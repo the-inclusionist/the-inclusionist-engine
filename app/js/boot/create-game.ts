@@ -1,51 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// boot/create-game — O TESTE DE FRONTEIRA DO ADR-0027 (passo 4), escrito em vez de discutido.
+// boot/create-game — THE BOUNDARY TEST OF ADR-0027 (step 4), written instead of argued.
 //
-// ========================= A PERGUNTA QUE ESTE ARQUIVO EXISTE PARA RESPONDER =========================
-// O ADR-0027 pôs um veredito e não o deixou vago:
+// ========================= THE QUESTION THIS FILE EXISTS TO ANSWER =========================
+// ADR-0027 set a verdict and did not leave it vague: if `createGame()` could not be written without a parameter
+// called `coinTarget`, the boundary that record proposed was wrong, and its steps 5 to 7 could not begin.
 //
-//     "se `createGame()` não puder ser escrito sem um parâmetro chamado `coinTarget`, a fronteira que este
-//      registro propõe está errada e os passos 5 a 7 NÃO PODEM COMEÇAR."
+// It can. There is no `coinTarget` here, and not out of discipline: ADR-0030 settled where the target comes from —
+// field 5 of the contract (`objectiveOf`). The HUD that asked for a coin count asks the game how many of how many, and
+// the coin stops being an engine word. `tests/boot-create-game.node.test.js` holds this.
 //
-// Pode. Não há `coinTarget` aqui, e não é por disciplina — é porque o ADR-0030 resolveu de onde o alvo vem:
-// campo 5 do contrato (`objectiveOf`). O HUD que pedia um número de moedas passa a perguntar ao jogo quantas
-// de quantas, e "moeda" deixa de ser palavra da engine. `tests/boot-create-game.node.test.js` prende isso.
+// ========================= WHAT THIS IS: THE ORDER =========================
+// Not a framework. It is the sequence that switches the engine on, which every consumer would otherwise rewrite by
+// hand — and the second consumer measured the price of rewriting it (`consumer-quiz`, findings 3, 6 and 12):
 //
-// ========================= O QUE ISTO É: A ORDEM, E O QUE FALTA =========================
-// Não é um framework. É a sequência de ligar a engine, que hoje cada consumidor reescreve à mão — e o segundo
-// consumidor mediu o preço de reescrevê-la (`consumer-quiz`, achados 3, 6 e 12):
+//  · FINDING 3 — `initAudioMixer()` MUST run before `createTts`, or `audioCat` is null and `narrate` gives up
+//    SILENTLY. An order dependency no type declares, found by the silence. Here it cannot be got wrong: the caller
+//    does not choose the order.
+//  · FINDING 6 — the panels need fixed ids in the document and, when they are missing, OPEN EMPTY, with no error.
+//    Here the engine builds its panels, and what the page lacks becomes `problems`, a list the consumer can read.
+//  · FINDING 12 — every consumer wrote the same one-line adapter for `window`. Written once.
 //
-//  · ACHADO 3 — `initAudioMixer()` TEM de rodar antes de `createTts`, senão `audioCat` é null e o `narrate`
-//    desiste CALADO. Uma dependência de ordem que nenhum tipo declara e que se descobre pelo silêncio. Aqui
-//    ela é impossível de errar: quem chama não escolhe a ordem.
-//  · ACHADO 6 — os painéis exigem ids fixos no documento (`#typo`, `#typo-list`…) e, quando faltam, ABREM
-//    VAZIOS. Sem erro. Aqui a falta vira `problems`, que é uma lista que o consumidor pode ler e mostrar.
-//  · ACHADO 12 — todo consumidor escreve o mesmo adaptador de uma linha para o `window`. Escrito uma vez.
+// And one finding that only appeared when this function tried to boot against an injected document:
 //
-// E um achado NOVO, que só apareceu quando esta função tentou bootar contra um documento injetado:
+//  · FINDING 15 — `initI18n()` called `applyDom(document)`, the GLOBAL, underneath whoever called it. In a browser
+//    it makes no difference, which is how it survived; in a pure-logic test it is the difference between booting and
+//    not, and with two documents (an engine in an iframe, an editor beside the game) it would be the difference
+//    between translating the right document and the other one. Hence `initI18n(root)`, with the global as default,
+//    exactly as `applyDom` already did.
 //
-//  · ACHADO 15 — `initI18n()` chamava `applyDom(document)`, o GLOBAL, por baixo de quem a chamasse. Num
-//    navegador dá no mesmo e por isso sobreviveu; num teste de lógica pura é a diferença entre bootar e não
-//    bootar, e num futuro com dois documentos (uma engine em iframe, um editor ao lado do jogo) seria a
-//    diferença entre traduzir o documento certo e o outro. Consertado no mesmo passo: `initI18n(root)`, com
-//    o global como padrão, exatamente como `applyDom` já fazia.
+// ========================= DECLINING IS NOT LYING =========================
+// The quiz declined the sonar and the pad instead of inventing tiles and a fake collision box, and that distinction
+// separates a finding from a false green. Here it becomes a TYPE: a game without a piece says so in a field instead
+// of returning `null` from a getter and hoping. What is declined is kept in the returned object, so a consumer can be
+// audited by what it refused.
+// ⚠️ THIS PARAGRAPH NAMES NONE OF THE FIELDS, which looks odd and is deliberate: `tests/declinio-morto` counts
+// MENTIONS, comments included, on purpose — «falhar para o lado de vivo é a direcção certa deste erro», because a
+// false accusation switches a gate off. So using a decline as an EXAMPLE in prose makes it look read, and a field
+// that is genuinely dead stops being accused.
 //
-// ========================= DECLINAR NÃO É MENTIR =========================
-// O quiz recusou o sonar e o pad em vez de inventar tiles e uma caixa de colisão falsos, e essa distinção é o
-// que separa um achado de um verde falso. Aqui ela vira TIPO: um jogo que não tem uma peça declara-o num
-// campo em vez de devolver `null` de um getter e torcer. O que se declina fica registrado no objeto devolvido,
-// e um consumidor pode ser auditado pelo que recusou.
-// ⚠️ E ESTE PARÁGRAFO NÃO NOMEIA NENHUM DOS CAMPOS, o que parece esquisito e é medido: o
-// `tests/declinio-morto` conta MENÇÕES, incluindo as de comentário, e fá-lo de propósito — «falhar para o lado
-// de vivo é a direcção certa deste erro», porque uma acusação falsa desliga um gate. A consequência é que usar
-// um declínio como EXEMPLO em prosa o faz parecer lido, e um campo genuinamente morto deixa de ser acusado.
-// 📌 O primeiro rascunho desta nota fez exactamente isso, e o crivo apanhou-o no mesmo minuto.
-//
-// ========================= O QUE ISTO AINDA NÃO FAZ, DITO AQUI E NÃO ESCONDIDO =========================
-// Não liga render, física, tiles nem o sonar — nada disso é de todo jogo, e o achado 9 mostra que o sonar hoje
-// exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
-// O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
-// pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
+// ========================= WHAT THIS DOES NOT DO =========================
+// It does not start a renderer, physics or tiles, nor the game loop: none of that belongs to every game, and the loop
+// is the cartridge's (`core/loop.startLoop`, called by the game). It does not mount `ui/shell`, the phase machine of a
+// game with a title screen. What it covers is what is the SAME in every game: language, screen reader, mixer, voice,
+// the dialog stack, the colour filters, the remappable keyboard, menu navigation, the pause card and the accessibility
+// bar, the settings panels, the navigation sonar, and every input transport.
 import i18nObject, { initI18n, dictionaryGaps, loadLocale, applyDom } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
 import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } from '../input/state.js';
@@ -78,7 +76,7 @@ import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, typ
 import { initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 import { keyName } from '../ui/control-choices.js';
 import { reserveTopBand } from '../ui/top-band.js';
-// O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
+// The WHOLE module: the event bus's `on`, so the mounted bar keeps telling the truth.
 import * as state from '../core/state.js';
 import type { CameraControl } from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
@@ -88,17 +86,17 @@ import { createTts } from '../platform/tts.js';
 import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
-// A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
-// responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
+// The root is the layer that MAY know both axes: `render/` is below it, and it is the root's job to answer
+// `platform/audio-sonar`, which cannot import from here without inverting an edge (#104).
 import { isBlind, isLowVision, DEFAULT_VISUAL, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
-// 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
+// 📌 The mode → `url(#...)` table, which `render/cvd-matrices` installs and the `consumer-quiz` consumes.
 import { VIZ_FILTER } from '../render/viz-modes.js';
 import { createPadWizard } from '../input/pad-wizard.js';
 import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
-// 📏 ERAM OITO NOMES ATÉ 22/09. Os cinco que saíram — `barIntruders`, `belowFloor`, `minimumTarget`, `Box` e `NodeMeasure` —
-// foram com os dois relatores de desenho para `ui/drawing-problems` (ADR-0221, issue #203), e a raiz deixou de os conhecer.
-// Um import que se pode apagar é acoplamento que deixou de existir, e é assim que esta dívida se paga: por assunto.
+// 📏 The drawing reporters (`barIntruders`, `belowFloor`, `minimumTarget` and their types) live in `ui/drawing-problems`
+// (ADR-0221, issue #203), and the root does not know them. An import that can be deleted is coupling that no longer
+// exists, and that is how this debt is paid: by subject.
 import { stageScale, applyScale, type Scale } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
@@ -109,8 +107,8 @@ import { LOGICAL_W } from '../core/constants.js';
 import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { mountPanel } from '../ui/mount-panel.js';
-// 📌 `latchRefusal` e `setMoveLatch` saíram destes imports com a linha do painel (2026-09-21): quem escreve
-// a aderência agora é o ☝️ da barra, e é ele que já resolvia as duas coisas — a recusa do aparelho e as duas chaves guardadas.
+// 📌 No `latchRefusal` or `setMoveLatch` here: the sticky keys are written by the bar's ☝️, which already resolves both
+// the device's refusal and the two stored keys.
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
@@ -138,7 +136,7 @@ import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/gam
 import * as store from '../platform/storage.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
-// 🔴 O COMANDO É MONTADO AQUI DESDE O ADR-0224 — era o único dos seis transportes montado pelo cartucho.
+// 🔴 THE GAMEPAD IS MOUNTED HERE (ADR-0224), like every other transport — no longer by the cartridge.
 import { initGamepad, padGameAnswers, seatEveryPlayer, type GamepadGameHooks } from '../input/gamepad.js';
 import { whereTheChildIs, type Place } from '../ui/where-the-child-is.js';
 import { createSimulationOverTheWorld } from '../ui/simulation-over-the-world.js';
@@ -151,94 +149,75 @@ import { registerPadMapping } from '../input/pad-defaults.js';
 import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/heavy.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
-/** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */
+/** What the game lends from the document. Everything optional but `doc`/`win`: what is missing becomes `problems`. */
 export interface EngineHost {
   readonly doc: Document;
   readonly win: Window;
-  /** Um `<svg>` vazio onde os seis filtros de daltonismo são montados em tempo de execução. */
+  /** An empty `<svg>` where the six colour-vision filters are mounted at run time. */
   readonly cvdHost?: SVGElement | Element | null;
   /**
-   * ONDE A BARRA DE ACESSIBILIDADE ENTRA, na PRIMEIRA tela do jogo.
+   * WHERE THE ACCESSIBILITY BAR GOES, on the game's FIRST screen.
    *
-   * ⚠️ PEDIDO DO DEV, 2026-09-07: «o menu de pausa, o design do menu de pausa e os ícones de acessibilidade
+   * ⚠️ THE DEV'S REQUEST, 2026-09-07: «o menu de pausa, o design do menu de pausa e os ícones de acessibilidade
    * que aparecem no jogo desde a primeira tela devem ser oferecidos pela ENGINE e não pela programação do
    * jogo. Todo jogo da engine inclusionist deve ter o mesmo menu de pausa e ícones de acessibilidade desde a
    * primeira.»
    *
-   * ⚠️ E A MEDIÇÃO DE 2026-09-08 MOSTROU QUE É UM ACHADO, e não uma arrumação: dos seis jogos do catálogo
-   * local, CINCO não têm barra de acessibilidade nenhuma — nem menu de pausa. `pixi-15-puzzle`, `game-chess`,
-   * `game-soccer`, `2048` e `whackwhack` não chamam `initPauseIcons` nem montam HUD, e o `createGame` nunca
-   * os montou por eles. O comentário do `ui/pause-icons` diz porquê sem o notar: «`initPauseIcons` é chamado
-   * pela raiz de composição de CADA jogo» — ou seja, cada jogo tinha de se lembrar, e cinco não se lembraram.
-   * A criança que depende do modo cego, do TTS ou do alto contraste abre esses cinco jogos e não tem por onde.
+   * Left to each game, the bar was missing from most of the catalogue: each game had to remember to call
+   * `initPauseIcons`, and a child who depends on blind mode, narration or high contrast opened those games with no way
+   * in. So the engine mounts it (ADR-0106 §4, step 2).
    *
-   * Ausente, a engine procura `#title-icons` — o id que o jogo de plataforma usa desde sempre — e, não o
-   * achando, diz-o em `problems`.
-   *
-   * ✅ E DESDE 2026-09-08 ELA TAMBÉM **MONTA** (etapa 2 do ADR-0106 §4). Este parágrafo dizia «dizer não é
-   * montar, e a montagem é o passo seguinte»; o passo seguinte aconteceu. O que a destravou foram as etapas
-   * 1 e 3: nenhuma delas era sobre montar, e sem as duas o `PauseIconsCtx` exigia sete coisas que esta raiz
-   * não sabe responder por um jogo que não conhece.
-   *
-   * ⚠️ Achando o hospedeiro, a barra é escrita e fiada aqui. Não achando, continua a ser `problems` — porque
-   * a engine pode oferecer os ícones, mas não pode adivinhar ONDE eles cabem no desenho de um jogo alheio.
+   * Absent, the engine looks for `#title-icons` — the id the platformer has always used. Found, the bar is written and
+   * wired here; not found, it is a line of `problems`: the engine can offer the icons, but it cannot guess WHERE they
+   * fit in the layout of a game it does not know.
    */
   readonly a11yBarHost?: Element | null;
   /**
-   * ONDE O CARTÃO DE PAUSA da primeira tela é pendurado. Ausente, a engine usa `#game-region`.
+   * WHERE THE PAUSE CARD of the first screen is hung. Absent, the engine uses `#game-region`.
    *
-   * ⚠️ Existe pela mesma razão do `a11yBarHost`: a engine pode OFERECER a pausa, mas não sabe onde ela cabe
-   * no desenho de um jogo alheio. 📌 E desde o ADR-0120 ONDE já não é SE: a pausa deixou de ser declinável, e
-   * o que sobra deste campo é o lugar. Um hospedeiro que não aceite filhos vira linha de `problems`, que é a
-   * diferença entre a engine não saber e a engine calar-se.
+   * ⚠️ For the same reason as `a11yBarHost`: the engine OFFERS the pause, but does not know where it fits in the
+   * layout of a game it does not know. 📌 And since ADR-0120/ADR-0122 WHERE is not WHETHER: the pause is not
+   * declinable, and what this field keeps is the place. A host that takes no children becomes a line of `problems` —
+   * the difference between the engine not knowing and the engine keeping quiet.
    */
   readonly pauseHost?: Element | null;
   /**
-   * ONDE O CONTROLE VIRTUAL É PENDURADO (ADR-0143). Ausente, a engine usa `#game-region`.
+   * WHERE THE VIRTUAL CONTROLLER IS HUNG (ADR-0143). Absent, the engine uses `#game-region`.
    *
-   * ⚠️ Pela mesma razão do `pauseHost`: a engine desenha o pad a partir do `preset`, mas não sabe onde ele cabe
-   * no desenho de um jogo alheio. E a folha põe `.touch` em `position:absolute` no fundo do hospedeiro — logo
-   * o hospedeiro é o rectângulo do jogo, não a página.
+   * ⚠️ For the same reason as `pauseHost`: the engine draws the pad from the `preset`, but does not know where it fits
+   * in the layout of a game it does not know. And the stylesheet puts `.touch` at `position:absolute` at the bottom of
+   * the host — so the host is the game's rectangle, not the page.
    */
   readonly touchHost?: Element | null;
 }
 
 /**
- * O que este jogo NÃO tem. Declarado, e não deduzido de um getter que devolve null.
+ * What this game does NOT have. Declared, not deduced from a getter that returns null.
  *
- * O achado 10 do segundo consumidor é a razão de isto existir como tipo: o quiz precisava se declarar
- * "pausado" para navegar os próprios menus, porque a engine não tinha por onde ouvir "eu não tenho fases".
+ * Finding 10 of the second consumer is why this exists as a type: the quiz had to declare itself paused to navigate its
+ * own menus, because the engine had no way to hear that a game has no phases.
  */
 export interface Declinios {
   /*
-   * ⚠️ `semMenuDePausa` SAIU DAQUI, E SAIU DUAS VEZES — a nota fica porque a ausência dele é decisão, e
-   * porque o caminho até ela é a coisa mais instrutiva deste ficheiro.
+   * ⚠️ THE PAUSE-MENU DECLINE IS GONE, and the note stays because its absence is a decision.
    *
-   * 1. **Aposentado** (ADR-0120): ele existia porque a engine não tinha nada que servisse a um jogo sem pausa
-   *    própria, e essa razão foi CONSTRUÍDA fora pelo próprio ADR-0106 — lista padrão de botões (`001b185`) e
-   *    montagem do cartão (`092a670`). O Dev fechou a colisão numa palavra: «Aposentar.»
-   * 2. 🔴 **Revertido** (ADR-0121, `7f256f0`): medido depois, QUATRO de cinco jogos usavam o campo, e o
-   *    `pixi-15-puzzle` tinha o custo escrito ao lado da própria declaração — «every arrow, Enter and Space
-   *    would start being eaten the moment anything created an element with a pause id».
-   * 3. **Aposentado outra vez** (ADR-0122), porque o Dev respondeu a issue #132 com a razão que já tinha dado
-   *    uma vez: o menu de pausa e os ícones de acessibilidade do HUD devem estar em TODO jogo, e é por isso
-   *    que são responsabilidade da engine.
+   * It existed because the engine had nothing for a game without a pause of its own; ADR-0106 built that (a default
+   * list of buttons and the mounting of the card), and ADR-0120 retired it. It came back once (ADR-0121) when four of
+   * five games turned out to use it, for fear that a mounted card would eat every arrow, Enter and Space. It does not:
+   * both readers of the card (`ui/menu-nav` and `input/gamepad`) consume a key only while the card is NOT hidden, and
+   * `buildScreenPause` delivers it hidden — a MOUNTED card eats nothing; only an OPEN card owns the keyboard, which is
+   * right. ADR-0122 retired it for good, with the Dev's reason: the pause menu and the HUD's accessibility icons are in
+   * EVERY game, which is why they are the engine's.
    *
-   * 📏 E A CITAÇÃO DO PASSO 2 FOI MEDIDA NO PASSO 3, que é o que ela nunca tinha sido: os dois leitores do
-   * cartão só consomem a tecla com `!menu.hidden` (`ui/menu-nav.ts:485`, `input/gamepad.ts:619`) e o
-   * `buildScreenPause` entrega-o com `sp.hidden = true` (`ui/pause-icons.ts:1180`). Cartão MONTADO não come
-   * tecla nenhuma; só o cartão ABERTO é dono do teclado, onde isso é o comportamento certo. A guarda entrou
-   * em `1519682` (25/08) e está no `v7.0.1`, a versão que os quatro instalam.
-   *
-   * 📌 Um jogo que genuinamente não tenha pausa nenhuma NÃO recupera este campo — seria decisão nova, sobre o
-   * que «pausa» quer dizer num jogo sem estado a correr. O que um jogo ainda declara é ONDE ela cabe:
-   * `host.pauseHost`, com `#game-region` de recuo.
+   * 📌 A game that genuinely has no pause does not get this back — that would be a new decision about what a pause
+   * means in a game with no running state. What a game still declares is WHERE it fits: `host.pauseHost`, with
+   * `#game-region` as the fallback.
    */
   /*
    * No controller-mapping decline (ADR-0231): the wizard is accessibility the engine offers to every game, and the
    * engine's accessibility is not declinable (ADR-0122).
    */
-  /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
+  /** No pause actor — who pressed the button that opened the menu. */
   readonly noPauseActor?: boolean;
   /**
    * No neural voice — this game does not declare `uses: { neuralVoice: true }` (ADR-0216 §3).
@@ -250,62 +229,61 @@ export interface Declinios {
 }
 
 export interface CreateGameOptions {
-  /** Os SETE CAMPOS (core/contract). É o que a pilha de acessibilidade lê, e a única coisa que ela lê. */
+  /** The SEVEN FIELDS (core/contract). It is what the accessibility stack reads, and the only thing it reads. */
   readonly declaration: GameDeclaration;
   readonly host: EngineHost;
   readonly declines?: Declinios;
   /**
-   * É AGORA hora de navegar menu? A plataforma responde `phase === 'paused'`; um quiz responde `true`.
-   * Ausente = `true`, que é o caso do jogo sem fases — o mais simples, e o que não obriga a inventar uma.
+   * Is it menu-navigation time NOW? The platformer answers `phase === 'paused'`; a quiz answers `true`.
+   * Absent = `true`, the case of a game with no phases — the simplest one, and the one that does not force one to be invented.
    */
   readonly isNavigable?: () => boolean;
-  /**
-   * O MODO `accessibility` do ADR-0044 (item 7): o direcional dirige a barra rápida em vez do personagem.
-   *
-   * Opcionais porque um hospedeiro pode não ter barra nenhuma — sem eles a resposta é "ninguém está nela" e
-   * nada é chamado. O jogo de plataforma os fornece; um quiz sem HUD de a11y, não.
-   */
-  /** O índice "N de M" está ligado? Ausente = sim. Ver `comIndice` em ui/menu-nav. */
+  /** Is the position index (item N of M) on? Absent = yes. See `withIndex` in ui/menu-nav. */
   readonly withIndex?: () => boolean;
+  /**
+   * ADR-0044's `accessibility` MODE (item 7): the directional drives the quick bar instead of the character.
+   *
+   * Optional: absent, the engine answers with the bar it mounted itself (`ui/pause-icons`). A game that draws its own
+   * bar answers for it.
+   */
   readonly onBar?: (i: number) => boolean;
   readonly navBar?: (i: number, k: NavKeys) => void;
-  /** Jogadores para o teclado remapeável. `Pick<ControlledPlayer,'ctrl'>` — esquema de teclas e nada mais.
-   *  ⚠️ `KeyScheme` e não `Record<string, string[]>` desde a #118: era uma CÓPIA ESTRUTURAL do tipo, e uma
-   *  cópia que ninguém obriga a concordar diverge — é a lição que o próprio `core/entity` abre a dizer, com
-   *  o `DomQuery` (dezasseis cópias) e o `KeyScheme` (seis) como as contas já pagas. */
   /**
-   * ⚠️ `audioSink` ENTROU EM 2026-09-12, e é ADITIVO E OPCIONAL: nenhum consumidor precisa de o escrever.
+   * Players for the remappable keyboard. `Pick<ControlledPlayer,'ctrl'>` — a key scheme and nothing more.
+   * ⚠️ `KeyScheme` and not `Record<string, string[]>` (#118): a structural COPY of a type that nothing forces to agree
+   * drifts — the lesson `core/entity` opens with.
    *
-   * 🎯 Ele entra porque o assento passou a ter um segundo leitor dentro da engine. O painel auditivo, que a
-   * engine agora monta, escreve nele a saída de áudio que a criança escolheu — e `ui/pause-icons` lê-o para
-   * responder a uma pergunta que muda o que a barra oferece: «esta criança tem uma saída SÓ dela?». Sem isso,
-   * mexer em som, TTS ou modo cego num fone partilhado mudaria o áudio de toda a gente.
+   * ⚠️ `audioSink` is ADDITIVE AND OPTIONAL: no consumer needs to write it.
    *
-   * 📌 E É SÓ ESTE CAMPO. Os campos MOTORES (`easy`, `toggleMove`, `toggleRun`) não entram: eles são
-   * obrigatórios em `MobilityPlayer` — o painel LÊ-OS para desenhar o estado —, e torná-los exigíveis aqui
-   * obrigaria todo jogo a carregá-los. Essa é uma decisão de contrato por tomar, e ela não se toma de
-   * passagem por um cast que faria o compilador calar-se.
+   * 🎯 It is here because the seat has a second reader inside the engine. The hearing panel, which the engine mounts,
+   * writes into it the audio output the child chose — and `ui/pause-icons` reads it to answer a question that changes
+   * what the bar offers: does this child have an output of HER OWN? Without it, changing sound, narration or blind
+   * mode on a shared headset would change everyone's audio.
+   *
+   * 📌 AND ONLY THIS FIELD. The MOTOR fields (`easy`, `toggleMove`, `toggleRun`) are left out: they are required in
+   * `MobilityPlayer` — the panel READS them to draw its state — and making them required here would force every game
+   * to carry them. That is a contract decision still to be taken, and it is not taken in passing by a cast that would
+   * silence the compiler.
    */
   readonly players?: { ctrl: KeyScheme; audioSink?: string | null }[];
-  /** Troca de fase, para quem tem fases. Ausente = não faz nada (o jogo sem fases não perde nada). */
+  /** Phase change, for a game that has phases. Absent = does nothing (a game without phases loses nothing). */
   readonly setPhase?: (p: 'title' | 'playing' | 'paused') => void;
   /**
-   * Os jogadores como a NAVEGAÇÃO SONORA os vê. Ausente, `createGame` DERIVA um do campo 4 do contrato: o
-   * foco diz onde o jogador está, que é tudo o que o sonar precisa saber sobre posição.
+   * The players as NAVIGATION SOUND sees them. Absent, `createGame` DERIVES one from field 4 of the contract: the focus
+   * says where the player is, which is all the sonar needs to know about position.
    *
-   * Um jogo com vários jogadores, ou com dispositivo de áudio por jogador, fornece a sua lista. Um jogo de
-   * uma criança só não fornece nada — e ganha sonar assim mesmo, que é o ponto.
+   * A game with several players, or with an audio device per player, supplies its own list. A one-child game supplies
+   * nothing — and gets the sonar anyway, which is the point.
    */
   readonly sonarPlayers?: () => SonarPlayer[];
-  /** Modo cego ligado? Ausente = não. Vale para todos os jogadores, como no jogo de plataforma. */
+  /** Blind mode on? Absent = the engine's own stored value (`core/state.blindMode`). Applies to every player. */
   readonly isBlindMode?: () => boolean;
   /**
-   * AS PALAVRAS DESTE JOGO (`core/actions`). Sem elas a engine não sabe QUANTAS ações pedir a um transporte,
-   * e a garantia do ADR-0079 §3 não tem como ser medida — foi a lacuna que a issue #112 encontrou: a
-   * aritmética existia, testada, e o `createGame` tinha ZERO ocorrências de qualquer coisa sobre ações.
+   * THIS GAME'S WORDS (`core/actions`). Without them the engine does not know HOW MANY actions to ask of a transport,
+   * and ADR-0079 §3's guarantee cannot be measured (issue #112).
    *
-   * Opcional porque um jogo pode não declarar preset ainda; sem ele o aviso de alcance simplesmente não
-   * aparece, que é o comportamento de hoje e não uma regressão.
+   * Optional because a game may not declare a preset yet; without it the reach notice simply does not appear, and the
+   * help and the scan have no words to show.
    */
   readonly preset?: ActionPreset;
   /**
@@ -346,26 +324,27 @@ export interface CreateGameOptions {
    */
   readonly onCommand?: (command: VirtualCommand) => void;
   /**
-   * O QUE SÓ ESTE JOGO SABE SOBRE O COMANDO (ADR-0224). A engine monta o transporte; isto são as poucas respostas que
-   * nada nela pode saber — a tela de título, a demonstração, o modal, entrar e recomeçar um assento, o selo de espera,
-   * a arte do assistente e «o mundo está a andar?».
+  /**
+   * WHAT ONLY THIS GAME KNOWS ABOUT THE GAMEPAD (ADR-0224). The engine mounts the transport; these are the few answers
+   * nothing in it can know — the title screen, the attract demo, the modal, joining and respawning a seat, the waiting
+   * badge, the wizard's art, and whether the world is running.
    *
-   * 🎯 **Ausente por inteiro é uma resposta**, não um esquecimento: o controle funciona, e o que depende do mundo do
-   * cartucho simplesmente não acontece. Cada ausência está escrita em `GamepadGameHooks`.
+   * 🎯 **Absent altogether is an answer**, not an oversight: the gamepad works, and what depends on the cartridge's
+   * world simply does not happen. Each absence is written in `GamepadGameHooks`.
    */
   readonly gamepad?: GamepadGameHooks;
   /**
-   * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
+   * THE ACCOMMODATIONS THAT HAVE A SUBJECT IN THIS GAME — the cartridge's answer, REQUIRED (ADR-0153).
    *
-   * 🔴 Para cada uma das dezasseis que só o jogo sabe responder (`GAME_KEYED` em `core/accommodations`): a PALAVRA
-   * do jogo, se tem assunto aqui, ou `false`. Nas palavras do Dev: «Gênero não precisa responder todas as
-   * acomodações, mas sim o cartucho, obrigatoriamente.»
+   * 🔴 For each of the sixteen only the game can answer (`GAME_KEYED` in `core/accommodations`): the game's WORD, if
+   * it has a subject here, or `false`. In the Dev's words: «Gênero não precisa responder todas as acomodações, mas
+   * sim o cartucho, obrigatoriamente.»
    *
-   * ⚠️ OBRIGATÓRIO, e pela rubrica do `holdsAtOnce`: não há padrão seguro — «sim» monta a cadeira de rodas no
-   * xadrez, «não» esconde-a da plataforma — e o esquecimento falha INVISIVELMENTE a quem escreve o jogo. Uma resposta
-   * ausente ou incompleta é declaração malformada, e o arranque RECUSA.
+   * ⚠️ REQUIRED, by the `holdsAtOnce` rubric: there is no safe default — yes mounts the wheelchair in chess, no
+   * hides it from the platformer — and forgetting fails INVISIBLY to whoever writes the game. A missing or incomplete
+   * answer is a malformed declaration, and the boot REFUSES.
    *
-   * 📌 As gerais montam sempre e as do contrato derivam-se; nenhuma delas se responde aqui.
+   * 📌 The general ones always mount and the contract's are derived; none of them is answered here.
    */
   readonly accommodations: AccommodationAnswers;
   /**
@@ -416,85 +395,72 @@ export interface CreateGameOptions {
    */
   readonly onHeavyProgress?: (r: HeavyReport) => void;
   /**
-   * Como se descobre que cada transporte está aqui. Ausente = a engine pergunta ao aparelho.
+   * How each transport is found to be here. Absent = the engine asks the device.
    *
-   * Injetável porque «há um controle ligado?» e «isto é uma tela de toque?» são perguntas ao navegador, e um
-   * teste que não as possa responder não consegue exercitar a tela que depende delas.
+   * Injectable because whether a gamepad is connected and whether this is a touch screen are questions to the browser, and a
+   * test that cannot answer them cannot exercise the screen that depends on them.
    */
   readonly availability?: Availability;
   /**
-   * O QUE CADA ITEM DO CARTÃO DE PAUSA FAZ NESTE JOGO — «continuar», «sair», «ajuda», o que o jogo ligar.
+   * WHAT EACH ITEM OF THE PAUSE CARD DOES IN THIS GAME — «continuar», «sair», «ajuda», whatever the game wires.
    *
-   * 🔴 ESTE CAMPO FALTAVA, E A FALTA ALCANÇAVA TODOS OS CONSUMIDORES DE UMA VEZ. O `initPauseIcons`
-   * aceita `getPauseActs` desde que existe; esta raiz não o passava e não tinha campo para ele, logo
-   * **nenhum jogo montado por `createGame`** conseguia ligar um item. O `refrescarItensDaPausa` esconde o
-   * que não acciona — o §5 do ADR-0106, que proíbe botão morto — e o resultado era um cartão com os TRÊS
-   * itens que a engine acciona sozinha (`ENGINE_ITEMS`) e nada mais, em todo o catálogo.
+   * 🔴 The engine hides every item nothing acts on (ADR-0106 §5, no dead buttons — `refreshPauseItems` in
+   * `ui/pause-icons`), so without this field a game could wire no item beyond the ones the engine acts on itself
+   * (`ENGINE_ITEMS` and the engine's own actions below). The game's table is spread over the engine's, so the game wins.
    *
-   * ⚠️ E O CUSTO MAIOR NÃO ERA O CARTÃO, ERA A BARRA. O `entrarNaBarra` chama `acts.resume?.()` para sair
-   * do cartão antes de entregar as direcções à barra de acessibilidade; com a tabela vazia esse `resume` era
-   * `undefined`, o cartão ficava por cima do jogo, e o item 7 do ADR-0044 — o direccional a conduzir a barra
-   * — era **inalcançável a partir de qualquer jogo**.
-   *
-   * 📌 FUNÇÃO e não valor, pela razão que o próprio `ui/pause-icons` regista: a tabela de um jogo muda
-   * durante a partida (um «sair» que só liga depois da primeira fase), e congelá-la no arranque já partiu
-   * um caso lá dentro. Ausente = tabela vazia, que é o comportamento de sempre.
+   * 📌 A FUNCTION and not a value, for the reason `ui/pause-icons` records: a game's table changes during a match (a
+   * «sair» that is wired only after the first level), and freezing it at boot broke a case there. Absent = only what
+   * the engine acts on.
    */
   readonly getPauseActs?: () => Record<string, (() => void) | undefined>;
   /**
-   * QUEM ABRIU A PAUSA, quando há mais de um assento — o painel de controle edita o assento DESTE índice.
+   * WHO OPENED THE PAUSE, when there is more than one seat — the keyboard panel edits the seat of THIS index.
    *
-   * ⚠️ A RAIZ JÁ SE DENUNCIAVA POR NÃO TER ISTO: o bloco 4d empurra uma linha de `problems` quando um jogo
-   * declara mais de um jogador, porque sem ator da pausa a criança do SEGUNDO assento não tem como remapear.
-   * O que faltava para a linha ser accionável era este campo — até agora ela dizia «conserte» sem haver por
-   * onde, e a única saída era declarar `semAtorDePausa`, que é aceitar a perda em vez de a corrigir.
+   * ⚠️ Without it the child in the SECOND seat cannot remap, and `problems` says so for a game that declares more than
+   * one player and does not answer this (`core/cartridge-problems`).
    */
   readonly setPauseActor?: (i: number, ...rest: unknown[]) => void;
   /**
-   * COMO ESTE JOGO REPINTA PARA ALTO CONTRASTE, e como corrige daltonismo — os dois eixos do ADR-0104.
+   * HOW THIS GAME REPAINTS FOR HIGH CONTRAST, and how it corrects colour vision — the two axes of ADR-0104.
    *
-   * 🔴 SEM ELES OS ÍCONES ⚫ E 🚥 NÃO SÃO MONTÁVEIS POR NENHUM JOGO. O `iconsThatAct` só os monta
-   * para quem entrega quem os escreve, e essa regra está certa — um ícone que não acciona é pior que um
-   * ícone a menos. O que estava errado era não haver PORTA: o consumidor externo que mediu isto leu a
-   * ausência como «este jogo tem os seus próprios controles», o que é verdade sobre o resultado e falso
-   * sobre a causa. Uma lacuna que o consumidor lê como escolha é a pior forma de lacuna.
+   * 🔴 THE ⚫ ICON IS OFFERED ONLY TO A GAME THAT HANDS IN A WRITER. `iconsThatAct` mounts an icon only for whoever
+   * hands in its writer, and that rule is right — an icon that acts on nothing is worse than one icon fewer. What
+   * these fields add is the DOOR: without it, an outside consumer read the absence as this game having its own
+   * controls, true about the result and false about the cause. A gap the consumer reads as a choice is the worst kind.
+   * The 🚥 has an engine default (a filter over the world, below); a game that corrects colour in its own render wins.
    *
-   * ⚠️ SÃO DOIS CAMPOS E NÃO UM, porque são duas perguntas: um jogo pode saber repintar texturas e não ter
-   * como corrigir cor, ou o contrário. O `game-pinball` é o segundo caso — a imagem dele é um framebuffer
-   * de 320x180 sem textura para repintar, e o filtro de cor ele aplica há semanas.
+   * ⚠️ TWO FIELDS AND NOT ONE, because they are two questions: a game may know how to repaint textures and have no way
+   * to correct colour, or the other way round — `game-pinball`'s image is a 320×180 framebuffer with no texture to
+   * repaint, and it applies the colour filter itself.
    */
   readonly setPlayerTheme?: (i: number, theme: Theme) => void;
   readonly setPlayerCorrection?: (i: number, correction: Correction) => void;
 }
 
 /*
- * ⚠️ O TIPO MUDOU DE CASA E O NOME FICOU. `FlashMeasurement` passou a ser declarado em `platform/flash-sampler`, junto de quem
- * o produz, e é REEXPORTADO daqui porque é superfície pública desta raiz desde a nota AR: um jogo que o importa de
- * `boot/create-game` continua a poder. Mover o nome sem isto seria uma quebra que ninguém declarou.
+ * ⚠️ THE TYPE MOVED HOUSE AND THE NAME STAYED. `FlashMeasurement` is declared in `platform/flash-sampler`, beside what
+ * produces it, and RE-EXPORTED here because it is public surface of this root: a game that imports it from
+ * `boot/create-game` still can. Moving the name without this would be a break nobody declared.
  */
 export type { FlashMeasurement };
 
 export interface Engine {
   readonly declaration: GameDeclaration;
   /**
-   * A PAUSA QUE ESTA RAIZ MONTOU — mostrar e esconder, sem o consumidor caçar id nenhum.
+   * THE PAUSE THIS ROOT MOUNTED — show and hide, without the consumer hunting for any id.
    *
-   * ⚠️ EXISTE PORQUE MONTAR NÃO É MOSTRAR, e a etapa 2 do ADR-0106 tinha ficado a meio sem que nada o
-   * dissesse. O cartão nasce `hidden` (é assim que o `buildScreenPause` o entrega, e tem de ser: a pausa
-   * abre-se, não está aberta) e QUEM O REVELA é o `ui/shell`, por fase — que esta raiz **não monta**, de
-   * propósito: «não substitui o boot do main.js, que tem catorze anos de ordem própria».
+   * ⚠️ IT EXISTS BECAUSE MOUNTING IS NOT SHOWING. The card is born `hidden` (that is how `buildScreenPause` delivers
+   * it, and it must be: a pause is opened, not open). The engine opens it on SELECT, the ☰ and the quick pause's
+   * `action4`; these two let a game open and close it too, without looking for `#vp-pause-0` in the document — exactly
+   * the kind of knowledge this file exists not to demand.
    *
-   * ⚠️ Sem estas duas, um jogo montado por `createGame` ficava com um cartão de pausa que NADA mostrava. Não
-   * é «o consumidor esqueceu-se»: não havia por onde, a não ser procurar `#vp-pause-0` no documento — que é
-   * exactamente o tipo de conhecimento que este ficheiro existe para não exigir.
-   *
-   * 📌 A engine OFERECE o mecanismo e não toma a fase. Quando abrir a pausa continua a ser do jogo, porque só
-   * ele sabe o que é estar a jogar; o que deixa de ser dele é saber COMO.
+   * 📌 The engine OFFERS the mechanism and does not take the phase. When to open the pause stays the game's, because
+   * only it knows what playing is; what stops being its business is HOW.
    */
   readonly pause: {
-    /** Revela o cartão da tela `i` e refaz os itens — o §5 avaliado no instante em que ela abre. */
+    /** Reveals screen `i`'s card and rebuilds its items — ADR-0106 §5 evaluated the moment it opens. */
     readonly show: (i: number) => void;
-    /** Esconde-o outra vez. */
+    /** Hides it again. */
     readonly hide: (i: number) => void;
   };
   readonly tts: ReturnType<typeof createTts>;
@@ -529,103 +495,100 @@ export interface Engine {
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
   /**
-   * O OBJETO DE CONTROLE, oferecido ao cartucho (ADR-0216, nas palavras do Dev: «Assim como a engine oferece o objeto de
+   * THE CONTROLLER OBJECT, offered to the cartridge (ADR-0216, in the Dev's words: «Assim como a engine oferece o objeto de
    * controle, ela deve oferecer objetos de leitura e TTS»).
    *
-   * 🔴 Existe porque há um transporte que a RAIZ não monta: `initGamepad` é chamado pelo CARTUCHO, e a porta única do
-   * ADR-0223 tem de lhe chegar às mãos para ele a passar adiante — `press: motor.controller.press`. Todos os outros
-   * transportes (toque, olhos, rosto, mãos, voz, varredura) são montados aqui e ligam-se sozinhos.
+   * 📌 Every transport the engine knows — keyboard, gamepad (ADR-0224), touch, eyes, face, hands, voice, scan — is mounted
+   * here and presses this controller by itself. This is for a transport a game mounts ITSELF: pressing a position by hand
+   * is telling the engine that the child's device produced that position — with the source, which ADR-0109 demands.
    *
-   * ⚠️ O que ele NÃO é: uma segunda forma de o jogo receber entrada. O jogo recebe por `onCommand`. Isto é o que um
-   * jogo usa para LIGAR um transporte que ele próprio monta, e apertar uma posição à mão é dizer à engine que o
-   * aparelho da criança produziu aquela posição — com a origem, que o ADR-0109 exige.
+   * ⚠️ What it is NOT: a second way for the game to receive input. The game receives through `onCommand`.
    */
   readonly controller: VirtualController;
   /**
-   * APLICA O FILTRO DE VISÃO NO MUNDO QUE ESTE JOGO DECLAROU (ADR-0087).
+   * APPLIES THE VISION FILTER TO THE WORLD THIS GAME DECLARED (ADR-0087).
    *
-   * ⚠️ Existe porque, sem ela, cada consumidor escrevia a sua — e o `game-15puzzle` escreveu, com o
-   * raciocínio certo e sozinho. O que ela acrescenta é a regra dos MENUS, que um consumidor não tem como
-   * saber: eles vivem por cima da simulação e são o instrumento de sair dela, então se herdaram o filtro por
-   * estarem DENTRO do mundo, ele é desfeito neles. Uma cegueira que apagasse o menu de pausa trancaria a
-   * criança dentro da simulação (#82).
+   * ⚠️ It exists because, without it, each consumer wrote its own — and `game-15puzzle` did, with the right reasoning
+   * and on its own. What it adds is the rule of MENUS, which a consumer has no way to know: they live over the
+   * simulation and are the way out of it, so if they inherited the filter by being INSIDE the world, it is undone on
+   * them. A blindness that blacked out the pause menu would lock the child inside the simulation (#82).
    */
   readonly applyVisionFilter: (css: string, reach: FilterReach) => void;
   /**
-   * A NAVEGAÇÃO SONORA, pronta e ligada à declaração deste jogo (item 19).
+   * NAVIGATION SOUND, ready and wired to this game's declaration (item 19).
    *
-   * Ela vem de graça porque o sonar deixou de precisar de tiles: pergunta topologia (campo 1), alvos (campo
-   * 5) e nome (campo 3), e o jogo já declarou os três para existir. Era o achado 9 do segundo consumidor —
-   * "ligá-lo exigiria MENTIR para a engine" —, e a mentira era exigida pela FORMA da pergunta, não pelo som.
+   * It comes for free because the sonar no longer needs tiles: it asks for topology (field 1), targets (field 5) and
+   * names (field 3), and the game already declared all three to exist. It was finding 9 of the second consumer: wiring
+   * the sonar meant LYING to the engine, and the lie was demanded by the SHAPE of the question, not by the sound.
    */
   readonly sonar: AudioSonar;
   /**
-   * A PILHA DE CENAS (item 22, C3 do ADR-0030), vazia e pronta.
+   * THE SCENE STACK (item 22, C3 of ADR-0030), empty and ready.
    *
-   * Vem de `createGame` e não de cada jogo pelo mesmo motivo do sonar: é infraestrutura, e um jogo que a
-   * montasse sozinho montaria a décima quinta versão de push/pop. O que ela substitui é o
-   * `phase: 'title' | 'playing' | 'paused'` — um enum DESTE jogo que doze módulos leem, e que um jogo com
-   * mapa de fases ou tela de resultados não teria como estender sem pedir constante nova à engine (o ADR-0030
-   * registra alargar a união como NÃO-opção, e é essa a razão).
+   * It comes from `createGame` and not from each game for the same reason as the sonar: it is infrastructure. What it
+   * replaces is `phase: 'title' | 'playing' | 'paused'` — ONE game's enum that engine modules read, and that a game
+   * with a level map or a results screen could not extend without asking the engine for a new constant (ADR-0030
+   * records widening the union as a NON-option, and that is why).
    *
-   * Nasce VAZIA: quem empilha é o jogo, porque quais são as cenas é a única parte disto que é dele.
+   * It is born EMPTY: the game pushes, because which scenes there are is the only part of this that is its own.
    */
   readonly scenes: SceneStack;
   /**
-   * AVISA O CARTUCHO QUE O IDIOMA MUDOU — e é a única coisa que ele precisa de saber sobre o assunto (ADR-0225).
+   * TELLS THE CARTRIDGE THE LANGUAGE CHANGED — the only thing it needs to know about it (ADR-0225).
    *
-   * 📌 A engine já redesenha tudo o que É dela: a barra, a legenda, o cartão, o pad, um painel aberto, a voz que fala e o
-   * modelo que ouve. O que ela não pode redesenhar é a ATIVIDADE — e sem esta porta o cartucho teria de assinar
-   * `i18n:change` na janela, conhecendo o nome do evento e alcançando um global para isso. É a regra que o Dev escreveu
-   * para a leitura e a fala: «o jogo não deve precisar saber como isso funciona» (ADR-0216).
+   * 📌 The engine already redraws everything that IS its own: the bar, the caption, the card, the pad, an open panel, the
+   * voice that speaks and the model that listens. What it cannot redraw is the ACTIVITY — and without this door the
+   * cartridge would have to subscribe to `i18n:change` on the window, knowing the event's name and reaching a global to
+   * do it. It is the rule the Dev wrote for reading and speech: «o jogo não deve precisar saber como isso funciona»
+   * (ADR-0216).
    *
-   * ⚠️ Chamado DEPOIS de a engine se ter redesenhado, para o cartucho nunca ver uma tela meio traduzida.
+   * ⚠️ Called AFTER the engine has redrawn itself, so the cartridge never sees a half-translated screen.
    */
   readonly onLocaleChange: (fn: () => void) => void;
-  /** Quantos filtros de daltonismo foram montados. `0` = não havia host, e o menu visual perde metade. */
+  /** How many colour-vision filters were mounted. `0` = there was no host, and the visual menu loses half. */
   readonly cvdFilters: number;
-  /** O que FALTOU no documento do consumidor. Vazia = o hospedeiro cumpriu o contrato de marcação. */
+  /** What the host page lacks and what the cartridge left undone, each line naming its fix. Empty = nothing to fix. */
   readonly problems: readonly string[];
-  /** O que este jogo declarou não ter. Devolvido para poder ser auditado — declinar fica no registro. */
+  /** What this game declared it does not have. Returned so it can be audited — declining stays on the record. */
   readonly declines: Declinios;
   /**
-   * O ANÚNCIO DE QUE O LAÇO PAROU, pronto para entrar em `startLoop(ticker, quadro, maxDt, { aoFalhar })`.
+   * THE ANNOUNCEMENT THAT THE LOOP STOPPED, ready to go into `startLoop(ticker, frame, maxDt, { onFailure })`.
    *
-   * ⚠️ O ADR-0054 diz por escrito que fica *"só metade verdadeiro"* enquanto isto não existir, e a metade que
-   * faltava é a que importa: **criança cega não vê tela congelada.** Sem anúncio, o modo cego não distingue
-   * «travou» de «está pensando», e o silêncio é a mesma coisa nos dois casos.
+   * ⚠️ ADR-0054 says in writing that it is only half true while this does not exist, and the missing half is the one
+   * that matters: **a blind child does not see a frozen screen.** Without an announcement, blind mode cannot tell
+   * a crash from a pause to think, and the silence is the same in both cases.
    *
-   * ⚠️ VEM DA ENGINE E NÃO DE CADA JOGO porque a mensagem é a mesma em todos e o canal (leitor de tela +
-   * narração + o que se VÊ) é infraestrutura. Mas quem chama `startLoop` é o JOGO — ele é o dono do ticker —,
-   * então isto é entregue e não instalado: um jogo que monte o laço sem passar isto continua a PARAR, porque
-   * parar não é opcional; o que ele perde é dizer que parou.
+   * ⚠️ IT COMES FROM THE ENGINE AND NOT FROM EACH GAME because the message is the same in all of them and the channel
+   * (screen reader + narration + what is SEEN) is infrastructure. The game owns the ticker and calls `startLoop`; this
+   * root also registers the notice with `core/loop` (study item D1), so a loop started without `onFailure` announces
+   * through it too.
    */
   readonly onFailure: (failure: unknown) => void;
   /**
-   * O ALCANCE MEDIDO NO ARRANQUE — a garantia do ADR-0079 §3 como dado, para quem quiser lê-la.
+   * THE REACH MEASURED FOR THE MOUNTED CARTRIDGE — ADR-0079 §3's guarantee as data, for whoever wants to read it.
    *
-   * A engine já mostrou o aviso se havia o que dizer; isto fica devolvido porque um jogo pode querer decidir
-   * mais (esconder uma fase que exige doze ações, por exemplo), e porque `ok: false` é o tipo de facto que
-   * tem de poder ser auditado em vez de ficar só numa tela que já fechou.
+   * The engine has already shown the notice if there was something to say; this is returned because a game may want to
+   * decide more (hide a level that demands twelve actions, for example), and because `ok: false` is the kind of fact
+   * that must be auditable instead of living only on a screen that has closed.
    */
   readonly reach: Reach;
   /**
-   * TORNA ESTE CARTUCHO O CORRENTE (ADR-0142). Uma raiz de composição, vários jogos.
+   * MAKES THIS CARTRIDGE THE CURRENT ONE (ADR-0142). One composition root, several games.
    *
-   * ⚠️ **LANÇA** numa declaração malformada, e não a põe em `problems`: o contrato é PRÉ-CONDIÇÃO e não
-   * diagnóstico, tal como no arranque. Um cartucho mau não chega a ser montado.
+   * ⚠️ **THROWS** on a malformed declaration, and does not put it in `problems`: the contract is a PRECONDITION and not
+   * a diagnosis, as at boot. A bad cartridge is never mounted.
    *
-   * 📌 O que ele refaz é só o que não se conserta lendo de novo: os dois registos de mapeamento, que são
-   * efeito global, e o alcance com o seu aviso, que escreve DOM. `problems` e `reach` passam a descrever
-   * o cartucho montado porque são derivados, não porque `mount` os copie.
+   * 📌 What it redoes is only what reading again cannot fix: effects written elsewhere — the two mapping registers, the
+   * HUD, the game-options rows, the bar, the reach notice and the pad. `problems` and `reach` describe the mounted
+   * cartridge because they are derived when read, not because `mount` copies them.
    */
   mount(declaration: GameDeclaration, hooks?: CartridgeHooks): void;
   /**
-   * SOLTA O CORRENTE: mapeamentos a `null`, aviso de alcance retirado, pilha de cenas esvaziada.
+   * RELEASES THE CURRENT ONE: mappings and crash notice set to `null`, reach notice and HUD removed, reading thread
+   * closed, scene stack emptied.
    *
-   * ⚠️ A pilha esvazia-se com `pop()` e não com um `clear()`, e a diferença é a decisão: 📏 medido nos seis
-   * jogos, os quatro `exit()` que existem são LIMPEZA DE DOM, logo dispará-los é o teardown que se quer.
-   * Um `clear()` que os saltasse seria o conserto errado.
+   * ⚠️ The stack is emptied with `pop()` and not with a `clear()`, and the difference is the decision: a scene's `exit()`
+   * is its DOM cleanup, so running it is the teardown wanted. A `clear()` that skipped them would be the wrong fix.
    */
   unmount(): void;
   /**
@@ -644,41 +607,41 @@ export interface Engine {
   dispose(): void;
 }
 
-/** A metade do jogo SEM a declaração — o que `mount` recebe ao lado dela. */
+/** The game's half WITHOUT the declaration — what `mount` receives beside it. */
 export type CartridgeHooks = Omit<GameHalf, 'declaration'>;
 
 /*
- * UMA FRASE SÓ PARA AS DUAS RECUSAS, e o gate do pilar 3 é que a pediu.
+ * ONE SENTENCE FOR BOTH REFUSALS.
  *
- * ⚠️ O arranque e o `mount()` recusam uma declaração malformada pela MESMA razão e com a mesma frase, e
- * escrevê-la duas vezes fez o teto de texto cru deste módulo subir de 15 para 16 — o crivo de i18n reprovou,
- * e reprovou com razão. Duas cópias de uma frase são dois sítios para ela divergir, e é também a segunda
- * tradução a fazer quando o pilar 3 chegar aqui.
+ * ⚠️ The boot and `mount()` refuse a malformed declaration for the SAME reason, so with the same sentence: two copies
+ * of a sentence are two places for it to drift, and a second translation to do when pillar 3 reaches it (the i18n
+ * gate caps this module's raw text).
  */
 function refuseDeclaration(who: string, problemas: readonly string[]): never {
   throw new Error(`${who}: declaração malformada — ${problemas.join('; ')}`);
 }
 
 /*
- * «start» É DA PAUSA, E UM CARTUCHO NÃO A TOMA (ADR-0144 §4).
+ * «start» BELONGS TO THE PAUSE, AND A CARTRIDGE DOES NOT TAKE IT (ADR-0144 §4).
  *
- * ⚠️ A FRASE MORA EM `core/actions`, e não aqui, por duas razões que apontam para o mesmo sítio: é lá que a
- * validade de um `ActionPreset` vive, e é lá que o livro-razão de prosa crua já responde por mensagens que
- * quem ESCREVE um preset lê. Uma frase nova neste módulo subia o teto dele para pagar por texto que é do
- * vocabulário de entrada, não do arranque.
+ * ⚠️ THE SENTENCE LIVES IN `core/actions`, not here, for two reasons that point the same way: that is where the
+ * validity of an `ActionPreset` lives, and that is where the raw-prose ledger already answers for messages read by
+ * whoever WRITES a preset. A new sentence in this module would raise its cap to pay for text that belongs to the input
+ * vocabulary, not to the boot.
  *
- * ⚠️ LANÇA, e a rubrica é a das duas linhas acima: isto é defeito de PROGRAMA — o jogo declarou uma palavra
- * para uma posição que não lhe pertence —, e não lacuna do hospedeiro. `problems` é para o que deixa jogar.
+ * ⚠️ IT THROWS, by the rubric of the two refusals above: this is a PROGRAM defect — the game declared a word for a
+ * position that is not its own — and not a gap of the host. `problems` is for what still lets the child play.
  */
 function refuseIfItClaimsStart(who: string, preset: ActionPreset | undefined): void {
-  // 📌 E O SELECT TAMBÉM, desde o ADR-0155: as duas posições de sistema são as duas portas da pausa.
+  // 📌 AND SELECT TOO, since ADR-0155: the two system positions are the two doors of the pause.
   const problemas = [startClaimProblem(preset), selectClaimProblem(preset)].filter((x): x is string => x !== null);
   if (problemas.length) refuseDeclaration(who, problemas);
 }
 
 /**
- * O cartucho RESPONDEU às suas acomodações? (ADR-0153.) Mesma rubrica do contrato: resposta ausente ou incompleta é
- * pré-condição, não lacuna — `problems` é para o que deixa jogar, e aqui a engine não saberia que linhas montar.
+ * Did the cartridge ANSWER its accommodations? (ADR-0153.) Same rubric as the contract: a missing or incomplete answer is
+ * a precondition, not a gap — `problems` is for what still lets the child play, and here the engine would not know which
+ * rows to mount.
  */
 function refuseIfNoAnswer(who: string, answers: unknown): void {
   const problemas = accommodationAnswersProblems(answers);
@@ -709,49 +672,43 @@ function refuseIfHowToPlayMalformed(who: string, slides: unknown): void {
   if (problemas.length) refuseDeclaration(who, problemas);
 }
 
-/** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
+/** The ids the engine announces and draws into. Without them a child who listens hears nothing (finding 6). */
 const REQUIRED_MARKUP: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
 /**
- * Onde a engine procura a barra de acessibilidade quando o jogo não declara `host.a11yBarHost`.
+ * Where the engine looks for the accessibility bar when the game does not declare `host.a11yBarHost`.
  *
- * ⚠️ NÃO ENTROU NA `MARCACAO_EXIGIDA` de propósito, e a diferença é de mensagem e não de rigor. Aquela lista
- * produz «marcação ausente: #x», que é o que se diz de um id que o jogo esqueceu. Aqui o que falta não é um
- * id — é a barra inteira, e cinco jogos do catálogo não a têm porque ninguém lhes disse que a deviam ter. A
- * frase própria pode explicar O QUE se perde, e é isso que a torna útil a quem a lê pela primeira vez.
+ * ⚠️ NOT IN `REQUIRED_MARKUP` on purpose, and the difference is one of message, not of rigour. That list produces «the
+ * page lacks #x», which is what one says of an id the game forgot. What is missing here is not an id — it is the whole
+ * bar, and its own sentence can say WHAT is lost, which is what makes it useful to whoever reads it first.
  */
 const A11Y_BAR_SELECTOR = '#title-icons';
 
 /**
- * Liga a engine para um jogo declarado.
+ * THE GAME'S HALF of `CreateGameOptions` — the fields ADR-0139 §1 says a cartridge SUPPLIES, apart from the ones that
+ * describe the page and the device.
  *
- * ⚠️ LANÇA se a declaração for malformada, e NÃO lança se faltar marcação. A diferença não é gosto: uma
- * declaração errada é defeito de PROGRAMA, e um jogo que roda meio declarado é pior do que um que não abre;
- * um id ausente é lacuna do HOSPEDEIRO, e o quiz provou que ligar só a parte que serve é legítimo — foi
- * assim que ele recusou o pad e o sonar sem mentir. Por isso um vira exceção e o outro vira `problems`.
- */
-/**
- * A METADE DO JOGO de `CreateGameOptions` — os quinze campos que o ADR-0139 §1 diz que um cartucho
- * FORNECE, separados dos cinco que descrevem a página e o aparelho.
- *
- * ⚠️ São quinze e não dez: a primeira versão daquele registo contou quinze campos num total de vinte e
- * deixou `declines`, `getPauseActs`, `setPauseActor`, `setTemaDoJogador` e `setCorrecaoDoJogador` de fora.
- * O teste que ele próprio dá — «uma PÁGINA conseguiria responder isto sem saber que jogo corre?» — põe os
- * cinco deste lado, e a errata de 2026-09-11 corrigiu a lista.
+ * The test that record gives: could a PAGE answer this without knowing which game runs? If not, the field is here.
  */
 type GameHalf = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'withIndex' | 'onBar' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
   | 'setPlayerTheme' | 'setPlayerCorrection' | 'accommodations' | 'genre' | 'onScreenPad' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'>;
 
+/**
+ * Switches the engine on for a declared game.
+ *
+ * ⚠️ THROWS if the declaration is malformed, and does NOT throw if markup is missing. The difference is not taste: a
+ * wrong declaration is a PROGRAM defect, and a game that runs half-declared is worse than one that does not open; a
+ * missing id is a gap of the HOST, and the quiz proved that switching on only the part that serves is legitimate —
+ * that is how it declined the pad and the sonar without lying. So one becomes an exception and the other `problems`.
+ */
 export function createGame(o: CreateGameOptions): Engine {
   /*
-   * O CARTUCHO CORRENTE, e por enquanto ele É as opções que chegaram.
+   * THE CURRENT CARTRIDGE, which starts as the options that arrived.
    *
-   * ⚠️ Este passo não muda comportamento nenhum: `cartucho` começa como o próprio `o`, então toda leitura
-   * abaixo devolve exatamente o que devolvia. O que ele compra é o LUGAR onde `mount()` vai escrever
-   * (ADR-0142) — sem ele, as trinta e seis leituras da metade do jogo estão presas ao argumento, e uma raiz
-   * de composição a servir vários cartuchos ficaria com o primeiro deles para sempre.
+   * 📌 Every read of the game's half goes through `cartridge`, which is the PLACE `mount()` writes (ADR-0142): a read
+   * tied to the argument would leave a root serving several cartridges with the first of them forever.
    */
   let cartridge: GameHalf = o;
 
@@ -779,22 +736,20 @@ export function createGame(o: CreateGameOptions): Engine {
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   state.loadState(store);
   /*
-   * 🔴 O IDIOMA GUARDADO **E** O NAVEGADOR (ADR-0221 passo 7g). O `core/i18n` escrevia o `<html lang>`, despachava no
-   * `window` e lia o `navigator.language` por baixo de quem o chamasse — três alcances a globais a partir de `core`, que é
-   * «o que a engine É, SEM navegador». Agora as decisões ficam lá e os efeitos de página entram por estas duas funções, que
-   * é o hospedeiro DESTA raiz a falar: o documento e a janela que ela recebeu, nunca os globais.
+   * 🔴 THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g). `core/i18n` keeps the decisions; the page effects —
+   * writing `<html lang>`, dispatching on the window, reading `navigator.language` — come in through these two functions,
+   * which are THIS root's host speaking: the document and window it received, never the globals. `core` is what the
+   * engine IS without a browser.
    */
   loadLocale({ ...store, ...localeHostHooks(doc as Document, win, applyDom) });
-  // 📌 E a exposição de depuração, que era a última linha do core/i18n: quem TEM uma janela é esta raiz.
+  // 📌 And the debugging exposure: whoever HAS a window is this root.
   exposeI18n(win, i18nObject);
   /*
-   * ⚠️ LEITOR E NÃO INSTANTÂNEO — terceira vez que este ficheiro comete e conserta o mesmo padrão, depois do
-   * `seguraTeclas` e do `players`. `declines` é da metade do JOGO (ADR-0139, errata de 2026-09-11: é o
-   * cartucho que declara o que NÃO tem), então um `const` tirado no arranque devolve, depois de um `mount()`,
-   * os declínios do cartucho anterior — e um declínio lido errado esconde uma linha de `problems` ou
-   * inventa outra.
+   * ⚠️ A READER AND NOT A SNAPSHOT. `declines` belongs to the GAME's half (ADR-0139: the cartridge declares what it does
+   * NOT have), so a `const` taken at boot would return, after a `mount()`, the previous cartridge's declines — and a
+   * decline read wrong hides a line of `problems` or invents one.
    *
-   * 📌 O vazio é uma constante e não um literal por chamada: `declines()` é lido em sítios que comparam.
+   * 📌 The empty value is a constant and not a literal per call: `declines()` is read in places that compare.
    */
   const NO_DECLINES: Declinios = {};
   const declines = () => cartridge.declines ?? NO_DECLINES;
@@ -807,40 +762,32 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!$(sel)) hostProblems.push(`the page lacks ${sel}: the engine announces and draws into it, and without it a child who listens hears nothing — add it to the page`);
   }
 
-  // ⚠️ O MUNDO DECLARADO TEM DE EXISTIR NO DOCUMENTO, e esta é a falha que o ADR-0087 deixaria aberta se
-  // parasse na conformidade. `conformanceProblems` confere a FORMA — que há um seletor e que ele não está
-  // vazio — e não tem como conferir se ele CASA alguma coisa, porque `core/contract` é puro e não vê DOM.
+  // ⚠️ THE DECLARED WORLD MUST EXIST IN THE DOCUMENT, the gap ADR-0087 would leave open if it stopped at conformance.
+  // `conformanceProblems` checks the SHAPE — that there is a selector and it is not empty — and cannot check whether it
+  // MATCHES anything, because `core/contract` is pure and sees no DOM.
   //
-  // Um seletor com erro de digitação (`#gaem-region`) passa na conformidade e produz exatamente o defeito
-  // que o registro existe para eliminar: a simulação de empatia aplicada a NADA, e um adulto informado de
-  // que sentiu algo que não sentiu. É um problema do HOSPEDEIRO e não do programa, então entra em
-  // `problems` como as marcações — o jogo abre, e quem o integrou lê que o mundo dele não está lá.
+  // A selector with a typo (`#gaem-region`) passes conformance and produces exactly the defect that record exists to
+  // remove: the empathy simulation applied to NOTHING, and an adult told they felt something they did not. It is a
+  // HOST problem and not a program one, so it goes into `problems` like the markup — the game opens, and whoever
+  // integrated it reads that their world is not there.
   /*
-   * AS TRÊS LINHAS DE `problems` QUE DEPENDEM DO CARTUCHO, juntas e recalculáveis.
-   *
-   * 📏 Medido: das oito que esta raiz produz, CINCO são sobre a PÁGINA — marcação ausente, sem host de
-   * filtros, sem barra de acessibilidade, uma barra que não aceita conteúdo, sem sítio para a pausa — e
-   * essas não mexem quando se troca de jogo, porque não é o jogo que as causa. Só estas três mexem.
-   *
-   * ⚠️ E é por isso que `problems` não podia continuar a ser UM array construído no arranque: metade dele
-   * descreve o hospedeiro e vale para sempre, a outra metade descreve um cartucho e caduca no `mount()`.
-   * Recalcular tudo apagaria diagnósticos do hospedeiro que ninguém consertou; não recalcular nada deixaria
-   * o diagnóstico a falar do jogo errado.
+   * `problems` HAS TWO HALVES. The HOST's lines (`hostProblems`) are measured once at boot and hold for as long as the
+   * page does: they are about the page, not the game, and do not change when a cartridge is swapped. The CARTRIDGE's
+   * lines are measured again at every read, so they follow `mount()`. Recomputing everything would drop host
+   * diagnoses nobody fixed; recomputing nothing would leave the diagnosis talking about the wrong game.
    */
   /**
-   * As lacunas do CONTROLE VIRTUAL deste cartucho. Começa vazia e é trocada quando o pad é montado, mais abaixo:
-   * `problemasDoCartucho` é chamada só no `problems`, depois do arranque, mas ler o pad daqui antes de ele
-   * existir cairia na zona morta temporal — o mesmo tropeço que o `getPlayers` já deu neste ficheiro.
+   * The VIRTUAL CONTROLLER's gaps for this cartridge. Starts empty and is replaced once the pad is mounted, below:
+   * `measureCartridgeProblems` runs only when `problems` is read, after boot, but reading the pad from here before it
+   * exists would fall into the temporal dead zone.
    */
   let padGapProblems: () => string[] = () => [];
 
   /*
-   * 🔴 AS REGRAS SAÍRAM PARA `core/cartridge-problems` (ADR-0221 passo 7c). O que fica aqui é MEDIR a página e
-   * responder ao módulo; o que era decisão — as três regras, a ordem das linhas, quando calar — mora onde uma frase
-   * pode ser lida inteira. Uma raiz de composição é grande de propósito e carrega FIAÇÃO; os nove ramos que estavam
-   * nesta função eram lógica, e é isso que a errata do ADR-0221 mede quando diz que a dívida da raiz são os RAMOS.
-   * 📏 Sondado antes de mexer, que é a ordem: as sete linhas desta função foram desligadas uma a uma e a suíte
-   * reprovou nas sete — logo o corte é de FORMA e não muda comportamento nenhum, e há como o provar.
+   * 🔴 THE RULES LIVE IN `core/cartridge-problems` (ADR-0221 step 7c). What stays here is MEASURING the page and answering
+   * that module; what is a decision — the rules, the order of the lines, when to keep quiet — lives where a sentence can
+   * be read whole. A composition root is big on purpose and carries WIRING; branches are logic, and ADR-0221's erratum
+   * measures a root's debt in branches.
    */
   function measureCartridgeProblems(): string[] {
     const declaredWorld = cartridge.declaration.world();
@@ -864,11 +811,11 @@ export function createGame(o: CreateGameOptions): Engine {
     );
   }
 
-  // 1. IDIOMA ANTES DE TUDO. A interface não pode ser construída antes de a língua ser conhecida — foi o que
-  //    o item 14 consertou movendo `initI18n()` para o topo do boot. O documento entra: ver o achado 15.
+  // 1. LANGUAGE BEFORE EVERYTHING. The interface cannot be built before the language is known. The document goes in:
+  //    see finding 15.
   initI18n(doc);
 
-  // 2. MIXER ANTES DA VOZ. O achado 3, virado sequência: quem chama não tem como inverter estas duas linhas.
+  // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: the caller cannot swap these two lines.
   initAudioMixer();
   const tts = createTts({
     srSay, srAlert, ensureAC, catNode, audioOut,
@@ -876,29 +823,29 @@ export function createGame(o: CreateGameOptions): Engine {
     neuralVoice: !!o.uses?.neuralVoice, // ADR-0216 §3: the game says it wants one; the engine loads it
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
   });
-  // 📌 A linha da voz neural mudou-se para `problemasDoCartucho()`: o declínio que a cala é do jogo.
+  // 📌 The neural-voice line lives in `measureCartridgeProblems()`: the decline that silences it is the game's.
 
   /**
-   * O FILTRO DE VISÃO, aplicado ao MUNDO QUE O JOGO DECLAROU (ADR-0087).
+   * THE VISION FILTER, applied to THE WORLD THE GAME DECLARED (ADR-0087).
    *
-   * ⚠️ E A REGRA DOS MENUS É UMA GENERALIZAÇÃO, não uma segunda regra. O jogo próprio da engine limpava o
-   * filtro em `#dom-layer` porque ele está DENTRO de `#game-region` e um filtro CSS herda — sem isso, uma
-   * simulação de cegueira apagaria o menu de pausa e trancaria a criança dentro dela (#82). O 15-puzzle não
-   * tem nada dentro, e a mesma linha não faz nada. Um só código serve às duas formas porque ele pergunta ao
-   * DOM em vez de assumir a forma: limpa o filtro nos overlays que ESTEJAM dentro do mundo.
+   * ⚠️ THE RULE OF MENUS IS A GENERALISATION, not a second rule. A CSS filter is inherited, so a menu inside the world
+   * would be filtered with it — a blindness simulation would black out the pause menu and lock the child inside it
+   * (#82). A world with nothing inside it (the 15-puzzle) is untouched by the same line. One code serves both shapes
+   * because it asks the DOM instead of assuming the shape: it clears the filter on the overlays that ARE inside the
+   * world.
    *
-   * ⚠️ `{kind:'none'}` NÃO APLICA NADA. Uma atividade sem espaço não tem mundo para simular, e pintar um
-   * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
+   * ⚠️ `{kind:'none'}` APPLIES NOTHING. An activity with no space has no world to simulate, and painting a filter over
+   * it would be the lie ADR-0087 exists to prevent, only backwards.
    */
   function setVisionFilter(css: string, reach: FilterReach): void {
     const declaredWorld = cartridge.declaration.world();
     if (declaredWorld.kind !== 'element') return;
     const el = $<HTMLElement>(declaredWorld.selector);
-    if (!el) return; // já reportado em `problems`; não se inventa superfície
+    if (!el) return; // already reported in `problems`; no surface is invented
     el.style.filter = css;
     if (reach === 'mundo') {
-      // Os menus vivem POR CIMA da simulação e são o instrumento de sair dela: se herdaram o filtro por
-      // estarem dentro do mundo, desfaz-se neles.
+      // Menus live ABOVE the simulation and are the way out of it: if they inherited the filter by being inside the
+      // world, it is undone on them.
       for (const ov of $$<HTMLElement>(OVERLAY_SCOPE_SELECTOR)) {
         if (el.contains(ov)) ov.style.filter = '';
       }
@@ -906,12 +853,12 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   /*
-   * O FILTRO DO MUNDO É UMA COMPOSIÇÃO: a correcção de cor do 🚥 e o realce de contraste L→Q (ADR-0151). Escritos à
-   * parte, o segundo a escrever apagava o primeiro — ligar o realce desligava a correcção que a criança daltónica
-   * tinha posto. Cada escritor guarda a sua parte e pede a composição.
+   * THE WORLD'S FILTER IS A COMPOSITION: the 🚥's colour correction and the L→Q contrast enhancement (ADR-0151). Written
+   * apart, the second writer erased the first — turning the enhancement on turned off the correction a colour-blind
+   * child had set. Each writer keeps its part and asks for the composition.
    */
-  // O estado visual que o MUNDO mostra: a correcção (🚥) e a simulação (modo empatia) são dois campos dele, e
-  // `filterKey` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
+  // The visual state the WORLD shows: the correction (🚥) and the simulation (empathy mode) are two fields of it, and
+  // `filterKey` already knows the simulation runs only with the correction at its default (ADR-0076).
   let worldState: VisualState = DEFAULT_VISUAL;
   /*
    * A DISABILITY SIMULATION RUNS IN THE GAME, NEVER IN A MENU (issue #182). The Dev: «Simulação de deficiência não pode
@@ -925,11 +872,9 @@ export function createGame(o: CreateGameOptions): Engine {
   /** Assigned once the menus exist (below): until then no menu can be open. */
   let simulationSuspended = (): boolean => false;
   /*
-   * 🔴 ONDE A SIMULAÇÃO VAI PARAR MUDOU-SE PARA `ui/simulation-over-the-world` (ADR-0221 passo 7c). Eram ~30 ramos
-   * desta raiz e nenhum deles fiação: «descer para dentro de uma caixa que contém uma porta», «um canvas não tem filhos,
-   * logo a camada vai para o pai dele», «o que AJUDA fica por baixo do que SIMULA» são regras com razão.
-   * 🎯 Sondada ANTES de sair, e CINCO de onze decisões estavam cegas — três delas o caminho inteiro do mundo CANVAS,
-   * que nenhum caso da árvore conduzia. Ganharam casos em `engine:9ee07d3c`, antes de uma linha se mexer.
+   * 🔴 WHERE THE SIMULATION LANDS lives in `ui/simulation-over-the-world` (ADR-0221 step 7c). Going down into a box that
+   * holds a door, sending the layer to a canvas's parent because a canvas has no children, keeping what HELPS under what
+   * SIMULATES: those are rules with reasons, not wiring.
    */
   const simulationOverWorld = createSimulationOverTheWorld({
     world: () => cartridge.declaration.world(),
@@ -957,23 +902,22 @@ export function createGame(o: CreateGameOptions): Engine {
     a11yVisualOn: () => filterKey(worldState) !== null || getLqT() > 0,
   });
   initLqFilter({ onChange: recomposeWorldFilter });
-  if (getLqT() > 0) recomposeWorldFilter(); // o realce guardado vale desde o arranque
+  if (getLqT() > 0) recomposeWorldFilter(); // the stored enhancement holds from boot
   else applyCrt(); // and the stored CRT too (the recompose above applies it when it runs)
 
-  // 3. A pilha de diálogos. O ctx é o mesmo em qualquer jogo — é boilerplate, e boilerplate repetido é onde
-  //    consumidores divergem sem querer.
+  // 3. The dialog stack. The ctx is the same in every game — it is boilerplate, and repeated boilerplate is where
+  //    consumers diverge without meaning to.
   const overlays = initSettingsPanel({
     $, $$, doc,
     computedZ: (el) => +win.getComputedStyle(el).zIndex || 0,
   });
 
-  // 4. Daltonismo: a engine ENTREGA o markup em vez de exigir que o consumidor o adivinhe (achado 7).
+  // 4. Colour vision: the engine HANDS OVER the markup instead of making the consumer guess it (finding 7).
   const cvdFilters = installCvdFilters(o.host.cvdHost ?? null);
   if (!cvdFilters) hostProblems.push('there is no filter host (<svg>): colour-vision correction was not mounted, so a colour-blind child cannot turn it on — set `host.cvdHost`');
 
-  // 4c. A BARRA DE ACESSIBILIDADE DA PRIMEIRA TELA. Ver a nota em `EngineHost.a11yBarHost`: cinco dos seis
-  //     jogos do catálogo não têm nenhuma, e nada o dizia. Isto não a monta — diz que ela falta, que é o
-  //     passo que tira o silêncio. A frase nomeia a saída, como as outras deste bloco fazem.
+  // 4c. THE FIRST SCREEN'S ACCESSIBILITY BAR. See the note on `EngineHost.a11yBarHost`. This block only reports that it
+  //     is missing, with a sentence that names the way out; the bar is mounted further below, once the icons exist.
   const a11yBar = o.host.a11yBarHost ?? $(A11Y_BAR_SELECTOR);
   if (!a11yBar) {
     hostProblems.push(
@@ -982,53 +926,41 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   /*
-   * ⚠️ E AGORA A ENGINE MONTA-A (ADR-0106 §4, etapa 2). Até 2026-09-08 esta raiz só REPORTAVA a ausência, e o
-   * registo dizia porquê: «reportar não é oferecer — cinco jogos continuam sem barra até alguém agir na
-   * linha». A etapa 1 tirou dos sete campos acidentais a obrigação de virem do jogo, e a 3 deu lista padrão
-   * ao menu; com isso o `PauseIconsCtx` deixou de exigir seja o que for que esta raiz não saiba responder.
+   * ⚠️ THE ENGINE MOUNTS IT (ADR-0106 §4, step 2): step 1 took from the game the duty of answering the seven incidental
+   * fields, and step 3 gave the menu a default list, so `PauseIconsCtx` demands nothing this root cannot answer.
    *
-   * ⚠️ NÃO É `buildQuickBar`, e a diferença tem dono: aquele põe `tabIndex = -1` nos botões porque durante a
-   * partida dez paradas de tabulação separam a criança do jogo (ADR-0044 item 7). Na primeira tela não se
-   * está a jogar, e tirar os ícones da ordem de tabulação ali seria escondê-los de quem navega por teclado —
-   * exactamente a pessoa para quem eles existem.
+   * ⚠️ IT IS NOT `buildQuickBar`, and the difference has a reason: that one sets `tabIndex = -1` on the buttons because
+   * during play ten tab stops separate the child from the game (ADR-0044 item 7). On the first screen nobody is playing,
+   * and taking the icons out of the tab order there would hide them from whoever navigates by keyboard — exactly the
+   * person they exist for.
    */
   /**
-   * O LEITOR DO MODO CEGO — e ele tem de ler ONDE O ESCRITOR PADRÃO ESCREVE.
+   * THE BLIND-MODE READER — and it must read WHERE THE DEFAULT WRITER WRITES.
    *
-   * 🔴 ESTAS DUAS METADES GANHARAM PADRÃO EM DIAS DIFERENTES E NÃO SE FALAVAM, o que produziu um defeito que
-   * nenhum teste podia ver. O escritor recebeu o padrão da engine na etapa 1b do ADR-0106
-   * (`ui/pause-icons` → `ctx.setModoCego ?? setBlindModeValue`), que grava no `core/state`. O leitor ficou com
-   * o `() => false` que já cá estava — uma CONSTANTE. Num jogo que não injecta `isBlindMode`:
+   * 🔴 The writer's default is the engine's (`ui/pause-icons`: `ctx.setBlindMode ?? setBlindModeValue`), which stores
+   * in `core/state`. A reader that answered a CONSTANT `false` made blind mode impossible to turn off in a game that does
+   * not inject `isBlindMode`: the first press turned it on; the reflection read `false` and the icon said off; the
+   * second press wrote `true` AGAIN, `core/state`'s equality guard returned early, and nothing happened. A game that
+   * starts describing everything aloud and never stops, with no error anywhere.
    *
-   *   1. a criança carrega no ícone → `setModoCego(!false)` → o modo LIGA de verdade;
-   *   2. o reflexo lê `false` → o ícone diz «desligado» e o anúncio diz o mesmo;
-   *   3. ela carrega outra vez → `setBlindModeValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade do
-   *      `core/state` devolve cedo → nada acontece.
-   *
-   * ⚠️ O modo cego ligava uma vez e NÃO HAVIA COMO DESLIGAR — um jogo que começa a descrever tudo em voz alta
-   * e não se cala, sem erro em lado nenhum. Para quem não depende dele, é o jogo a ficar inutilizável.
-   *
-   * 📌 UMA CONSTANTE E NÃO A EXPRESSÃO REPETIDA NOS DOIS SÍTIOS, porque a repetição É o defeito: duas
-   * respostas à mesma pergunta divergem, e foi assim que esta divergiu. `import * as state` dá ligação VIVA,
-   * então isto lê o valor de agora e não o do arranque.
+   * 📌 ONE CONSTANT AND NOT THE EXPRESSION REPEATED IN TWO PLACES, because repetition IS the defect: two answers to the
+   * same question drift. `import * as state` is a LIVE binding, so this reads the value of now and not of boot.
    */
   const readBlindMode = cartridge.isBlindMode ?? (() => state.blindMode);
 
   /**
-   * O QUE A ENGINE SABE ACCIONAR SOZINHA NO MENU DE PAUSA — preenchido pelo bloco 4f, lido quando a pausa abre.
+   * WHAT THE ENGINE CAN ACT ON BY ITSELF IN THE PAUSE MENU — filled below, read when the pause opens.
    *
-   * 🔴 O CARTÃO DE PAUSA TINHA UM BOTÃO. 📏 Medido em 2026-09-11 contra um jogo que chama só `createGame`:
-   * sem `getPauseActs` a tabela é vazia (`ui/pause-icons:879`), `itemsThatAct` guarda só os três de
-   * `ENGINE_ITEMS`, e `rootThatActs` tira também o `options` — «uma porta para uma sala vazia». O que
-   * sobrevive é `acessibilidade`. Um menu de pausa com um item não é um menu de pausa.
+   * 🔴 Without it, a game that calls only `createGame` got a pause card of one item: with an empty table
+   * `itemsThatAct` keeps only the `ENGINE_ITEMS`, and `rootThatActs` also drops `options` — «uma porta para uma sala
+   * vazia». A pause menu with one item is not a pause menu.
    *
-   * ⚠️ MUTÁVEL E LIDO TARDE, de propósito, e é para isto que a preguiça do campo existe: `initPauseIcons`
-   * corre aqui e os painéis montam-se ~150 linhas abaixo. O próprio campo documenta o padrão — «`pauseActs` is
-   * a `const` declared far below the init site» —, e `refrescarItensDaPausa` reavalia quando a pausa ABRE, não
-   * na montagem. Ler a tabela agora congelaria um objecto vazio.
+   * ⚠️ MUTABLE AND READ LATE, on purpose, which is what the field's laziness is for: `initPauseIcons` runs here and the
+   * panels mount further below. `refreshPauseItems` evaluates it when the pause OPENS, not at mounting; reading the
+   * table now would freeze an empty object.
    *
-   * 📌 E O CARTUCHO SOBREPÕE-SE, não o contrário: um jogo que traga o seu `tipo` ganha ao da engine. O que
-   * ADR-0122 torna não-declinável é a pausa EXISTIR, não a engine ser dona de cada item dentro dela.
+   * 📌 AND THE CARTRIDGE OVERRIDES, not the other way round: a game that brings its own entry wins over the engine's.
+   * What ADR-0122 makes non-declinable is that the pause EXISTS, not that the engine owns every item in it.
    */
   const engineActions: Record<string, () => void> = {};
   /** Opens the game options panel, once mounted (ADR-0182). Offered as the door's action only while the cartridge declares rows. */
@@ -1036,75 +968,71 @@ export function createGame(o: CreateGameOptions): Engine {
   let redrawGameOptions = (): void => {};
 
   /*
-   * ===================== A SAÍDA, QUE TINHA DE NASCER COM A ENTRADA (ADR-0144, errata) =====================
+   * ===================== THE WAY OUT, BORN WITH THE WAY IN (ADR-0144, erratum) =====================
    *
-   * 🔴 MEDIDO ao construir o ADR-0144, e é a metade que aquele registo não viu: `ENGINE_ITEMS` é
-   * `{options, pmback, acessibilidade}` — **`resume` não está lá** —, e esta tabela não o definia. Logo
-   * `itemsThatAct` cortava o «continuar» do cartão de TODO jogo que só chame `createGame`. E o Escape
-   * também não fechava: `ui/menu-nav:403` faz `ctx.setPhase('playing')`, que aqui era
-   * `cartucho.setPhase ?? (() => {})` — um no-op. Antes disto ninguém reparava, porque nada ABRIA o cartão.
+   * 🔴 `resume` is not in `ENGINE_ITEMS`, so without this entry `itemsThatAct` cut «continuar» from the card of EVERY game
+   * that calls only `createGame`; and Escape at the card's root calls `setPhase('playing')` (`ui/menu-nav`), which with
+   * no hook was a no-op. Both go through `changePhase` now.
    *
-   * ⚠️ ABRIR UMA PORTA SEM SAÍDA É PIOR DO QUE NÃO A ABRIR. É o §5 do ADR-0106 em tantas palavras — «uma
-   * barra que oferece um caminho e depois o refusal ensina-lhe que o caminho não é para ela» —, e a criança
-   * que ficasse presa no cartão seria precisamente a que navega sem ver, que não tem o rato por alternativa.
+   * ⚠️ OPENING A DOOR WITH NO WAY OUT IS WORSE THAN NOT OPENING IT. It is ADR-0106 §5 in so many words, and the child
+   * stuck on the card would be precisely the one who navigates without seeing, who has no mouse to fall back on.
    *
-   * 📌 E ISTO DESTRANCA UMA TERCEIRA COISA, que o campo `getPauseActs` já anotava como perda: `entrarNaBarra`
-   * chama `acts.resume?.()` antes de entregar o direccional à barra. Com a tabela vazia esse `resume` era
-   * `undefined` e o item 7 do ADR-0044 ficava «inalcançável a partir de qualquer jogo». Deixa de ficar.
+   * 📌 It also unlocks a third thing: `enterBarMode` in `ui/pause-icons` calls `resume` before handing the directional
+   * to the bar, so ADR-0044's item 7 is reachable from any game.
    *
-   * 📌 O CARTUCHO CONTINUA A SOBREPOR-SE (a ordem do espalhamento em `getPauseActs` não muda): um jogo que
-   * tenha o seu próprio «continuar» — porque retomar ali é descongelar física, retomar áudio e mais — ganha
-   * a este. O que a engine garante é que NUNCA falta um.
+   * 📌 THE CARTRIDGE STILL OVERRIDES (the order of the spread in `getPauseActs` does not change): a game with its own
+   * «continuar» — because resuming there means unfreezing physics, resuming audio and more — wins over this one. What the
+   * engine guarantees is that there is ALWAYS one.
    */
-  // O rodapé da tela (ver `rodapeDaTela`): declarados AQUI, antes do primeiro `mudarDeFase`, que já o limpa.
+  // The screen footer (see `screenFooter`): declared HERE, before the first `changePhase`, which already clears it.
   let footer: HTMLElement | null = null;
   let barExplanation: HTMLElement | null = null;
-  // The quick-pause state and the button legend, declared before the first `mudarDeFase` too: its `pausa.esconder`
+  // The quick-pause state and the button legend, declared before the first `changePhase` too: its `pauseControls.hide`
   // refreshes the legend (ADR-0164 rule 3), and reading them earlier would be a temporal-dead-zone error at boot.
   const inQuickPause = new Set<number>();
   // the menus and the quick pause exist from here on: a simulation is suspended while one is open (issue #182)
   simulationSuspended = () => isMenuOpen() || inQuickPause.size > 0;
   let pauseCaption: HTMLElement | null = null;
   function changePhase(p: 'title' | 'playing' | 'paused'): void {
-    // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
-    // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
-    if (p !== 'paused') { pauseControls.hide(0); writeInFooter(null); } // o motivo de um item não fica sobre o jogo
+    // ⚠️ THE ENGINE CLOSES ITS CARD; THE GAME STILL DECIDES THE WORLD. It is the exact symmetry of ADR-0144 §2 from the
+    // other side: there the engine reveals and ASKS for the pause, here it hides and ASKS for the resume.
+    if (p !== 'paused') { pauseControls.hide(0); writeInFooter(null); } // an item's reason does not stay over the game
     cartridge.setPhase?.(p);
   }
   engineActions.resume = () => changePhase('playing');
 
   /*
-   * SAIR — «voltar à tela de press start» (decisão do Dev, 2026-09-12; errata do ADR-0144 §5).
+   * QUIT — «voltar à tela de press start» (the Dev's decision, 2026-09-12; erratum of ADR-0144 §5).
    *
-   * 🔴 O §5 daquele registo tinha deixado isto EM ABERTO de propósito, porque a resposta errada perde o jogo
-   * de uma criança: recarregar? `history.back()`? um menu de actividades que pode não existir? A resposta
-   * dele não é nenhuma das três — é uma FASE que o projeto já tem nome e contrato para.
+   * 🔴 ADR-0144 §5 had left this OPEN on purpose, because the wrong answer loses a child's game: reload? `history.back()`?
+   * an activities menu that may not exist? The answer is none of the three — it is a PHASE the project already has a
+   * name and a contract for.
    *
-   * ⚠️ E A ARESTA FICA DITA: o `ui/shell`, que DESENHAVA essa tela, é deliberadamente não montado por esta
-   * raiz (`:325-336`). A engine esconde o cartão dela e PEDE a fase; um jogo sem o gancho fica onde está. É a
-   * mesma assimetria do `setPhase('paused')` no ADR-0144 §2, e é por isso que o crivo afirma a CHAMADA.
+   * ⚠️ AND THE EDGE IS STATED: `ui/shell`, which draws that screen, is deliberately not mounted by this root. The engine
+   * hides its card and ASKS for the phase; a game without the hook stays where it is. It is the same asymmetry as
+   * `setPhase('paused')` in ADR-0144 §2, and that is why the gate asserts the CALL.
    *
-   * 📌 SEM CONFIRMAÇÃO, e isso é escolha e não esquecimento. O anel põe `quit` a um passo de `resume`
-   * (ADR-0044 item 1), o que o torna fácil de alcançar por engano — mas o ADR-0037 é o que decide: não há
-   * salvamento nenhum neste projeto, logo o que se perde é a rodada corrente e não progresso. Um diálogo de
-   * confirmação custaria uma parada a mais na varredura de TODA saída para proteger o que não existe.
+   * 📌 NO CONFIRMATION, and that is a choice, not an omission. The ring puts `quit` one step from `resume` (ADR-0044
+   * item 1), which makes it easy to reach by mistake — but ADR-0037 decides: this project saves nothing, so what is lost
+   * is the current round and not progress. A confirmation dialog would cost one more stop in the scan of EVERY exit to
+   * protect what does not exist.
    */
   engineActions.quit = () => changePhase('title');
 
   /*
-   * PRINT — «ver a tela sem menus», e qualquer botão volta.
+   * PRINT — «ver a tela sem menus», and any button comes back.
    *
-   * 📌 O `ui/shell.printMode` já fazia isto no monólito e não vem com o `ui/shell`, que esta raiz refusal
-   * montar. Mas ele não precisa da máquina de fases: precisa dos cartões, da janela e do anúncio — os três
-   * que a engine tem. Reescrito aqui com o MESMO comportamento, incluindo o adiamento.
+   * 📌 `ui/shell.printMode` does this, and `ui/shell` is not mounted by this root. But it needs no phase machine: it needs
+   * the cards, the window and the announcement — three things the engine has. Rewritten here with the SAME behaviour,
+   * including the delay.
    *
-   * ⚠️ OS 80 ms NÃO SÃO SUPERSTIÇÃO, e a linha original já os explicava: sem eles, o próprio evento que
-   * ACCIONOU o print é o que o desfaz — a criança carrega uma vez e vê a tela limpa piscar.
+   * ⚠️ THE 80 ms ARE NOT SUPERSTITION: without them, the very event that TRIGGERED print is what undoes it — the child
+   * presses once and sees the clean screen blink.
    *
-   * 📌 EM CAPTURA, e não em bolha, porque o ponto é interceptar ANTES de quem quer que seja: em modo print a
-   * tecla não é do jogo nem da pausa, é a saída. 🎯 E ela não colide com o gancho do `start` (ADR-0144), que
-   * é de bolha: o `voltar` revela o cartão na captura, e quando o de bolha chega o guarda do «cartão já
-   * aberto» manda-o embora. Medido a ler os dois lado a lado, não assumido.
+   * 📌 IN CAPTURE, not bubbling, because the point is to intercept BEFORE anyone else: in print mode the key belongs
+   * neither to the game nor to the pause, it is the way out. 🎯 And it does not collide with the `start` hook (ADR-0144),
+   * which bubbles: `goBack` reveals the card in the capture, and when the bubbling one arrives the card-already-open
+   * guard sends it away.
    */
   engineActions.print = () => {
     const findPauseCard = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
@@ -1126,73 +1054,68 @@ export function createGame(o: CreateGameOptions): Engine {
   };
 
   /**
-   * O PAINEL AUDITIVO, resolvido tarde e lido cedo — a mesma preguiça do `acoesDaEngine` acima, e pela mesma
-   * razão: `initPauseIcons` corre aqui e os painéis montam-se ~150 linhas abaixo.
+   * THE HEARING PANEL, resolved late and read early — the same laziness as `engineActions` above, for the same reason:
+   * `initPauseIcons` runs here and the panels mount further below.
    *
-   * 🔴 ELE EXISTE COMO `let` POR CAUSA DE UM DEFEITO PRESERVADO VERBATIM. O `ui/pause-icons` documenta-o: no
-   * monólito a chamada que refresca a linha do TTS estava atrás de `typeof reflectTTS === 'function'`, um
-   * símbolo que já não existia, «so it never fires». O guarda veio portado como `reflectTtsPanelEnabled`, com
-   * o padrão `false`, para não consertar em silêncio — e com um campo por onde o ligar de volta.
+   * 🔴 IT IS A `let` BECAUSE OF A DEFECT KEPT VERBATIM. `ui/pause-icons` documents it: in the monolith the call that
+   * refreshed the narration row sat behind `typeof reflectTTS === 'function'`, a symbol that no longer existed, «so it
+   * never fires». The guard was ported as `reflectTtsPanelEnabled`, defaulting to `false`, so as not to fix it
+   * silently — and with a field to switch it back on.
    *
-   * 🎯 AGORA HÁ POR ONDE: a engine monta o painel, logo ela tem o `reflectTts` para lhe dar. Sem isto, a
-   * criança liga a narração pelo ícone 🗣 da barra e o painel continua a dizer que ela está desligada — a
-   * família de defeito do controlo a mentir o estado, que este repositório já pagou com o `#opt-modocego`.
+   * 🎯 THE ENGINE CAN: it mounts the panel, so it has the `reflectTts` to hand over. Without it, the child turns
+   * narration on with the bar's 🗣 icon and the panel goes on saying it is off — the family of defect where a control
+   * lies about its state.
    */
   let audio: SettingsAudioApi | null = null;
 
   /*
-   * ⚠️ IÇADOS PARA CIMA DO `initPauseIcons` em 2026-09-12, e o motivo é de ORDEM e não de arrumação: a barra
-   * decide QUE ÍCONES monta no arranque (`iconsThatAct`, resolvido uma vez), e o 11.º — o ciclo de
-   * tipografia — só existe se o painel de tipografia existir. O painel nasce dentro de
-   * `if (hospedeiroDaPausa && pausaUsavel)`, ~250 linhas abaixo; lidos lá, a barra já tinha decidido.
+   * ⚠️ HOISTED ABOVE `initPauseIcons`, and the reason is ORDER, not tidiness: the bar decides WHICH ICONS it mounts at
+   * boot (`iconsThatAct`, resolved once), and the 11th — the typography cycle — exists only if the typography writer
+   * exists. That writer is born inside `if (pauseMountPoint && pauseUsable)`, further below; read there, the bar would
+   * already have decided.
    *
-   * 📌 Içar em vez de duplicar a pergunta: `o.host.pauseHost ?? $('#game-region')` escrito em dois sítios
-   * seria a mesma resposta com duas fontes — o defeito que este ficheiro já apanhou no `getPlayers`.
+   * 📌 Hoisting instead of repeating the question: `o.host.pauseHost ?? $('#game-region')` written in two places would be
+   * the same answer with two sources.
    */
   const pauseMountPoint = o.host.pauseHost ?? $('#game-region');
   const pauseUsable = !!pauseMountPoint && typeof (pauseMountPoint as HTMLElement).appendChild === 'function';
   /*
-   * ⚠️ O `typo` TAMBÉM SUBIU, e pelo mesmo motivo: ele era `let` DENTRO do bloco que monta os painéis, e
-   * o ciclo de tipografia da barra — que é decidido antes — precisa de o alcançar. Continua a ser atribuído
-   * lá em baixo; o que mudou é o ESCOPO, não o instante.
+   * ⚠️ `typo` IS HOISTED TOO, for the same reason: the bar's typography cycle, decided earlier, must reach it. It is still
+   * assigned below; what changed is the SCOPE, not the moment.
    */
   let typo: SettingsTypoApi | null = null;
-  /** A posição corrente do ciclo de tipografia. Ver a nota em `ciclarTipografia`, logo abaixo. */
+  /** The typography cycle's current position. See the note on `cycleTypography`, below. */
   let typographyStep = CYCLE_START;
 
   /*
-   * 🔴 OS JOGADORES SOBEM PARA AQUI (issue #147), e a razão é uma medição de ordem de arranque: `initPauseIcons`
-   * consome `getPlayers()` AVIDAMENTE (`ui/pause-icons`, ao montar o sub-ctx do áudio), então um `players`
-   * declarado mais abaixo caía na zona morta temporal e derrubava o boot — 39 casos de uma vez, na primeira
-   * tentativa. Com a barra a ler `cartucho.players ?? []` em vez disto, um jogo que não declara jogadores tinha
-   * ZERO assentos para a barra e UM para o teclado, e os ciclos da barra (🚥 correcção, ☝️, TEA) ficavam presos
-   * na primeira posição: o estado não tinha onde ser guardado e cada pressão relia o padrão.
+   * 🔴 THE PLAYERS ARE HOISTED HERE (issue #147), for an order-of-boot reason: `initPauseIcons` consumes `getPlayers()`
+   * EAGERLY (when building the audio sub-ctx), so a `players` declared lower down fell into the temporal dead zone and
+   * brought the boot down. And with the bar reading `cartridge.players ?? []` instead, a game that declares no players
+   * had ZERO seats for the bar and ONE for the keyboard, and the bar's cycles (🚥 correction, ☝️, ASD) stuck on the
+   * first position: the state had nowhere to be kept and each press re-read the default.
    */
-  // ⚠️ O ESQUEMA DE ARRANQUE ALCANÇA NADA, e diz isso com `null` em vez de com um objeto vazio (issue #118).
-  // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive
-  // é um `KeyScheme` como qualquer outro, e a única forma honesta de um esquema que não alcança nada é
-  // catorze ausências declaradas. Um `{}` fazia o tipo mentir sobre estar completo.
+  // ⚠️ THE BOOT SCHEME REACHES NOTHING, and says so with `null` instead of with an empty object (issue #118). It lives an
+  // instant — `assignControls()` just below replaces it with the real scheme — but while it lives it is a `KeyScheme` like
+  // any other, and the only honest form of a scheme that reaches nothing is fourteen declared absences. A `{}` made the
+  // type lie about being complete.
   const withoutReach = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
-  // ⚠️ O FALLBACK É UMA CONSTANTE e não um literal novo a cada chamada: `getPlayers` é lido pelo runtime de
-  // teclado a cada leitura de controlo, e devolver um array novo de cada vez faria qualquer comparação de
-  // identidade mentir — um defeito que só aparece em quem compara, e tarde.
+  // ⚠️ THE FALLBACK IS A CONSTANT and not a new literal per call: `getPlayers` is read by the keyboard runtime at every
+  // control read, and returning a new array each time would make any identity comparison lie — a defect that shows
+  // only in whoever compares, and late.
   const withoutPlayers = [{ ctrl: withoutReach }];
-  // ⚠️ LÊ `cartucho.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
-  // tirado no arranque. As linhas de `initPauseIcons` e do sonar, neste mesmo ficheiro, já liam a fonte viva —
-  // esta era a que faltava. Com vários cartuchos numa raiz de composição (ADR-0142), o teclado ficava com os
-  // jogadores do cartucho que arrancou primeiro.
+  // ⚠️ IT READS `cartridge.players`, NOT A SNAPSHOT: with several cartridges on one composition root (ADR-0142), a `const`
+  // taken at boot would leave the keyboard with the players of the cartridge that booted first.
   const players = () => cartridge.players ?? withoutPlayers;
 
   /*
-   * A PALETA SEGURA PARA DALTONISMO NOS MENUS E NO HUD (ADR-0151) — Okabe-Ito, por `:root[data-paleta]`.
+   * THE COLOUR-BLIND-SAFE PALETTE IN THE MENUS AND THE HUD (ADR-0151) — Okabe-Ito, through `:root[data-paleta]`.
    *
-   * 📏 ANTES DISTO O `core/state.cbSafe` ERA UMA BANDEIRA SEM LEITOR: gravava, persistia e avisava, e nada na
-   * engine pintava menu ou HUD de outra cor. Ligá-la à correcção sem este escritor seria virar uma chave que
-   * ninguém lê. As cores e a medida que as escolheu estão na folha (`style.css`, junto do `data-cursiva`).
+   * 📌 `core/state.cbSafe` stores, persists and notifies; this is its writer on the page. The colours, and the measure
+   * that chose them, are in the stylesheet (`style.css`, beside `data-cursiva`).
    *
-   * 🎯 A REGRA É DO DEV, nas palavras dele: «ativada automaticamente quando se liga correção para protano,
+   * 🎯 THE RULE IS THE DEV'S, in their words: «ativada automaticamente quando se liga correção para protano,
    * deutero e tritanopia e desativada automaticamente quando muda para visão padrão (tricromática). Aqui se
-   * permite ativá-la sem usar o filtro.» Logo o estado é UM (`cbSafe`), e a correcção só o empurra.
+   * permite ativá-la sem usar o filtro.» So the state is ONE (`cbSafe`), and the correction only pushes it.
    */
   const applySafePalette = (on: boolean): void => {
     if (on) doc.documentElement.dataset.paleta = 'okabe-ito';
@@ -1201,9 +1124,9 @@ export function createGame(o: CreateGameOptions): Engine {
   applySafePalette(state.cbSafe);
   state.on('cbSafe', (v) => applySafePalette(Boolean(v)));
   /**
-   * Envolve QUALQUER escritor de correcção — o do cartucho ou o da engine: a paleta segue a correcção seja quem
-   * for que a aplica. ⚠️ Envolver só o da engine deixaria um jogo que corrige no próprio render (o `game-pinball`)
-   * sem a paleta que a criança pediu ao carregar no mesmo ícone.
+   * Wraps ANY correction writer — the cartridge's or the engine's: the palette follows the correction whoever applies it.
+   * ⚠️ Wrapping only the engine's would leave a game that corrects in its own render (`game-pinball`) without the palette
+   * the child asked for by pressing the same icon.
    */
   function withSafePalette(write: (i: number, correction: Correction) => void): (i: number, correction: Correction) => void {
     return (i, correction) => {
@@ -1219,19 +1142,17 @@ export function createGame(o: CreateGameOptions): Engine {
   const pauseIcons = initPauseIcons({
     doc,
     /*
-     * A RESPOSTA DO JOGO, lida da declaração (ADR-0115). Sem ela o ícone `altmove` não é montado.
+     * THE GAME'S ANSWER, read from the declaration (ADR-0115). Without it the `altmove` icon is not mounted.
      *
-     * ⚠️ LIDA UMA VEZ, NO ARRANQUE, e a razão não é economia — é a criança. O campo é uma FUNÇÃO porque o
-     * ADR-0084 diz que um jogo muda de exigência entre fases, mas a COMPOSIÇÃO DA BARRA não pode mudar
-     * debaixo da mão de quem está a usá-la: um ícone que aparece e some entre fases é pior do que um que
-     * nunca esteve lá, e para quem navega por teclado desloca a ordem de tabulação a meio.
-     * 📌 Logo a leitura correcta do contrato é «este jogo segura teclas em ALGUMA fase» — um jogo que segura
-     * a pé e nada dentro de um veículo declara `true`, e o registo não disse isto porque a pergunta só
-     * aparece quando se monta a barra.
+     * ⚠️ WHICH ICONS THE BAR HAS IS DECIDED ONCE, AT BOOT, and the reason is not economy — it is the child. The field is
+     * a FUNCTION because ADR-0084 says a game changes its demands between phases, but the bar's COMPOSITION must not
+     * change under the hand of whoever is using it: an icon that comes and goes between phases is worse than one that
+     * was never there, and for someone navigating by keyboard it shifts the tab order midway.
+     * 📌 So the right reading of the contract is: this game holds keys in SOME phase — a game that holds keys on foot
+     * and nothing inside a vehicle declares `true`.
      */
-    // ⚠️ A REFERÊNCIA, e não o resultado. Chamar aqui congelava a resposta no arranque, e o
-    // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
-    // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
+    // ⚠️ THE REFERENCE, not the result: the ☝️'s cycle reads it again at each press, and with several cartridges on one
+    // composition root (ADR-0142) it must describe the mounted one.
     holdsKeys: () => cartridge.declaration.holdsKeys(),
     // how many positions this cartridge declared — what «one button only» would have to offer (ADR-0218, issue #201)
     declaredPositions: () => (cartridge.preset ? presetActions(cartridge.preset).length : 0),
@@ -1246,78 +1167,72 @@ export function createGame(o: CreateGameOptions): Engine {
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
     noVoice: () => tts.voices().length === 0,
     /*
-     * ✅ A MESMA LISTA DO TECLADO (issue #147, consertada em 2026-09-12).
+     * ✅ THE SAME LIST AS THE KEYBOARD (issue #147).
      *
-     * 📏 ERA `cartucho.players ?? []`, e com a lista VAZIA `iconAct('cvd', i)` relia `(P()[i] || {}).visual` como
-     * `undefined` a cada pressão: o ciclo ficava PRESO na primeira posição enquanto o ícone anunciava correcções
-     * diferentes. Valia igual para o ☝️ e o TEA. E desde o ADR-0151 o defeito tinha ficado pior, porque a
-     * correcção passou a ligar a paleta segura — que é PERSISTIDA —, e quem carregasse uma vez ficava com ela.
+     * 📏 With an empty list, `iconAct('cvd', i)` re-read `(P()[i] || {}).visual` as `undefined` at every press: the cycle
+     * STUCK on the first position while the icon announced different corrections — and the same for the ☝️ and ASD.
+     * Since ADR-0151 the correction also switches the safe palette, which is PERSISTED, so it stuck for good.
      *
-     * ⚠️ `() => players()` já tinha sido tentado e derrubara o boot (TDZ, 39 casos): `initPauseIcons` consome
-     * isto AVIDAMENTE. O conserto foi içar `players`/`semJogadores` para cima desta chamada. Um jogo que não
-     * declara jogadores tem UMA criança a jogar, não nenhuma.
+     * ⚠️ `initPauseIcons` consumes this EAGERLY, which is why `players` is hoisted above this call. A game that declares
+     * no players has ONE child playing, not none.
      */
     getPlayers: () => players(),
     getNumPlayers: () => players().length,
     srSay, srAlert,
-    // A saída da barra é a saída da pausa rápida, por qualquer porta (ADR-0155). Função içada: lida ao chamar.
+    // Leaving the bar is leaving the quick pause, by any door (ADR-0155). Hoisted function, read when called.
     onLeaveBar: (i, silent) => endQuickPause(i, silent),
-    // O que o ícone apontado FAZ vai ao rodapé (função içada, lida ao chamar).
+    // What the pointed icon DOES goes to the footer (hoisted function, read when called).
     explainIcon: (_i, k) => explainIconInFooter(k),
     explainItem: (text) => writeInFooter(text),
-    // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
-    // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
-    // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
-    // de quem injectou o documento. A pergunta certa é a mesma que o `barraUsavel` faz — sabe ser uma barra?
+    // ⚠️ NOT `instanceof HTMLElement`: that is a BROWSER GLOBAL, and reading it where it does not exist THROWS — it does
+    // not return false. It is the same shape of error as FINDING 15 in this file's header: reaching the global underneath
+    // whoever injected the document. The right question is the one `barUsable` asks — can it be a bar?
     getA11yBars: () => (barUsable && a11yBar ? [a11yBar as HTMLElement] : []),
     getBlindMode: readBlindMode,
     getAudioCat: () => audioCat,
     setCatGain,
     /*
-     * ⚠️ QUEM RESPONDE PELO APARELHO EM USO É A RAIZ, e é aqui que o autómato do ADR-0109 ganha o primeiro
-     * leitor. `input/state.inputOf(i)` devolve `DEFAULT_INPUT_STATE` para quem nunca produziu uma aresta, logo isto
-     * nunca é `undefined` e o ícone nunca escreve numa chave torta.
+     * ⚠️ THE ROOT ANSWERS FOR THE DEVICE IN USE, and here ADR-0109's automaton gets its reader. `input/state.inputOf(i)`
+     * returns `DEFAULT_INPUT_STATE` for whoever never produced an edge, so this is never `undefined` and the icon never
+     * writes to a crooked key.
      *
-     * 📌 E é a RAIZ que o passa, não o ícone que o importa: `ui/` a ler estado de módulo de `input/` seria
-     * uma aresta nova entre camadas para poupar um argumento. A composição é o trabalho deste ficheiro.
+     * 📌 And the ROOT passes it rather than the icon importing it: `ui/` reading module state from `input/` would be a new
+     * edge between layers to save one argument. Composition is this file's job.
      */
     transportInUse: (i: number) => inputOf(i).inUse,
-    // ✅ O guarda morto do monólito volta a valer — ver a nota em `audio`, acima.
+    // ✅ The monolith's dead guard works again — see the note on `audio`, above.
     reflectTtsPanel: () => { audio?.reflectTts(); },
     reflectTtsPanelEnabled: true,
     isLibrasOn: vlibrasOpen,
     toggleLibras,
     /*
-     * ⚠️ O QUE O JOGO ENTREGA, E QUE ATÉ HOJE NÃO TINHA POR ONDE. Os três campos são opcionais dos dois
-     * lados: ausentes, tudo se comporta como antes — tabela de acções vazia e os dois ícones visuais
-     * não montados. Ver as notas em `CreateGameOptions` para o que a ausência custava.
+     * ⚠️ WHAT THE GAME HANDS OVER: the three fields are optional on both sides. Absent, the pause card holds only what the
+     * engine acts on, and the two visual icons follow their own rules. See the notes in `CreateGameOptions`.
      */
-    // ⚠️ SEMPRE PASSADO AGORA, e já não só quando o jogo traz o seu. A ausência do cartucho deixou de
-    // significar «tabela vazia»: significa «só o que a engine acciona», que é o que ADR-0106 §1 manda.
+    // ⚠️ ALWAYS PASSED: a cartridge's absence means only what the engine acts on, which is what ADR-0106 §1 asks for.
     getPauseActs: () => ({
       ...engineActions,
       ...(openGameOptions && cartridge.gameOptions?.length ? { opcoesdojogo: openGameOptions } : {}),
       ...(cartridge.getPauseActs ? cartridge.getPauseActs() : {}),
     }),
     /*
-     * O CICLO DE TIPOGRAFIA DO 11.º ÍCONE (ADR-0149 §1, ADR-0150 §2).
+     * THE TYPOGRAPHY CYCLE OF THE 11th ICON (ADR-0149 §1, ADR-0150 §2).
      *
-     * 🎯 UMA PRESSÃO MUDA A CAIXA **E** A FACE, e é essa a decisão: `letterCase` (ADR-0028) e a face são hoje
-     * dois controles em dois sítios, e «Andika em caixa alta» é UMA escolha pedagógica de quem alfabetiza.
-     * Uma criança não devia ter de saber o modelo para a fazer.
+     * 🎯 ONE PRESS CHANGES THE CASE **AND** THE FACE, and that is the decision: `letterCase` (ADR-0028) and the face are
+     * two settings, and Andika in capitals is ONE pedagogical choice of whoever teaches reading. A child should not
+     * have to know the model to make it.
      *
-     * 📌 A POSIÇÃO VIVE AQUI, num `let` da raiz, e não em `core/state`: ela é derivada — a caixa e a face já
-     * são persistidas cada uma por si —, e guardar um índice ao lado do que ele deriva é o terceiro sítio
-     * para os três divergirem. Ao reabrir, o ciclo recomeça na posição padrão com a face que ficou.
+     * 📌 THE POSITION LIVES HERE, in a `let` of the root, and not in `core/state`: it is derived — the case and the face
+     * are each persisted on their own —, and storing an index beside what it derives from is a third place for the
+     * three to drift. On reopening, the cycle restarts at the default position with the face that was left.
      *
-     * ⚠️ A MÃO DO PAÍS SAI DA ETIQUETA BCP-47 do idioma corrente, e o recuo é o do COLONIZADOR (ADR-0150):
-     * espanhol → Espanha, português → Portugal, inglês → Inglaterra. Uma língua fora do repertório devolve
-     * lista vazia e o ciclo fica com quatro posições — melhor uma a menos do que a mão de um país que não é
-     * o daquela criança.
+     * ⚠️ THE COUNTRY'S HAND COMES FROM THE BCP-47 TAG of the current language, and the fallback is the COLONISER's
+     * (ADR-0150): Spanish → Spain, Portuguese → Portugal, English → England. A language outside the repertoire returns an
+     * empty list and the cycle has four positions — better one fewer than the hand of a country that is not that child's.
      */
     cycleTypography: pauseUsable ? (): string | null => {
-      // ⚠️ `typo` é lido AQUI e não na condição: ele nasce ~250 linhas abaixo, e a condição corre agora.
-      // Quem decide se o ícone existe é `pausaUsavel`, que é a MESMA pergunta que decide se o painel nasce.
+      // ⚠️ `typo` is read HERE and not in the condition: it is born further below, and the condition runs now. Whether
+      // the icon exists is decided by `pauseUsable`, the SAME question that decides whether the writer is born.
       if (!typo) return null;
       const cycle = typographyCycle(bcp47());
       typographyStep = (typographyStep + 1) % cycle.length;
@@ -1325,11 +1240,11 @@ export function createGame(o: CreateGameOptions): Engine {
       state.setLetterCaseValue(position.letterCase);
       typo.setFont(position.font, false);
       /*
-       * ⚠️ A ESCALA É ESCRITA SEMPRE, e não só quando é maior que 1. Escrever só na subida deixaria a mão do
-       * país a valer depois de a criança voltar para a Atkinson — o texto inteiro 25% maior sem nada o
-       * explicar, e ela a carregar no botão outra vez para tentar desfazer.
-       * 📌 Na raiz do documento e não no `#game-region`: o `font-size` de base é de `html,body`, e é ele que
-       * esta razão multiplica.
+       * ⚠️ THE SCALE IS ALWAYS WRITTEN, not only when it is above 1. Writing only on the way up would leave the country's
+       * hand in force after the child went back to Atkinson — the whole text 25% larger with nothing explaining it, and
+       * her pressing the button again to try to undo it.
+       * 📌 On the document root and not on `#game-region`: the base `font-size` belongs to `html,body`, and that is what
+       * this ratio multiplies.
        */
       doc.documentElement.style.setProperty('--fonte-escala', String(position.scale));
       reserveBarBand(); // the name line under the bar grows with the text (issue #160)
@@ -1337,52 +1252,42 @@ export function createGame(o: CreateGameOptions): Engine {
     } : undefined,
     ...(cartridge.setPlayerTheme ? { setPlayerTheme: cartridge.setPlayerTheme } : {}),
     /*
-     * 🚥 A CORREÇÃO DE DALTONISMO PASSA A TER PADRÃO DA ENGINE (ADR-0148 §1), e o ícone deixa de faltar.
+     * 🚥 COLOUR-VISION CORRECTION HAS AN ENGINE DEFAULT (ADR-0148 §1), so the icon is never missing for want of a writer.
      *
-     * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones — três deles a dizer «em construção» — e o
-     * 🚥 ficava de fora, porque `iconsThatAct` pergunta «este ícone tem quem o accione» e esta raiz não
-     * passava escritor nenhum. E não passava tendo tudo à mão: `installCvdFilters` já montou os seis
-     * `<filter>` e `setVisionFilter` já sabe pô-los no elemento do mundo.
+     * 🎯 A FILTER NEEDS NOT KNOW THE GAME — the argument that makes this legitimate. It goes over whatever the game drew,
+     * the same way the `consumer-quiz` does by hand. What the engine CANNOT do is repaint textures, which is why the 🌗
+     * stays the game's (see the ADR-0148 erratum).
      *
-     * 🎯 UM FILTRO NÃO PRECISA DE CONHECER O JOGO — é o argumento que torna isto legítimo. Ele passa por cima
-     * do que quer que o jogo tenha desenhado, que é o mesmo caminho que o `consumer-quiz` já usa à mão
-     * (`main-quiz.ts:359`). O que a engine NÃO pode é repintar texturas, e por isso o 🌗 continua a ser do
-     * jogo (ver a errata do ADR-0148).
+     * ⚠️ AND ONLY IF THE FILTERS EXIST. Without `host.cvdHost`, `installCvdFilters` returns zero, `url(#cvd-fix-protan)`
+     * points at nothing and the icon would announce a correction that does not happen — a control that lies about its
+     * state, worse than one icon fewer (ADR-0106 §5). The `problems` line for that gap already exists.
      *
-     * ⚠️ E SÓ SE OS FILTROS EXISTIREM. Sem `host.cvdHost` o `installCvdFilters` devolve zero, o
-     * `url(#cvd-fix-protan)` aponta para coisa nenhuma e o ícone anunciaria uma correcção que não acontece —
-     * um controle que mente o estado, que é pior do que o ícone a menos (ADR-0106 §5). A linha de `problems`
-     * para essa lacuna já existe, logo quem a tem sabe o que fazer.
-     *
-     * 📌 O CARTUCHO CONTINUA A GANHAR: um jogo que saiba corrigir a cor no seu próprio render — o
-     * `game-pinball` corrige num framebuffer há semanas — entrega o seu e a engine sai da frente.
+     * 📌 THE CARTRIDGE STILL WINS: a game that corrects colour in its own render (`game-pinball`, in a framebuffer) hands in
+     * its own and the engine steps aside.
      */
     ...(cartridge.setPlayerCorrection
       ? { setPlayerCorrection: withSafePalette(cartridge.setPlayerCorrection) }
       : cvdFilters
         /*
-         * ⚠️ `filterKey` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
-         * vocabulários são DIFERENTES. O eixo diz `protan`; o `VIZ_FILTER` conhece `fix-protan`. Escrita à
-         * mão, a tradução dava `undefined`, o filtro saía vazio e o ícone ANUNCIAVA uma correcção que não
-         * acontecia — que é exactamente o controle a mentir o estado.
-         * 📌 E `filterKey` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
-         * quando há uma, que é a regra que este módulo não teria de reinventar.
+         * ⚠️ `filterKey` AND NOT `VIZ_FILTER[correction]`: the two vocabularies are DIFFERENT. The axis says `protan`;
+         * `VIZ_FILTER` knows `fix-protan`. Translated by hand, the lookup gave `undefined`, the filter came out empty and
+         * the icon ANNOUNCED a correction that did not happen — exactly the control lying about its state.
+         * 📌 And `filterKey` does more than glue a prefix: it puts the SIMULATION ahead of the correction when there is
+         * one, a rule this module should not reinvent.
          */
         ? { setPlayerCorrection: withSafePalette((i: number, correction: Correction) => {
           /*
-           * 🔴 GUARDA ANTES DE APLICAR, e a primeira versão desta linha só aplicava — o que fazia o ciclo
-           * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `nextCorrection(p.visual)`, em
-           * `ui/pause-icons`; sem escrever de volta, toda pressão relia o padrão e devolvia `protan`.
-           * ⚠️ Não dava erro nenhum: o ícone anunciava a correcção certa, o filtro mudava na primeira vez, e
-           * a criança carregava mais duas vezes a ver a mesma tela. Apanhado por uma MUTAÇÃO sobrevivente —
-           * «aplica sempre, nunca limpa» ficava verde porque o caso só carregava uma vez.
+           * 🔴 STORE BEFORE APPLYING: applying alone left the cycle STUCK on the first position. The next step is computed
+           * by `nextCorrection(p.visual)` in `ui/pause-icons`; without writing it back, every press re-read the default and
+           * returned `protan`.
+           * ⚠️ No error at all: the icon announced the right correction, the filter changed the first time, and the child
+           * pressed twice more to see the same screen. Caught by a surviving MUTATION — always apply, never clear — that stayed
+           * green because the case pressed only once.
            */
-          // ⚠️ `cartucho.players` E NÃO `players()`, para escrever no MESMO array que o `ui/pause-icons` lê
-          // ao calcular o passo seguinte. Com o recuo `semJogadores` os dois discordavam, e o estado ia parar
-          // a um sítio que ninguém relê. 🔴 Num jogo que não declara jogadores não há onde guardar, e o ciclo
-          // fica preso na primeira posição — o defeito do `getPlayers` nomeado mais acima, e não deste ramo.
+          // ⚠️ `players()`, the SAME list `ui/pause-icons` reads (`getPlayers`, above) to compute the next step: written
+          // anywhere else, the state would land where nobody reads it again.
           const player = players()[i] as { visual?: VisualState } | undefined;
-          // Uma correcção LIGADA pára a demonstração (ADR-0076): a simulação por cima de uma adaptação ensina uma coisa falsa.
+          // A correction switched ON stops the demonstration (ADR-0076): a simulation over an adaptation teaches something false.
           const before = player?.visual ?? worldState;
           const nextVisual: VisualState = { ...before, correcao: correction, simulacao: correction === 'tricro' ? before.simulacao : null };
           if (player) player.visual = nextVisual;
@@ -1393,12 +1298,12 @@ export function createGame(o: CreateGameOptions): Engine {
   });
 
   /*
-   * ⚠️ O HOSPEDEIRO TEM DE SABER SER UMA BARRA, e perguntar isso não é zelo: `a11yBarHost` é `Element` no
-   * tipo, e um consumidor pode passar um duplo, um nó de outro documento, ou um elemento de um `<svg>`. Sem
-   * esta guarda, um objecto sem `addEventListener` derruba o BOOT INTEIRO — e derrubá-lo por causa da barra
-   * de acessibilidade seria tirar o jogo a toda a gente para não o dar a ninguém.
+   * ⚠️ THE HOST MUST BE ABLE TO BE A BAR, and asking is not fussiness: `a11yBarHost` is `Element` in the type, and a
+   * consumer may pass a double, a node from another document, or an element of an `<svg>`. Without this guard, an object
+   * without `addEventListener` brings the WHOLE BOOT down — and bringing it down for the accessibility bar would take
+   * the game from everyone so as to give it to no one.
    *
-   * Não sabendo, é `problems` como qualquer outra lacuna do hospedeiro: o consumidor lê e conserta.
+   * If it cannot, it is `problems` like any other gap of the host: the consumer reads and fixes.
    */
   const barUsable = !!a11yBar
     && typeof (a11yBar as HTMLElement).addEventListener === 'function'
@@ -1410,8 +1315,8 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   if (a11yBar && barUsable) {
-    // 🔴 COM A LEGENDA DO NOME, debaixo da fileira: a barra montada pela engine não a tinha, e o Dev viu-a muda ao
-    // navegar e ao passar o rato. `aria-hidden` porque o nome já é DITO (`srSay` no cursor, o `aria-label` no foco).
+    // 🔴 WITH THE NAME CAPTION under the row: the bar the engine mounted had none, and the Dev saw it mute when navigating
+    // and hovering. `aria-hidden` because the name is already SPOKEN (`srSay` on the cursor, the `aria-label` on focus).
     a11yBar.innerHTML = iconsMarkup(pauseIcons.mountedIcons) + '<p class="pause-icons-cap" aria-hidden="true"></p>';
     wireBarCaption(a11yBar as HTMLElement, explainIconInFooter);
     a11yBar.addEventListener('click', (e) => {
@@ -1421,34 +1326,30 @@ export function createGame(o: CreateGameOptions): Engine {
       pauseIcons.reflectIconsIn(a11yBar, 0);
       const caption = a11yBar.querySelector('.pause-icons-cap');
       if (caption) caption.textContent = accessibleLabel(rowButton); // the NEW state, after the reflection; «N de M» is spoken, never written (ADR-0167)
-      // O anúncio lê o `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO — anunciar
-      // antes diria o estado que a criança acabou de deixar.
+      // The announcement reads the `aria-label` AFTER the reflection, because that carries the NEW state — announcing
+      // before would say the state the child just left.
       srSay(rowButton.getAttribute('aria-label') ?? '');
     });
     pauseIcons.reflectIconsIn(a11yBar, 0);
 
     /*
-     * ⚠️ E OUTRA VEZ QUANDO O IDIOMA DO ARRANQUE CHEGAR — sem isto a barra fica no idioma de RECUO.
+     * ⚠️ AND AGAIN WHEN THE BOOT LANGUAGE ARRIVES — without it the bar stays in the FALLBACK language.
      *
-     * O `initI18n` aplica pt de forma síncrona (para a página nunca ficar em branco) e, se o idioma
-     * preferido for outro, PEDE a troca — que é assíncrona, porque en/es são chunks sob demanda. Esta
-     * marcação nasce nesse intervalo. 📏 Medido num navegador em 2026-09-08, com `lang="en"`: a barra
-     * servia cinco rótulos em inglês e três ainda em português, na mesma linha de ícones.
+     * `initI18n` applies pt synchronously (so the page is never blank) and, if the preferred language is another, ASKS
+     * for the switch — which is asynchronous, because en/es are on-demand chunks. This markup is born in that interval.
      *
-     * 📌 SINCE STUDY ITEM C6 (ADR-0031) IT IS THE `i18n:change` LISTENER near the pad that repaints it: the boot's
-     * preferred language arrives through `setLocale`, which dispatches that same event, so one path serves the boot
-     * and a change made mid-game. The `localeReady()` repaint that stood here was the same work twice.
+     * 📌 IT IS THE `i18n:change` LISTENER near the pad that repaints it (study item C6, ADR-0031): the boot's preferred
+     * language arrives through `setLocale`, which dispatches that same event, so one path serves the boot and a change
+     * made mid-game.
      */
 
     /*
-     * ⚠️ E ELA TEM DE CONTINUAR A DIZER A VERDADE quando o estado muda NOUTRO SÍTIO. O modo cego liga-se
-     * também pelo painel de áudio e pela simulação de empatia; sem esta assinatura, o ícone da barra ficaria
-     * a dizer «desligado» com `aria-pressed=false` depois de a criança o ter ligado — o controlo a mentir o
-     * estado, que é a família de defeito que o `reflectTTS` e o `#opt-modocego` já custaram a este projeto.
+     * ⚠️ AND IT MUST GO ON TELLING THE TRUTH when a state changes ELSEWHERE. Blind mode is also switched by the hearing
+     * panel and by the empathy simulation; without this subscription, the bar's icon would go on saying off with
+     * `aria-pressed=false` after the child had turned it on — the control lying about its state.
      *
-     * 📌 SÓ O MODO CEGO, e a limitação é medida e não preguiça: dos ícones que esta raiz monta, ele é o ÚNICO
-     * cujo estado tem evento (`GameEvent` tem `blindMode`; TTS, Libras, TEA e alternância não emitem nada).
-     * Os outros continuam a refletir-se ao clique, que é o caminho por onde hoje eles mudam.
+     * 📌 ONLY THE STATES WITH AN EVENT that can change elsewhere: blind mode, the camera control and the voice control
+     * (`GameEvent`). The other icons reflect themselves on the click, which is the path by which they change.
      */
     state.on('blindMode', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
@@ -1459,34 +1360,23 @@ export function createGame(o: CreateGameOptions): Engine {
     state.on('voiceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
   }
 
-  // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.
+  // 4d. WHO OPENED THE PAUSE, when there is more than one seat — finding 3 of the `game-soccer` audit.
   //
-  // ⚠️ O PAINEL DE CONTROLE É PARAMETRIZADO PELO ASSENTO: `render(selPlayer)` desenha as posições DAQUELE
-  // esquema, e não há selector de assento — o `#ctrl-players` é uma FRASE, não abas. Quem decide o assento é
-  // o consumidor, passando o ator da pausa: «edita o controle de quem abriu o menu».
+  // ⚠️ THE KEYBOARD PANEL IS PARAMETERISED BY THE SEAT: `render(selPlayer)` draws the positions of THAT scheme, and the
+  // consumer decides the seat by passing the pause actor: the panel edits the controls of whoever opened the menu.
   //
-  // ✅ E ISTO DEIXOU DE SER MUDO. O `setPauseActor` desta raiz era `() => {}` LITERAL, sem campo por onde um
-  // jogo o entregar: a linha abaixo dizia «conserte» sem haver por onde, e a única saída era declarar
-  // `semAtorDePausa`, que é aceitar a perda em vez de a corrigir. Agora ela só acusa quem NÃO respondeu —
-  // que é o que uma linha de `problems` deve fazer, pelo §2 do ADR-0106.
-  // 📌 A linha do ator da pausa mudou-se para `problemasDoCartucho()`: quem declara assentos é o jogo.
+  // 📌 The pause-actor line of `problems` lives in `measureCartridgeProblems()`: whoever declares seats is the game, and
+  // the line accuses only a game that did not answer (ADR-0106 §2).
 
   /*
-   * 4e. O CARTÃO DE PAUSA DA PRIMEIRA TELA — e isto fecha um LAÇO QUE ESTAVA ABERTO.
-   *
-   * 📏 MEDIDO EM 2026-09-08, nos seis jogos do catálogo local: `#vp-pause-0` é procurado por esta raiz (o
-   * `getPauseMenu` do `initMenuNav`, mais abaixo) e **NENHUM jogo o cria**. `git grep vp-pause` devolve zero
-   * em `game-platformer`, `game-soccer`, `pixi-15-puzzle`, `2048`, `whackwhack` e `game-chess`. Ou seja: a
-   * engine inventou uma convenção, procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu
-   * de pausa — que é a MESMA forma de defeito do ADR-0106 §2, desta vez cometida pela engine contra si mesma.
-   *
-   * Agora ela cria o que procura — e para TODO jogo, desde o ADR-0120 e outra vez desde o ADR-0122: o
-   * declínio saiu, porque a razão de ele existir foi construída fora por este mesmo ADR-0106, e porque a
-   * regra é do Dev — a pausa e os ícones de acessibilidade estão em todo jogo, logo são da engine.
+   * 4e. THE FIRST SCREEN'S PAUSE CARD. `#vp-pause-0` is what this root looks for (`getPauseMenu` of `initMenuNav`, below),
+   * and games did not create it: the engine had invented a convention, looked for it, not found it, and concluded in
+   * silence that no game had a pause menu — the same shape of defect as ADR-0106 §2, committed by the engine against
+   * itself. So the engine creates what it looks for, for EVERY game (ADR-0120, ADR-0122): the pause and the
+   * accessibility icons are in every game, so they are the engine's.
    */
-  // (`hospedeiroDaPausa` e `pausaUsavel` foram IÇADOS para cima do `initPauseIcons` em 2026-09-12 — ver a
-  //  nota lá. Dependem só de `o.host` e do `$`, que existem desde o início, e a barra precisa da resposta
-  //  ANTES de decidir que ícones monta.)
+  // (`pauseMountPoint` and `pauseUsable` are hoisted above `initPauseIcons` — see the note there. They depend only on
+  //  `o.host` and `$`, and the bar needs the answer BEFORE deciding which icons it mounts.)
   if (!pauseUsable) {
     hostProblems.push(
       'the pause menu has nowhere to mount: a child cannot reach the settings during play — set `host.pauseHost` or give '
