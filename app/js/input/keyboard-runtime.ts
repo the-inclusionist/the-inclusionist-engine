@@ -13,15 +13,12 @@ import type { KeyScheme } from '../core/entity.js';
 import { ACTIONS, type Action } from '../core/actions.js';
 import type { KBDefaults } from '../input/keyboard.js';
 
-/** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. Mirrors the shape
- *  ui/settings-controls.ts also defines locally (input/keyboard.ts's KeyScheme is not exported — each consumer
- *  keeps its own structural copy rather than reaching across layers for a type alias). */
-// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
-// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+/** action -> list of physical key codes (KeyboardEvent.code), e.g. {action2:['KeyJ','Space']}. It lives in `core/entity`,
+ *  whose `ctrl: KeyScheme | null` makes it the owner — the same line was once written in six modules. Re-exported for
+ *  whoever already imported it from here. */
 export type { KeyScheme } from '../core/entity.js';
 
-/** input/keyboard.ts's KBDefaults shape ({solo,p2,p3,p4}) — the live `KB` value in game.js. */
-/** O `KBDefaults` de `input/keyboard`, que é o dono. O nome local sobrevive porque os consumidores o usam. */
+/** `input/keyboard`'s `KBDefaults` ({solo,p2,p3,p4}), which owns it. The local name survives because consumers use it. */
 export type KeyboardConfig = KBDefaults;
 
 /** Minimal player shape this module needs: only `ctrl` is read/written — derived from core/entity.
@@ -30,23 +27,22 @@ export type KeyboardConfig = KBDefaults;
 export type KeyboardRuntimePlayer = Pick<ControlledPlayer, 'ctrl'>;
 
 export interface KeyboardRuntimeCtx {
-  /** The live keyboard config (game.js's `KB`), read fresh on every call — never cached. */
+  /** The live keyboard config, read fresh on every call — never cached. */
   getKB(): KeyboardConfig;
-  /** Current player count (core/state.ts's `numPlayers`, read live via game.js). */
+  /** The current player count, read live. */
   getNumPlayers(): number;
-  /** The live players array (core/state.ts's `players`, mutated in place — never reassigned). */
+  /** The live players array (mutated in place — never reassigned). */
   getPlayers(): KeyboardRuntimePlayer[];
 }
 
-/** Result of the old `applyControls()` mutation, as a value: `controls` + its per-action aliases (game.js's
- *  KJUMP/KLEFT/KRIGHT/KUP/KDOWN/KRUN) + the flattened `GAME_KEYS` list. */
-/** A lista que uma posição SEM ALCANCE devolve. Congelada e partilhada: ninguém deve escrever nela. */
+/** The list a position WITH NO REACH returns. Frozen and shared: nobody may write to it. */
 const EMPTY: readonly string[] = Object.freeze([]);
 
+/** The controls state as a value: player 1's `controls` + its per-action aliases + the flattened list of game keys. */
 export interface ControlsState {
   controls: KeyScheme;
-  // ⚠️ `readonly` desde a #118: uma posição sem alcance devolve a lista vazia partilhada, e uma lista
-  // partilhada que alguém pudesse mutar seria uma lista vazia que deixa de ser vazia para todos.
+  // ⚠️ `readonly` (#118): a position with no reach returns the shared empty list, and a shared list someone could mutate
+  // would be an empty list that stops being empty for everyone.
   action2: readonly string[];
   left: readonly string[];
   right: readonly string[];
@@ -57,24 +53,22 @@ export interface ControlsState {
 }
 
 export interface KeyboardRuntime {
-  /** The key scheme for player `playerIndex`, given the current KB config + player count (game.js's kbFor). */
+  /** The key scheme for player `playerIndex`, given the current config + player count. */
   kbFor(playerIndex: number): KeyScheme;
-  /** Which action (if any) `code` triggers FOR that player, given their scheme (game.js's actionOf). */
+  /** Which action (if any) `code` triggers FOR that player, given their scheme. */
   actionOf(code: string, playerIndex: number): string | null;
-  /** Which player (0-based) owns `code` among the active players; -1 if none (game.js's whichPlayer). */
+  /** Which player (0-based) owns `code` among the active players; -1 if none. */
   whichPlayer(code: string): number;
-  /** Propagates `kb` -> each active player's `p.ctrl`, mutated in place (game.js's assignControls). */
+  /** Propagates the config -> each active player's `p.ctrl`, mutated in place. */
   assignControls(): void;
-  /** Computes the P1-alias `controls` + `GAME_KEYS` (game.js's applyControls, minus the reassignment). */
+  /** Computes player 1's `controls` alias + the game keys. */
   computeControlsState(): ControlsState;
-  /** O estado ATUAL, memorizado. Antes eram oito `let` no game.js (`controls`, `KJUMP`..`KRUN`, `GAME_KEYS`)
-   *  copiados de `computeControlsState()` por um `applyControls()` que existia só para fazer a cópia. Eram
-   *  derivados de `KB` + `players`, guardados em variável — a forma de estado que mais apodrece, porque nada
-   *  obriga a cópia a acompanhar a origem. Aqui a memória fica com quem é dono da conta, e a invalidação é
-   *  explícita e única: `refreshControls()`. NÃO recalcula a cada leitura de propósito — recalcular mudaria
-   *  o comportamento (passaria a enxergar remapeamento que ainda não foi aplicado), e isto é refatoração. */
+  /** The CURRENT state, memoised. It was a set of copies kept in variables, derived from the config + players — the
+   *  kind of state that rots fastest, because nothing forces a copy to follow its source. Here the memo stays with
+   *  whoever owns the sum, and invalidating it is explicit and single: `refreshControls()`. It does NOT recompute on
+   *  every read, on purpose — that would change behaviour (it would see a remap not applied yet). */
   controlsState(): ControlsState;
-  /** Recalcula e memoriza. É o `applyControls()` do game.js, agora do lado de cá. */
+  /** Recomputes and memoises. */
   refreshControls(): ControlsState;
 }
 
@@ -86,10 +80,10 @@ export interface KeyboardRuntime {
  *  (mirrors ui/settings-controls.ts's keyUsedByOther: a Map built over the scheme, not a re-scan per query). */
 function buildActionIndex(scheme: KeyScheme): Map<string, string> {
   const index = new Map<string, string>();
-  // ⚠️ O LAÇO PASSOU A SER SOBRE `ACTIONS` E NÃO SOBRE AS CHAVES DO OBJETO (issue #118). São a mesma lista
-  // agora que o `KeyScheme` é fechado — mas percorrer `ACTIONS` diz QUAL é a lista, e um esquema que ganhe
-  // uma chave a mais por engano deixa de a ver. E o `?? []` é o que trata a AUSÊNCIA DECLARADA: um `null`
-  // não é um esquema partido, é um teclado que não alcança aquela posição.
+  // ⚠️ THE LOOP IS OVER `ACTIONS` AND NOT OVER THE OBJECT'S KEYS (issue #118). They are the same list now that
+  // `KeyScheme` is closed — but walking `ACTIONS` says WHICH list it is, and a scheme that gains an extra key by mistake
+  // no longer sees it. And `?? []` handles the DECLARED ABSENCE: a `null` is not a broken scheme, it is a keyboard that
+  // does not reach that position.
   for (const action of ACTIONS) {
     for (const code of scheme[action] ?? []) {
       if (!index.has(code)) index.set(code, action);
@@ -144,15 +138,14 @@ export function initKeyboardRuntime(ctx: KeyboardRuntimeCtx): KeyboardRuntime {
 
   function computeControlsState(): ControlsState {
     const kb = ctx.getKB();
-    const controls = kb.solo; // alias do P1 — SEMPRE kb.solo, mesmo com numPlayers>1 (comportamento original; ver relato)
-    // Os apelidos são LISTAS, nunca `null`: quem os lê faz `.includes(code)` sem perguntar. Uma posição que o
-    // esquema não alcança vira lista vazia aqui — «não alcança» e «alcança com zero teclas» valem o mesmo
-    // para quem só pergunta se a tecla está lá.
+    const controls = kb.solo; // player 1's alias — ALWAYS kb.solo, even with more players (the original behaviour)
+    // The aliases are LISTS, never `null`: whoever reads them does `.includes(code)` without asking. A position the
+    // scheme does not reach becomes an empty list here — "does not reach" and "reaches with zero keys" are worth the
+    // same to whoever only asks whether the key is there.
     //
-    // ⚠️ E DEVOLVE A MESMA REFERÊNCIA, não uma cópia. A primeira versão fazia `[...]` e um caso reprovou por
-    // identidade — corretamente: o apelido é o alias do P1, e um teste que afirma «é o mesmo array» está a
-    // afirmar que ninguém interpôs uma cópia entre o esquema vivo e quem o lê. Copiar aqui não custaria nada
-    // hoje e passaria a custar no dia em que alguém mutasse a lista no lugar.
+    // ⚠️ AND IT RETURNS THE SAME REFERENCE, not a copy. A case asserts "it is the same array", which is asserting that
+    // nobody put a copy between the live scheme and its reader. Copying would cost nothing today and would start costing
+    // the day someone mutated the list in place.
     const list = (a: Action): readonly string[] => controls[a] ?? EMPTY;
     const action2 = list('action2'), left = list('left'), right = list('right');
     const up = list('up'), down = list('down'), action1 = list('action1');
@@ -165,7 +158,7 @@ export function initKeyboardRuntime(ctx: KeyboardRuntimeCtx): KeyboardRuntime {
     return { controls, action2, left, right, up, down, action1, gameKeys };
   }
 
-  let cache: ControlsState | null = null; // memória do estado derivado; só refreshControls a invalida
+  let cache: ControlsState | null = null; // the derived state's memo; only refreshControls invalidates it
   function controlsState(): ControlsState { return cache ?? (cache = computeControlsState()); }
   function refreshControls(): ControlsState { cache = computeControlsState(); return cache; }
 

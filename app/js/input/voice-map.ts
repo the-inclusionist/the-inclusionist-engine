@@ -19,20 +19,20 @@ import type { Action } from '../core/actions.js';
 /**
  * Every word of one language, by position.
  *
- * ⚠️ WRITTEN THE WAY THEY ARE COMPARED — lowercase and unaccented. The Dev's words are «ação» and «Acción»; a heard sentence and
- * a table entry both pass through `wordsOf` before they meet, so storing the accented spelling would only be a transformation
- * done twice. It also keeps this table out of the Portuguese-prose sieve, which cannot tell a lone accented word from a phrase.
+ * ⚠️ WRITTEN AS THE RECOGNISER'S VOCABULARY SPELLS THEM — lowercase, with their accents (the Dev's words are «ação» and
+ * «Acción»): a grammar word the model does not know is dropped and its position goes mute (measured below). Comparing ignores
+ * accents, because a heard sentence and a table entry both pass through `wordsOf` before they meet.
  */
 export type VoiceWords = { readonly [A in Action]?: readonly string[] };
 
 const PT: VoiceWords = {
   up: ['acima'], down: ['abaixo'], left: ['esquerda'], right: ['direita'],
   start: ['start'], select: ['select'],
-  // 🔴 «ação» COM O CEDILHO E O TIL, e isto foi medido num navegador em 2026-09-21: escrito `acao`, o modelo pt respondeu
-  // «Ignoring word missing in vocabulary: 'acao'» e a primeira posição ficava MUDA — a criança dizia a palavra e nada
-  // acontecia. A grafia aqui é a do VOCABULÁRIO do reconhecedor; quem compara já não olha acentos (`wordsOf`), então
-  // escrevê-la certa não custa nada ao lado de quem ouve. ⚠️ «boreste» continua fora do vocabulário do modelo pequeno
-  // (errata do ADR-0204) e fica na mesa de propósito: é a palavra do Dev, e um modelo maior ouve-a.
+  // 🔴 `ação` WITH THE CEDILLA AND THE TILDE, measured in a browser: written `acao`, the pt model answered "Ignoring word
+  // missing in vocabulary: 'acao'" and the first position was MUTE — the child said the word and nothing happened. The
+  // spelling here is the recogniser's VOCABULARY's; whoever compares no longer looks at accents (`wordsOf`), so spelling it
+  // right costs nothing on the hearing side. ⚠️ `boreste` is still outside the small model's vocabulary (ADR-0204 erratum)
+  // and stays on the table on purpose: it is the Dev's word, and a larger model hears it.
   action1: ['ação'], action2: ['confirma', 'pega', 'ativar', 'pulo'], action3: ['voltar', 'solta', 'cancelar', 'especial'],
   action4: ['lista', 'troca'],
   leftShoulder: ['bombordo'], leftTrigger: ['mira', 'freia'],
@@ -42,7 +42,7 @@ const PT: VoiceWords = {
 const ES: VoiceWords = {
   up: ['arriba'], down: ['abajo'], left: ['izquierda'], right: ['derecha'],
   start: ['start'], select: ['select'],
-  // «acción» com o acento, pela mesma medição da linha do pt: o vocabulário do modelo guarda a palavra como a língua a escreve.
+  // `acción` with its accent, by the pt line's measurement: the model's vocabulary keeps the word as the language writes it.
   action1: ['acción'], action2: ['confirma', 'recoger', 'activar', 'saltar'], action3: ['volver', 'soltar', 'cancelar', 'especial'],
   action4: ['inventario', 'lista', 'cambiar'],
   leftShoulder: ['babor'], leftTrigger: ['apuntar', 'frenar'],

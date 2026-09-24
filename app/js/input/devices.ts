@@ -1,33 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/devices.ts — rótulos/mapeamentos de gamepad e toque (dados). Módulo-folha, ZERO deps.
-// PAD_DESIGNS: como rotular os 4 botões de ação por modelo de controle (o navegador detecta genérico no
-// Windows). TOUCH_DEFAULT: mapa padrão dos 13 slots de toque (os 4 de ombro desde o ADR-0160).
-// A leitura de pads (pollPads) e o layout de toque ficam no game.js. (Fase 2, subsistema input)
+// input/devices.ts — gamepad and touch labels and mappings (data). A leaf module, NO dependencies.
+// PAD_DESIGNS: how to label the 4 action buttons per pad model (the browser detects a generic one on Windows).
+// TOUCH_DEFAULT: the default map of the 13 touch slots (the 4 shoulder ones since ADR-0160).
 //
-// POR QUE CHAVES E NÃO TEXTO: a tabela é uma `const` de módulo, avaliada UMA vez no import. Se guardasse
-// `t('…')` já resolvido, o idioma congelaria no boot — `dict` em core/i18n é um `let` que `setLocale`
-// reatribui, e quem leu antes da troca nunca mais vê a troca. Guardando a chave, quem resolve é o ponto de
-// Este módulo continua ZERO deps de propósito: chave é dado, `t` é comportamento e mora no consumidor.
-export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por botão: [rótulo, cor]
+// WHY KEYS AND NOT TEXT: the table is a module `const`, evaluated ONCE at import. If it held an already resolved `t('…')`,
+// the language would freeze at boot — whoever read before a switch would never see the switch. Holding the key, the
+// place of use resolves it. This module stays dependency-free on purpose: a key is data, `t` is behaviour and lives in
+// the consumer.
+export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // per button: [label, colour]
   generic:{'0':['0','#3a4a6a'],'1':['1','#3a4a6a'],'2':['2','#3a4a6a'],'3':['3','#3a4a6a']},
   microsoft:{'0':['A','#2fae4e'],'1':['B','#d23b3b'],'2':['X','#2f6fd2'],'3':['Y','#d9a400']},
   sony:{'0':['✕','#4f8fd0'],'1':['○','#d23b3b'],'2':['□','#d76fae'],'3':['△','#2fae7e']},
   nintendo:{'0':['B','#d9a400'],'1':['A','#d23b3b'],'2':['Y','#2fae4e'],'3':['X','#2f6fd2']},
 };
 /**
- * Glifos de controle que NÃO SE LEEM — chave i18n do nome falado de cada um (ADR-0044, item 4).
+ * Pad glyphs that CANNOT BE READ ALOUD — the i18n key of each one's spoken name (ADR-0044, item 4).
  *
- * Um leitor de tela lê `✕` como "sinal de multiplicação", ou não lê nada, e `△` costuma sair mudo. É por isso
- * que a legenda da pausa carregava `aria-hidden="true"`: escondiam-se o ruído E a informação juntos. Aqui está
- * a metade que faltava para poder tirar o atributo — o glifo continua na tela para quem o reconhece, e a
- * PALAVRA existe para quem o escuta.
+ * A screen reader reads `✕` as "multiplication sign", or reads nothing, and `△` usually comes out mute. That is why the
+ * pause legend carried `aria-hidden="true"`: the noise AND the information were hidden together. Here is the half that
+ * was missing to take the attribute off — the glyph stays on screen for whoever recognises it, and the WORD exists for
+ * whoever hears it.
  *
- * Só os quatro do PlayStation entram. `A`, `B`, `X`, `Y` e `0`–`3` já se leem, e traduzi-los para "letra A"
- * seria acrescentar ruído em nome de acessibilidade — o defeito que este item conserta pelo avesso.
+ * Only the four PlayStation ones are here. `A`, `B`, `X`, `Y` and `0`–`3` already read, and translating them to "letter
+ * A" would add noise in accessibility's name — the defect this item fixes, inside out.
  */
 export const PAD_GLYPH_SPOKEN: Record<string, string> = {
   '✕': 'pad.glyph.cross', '○': 'pad.glyph.circle', '□': 'pad.glyph.square', '△': 'pad.glyph.triangle',
 };
 export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'start',b0:'action2',b1:'action3',b2:'action1',b3:'action4',
-  // Os OMBROS (ADR-0160): L1/L2 no canto superior esquerdo, R1/R2 no direito. Só aparecem se o jogo os nomeia (ADR-0162).
+  // The SHOULDERS (ADR-0160): L1/L2 in the top-left corner, R1/R2 in the right. They show only if the game names them (ADR-0162).
   bl1:'leftShoulder',bl2:'leftTrigger',br1:'rightShoulder',br2:'rightTrigger' };
