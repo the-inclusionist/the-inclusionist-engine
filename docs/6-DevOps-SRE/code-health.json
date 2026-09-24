@@ -2299,8 +2299,8 @@
       ]
     },
     "ui/voice-control.ts": {
-      "codeLines": 101,
-      "decisionNodes": 10,
+      "codeLines": 102,
+      "decisionNodes": 11,
       "maxDepth": 2,
       "fanOut": 4,
       "globalReach": 0,

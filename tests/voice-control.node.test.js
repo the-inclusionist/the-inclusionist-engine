@@ -176,6 +176,22 @@ describe('ui/voice-control — what cannot start is SAID, and the icon goes back
     expect(b.log.reported[0], 'the line does not carry what actually broke').toContain('the delivery has the wrong file');
   });
 
+  /*
+   * 🔴 A START THAT FAILS AFTER THE 👄 WAS TURNED OFF (or the root was disposed, which turns it off) says nothing and writes
+   * nothing: nobody is waiting for it any more, and turning the icon "off" again would store off over a choice the child — or
+   * another root on the page — may have made since. Found when `dispose()` started switching voice off (ADR-0220).
+   */
+  it('🔴 [Boundary] a start that fails AFTER it was turned off stays silent and does not write off again', async () => {
+    let fail;
+    const b = bench({ loadRuntime: () => new Promise((_, reject) => { fail = reject; }) });
+    const going = b.control.apply(true);
+    await b.control.apply(false);
+    fail(new Error('the delivery has the wrong file'));
+    await going;
+    expect(b.log.off, 'a failure nobody waits for turned the 👄 off again').toBe(0);
+    expect(b.log.alerted, 'a failure nobody waits for was announced to the child').toEqual([]);
+  });
+
   it('⚠️ [Boundary] and it never reaches the caller as a rejection — `createGame` calls `apply` with `void`', async () => {
     const b = bench({ loadRuntime: async () => { throw new Error('boom'); } });
     await expect(b.control.apply(true)).resolves.toBeUndefined();

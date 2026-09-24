@@ -80,8 +80,12 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     void going?.stop();
   };
 
-  /** Nothing started: the child hears why, the adult reads it once, and the icon goes back to off. */
+  /**
+   * Nothing started: the child hears why, the adult reads it once, and the icon goes back to off. A failure that arrives after
+   * the 👄 was turned off (or the root disposed, ADR-0220) has nobody waiting for it and says and writes nothing.
+   */
   const failed = (kind: string, line: string, spoken: string): void => {
+    if (!on) return;
     if (!said.has(kind)) { said.add(kind); d.report(line); }
     d.alert(spoken);
     d.turnOff();
