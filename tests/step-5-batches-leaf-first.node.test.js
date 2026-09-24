@@ -17,16 +17,15 @@
 // Item 19 estimates FOUR batches; the graph gives at least four layers plus a small tail. That is asserted below instead
 // of rounded.
 //
-// The `game/` checks below guard the boundary: the cartridge left this repository (issue #111), so no engine module may
-// drag a `game/` path, directly or transitively.
-//
 // ========================= WHAT THIS FILE DOES NOT DECIDE =========================
 // Nothing about the AXIS (by genre · by subsystem · by declared contract). The leaf-first ordering is the same in all
 // the alternatives, because it is a fact of the graph and not of the choice. When the axis is decided, this computation
 // says in what ORDER to move — and it will already be here, true.
 //
-// ⚠️ It complements `tests/engine-boundary.node.test.js` rather than repeating it: that one holds the known EDGES and the
-// vocabulary; this one holds the graph's SHAPE (acyclicity, layers, concentration).
+// ⚠️ It complements `tests/engine-boundary.node.test.js` rather than repeating it: that one holds the EDGES to `game/` and
+// `educational/` (every published layer, `i18n` included, in every import form) and the vocabulary; this one holds the
+// graph's SHAPE (acyclicity, layers). It asks nothing about `game/`: with that folder absent, «an engine module drags it
+// transitively» reduces to «an engine module imports it directly», which is engine-boundary's question.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -47,6 +46,7 @@ const CAMADAS_ENGINE = (() => {
     .filter((c) => c && !c.includes('/'))
     .sort();
 })();
+
 function modulosDe(camada) {
   const dir = join(RAIZ, camada);
   if (!existsSync(dir)) return [];
@@ -88,17 +88,6 @@ function niveis() {
     for (const m of prontos) { nivel.set(m, n); restante.delete(m); }
   }
   return { nivel, restante };
-}
-
-/** Transitive closure of what `m` drags, including what leaves the engine. */
-function arrasta(m, visto = new Set()) {
-  const acc = new Set();
-  for (const d of DEPS.get(m) || []) {
-    if (visto.has(d)) continue;
-    acc.add(d);
-    if (SET.has(d)) for (const x of arrasta(d, new Set([...visto, m, d]))) acc.add(x);
-  }
-  return acc;
 }
 
 /** How many modules in each batch. */
@@ -160,31 +149,5 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
     const comDependencia = lote0.filter((m) => DEPS.get(m).length > 0);
     expect(comDependencia, 'lote 0 deveria ser folha absoluta').toEqual([]);
     expect(lote0.length).toBeGreaterThan(20); // the order of magnitude is what matters
-  });
-});
-
-describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão barata', () => {
-  /**
-   * KNOWN debt — EMPTY. It only shrinks, and it shrank to the end: the last engine modules that dragged `game/` stopped
-   * doing so by INJECTION (the shape ids), by a CHANGE OF ADDRESS (the curriculum catalogue, ADR-0032) and by CONTRACT
-   * (drawing receives declared entities, ADR-0030).
-   */
-  const ARRASTAM_JOGO = [];
-
-  it('[Right] só estes módulos de engine arrastam game/, direta ou transitivamente', () => {
-    const sujos = ENGINE.filter((m) => [...arrasta(m)].some((d) => d.startsWith('game/'))).sort();
-    expect(sujos, 'módulo de engine NOVO arrastando game/').toEqual([...ARRASTAM_JOGO].sort());
-  });
-
-  it('[Zero] `render/viz-setters` NÃO arrasta mais nada — a conta transitiva voltou a bater com a direta', () => {
-    // `viz-setters` once dragged `game/` only transitively; the direct and the transitive reading must agree that it drags
-    // nothing. (The module it dragged through, `render/textures`, left the engine, so it is not asked about here.)
-    expect(DEPS.get('render/viz-setters').some((d) => d.startsWith('game/'))).toBe(false);
-    expect([...arrasta('render/viz-setters')].some((d) => d.startsWith('game/'))).toBe(false);
-  });
-
-  it('[Boundary] a esmagadora maioria da engine é LIMPA — o passo 5 move, não conserta', () => {
-    const limpos = ENGINE.filter((m) => ![...arrasta(m)].some((d) => d.startsWith('game/')));
-    expect(limpos.length / ENGINE.length).toBeGreaterThan(0.9);
   });
 });

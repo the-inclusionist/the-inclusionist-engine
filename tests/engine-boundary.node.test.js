@@ -45,9 +45,10 @@ function camadasPublicadas() {
 }
 
 /**
- * Out of the EDGE scan, each for a different reason:
+ * Out of `MODULOS` (the VOCABULARY scan), each for a different reason:
  *
- *   · `i18n` are the dictionaries — pure data, and what they import is the dictionary's type.
+ *   · `i18n` are the dictionaries — pure data whose sentences name the game's words (`sr.quiz.*`) by duty. Its EDGES are
+ *     still scanned, below: an import is not a word.
  *   · `educational` has its OWN, harder rule, measured at the end of this file: it imports NOTHING, not even from
  *     `core/`. Putting it here would only ask about `game/`, which is less than it promises.
  */
@@ -60,6 +61,9 @@ function modulosDe(camada) {
   return readdirSync(dir).filter((f) => f.endsWith('.ts')).map((f) => `${camada}/${f}`);
 }
 const MODULOS = CAMADAS_ENGINE.flatMap(modulosDe);
+/** The modules whose IMPORT EDGES are scanned: every published layer but `educational` — `i18n` included, since a
+ *  dictionary importing `game/` would carry the game into the package like any other module. */
+const MODULOS_DE_ARESTA = camadasPublicadas().filter((c) => c !== 'educational').flatMap(modulosDe);
 // LINE ENDINGS ARE NORMALISED on reading, and that is not hygiene: with CRLF each line ends in CR, and CR is a LINE
 // TERMINATOR for a regex — `.` does not reach it, so the end anchor in /\/\/.*$/ never arrives and the comment stripper
 // REMOVES NOTHING, and end-of-line comments get accused as dependencies. A filter that fails OPEN is worse than none: it
@@ -122,7 +126,7 @@ function importsDeJogo(m) {
 describe('fronteira engine↔jogo — arestas de importação (ADR-0027 passo 4)', () => {
   it('[Right] NENHUM módulo de engine importa de game/ além da dívida conhecida', () => {
     const novas = {};
-    for (const m of MODULOS) {
+    for (const m of MODULOS_DE_ARESTA) {
       const extras = importsDeJogo(m).filter((i) => !(IMPORTS_CONHECIDOS[m] || []).includes(i));
       if (extras.length) novas[m] = extras;
     }
@@ -158,7 +162,7 @@ describe('fronteira engine↔currículo — a aresta que a mudança de endereço
 
   it('[Right] NENHUM módulo de engine importa de educational/ além da dívida conhecida', () => {
     const novas = {};
-    for (const m of MODULOS) {
+    for (const m of MODULOS_DE_ARESTA) {
       const extras = importsDeCurriculo(m).filter((i) => !(IMPORTS_CURRICULO[m] || []).includes(i));
       if (extras.length) novas[m] = extras;
     }
