@@ -553,13 +553,13 @@ function mappingProblems(field: string, declared: unknown, example: string, beca
 
 const keyboardMappingProblems: FieldCheck = (d) => mappingProblems(
   'keyboardMapping', d.keyboardMapping,
-  '(jogadores, assento) => ({ action1: ["KeyQ"] })',
+  '(players, seat) => ({ action1: ["KeyQ"] })',
   'the keyboard of two players is not the keyboard of one',
 );
 
 const padMappingProblems: FieldCheck = (d) => mappingProblems(
   'padMapping', d.padMapping,
-  '(jogadores, assento) => ({ action1: 3 })',
+  '(players, seat) => ({ action1: 3 })',
   'two seats may want different arrangements',
 );
 
