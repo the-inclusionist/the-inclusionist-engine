@@ -1,37 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-caa.ts — O SÉTIMO MENU: COMUNICAÇÃO AUMENTADA E ALTERNATIVA (ADR-0028, issue #57).
+// ui/settings-caa.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION MENU (ADR-0028, issue #57).
 //
-// O catálogo (quem existe, sob qual licença, em qual camada) mora em ./caa-sets.js; aqui só a tela. DI por
-// ctx, como os painéis irmãos: nada de global fora do que for injetado.
+// The catalogue (who exists, under which licence, in which tier) lives in ./caa-sets.js; only the screen is here. DI by
+// ctx, like the sibling panels: no global beyond what is injected.
 //
-// O QUE ESTE MENU É HOJE, dito sem maquiagem: um seletor de caixa de letra que já mostra, ao lado, os sete
-// conjuntos de pictogramas que virão. Só as duas caixas de letra funcionam — os pictogramas são milhares de
-// arquivos que ainda não entraram no repositório, e três deles dependem de negociação que não é nossa.
+// WHAT THIS MENU IS TODAY, said without make-up: a letter-case switch that already shows, beside it, the pictogram sets
+// to come. Only the letter case works — the pictograms are thousands of files that have not entered the repository, and
+// some of the sets depend on a negotiation that is not ours.
 //
-// Mostrar o que não funciona seria desonesto se o menu não dissesse POR QUE. Ele diz, e com duas respostas
-// diferentes de propósito: "em preparação" (a licença está resolvida, o trabalho é nosso) e "aguardando
-// negociação" (a permissão é de outra pessoa). Um educador que lê a primeira sabe esperar; que lê a segunda
-// sabe que esperar não adianta. Esconder tudo o que ainda não anda faria o educador concluir que o jogo não
-// faz pictograma nenhum — que é a conclusão errada, e a que mais custa a quem precisa deles.
+// Showing what does not work would be dishonest if the menu did not say WHY. It does, with two different answers on
+// purpose: in preparation (the licence is settled, the work is ours) and awaiting negotiation (the permission is someone
+// else's). An educator who reads the first knows to wait; one who reads the second knows waiting does not help. Hiding
+// everything that does not work yet would make the educator conclude the game has no pictograms at all — the wrong
+// conclusion, and the one that costs most to whoever needs them.
 //
-// LETRA vs PICTOGRAMA: a escolha de caixa é `letterCase` (core/state). NÃO existe um `caaMode` paralelo, e
-// isso é decisão: enquanto só duas opções forem escolhíveis, uma segunda variável para a mesma pergunta
-// seria duplicação com aparência de arquitetura. Ver a nota em core/state.
+// LETTER vs PICTOGRAM: the case choice is `letterCase` (core/state). There is NO parallel `caaMode`, and that is a
+// decision: while only one question is answerable, a second variable for it would be duplication dressed as
+// architecture. See the note in core/state.
 //
-// ========================= O KIT DE PAINEL, E POR QUE AS LINHAS DEIXARAM DE SER CADEIAS =========================
-// 🔴 Este painel construía as linhas como HTML em cadeia (`'<div class="ctrl-row">…'`) e refazia a lista inteira
-// por `innerHTML` a cada render. O kit (`ui/mount-panel` + `ui/panel-widgets`) constrói NÓS, e a adopção dele
-// pelos nove painéis é o ADR-0129, fechado pelo Dev em 22/09 com «Sim, terminamos a adoção».
+// ========================= THE PANEL KIT =========================
+// The rows are built as NODES by the kit (`ui/mount-panel` + `ui/panel-widgets`), which is ADR-0129 — «Sim, terminamos
+// a adoção», the Dev said.
 //
-// 🎯 A diferença que paga a conversão não é estética: a regra de menu do `CLAUDE.md` §4 — rótulo curto à vista,
-// TODA a prosa num único `.opt-hint` dentro do `<span>` — passa a valer POR CONSTRUÇÃO, porque é o
-// `controlRow` que a escreve. Em cadeia ela valia por convenção, e uma convenção repetida em quatro ficheiros
-// é uma convenção que diverge.
+// 🎯 What pays for it is not aesthetic: the menu rule of `CLAUDE.md` §4 — short label in view, ALL the prose in a single
+// `.opt-hint` inside the `<span>` — holds BY CONSTRUCTION, because `controlRow` writes it. In hand-built strings it held
+// by convention, and a convention repeated across files is a convention that drifts.
 //
-// 📌 E a montagem passa a ser UMA VEZ, com o render a REFLECTIR: era a lista inteira refeita a cada clique, o
-// que obrigava a religar as escutas em cada render e fazia o foco cair. Reetiquetar em vez de reconstruir é o
-// que o `labelRow` existe para fazer (ver o cabeçalho dele: o painel capturava o texto no intervalo de
-// arranque, onde o idioma ainda é o de recuo).
+// 📌 And mounting happens ONCE, with render REFLECTING: rebuilding the list on every click would force rewiring the
+// listeners on every render and drop the focus. Relabelling instead of rebuilding is what `labelRow` exists for.
 import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
 import type { LetterCase } from '../core/state.js';
@@ -42,32 +38,30 @@ import type { PanelShellCtx } from './panel-shell.js';
 import { toggleLabel } from './dom.js';
 
 /**
- * A linha das LETRAS é um INTERRUPTOR, não duas opções (decisão do Dev). Ligado = só maiúsculas; desligado =
- * maiúsculas e minúsculas. Uma pergunta binária apresentada como duas linhas obriga a criança a comparar as
- * duas para descobrir que são a mesma pergunta.
+ * The LETTERS row is a SWITCH, not two options (the Dev's decision). On = upper case only; off = upper and lower case.
+ * A binary question presented as two rows makes the child compare both to discover they are the same question.
  */
 export function upperCaseOn(letterCase: LetterCase): boolean {
   return letterCase === 'upper';
 }
 
-/** O id do controle de um conjunto. Sai do `key` do catálogo, que é único por construção (`CAA_BY_KEY`). */
+/** The id of a set's control. It comes from the catalogue `key`, unique by construction (`CAA_BY_KEY`). */
 export const caaControlId = (key: string): string => `caa-set-${key}`;
 
-/** O interruptor das letras. Sempre disponível: é o piso offline, e nunca dependeu de arquivo nenhum. */
+/** The letters switch. Always available: it is the offline floor, and never depended on any file. */
 export function lettersRowSpec(): ControlRowSpec {
   return { id: 'caa-caixa-alta', label: t('caa.letras'), hint: t('caa.letras.dica') };
 }
 
 /**
- * Uma linha do menu: RÓTULO CURTO e nada mais à vista.
+ * A menu row: a SHORT LABEL and nothing else in view.
  *
- * Tudo o que explica — nota, licença, situação — entra num único `.opt-hint`, que é o que a casca
- * (`fillExplain`) reconhece e MOVE para o rodapé. A primeira versão pendurava três blocos de prosa dentro da
- * linha, e o Dev viu o resultado: o menu virou um manual, mais parecido com um arquivo de configuração do que
- * com um menu de videogame. A explicação já tinha um lugar; eu é que não a pus lá.
+ * Everything that explains — note, licence, status — goes into a single `.opt-hint`, which the shell (`fillExplain`)
+ * recognises and MOVES to the footer. Prose hung inside the row turns the menu into a manual, closer to a configuration
+ * file than to a videogame menu — the Dev saw exactly that.
  *
- * O `rotuloAria` guarda o motivo, para quem navega por teclado ouvir por que a linha não responde sem precisar
- * caçar o rodapé. O `disabled` é do CONTROLE e não do texto: a situação some do rótulo, nunca do botão.
+ * `ariaLabel` carries the reason, so whoever navigates by keyboard hears why the row does not respond without hunting
+ * for the footer. `disabled` belongs to the CONTROL and not the text: the status leaves the label, never the button.
  */
 export function caaRowSpec(s: CaaSet): ControlRowSpec {
   const reason = caaReason(s);
@@ -82,11 +76,11 @@ export function caaRowSpec(s: CaaSet): ControlRowSpec {
 }
 
 /**
- * As três seções do menu, na ordem da decisão: a seção diz de QUEM é a vez de agir.
+ * The menu's three sections, in decision order: the section says WHOSE turn it is to act.
  *
- * 📌 Cada uma produz as próprias linhas em vez de filtrar o catálogo, porque a primeira não sai do catálogo —
- * as letras são um interruptor e não um conjunto, e foi essa a decisão do Dev que as tirou da lista. Uma
- * tabela em que a primeira linha é a excepção de todas as outras mente sobre o que ela é.
+ * 📌 Each produces its own rows instead of filtering the catalogue, because the first does not come from the catalogue
+ * — the letters are a switch and not a set, the Dev's decision that took them out of the list. A table whose first row
+ * is the exception to all the others lies about what it is.
  */
 export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: () => ControlRowSpec[] }> = [
   { title: 'caa.secao.agora', tag: 'caa.secao.agoraTag', rows: () => [lettersRowSpec()] },
@@ -103,11 +97,11 @@ export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: () 
 ];
 
 /**
- * Monta o interior do menu UMA VEZ. Chamada de novo, REETIQUETA em vez de reconstruir.
+ * Mounts the menu's inside ONCE. Called again, it RELABELS instead of rebuilding.
  *
- * ⚠️ Reetiquetar e não reconstruir, pela razão que o `labelRow` já escreve: as escutas ligam-se no arranque, e
- * refazer a linha deixaria um controle no documento e sem escuta — um botão morto com aparência de vivo
- * (ADR-0106 §5). E o texto foi capturado no intervalo de arranque, onde o idioma ainda é o de recuo.
+ * ⚠️ Relabel and not rebuild, for the reason `labelRow` already states: listeners are wired at boot, and remaking the
+ * row would leave a control in the document with no listener — a dead button that looks alive (ADR-0106 §5). And the
+ * text may have been captured at boot, while the language was still the fallback.
  */
 export function mountCaaInside(ctx: PanelShellCtx, list: HTMLElement): void {
   for (const section of CAA_SECTIONS) {
@@ -126,10 +120,10 @@ export function mountCaaInside(ctx: PanelShellCtx, list: HTMLElement): void {
 }
 
 /**
- * Uma linha nova, com o que o kit não sabe deste painel: a chave do conjunto e a trava.
+ * A new row, with what the kit does not know about this panel: the set's key and the lock.
  *
- * Nenhum conjunto está disponível hoje. Um botão que não faz nada é pior que a ausência, porque gasta a
- * confiança — então ele vem travado, e o motivo já está no `rotuloAria` para quem navega por teclado.
+ * No set is available today. A button that does nothing is worse than absence, because it spends trust — so it comes
+ * locked, and the reason is already in `ariaLabel` for whoever navigates by keyboard.
  */
 function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   const { row: row, controle: control } = controlRow(ctx, spec);
@@ -143,14 +137,14 @@ function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
 export interface SettingsCaaCtx {
   $: <T extends Element = Element>(sel: string) => T | null;
   srSay: (msg: string) => void;
-  /** Leitura viva de core/state `letterCase` (o binding é reatribuído pelo setter). */
+  /** Live read of core/state `letterCase` (the binding is reassigned by the setter). */
   getLetterCase: () => LetterCase;
-  /** `setLetterCaseValue` de core/state MAIS a reflexão que o jogo precisa (re-render do quiz, rótulos). */
+  /** core/state `setLetterCaseValue` PLUS the reflection the game needs (re-rendering its text, labels). */
   setLetterCase: (c: LetterCase) => void;
   frontOverlay: (el: HTMLElement | null) => void;
-  /** Move a prosa das linhas para o rodapé (ui/settings-panel `fillExplain`). Chamado a CADA render, e não só
-   *  ao abrir: reetiquetar uma linha devolve a dica para dentro dela, e sem esta chamada o menu vira manual
-   *  de novo ao primeiro clique — foi exatamente o que aconteceu. */
+  /** Moves the rows' prose to the footer (ui/settings-panel `fillExplain`). Called on EVERY render, not only on open:
+   *  relabelling a row puts the hint back inside it, and without this call the menu turns into a manual again on the
+   *  first click. */
   fillExplain: (card: HTMLElement | null) => void;
   restoreFocus?: (id: string) => boolean;
 }
@@ -163,10 +157,10 @@ export interface SettingsCaaApi {
 
 export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   /*
-   * 📌 O CTX DO KIT SAI DO PRÓPRIO NÓ DA LISTA, e não de um `document` global nem de um campo novo no contrato.
-   * `ownerDocument` é o documento onde aquela lista VIVE — que é exactamente o documento em que as linhas têm
-   * de nascer —, então o alcance global deste módulo continua ZERO (ADR-0221 passo 7d) e `SettingsCaaCtx`, que
-   * é superfície publicada, não ganha membro obrigatório (ADR-0172).
+   * 📌 THE KIT'S CTX COMES FROM THE LIST NODE ITSELF, not from a global `document` nor a new contract field.
+   * `ownerDocument` is the document that list LIVES in — exactly the document the rows must be born in —, so this
+   * module's global reach stays ZERO (ADR-0221) and `SettingsCaaCtx`, which is published surface, gains no required
+   * member (ADR-0172).
    */
   const panelCtx = (list: HTMLElement): PanelShellCtx => ({
     find: (sel) => ctx.$<HTMLElement>(sel),
@@ -179,7 +173,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
     const on = upperCaseOn(ctx.getLetterCase());
     b.classList.toggle('is-on', on);
     b.setAttribute('aria-pressed', String(on));
-    // O texto do interruptor é o ESTADO; o nome dele está no `<strong>` ao lado e no `aria-label`.
+    // The switch's text is the STATE; its name is in the `<strong>` beside it and in the `aria-label`.
     b.textContent = toggleLabel(on);
   }
 
@@ -192,7 +186,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
     refreshMarks();
   }
 
-  /** A marca de "saiu do padrão" (ADR-0029), na linha escolhida e no botão do menu. */
+  /** The left-the-default mark (ADR-0029), on the chosen row and on the menu's button. */
   function refreshMarks(): void {
     const changed = ctx.getLetterCase() !== DEFAULTS.letterCase;
     markChanged(ctx.$<HTMLElement>('#caa-letras'), changed);
@@ -217,10 +211,9 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   }
 
   /*
-   * As escutas ligam-se UMA VEZ, na lista, por delegação — e é a montagem única que o permite. Antes cada
-   * render refazia os nós, logo cada render religava tudo; e a escuta dos conjuntos era um corpo com um guarda
-   * e mais nada depois dele, que é código inerte com aparência de proteção. O que protege um conjunto
-   * indisponível é o `disabled` do próprio botão, escrito onde ele nasce.
+   * The listeners are wired ONCE, on the list, by delegation — which mounting once allows. What protects an
+   * unavailable set is its own button's `disabled`, written where it is born; a listener that only guards and then does
+   * nothing would be inert code dressed as protection.
    */
   const list = ctx.$<HTMLElement>('#caa-list');
   if (list) list.addEventListener('click', (ev) => {
@@ -235,10 +228,10 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   const closeBtn = ctx.$<HTMLElement>('#caa-close');
   if (closeBtn) closeBtn.addEventListener('click', close);
 
-  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
-  // O menu tem uma escolha só, então o reset é uma linha — mas vale dizer para onde ele volta: maiúsculas, que
-  // é onde a alfabetização brasileira costuma começar. Uma criança que trocou a caixa e não consegue mais ler
-  // a tela precisa de um caminho de volta que termine no que a professora dela usa.
+  // ---- reset THIS menu's defaults (ADR-0028) ----
+  // The menu has one choice, so the reset is one line — but where it returns to is worth saying: the default case,
+  // where Brazilian literacy usually starts. A child who switched the case and can no longer read the screen needs a way
+  // back that ends at what their teacher uses.
   const resetBtn = ctx.$<HTMLElement>('#caa-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
     ctx.setLetterCase(DEFAULTS.letterCase);

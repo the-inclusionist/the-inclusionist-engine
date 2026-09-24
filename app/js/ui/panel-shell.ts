@@ -1,115 +1,106 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/panel-shell — A CASCA DE UM PAINEL DE AJUSTES, construída em vez de exigida.
+// ui/panel-shell — THE SHELL OF A SETTINGS PANEL, built instead of required.
 //
-// ========================= O ACHADO QUE ISTO CONSERTA =========================
-// O segundo consumidor (a etapa C da issue #63) mediu-o e escreveu-o no achado 6:
+// ========================= WHAT THIS FIXES =========================
+// A second consumer (issue #63) measured it: a panel's ctx asks for `$` and `store`, but what it REALLY requires is
+// that the consumer's document contain five ids (`#typo`, `#typo-list`, `#typo-close`, …). Nothing in the type says so;
+// it is found by trial, and the failure mode is the worst possible one — the panel opens EMPTY, with no error.
 //
-//     «O CONTRATO DE MARKUP É INVISÍVEL. O ctx do painel pede `$` e `store`; o que ele REALMENTE exige é que
-//      o documento do consumidor contenha `#typo`, `#typo-list`, `#typo-preview`, `#typo-close` e
-//      `#typo-reset`. Nada no tipo diz isso — descobre-se por tentativa, e o modo de falhar é o pior
-//      possível: o painel abre VAZIO, sem erro.»
+// Each `ui/settings-*.ts` fills the INSIDE of its panel; this module builds the OUTSIDE — the veil, the card, the title,
+// the actions row and the reset button — and returns the ids it created, so the contract is stated instead of
+// discovered.
 //
-// Cada `ui/settings-*.ts` preenche o INTERIOR do seu painel; o EXTERIOR — o véu, o cartão, o título, o
-// rodapé de ações e o botão de restaurar — vinha do `app/index.html`, que saiu com o cartucho (#111). Desde
-// então a engine EXIGE cinco ids por painel e não os declara em lado nenhum.
+// ⚠️ AND THE MENU RULE OF `CLAUDE.md` §4 IS BUILT IN, not remembered. A panel's introduction goes in the card's
+// `data-explain-idle` — never in a `<p>` of prose at the top —, because a menu that explains item by item makes the
+// child READ EVERYTHING to find what they want (issue #62). The shell has no way to receive a `<p>` at the top.
 //
-// ⚠️ E A REGRA DE MENU DO `CLAUDE.md` §4 DEPENDIA DE ALGUÉM SE LEMBRAR DELA. A introdução de um painel vai no
-// `data-explain-idle` do cartão — nunca num `<p>` de prosa no topo —, porque um menu que explica item a item
-// obriga a criança a LER TUDO para achar o que procura. A issue #62 mandava editar seis blocos de markup para
-// isso; o markup saiu, e a regra ficou sem alvo. Aqui ela deixa de ser lembrete e passa a ser construção: a
-// casca não tem por onde receber um `<p>` no topo.
-//
-// ========================= A FORMA, QUE FOI MEDIDA E NÃO INVENTADA =========================
-// É a do painel de tipografia do `app/quiz.html`, que é o único que sobrou e o que o segundo consumidor
-// exercitou de facto:
+// ========================= THE SHAPE =========================
 //
 //     <div id="X" class="overlay" hidden>
 //       <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="X-title" [data-explain-idle]>
 //         <h2 id="X-title">…</h2>
-//         <button id="X-close">Voltar</button>                                      ← item 1 (ADR-0158)
-//         <div id="X-list" class="ctrl-list" role="group" aria-label="…"></div>   ← o interior, do settings-*
+//         <button id="X-close">…</button>                                           ← item 1 (ADR-0158)
+//         <div id="X-list" class="ctrl-list" role="group" aria-label="…"></div>   ← the inside, from settings-*
 //         <div class="overlay__actions">
 //           <button id="X-reset">…</button>
 //         </div>
 //       </div>
 //     </div>
 //
-// ⚠️ O RODAPÉ `.opt-explain` NÃO É CRIADO AQUI, e isso é deliberado: `ui/settings-panel.fillExplain` cria-o
-// quando move a primeira dica para lá. Criá-lo vazio aqui daria uma região `aria-live` que anuncia nada, e
-// duas mãos a criar o mesmo nó é como ele acabaria duplicado.
+// ⚠️ THE `.opt-explain` FOOTER IS NOT CREATED HERE, on purpose: `ui/settings-panel.fillExplain` creates it when it moves
+// the first hint there. Creating it empty here would give an `aria-live` region that announces nothing, and two hands
+// creating the same node is how it would end up duplicated.
 //
-// Sem `innerHTML`: tudo por `criar` + `textContent`, no molde de `ui/loop-crash` e `ui/focus-trap`. O título
-// e o rótulo da lista vêm do CHAMADOR já resolvidos — este módulo não traduz, para poder ser exercitado sem
-// dicionário.
+// No `innerHTML`: everything through `create` + `textContent`, like `ui/loop-crash` and `ui/focus-trap`. The title and
+// the list label come from the CALLER already resolved — this module does not translate, so it can be exercised with no
+// dictionary.
 //
-// ⚠️ E NÃO IMPORTA NADA. Uma casca que não usa `innerHTML` também não precisa de escapar texto: `textContent`
-// escapa por construção. Chegou a haver aqui um `escapeHtml` importado «por conveniência» — que é como um
-// módulo-folha deixa de o ser, e como um leitor futuro passa a procurar a interpolação que não existe.
+// ⚠️ AND IT IMPORTS NOTHING. A shell that does not use `innerHTML` does not need to escape text either: `textContent`
+// escapes by construction. An import "for convenience" is how a leaf module stops being one, and how a future reader
+// starts looking for an interpolation that does not exist.
 
-/** As três coisas do `document` de que a casca precisa. Mesma forma de `ui/loop-crash`. */
+/** The things from `document` the shell needs. The same shape as `ui/loop-crash`. */
 export interface PanelShellCtx {
-  /** `document.querySelector`, injetado — a casca nunca alcança o `document` global. */
+  /** `document.querySelector`, injected — the shell never reaches the global `document`. */
   find: (sel: string) => HTMLElement | null;
-  /** `document.createElement`, injetado. */
+  /** `document.createElement`, injected. */
   create: (tag: string) => HTMLElement;
 }
 
 export interface PanelShellSpec {
-  /** O id do painel: `typo`, `audio`, `visual`… Gera `#X`, `#X-title`, `#X-list`, `#X-reset`, `#X-close`. */
+  /** The panel's id: `typo`, `audio`, `visual`… It produces `#X`, `#X-title`, `#X-list`, `#X-reset`, `#X-close`. */
   id: string;
   /**
-   * O id da LISTA, quando ele não é `${id}-list`.
+   * The LIST's id, when it is not `${id}-list`.
    *
-   * 📏 MEDIDO NOS OITO EM 2026-09-11, e há exactamente uma divergência: `settings-motion` vive no overlay
-   * `#animation` — com `#animation-reset` e `#animation-close`, que casam — e lê a lista em **`#motion-list`**.
-   * É herança do monólito, onde o painel se chamava «motion» e o overlay «animation».
+   * 📏 Exactly one panel diverges: `settings-motion` lives in the `#animation` overlay — with `#animation-reset` and
+   * `#animation-close`, which match — and reads its list at **`#motion-list`**.
    *
-   * ⚠️ E A SAÍDA NÃO É RENOMEAR. O id que um `settings-*` lê é contrato com o markup de quem já o usa, e a
-   * regra do `CLAUDE.md` sobre tirar campo de contrato aplica-se inteira: mede-se o CATÁLOGO, não o consumidor
-   * da casa — e o catálogo vive em repositórios que não são este. Um campo opcional custa uma linha e não
-   * quebra ninguém; a renomeação custaria o painel de movimento a quem já tem markup.
+   * ⚠️ AND THE ANSWER IS NOT TO RENAME. The id a `settings-*` reads is a contract with the markup of whoever already uses
+   * it. An optional field costs one line and breaks no one; the rename would cost the motion panel to whoever already has
+   * markup.
    */
   listId?: string;
-  /** O título, JÁ TRADUZIDO. Vai por `textContent`. */
+  /** The title, ALREADY TRANSLATED. It goes in through `textContent`. */
   title: string;
-  /** O `aria-label` da lista, já traduzido — o nome do grupo que a criança ouve ao entrar nele. */
+  /** The list's `aria-label`, already translated — the group name the child hears on entering it. */
   listLabel: string;
-  /** Os rótulos dos dois botões, já traduzidos. `rotuloFechar` é a palavra de VOLTAR (item 1, ADR-0158). */
+  /** The two buttons' labels, already translated. `closeLabel` is the word for BACK (item 1, ADR-0158). */
   resetLabel: string;
   closeLabel: string;
   /**
-   * A introdução do painel, já traduzida. Vira o texto de REPOUSO do rodapé, via `data-explain-idle`.
+   * The panel's introduction, already translated. It becomes the footer's RESTING text, via `data-explain-idle`.
    *
-   * ⚠️ É O ÚNICO CAMINHO QUE ESTA CASCA OFERECE PARA UMA INTRODUÇÃO, e é o ponto da issue #62: não há por
-   * onde passar um parágrafo de prosa para o topo do cartão. Ausente = o painel não tem introdução, que é
-   * uma resposta legítima e não uma omissão.
+   * ⚠️ IT IS THE ONLY PATH THIS SHELL OFFERS FOR AN INTRODUCTION, which is the point of issue #62: there is no way to
+   * pass a paragraph of prose to the top of the card. Absent = the panel has no introduction, which is a legitimate
+   * answer and not an omission.
    */
   intro?: string;
 }
 
 /**
- * AS PALAVRAS DA CASCA, sem o id — tudo o que muda quando o idioma muda, e nada do que não muda.
+ * THE SHELL'S WORDS, without the id — everything that changes when the language changes, and nothing that does not.
  *
- * ⚠️ SEPARADAS DO `id` DE PROPÓSITO, e a separação é a que `ui/mount-panel` precisa: o id é identidade e
- * resolve-se uma vez; os rótulos são TEXTO TRADUZIDO e resolvem-se a cada abertura. Um tipo que os juntasse
- * obrigaria quem retraduz a repetir o id, e repetir uma identidade é como ela diverge.
+ * ⚠️ SEPARATE FROM THE `id` ON PURPOSE, the separation `ui/mount-panel` needs: the id is identity and resolves once; the
+ * labels are TRANSLATED TEXT and resolve on every open. A type joining them would make whoever retranslates repeat the
+ * id, and repeating an identity is how it drifts.
  */
 export type PanelLabels = Omit<PanelShellSpec, 'id'>;
 
-/** O que a casca devolve: o nó e os ids que ela criou, para o painel não os adivinhar. */
+/** What the shell returns: the node and the ids it created, so the panel does not guess them. */
 export interface PanelShell {
   overlay: HTMLElement;
   card: HTMLElement;
-  /** O `<h2>` do cartão. Exposto porque quem retraduz o painel escreve nele — ver `applyLabels`. */
+  /** The card's `<h2>`. Exposed because whoever retranslates the panel writes into it — see `applyLabels`. */
   title: HTMLElement;
   list: HTMLElement;
   reset: HTMLElement;
   close: HTMLElement;
-  /** Os cinco selectores que este painel passa a garantir. É o contrato, agora dito em vez de descoberto. */
+  /** The five selectors this panel guarantees. It is the contract, stated instead of discovered. */
   ids: { overlay: string; title: string; list: string; reset: string; close: string };
 }
 
-/** Os ids que um painel de `id` ocupa. Exportado porque um gate e um consumidor precisam de os nomear. */
+/** The ids a panel of `id` occupies. Exported because a gate and a consumer need to name them. */
 export function shellIds(id: string, customListId?: string): PanelShell['ids'] {
   return {
     overlay: id,
@@ -121,11 +112,10 @@ export function shellIds(id: string, customListId?: string): PanelShell['ids'] {
 }
 
 /**
- * Monta (ou reaproveita) a casca do painel `spec.id` e devolve as suas partes.
+ * Mounts (or reuses) the shell of panel `spec.id` and returns its parts.
  *
- * IDEMPOTENTE: se já existir um `#id`, ele é reutilizado e o conteúdo do cartão é reconstruído. Um painel que
- * a raiz monte duas vezes não pode acabar com dois véus — e a raiz monta mais do que uma vez, porque a
- * contagem de jogadores muda a grade de telas.
+ * IDEMPOTENT: if a `#id` already exists, it is reused and the card's content is rebuilt. A panel mounted twice cannot
+ * end up with two veils — and it can be mounted more than once (two cartridges on one page, ADR-0139).
  */
 export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell {
   const ids = shellIds(spec.id, spec.listId);
@@ -170,20 +160,17 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
 }
 
 /**
- * ESCREVE AS PALAVRAS DA CASCA — separado da construção porque elas mudam DEPOIS de ela existir.
+ * WRITES THE SHELL'S WORDS — separate from construction because they change AFTER it exists.
  *
- * 🔴 O DEFEITO QUE ISTO FECHA JÁ FOI MEDIDO NA BARRA DE ÍCONES, e está escrito em `boot/create-game.ts`: o
- * `initI18n` aplica pt de forma síncrona — para a página nunca ficar em branco — e, se o idioma preferido for
- * en ou es, PEDE a troca, que é assíncrona. Tudo o que o JavaScript monta nesse intervalo captura o texto de
- * recuo e ninguém o reconstrói. 📏 Medido num navegador em 2026-09-08, com `lang="en"`: a barra servia cinco
- * rótulos em inglês e três ainda em português, na mesma linha.
+ * 🔴 `initI18n` applies the fallback language synchronously — so the page is never blank — and, if the preferred
+ * language is another, REQUESTS the switch, which is asynchronous. Anything JavaScript builds in that gap captures the
+ * fallback text and nothing rebuilds it; and the language can also change mid-game.
  *
- * ⚠️ E NÃO SERVE RECONSTRUIR A CASCA PARA CORRIGIR O TÍTULO. `mountShell` esvazia o cartão, e cada
- * `ui/settings-*` liga o seu `#X-reset` UMA VEZ, no `init` — remontar deixa o botão de repor no documento e
- * sem escuta, que é um botão morto com aparência de vivo (ADR-0106 §5). Escrever só as palavras não toca em
- * escuta nenhuma.
+ * ⚠️ AND REBUILDING THE SHELL TO FIX THE TITLE DOES NOT WORK. `mountShell` empties the card, and each `ui/settings-*`
+ * wires its `#X-reset` ONCE, at `init` — remounting leaves the reset button in the document with no listener, a dead
+ * button that looks alive (ADR-0106 §5). Writing only the words touches no listener.
  *
- * IDEMPOTENTE: escrever os mesmos rótulos duas vezes é escrever os mesmos rótulos.
+ * IDEMPOTENT: writing the same labels twice is writing the same labels.
  */
 export function applyLabels(shell: PanelShell, r: PanelLabels): void {
   shell.title.textContent = r.title;
@@ -192,9 +179,9 @@ export function applyLabels(shell: PanelShell, r: PanelLabels): void {
   shell.close.textContent = r.closeLabel;
   // the arrow is drawn by the stylesheet, out of the name (ADR-0159 rule 12)
   shell.close.setAttribute('data-glifo', '↩');
-  // A introdução do painel é o texto de REPOUSO do rodapé (CLAUDE.md §4), nunca um `<p>` no topo.
-  // ⚠️ A AUSÊNCIA TEM DE APAGAR, e não só deixar de escrever: numa retradução para um dicionário que não tem
-  // a chave, o atributo antigo sobreviveria e o rodapé descansaria no idioma anterior.
+  // The panel's introduction is the footer's RESTING text (CLAUDE.md §4), never a `<p>` at the top.
+  // ⚠️ ABSENCE HAS TO ERASE, not just stop writing: on a retranslation into a dictionary without the key, the old
+  // attribute would survive and the footer would rest in the previous language.
   if (r.intro) shell.card.setAttribute('data-explain-idle', r.intro);
   else shell.card.removeAttribute('data-explain-idle');
 }
@@ -204,7 +191,7 @@ function button(ctx: PanelShellCtx, id: string, cssClass: string): HTMLElement {
   b.id = id;
   b.className = cssClass;
   b.setAttribute('type', 'button');
-  // O rótulo entra pelo `applyLabels`, por `textContent` e não `innerHTML`: um rótulo traduzido é dado de
-  // fora como qualquer outro, e um dicionário de consumidor pode trazer o que quiser dentro dele.
+  // The label comes in through `applyLabels`, by `textContent` and not `innerHTML`: a translated label is outside data
+  // like any other, and a consumer's dictionary can bring anything inside it.
   return b;
 }
