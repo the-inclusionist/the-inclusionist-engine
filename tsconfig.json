@@ -1,7 +1,7 @@
 {
-  "//": "Migração TS+Vite — Estágio 0 (docs/2-Architecture/plan-typescript-vite.md). FROUXO de propósito: allowJs deixa .js e .ts",
-  "//2": "coexistirem; checkJs:false ainda NÃO checa os .js. strict:true a partir do Estágio 3 (só os .ts são",
-  "//3": "checados). Aperto mais flags conforme converto módulo a módulo. noEmit: o Vite emite; o tsc só checa.",
+  "//": "The CHECKING config (docs/2-Architecture/plan-typescript-vite.md). allowJs lets the .js files (the tests and",
+  "//2": "the setups) sit beside the .ts; checkJs:false does NOT check them. strict:true applies to the .ts, and app/js",
+  "//3": "is all .ts now. noEmit: Vite emits the app and tsconfig.pkg.json emits the package; this one only checks.",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -12,12 +12,11 @@
     "checkJs": false,
     "noEmit": true,
     "strict": true,
-    // DECLARAÇÃO MORTA REPROVA (2026-08-26, issue #51). O CodeQL apontava 44 alertas no `game.js`, e VINTE E UM
-    // deles eram `js/unused-local-variable`. O arquivo não existe mais, o scanner mudou (o GitLab usa Semgrep),
-    // e a estratégia registrada na issue era "resolver por extração e revisar o que sobrar no fecho".
-    // Sobraram 22 — imports de tipo órfãos das refatorações, envelopes içados cujos chamadores migraram, e um
-    // `PIXI.Graphics` construído no boot que ninguém desenhava. Um passe de limpeza os tira uma vez; a flag
-    // impede que voltem, que é a diferença entre arrumar e resolver.
+    // A DEAD DECLARATION FAILS (issue #51). The scanners had flagged unused locals by the dozen, and the strategy recorded
+    // in the issue was "resolve by extraction and review what is left at the close". 22 were left — type imports
+    // orphaned by refactors, hoisted wrappers whose callers had moved, and a `PIXI.Graphics` built at boot that nobody
+    // drew. A cleanup pass removes them once; the flag keeps them from coming back, which is the difference between
+    // tidying and solving.
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "skipLibCheck": true,
