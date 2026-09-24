@@ -4,17 +4,17 @@
 // Types only, in core because `core/entity` holds a player's state and may not import upward (ADR-0173, issue #167);
 // `render/viz-axes` keeps the same names and the functions that apply them.
 
-/** O eixo do CONTRASTE. `padrao` não é ausência de tema: é o tema desenhado do jogo. */
+/** The CONTRAST axis. `padrao` is not the absence of a theme: it is the game's own drawn theme. */
 export type Theme = 'padrao' | 'hc3' | 'hc45' | 'hc7';
 
-/** O eixo da CORREÇÃO DE COR. `tricro` = visão tricromática, e é um nome, não uma ausência. */
+/** The COLOUR CORRECTION axis. `tricro` = trichromatic vision, and it is a name, not an absence. */
 export type Correction = 'tricro' | 'protan' | 'deuter' | 'tritan';
 
-/** A simulação, que NÃO é eixo. `null` = nenhuma a correr. */
+/** The simulation, which is NOT an axis. `null` = none running. */
 export type Simulation = null | 'sim-protan' | 'sim-deuter' | 'sim-tritan'
   | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind';
 
-/** O estado visual de UM jogador. Substitui a string única de `p.viz`. */
+/** The visual state of ONE player. Replaces the single `p.viz` string. */
 export interface VisualState {
   readonly tema: Theme;
   readonly correcao: Correction;

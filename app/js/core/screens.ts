@@ -1,32 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/screens — a grade de telas do multiplayer, num só lugar.
+// core/screens — the multiplayer screen grid, in one place.
 //
-// O jogo divide a janela em uma tela por jogador (pilar: multiplayer em telas SEPARADAS, sem split-screen —
-// ADR-0010). Quantas colunas e quantas linhas isso dá era uma conta de uma linha copiada em CINCO lugares:
-// ui/layout.ts (escala inteira), render/crt.ts (só as linhas, para o passo do scanline), ui/hud.ts (posição
-// de cada `.player-screen`), e no game.js em configureRender() e fitsN().
+// The game splits the window into one screen per player (pillar: multiplayer on SEPARATE screens, no split-screen —
+// ADR-0010). How many columns and rows that gives was a one-line sum copied into several places (the layout's integer
+// scale, the CRT's scanline step, the HUD's `.player-screen` positions), and one copy DIVERGED: without the `n<=1`
+// guard, n=0 gives zero columns and every geometry becomes NaN. It survived because that case is unreachable today,
+// not because anyone checked it — which is why the sum lives here once.
 //
-// A quinta cópia estava DIVERGENTE: `cols = n<=2 ? n : 2`, sem a guarda de `n<=1`. Para n>=1 as duas contas
-// concordam, então a divergência nunca chegou a aparecer — com n=0 uma devolve 1 e a outra devolve 0, e
-// dividir por 0 colunas daria NaN em toda a geometria. Vale a pena guardar essa história: a cópia errada
-// sobreviveu justamente porque o caso onde ela erra é inalcançável hoje, e não porque alguém a conferiu.
-//
-// Módulo FOLHA de propósito: zero dependências, nem de estado. `n` é parâmetro, nunca `numPlayers` global —
-// é isso que deixa a conta testável e que permite o render, o layout e o HUD importarem daqui sem que um
-// passe a depender do outro.
+// A LEAF module on purpose: no dependencies, not even on state. `n` is a parameter, never a global `numPlayers` —
+// that is what makes the sum testable and lets render, layout and HUD import it without depending on each other.
 
-/** Colunas e linhas da grade para `n` telas. */
+/** Columns and rows of the grid for `n` screens. */
 export interface ScreenGrid { cols: number; rows: number }
 
 /**
- * A grade para `n` jogadores: 1 -> 1x1 · 2 -> 2x1 · 3 e 4 -> 2x2.
- * `n` menor que 1 devolve a grade de uma tela, e não zero colunas.
+ * The grid for `n` players: 1 -> 1x1 · 2 -> 2x1 · 3 and 4 -> 2x2.
+ * `n` below 1 gives the grid of one screen, not zero columns.
  */
 export function screenGrid(n: number): ScreenGrid {
   return { cols: n <= 1 ? 1 : (n <= 2 ? n : 2), rows: n <= 2 ? 1 : 2 };
 }
 
-/** Dimensões em pixels de arte da grade de `n` telas (320x180 por tela — o pixel canônico do ADR-0010). */
+/** Size in art pixels of the grid of `n` screens (320x180 per screen — the canonical pixel of ADR-0010). */
 export function screenBaseSize(n: number): { w: number; h: number } {
   const { cols, rows } = screenGrid(n);
   return { w: 320 * cols, h: 180 * rows };

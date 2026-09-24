@@ -1,31 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/ring — A CONTA DO ANEL, e nada mais.
+// core/ring — THE RING ARITHMETIC, and nothing else.
 //
-// Ela morava em `ui/menu-nav`, e saiu de lá quando o item 7 do ADR-0044 fez `ui/pause-icons` precisar dela
-// também: `menu-nav` já importava `pause-icons` (por `showPauseOptions` e `PM_VISIBLE_ITEMS`), e a volta
-// fecharia um CICLO de importação. Ciclo em ESM não estoura na hora — estoura no boot, em TDZ, quando um dos
-// dois lê o outro durante a avaliação. É o tipo de defeito que aparece uma vez, em produção, e some ao ser
-// investigado.
+// It lived in `ui/menu-nav` and left when item 7 of ADR-0044 made `ui/pause-icons` need it too: `menu-nav` already
+// imported `pause-icons`, and the way back would close an import CYCLE. A cycle in ESM does not blow up at once — it
+// blows up at boot, in the TDZ, when one of the two reads the other during evaluation: the kind of defect that shows
+// once, in production, and vanishes when investigated.
 //
-// Módulo-folha de propósito: zero dependências, uma função, nenhuma I/O. `ui/menu-nav` continua a
-// reexportando, porque é de lá que os testes e os outros menus já a importavam — o nome público não muda.
+// A leaf module on purpose: no dependencies, one function, no I/O.
 
 /**
- * ANDA UM PASSO NUM ANEL — passar do último volta ao primeiro, e antes do primeiro está o último.
+ * TAKES ONE STEP ROUND A RING — past the last comes the first, and before the first is the last.
  *
- * Era `clampIndex`, que prendia nas pontas "porque o original nunca faz wrap em lista de itens". O ADR-0044
- * derrubou isso, e o motivo é de uso, não de gosto: com UM MENU POR TELA, toda lista pode ser um anel, e o
- * item mais indesejado (`quit`) fica a UMA tecla do mais urgente (`resume`) sem estar perto dele. Quem não
- * enxerga não varre a lista à procura do fim — ela pergunta "e antes do primeiro?" e recebe uma resposta.
+ * It was `clampIndex`, which stuck at the ends. ADR-0044 overturned that for a reason of use, not taste: with ONE MENU
+ * PER SCREEN every list can be a ring, and the least wanted item (`quit`) is ONE key from the most urgent (`resume`)
+ * without sitting next to it. A child who cannot see does not sweep the list looking for its end — they ask "and
+ * before the first?" and get an answer.
  *
- * A XAG 106 permite o anel exatamente para menu LINEAR, e o proíbe para grade 2-D de blocos: ali "voltar ao
- * primeiro" não tem significado espacial.
+ * XAG 106 allows the ring exactly for a LINEAR menu and forbids it for a 2-D grid of blocks, where "back to the first"
+ * has no spatial meaning.
  *
- * ⚠️ NAVEGAR LISTA É ANEL; AJUSTAR VALOR É LIMITE. `selectStep` e `rangeStep` (em ui/menu-nav) continuam
- * presos nas pontas, e a diferença é real: passar do volume máximo para o mínimo com uma tecla é um susto,
- * não uma conveniência — e num jogo com pistas de áudio para cegueira, um susto de volume é dano.
+ * ⚠️ WALKING A LIST IS A RING; ADJUSTING A VALUE IS A LIMIT. The select and range steps stay pinned at their ends, and
+ * the difference is real: jumping from the loudest volume to the quietest with one key is a fright, not a convenience —
+ * and in a game with audio cues for blindness, a volume fright is harm.
  */
 export function stepInRing(len: number, idx: number, delta: number): number {
   if (len <= 0) return 0;
-  return ((idx + delta) % len + len) % len; // o `+ len` extra: `%` de negativo em JS devolve negativo
+  return ((idx + delta) % len + len) % len; // the extra `+ len`: `%` of a negative in JS is negative
 }

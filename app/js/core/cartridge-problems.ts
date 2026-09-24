@@ -17,39 +17,39 @@
 // caller and arrives as an answer. That is what lets this module live in `core`, which is what the engine IS without a
 // browser (ADR-0173), and what lets a case exercise every line without a document.
 
-/** O que já foi MEDIDO na página sobre este cartucho: cada uma é uma linha pronta, ou nada. */
+/** What was already MEASURED in the page about this cartridge: each one is a finished line, or nothing. */
 export interface MeasuredCartridgeProblems {
-  /** As posições que o controle virtual não consegue montar. */
+  /** The positions the virtual pad cannot mount. */
   readonly padGaps: readonly string[];
-  /** A região do jogo redimensionada pelo próprio cartucho (ADR-0163). */
+  /** The game region resized by the cartridge itself (ADR-0163). */
   readonly resizedRegion: string | null;
-  /** O que o cartucho desenhou abaixo do piso da tela. */
+  /** What the cartridge drew below the screen's floor. */
   readonly drawnBelowFloor: string | null;
-  /** O género que o cartucho declarou, quando ele é dos que se avisam (ADR-0156). */
+  /** The genre the cartridge declared, when it is one that is warned about (ADR-0156). */
   readonly genreWarning: string | null;
 }
 
-/** O que o cartucho DECLAROU, e que só ele sabe — as três regras deste módulo leem-se daqui. */
+/** What the cartridge DECLARED, which only it knows — this module's three rules are read from here. */
 export interface DeclaredCartridgeFacts {
-  /** O selector do mundo, quando o cartucho declarou um ELEMENTO; `null` para qualquer outra forma de mundo. */
+  /** The world's selector, when the cartridge declared an ELEMENT; `null` for any other kind of world. */
   readonly worldSelector: string | null;
-  /** Esse selector está na página? Respondido por quem tem documento. */
+  /** Is that selector in the page? Answered by whoever holds a document. */
   readonly worldIsInPage: boolean;
-  /** O jogo pediu voz neural (`uses.neuralVoice`, ADR-0216)? */
+  /** Did the game ask for the neural voice (`uses.neuralVoice`, ADR-0216)? */
   readonly wantsNeuralVoice: boolean;
-  /** …ou declinou-a de propósito? */
+  /** …or decline it on purpose? */
   readonly declinesNeuralVoice: boolean;
-  /** Quantos assentos o cartucho declarou. */
+  /** How many seats the cartridge declared. */
   readonly seats: number;
-  /** Ele passou `setPauseActor`? */
+  /** Did it pass `setPauseActor`? */
   readonly setsPauseActor: boolean;
-  /** …ou declinou o ator de pausa de propósito? */
+  /** …or decline the pause actor on purpose? */
   readonly declinesPauseActor: boolean;
 }
 
 /**
- * As linhas deste cartucho, na ordem em que a criança as vê ao ler `problems`: primeiro o que foi MEDIDO na página,
- * depois o que foi DECLARADO — porque uma medição descreve o que já aconteceu e uma declaração descreve o contrato.
+ * This cartridge's lines, in the order a reader of `problems` meets them: first what was MEASURED in the page, then
+ * what was DECLARED — a measurement describes what already happened, a declaration describes the contract.
  */
 export function cartridgeProblems(measured: MeasuredCartridgeProblems, declared: DeclaredCartridgeFacts): string[] {
   return [
@@ -60,14 +60,14 @@ export function cartridgeProblems(measured: MeasuredCartridgeProblems, declared:
 }
 
 /**
- * As TRÊS regras que só a declaração do cartucho pode quebrar.
+ * The THREE rules only the cartridge's declaration can break.
  *
- * 📌 Cada uma nomeia o que a CRIANÇA perde e o que se conserta, que é a forma que o ADR-0169 exige — uma linha que só
- * diga «falta X» manda quem a lê adivinhar porque é que X importa.
+ * 📌 Each names what the CHILD loses and what fixes it, which is the shape ADR-0169 requires — a line that only says
+ * "X is missing" leaves its reader to guess why X matters.
  */
 function declaredProblems(d: DeclaredCartridgeFacts): string[] {
   const lines: string[] = [];
-  // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
+  // The declared world has to exist in the page — and it is the game that declares it, not the host.
   if (d.worldSelector && !d.worldIsInPage) {
     lines.push(`the declared world ${d.worldSelector} is not in the page: the colour correction and vision filters a child turns on reach nothing — fix \`world()\``);
   }

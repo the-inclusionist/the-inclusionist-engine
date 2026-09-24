@@ -1,46 +1,42 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/accessible-label — COMO SE CHAMA UM CONTROLE, e uma resposta só para quem vê e para quem escuta.
+// core/accessible-label — WHAT A CONTROL IS CALLED, and one answer for whoever sees and whoever listens.
 //
-// ========================= O DEFEITO QUE ISTO FECHA =========================
-// MEDIDO no jogo construído, pousando o cursor no botão de número de jogadores do menu inicial:
+// ========================= THE DEFECT THIS CLOSES =========================
+// MEASURED in the built game, with the cursor on the menu's number-of-players button:
 //
-//     o jogo narrou:         "◀ Number of players: 1 ▶, 1 of 4"
-//     o leitor de tela diz:  "Number of players: 1. Click on the left for fewer, on the right for more."
+//     the game narrated:        "◀ Number of players: 1 ▶, 1 of 4"
+//     the screen reader said:   "Number of players: 1. Click on the left for fewer, on the right for more."
 //
-// Duas frases diferentes para o MESMO item, no mesmo instante. Uma criança que usa leitor de tela E a
-// narração do jogo ouve o item duas vezes, de dois jeitos — e a versão do jogo lê os glifos `◀` e `▶`, que é
-// exatamente o ruído que o item 4 do ADR-0044 tirou da legenda da pausa.
+// Two different sentences for the SAME item at the same instant. A child using a screen reader AND the game's
+// narration hears the item twice, two ways — and the game's version reads the `◀` and `▶` glyphs, the very noise
+// item 4 of ADR-0044 took out of the pause legend. The rule already existed for the bar's icons (hovering or focusing
+// says the SAME truth a screen reader would announce); here it becomes one function every menu calls.
 //
-// A REGRA JÁ EXISTIA, escrita uma vez: `iconCaption` (ui/pause-icons) lê o `aria-label` do ícone justamente
-// para que "passar o mouse ou focar diga a MESMA verdade que um leitor de tela anunciaria". Ela valia para os
-// dez ícones e não para o resto dos menus. Aqui ela vira uma função, e as três chamadas passam a ser a mesma.
+// ========================= WHY A LEAF MODULE =========================
+// Its consumers sit in different modules of `ui/`, and `ui/menu-nav` already reaches `ui/pause-icons` — putting the rule
+// in one of them would close a cycle or make someone import from where it should not. The lesson of `core/ring`: a
+// cycle in ESM does not blow up at once, it blows up at boot in the TDZ, once, in production.
 //
-// ========================= POR QUE UM MÓDULO-FOLHA =========================
-// Três consumidores em camadas diferentes (`ui/activities-menu`, `ui/menu-nav`, `ui/pause-icons`), e
-// `ui/menu-nav` já importa `ui/pause-icons` — pôr a regra num deles fecharia ciclo ou obrigaria alguém a
-// importar de quem não devia. Mesma lição de `core/ring`, e ela é recente: ciclo em ESM não estoura na hora,
-// estoura no boot em TDZ, uma vez, em produção.
-//
-// Zero dependências, zero I/O, nenhum `document` global: recebe o elemento e devolve texto.
+// No dependencies, no I/O, no global `document`: it takes the element and returns text.
 
-/** A fatia mínima de `Element` que este módulo lê. Estrutural para o teste de node não precisar de DOM real. */
+/** The minimal slice of `Element` this module reads. Structural, so a node test needs no real DOM. */
 export interface LabelledElement {
   getAttribute(name: string): string | null;
   textContent: string | null;
 }
 
-/** Espaço em branco de markup vira UM espaço; pontas somem. */
+/** Markup whitespace becomes ONE space; the ends go. */
 const tidy = (s: string | null | undefined): string => (s || '').replace(/\s+/g, ' ').trim();
 
 /**
- * O nome do controle: `aria-label` quando existe, o texto visível quando não.
+ * The control's name: `aria-label` when there is one, the visible text when not.
  *
- * A ORDEM É A DECISÃO, e ela não é arbitrária: `aria-label` é o que a plataforma de acessibilidade JÁ vai
- * anunciar. Narrar outra coisa não acrescenta informação — cria uma segunda versão do mesmo item, e quem
- * escuta as duas não tem como saber qual é a verdadeira.
+ * THE ORDER IS THE DECISION, and it is not arbitrary: `aria-label` is what the accessibility platform is ALREADY going
+ * to announce. Narrating something else adds no information — it creates a second version of the same item, and whoever
+ * hears both has no way to know which is true.
  *
- * O texto visível entra quando não há rótulo declarado, que é o caso da maioria dos botões: ali as duas
- * fontes já coincidem por construção.
+ * The visible text comes in when no label is declared, which is most buttons: there the two sources agree by
+ * construction.
  */
 export function accessibleLabel(el: LabelledElement | null | undefined): string {
   if (!el) return '';

@@ -1,30 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/escape-html.ts — ESCAPAR TEXTO QUE VAI PARAR EM MARCAÇÃO. Módulo-folha: uma função, zero dependências.
+// core/escape-html.ts — ESCAPING TEXT THAT ENDS UP IN MARKUP. A leaf module: one function, no dependencies.
 //
-// ⚠️ NASCEU DENTRO DE `game/quiz.ts` E TEVE DE SAIR NO DIA SEGUINTE, o que vale registrar porque a razão não
-// é arrumação: `game/` é o CARTUCHO, e a issue #111 leva-o para um repositório próprio. O ajudante sairia com
-// ele, e o `consumer-quiz` — que é prova da ENGINE — nem sequer pode importar de `game/`, porque o
-// `engine-boundary` o proíbe. Um utilitário de segurança que vive do lado errado da fronteira é um utilitário
-// que o próximo consumidor reescreve, e duas versões de um escape divergem em silêncio.
+// ⚠️ It lives in the engine, not in a cartridge, because a security helper on the wrong side of a boundary is one the
+// next consumer rewrites — and two versions of an escape diverge in silence.
 //
-// ⚠️ E O ESCAPE É O SEGUNDO RECURSO, NÃO O PRIMEIRO. Onde o valor cabe num nó — `textContent`, `setAttribute`
-// —, é assim que ele entra, porque aí não há o que esquecer. Isto existe para o caso em que o texto está
-// dentro de um construtor denso de marcação, e nesse caso vem sempre acompanhado de um gate com conteúdo
-// hostil: um escape sem rasto é pior do que construir nós.
+// ⚠️ AND ESCAPING IS THE SECOND RESORT, NOT THE FIRST. Where the value fits a node — `textContent`, `setAttribute` —
+// that is how it goes in, because then there is nothing to forget. This exists for text inside a dense markup
+// builder, and there it always comes with a gate fed hostile content: an escape without a trace is worse than
+// building nodes.
 
 /**
- * Os CINCO caracteres, e cobre os dois contextos: elemento (`<` `>`) e ATRIBUTO (`"` `'`).
+ * The FIVE characters, covering both contexts: element (`<` `>`) and ATTRIBUTE (`"` `'`).
  *
- * O atributo é o que costuma faltar, e é o pior: dentro de um elemento uma aspa é inofensiva; dentro de
- * `aria-label="…"` ela FECHA o atributo e o que vem a seguir vira atributo — um `onmouseover` sem precisar de
- * uma única tag.
+ * The attribute is the one usually missing, and the worst: inside an element a quote is harmless; inside
+ * `aria-label="…"` it CLOSES the attribute and what follows becomes an attribute — an `onmouseover` without a single tag.
  *
- * ⚠️ O `&` É O PRIMEIRO, E A ORDEM É O DEFEITO CLÁSSICO DESTE AJUDANTE. Escapando-o por último, o `&` do
- * `&lt;` que acabou de ser produzido é escapado outra vez e a tela mostra `&lt;` literal. É silencioso porque
- * quem testa só com `<b>` nunca o vê: a saída ainda «parece» escapada.
+ * ⚠️ `&` GOES FIRST, AND THE ORDER IS THIS HELPER'S CLASSIC DEFECT. Escaped last, the `&` of the `&lt;` just produced is
+ * escaped again and the screen shows a literal `&lt;`. It is silent because a test with only `<b>` never sees it: the
+ * output still "looks" escaped.
  *
- * E ele escapa, não apaga. Apagar mudaria a palavra que a criança digitou, e uma atividade cujo texto muda
- * sozinho é um defeito diferente e igualmente sério.
+ * And it escapes, it does not delete. Deleting would change the word the child typed, and an activity whose text changes
+ * by itself is a different defect, and just as serious.
  */
 export function escapeHtml(s: string): string {
   return String(s)
