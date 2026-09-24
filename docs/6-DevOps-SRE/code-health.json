@@ -1113,8 +1113,8 @@
       "fanIn": 3
     },
     "platform/listener-scope.ts": {
-      "codeLines": 45,
-      "decisionNodes": 7,
+      "codeLines": 48,
+      "decisionNodes": 8,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,

@@ -48,12 +48,15 @@ const captureOf = (o: boolean | AddEventListenerOptions | undefined): boolean =>
 
 export function createListenerScope(real: Window): ListenerScope {
   const installed: Installed[] = [];
+  // A released scope is ended: a listener armed before the end and added after it (a timer) must not reach the window.
+  let released = false;
 
   const listen = (
     type: string,
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions,
   ): void => {
+    if (released) return;
     real.addEventListener(type, listener, options);
     installed.push({ type, listener, capture: captureOf(options), options });
   };
@@ -96,6 +99,7 @@ export function createListenerScope(real: Window): ListenerScope {
   });
 
   const releaseAll = (): void => {
+    released = true;
     // Drained as it goes: a listener that took another off while being removed would otherwise make this skip one, and a scope
     // released twice must not try to take the same listener off again.
     for (const e of installed.splice(0)) real.removeEventListener(e.type, e.listener, e.options);
