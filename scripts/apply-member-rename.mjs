@@ -234,6 +234,32 @@ export function leftovers() {
   return out;
 }
 
+/**
+ * Where an applied OLD name is still DECLARED as a member, and whether that declaration is OPTIONAL — the list to read
+ * after each layer, because the gate above deliberately does not police a spelling that is still declared.
+ * 📏 Measured on the platform layer: `ui/voice-settings` declared its own view of the voice engine with every member
+ * optional; the renamed engine stayed assignable to it, `tsc` was clean, and the panel saw no voices. An optional member
+ * with an old name is the first place to look.
+ */
+export function stillDeclared() {
+  const map = readMap();
+  const applied = Object.assign({}, ...map.layersApplied.map((l) => map.layers[l] ?? {}));
+  const oldNames = new Set(Object.keys(applied).map((k) => k.split('.').at(-1)));
+  const cfg = ts.getParsedCommandLineOfConfigFile(join(ROOT, 'tsconfig.json'), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} });
+  const out = [];
+  for (const f of cfg.fileNames.filter((x) => x.includes('/app/js/'))) {
+    const sf = ts.createSourceFile(f, readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    (function walk(n) {
+      if (isMember(n) && n.name && ts.isIdentifier(n.name) && oldNames.has(n.name.text)) {
+        const key = keyOf(n, relOf(f));
+        out.push({ key, optional: !!n.questionToken, excluded: !!map.excluded?.[key] });
+      }
+      n.forEachChild(walk);
+    })(sf);
+  }
+  return out;
+}
+
 function table(layer) {
   const map = readMap();
   const layers = layer ? [layer] : Object.keys(map.layers);
@@ -256,5 +282,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   } else if (mode === '--apply') apply(arg);
   else if (mode === '--table') table(arg);
   else if (mode === '--leftovers') for (const l of leftovers()) console.log(`${l.file}:${l.line}  ${l.name}  (${l.kind})`);
+  else if (mode === '--declared') for (const d of stillDeclared()) console.log(`${d.optional ? 'OPTIONAL ' : '         '}${d.key}${d.excluded ? '   (excluded)' : ''}`);
   else { console.error('usage: --list <layer> | --apply <layer> | --table [layer]'); process.exit(2); }
 }
