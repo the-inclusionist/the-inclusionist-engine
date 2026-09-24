@@ -67,8 +67,15 @@ request `g` of the filing asks to be put on record: the itemized list of those e
   **GPL-3.0-or-later**, compatible with the AGPL-3.0-or-later) and `onnxruntime-web` 1.27.0 (**MIT**) are catalogued
   heavy files (`app/js/platform/heavy-catalogue.ts`), fetched by the build into the delivery's `heavy/` folder and read
   from the page's own origin — only for a game that declares `uses: { neuralVoice: true }`. The published npm package
-  carries neither. The other runtimes and models the engine downloads (the vision runtime, the reading and command
-  models) are listed in the same catalogue, each with its source; their attribution is not yet in `CREDITS.md`.
+  carries neither. The other runtimes and models in the same catalogue, each credited in `CREDITS.md`:
+  - **vision** — MediaPipe `@mediapipe/tasks-vision` 1.0.1 and its face, gesture and hand models: **Apache-2.0**;
+  - **reading** — Whisper small (pt, exported here): **Apache-2.0**; Moonshine streaming small (en, and es exported
+    here): **MIT**;
+  - **commands** — the Vosk browser runtime built here from vosk-browser, vosk-api and Kaldi: **Apache-2.0**, with the
+    BSD, Zlib and MIT parts its `NOTICE` lists; the Vosk small models (pt, en-us, es): **Apache-2.0**.
+
+  ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
+  lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.
 - **Voices** — only **Kokoro-82M** (Apache-2.0 weights trained on permissive audio; `CREDITS.md`). A voice enters when its licence
   AND its starting point's (the model it was fine-tuned from, and that model's data) have been read — that chain took the Piper
   voices out (ADR-0207, [`notices/2026-09-14-piper-voices-withdrawn.md`](notices/2026-09-14-piper-voices-withdrawn.md)).

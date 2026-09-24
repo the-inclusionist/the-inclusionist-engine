@@ -61,10 +61,10 @@ Credit follows what was used. Until that date neural narration relied on:
   **Fangjun Kuang** ([@csukuangfj](https://github.com/csukuangfj)), who packaged Piper voices in the sherpa format.
 - **[Piper](https://github.com/rhasspy/piper)** (Michael Hansen / rhasspy, **MIT**) and the `@mintplex-labs/piper-tts-web` runtime (MIT).
 - **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)** (**GPL-3.0**) — the voices' phonemization (`piper_phonemize`).
-  ⚠️ **Mirrored since 2026-09-22** (issue #192), and the GPL obliges what follows: the project serves the WebAssembly build
-  of `espeak-ng` 1.0.2 from its own bucket, under `espeak-ng-1.0.2/`, and the **matching source** is published beside it in
-  the same folder (`espeak-ng-1.0.2/source/`). A binary served without its source would breach the licence, and a mirror is
-  distribution.
+  ⚠️ **Staged for the mirror on 2026-09-22 and ON HOLD** (issue #192): the WebAssembly build of `espeak-ng` 1.0.2 sits in
+  `the-inclusionist-lfs/espeak-ng-1.0.2/`, but the **matching source** the GPL requires beside it (`espeak-ng-1.0.2/source/`)
+  has not been staged, so the upload script skips the folder. A binary served without its source would breach the licence,
+  and a mirror is distribution. What `source/` needs is written in that folder's `LICENSE.md`.
 - **The voices and their dataset licences**, read on 2026-09-14: `pt_BR-faber-medium` (NabuCasa/voice-datasets, CC0),
   `es_MX-claude-high` (HirCoir/Piper-TTS-Spanish, Apache-2.0), `en_US-amy-medium` (MycroftAI/mimic3-voices, «See URL»),
   `en_US-ryan-medium` (roholazandie/ryanspeech, CC BY-NC-SA 4.0). The Dev's answer on Ryan — «nosso projeto não tem fins
@@ -79,9 +79,109 @@ What speaks it, fetched by the engine beside the model: **[eSpeak NG](https://gi
 (`espeak-ng` 1.0.2, **GPL-3.0-or-later**) turns the sentence into phonemes, and
 **[ONNX Runtime Web](https://github.com/microsoft/onnxruntime)** (`onnxruntime-web` 1.27.0, **MIT**, Microsoft) runs the graph.
 
+- **Kokoro-82M** (catalogue `voz:kokoro:*`: the fp32 model, the tokenizer and one style table per voice) — **Apache-2.0**.
+  Licence statement and NOTICE: `the-inclusionist-lfs/kokoro-82m-v1.0-onnx/LICENSE.md` and `NOTICE.md`; the Apache-2.0 text
+  itself is upstream (`huggingface.co/hexgrad/Kokoro-82M`), not held in that folder.
+- **eSpeak NG in WebAssembly** (catalogue `voz:runtime:fonemas*`: `espeak-ng.js` and `espeak-ng.wasm` from the npm package
+  `espeak-ng` 1.0.2, built by the `ianmarmour/espeak-ng.js` repository) — **GPL-3.0-or-later**, as its `package.json`
+  declares. The package carries the GPL-3.0 text (`LICENSE`) and no copyright line of its own; the eSpeak NG revision the
+  build was made from is not stated in the package. The source obligation is the one written under Piper above.
+- **ONNX Runtime Web** (catalogue `voz:runtime:onnx*`: `ort.webgpu.bundle.min.mjs` and the `ort-wasm-simd-threaded.jsep` pair)
+  — **MIT**. The bundle's own header: «Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT
+  License.» Mirror notice: `the-inclusionist-lfs/onnxruntime-web-1.27.0/LICENSE.md`; the MIT text itself is upstream
+  (`github.com/microsoft/onnxruntime`), not held in that folder or in the npm package.
+
 > The voice's files are **downloaded once** — by the build into the delivery's `heavy/` folder, and from there into the
 > device's cache — and run **100% locally** afterwards: no child's audio leaves the device. See ADR-0216 (the engine loads
 > the voice), ADR-0198 and ADR-0207 in `the-inclusionist-docs · docs/2-Architecture/adr/`.
+
+## The other runtimes and models the engine downloads
+
+Every file below is listed in `app/js/platform/heavy-catalogue.ts` with its address and sha256, fetched by the build into the
+delivery's `heavy/` folder (or from the project's mirror, `the-inclusionist-lfs/`, with the same bytes) and run on the device.
+The published npm package carries none of them. How each one is used and rebuilt: `docs/6-DevOps-SRE/models.md`.
+
+⚠️ **What the licence lines rest on.** Only the Vosk runtime's folder holds the upstream licence text and NOTICE. The other
+folders hold a `LICENSE.md` the project wrote from the upstream page it read, not the upstream text: the
+licence is stated, and the copyright line an MIT or Apache-2.0 notice carries is, where marked **UNVERIFIED**, not held
+anywhere in this project yet.
+
+## MediaPipe tasks-vision and its face, gesture and hand models — Google — Apache-2.0
+
+The eye, face and hand control (`platform/vision`; catalogue `visao:*`): the `@mediapipe/tasks-vision` 1.0.1 runtime
+(`vision_bundle.mjs`, `vision_wasm_internal.js`, `vision_wasm_internal.wasm`, from jsDelivr) and the float16 **Face
+Landmarker**, **Gesture Recognizer** and **Hand Landmarker** models (`storage.googleapis.com/mediapipe-models`).
+
+- **Licence:** `Apache-2.0`, as stated in `the-inclusionist-lfs/mediapipe-tasks-vision-1.0.1/LICENSE.md` and in ADR-0203's
+  erratum (the runtime, and the face model card with its blendshapes).
+- **Copyright line: UNVERIFIED.** The runtime files carry no licence header, the `.task` bundles carry no licence file, and the
+  package is not installed here. The Apache-2.0 text lives upstream, with the MediaPipe project.
+- ⚠️ **The hand and gesture model cards were not read** (the mirror's `LICENSE.md` says so; issue #192). Their terms are
+  UNVERIFIED until they are.
+
+## Whisper small — OpenAI — Apache-2.0
+
+The Portuguese reading model (catalogue `reading:pt:*`): `openai/whisper-small`, **exported to ONNX and quantized by this
+project** (`scripts/models/export-whisper-small.py`), with the upstream tokenizer, configuration and mel filterbank copied
+unchanged. The export was made here because the ready-made `onnx-community/whisper-small` states no licence of its own.
+
+- **Licence:** `Apache-2.0`, as stated in `the-inclusionist-lfs/whisper-small-onnx/LICENSE.md` and in ADR-0203's erratum.
+- **Copyright line: UNVERIFIED** — not held locally. The Apache-2.0 text lives upstream (`huggingface.co/openai/whisper-small`).
+- The ONNX files are a derivative work (converted and quantized); `whisper-small-onnx/README.md` says what was changed.
+
+## Moonshine streaming small — Useful Sensors / Moonshine AI — MIT
+
+The English and Spanish reading models (catalogue `reading:en:*`, `reading:es:*`):
+
+- **English:** the ONNX export `Workmind/moonshine-streaming-small-ONNX` (base model `UsefulSensors/moonshine-streaming-small`),
+  copied unchanged. Licence `MIT`, as the export declares (`license: mit`), read on 2026-09-18 and stated in
+  `the-inclusionist-lfs/moonshine-streaming-small-onnx/LICENSE.md`.
+- **Spanish:** `moonshine-ai/moonshine-streaming-small-es` at revision `8cb0974f29ca24d6b645518c430efc8c57cd0073`, **exported to
+  ONNX by this project** (`scripts/models/export-moonshine-streaming-es.py`; the decoders quantized to q8). Licence `MIT`, as the
+  upstream model declares, stated in `the-inclusionist-lfs/moonshine-streaming-small-es-onnx/LICENSE.md`.
+- **Copyright line: UNVERIFIED** for both. MIT requires its copyright notice and permission notice to travel with every copy,
+  and neither folder holds that text yet; it lives upstream, on each model's Hugging Face page.
+
+## Vosk for the browser — vosk-browser, vosk-api and Kaldi — Apache-2.0
+
+The command runtime (catalogue `commands:runtime*`: `vosk.wasm.js`, `vosk.worker.js`, `vosk.wasm`), **built by this project**
+(`scripts/models/build-vosk-browser.ps1`) from `lichess-org/vosk-browser` `50a6347` and `alphacep/vosk-api` `d714dff`, with one
+change: the link flag `-s DYNAMIC_EXECUTION=0` (`scripts/models/vosk-browser-dynamic-execution.patch`), so it runs under the
+engine's Content-Security-Policy.
+
+- **Licence:** `Apache-2.0`. The full text is `the-inclusionist-lfs/vosk-browser-dynamic-execution-0/LICENSE`, and the attribution
+  notices are that folder's `NOTICE`, which opens:
+
+  ```
+  Vosk-Browser
+  Copyright 2020-2022 Ciaran O'Reilly
+
+  The Initial Developer of the the WASM bindings
+  (https://github.com/dtreskunov/tiny-kaldi) for the VOSK API is Denis
+  Treskunov (https://github.com/dtreskunov).
+  Copyright 2020, Denis Treskunov
+
+  The Developer of the VOSK API (https://github.com/alphacep/vosk-api) is
+  Alpha Cephei Inc (https://alphacephei.com/en/).
+  Copyright 2019-2022 Alpha Cephei Inc. All Rights Reserved.
+  ```
+
+- **What the binary also contains**, each with its notice in the same `NOTICE`: **Kaldi** (Apache-2.0, per-file authors listed
+  there), **OpenFst** (Apache-2.0, Copyright 2005-2010 Google, Inc.), **CLAPACK** (BSD-3-Clause, Copyright (c) 1992-2008 The
+  University of Tennessee), **clapack-wasm** (Apache-2.0, INRIA), **zlib** (Zlib), **libarchive** (BSD-2-Clause) and
+  **Emscripten and musl** (MIT). The `NOTICE` is the full list and its text governs; this page only points at it.
+
+## Vosk small models — Alpha Cephei — Apache-2.0
+
+The command models (catalogue `commands:model:*`): `vosk-model-small-pt-0.3`, `vosk-model-small-en-us-0.15` and
+`vosk-model-small-es-0.42`, **repacked unchanged** from alphacephei's zips into the `.tar.gz` vosk-browser loads
+(`scripts/models/repack-vosk-models.py`).
+
+- **Licence:** `Apache-2.0`, as stated in `the-inclusionist-lfs/vosk-models/LICENSE.md` (from `alphacephei.com/vosk/models`).
+  ⚠️ **The archives themselves state no licence**: their `README`s carry only a copyright line, and the Apache-2.0 text is not
+  held locally.
+- **Copyright lines, as each archive's `README` states them:** en-us 0.15 «Copyright 2020 Alpha Cephei Inc»; es 0.42
+  «Copyright 2022-2050 AC Technologies LLC»; pt 0.3 **none** (its `README` says only what the model is).
 
 ## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
 
