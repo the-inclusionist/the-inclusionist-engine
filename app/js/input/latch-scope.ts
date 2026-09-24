@@ -1,119 +1,110 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/latch-scope — A ALTERNÂNCIA É DE UM TRANSPORTE, e não da criança (ADR-0104 §C, issue #114).
+// input/latch-scope — THE TOGGLE BELONGS TO A TRANSPORT, not to the child (ADR-0104 §C, issue #114).
 //
-// ========================= O DEFEITO QUE ISTO CONSERTA, E ELE NÃO TINHA NOME =========================
-// «Segurar vira alternar» estava guardado POR JOGADOR — `incl_togglemove_p0` —, o que quer dizer: por
-// pessoa, e para todos os aparelhos ao mesmo tempo. Uma criança que liga a alternância no controle de TELA,
-// porque num botão virtual ninguém segura com conforto, liga-a também no teclado, onde segurar uma tecla é
-// exactamente o que ela sabe fazer. Ela não pediu isso e nada lho diz.
+// ========================= THE DEFECT THIS FIXES, WHICH HAD NO NAME =========================
+// "Holding becomes toggling" was stored PER PLAYER — `incl_togglemove_p0` — that is: per person, and for every device
+// at once. A child who turns the toggle on for the on-screen pad, because nobody holds a virtual button comfortably,
+// turns it on for the keyboard too, where holding a key is exactly what they can do. They did not ask for that and
+// nothing tells them.
 //
-// ⚠️ E O REPOSITÓRIO JÁ CONHECIA O DEFEITO SEM O NOMEAR: o `core/state` traz a nota «a alternância do botão
-// de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é CONTEXTO e não escolha».
-// Contexto é precisamente a palavra: o valor depende do aparelho em que a criança está. Guardá-lo por pessoa
-// obrigava a distinguir «ligou porque quis» de «ligou porque é toque» com uma marca à parte (o ADR-0029), e
-// essa marca existia para compensar uma chave que estava no escopo errado.
+// ⚠️ AND THE REPOSITORY ALREADY KNEW THE DEFECT WITHOUT NAMING IT: the run toggle is born off at the factory and switches
+// itself on with the on-screen pad, which is CONTEXT and not choice. Context is exactly the word: the value depends on
+// the device the child is on. Keeping it per person forced a separate mark (ADR-0029) to tell "turned on because they
+// wanted" from "turned on because it is touch" — a mark compensating for a key in the wrong scope.
 //
-// O mapeamento de teclas já se guarda por transporte, e sempre se guardou. Esta é a mesma coisa.
+// The key mapping is already kept per transport, and always was. This is the same thing.
 //
-// ========================= E PARA QUATRO TRANSPORTES ELA NÃO É ESCOLHA NENHUMA =========================
-// ⚠️ Olhos, rosto, gestos e fala emitem UM COMANDO DE CADA VEZ. Não há como olhar para a esquerda e para o
-// botão de pular ao mesmo tempo; não há como dizer duas palavras em simultâneo. Neles a alternância não é
-// preferência — é a única forma de o controle funcionar, e oferecê-la como opção seria oferecer a uma
-// criança a escolha de um controle que não funciona.
+// ========================= AND FOR FOUR TRANSPORTS IT IS NO CHOICE AT ALL =========================
+// ⚠️ Eyes, face, gestures and speech emit ONE COMMAND AT A TIME. There is no looking left and at the jump button at once;
+// no saying two words simultaneously. On them the toggle is not a preference — it is the only way the control works, and
+// offering it as an option would offer a child the choice of a control that does not work.
 //
-// Isto resolve, de passagem, uma tensão que o ADR-0084 tinha contra a sua própria regra «valor salvo
-// significa escolha»: a alternância a ligar-se sozinha na webcam era uma excepção àquela regra. Deixa de
-// ser, porque nestes transportes ela nunca foi um valor salvo — é uma propriedade do transporte.
+// This resolves, in passing, a tension ADR-0084 had with its own rule "a stored value means a choice": the toggle
+// switching itself on for the camera was an exception to that rule. It no longer is, because on these transports it was
+// never a stored value — it is a property of the transport.
 //
-// ⚠️ OS QUATRO AINDA NÃO EXISTEM COMO TRANSPORTE, e a regra fica escrita à mesma. Medido em 2026-09-08: o
-// `defaultTransports` devolve três (gamepad, teclado, toque), e a webcam de então sintetizava `KeyboardEvent` — do
-// ponto de vista da engine, ela ERA o teclado (os olhos passaram a apertar o controle virtual: ADR-0111, #197). Os três ícones da barra rápida dizem-no: `face`, `eyes` e
-// `voice` estão marcados `soon`. Escrever a regra agora custa nada e faz com que eles cheguem COBERTOS, em
-// vez de chegarem a uma excepção que alguém terá de se lembrar de abrir.
+// The rule was written before those four transports existed, so they arrived COVERED instead of arriving at an
+// exception someone would have to remember to open.
 //
-// Módulo-folha: não importa nada, nem sequer o `platform/storage` cujas chaves ele monta.
+// A leaf module: it imports nothing, not even the `platform/storage` whose keys it builds.
 
 /**
- * Os transportes que emitem UM COMANDO DE CADA VEZ, e em que a alternância está sempre ligada.
+ * The transports that emit ONE COMMAND AT A TIME, on which the toggle is always on.
  *
- * Os nomes são os que a barra rápida já usa para os ícones (`face`, `eyes`, `voice`), mais `gestos`, que é o
- * quarto que o ADR-0104 §C nomeia. Ficam em português como o resto do vocabulário de transporte
- * (`teclado`, `toque`) — `defaultTransports` já mistura, e mudar isso é outra conversa.
+ * The values are transport names, which stay Portuguese like the rest of that vocabulary (`teclado`, `toque`): they are
+ * stored, and renaming a stored value loses what the child saved.
  */
 export const ONE_COMMAND_AT_A_TIME: ReadonlySet<string> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
 
 /**
- * Neste transporte a alternância está sempre ligada?
+ * Is the toggle always on for this transport?
  *
- * ⚠️ «Sempre ligada» e «ligada por omissão» são coisas diferentes, e a diferença é a que o ADR-0104 §C faz:
- * um padrão pode ser mudado, e mudá-lo aqui deixaria o controle inutilizável. Por isso o valor guardado nem
- * chega a ser lido nestes transportes — ver `latchOf`.
+ * ⚠️ "Always on" and "on by default" are different things, and the difference is ADR-0104 §C's: a default can be changed,
+ * and changing it here would make the control unusable. So the stored value is not even read on these transports — see
+ * `latchOf`.
  */
 export function latchAlwaysOn(transport: string): boolean {
   return ONE_COMMAND_AT_A_TIME.has(transport);
 }
 
 /**
- * A opção deve ser OFERECIDA para este transporte?
+ * Should the option be OFFERED for this transport?
  *
- * O contrário de `latchAlwaysOn`, e existe com nome próprio porque quem pergunta é outro: um
- * chama para decidir o estado, o outro para decidir se desenha o botão. Um painel que desenhasse o botão e
- * ignorasse o clique seria pior do que não o desenhar.
+ * The opposite of `latchAlwaysOn`, with a name of its own because a different caller asks: one decides the state, the
+ * other whether to draw the button. A panel that drew the button and ignored the click would be worse than not drawing it.
  */
 export function latchIsOptional(transport: string): boolean {
   return !latchAlwaysOn(transport);
 }
 
 /**
- * A chave de armazenamento da alternância, agora com o transporte no nome.
+ * The toggle's storage key, with the transport in its name.
  *
- * ⚠️ FUNÇÃO, e não concatenação no ponto de uso, pela razão que o `platform/storage` já escreveu sobre as
- * chaves por jogador: «virar função aqui é o que impede que um deles escreva num nome torto». Não é
- * hipótese — o `ui/settings-mobility` reescrevia `'incl_togglerun_p' + i` à mão, com um comentário ao lado a
- * dizer «== toggleRunP de platform/storage». Duas cópias de um nome mudam uma de cada vez.
+ * ⚠️ A FUNCTION, and not concatenation at the call site, for the reason `platform/storage` gives for the per-player keys:
+ * as a function, no call site can write a crooked name. Not a hypothesis — the mobility panel once rewrote the per-player
+ * key by hand, with a comment beside it saying it matched storage's. Two copies of a name change one at a time.
  *
- * `base` é `togglemove` ou `togglerun`, os dois nomes que já existem no armazenamento da criança.
+ * `base` is `togglemove` or `togglerun`, the two names that already exist in the child's storage.
  */
 export function latchKey(base: string, player: number, transport: string): string {
   return `incl_${base}_p${player}_${transport}`;
 }
 
 /**
- * A chave ANTIGA, por jogador e sem transporte. Continua a ser lida, e nunca mais escrita.
+ * The OLD key, per player and without a transport. Still read, never written again.
  *
- * ⚠️ ELA HERDA PARA TODOS OS TRANSPORTES, e a escolha custa uma frase a explicar. O valor velho foi posto
- * pela criança nalgum contexto, e não há como saber qual — a chave não o registava, que é o defeito. As
- * saídas eram três: perder o ajuste dela, adivinhar um transporte, ou herdar para todos. Herdar para todos é
- * a única que não tira nada a quem depende do ajuste, e o vazamento que ela mantém dura só até a criança
- * mexer no assunto uma vez em cada aparelho. Perder o ajuste custaria mais, e a quem menos pode pagar.
+ * ⚠️ IT IS INHERITED BY EVERY TRANSPORT, and the choice takes a sentence to explain. The old value was set by the child in
+ * some context, and there is no way to know which — the key did not record it, which is the defect. The ways out were
+ * three: lose their setting, guess a transport, or inherit for all. Inheriting for all is the only one that takes nothing
+ * from whoever depends on the setting, and the leak it keeps lasts only until the child touches the setting once on each
+ * device. Losing the setting would cost more, and to whoever can least afford it.
  *
- * É também o padrão que este repositório já escolheu para este mesmo valor: o `KEYS.toggleMoveLegacy` existe
- * desde a migração anterior, e a nota do `platform/storage` diz porquê — «a chave velha fica onde está: é
- * dado da criança, não meu para apagar, e a sua permanência é o que torna um retorno possível».
+ * It is also the pattern this repository chose for this same value before: the old key stays where it is — it is the
+ * child's data, not mine to delete, and keeping it is what makes a way back possible.
  */
 export function legacyLatchKey(base: string, player: number): string {
   return `incl_${base}_p${player}`;
 }
 
-/** O que se sabe ao resolver a alternância de um transporte. */
+/** What is known when resolving a transport's toggle. */
 export interface LatchReading {
-  /** O que está guardado para ESTE transporte. `null` = nunca foi escrito. */
+  /** What is stored for THIS transport. `null` = never written. */
   readonly fromTransport: boolean | null;
-  /** O que está guardado na chave antiga, sem transporte. `null` = nunca foi escrito. */
+  /** What is stored under the old key, without a transport. `null` = never written. */
   readonly fromLegacy: boolean | null;
-  /** O padrão de fábrica (`DEFAULTS.toggleMove` / `DEFAULTS.toggleRun`). */
+  /** The factory default (`DEFAULTS.toggleMove` / `DEFAULTS.toggleRun`). */
   readonly byDefault: boolean;
 }
 
 /**
- * A alternância deste transporte, resolvida.
+ * This transport's toggle, resolved.
  *
- * A ordem é: transporte de um comando → SEMPRE ligada, e nem se lê o resto · valor deste transporte · valor
- * legado · padrão de fábrica.
+ * The order: one-command transport → ALWAYS on, and nothing else is read · this transport's value · the legacy value ·
+ * the factory default.
  *
- * ⚠️ O TRANSPORTE DE UM COMANDO VEM PRIMEIRO, e não por atalho: se ele lesse o guardado primeiro, uma
- * criança que tivesse desligado a alternância no teclado herdaria esse `false` pelo legado e ficaria com um
- * controle de olhar que não responde — o pior defeito possível, no controle de quem tem menos alternativas.
+ * ⚠️ THE ONE-COMMAND TRANSPORT COMES FIRST, and not as a shortcut: if it read the stored value first, a child who had
+ * turned the toggle off on the keyboard would inherit that `false` through the legacy key and be left with a gaze control
+ * that does not respond — the worst defect possible, on the control of whoever has fewest alternatives.
  */
 export function latchOf(transport: string, l: LatchReading): boolean {
   if (latchAlwaysOn(transport)) return true;

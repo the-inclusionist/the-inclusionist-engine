@@ -1,70 +1,71 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/vocabulary-migration — O ÚNICO SÍTIO DA ENGINE QUE PODE DIZER `jump`, E POR QUANTO TEMPO.
+// input/vocabulary-migration — THE ONLY PLACE IN THE ENGINE ALLOWED TO SAY `jump`, AND FOR HOW LONG.
 //
-// ========================= POR QUE ESTE MÓDULO EXISTE SEPARADO =========================
-// O gate `action-vocabulary-boundary` reprova a engine por nomear os verbos do jogo, e estava certo ao
-// reprovar esta tabela quando ela nasceu dentro de `input/keyboard.ts`. Só que a tabela PRECISA de os nomear:
-// traduzir o vocabulário antigo é literalmente a função dela.
+// ========================= WHY THIS MODULE STANDS APART =========================
+// The `action-vocabulary-boundary` gate fails the engine for naming the game's verbs, and it was right to fail
+// this table when it was born inside `input/keyboard.ts`. But the table HAS to name them: translating the old
+// vocabulary is literally its job.
 //
-// ⚠️ E A SAÍDA NÃO FOI LEVANTAR O TETO. Levantar um teto que "só encolhe" é o afrouxamento que o gate existe
-// para impedir, e uma exceção sem endereço vira precedente para a próxima. A saída foi QUARENTENAR: o
-// acoplamento inteiro mora aqui, num ficheiro cujo nome diz que ele é histórico, com um teto próprio e uma
-// data de morte.
+// ⚠️ AND THE WAY OUT WAS NOT RAISING THE CEILING. Raising a ceiling that "only shrinks" is the loosening the gate
+// exists to prevent, and an exception with no address becomes a precedent for the next one. The way out was
+// QUARANTINE: the whole coupling lives here, in a file whose name says it is historical, with a ceiling of its
+// own and a date of death.
 //
-// ⚠️ QUANDO ISTO SE APAGA: quando não restar dado salvo no formato antigo. Não há como saber isso do lado do
-// código — o dado está no navegador de cada criança —, então o critério é de tempo e é do Dev. Enquanto
-// houver, apagar este ficheiro apaga o remapeamento de quem o fez.
+// ⚠️ WHEN THIS GETS DELETED: when no data saved in the old format remains. The code side has no way to know that
+// — the data is in each child's browser — so the criterion is time, and it is the Dev's. While any remains,
+// deleting this file deletes the remapping of whoever made one.
 //
-// ========================= O QUE SE PERDE SE ISTO ESTIVER ERRADO =========================
-// Quem remapeou teclas normalmente remapeou por NECESSIDADE — alcance de mão, dedo que não estica, teclado
-// sem numpad. Um esquema salvo que deixe de casar não dá erro: as teclas simplesmente param de responder, e
-// a criança conclui que o jogo quebrou. É perda de uma adaptação, não de uma preferência.
+// ========================= WHAT IS LOST IF THIS IS WRONG =========================
+// Whoever remapped keys usually remapped out of NEED — hand reach, a finger that does not stretch, a keyboard
+// without a numpad. A saved scheme that stops matching raises no error: the keys simply stop responding, and the
+// child concludes the game is broken. It is the loss of an adaptation, not of a preference.
 
 /**
- * ⚠️ O DADO SALVO NÃO É UM `KeyScheme`, e a issue #118 tornou isso um erro de compilação em vez de uma
- * suposição. Um `KeyScheme` é FECHADO nas quatorze posições e completo; o que está no navegador da criança é
- * uma SOBREPOSIÇÃO — parcial por construção (`loadKB` funde-a sobre os padrões com `Object.assign`) e capaz
- * de carregar chaves que este código não conhece, o que o cabeçalho de `migrateScheme` já dizia com todas as
- * letras: «chave desconhecida atravessa intacta».
+ * ⚠️ THE SAVED DATA IS NOT A `KeyScheme`, and issue #118 made that a compile error instead of an assumption. A
+ * `KeyScheme` is CLOSED over the fourteen positions and complete; what sits in the child's browser is an
+ * OVERLAY — partial by construction (`loadKB` merges it over the defaults with `Object.assign`) and able to
+ * carry keys this code does not know, which the header of `migrateScheme` already says in so many words: an
+ * unknown key passes through untouched.
  *
- * Dar-lhe o tipo fechado obrigaria este ficheiro a inventar as posições que faltam no dado antigo — quer
- * dizer, a escrever teclas que a criança nunca escolheu, no exacto módulo que existe para não lhe perder o
- * remapeamento. O tipo aberto é o honesto aqui, e é só aqui.
+ * Giving it the closed type would force this file to invent the positions missing from the old data — that is,
+ * to write keys the child never chose, in the very module that exists so as not to lose their remapping. The
+ * open type is the honest one here, and only here.
  */
 export type SavedScheme = Record<string, readonly string[]>;
 
 /**
- * Nome de plataforma → posição abstrata. **ADR-0086 §2**, e não o ADR-0074.
+ * Platform name → abstract position. **ADR-0086 §2**, not ADR-0074.
  *
- * ⚠️ A DIFERENÇA ENTRE OS DOIS REGISTROS É A TECLA DA CRIANÇA. O ADR-0074 dizia `jump → action1` e
- * `run → action4`; o ADR-0086 corrigiu para `run → action1` e `jump → action2`, medindo que a correção é a
- * leitura CONSERVADORA — ela deixa cada verbo na tecla e no botão que já ocupava. Traduzir por engano pela
- * tabela do 0074 não daria erro nenhum: moveria o pulo de `J` para `U` em silêncio.
+ * ⚠️ THE DIFFERENCE BETWEEN THE TWO RECORDS IS THE CHILD'S KEY. ADR-0074 said `jump → action1` and
+ * `run → action4`; ADR-0086 corrected it to `run → action1` and `jump → action2`, having measured that the
+ * correction is the CONSERVATIVE reading — it leaves each verb on the key and the button it already held.
+ * Translating by mistake with 0074's table would raise no error at all: it would move jump from `J` to `U`
+ * silently.
  */
 export const OLD_VOCABULARY: Readonly<Record<string, string>> = Object.freeze({
   run: 'action1',
   jump: 'action2',
   especial: 'action3',
   swap: 'action4',
-  // ⚠️ E UMA QUINTA ENTRADA QUE NÃO É UM VERBO DE PLATAFORMA. A camada de toque chamava `pause` a posição
-  // que todo o resto chama `start` — duas palavras para a mesma coisa, e a do toque era a única que não
-  // existia no conjunto abstrato. Um mapa de toque gravado antes disto tem `start: 'pause'` no slot do
-  // START, e sem esta linha esse botão deixaria de pausar: `decide()` passa a procurar `'start'` e
-  // receberia `'pause'`, que já não é nada — sem erro, sem aviso, e o único botão de pausa de um tablet.
+  // ⚠️ AND A FIFTH ENTRY THAT IS NOT A PLATFORM VERB. The touch layer called `pause` the position everything
+  // else calls `start` — two words for the same thing, and the touch one was the only one missing from the
+  // abstract set. A touch map saved before this has `start: 'pause'` in the START slot, and without this line
+  // that button would stop pausing: `decide()` now looks for `'start'` and would get `'pause'`, which is no
+  // longer anything — no error, no warning, and the only pause button a tablet has.
   pause: 'start',
 });
 
 /**
- * ⚠️ O SEGUNDO DADO SALVO, e ele quase passou. O mapa de toque (`incl_touchmap`) guarda SLOT → AÇÃO, ou seja
- * o nome da ação está no VALOR e não na chave: `{ b0: 'jump', b1: 'especial' }`. O tradutor de esquemas de
- * teclado, que traduz CHAVES, passaria por cima dele sem tocar em nada.
+ * ⚠️ THE SECOND SAVED DATA, and it nearly slipped through. The touch map (`incl_touchmap`) stores SLOT → ACTION,
+ * so the action name is in the VALUE and not the key: `{ b0: 'jump', b1: 'especial' }`. The keyboard scheme
+ * translator, which translates KEYS, would pass over it without touching anything.
  *
- * ⚠️ E O DANO SERIA PIOR DO QUE NO TECLADO. `normalizeTouchMap` funde o guardado SOBRE o padrão, então um
- * `b0: 'jump'` gravado sobrescreveria o `b0: 'action2'` correto — e o botão da tela deixaria de fazer
- * qualquer coisa. Num tablet de escola pública o toque não é o caminho alternativo: é o único.
+ * ⚠️ AND THE DAMAGE WOULD BE WORSE THAN ON THE KEYBOARD. `normalizeTouchMap` merges what is stored OVER the
+ * default, so a saved `b0: 'jump'` would overwrite the correct `b0: 'action2'` — and the on-screen button would
+ * stop doing anything. On a public-school tablet, touch is not the alternative path: it is the only one.
  *
- * Foi um teste de NAVEGADOR que o encontrou (`tests/touch.browser.test.js`), depois de a suíte `node` já
- * estar verde — o que é o argumento para os dois projetos existirem.
+ * A BROWSER test found it (`tests/touch.browser.test.js`), after the `node` suite was already green — which is
+ * the argument for having both projects.
  */
 export function migrateTouchMap(touchMap: Record<string, string> | null | undefined): Record<string, string> | null {
   if (!touchMap) return null;
@@ -76,17 +77,17 @@ export function migrateTouchMap(touchMap: Record<string, string> | null | undefi
 }
 
 /**
- * ⚠️ O TERCEIRO DADO SALVO, encontrado por varredura e não por acidente. Depois de o segundo aparecer num
- * teste de navegador, a pergunta certa deixou de ser «este está migrado?» e passou a ser «QUANTOS formatos
- * persistidos existem?». São três, e este é o do assistente de controle: `incl_padmap_<id>` guarda
- * AÇÃO → BINDING FÍSICO, `{ jump: { b: 0 }, run: { b: 2 } }`, um por modelo de controle.
+ * ⚠️ THE THIRD SAVED DATA, found by a sweep and not by accident. After the second turned up in a browser test,
+ * the right question stopped being "is this one migrated?" and became "HOW MANY persisted formats exist?". There
+ * are three, and this is the pad wizard's: `incl_padmap_<id>` stores ACTION → PHYSICAL BINDING,
+ * `{ jump: { b: 0 }, run: { b: 2 } }`, one per pad model.
  *
- * ⚠️ E ELE É O MAIS CARO DE PERDER DOS TRÊS. Um mapa desses existe porque a criança (ou quem a acompanha)
- * passou por um assistente de nove passos apertando botão a botão, provavelmente porque o controle dela não
- * é «standard» — controles genéricos e adaptados raramente são. Perdê-lo manda essa pessoa de volta ao
- * assistente inteiro.
+ * ⚠️ AND IT IS THE MOST EXPENSIVE OF THE THREE TO LOSE. Such a map exists because the child (or whoever is with
+ * them) went through the wizard pressing button after button, one step per position the game names — probably
+ * because their pad is not "standard", and generic and adapted pads rarely are. Losing it sends that person back
+ * through the whole wizard.
  *
- * `_skip` e qualquer chave desconhecida atravessam, pela mesma razão das outras duas migrações.
+ * `_skip` and any unknown key pass through, for the same reason as the other two migrations.
  */
 export function migrateControlMap<T>(touchMap: Record<string, T> | null | undefined): Record<string, T> | null {
   if (!touchMap) return null;
@@ -97,7 +98,7 @@ export function migrateControlMap<T>(touchMap: Record<string, T> | null | undefi
   return migrated;
 }
 
-/** O objeto salvo, tal como `input/keyboard` o persiste. `p34` é o formato mais antigo de todos. */
+/** The saved object, as `input/keyboard` persists it. `p34` is the oldest format of all. */
 export interface SavedKB {
   solo?: SavedScheme;
   p2?: SavedScheme[];
@@ -107,27 +108,27 @@ export interface SavedKB {
 }
 
 /**
- * Traduz UM esquema salvo do vocabulário antigo para o abstrato.
+ * Translates ONE saved scheme from the old vocabulary to the abstract one.
  *
- * ⚠️ CHAVE DESCONHECIDA ATRAVESSA INTACTA, e é decisão e não descuido: `up`, `down`, `left` e `right` nunca
- * mudaram de nome, e um esquema pode carregar uma chave que este código não conhece — dado de uma versão
- * futura, ou lixo. Apagá-la seria destruir dado que não entendemos, e é o que faria as quatro direções
- * sumirem. É também o que torna esta função IDEMPOTENTE: aplicada sobre um esquema já migrado, nenhuma chave
- * casa e o resultado é igual à entrada, o que importa porque `loadKB` pode correr mais de uma vez na sessão.
+ * ⚠️ AN UNKNOWN KEY PASSES THROUGH UNTOUCHED, and that is a decision, not carelessness: `up`, `down`, `left` and
+ * `right` never changed names, and a scheme may carry a key this code does not know — data from a future
+ * version, or garbage. Deleting it would destroy data we do not understand, and it is what would make the four
+ * directions vanish. It is also what makes this function IDEMPOTENT: applied to an already migrated scheme, no
+ * key matches and the result equals the input, which matters because `loadKB` may run more than once a session.
  */
 export function migrateScheme(saved: SavedScheme | null | undefined): SavedScheme | null {
   if (!saved) return null;
   const migrated: SavedScheme = {};
   for (const [key, keys] of Object.entries(saved)) {
     const newKey = OLD_VOCABULARY[key] ?? key;
-    // ⚠️ Esquema MEIO migrado (as duas chaves presentes): a UNIÃO, nunca a sobreposição. Perder uma tecla é
-    // o dano que este módulo existe para impedir; ter a mesma tecla duas vezes não é dano nenhum.
+    // ⚠️ A HALF-migrated scheme (both keys present): the UNION, never the overwrite. Losing a key is the damage
+    // this module exists to prevent; having the same key twice is no damage at all.
     migrated[newKey] = migrated[newKey] ? [...new Set([...migrated[newKey], ...keys])] : [...keys];
   }
   return migrated;
 }
 
-/** Traduz o objeto salvo inteiro — o esquema solo e as listas por contagem de jogadores. */
+/** Translates the whole saved object — the solo scheme and the lists per player count. */
 export function migrateSaved(s: SavedKB | null | undefined): SavedKB | null {
   if (!s) return null;
   const list = (arr: (SavedScheme | null)[] | undefined): SavedScheme[] | undefined =>
@@ -139,8 +140,8 @@ export function migrateSaved(s: SavedKB | null | undefined): SavedKB | null {
     const v = list(s[g]);
     if (v) out[g] = v;
   }
-  // `p34` migra de VOCABULÁRIO aqui e de FORMA em `loadKB`, que já o fazia antes deste módulo existir.
-  // Sem esta linha, o dado mais velho de todos seria o único a perder-se.
+  // `p34` migrates its VOCABULARY here and its SHAPE in `loadKB`, which already did that before this module
+  // existed. Without this line, the oldest data of all would be the only one to get lost.
   if (Array.isArray(s.p34)) out.p34 = s.p34.map((m) => migrateScheme(m));
   return out;
 }

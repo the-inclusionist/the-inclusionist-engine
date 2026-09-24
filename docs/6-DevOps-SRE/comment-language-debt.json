@@ -1,6 +1,6 @@
 {
   "about": "Portuguese comment lines per file (scripts/comment-language.mjs). Only shrinks; a new file starts at zero. A heuristic that undercounts — a ratchet, never a verdict.",
-  "total": 16756,
+  "total": 16637,
   "files": {
     "app/js/boot/create-game.ts": 1065,
     "app/js/env.d.ts": 21,
@@ -8,13 +8,11 @@
     "app/js/input/gamepad.ts": 219,
     "app/js/input/keyboard.ts": 80,
     "app/js/input/keydown.ts": 266,
-    "app/js/input/latch-scope.ts": 59,
     "app/js/input/state.ts": 81,
     "app/js/input/touch-bindings.ts": 251,
     "app/js/input/touch.ts": 139,
     "app/js/input/transport-in-use.ts": 78,
     "app/js/input/transports.ts": 116,
-    "app/js/input/vocabulary-migration.ts": 60,
     "app/js/render/canvas.ts": 18,
     "app/js/render/crt.ts": 34,
     "app/js/render/cvd-matrices.ts": 37,
