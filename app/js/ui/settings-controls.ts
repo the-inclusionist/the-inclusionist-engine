@@ -185,7 +185,7 @@ export const ACT_LABEL: Record<string, string> = {
 // DOM-facing (thin) — requires `document`/injected ctx
 // ---------------------------------------------------------------------------------------------
 
-interface CaptureState { action: Action; mapRef: KeyScheme; player: number }
+interface CaptureState { action: Action; mapRef: KeyScheme }
 
 /** O id do botão de uma posição. Sai do nome ABSTRATO da acção, que é único por construção (`core/actions`). */
 export const ctrlControlId = (action: string): string => `ctrl-act-${action}`;
@@ -241,35 +241,63 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     return ctx.acoesDoJogo().find((x) => x.acao === a)?.rotulo ?? null;
   }
 
+  /**
+   * THE LINE THAT SAYS WHOSE CONTROLLER THIS IS — «editing your controller, mode N players». There are no
+   * tabs for the other players: each child edits only their own, and only the mode changes the sentence.
+   *
+   * ⚠️ The sentence is split at the `{modo}` marker BEFORE substitution, so the mode can sit in a `<strong>`
+   * without the dictionary carrying markup (the `i18n-sem-markup` gate forbids that, rightly: a dictionary
+   * string that becomes markup is where a translation turns into code). It left raw Portuguese in #125.
+   */
+  function drawModeLine(n: number): void {
+    const tabs = ctx.$<HTMLElement>('#ctrl-players');
+    if (!tabs) return;
+    tabs.hidden = false;
+    // The skeleton by `innerHTML` carries no outside data; the TEXT goes in by `textContent`.
+    tabs.innerHTML = '<span class="opt-hint" style="width:100%;margin:0">'
+      + '<span data-modo="pre"></span><strong data-modo="v"></strong><span data-modo="pos"></span></span>';
+    const [before, after] = t('ctrl.editingYours').split('{modo}');
+    const setText = (sel: string, txt: string): void => {
+      const part = tabs.querySelector<HTMLElement>(sel);
+      if (part) part.textContent = txt;
+    };
+    setText('[data-modo="pre"]', before ?? '');
+    setText('[data-modo="v"]', n === 1 ? t('ctrl.mode.one') : t('ctrl.mode.many', { n }));
+    setText('[data-modo="pos"]', after ?? '');
+  }
+
+  /**
+   * THE «LEFT THE DEFAULT» MARK (ADR-0029), on every row whose keys differ from this seat's factory scheme.
+   * It is missed most in this menu, whose whole reason to exist is changing things: without it a child who
+   * remapped heard the action names and nothing said where they had changed something.
+   *
+   * ⚠️ The default comes from the host (`ctx.kbPadraoFor`), like `kbFor`: which scheme a player count uses is
+   * theirs, and a second copy here would drift. And never `resetKB` to read it — it is DESTRUCTIVE
+   * (`input/keyboard.resetKB` removes the stored scheme first), so calling it per render would erase the
+   * child's remapping.
+   *
+   * 📌 It compares the LIST OF CODES, not object identity: re-binding the SAME key is not a change, and a child
+   * who tries something and goes back cannot be left with the mark lit for good.
+   */
+  function markWhatLeftTheDefault(list: HTMLElement, player: number): void {
+    const factory = ctx.kbPadraoFor(player);
+    const now = ctx.kbFor(player);
+    const sameKeys = (a: readonly string[] | null | undefined, b: readonly string[] | null | undefined): boolean =>
+      (a ?? []).length === (b ?? []).length && (a ?? []).every((k, i) => k === (b ?? [])[i]);
+    for (const row of list.querySelectorAll<HTMLElement>('.ctrl-row')) {
+      const act = row.querySelector<HTMLElement>('button[data-act]')?.dataset.act;
+      if (!act || !isAction(act)) continue;
+      markChanged(row, !sameKeys(now[act], factory[act]));
+    }
+  }
+
   function render(selPlayer: number): void {
     const el = ctx.$<HTMLElement>('#ctrl-list');
     if (!el) return;
     const n = ctx.getNumPlayers();
     const player = selPlayer >= n ? 0 : selPlayer;
     lastPlayer = player;
-
-    // E3: sem abas de outros jogadores — você edita só o seu controle; só o hint muda com o modo.
-    //
-    // ⚠️ ESTA FRASE ESTAVA EM PORTUGUÊS CRU DENTRO DO MOTOR (#125), inteira, com o `<strong>` e o plural à
-    // mão. Vai pelo `t()` agora — e o realce sobrevive porque o molde é PARTIDO no marcador `{modo}` antes
-    // da substituição, em vez de o dicionário carregar markup (que o gate `i18n-sem-markup` proíbe, e com
-    // razão: string de dicionário que vira markup é a porta por onde uma tradução passa a ser código).
-    const tabs = ctx.$<HTMLElement>('#ctrl-players');
-    if (tabs) {
-      tabs.hidden = false;
-      // O esqueleto por `innerHTML` — ele não tem dado nenhum de fora; o TEXTO entra por `textContent`, que
-      // é o mesmo idioma que o `.ctrl-nome` abaixo já usa.
-      tabs.innerHTML = '<span class="opt-hint" style="width:100%;margin:0">'
-        + '<span data-modo="pre"></span><strong data-modo="v"></strong><span data-modo="pos"></span></span>';
-      const [antes, depois] = t('ctrl.editingYours').split('{modo}');
-      const setText = (sel: string, txt: string): void => {
-        const el2 = tabs.querySelector<HTMLElement>(sel);
-        if (el2) el2.textContent = txt;
-      };
-      setText('[data-modo="pre"]', antes ?? '');
-      setText('[data-modo="v"]', n === 1 ? t('ctrl.mode.one') : t('ctrl.mode.many', { n }));
-      setText('[data-modo="pos"]', depois ?? '');
-    }
+    drawModeLine(n);
 
     const map = ctx.kbFor(player);
     /*
@@ -310,35 +338,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
       el.appendChild(row);
     }
 
-    /**
-     * A MARCA DE «SAIU DO PADRÃO» (ADR-0029), e este era o ÚLTIMO menu sem ela.
-     *
-     * ⚠️ E É O MENU ONDE ELA MAIS FALTAVA, porque é o único cuja razão de existir é mexer: uma criança que
-     * remapeou as teclas percorria a lista, ouvia os nomes das acções, e nada lhe dizia onde ela própria tinha
-     * alterado. Os três canais do ADR-0029 — cor, forma (anéis) e NOME — passam a valer aqui.
-     *
-     * ⚠️ O PADRÃO VEM DO CONSUMIDOR (`ctx.kbPadraoFor`) e não de uma tabela lida aqui, pela mesma razão que o
-     * `kbFor` é injectado: o mapeamento «quantos jogadores → que balde» (`p2`/`p3`/`p4`) é dele, e uma segunda
-     * cópia dessa regra divergiria da primeira.
-     *
-     * 🎯 E NÃO SE USA O `resetKB` PARA LER O PADRÃO, embora ele devolva exactamente a configuração de fábrica:
-     * ele é DESTRUTIVO — `input/keyboard.resetKB` faz `store.remove(CKEY)` antes de devolver a cópia. Chamá-lo
-     * a cada render apagaria o remapeamento da criança, e o estrago só apareceria no arranque seguinte.
-     *
-     * 📌 COMPARA-SE A LISTA DE CÓDIGOS, não a identidade do objecto: reatribuir a MESMA tecla não é uma
-     * mudança, e uma criança que experimenta e volta atrás não pode ficar com a marca acesa para sempre.
-     */
-    {
-      const padrao = ctx.kbPadraoFor(player);
-      const atual = ctx.kbFor(player);
-      const sameKeys = (a: readonly string[] | null | undefined, b: readonly string[] | null | undefined): boolean =>
-        (a ?? []).length === (b ?? []).length && (a ?? []).every((k, i) => k === (b ?? [])[i]);
-      for (const linha of el.querySelectorAll<HTMLElement>('.ctrl-row')) {
-        const act = linha.querySelector<HTMLElement>('button[data-act]')?.dataset.act;
-        if (!act || !isAction(act)) continue;
-        markChanged(linha, !sameKeys(atual[act], padrao[act]));
-      }
-    }
+    markWhatLeftTheDefault(el, player);
 
     el.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) => {
       b.addEventListener('click', () => {
@@ -353,7 +353,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         // vez de assumida, porque quem a partir amanhã acorda um anúncio sem sujeito.
         const palavra = gameWordFor(act);
         if (!palavra) return;
-        capture = { action: act, mapRef: map, player };
+        capture = { action: act, mapRef: map };
         b.textContent = t('ctrl.pressing'); // estava cravado em português isInside do motor (#125)
         ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: palavra, n: player + 1 }));
       });

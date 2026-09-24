@@ -1520,12 +1520,12 @@
       "fanIn": 0
     },
     "ui/settings-controls.ts": {
-      "codeLines": 173,
+      "codeLines": 176,
       "decisionNodes": 18,
       "maxDepth": 2,
       "fanOut": 10,
       "globalReach": 0,
-      "worstFunction": 12,
+      "worstFunction": 6,
       "fanIn": 1
     },
     "ui/settings-empathy.ts": {
