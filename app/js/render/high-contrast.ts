@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/high-contrast — Renderização Direta (Estágio 4, Tier 2): o motor de alto contraste de acessibilidade
-// (ADR-0011) — outline + color-blocking por papel + fundo recuado (dessaturado/escurecido), 3 níveis de
-// contraste (3:1/4,5:1/7:1). worldToTextureDirect/directBgTexture/directSprite{Canvas,Texture} + os caches
-// _worldTexHC/_coinTexHC (worldTexFor/coinTexFor) + a paleta HC_ROLE (persistida) vivem aqui. INJETADO via
-// initHighContrast: os limites do grid (W/H), os dois níveis de contorno (outlineFg/outlineBg — mutados por
-// setOutlineFg/setOutlineBg no game.js) e os canvases/texturas NORMAIS do mundo/moeda (mundo é `let` e muda de
-// cenário → getter; moeda nunca é reatribuída → valor direto). `_lastSharedViz` FICA no game.js: não é cache de
-// alto contraste, é o cache de "modo já aplicado" que TODO o pipeline de render estático (mundo/parallax/moedas/
-// power-ups/portão) usa para decidir quando reaplicar texturas por viewport — 7 subsistemas fora daqui escrevem
-// nele. `_pupTexHC`/`_playerDirect` (power-ups/player) também ficam no game.js: consomem directSpriteCanvas/
-// directSpriteTexture DAQUI mas não estão na lista de extração desta onda.
-// Ver docs/2-Architecture/adr/ADR-0011-visual-accessibility.yaml + docs/5-Refactoring/plano-modularizacao-mapa.md.
+// render/high-contrast — Direct Rendering: the accessibility high-contrast engine (ADR-0011) — outline + color-blocking
+// by role + a pushed-back background (desaturated/darkened), 3 contrast levels (3:1/4.5:1/7:1).
+// worldToTextureDirect/directBgTexture/directSprite{Canvas,Texture} + the caches (worldTexFor/spriteTexFor) + the HC_ROLE
+// palette (persisted) live here. INJECTED through initHighContrast: the grid's bounds (W/H), the tile lookup, the two
+// outline levels (outlineFg/outlineBg, which the host changes) and the NORMAL world canvas/texture (the scenery can swap
+// it → getter). The "mode already applied" cache that the host's static render pipeline uses to decide when to reapply
+// textures per viewport is NOT here: it is not a high-contrast cache, and several subsystems outside write into it.
+// See the ADR-0011 record (visual accessibility).
 
 import { makeCanvas, tex } from './canvas.js';
 import { outlineCanvas } from './sprite-fx.js';
@@ -18,10 +14,10 @@ import { TILE } from '../core/constants.js';
 import { HC_ROLE_DEF, type HcRoleKey, type PaintableRole } from './hc-role-data.js';
 import * as store from '../platform/storage.js';
 
-/* ===================== papel → cor (color-blocking) ===================== */
-// Os papéis e suas cores padrão moram em render/hc-role-data (folha, sem dependências), porque o painel de
-// acessibilidade visual precisa da MESMA lista para oferecer um seletor de cor por papel. Reexportados aqui
-// para que os importadores deste módulo não precisem saber que houve uma separação.
+/* ===================== role → colour (color-blocking) ===================== */
+// The roles and their default colours live in render/hc-role-data (a leaf, no dependencies), because the visual
+// accessibility panel needs the SAME list to offer a colour picker per role. Re-exported here so this module's importers
+// need not know there was a split.
 export type { PaintableRole, HcRoleKey } from './hc-role-data.js';
 export { HC_ROLE_KEYS, HC_ROLE_DEF } from './hc-role-data.js';
 export const HC_ROLE: Record<HcRoleKey, [number, number, number]> = (() => {
@@ -35,13 +31,13 @@ export const HC_ROLE: Record<HcRoleKey, [number, number, number]> = (() => {
   }
   return d;
 })();
-/** Persiste HC_ROLE (chamado por setRoleColor/resetRoleColors no game.js). Migrado de localStorage direto → store. */
+/** Persists HC_ROLE (called by whoever changes or resets a role colour), through the store. */
 export function saveHcRole(): void { store.setJSON(store.KEYS.hcrole, HC_ROLE); }
 
-/* ===================== 3 níveis de contraste ===================== */
+/* ===================== 3 contrast levels ===================== */
 export interface DirectCfg { off: number; mul: number; bgMul: number }
-// off/mul = mapa da plataforma (mais off = mais clara → mais contraste); bgMul = fundo (menor = mais escuro/
-// recuado). Contraste plataforma×fundo ≈ 3 / 4,5 / 7 (ver ADR-0011: 3:1 é o default, "7:1 fica feio").
+// off/mul = the platform map (more off = lighter → more contrast); bgMul = the background (lower = darker/pushed back).
+// Platform×background contrast ≈ 3 / 4.5 / 7 (see ADR-0011: 3:1 is the default, and 7:1 looks ugly).
 export const DIRECT_CFG: Record<string, DirectCfg> = {
   'hc-direto': { off: 55, mul: 0.5, bgMul: 0.30 },
   'hc-direto-45': { off: 66, mul: 0.5, bgMul: 0.28 },
@@ -49,7 +45,7 @@ export const DIRECT_CFG: Record<string, DirectCfg> = {
 };
 export function dcfg(mode: string): DirectCfg { return DIRECT_CFG[mode] || DIRECT_CFG['hc-direto']; }
 
-/* ===================== dessaturação/escurecimento (fundo/estrutura) ===================== */
+/* ===================== desaturation/darkening (background/structure) ===================== */
 export function dimDesat(c: CanvasRenderingContext2D, w: number, h: number, mul: number, blue: number, off?: number): void {
   off = off || 0;
   const img = c.getImageData(0, 0, w, h), d = img.data;
@@ -61,44 +57,41 @@ export function dimDesat(c: CanvasRenderingContext2D, w: number, h: number, mul:
   c.putImageData(img, 0, 0);
 }
 
-/* ===================== DI: limites do grid + contornos + canvases/texturas NORMAIS ===================== */
+/* ===================== DI: the grid's bounds + outlines + the NORMAL canvases/textures ===================== */
 export interface HighContrastCtx {
-  W: number; H: number; // WORLD_W/WORLD_H — 	ileAt já resolve fora-de-grade; os loops usam W/H como limite
+  W: number; H: number; // the world's width/height in tiles — `tileAt` already resolves off-grid; the loops use W/H as the bound
   /**
-   * QUE TILE ESTÁ EM (tx,ty) — uma PERGUNTA e não um import, desde 2026-09-23. Este módulo é da engine (o
-   * assunto dele é o alto contraste da WCAG 1.4.6), mas para pintar papel a papel precisa de saber o que há em
-   * cada célula — e isso é a grade de UM jogo. Perguntando, a engine deixa de importar a geometria de tiles e
-   * quem tem uma grade responde; quem não tem nunca monta este módulo.
-   * ⚠️ OBRIGATÓRIA, pelo precedente do ADR-0224: uma porta opcional é mais um campo que um jogo pode esquecer, e
-   * esquecê-la aqui pintaria o mundo inteiro de uma cor só.
+   * WHICH TILE IS AT (tx,ty) — a QUESTION and not an import. This module is the engine's (its subject is WCAG 1.4.6's
+   * high contrast), but to paint role by role it needs to know what is in each cell — and that is ONE game's grid.
+   * By asking, the engine does not import tile geometry: whoever has a grid answers, and whoever does not never mounts
+   * this module.
+   * ⚠️ REQUIRED, by ADR-0224's precedent: an optional door is one more field a game can forget, and forgetting this one
+   * would paint the whole world one colour.
    */
   tileAt: (tx: number, ty: number) => number;
-  outlineFg: () => number; // hcOutlineFg (0/1/2) — mutado por setOutlineFg (game.js)
-  outlineBg: () => number; // hcOutlineBg (0/1/2) — mutado por setOutlineBg (game.js)
-  getWorldCanvasNormal: () => HTMLCanvasElement; // worldCanvasNormal É `let` (reescrito por setCenario ao trocar tema) → getter
-  getWorldTexNormal: () => unknown; // worldTexNormal idem
+  outlineFg: () => number; // the foreground outline level (0/1/2) — the host changes it
+  outlineBg: () => number; // the background outline level (0/1/2) — the host changes it
+  getWorldCanvasNormal: () => HTMLCanvasElement; // the host may redraw the world canvas when the scenery changes → getter
+  getWorldTexNormal: () => unknown; // the world texture, likewise
   /**
-   * OS SPRITES QUE O JOGO QUER RECOLORIDOS, POR ID. A engine cacheia por `(id, modo)` e nunca sabe o que o id
-   * significa — pode ser uma moeda, uma sílaba, uma peça de tabuleiro.
+   * THE SPRITES THE GAME WANTS RECOLOURED, BY ID. The engine caches per `(id, mode)` and never knows what the id means
+   * — it may be a coin, a syllable, a board piece.
    *
-   * Era um par cravado, `coinCanvasNormal` + `coinTexNormal`, e o nome era a dívida: a API do cache de alto
-   * contraste tinha a forma de UM sprite de UM jogo. Um segundo jogo que quisesse recolorir a peça dele não
-   * tinha por onde — teria de chamar a peça de "moeda", ou de reimplementar o cache.
+   * Not a fixed pair shaped like one game's coin: a second game wanting to recolour its piece would have no way in —
+   * it would have to call the piece a "coin", or reimplement the cache.
    *
-   * Função e não valor porque o canvas de um sprite pode ser reescrito no boot (o mesmo motivo do
-   * `getWorldCanvasNormal`), e um valor lido uma vez congelaria o do primeiro instante.
+   * A function and not a value because a sprite's canvas may be redrawn at boot (the same reason as
+   * `getWorldCanvasNormal`), and a value read once would freeze the first instant's.
    */
   sprites: () => Record<string, { canvas: HTMLCanvasElement | null; tex: unknown }>;
   /**
-   * TILE → PAPEL SEMÂNTICO, e é o consumidor quem sabe. `null` = estrutura (sem repintura).
+   * TILE → SEMANTIC ROLE, and the consumer is who knows. `null` = structure (no repaint).
    *
-   * Era uma tabela fixa AQUI DENTRO — `9` perigo, `4|5|10` escalável, `3` água — e o ADR-0027 a nomeia como o
-   * acoplamento nº 1 da base: quatro linhas das quais TODO o alto contraste dependia. Elas diziam, pela
-   * estrutura, que "perigo é o tile 9" era verdade da engine. É verdade DESTE MAPA. Um segundo jogo com outra
-   * numeração pintava o chão de laranja e a lava de cinza — sem erro, sem teste vermelho, para quem menos
-   * pode conferir isso olhando.
+   * Not a table fixed IN HERE (`9` hazard, `4|5|10` climbable, `3` water): ADR-0027 named that the base's no. 1
+   * coupling. "Hazard is tile 9" is true of ONE MAP, not of the engine; a second game with another numbering would
+   * paint the floor orange and the lava grey — no error, no red test, for whoever can least check it by looking.
    *
-   * A tabela do jogo de plataforma mora em `game/tile-roles`. Trocar de tabela é trocar de jogo, e é só isso.
+   * Swapping the table is swapping the game, and nothing more.
    */
   roleOf: (t: number) => PaintableRole | null;
 }
@@ -109,23 +102,23 @@ function requireCtx(): HighContrastCtx {
   return ctx;
 }
 
-/* ===================== Renderização Direta: mundo + fundo + sprites de 1º plano ===================== */
+/* ===================== Direct Rendering: world + background + foreground sprites ===================== */
 
-/** Mundo em alto contraste: base dessaturada/clareada + repintura por papel (com escada como caso especial:
- *  trilhos/degraus, não faixa sólida) + contorno de 2º plano no perímetro externo (navegável × não-navegável). */
+/** The world in high contrast: a desaturated/lightened base + repaint by role (with the ladder as a special case:
+ *  rails/rungs, not a solid band) + a background outline on the outer perimeter (walkable × not walkable). */
 export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string): unknown {
   const hc = requireCtx();
   const cfg = dcfg(mode);
   const cv = makeCanvas(srcCanvas.width, srcCanvas.height), c = cv.getContext('2d')!;
   c.drawImage(srcCanvas, 0, 0);
-  dimDesat(c, cv.width, cv.height, cfg.mul, 1.22, cfg.off); // base: estrutura vira cinza-azulado (mais clara = mais contraste)
+  dimDesat(c, cv.width, cv.height, cfg.mul, 1.22, cfg.off); // base: structure turns blue-grey (lighter = more contrast)
   for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
-    const t = hc.tileAt(x, y), role = hc.roleOf(t); if (!role) continue; // repinta tiles não-estruturais pela cor do papel
-    // ⚠️ O QUE SOBRA DE PLATAFORMA AQUI. A escada é desenhada com trilhos e degraus porque uma faixa sólida
-    // não LÊ como escada — decisão de acessibilidade, que serviria a qualquer jogo com algo escalável. Mas a
-    // forma da pergunta injetada ("este tile se desenha como escada?" · "que pintor este papel usa?") ainda
-    // não tem evidência que a escolha, e foi um consumidor que mostrou, no menu-nav, que a forma importa mais
-    // que a existência da injeção. Declarado em vez de adivinhado. Ver game/tile-roles.
+    const t = hc.tileAt(x, y), role = hc.roleOf(t); if (!role) continue; // repaint non-structural tiles in the role's colour
+    // ⚠️ WHAT PLATFORMER IS LEFT HERE. The ladder is drawn with rails and rungs because a solid band does not READ as a
+    // ladder — an accessibility decision that would serve any game with something climbable. But the shape of the
+    // injected question ("does this tile draw as a ladder?" · "which painter does this role use?") has no evidence to
+    // choose it yet, and a consumer showed, in menu-nav, that the shape matters more than the existence of the
+    // injection. Declared instead of guessed.
     if (t === 4) drawLadder(c, x * TILE, y * TILE);
     else repaintByRole(c, x * TILE, y * TILE, role);
   }
@@ -133,11 +126,11 @@ export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string)
   return tex(cv);
 }
 
-/** ESCADA: preto + trilhos e degraus na cor do papel → lê como escada, e não como faixa sólida. */
+/** LADDER: black + rails and rungs in the role's colour → it reads as a ladder, not a solid band. */
 function drawLadder(c: CanvasRenderingContext2D, X: number, Y: number): void {
   c.fillStyle = '#0a0e14'; c.fillRect(X, Y, TILE, TILE);
-  c.fillStyle = 'rgb(' + HC_ROLE.climb.join(',') + ')'; c.fillRect(X + 1, Y, 2, TILE); c.fillRect(X + TILE - 3, Y, 2, TILE); // trilhos laterais (cor do papel, customizável)
-  for (let ry = 2; ry < TILE - 1; ry += 5) c.fillRect(X + 1, Y + ry, TILE - 2, 2); // degraus
+  c.fillStyle = 'rgb(' + HC_ROLE.climb.join(',') + ')'; c.fillRect(X + 1, Y, 2, TILE); c.fillRect(X + TILE - 3, Y, 2, TILE); // side rails (the role's colour, customisable)
+  for (let ry = 2; ry < TILE - 1; ry += 5) c.fillRect(X + 1, Y + ry, TILE - 2, 2); // rungs
 }
 
 /** A tile repainted in its role's colour, by the brightness of each pixel (BT.601 luma); a hazard starts from brighter. */
@@ -154,7 +147,7 @@ function repaintByRole(c: CanvasRenderingContext2D, X: number, Y: number, role: 
 /** Tiles 0 and 1 are this map's air (see the note in the loop above: a platformer's numbering, declared, not generalised). */
 const isAir = (t: number): boolean => t === 0 || t === 1;
 
-/** Contorno de 2º plano: SÓ o perímetro externo — as bordas de um bloco voltadas ao ar —, não cada bloco. */
+/** The background outline: ONLY the outer perimeter — a block's edges that face the air —, not every block. */
 function outlineSecondPlane(c: CanvasRenderingContext2D, hc: HighContrastCtx, th: number): void {
   if (th <= 0) return;
   const air = (x: number, y: number): boolean => isAir(hc.tileAt(x, y));
@@ -169,15 +162,14 @@ function outlineSecondPlane(c: CanvasRenderingContext2D, hc: HighContrastCtx, th
   }
 }
 
-/** Superfície mínima de PIXI.Texture que directBgTexture/directSpriteTexture tocam (resource.source pode ser
- *  canvas OU imagem — parallax de tema "cidade" carrega PNG via PIXI.Texture.from(img)). Estrutural (como o
- *  FxGraphics de render/fx.ts) para não arrastar os tipos de união de Resource do PIXI aqui dentro. */
+/** The minimal PIXI.Texture surface directBgTexture/directSpriteTexture touch (resource.source may be a canvas OR an
+ *  image — a parallax loaded from a PNG through PIXI.Texture.from(img)). Structural, so PIXI's Resource union types are
+ *  not dragged in here. */
 interface DirectTexSource {
   orig: { width: number; height: number };
   /**
-   * O RECORTE do quadro dentro da base. Passou a existir aqui com o atlas (item 22): antes toda textura de
-   * personagem era uma tela própria e base e recorte coincidiam. Opcional porque `directBgTexture` recebe
-   * texturas que de fato ocupam a base inteira (parallax, árvore) e não precisa dele.
+   * The frame's CLIP inside the base — a character packed in an atlas is a clip, not a canvas of its own. Optional
+   * because `directBgTexture` gets textures that really fill the whole base (parallax, tree) and does not need it.
    */
   frame?: { x: number; y: number; width: number; height: number };
   baseTexture: {
@@ -187,8 +179,8 @@ interface DirectTexSource {
   };
 }
 
-/** Fundo/decoração em alto contraste: só dessaturação/escurecimento (recua) — sem repintura por papel nem
- *  contorno. Usada por game.js para árvores (treeTexFor) e parallax (parallaxTexFor). */
+/** Background/decoration in high contrast: only desaturation/darkening (it steps back) — no repaint by role and no
+ *  outline. Used by render/viewports for decoration (treeTexFor) and parallax (parallaxTexFor). */
 export function directBgTexture(srcTex: DirectTexSource, mode: string): unknown {
   const cfg = dcfg(mode);
   const cv = makeCanvas(Math.max(1, srcTex.orig.width), Math.max(1, srcTex.orig.height)), dst = tex(cv);
@@ -204,16 +196,16 @@ export function directBgTexture(srcTex: DirectTexSource, mode: string): unknown 
   return dst;
 }
 
-/** Sprite de 1º plano (player/moeda/power-up) em alto contraste: mantém a cor da arte + contorno ESCURO
- *  (WCAG 2.4.7 — "salta" do fundo recuado). `mode` não é usado (mantido só p/ paridade de assinatura com as
- *  outras 3 funções "direct*" — o dispatch por DIRECT_CFG[mode] já aconteceu no chamador). fg=0 → sem contorno. */
+/** A foreground sprite (player/coin/power-up) in high contrast: it keeps the art's colour + a DARK outline (WCAG 2.4.7 —
+ *  it "jumps" off the pushed-back background). `mode` is unused (kept only for signature parity with the other 3
+ *  "direct*" functions — the dispatch by DIRECT_CFG[mode] already happened in the caller). fg=0 → no outline. */
 export function directSpriteCanvas(srcCanvas: HTMLCanvasElement, mode: string): HTMLCanvasElement {
   void mode;
   const fg = requireCtx().outlineFg();
   return fg > 0 ? outlineCanvas(srcCanvas, fg) : srcCanvas;
 }
-/** Variante PIXI.Texture de directSpriteCanvas (player: a textura de origem já é uma PIXI.Texture, não um
- *  canvas cru). `mode` idem — não usado, mantido por paridade de assinatura. */
+/** The PIXI.Texture variant of directSpriteCanvas (player: the source texture is already a PIXI.Texture, not a raw
+ *  canvas). `mode` likewise — unused, kept for signature parity. */
 export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unknown {
   void mode;
   const fg = requireCtx().outlineFg();
@@ -223,28 +215,26 @@ export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unkn
   const paint = (): void => {
     const s = srcTex.baseTexture.resource && srcTex.baseTexture.resource.source;
     if (!s || !s.width) return;
-    // ===================== O RECORTE VEM ANTES DO CONTORNO =====================
-    // Aqui morava o "kage bunshin". Esta função lia a BASE e ignorava o `frame`, e havia um comentário
-    // explicando por que isso era seguro: "só é chamada p/ texturas de player (sempre canvas-sourced)". A
-    // afirmação era verdadeira e VIROU FALSA — o item 22 empacotou os sprites num atlas de 256×207, e desde
-    // então só os quadros que passam pelo tapa-costuras (idle/andar/correr) viram tela própria. Pulo, escada,
-    // parede, teto, nado e voo são RECORTE dentro do atlas, e contornar a base deles desenhava o atlas
-    // inteiro: todos os quadros do personagem de uma vez, em grade.
+    // ===================== THE CLIP COMES BEFORE THE OUTLINE =====================
+    // Reading the BASE and ignoring the `frame` draws, for a frame packed in an atlas, the whole atlas: every frame of the
+    // character at once, in a grid — the "kage bunshin" defect. It happened once the character's sprites were packed
+    // into an atlas, where only the frames that go through the seam fixer (idle/walk/run) become canvases of their own
+    // and jump, ladder, wall, ceiling, swim and flight are CLIPS.
     //
-    // O tapa-costuras é assíncrono, e por isso o idle também aparecia: com alto contraste ligado cedo, o
-    // cache `_playerDirect` memoriza a versão baseada no atlas e a guarda para sempre.
+    // The seam fixer is asynchronous, so the idle frame showed it too: with high contrast on early, the outlined-frame
+    // cache memorises the atlas-based version and keeps it forever.
     const f = srcTex.frame;
     const needsClipping = !!f && (f.x !== 0 || f.y !== 0 || f.width !== s.width || f.height !== s.height);
     let drawSource: HTMLCanvasElement | HTMLImageElement = s;
     if (needsClipping && f) {
       const rec = makeCanvas(Math.max(1, f.width), Math.max(1, f.height));
       const rc = rec.getContext('2d')!;
-      rc.imageSmoothingEnabled = false; // pixel art: reamostrar aqui borraria o contorno que o modo promete
+      rc.imageSmoothingEnabled = false; // pixel art: resampling here would blur the outline the mode promises
       rc.drawImage(s, f.x, f.y, f.width, f.height, 0, 0, f.width, f.height);
       drawSource = rec;
     }
-    // outlineCanvas só declara HTMLCanvasElement; o recorte já devolve canvas, e a base sem recorte é
-    // canvas-sourced pelos caminhos que restam. O cast preserva o runtime idêntico ao original.
+    // outlineCanvas only declares HTMLCanvasElement; the clip already returns a canvas, and an unclipped base is
+    // canvas-sourced on the paths that remain. The cast changes nothing at runtime.
     const o = outlineCanvas(drawSource as HTMLCanvasElement, th);
     cv.width = o.width; cv.height = o.height;
     const c = cv.getContext('2d')!;
@@ -255,12 +245,12 @@ export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unkn
   return dst;
 }
 
-/* ===================== caches preguiçosos (mundo/moeda) + seletor por modo ===================== */
+/* ===================== lazy caches (world/sprites) + per-mode selector ===================== */
 const _worldTexHC: Record<string, unknown> = {};
-/** Cache de sprite recolorido, chaveado por `id|modo`. Era `_coinTexHC[modo]` — um cache por jogo. */
+/** The recoloured-sprite cache, keyed by `id|mode` — one cache for every game, not one per game's coin. */
 const _spriteTexHC: Record<string, unknown> = {};
 
-/** Textura do MUNDO para `mode` (normal → a textura viva; hc-* → Renderização Direta, cacheada). */
+/** The WORLD texture for `mode` (normal → the live texture; hc-* → Direct Rendering, cached). */
 export function worldTexFor(mode: string): unknown {
   const hc = requireCtx();
   if (DIRECT_CFG[mode]) {
@@ -270,11 +260,11 @@ export function worldTexFor(mode: string): unknown {
   return hc.getWorldTexNormal();
 }
 /**
- * Textura do sprite `id` para `mode` (mesma lógica de `worldTexFor`, cache por `id|modo`).
+ * Sprite `id`'s texture for `mode` (the same logic as `worldTexFor`, cached by `id|mode`).
  *
- * Fora dos modos de renderização direta devolve a textura normal declarada pelo jogo — e devolve `undefined`
- * para um id que o jogo não declarou, em vez de lançar: um sprite ausente vira "sem textura" no desenho, que
- * é degradação; lançar aqui derrubaria o quadro inteiro por causa de um item.
+ * Outside the direct rendering modes it returns the normal texture the game declared — and it returns `undefined` for
+ * an id the game did not declare, instead of throwing: a missing sprite becomes "no texture" in the drawing, which is
+ * degradation; throwing here would take the whole frame down because of one item.
  */
 export function spriteTexFor(id: string, mode: string): unknown {
   const hc = requireCtx();
@@ -287,12 +277,12 @@ export function spriteTexFor(id: string, mode: string): unknown {
   }
   return src.tex;
 }
-/** Invalida o cache de mundo (tema/cenário mudou → worldCanvasNormal é outro canvas). */
+/** Invalidates the world cache (the theme/scenery changed → the normal world canvas is another canvas). */
 export function clearWorldTexCache(): void { for (const k in _worldTexHC) delete _worldTexHC[k]; }
 /**
- * Invalida o cache de sprites (cor de papel mudou → `_rebakeDirect` no game.js). Sem argumento limpa TUDO;
- * com um `id`, só as entradas daquele sprite — o que um jogo com muitos sprites vai querer, e o que um cache
- * chaveado só por modo não conseguia oferecer.
+ * Invalidates the sprite cache (a role colour changed → the host re-bakes). With no argument it clears EVERYTHING; with
+ * an `id`, only that sprite's entries — what a game with many sprites will want, and what a cache keyed only by mode
+ * could not offer.
  */
 export function clearSpriteTexCache(id?: string): void {
   for (const k in _spriteTexHC) {
