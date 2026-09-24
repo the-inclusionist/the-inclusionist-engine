@@ -71,7 +71,7 @@ export function simulationUnavailable(v: VisualState): UnavailableReason | null 
 // máquina — era o campo único que só cabia um valor.
 
 /** A chave de modo DIRETO que este tema usa, ou `null` para o tema padrão. */
-export function directTheme(v: VisualState): string | null {
+function directTheme(v: VisualState): string | null {
   return v.tema === 'hc3' ? 'hc-direto'
     : v.tema === 'hc45' ? 'hc-direto-45'
       : v.tema === 'hc7' ? 'hc-direto-7'

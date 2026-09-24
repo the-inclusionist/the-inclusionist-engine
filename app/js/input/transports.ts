@@ -60,7 +60,7 @@ export const SLOTS = Object.freeze({ gamepad: 17, toque: 13, teclado: ACTIONS.le
  * conhecido», não «segura uma». Um registo de tetos para teclado e controle é uma mudança maior, e nada
  * precisa dela hoje.
  */
-export const HOLDS_TOUCH = 2;
+const HOLDS_TOUCH = 2;
 
 /** Como se descobre que cada transporte está aqui AGORA. Injetado: nenhuma destas perguntas é pura. */
 export interface Availability {

@@ -2539,6 +2539,24 @@ re-exports of `input/edges` and `core/ring`, not its pure half).
 |---|---|
 | `KEY_YES`, `KEY_NO`, `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, `KEY_RIGHT`, `menuKeyIntent`, `selectStep`, `selectWrap`, `rangeStep`, `stepInPause` | `ui/menu-intent.js`, same names, no alias left behind |
 
+## CH · Eight names nothing reads stop being published (ADR-0221, issue #203)
+
+**Who is affected:** anyone importing one of the eight names below. 📏 Measured: nothing in `app/js`, in `tests/` or
+in the seven games imports any of them; each one's only reader is the module that declares it, a screen away.
+
+🎯 **Why:** the R3 rule (the precedent is note BW): a published name with no reader gains one or stops being published.
+All eight are used inside their own module, so they stay — only the `export` keyword goes.
+⚠️ `ui/menu-items.ITEM_SELECTOR` has no importer either and **stays published on purpose**: the public-surface gate
+uses it as its live sample of a comma inside a string (`'button:not([disabled]), select…'` must not publish a name
+`select`), and no other published constant has that shape. Un-exporting it would leave that case measuring nothing.
+
+| no longer published | module |
+|---|---|
+| `bootQuiz`, `declareQuiz`, `spokenOption` | `consumer-quiz/main-quiz.js` |
+| `HOLDS_TOUCH` | `input/transports.js` |
+| `directTheme` | `render/viz-axes.js` |
+| `ENGINE_ITEMS`, `iconCaption`, `itemsThatAct` | `ui/pause-icons.js` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -9,15 +9,12 @@
   ],
   "consumer-quiz/main-quiz.ts": [
     "answerText",
-    "bootQuiz",
-    "declareQuiz",
     "endText",
     "heardAlternative",
     "narrationOnDraw",
     "nextFocus",
     "questionHtml",
-    "questionNarration",
-    "spokenOption"
+    "questionNarration"
   ],
   "core/a11y-sr.ts": [
     "setVlibrasSay",
@@ -659,7 +656,6 @@
   ],
   "input/transports.ts": [
     "Availability",
-    "HOLDS_TOUCH",
     "Reach",
     "SLOTS",
     "Transport",
@@ -1112,7 +1108,6 @@
     "Theme",
     "UnavailableReason",
     "VisualState",
-    "directTheme",
     "filterKey",
     "hasHighContrast",
     "howItApplies",
@@ -1455,7 +1450,6 @@
   "ui/pause-icons.ts": [
     "ActionableIcons",
     "BarAction",
-    "ENGINE_ITEMS",
     "ICON_STATE_CLASSES",
     "IconStateSnapshot",
     "IconVisual",
@@ -1469,11 +1463,9 @@
     "computeIconLabel",
     "computeIconVisual",
     "hasPrivateOutputIn",
-    "iconCaption",
     "iconsThatAct",
     "initPauseIcons",
     "inputModeOf",
-    "itemsThatAct",
     "nextInputMode",
     "rootThatActs",
     "showPauseOptions",

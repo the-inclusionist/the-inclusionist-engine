@@ -168,7 +168,7 @@ export function wireBarCaption(bar: HTMLElement, explain: (k: string | null) => 
   });
 }
 
-export function iconCaption(barEl: ParentNode, el: HTMLElement): string {
+function iconCaption(barEl: ParentNode, el: HTMLElement): string {
   const icons = [...barEl.querySelectorAll<HTMLElement>('.pi-btn')];
   // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/accessible-label`
   // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
@@ -487,7 +487,7 @@ export function iconsThatAct(writers: ActionableIcons): readonly PauseIcon[] {
 // ⚠️ QUATRO desde 2026-09-12: `opcoesdojogo` entra pela MESMA razão que `options` já estava — ele não faz
 // nada ao jogo, troca qual lista está no cartão, e é tratado neste módulo antes de a tabela do jogo ser
 // consultada. Não é a engine a reclamar um item do jogo: o que é do jogo é o CONTEÚDO da lista que ele abre.
-export const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'pmback', 'acessibilidade']);
+const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'pmback', 'acessibilidade']);
 
 /**
  * OS ITENS DO MENU QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
@@ -508,7 +508,7 @@ function itemReason(act: string): string {
   return t(OWN_REASONS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
 
-export function itemsThatAct(
+function itemsThatAct(
   buttons: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
 ): readonly PauseMenuButton[] {

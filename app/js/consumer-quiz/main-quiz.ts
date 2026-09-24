@@ -198,7 +198,7 @@ export function questionNarration(p: Question): string {
 }
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
-export function spokenOption(p: Question, i: number): string {
+function spokenOption(p: Question, i: number): string {
   return announceItem({ rotulo: t(p.alternativas[i] ?? ''), posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
@@ -389,7 +389,7 @@ function handleCommand(cmd: VirtualCommand): void {
  * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
  * mostra que os sete campos cabem num jogo que não tem mundo.
  */
-export function declareQuiz(questions: readonly Question[]): GameDeclaration {
+function declareQuiz(questions: readonly Question[]): GameDeclaration {
   const sequence = questions.map((_, i) => `q${i + 1}`);
   return {
     topology: () => ({ kind: 'hotspots', order: sequence }),
@@ -433,7 +433,7 @@ export function declareQuiz(questions: readonly Question[]): GameDeclaration {
 }
 
 /** Boot. Exportado para o teste poder montá-lo num DOM de mentira sem depender do carregamento do módulo. */
-export function bootQuiz(): void {
+function bootQuiz(): void {
   // A ENGINE INTEIRA, numa chamada. Antes eram nove inicializações à mão nesta função, em ordem que só o
   // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
   // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
