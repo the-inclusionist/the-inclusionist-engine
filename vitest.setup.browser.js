@@ -6,10 +6,20 @@ import * as PIXI from 'pixi.js';
 globalThis.PIXI = PIXI;
 // No error suppression: the render modules are imported PURELY (nothing loads a texture at import time), so there is no
 // asset-load rejection to ignore.
-// The stored settings are loaded as a composition root loads them (ADR-0178), from THIS FILE'S OWN storage (ADR-0232,
-// `tests/fixtures/file-storage.js`); `createGame` loads them again from the storage its host lends, and
-// `estado-carregado-pela-raiz` checks the order without this setup.
-import { filePort } from './tests/fixtures/file-storage.js';
+
+// 🔴 EACH FILE HAS ITS OWN STORAGE (ADR-0232 D4, issue #207 — the browser suite's F9). The files share one origin, and
+// with it one `localStorage`: a file wrote a key while another booted, and the second read the first one's choice. The
+// engine reaches no storage by import any more — a root builds its store from what its host lends — so the host WINDOW of
+// this file lends this file's own backend (`tests/fixtures/file-storage.js`). Every root a case boots with `win: window`,
+// the quiz page and every case reading `localStorage` meet this file's storage and nobody else's. It is set here, before
+// any case runs; nothing imported above reads storage at import (ADR-0232), so nothing has read the origin's first.
+// 📌 This also retires the per-file cleanup of `incl_font_k`/`incl_lettercase` that stood here: a file's storage starts
+// empty, and each file has its own window, so no stored face or `--fonte-escala` survives into the next file.
+import { fileBackend, filePort } from './tests/fixtures/file-storage.js';
+Object.defineProperty(window, 'localStorage', { value: fileBackend, configurable: true, writable: false });
+
+// The stored settings are loaded as a composition root loads them (ADR-0178), from that same storage; `createGame` loads them
+// again from the storage its host lends, and `estado-carregado-pela-raiz` checks the order without this setup.
 import { loadState } from './app/js/core/state.js';
 import { loadLocale, applyDom } from './app/js/core/i18n.js';
 import { localeHostHooks } from './app/js/platform/locale-host.js';
@@ -19,14 +29,3 @@ loadState(filePort);
 // the port. This setup plays the composition root, and without this line a case that checks `<html lang>` measures a
 // page nobody told. That is exactly what happened: `tts.browser` went red at the moment of the cut, and it was right.
 loadLocale({ ...filePort, ...localeHostHooks(document, window, applyDom) });
-
-// EACH FILE STARTS WITH NO TYPOGRAPHY CHOSEN. The browser project shares one localStorage across files, and five of them walk the
-// typography cycle: since ADR-0176 a stored face with a 20 px floor is applied at boot (25% larger text), and the next file
-// opened the quiz with its last option in the footer — failing about one full run in three, never alone.
-import { beforeAll } from 'vitest';
-beforeAll(() => {
-  for (const chave of ['incl_font_k', 'incl_lettercase']) localStorage.removeItem(chave);
-  document.documentElement.style.removeProperty('--fonte-escala');
-  delete document.documentElement.dataset.letras;
-  loadState(filePort);
-});
