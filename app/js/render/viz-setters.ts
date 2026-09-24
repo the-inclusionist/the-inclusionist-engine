@@ -21,7 +21,7 @@
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
 import {
-  migrateVisual, filterKey, textureKey, legacyKey, isSimulation, isLowVision, isBlind, hasHighContrast, PADRAO,
+  migrateVisual, filterKey, textureKey, legacyKey, isSimulation, isLowVision, isBlind, hasHighContrast, DEFAULT_VISUAL,
   type Theme, type Correction,
   type VisualState,
 } from './viz-axes.js';
@@ -306,13 +306,13 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
   function writePlayerTheme(i: number, tema: Theme): void {
     const p = ctx.getPlayers()[i];
-    writePlayerVisual(i, { ...(p.visual ?? PADRAO), tema });
+    writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), tema });
   }
 
   /** Muda SÓ a correção de cor deste jogador. O tema e a simulação ficam onde estavam. */
   function writePlayerCorrection(i: number, correcao: Correction): void {
     const p = ctx.getPlayers()[i];
-    writePlayerVisual(i, { ...(p.visual ?? PADRAO), correcao });
+    writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), correcao });
   }
 
   /** A API antiga, por chave única. Continua a valer: um jogo que escolhe um modo inteiro passa por aqui. */
@@ -393,7 +393,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   // MP: filtro CSS/overlay/bolinha globais OFF (por viewport agora)
   function reapplyVizAll(): void {
     ctx.invalidateSharedViz();
-    if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].visual ?? PADRAO); }
+    if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].visual ?? DEFAULT_VISUAL); }
     else {
       ctx.applyCssFilter(lqFilter(), 'mundo-e-menus'); // realce L/Q é melhoria: alcança o menu
       ctx.camera.filters = null;
@@ -406,7 +406,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
   function rebakeDirect(): void {
     clearWorldTexCache(); clearSpriteTexCache(); ctx.resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
-    if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].visual ?? PADRAO); else applyVpFilters();
+    if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].visual ?? DEFAULT_VISUAL); else applyVpFilters();
   }
 
   function renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void {
@@ -423,7 +423,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       }));
     }
     const players = ctx.getPlayers(), sel = ctx.getSelVizPlayer();
-    const v = players[sel]?.visual ?? PADRAO;
+    const v = players[sel]?.visual ?? DEFAULT_VISUAL;
     const cur = legacyKey(v);
     el.innerHTML = vizGroupHtml(modes, cur);
     // ⚠️ A RECUSA DA SIMULAÇÃO (#104, ADR-0076 §4). Com qualquer dos dois eixos fora do padrão, uma
@@ -470,7 +470,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     if (ctx.getSelVizPlayer() >= ctx.getNumPlayers()) ctx.setSelVizPlayer(0);
     const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden = true; tabs.innerHTML = ''; }
     const sel = ctx.getSelVizPlayer();
-    const v = ctx.getPlayers()[sel]?.visual ?? PADRAO;
+    const v = ctx.getPlayers()[sel]?.visual ?? DEFAULT_VISUAL;
     el.innerHTML = axesHtml(v, t);
     el.querySelectorAll<HTMLElement>('button[data-eixo]').forEach((btn) => btn.addEventListener('click', () => {
       const choice = buttonChoice(btn.dataset);

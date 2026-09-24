@@ -9,9 +9,9 @@ import { describe, it, expect } from 'vitest';
 import { iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { DEFAULTS } from '../app/js/core/state.js';
-import { PADRAO } from '../app/js/render/viz-axes.js';
+import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 
-const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, speed: DEFAULTS.gameSpeed, ...over });
+const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: DEFAULT_VISUAL, privateOutput: true, speed: DEFAULTS.gameSpeed, ...over });
 const todos = { theme: true, correction: true, holdsKeys: () => true, typography: true };
 
 describe('the hourglass icon', () => {

@@ -3038,6 +3038,22 @@ change in a note of their own.
 | `input/latch-scope.js` | `LatchReading` | `padrao` | `byDefault` |
 | `ui/settings-controls.js` | `SettingsControlsCtx` | `kbPadraoFor` | `defaultSchemeFor` |
 
+## CP · Five published names the word list hid (ADR-0219, issue #206)
+
+**Who is affected:** anyone importing one of these. 📏 Measured by reading the seven games' imports, as information: the
+platformer imports the visual default (three uses) and the 15-puzzle one — both are `render/viz-axes`'s `PADRAO`.
+
+📌 **Why now, after phase 2 said zero of 1620:** its words sat in the language gate's English list — `padrao` until
+`63865376`, `tokenizar` until `4a0a2707` — so the names counted as clean. The measure changed, not the names.
+
+| module | old name | new name | what it is |
+|---|---|---|---|
+| `render/viz-axes.js` | `PADRAO` | `DEFAULT_VISUAL` | the visual state with nothing chosen |
+| `render/viz-axes.js` | `nosPadroes` | `bothAxesAtDefault` | are both axes at their default? (what frees a simulation) |
+| `input/pointer.js` | `PADRAO` | `DEFAULT_POINTER` | the pointer sample before any input |
+| `input/transport-in-use.js` | `PADRAO` | `DEFAULT_INPUT_STATE` | the input state of a player who touched nothing |
+| `platform/kokoro.js` | `tokenizar` | `tokenize` | the token ids of a phoneme string |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

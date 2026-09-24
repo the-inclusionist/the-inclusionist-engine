@@ -546,7 +546,7 @@
     "fromCentre"
   ],
   "input/pointer.ts": [
-    "PADRAO",
+    "DEFAULT_POINTER",
     "PointerSample",
     "PressEdge",
     "clampInside",
@@ -642,10 +642,10 @@
     "touchGaps"
   ],
   "input/transport-in-use.ts": [
+    "DEFAULT_INPUT_STATE",
     "InputState",
     "LATCH_OF_THEIR_OWN",
     "NEED_ENABLING",
-    "PADRAO",
     "TRANSPORT_NAMES",
     "TransportName",
     "afterEdge",
@@ -817,7 +817,7 @@
     "eFala",
     "kokoroVoiceUrl",
     "sentenceStyle",
-    "tokenizar",
+    "tokenize",
     "wavDe"
   ],
   "platform/listener-scope.ts": [
@@ -1099,15 +1099,16 @@
   "render/viz-axes.ts": [
     "CORRECTIONS",
     "Correction",
+    "DEFAULT_VISUAL",
     "HowItApplies",
     "LEGACY_KEYS",
-    "PADRAO",
     "SIMULATIONS",
     "Simulation",
     "THEMES",
     "Theme",
     "UnavailableReason",
     "VisualState",
+    "bothAxesAtDefault",
     "filterKey",
     "hasHighContrast",
     "howItApplies",
@@ -1118,7 +1119,6 @@
     "migrateVisual",
     "nextCorrection",
     "nextTheme",
-    "nosPadroes",
     "simulationUnavailable",
     "textureKey"
   ],

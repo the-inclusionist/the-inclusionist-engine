@@ -12,16 +12,16 @@
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import {
-  PADRAO, latchNow, afterEdge, enableAssisted, disableAssisted,
+  DEFAULT_INPUT_STATE, latchNow, afterEdge, enableAssisted, disableAssisted,
   NEED_ENABLING, LATCH_OF_THEIR_OWN,
 } from '../app/js/input/transport-in-use.js';
 
 /** Corre uma sequência de arestas a partir do padrão, e devolve o estado final. */
-const correr = (...origens) => origens.reduce(afterEdge, PADRAO);
+const correr = (...origens) => origens.reduce(afterEdge, DEFAULT_INPUT_STATE);
 
 describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
   it('[Right] REGRA 1 — por padrão, teclado e controle, ambos SEM alternância', () => {
-    expect(latchNow(PADRAO)).toBe(false);
+    expect(latchNow(DEFAULT_INPUT_STATE)).toBe(false);
     expect(latchNow(correr('gamepad'))).toBe(false);
     expect(latchNow(correr('teclado'))).toBe(false);
   });
@@ -42,7 +42,7 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
   it('⚠️ [Zero] REGRA 4 — com a assistida ligada, NENHUM aparelho desliga a alternância', () => {
     // O caso cuja falha tranca uma criança fora do próprio jogo. Ela joga por webcam, toca na tela uma vez,
     // e sem esta regra fica sem a alternância de que depende — no meio da partida e sem nada o dizer.
-    const ligada = enableAssisted(PADRAO);
+    const ligada = enableAssisted(DEFAULT_INPUT_STATE);
     for (const t of ['teclado', 'gamepad', 'toque', 'olhos', 'rosto', 'gestos', 'fala']) {
       expect(latchNow(afterEdge(ligada, t)), `${t} desligou a alternância da assistida`).toBe(true);
     }
@@ -55,16 +55,16 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
     // Um falso positivo da webcam (uma sombra, um segundo rosto a passar) trancaria a alternância de toda a
     // gente sem ninguém ter pedido. O §4 diz «precisam ser habilitados», e isto é essa palavra.
     for (const t of NEED_ENABLING) {
-      expect(afterEdge(PADRAO, t).assistedOn, `${t} habilitou-se sozinho`).toBe(false);
-      expect(latchNow(afterEdge(PADRAO, t)), `${t} ligou a alternância sem habilitação`).toBe(false);
+      expect(afterEdge(DEFAULT_INPUT_STATE, t).assistedOn, `${t} habilitou-se sozinho`).toBe(false);
+      expect(latchNow(afterEdge(DEFAULT_INPUT_STATE, t)), `${t} ligou a alternância sem habilitação`).toBe(false);
     }
   });
 
   it('[Right] habilitar é idempotente, e desabilitar existe — mas não é oferecido à criança', () => {
-    const ligada = enableAssisted(PADRAO);
+    const ligada = enableAssisted(DEFAULT_INPUT_STATE);
     expect(enableAssisted(ligada)).toBe(ligada); // MESMO objecto: sem mudança, sem cópia
     expect(latchNow(disableAssisted(ligada))).toBe(false);
-    expect(disableAssisted(PADRAO)).toBe(PADRAO);
+    expect(disableAssisted(DEFAULT_INPUT_STATE)).toBe(DEFAULT_INPUT_STATE);
   });
 
   it('[Boundary] uma aresta do transporte que já está em uso não cria estado novo', () => {
@@ -92,6 +92,6 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
 //   · `afterEdge` a habilitar a assistida quando a origem esta em `NEED_ENABLING` -> reprova "uma
 //     ARESTA nao habilita". E a leitura ingenua da regra 4, e a que um falso positivo da webcam explora.
 //   · `afterEdge` a ignorar a origem (devolver sempre o estado) -> reprovam as REGRAS 2 e 3.
-//   · `PADRAO` com `emUso: 'toque'` -> reprova a REGRA 1: o padrao passaria a ter alternancia, que e
+//   · `DEFAULT_INPUT_STATE` com `inUse: 'toque'` -> reprova a REGRA 1: o padrao passaria a ter alternancia, que e
 //     exactamente o contrario do que o ADR diz.
 //   · pondo `'toque'` em `NEED_ENABLING` -> reprovam a REGRA 2 e o caso das listas disjuntas.

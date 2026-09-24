@@ -93,7 +93,7 @@ export interface InputState {
  * O `emUso` só passa a distingui-los quando alguém quiser MOSTRAR o aparelho corrente, que é outra questão
  * e o ADR-0109 deixa-a explicitamente por decidir.
  */
-export const PADRAO: InputState = Object.freeze({ inUse: 'teclado', assistedOn: false });
+export const DEFAULT_INPUT_STATE: InputState = Object.freeze({ inUse: 'teclado', assistedOn: false });
 
 /**
  * HÁ ALTERNÂNCIA AGORA? — ⚠️ **NÃO PERGUNTE ISTO A ESTA FUNÇÃO.** Ver o parágrafo abaixo.

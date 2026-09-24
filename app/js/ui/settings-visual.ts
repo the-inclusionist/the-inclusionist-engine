@@ -30,7 +30,7 @@ import {
   VISUAL_MODES, type RGB, type RoleKey,
 } from './visual-choices.js';
 // O padrao dos DOIS EIXOS (ADR-0076/#104). A marca pergunta ao modelo novo, nao ao espelho p.viz.
-import { PADRAO as PADRAO_VISUAL } from '../render/viz-axes.js';
+import { DEFAULT_VISUAL as PADRAO_VISUAL } from '../render/viz-axes.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
 /** Live snapshot of the state this panel does not own — read fresh on every render(). */

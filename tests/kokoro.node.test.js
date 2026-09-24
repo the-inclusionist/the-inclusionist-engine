@@ -6,7 +6,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { KOKORO_VOICES, tokenizar, sentenceStyle, eFala, wavDe, MAX_KOKORO_TOKENS, STYLE_DIMENSION } from '../app/js/platform/kokoro.js';
+import { KOKORO_VOICES, tokenize, sentenceStyle, eFala, wavDe, MAX_KOKORO_TOKENS, STYLE_DIMENSION } from '../app/js/platform/kokoro.js';
 import { voicesForLocale } from '../app/js/platform/voice-plan.js';
 import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 
@@ -47,11 +47,11 @@ describe('the ids and the style row', () => {
   const vocab = { p: 1, u: 2, l: 3, i: 4, ' ': 5, 'ˈ': 6 };
 
   it('🔴 [Right] each known symbol in order, between two pad tokens; unknown symbols dropped', () => {
-    expect(tokenizar('pˈuli?', vocab)).toEqual([0, 1, 6, 2, 3, 4, 0]);
+    expect(tokenize('pˈuli?', vocab)).toEqual([0, 1, 6, 2, 3, 4, 0]);
   });
 
   it('⚠️ [Boundary] a sentence past the model\'s context is cut at 510 ids', () => {
-    expect(tokenizar('p'.repeat(600), vocab).length).toBe(MAX_KOKORO_TOKENS + 2);
+    expect(tokenize('p'.repeat(600), vocab).length).toBe(MAX_KOKORO_TOKENS + 2);
   });
 
   it('🔴 [Right] the style row is the token count\'s row of the voice table, held at its last row', () => {

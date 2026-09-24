@@ -11,9 +11,9 @@ import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { getLocale } from '../app/js/core/i18n.js';
 import { LOCALE_CYCLE, nextLocale, FLAG_SVG, flagOf, LANGUAGE_NAME } from '../app/js/ui/locale-flags.js';
 import { bcp47 } from '../app/js/core/i18n.js';
-import { PADRAO } from '../app/js/render/viz-axes.js';
+import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 
-const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, ...over });
+const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: DEFAULT_VISUAL, privateOutput: true, ...over });
 
 describe('the language button', () => {
   it('is the last button, and mounts in every game', () => {

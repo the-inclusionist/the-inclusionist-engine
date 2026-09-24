@@ -35,7 +35,7 @@ export interface PointerSample {
 }
 
 /** O repouso: centro da região, sem aperto, teclado — o mesmo padrão que o `transport-in-use` assume. */
-export const PADRAO: PointerSample = Object.freeze({ fx: 0.5, fy: 0.5, source: 'teclado', pressed: false });
+export const DEFAULT_POINTER: PointerSample = Object.freeze({ fx: 0.5, fy: 0.5, source: 'teclado', pressed: false });
 
 /**
  * A amostra está DENTRO da região do jogo?

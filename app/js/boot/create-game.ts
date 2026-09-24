@@ -90,7 +90,7 @@ import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, au
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
-import { isBlind, isLowVision, PADRAO, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
+import { isBlind, isLowVision, DEFAULT_VISUAL, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER } from '../render/viz-modes.js';
 import { createPadWizard } from '../input/pad-wizard.js';
@@ -910,7 +910,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   // O estado visual que o MUNDO mostra: a correcção (🚥) e a simulação (modo empatia) são dois campos dele, e
   // `filterKey` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
-  let worldState: VisualState = PADRAO;
+  let worldState: VisualState = DEFAULT_VISUAL;
   /*
    * A DISABILITY SIMULATION RUNS IN THE GAME, NEVER IN A MENU (issue #182). The Dev: «Simulação de deficiência não pode
    * funcionar no menu! Só no jogo! Senão fica impossível desabilitar em certos casos.» Two rules make it so:
@@ -1273,7 +1273,7 @@ export function createGame(o: CreateGameOptions): Engine {
     setCatGain,
     /*
      * ⚠️ QUEM RESPONDE PELO APARELHO EM USO É A RAIZ, e é aqui que o autómato do ADR-0109 ganha o primeiro
-     * leitor. `input/state.inputOf(i)` devolve `PADRAO` para quem nunca produziu uma aresta, logo isto
+     * leitor. `input/state.inputOf(i)` devolve `DEFAULT_INPUT_STATE` para quem nunca produziu uma aresta, logo isto
      * nunca é `undefined` e o ícone nunca escreve numa chave torta.
      *
      * 📌 E é a RAIZ que o passa, não o ícone que o importa: `ui/` a ler estado de módulo de `input/` seria
@@ -2160,7 +2160,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
     getPlayers: cartridge.sonarPlayers ?? (() => {
       const f = cartridge.declaration.focusOf(0);
-      return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: PADRAO }] : [];
+      return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: DEFAULT_VISUAL }] : [];
     }),
     getNumPlayers: () => (cartridge.players ?? [null]).length,
     getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,

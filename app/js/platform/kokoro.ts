@@ -119,7 +119,7 @@ export const STYLE_DIMENSION = 256;
 const KOKORO_SAMPLE_RATE = 24_000;
 
 /** The token ids of a phoneme string: each symbol the vocabulary knows, in order, between two pad tokens (id 0). */
-export function tokenizar(phonemes: string, symbolIds: Readonly<{ [symbol: string]: number }>): number[] {
+export function tokenize(phonemes: string, symbolIds: Readonly<{ [symbol: string]: number }>): number[] {
   const ids: number[] = [];
   for (const symbol of phonemes) {
     const id = symbolIds[symbol];

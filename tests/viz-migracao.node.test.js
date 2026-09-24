@@ -27,7 +27,7 @@ import {
 } from '../app/js/render/viz-modes.js';
 import {
   migrateVisual, howItApplies, textureKey, legacyKey, isSimulation, isBlind, isLowVision, hasHighContrast,
-  nosPadroes, PADRAO, LEGACY_KEYS,
+  bothAxesAtDefault, DEFAULT_VISUAL, LEGACY_KEYS,
 } from '../app/js/render/viz-axes.js';
 
 /** O que a tabela ANTIGA fazia com esta chave, derivado dela e não escrito à mão. */
@@ -87,14 +87,14 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
       const v = migrateVisual(k);
       const eraTema = needsCanvas(k);
       const eraCorrecao = k.startsWith('fix-');
-      expect(nosPadroes(v), `«${k}» passou a bloquear a simulação`).toBe(!eraTema && !eraCorrecao);
+      expect(bothAxesAtDefault(v), `«${k}» passou a bloquear a simulação`).toBe(!eraTema && !eraCorrecao);
     }
   });
 
   it('[Zero] lixo, ausência e uma chave de outra versão caem no padrão em vez de estourar', () => {
     // O dado vem do navegador de uma criança: pode ser de outra máquina, de uma versão futura, ou corrompido.
     for (const mau of [undefined, null, '', 'modo-de-2030', 42, [], { tema: 'roxo' }]) {
-      expect(migrateVisual(mau), String(mau)).toEqual(PADRAO);
+      expect(migrateVisual(mau), String(mau)).toEqual(DEFAULT_VISUAL);
     }
   });
 
@@ -116,7 +116,7 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
     // é por isso que o caso o constrói à mão.
     const os_dois = { tema: 'hc7', correcao: 'deuter', simulacao: null };
     expect(howItApplies(os_dois)).toEqual({ direct: 'hc-direto-7', filter: 'fix-deuter' });
-    expect(nosPadroes(os_dois), 'com um eixo fora do padrão a simulação tem de ficar travada').toBe(false);
+    expect(bothAxesAtDefault(os_dois), 'com um eixo fora do padrão a simulação tem de ficar travada').toBe(false);
   });
 
   it('⚠️ [Right] a chave LEGADA preserva TODO ajuste que já existia — ida e volta pelos 16 modos', () => {

@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import {
   axesHtml, axisRows, buttonChoice, THEME_LABEL, CORRECTION_LABEL,
 } from '../app/js/ui/visual-axes-panel.js';
-import { THEMES, CORRECTIONS, PADRAO } from '../app/js/render/viz-axes.js';
+import { THEMES, CORRECTIONS, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
@@ -21,7 +21,7 @@ const t = (k) => pt[k] ?? k;
 
 describe('ui/visual-axes-panel · dois eixos, dois rádios', () => {
   it('⚠️ [Right] os DOIS grupos saem, e cada valor de cada eixo tem a sua linha', () => {
-    const html = axesHtml(PADRAO, t);
+    const html = axesHtml(DEFAULT_VISUAL, t);
     for (const v of THEMES) expect(html, `falta o tema «${v}»`).toContain(`data-eixo="tema" data-valor="${v}"`);
     for (const v of CORRECTIONS) expect(html, `falta a correção «${v}»`).toContain(`data-eixo="correcao" data-valor="${v}"`);
   });
@@ -47,7 +47,7 @@ describe('ui/visual-axes-panel · dois eixos, dois rádios', () => {
     // O `settings-visual` regista o erro que o Dev apanhou na primeira tentativa: dentro de um `<select>`,
     // um controle cuja razão de existir é ser ACHADO por quem enxerga mal fica «quase o mesmo que não ter
     // movido».
-    const html = axesHtml(PADRAO, t);
+    const html = axesHtml(DEFAULT_VISUAL, t);
     expect(html).not.toContain('<select');
     expect(html).toContain('class="ctrl-row"');
     expect(html).toContain('role="radio"');

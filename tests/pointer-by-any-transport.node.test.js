@@ -27,7 +27,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { isInside, clampInside, pressEdge, switchedTransport, PADRAO } from '../app/js/input/pointer.js';
+import { isInside, clampInside, pressEdge, switchedTransport, DEFAULT_POINTER } from '../app/js/input/pointer.js';
 import { TRANSPORT_NAMES } from '../app/js/input/transport-in-use.js';
 import { reach } from '../app/js/input/transports.js';
 
@@ -88,8 +88,8 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
   });
 
   it('[Interface] a origem é obrigatória na amostra — o padrão traz uma', () => {
-    expect(TRANSPORT_NAMES).toContain(PADRAO.source);
-    expect(switchedTransport(PADRAO, { ...PADRAO, source: 'olhos' })).toBe(true);
+    expect(TRANSPORT_NAMES).toContain(DEFAULT_POINTER.source);
+    expect(switchedTransport(DEFAULT_POINTER, { ...DEFAULT_POINTER, source: 'olhos' })).toBe(true);
   });
 });
 

@@ -57,7 +57,7 @@ import {
  */
 import { type PauseIcon, PAUSE_ICONS, pauseIcon } from '../core/pause-icon-catalogue.js';
 import {
-  nextTheme, nextCorrection, hasHighContrast, PADRAO,
+  nextTheme, nextCorrection, hasHighContrast, DEFAULT_VISUAL,
   type Theme, type Correction, type VisualState,
 } from '../render/viz-axes.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
@@ -976,7 +976,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
       // o que não faz nada. Dizer o padrão em vez de o deduzir é o que torna a marca do ADR-0029 possível
       // aqui, porque ela lê `DEFAULTS` e mais nada.
-      visual: p.visual ?? PADRAO,
+      visual: p.visual ?? DEFAULT_VISUAL,
       speed: gameSpeed,
       camera: cameraControl,
       locale: getLocale(),
@@ -1068,7 +1068,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // nada e não anuncia — que é o mesmo que dizer a verdade: este jogo não tem por onde.
     contrast: (i) => {
       if (!ctx.setPlayerTheme) return;
-      const v = nextTheme((P()[i] || {}).visual ?? PADRAO);
+      const v = nextTheme((P()[i] || {}).visual ?? DEFAULT_VISUAL);
       ctx.setPlayerTheme(i, v.tema);
       ctx.srSay(t('sr.visual.contrast', { v: t(SHORT_THEME[v.tema]) }));
     },
@@ -1114,7 +1114,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     cvd: (i) => {
       if (!ctx.setPlayerCorrection) return;
-      const v = nextCorrection((P()[i] || {}).visual ?? PADRAO);
+      const v = nextCorrection((P()[i] || {}).visual ?? DEFAULT_VISUAL);
       ctx.setPlayerCorrection(i, v.correcao);
       ctx.srSay(t('sr.icon.cvd', { v: t(SHORT_CORRECTION[v.correcao]) }));
     },

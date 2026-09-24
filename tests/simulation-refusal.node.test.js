@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import {
   simulationRefusal, showsEvenWhenUnavailable, REASON_KEY,
 } from '../app/js/ui/simulation-refusal.js';
-import { PADRAO, THEMES, CORRECTIONS } from '../app/js/render/viz-axes.js';
+import { DEFAULT_VISUAL, THEMES, CORRECTIONS } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
@@ -24,8 +24,8 @@ const comEixos = (tema, correcao) => ({ tema, correcao, simulacao: null });
 describe('ui/simulation-refusal · quando NÃO há o que dizer, não se diz nada', () => {
   it('[Zero] com os dois eixos no padrão a simulação está disponível, e a recusa é `null`', () => {
     // Um aviso que aparece sempre deixa de ser lido — a mesma regra do `ui/reach-notice`.
-    expect(simulationRefusal(PADRAO)).toBeNull();
-    expect(simulationRefusal({ ...PADRAO, simulacao: 'lv-tunnel' })).toBeNull();
+    expect(simulationRefusal(DEFAULT_VISUAL)).toBeNull();
+    expect(simulationRefusal({ ...DEFAULT_VISUAL, simulacao: 'lv-tunnel' })).toBeNull();
   });
 });
 

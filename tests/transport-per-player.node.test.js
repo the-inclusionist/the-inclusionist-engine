@@ -19,17 +19,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   inputOf, playerEdge, enableAssistedFor, disableAssistedFor, forgetInputs, releaseAllKeys,
 } from '../app/js/input/state.js';
-import { PADRAO } from '../app/js/input/transport-in-use.js';
+import { DEFAULT_INPUT_STATE } from '../app/js/input/transport-in-use.js';
 
 beforeEach(() => { forgetInputs(); });
 
 describe('entrada por jogador · quem nunca tocou em nada tem uma resposta', () => {
-  // ⚠️ `PADRAO` E NÃO `undefined`, e o contraste com o `sourceOf` do mesmo módulo é deliberado: ali «não sei»
+  // ⚠️ `DEFAULT_INPUT_STATE` E NÃO `undefined`, e o contraste com o `sourceOf` do mesmo módulo é deliberado: ali «não sei»
   // é honesto porque a pergunta é sobre uma TECLA que já existe; aqui a pergunta é sobre um JOGADOR, e um
   // jogador que ainda não tocou em nada está mesmo no teclado sem assistida.
   it('[Zero] jogador desconhecido responde o PADRÃO, e não `undefined`', () => {
-    expect(inputOf(0)).toEqual(PADRAO);
-    expect(inputOf(7)).toEqual(PADRAO);
+    expect(inputOf(0)).toEqual(DEFAULT_INPUT_STATE);
+    expect(inputOf(7)).toEqual(DEFAULT_INPUT_STATE);
   });
 
   it('[Interface] o padrão é teclado, sem assistida', () => {
@@ -118,8 +118,8 @@ describe('entrada por jogador · o que o `blur` NÃO faz', () => {
     playerEdge(0, 'gamepad');
     playerEdge(1, 'toque');
     forgetInputs();
-    expect(inputOf(0)).toEqual(PADRAO);
-    expect(inputOf(1)).toEqual(PADRAO);
+    expect(inputOf(0)).toEqual(DEFAULT_INPUT_STATE);
+    expect(inputOf(1)).toEqual(DEFAULT_INPUT_STATE);
   });
 });
 

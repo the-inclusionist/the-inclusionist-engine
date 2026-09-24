@@ -12,7 +12,7 @@ import type { Action } from '../core/actions.js';
 // desaparecem no build. A terceira entra pela mesma razão que as outras duas: o vocabulário mora com quem
 // tem as REGRAS sobre ele (`input/transport-in-use`), e repeti-lo aqui seria a segunda cópia de uma união.
 import {
-  PADRAO, afterEdge, enableAssisted, disableAssisted,
+  DEFAULT_INPUT_STATE, afterEdge, enableAssisted, disableAssisted,
   type TransportName, type InputState,
 } from './transport-in-use.js';
 
@@ -125,12 +125,12 @@ const inputByPlayer: Record<number, InputState> = {};
 /**
  * O ESTADO DA ENTRADA DESTE JOGADOR. Nunca `undefined`: quem nunca produziu uma aresta está no PADRÃO.
  *
- * ⚠️ `PADRAO` E NÃO `undefined`, pela mesma razão que o `sourceOf` faz o contrário: ali «não sei» é uma
+ * ⚠️ `DEFAULT_INPUT_STATE` E NÃO `undefined`, pela mesma razão que o `sourceOf` faz o contrário: ali «não sei» é uma
  * resposta honesta sobre uma tecla que já existe; aqui a pergunta é sobre um JOGADOR, e um jogador que
- * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `PADRAO` diz.
+ * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `DEFAULT_INPUT_STATE` diz.
  */
 export function inputOf(jogador: number): InputState {
-  return inputByPlayer[jogador] ?? PADRAO;
+  return inputByPlayer[jogador] ?? DEFAULT_INPUT_STATE;
 }
 
 /**

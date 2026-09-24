@@ -788,11 +788,11 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
     // `resolveViz` já mandava chave desconhecida para `normal`. Se o espelho não seguisse essa mesma queda,
     // o jogador ficaria com `viz: 'normal'` e um `visual` de outra coisa — a divergência mais difícil de ver,
     // porque os dois estão preenchidos e só um está certo.
-    const { PADRAO } = await import('../app/js/render/viz-axes.js');
+    const { DEFAULT_VISUAL } = await import('../app/js/render/viz-axes.js');
     const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
     api.setPlayerViz(0, 'modo-que-nao-existe');
     expect(env.players[0].viz).toBe('normal');
-    expect(env.players[0].visual).toEqual(PADRAO);
+    expect(env.players[0].visual).toEqual(DEFAULT_VISUAL);
   });
 });
 
@@ -824,9 +824,9 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
 
   it('[Zero] nenhuma das duas: o padrão, e sem estourar', async () => {
     const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
-    const { PADRAO } = await import('../app/js/render/viz-axes.js');
+    const { DEFAULT_VISUAL } = await import('../app/js/render/viz-axes.js');
     mem.clear();
-    expect(readStoredVisual(0)).toEqual(PADRAO);
+    expect(readStoredVisual(0)).toEqual(DEFAULT_VISUAL);
   });
 
   it('⚠️ [Zero] JSON corrompido na chave nova cai na VELHA em vez de no padrão', async () => {
@@ -860,13 +860,13 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
 //     migrar passaria a ler o padrao para toda a gente — sem erro, sem aviso, com a arvore verde.
 //   · ⚠️ trocando `migrateVisual(m.key)` por `migrateVisual(mode)` -> NAO reprova, e a mutacao e' EQUIVALENTE,
 //     nao um buraco. `resolveViz` manda chave desconhecida para `normal` e `migrateVisual` manda-a para
-//     `PADRAO`, que sao o mesmo estado; para chave conhecida `m.key === mode`. Nao ha entrada que as separe.
+//     `DEFAULT_VISUAL`, que sao o mesmo estado; para chave conhecida `m.key === mode`. Nao ha entrada que as separe.
 //     Fica `m.key` na mesma, porque a linha acima ja resolveu e ler duas vezes da mesma resolucao e' o que
 //     impede a terceira de divergir. Registado aqui em vez de apagado: uma mutacao sobrevivente que se
 //     confirma equivalente e' informacao, e a proxima pessoa nao precisa de a redescobrir.
 //
 // ========================= MUTACOES CONFERIDAS (a migracao do valor salvo, 1b) =========================
-//   · ⚠️ TIRANDO O RECUO para a chave velha (`return PADRAO`) -> reprovam TRES. E o estrago que a issue chama
+//   · ⚠️ TIRANDO O RECUO para a chave velha (`return DEFAULT_VISUAL`) -> reprovam TRES. E o estrago que a issue chama
 //     de «the dangerous half»: a primeira sessao depois da actualizacao apagaria o modo visual de TODA
 //     crianca que ja jogou, porque o ajuste dela vive na chave velha e mais lado nenhum.
 //   · fazendo a chave VELHA vencer a nova -> reprova o caso dos dois eixos. Nao ha string que descreva

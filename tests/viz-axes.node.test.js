@@ -6,8 +6,8 @@
 // não pode ter os dois — e as duas necessidades coexistem numa mesma pessoa com frequência.
 import { describe, it, expect } from 'vitest';
 import {
-  PADRAO, THEMES, CORRECTIONS, SIMULATIONS, LEGACY_KEYS,
-  nosPadroes, simulationUnavailable, migrateVisual, howItApplies,
+  DEFAULT_VISUAL, THEMES, CORRECTIONS, SIMULATIONS, LEGACY_KEYS,
+  bothAxesAtDefault, simulationUnavailable, migrateVisual, howItApplies,
   isSimulation, isBlind, isLowVision, hasHighContrast, nextTheme, nextCorrection, textureKey,
 } from '../app/js/render/viz-axes.js';
 import { VIZ_MODES, VIZ_FILTER } from '../app/js/render/viz-modes.js';
@@ -37,8 +37,8 @@ describe('os dois eixos COMPÕEM — é a razão inteira da issue', () => {
 
 describe('a simulação é travada nos DOIS padrões, e a recusa diz por quê', () => {
   it('nos dois padrões, disponível', () => {
-    expect(nosPadroes(PADRAO)).toBe(true);
-    expect(simulationUnavailable(PADRAO)).toBeNull();
+    expect(bothAxesAtDefault(DEFAULT_VISUAL)).toBe(true);
+    expect(simulationUnavailable(DEFAULT_VISUAL)).toBeNull();
   });
 
   it('⚠️ com o TEMA fora do padrão, indisponível — e o motivo é o tema', () => {
@@ -94,12 +94,12 @@ describe('a migração: nenhum ajuste já escolhido se perde', () => {
     for (const k of ['sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind']) {
       const v = migrateVisual(k);
       expect(v.simulacao, k).toBe(k);
-      expect(nosPadroes(v), `${k} tinha de voltar nos padrões`).toBe(true);
+      expect(bothAxesAtDefault(v), `${k} tinha de voltar nos padrões`).toBe(true);
     }
   });
 
   it('`normal` volta como o padrão dos dois eixos', () => {
-    expect(migrateVisual('normal')).toEqual(PADRAO);
+    expect(migrateVisual('normal')).toEqual(DEFAULT_VISUAL);
   });
 
   it('é IDEMPOTENTE — o objeto já migrado atravessa igual', () => {
@@ -110,11 +110,11 @@ describe('a migração: nenhum ajuste já escolhido se perde', () => {
   it('⚠️ desconhecido cai no PADRÃO em vez de estourar', () => {
     // O dado vem do navegador de uma criança e pode ser de outra versão, de outra máquina, ou lixo. Um
     // `throw` aqui tiraria o jogo do ar por causa de uma preferência.
-    expect(migrateVisual('modo-que-nunca-existiu')).toEqual(PADRAO);
-    expect(migrateVisual(null)).toEqual(PADRAO);
-    expect(migrateVisual(undefined)).toEqual(PADRAO);
-    expect(migrateVisual(42)).toEqual(PADRAO);
-    expect(migrateVisual({ tema: 'roxo', correcao: 'nada', simulacao: 'voar' })).toEqual(PADRAO);
+    expect(migrateVisual('modo-que-nunca-existiu')).toEqual(DEFAULT_VISUAL);
+    expect(migrateVisual(null)).toEqual(DEFAULT_VISUAL);
+    expect(migrateVisual(undefined)).toEqual(DEFAULT_VISUAL);
+    expect(migrateVisual(42)).toEqual(DEFAULT_VISUAL);
+    expect(migrateVisual({ tema: 'roxo', correcao: 'nada', simulacao: 'voar' })).toEqual(DEFAULT_VISUAL);
   });
 
   it('um objeto MEIO válido conserva a metade válida', () => {
@@ -171,7 +171,7 @@ describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
   });
 
   it('o padrão dos dois eixos não aplica nada', () => {
-    expect(howItApplies(PADRAO)).toEqual({ direct: null, filter: null });
+    expect(howItApplies(DEFAULT_VISUAL)).toEqual({ direct: null, filter: null });
   });
 
   it('tema sozinho não inventa filtro, e correção sozinha não inventa tema', () => {
@@ -181,10 +181,10 @@ describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
 });
 
 describe('as perguntas que os leitores fazem, cada uma com nome', () => {
-  const v = (o) => ({ ...PADRAO, ...o });
+  const v = (o) => ({ ...DEFAULT_VISUAL, ...o });
 
   it('ehSimulacao / ehCego / ehBaixaVisao', () => {
-    expect(isSimulation(PADRAO)).toBe(false);
+    expect(isSimulation(DEFAULT_VISUAL)).toBe(false);
     expect(isSimulation(v({ simulacao: 'lv-haze' }))).toBe(true);
     expect(isBlind(v({ simulacao: 'blind' }))).toBe(true);
     expect(isBlind(v({ simulacao: 'lv-blur' }))).toBe(false);
@@ -199,7 +199,7 @@ describe('as perguntas que os leitores fazem, cada uma com nome', () => {
   });
 
   it('temAltoContraste responde pelo TEMA e ignora a correcao', () => {
-    expect(hasHighContrast(PADRAO)).toBe(false);
+    expect(hasHighContrast(DEFAULT_VISUAL)).toBe(false);
     expect(hasHighContrast(v({ correcao: 'deuter' }))).toBe(false);
     expect(hasHighContrast(v({ tema: 'hc3' }))).toBe(true);
   });
@@ -222,12 +222,12 @@ describe('os ciclos andam CADA UM no seu eixo', () => {
   });
 
   it('os dois ciclos DAO A VOLTA e voltam ao padrao', () => {
-    let t = PADRAO;
+    let t = DEFAULT_VISUAL;
     for (let i = 0; i < THEMES.length; i++) t = nextTheme(t);
-    expect(t.tema).toBe(PADRAO.tema);
-    let c = PADRAO;
+    expect(t.tema).toBe(DEFAULT_VISUAL.tema);
+    let c = DEFAULT_VISUAL;
     for (let i = 0; i < CORRECTIONS.length; i++) c = nextCorrection(c);
-    expect(c.correcao).toBe(PADRAO.correcao);
+    expect(c.correcao).toBe(DEFAULT_VISUAL.correcao);
   });
 
   it('⚠️ um valor desconhecido comeca no PADRAO nos DOIS ciclos', () => {
@@ -246,16 +246,16 @@ describe('textureKey', () => {
 
   it('sem simulacao, o TEMA; sem nenhum dos dois, `normal`', () => {
     expect(textureKey({ tema: 'hc45', correcao: 'tricro', simulacao: null })).toBe('hc-direto-45');
-    expect(textureKey(PADRAO)).toBe('normal');
+    expect(textureKey(DEFAULT_VISUAL)).toBe('normal');
   });
 
   it('⚠️ a chave devolvida EXISTE na lista real de modos', () => {
     const chaves = VIZ_MODES.map((m) => m.key);
     for (const s of SIMULATIONS) {
-      expect(chaves, `textura inexistente`).toContain(textureKey({ ...PADRAO, simulacao: s }));
+      expect(chaves, `textura inexistente`).toContain(textureKey({ ...DEFAULT_VISUAL, simulacao: s }));
     }
     for (const tema of THEMES) {
-      expect(chaves, `textura inexistente`).toContain(textureKey({ ...PADRAO, tema }));
+      expect(chaves, `textura inexistente`).toContain(textureKey({ ...DEFAULT_VISUAL, tema }));
     }
   });
 });

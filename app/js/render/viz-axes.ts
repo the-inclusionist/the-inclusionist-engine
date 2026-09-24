@@ -33,7 +33,7 @@ export type Simulation = SimulacaoDoCore;
 /** O estado visual de UM jogador (`core/visual-state`). */
 export type VisualState = VisualStateDoCore;
 
-export const PADRAO: VisualState = Object.freeze({ tema: 'padrao', correcao: 'tricro', simulacao: null });
+export const DEFAULT_VISUAL: VisualState = Object.freeze({ tema: 'padrao', correcao: 'tricro', simulacao: null });
 
 /**
  * Os dois eixos estão no padrão?
@@ -42,7 +42,7 @@ export const PADRAO: VisualState = Object.freeze({ tema: 'padrao', correcao: 'tr
  * guardar o resultado deixaria as duas coisas divergirem, e a divergência aqui significa uma demonstração a
  * correr por cima de uma adaptação — que ensina uma coisa falsa.
  */
-export function nosPadroes(v: VisualState): boolean {
+export function bothAxesAtDefault(v: VisualState): boolean {
   return v.tema === 'padrao' && v.correcao === 'tricro';
 }
 
@@ -196,7 +196,7 @@ export function legacyKey(v: VisualState): string {
 
 /** O valor único antigo → o estado de dois eixos. Chave desconhecida cai no padrão, e nunca estoura. */
 const FROM_SINGLE_KEY: Readonly<Record<string, VisualState>> = Object.freeze({
-  normal: PADRAO,
+  normal: DEFAULT_VISUAL,
 
   // Os três níveis de contraste viram TEMA, e a correção fica no padrão.
   'hc-direto': { tema: 'hc3', correcao: 'tricro', simulacao: null },
@@ -233,16 +233,16 @@ const FROM_SINGLE_KEY: Readonly<Record<string, VisualState>> = Object.freeze({
  * preferência; o padrão apenas devolve o jogo como ele nasce.
  */
 export function migrateVisual(saved: unknown): VisualState {
-  if (typeof saved === 'string') return FROM_SINGLE_KEY[saved] ?? PADRAO;
+  if (typeof saved === 'string') return FROM_SINGLE_KEY[saved] ?? DEFAULT_VISUAL;
   if (saved && typeof saved === 'object') {
     const o = saved as Partial<VisualState>;
     return {
-      tema: THEMES.includes(o.tema as Theme) ? (o.tema as Theme) : PADRAO.tema,
-      correcao: CORRECTIONS.includes(o.correcao as Correction) ? (o.correcao as Correction) : PADRAO.correcao,
+      tema: THEMES.includes(o.tema as Theme) ? (o.tema as Theme) : DEFAULT_VISUAL.tema,
+      correcao: CORRECTIONS.includes(o.correcao as Correction) ? (o.correcao as Correction) : DEFAULT_VISUAL.correcao,
       simulacao: SIMULATIONS.includes(o.simulacao as Simulation) ? (o.simulacao as Simulation) : null,
     };
   }
-  return PADRAO;
+  return DEFAULT_VISUAL;
 }
 
 export const THEMES: readonly Theme[] = ['padrao', 'hc3', 'hc45', 'hc7'];

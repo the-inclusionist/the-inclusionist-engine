@@ -6,7 +6,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ui/settings-visual).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
-import { PADRAO, migrateVisual } from '../app/js/render/viz-axes.js';
+import { DEFAULT_VISUAL, migrateVisual } from '../app/js/render/viz-axes.js';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/visual-choices.js';
@@ -65,7 +65,7 @@ function makeCtx(overrides = {}) {
       calls.renderVisualAxes.push([listSel, tabsSel]);
       const el = document.querySelector(listSel);
       if (!el) return;
-      el.innerHTML = axesHtml(players[selected]?.visual ?? PADRAO, t);
+      el.innerHTML = axesHtml(players[selected]?.visual ?? DEFAULT_VISUAL, t);
     },
     // Dublê do renderizador de linhas compartilhado com o painel de empatia (render/viz-setters). Ele desenha
     // as MESMAS linhas de rádio nos dois menus — é por isso que as correções de daltonismo mantêm a aparência
@@ -137,20 +137,20 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   //
   // ⚠️ E A MARCA ERA CALCULADA DO ESPELHO OBSOLETO (`resolveVisualMode(playerViz(...))` → `p.viz`), o campo que
   // a #104 etapa 1a marcou `@deprecated`. O predicado que responde a esta pergunta exacta já existe no modelo
-  // novo, e é o `PADRAO` do `render/viz-axes`.
+  // novo, e é o `DEFAULT_VISUAL` do `render/viz-axes`.
   const linhaDoEixo = (eixo) => document.querySelector(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
     ?.closest('.ctrl-row') ?? null;
   const marcada = (el) => !!el && el.classList.contains('is-changed');
 
   it('🎯 [Right] só o eixo que SAIU do padrão fica marcado — o outro não', () => {
-    players.push({ viz: 'hc7', visual: { ...PADRAO, tema: 'hc7' } });
+    players.push({ viz: 'hc7', visual: { ...DEFAULT_VISUAL, tema: 'hc7' } });
     initSettingsVisual(makeCtx().ctx).render();
     expect(marcada(linhaDoEixo('tema')), 'o tema saiu do padrão e não foi marcado').toBe(true);
     expect(marcada(linhaDoEixo('correcao')), 'a correção está no padrão e foi marcada').toBe(false);
   });
 
   it('🎯 [Right] e ao contrário: só a correção', () => {
-    players.push({ viz: 'fix-deuter', visual: { ...PADRAO, correcao: 'deuter' } });
+    players.push({ viz: 'fix-deuter', visual: { ...DEFAULT_VISUAL, correcao: 'deuter' } });
     initSettingsVisual(makeCtx().ctx).render();
     expect(marcada(linhaDoEixo('correcao'))).toBe(true);
     expect(marcada(linhaDoEixo('tema'))).toBe(false);
@@ -177,7 +177,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
 
   it('⚠️ [Right] o botão que ABRE o menu fica marcado quando qualquer um dos eixos saiu', () => {
     // O canal que leva a criança até aqui: sem ele, ela teria de abrir cada menu para descobrir onde mexeu.
-    players.push({ viz: 'normal', visual: { ...PADRAO, correcao: 'protan' } });
+    players.push({ viz: 'normal', visual: { ...DEFAULT_VISUAL, correcao: 'protan' } });
     initSettingsVisual(makeCtx().ctx).render();
     expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(true);
   });
@@ -189,7 +189,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     //
     // ⚠️ E O QUE MUDOU: os sete numa lista só contavam uma exclusividade que DEIXOU DE EXISTIR. Agora são
     // dois eixos, e cada um pode estar fora do padrão ao mesmo tempo que o outro.
-    players.push({ viz: 'normal', visual: PADRAO });
+    players.push({ viz: 'normal', visual: DEFAULT_VISUAL });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
     const [listSel] = calls.renderVisualAxes.at(-1);
@@ -231,7 +231,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     // em `render/viz-setters`, e é lá que ele tem caso próprio. O que ESTE painel ainda promete é chamá-lo
     // com o seletor certo — e é isso que se afirma aqui, em vez de reimplementar a fiação dentro do dublê e
     // acabar a medir o dublê.
-    players.push({ viz: 'normal', visual: PADRAO });
+    players.push({ viz: 'normal', visual: DEFAULT_VISUAL });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
     expect(calls.renderVisualAxes.at(-1)).toEqual(['#visual-modes', '#visual-players']);

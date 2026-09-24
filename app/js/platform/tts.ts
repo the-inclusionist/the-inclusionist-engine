@@ -11,7 +11,7 @@ import { createInterruptibleSpeech } from './interruptible-speech.js';
 import { voicesForLocale, type NeuralVoice } from './voice-plan.js';
 import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
 import {
-  KOKORO_VOICES, tokenizar, sentenceStyle, eFala, wavDe,
+  KOKORO_VOICES, tokenize, sentenceStyle, eFala, wavDe,
   type LoadKokoro, type KokoroModule, type KokoroSession,
 } from './kokoro.js';
 
@@ -218,7 +218,7 @@ export function createTts(ctx: TtsCtx): Tts {
     load().then(async (mod) => {
       const [vocabulario, tabela] = await Promise.all([mod.vocabulary(), mod.voice(kv.voice)]);
       const synthesiseWith = async (kokoroSession: KokoroSession, texto: string): Promise<Float32Array> => {
-        const ids = tokenizar(await mod.phonemize(texto, kv.espeak), vocabulario);
+        const ids = tokenize(await mod.phonemize(texto, kv.espeak), vocabulario);
         return kokoroSession.synthesize(ids, sentenceStyle(tabela, ids.length - 2));
       };
       let kokoroSession: KokoroSession | null = null;

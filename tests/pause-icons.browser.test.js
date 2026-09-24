@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initPauseIcons, showPauseOptions } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
-import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 /*
  * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
  * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
@@ -77,8 +77,8 @@ function makeCtx(over = {}) {
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
     setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
     // Os escritores POR EIXO (#104): cada icone escreve no seu, e o outro fica onde estava.
-    setPlayerTheme: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), tema }; },
-    setPlayerCorrection: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), correcao }; },
+    setPlayerTheme: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? DEFAULT_VISUAL), tema }; },
+    setPlayerCorrection: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? DEFAULT_VISUAL), correcao }; },
     // Este duplo é de forma de PLATAFORMA — segura direcção — logo a barra dele tem o `altmove` (ADR-0115).
     // A metade que prova a AUSÊNCIA vive no project node, onde a regra mora.
     holdsKeys: () => true,
@@ -912,7 +912,7 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
   function ctxMinimo(over = {}) {
     const bars = [];
     return {
-      getPlayers: () => [{ visual: PADRAO, toggleMove: false, walkDir: 0 }],
+      getPlayers: () => [{ visual: DEFAULT_VISUAL, toggleMove: false, walkDir: 0 }],
       getNumPlayers: () => 1,
       srSay: () => {}, srAlert: () => {},
       getA11yBars: () => bars,

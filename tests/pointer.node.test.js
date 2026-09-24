@@ -12,10 +12,10 @@
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import {
-  PADRAO, isInside, clampInside, pressEdge, switchedTransport,
+  DEFAULT_POINTER, isInside, clampInside, pressEdge, switchedTransport,
 } from '../app/js/input/pointer.js';
 
-const amostra = (over = {}) => ({ ...PADRAO, ...over });
+const amostra = (over = {}) => ({ ...DEFAULT_POINTER, ...over });
 
 describe('onde o ponteiro está', () => {
   it('[Right] dentro da região é dentro, nas bordas inclusive', () => {
@@ -79,8 +79,8 @@ describe('o que o ponteiro está a fazer', () => {
   });
 
   it('[Interface] o padrão é o repouso, e é congelado', () => {
-    expect(PADRAO).toEqual({ fx: 0.5, fy: 0.5, source: 'teclado', pressed: false });
-    expect(Object.isFrozen(PADRAO)).toBe(true);
+    expect(DEFAULT_POINTER).toEqual({ fx: 0.5, fy: 0.5, source: 'teclado', pressed: false });
+    expect(Object.isFrozen(DEFAULT_POINTER)).toBe(true);
   });
 });
 
@@ -98,5 +98,5 @@ describe('o que o ponteiro está a fazer', () => {
 //   4. segurar a virar borda -> reprova o [Zero]. Sessenta desenhos do mesmo ponto por segundo.
 //   5. `switchedTransport` sempre falso -> reprova o caso dela. A troca so seria notada na proxima TECLA, e
 //      as regras do ADR-0109 responderiam sobre um aparelho que ninguem esta a usar.
-//   6. `PADRAO` sem congelar -> reprova o [Interface]. Um padrao partilhado que alguem muta e um padrao que
+//   6. `DEFAULT_POINTER` sem congelar -> reprova o [Interface]. Um padrao partilhado que alguem muta e um padrao que
 //      deixa de existir para todos os outros.

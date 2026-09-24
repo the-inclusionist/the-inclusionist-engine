@@ -6,7 +6,7 @@
 //      + querySelectorAll do original, incluindo o querySelectorAll das abas que NÃO acha nada — ver relatório).
 // ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel e do JOGO (ADR-0080); a engine a RECEBE
 
 // lqT é lido no IMPORT de render/lq-filter → zerar antes do import dinâmico, senão um resíduo de 'incl_lq'
@@ -258,7 +258,7 @@ describe('renderVizGroup — fiação no DOM real', () => {
 
   it('⚠️ [Zero] com os dois eixos no padrão, nada é recusado e o clique volta a valer', () => {
     // Um aviso que aparece sempre deixa de ser lido, e uma recusa que nunca levanta é uma parede.
-    const { env, api } = setup({ players: [{ visual: PADRAO }], numPlayers: 1 });
+    const { env, api } = setup({ players: [{ visual: DEFAULT_VISUAL }], numPlayers: 1 });
     api.renderVizGroup('#viz-list', '#viz-tabs', [VIZ_BY_KEY.blind]);
     const btn = document.querySelector('#viz-list button[data-viz="blind"]');
     expect(btn.getAttribute('aria-disabled')).toBeNull();

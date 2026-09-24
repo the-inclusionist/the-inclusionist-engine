@@ -11,7 +11,7 @@
 // quando o estado muda, e um ícone `em construção` nunca se declara ligado.
 // ZOMBIES (Zero/One/Many/Boundary/Interface/Exception/Simple) + Right-BICEP.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import {
   hasPrivateOutputIn,
@@ -163,8 +163,8 @@ function buildCtx(over = {}) {
     setToggleMove: (i, on) => { state.toggleMoveCalls.push([i, on]); const p = players[i]; if (p) p.toggleMove = on; },
     setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrateVisual(mode); } },
     // Os escritores POR EIXO (#104): mexer num nao apaga o outro, e e' isso que os casos afirmam.
-    setPlayerTheme: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), tema }; },
-    setPlayerCorrection: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), correcao }; },
+    setPlayerTheme: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? DEFAULT_VISUAL), tema }; },
+    setPlayerCorrection: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? DEFAULT_VISUAL), correcao }; },
     ...over,
   };
   return { ctx, state, said, alerted };
@@ -186,7 +186,7 @@ function setPlayers(list) {
 // reposicionar, um caso que entra na varredura — ou que liga o microfone — deixa o seguinte a começar lá dentro, e um caso
 // que depende da ordem dos vizinhos não mede o que diz.
 beforeEach(() => {
-  setPlayers([{ viz: 'normal', visual: PADRAO }]);
+  setPlayers([{ viz: 'normal', visual: DEFAULT_VISUAL }]);
   estado.setSwitchScanValue(false);
   estado.setVoiceControlValue(false);
 });
@@ -926,7 +926,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     //
     // Agora cada ícone escreve no seu eixo, e a asserção que interessa é a última: depois de mexer nos DOIS,
     // os DOIS continuam ligados.
-    setPlayers([{ visual: PADRAO }, { visual: PADRAO }]);
+    setPlayers([{ visual: DEFAULT_VISUAL }, { visual: DEFAULT_VISUAL }]);
     const { ctx, state, said } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('contrast', 1);
