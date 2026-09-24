@@ -480,42 +480,59 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * criança não confunda «está longe» com «não há nada para achar».
    */
   function updateGuide(): void {
-    const cat = ctx.getAudioCat();
-    const guideAudible = !!ctx.getAudioCtx() && ctx.getSoundOn() && !!cat && !!cat.guide && cat.guide.on;
+    const audible = guideAudible();
     const vol = ctx.getVolume ? ctx.getVolume() : 1;
     for (const pl of ctx.getPlayers()) {
-      if (!guideAudible || !needsAudioCues(pl)) { stopGuide(pl); continue; }
-
-      let g = pl._guia;
-      if (!g) {
-        // ⚠️ A PERGUNTA «HÁ ALVO?» VEM ANTES DE ACENDER, e o gate cobrou-a: com o grafo a nascer primeiro, um
-        // jogador sem alvo criava um oscilador, media a rota, não achava nada e apagava-o — SESSENTA VEZES
-        // POR SEGUNDO. O bipe não tinha este problema porque não tinha nada que durasse; foi a permanência
-        // que o trouxe. `alvoMaisProximo` é um laço sobre `targetsOf`, não a BFS: perguntar por quadro custa
-        // zero quando a lista está vazia, que é exactamente o caso em questão.
-        if (!nearestSpot(pl)) continue;
-        g = pl._guia = startGuide(pl);
-        if (!g) continue;
-      }
-
-      if (++g.desdeARota >= FRAMES_BETWEEN_ROUTES) {
-        g.desdeARota = 0;
-        const alvo = nearestSpot(pl);
-        if (!alvo) { stopGuide(pl); continue; }
-        g.passos = stepsToTarget(pl, alvo);
-        g.pan = panFor(alvo.at.x, pl);
-      }
-
-      // TODO quadro, e não só quando a rota é nova: é isto que faz a mudança ser um deslize.
-      const i = guideIntensity(g.passos);
-      try {
-        const audioNow = g.ac.currentTime;
-        g.filtro.frequency.setTargetAtTime(i.corte, audioNow, GUIDE_TAU);
-        g.ganho.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, audioNow, GUIDE_TAU);
-        g.panner?.pan.setTargetAtTime(g.pan, audioNow, GUIDE_TAU);
-      } catch (e) { /* noop */ }
+      if (!audible || !needsAudioCues(pl)) { stopGuide(pl); continue; }
+      // no guide lit (no target, or a device that refused it), or the target gone: silence says «nothing to find»
+      const g = liveGuide(pl);
+      if (!g || !remeasure(pl, g)) { stopGuide(pl); continue; }
+      glide(g, vol);
       _guideCount++;
     }
+  }
+
+  /** Can the guide be heard at all: the engine's audio started, the game's sound on, and a `guide` category that is on. */
+  function guideAudible(): boolean {
+    const cat = ctx.getAudioCat();
+    return !!ctx.getAudioCtx() && ctx.getSoundOn() && !!cat && !!cat.guide && cat.guide.on;
+  }
+
+  /** This player's live guide — lit here only if there is a target to point to, and `null` where it cannot be lit. */
+  function liveGuide(pl: SonarPlayer): LiveGuide | null {
+    if (pl._guia) return pl._guia;
+    // ⚠️ A PERGUNTA «HÁ ALVO?» VEM ANTES DE ACENDER, e o gate cobrou-a: com o grafo a nascer primeiro, um
+    // jogador sem alvo criava um oscilador, media a rota, não achava nada e apagava-o — SESSENTA VEZES
+    // POR SEGUNDO. O bipe não tinha este problema porque não tinha nada que durasse; foi a permanência
+    // que o trouxe. `alvoMaisProximo` é um laço sobre `targetsOf`, não a BFS: perguntar por quadro custa
+    // zero quando a lista está vazia, que é exactamente o caso em questão.
+    if (!nearestSpot(pl)) return null;
+    return (pl._guia = startGuide(pl));
+  }
+
+  /**
+   * Every FRAMES_BETWEEN_ROUTES frames the route and the side are measured again — the BFS on a cadence, not sixty times a
+   * second. Answers `false` when the target is gone.
+   */
+  function remeasure(pl: SonarPlayer, g: LiveGuide): boolean {
+    if (++g.desdeARota < FRAMES_BETWEEN_ROUTES) return true;
+    g.desdeARota = 0;
+    const alvo = nearestSpot(pl);
+    if (!alvo) return false;
+    g.passos = stepsToTarget(pl, alvo);
+    g.pan = panFor(alvo.at.x, pl);
+    return true;
+  }
+
+  /** TODO quadro, e não só quando a rota é nova: é isto que faz a mudança ser um deslize. */
+  function glide(g: LiveGuide, vol: number): void {
+    const i = guideIntensity(g.passos);
+    try {
+      const audioNow = g.ac.currentTime;
+      g.filtro.frequency.setTargetAtTime(i.corte, audioNow, GUIDE_TAU);
+      g.ganho.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, audioNow, GUIDE_TAU);
+      g.panner?.pan.setTargetAtTime(g.pan, audioNow, GUIDE_TAU);
+    } catch (e) { /* noop */ }
   }
 
   return {

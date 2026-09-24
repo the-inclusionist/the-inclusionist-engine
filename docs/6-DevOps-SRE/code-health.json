@@ -718,12 +718,12 @@
       "fanIn": 0
     },
     "platform/audio-sonar.ts": {
-      "codeLines": 198,
+      "codeLines": 207,
       "decisionNodes": 38,
-      "maxDepth": 3,
+      "maxDepth": 2,
       "fanOut": 4,
       "globalReach": 1,
-      "worstFunction": 15,
+      "worstFunction": 9,
       "fanIn": 3,
       "reached": [
         "window"
