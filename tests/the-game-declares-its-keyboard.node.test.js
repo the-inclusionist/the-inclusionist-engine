@@ -75,6 +75,16 @@ describe('a precedência, e o botão que a punha em causa', () => {
     expect(loadKB(store, () => ({ action1: ['KeyQ'] })).solo.action1, 'o que ela gravou tem de vir por último').toEqual(['KeyZ']);
   });
 
+  it('[Right] e o `load()` do config da raiz põe a mesma precedência no mapa VIVO — o jogo por baixo, ela por cima', () => {
+    // 📌 The root's live map comes from here (ADR-0232 D4): a config that loaded without its mapping would boot every game
+    // on the ENGINE's keys wherever the child had not remapped, and only «restaurar» would bring the game's back.
+    store.setJSON(CKEY, { solo: { action2: ['KeyZ'] } });
+    const config = createKeyboardConfig({ store, mapping: () => ({ action1: ['KeyQ'] }) });
+    config.load();
+    expect(config.kb().solo.action1, 'the live map booted without the game\'s default').toEqual(['KeyQ']);
+    expect(config.kb().solo.action2, 'and without what the child stored').toEqual(['KeyZ']);
+  });
+
   it('🔴 «restaurar padrões» volta ao padrão do JOGO, não ao da ENGINE', () => {
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
 

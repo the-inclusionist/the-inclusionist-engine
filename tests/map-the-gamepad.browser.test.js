@@ -78,6 +78,32 @@ describe('«Mapear controle»', () => {
     expect(document.querySelector('#padwiz').hidden, 'the wizard stayed open after the last named position').toBe(true);
   });
 
+  it('🔴 [Right] the map the wizard stored is the one the pad plays with, on the next frame (one cache per root, ADR-0232 D4)', async () => {
+    // 📌 A STANDARD pad, because the root reads it every frame without the gamepad's own wizard taking over: its reading
+    // asks for this pad's map before the child maps it — and gets none. If the motor wizard stored into a cache the reading
+    // does not share, the reading would keep that «none» and the pad would go on playing the factory layout.
+    const std = { id: 'Standard test pad (ADR-0232 D4)', index: 0, mapping: 'standard', axes: [0, 0, 0, 0],
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false })) };
+    const premir = async (i) => { std.buttons[i].pressed = true; await esperar(); const lido = motor.input.padCur[0];
+      std.buttons[i].pressed = false; await esperar(); return lido; };
+    localStorage.removeItem('incl_padmap_' + std.id);
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [std] });
+    try {
+      await esperar(); // the root's poll reads this pad, and asks for its map
+      expect((await premir(16))?.left, 'the premise: the factory layout gives button 16 no direction').toBe(false);
+      abrirMotora();
+      document.querySelector('#motora #opt-controle').click();
+      await premir(16); // any button: this pad is the one
+      await premir(16); // «Esquerda» is button 16
+      await premir(11); // «Pular» is button 11
+      expect(JSON.parse(localStorage.getItem('incl_padmap_' + std.id) ?? 'null'), 'the premise: the map was stored')
+        .toEqual({ left: { b: 16 }, action2: { b: 11 } });
+      expect((await premir(16))?.left, 'the pad does not play with the map the wizard stored').toBe(true);
+    } finally {
+      Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+      localStorage.removeItem('incl_padmap_' + std.id);
+    }
+  });
   it('🔴 [Right] «Voltar» cancels: nothing is stored', async () => {
     localStorage.removeItem('incl_padmap_' + pad.id);
     abrirMotora();
@@ -120,3 +146,4 @@ describe('«Mapear controle»', () => {
 // ============================== MUTATIONS CHECKED ==============================
 //   K1 no row · K2 wizard not started · K3 asks every position · K4 «Voltar» not wired · K5 cancel saves
 //   K6 row offered with nothing named · K7 closing does not hide the panel                                🔴 each
+//   K8 the root's wizard and its gamepad on two caches of stored maps (ADR-0232 D4)                        🔴

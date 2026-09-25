@@ -1303,6 +1303,19 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     expect(press(GAMEPAD_STANDARD.action1).action1, 'sem cartucho, a fábrica da engine').toBe(true);
   });
 
+  it('🎯 [Right] a raiz arranca com o teclado que a criança GUARDOU, por cima do padrão do jogo', async () => {
+    // 📌 The live map is loaded once, at boot, from the store the host lends: without that load a child who remapped plays
+    // on the factory keys until she opens the panel — and the keyboard conductor presses what she no longer uses.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { memoryBackend } = await import('../app/js/platform/storage.js');
+    const { doc, win } = domFalso();
+    const storage = memoryBackend([['inclusionist.kbcontrols.v3', JSON.stringify({ solo: { action2: ['KeyM'] } })]]);
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win, storage } });
+    expect(motor.keyboardConfig.kb().solo.action2, 'the root booted without what the child stored').toEqual(['KeyM']);
+    expect(motor.keyboardConfig.kb().solo.up, 'and without the game\'s default under it').toEqual(['KeyZ']);
+    expect(motor.keyboard.kbFor(0).action2, 'the runtime reads another map than the config').toEqual(['KeyM']);
+  });
+
   it('🔴 [Cross-check] duas raízes na mesma página, dois teclados e duas memórias de entrada (ADR-0142, ADR-0232 D4)', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const a = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: domFalso() });
