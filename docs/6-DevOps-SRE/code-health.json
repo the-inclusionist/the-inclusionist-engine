@@ -1901,8 +1901,8 @@
       "fanIn": 1
     },
     "ui/vlibras-player.ts": {
-      "codeLines": 148,
-      "decisionNodes": 23,
+      "codeLines": 165,
+      "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 3,
       "globalReach": 0,

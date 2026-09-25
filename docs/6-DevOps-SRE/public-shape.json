@@ -3226,6 +3226,7 @@
       "base",
       "doc",
       "fetch",
+      "leaveAfterMs?",
       "loadTimeoutMs?",
       "playerFolder?",
       "title",
