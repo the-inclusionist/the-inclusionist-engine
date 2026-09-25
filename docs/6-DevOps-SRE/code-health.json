@@ -50,27 +50,21 @@
     "platform/vision.ts",
     "platform/voice-listener.ts",
     "platform/vosk-runtime.ts",
-    "render/canvas.ts",
-    "render/crt.ts",
-    "render/high-contrast.ts",
-    "render/lq-filter.ts",
     "ui/debug-panel.ts",
     "ui/fonts.ts",
-    "ui/layout.ts",
     "ui/mount-panel.ts",
     "ui/pause-icons.ts",
-    "ui/settings-motion.ts",
     "ui/vlibras.ts"
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2109,
+      "codeLines": 2116,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 88,
       "globalReach": 1,
       "worstFunction": 70,
-      "statefulEdges": 23,
+      "statefulEdges": 19,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
@@ -91,13 +85,9 @@
         "platform/reading-in-worker.ts",
         "platform/reading-runtime.ts",
         "platform/tts.ts",
-        "render/crt.ts",
-        "render/lq-filter.ts",
         "ui/fonts.ts",
-        "ui/layout.ts",
         "ui/mount-panel.ts",
         "ui/pause-icons.ts",
-        "ui/settings-motion.ts",
         "ui/vlibras.ts"
       ]
     },
@@ -253,7 +243,7 @@
       "globalReach": 1,
       "worstFunction": 2,
       "statefulEdges": 0,
-      "fanIn": 3,
+      "fanIn": 2,
       "reached": [
         "globalThis"
       ]
@@ -1316,39 +1306,24 @@
       ]
     },
     "render/canvas.ts": {
-      "codeLines": 12,
+      "codeLines": 13,
       "decisionNodes": 4,
       "maxDepth": 4,
       "fanOut": 0,
-      "globalReach": 1,
+      "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 3,
-      "reached": [
-        "document"
-      ]
+      "fanIn": 3
     },
     "render/crt.ts": {
-      "codeLines": 54,
+      "codeLines": 60,
       "decisionNodes": 15,
       "maxDepth": 2,
-      "fanOut": 3,
-      "globalReach": 1,
+      "fanOut": 2,
+      "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 1,
-      "fanIn": 3,
-      "reached": [
-        "window"
-      ],
-      "holds": [
-        "let _a11yVisualActive",
-        "let _playerCount",
-        "let _store",
-        "mutated CRT"
-      ],
-      "statefulImports": [
-        "core/dom-query.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "render/cvd-matrices.ts": {
       "codeLines": 38,
@@ -1371,23 +1346,14 @@
       "fanIn": 4
     },
     "render/high-contrast.ts": {
-      "codeLines": 179,
-      "decisionNodes": 37,
+      "codeLines": 193,
+      "decisionNodes": 36,
       "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 1,
-      "fanIn": 2,
-      "holds": [
-        "let ctx",
-        "mutated HC_ROLE",
-        "mutated _spriteTexHC",
-        "mutated _worldTexHC"
-      ],
-      "statefulImports": [
-        "render/canvas.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "render/low-vision-drawing.ts": {
       "codeLines": 30,
@@ -1400,22 +1366,14 @@
       "fanIn": 2
     },
     "render/lq-filter.ts": {
-      "codeLines": 73,
+      "codeLines": 74,
       "decisionNodes": 8,
       "maxDepth": 3,
       "fanOut": 1,
-      "globalReach": 1,
+      "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 3,
-      "reached": [
-        "document"
-      ],
-      "holds": [
-        "let lqStore",
-        "let lqT",
-        "let onChange"
-      ]
+      "fanIn": 2
     },
     "render/port.ts": {
       "codeLines": 43,
@@ -1444,25 +1402,18 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "render/canvas.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "render/viewports.ts": {
-      "codeLines": 112,
+      "codeLines": 114,
       "decisionNodes": 17,
       "maxDepth": 2,
       "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 6,
-      "statefulEdges": 2,
-      "fanIn": 0,
-      "statefulImports": [
-        "render/canvas.ts",
-        "render/high-contrast.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "render/viz-axes-labels.ts": {
       "codeLines": 52,
@@ -1505,18 +1456,14 @@
       "fanIn": 2
     },
     "render/viz-setters.ts": {
-      "codeLines": 274,
+      "codeLines": 275,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 2,
-      "fanIn": 0,
-      "statefulImports": [
-        "render/high-contrast.ts",
-        "render/lq-filter.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "ui/aac-sets.ts": {
       "codeLines": 37,
@@ -1601,7 +1548,7 @@
       "globalReach": 0,
       "worstFunction": 2,
       "statefulEdges": 1,
-      "fanIn": 10,
+      "fanIn": 9,
       "statefulImports": [
         "core/dom-query.ts"
       ]
@@ -1613,11 +1560,8 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "ui/layout.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/eye-control.ts": {
       "codeLines": 148,
@@ -1752,24 +1696,14 @@
       "fanIn": 2
     },
     "ui/layout.ts": {
-      "codeLines": 69,
+      "codeLines": 79,
       "decisionNodes": 10,
       "maxDepth": 2,
-      "fanOut": 3,
-      "globalReach": 2,
+      "fanOut": 1,
+      "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 1,
-      "fanIn": 2,
-      "reached": [
-        "location",
-        "window"
-      ],
-      "holds": [
-        "let _countPlayers"
-      ],
-      "statefulImports": [
-        "render/crt.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "ui/locale-flags.ts": {
       "codeLines": 20,
@@ -1995,20 +1929,14 @@
       "fanIn": 1
     },
     "ui/settings-motion.ts": {
-      "codeLines": 317,
+      "codeLines": 324,
       "decisionNodes": 46,
       "maxDepth": 3,
       "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "holds": [
-        "let selectedPlayer"
-      ],
-      "statefulImports": [
-        "render/crt.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/settings-panel.ts": {
       "codeLines": 143,
@@ -2146,11 +2074,8 @@
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 2,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "render/lq-filter.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/vlibras.ts": {
       "codeLines": 37,

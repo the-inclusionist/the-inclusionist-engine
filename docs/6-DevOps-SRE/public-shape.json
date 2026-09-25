@@ -48,6 +48,7 @@
       "applyVisionFilter",
       "captionSound",
       "controller",
+      "crt",
       "cvdFilters",
       "declaration",
       "declines",
@@ -55,6 +56,7 @@
       "gameSpeed",
       "keyboard",
       "localeReady",
+      "lq",
       "measureFlashes",
       "menuIndexOn",
       "mount",
@@ -1704,8 +1706,24 @@
     "type VoskLoad": "| { readonly ok: true"
   },
   "render/canvas.ts": {
+    "type CanvasDoc": "Pick<Document, 'createElement'>",
     "type PixelBrush": "(x: number, y: number, w: number, h: number, col: string) => void",
     "type PixelPainter": "(px: PixelBrush) => void"
+  },
+  "render/crt.ts": {
+    "interface CrtCtx": [
+      "a11yVisualOn",
+      "numPlayers",
+      "region",
+      "store",
+      "win"
+    ],
+    "interface Crt": [
+      "apply",
+      "cfg",
+      "scanVars"
+    ],
+    "type CrtCfg": "{ scan: number"
   },
   "render/cvd-matrices.ts": {
     "type CvdKey": "'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan'"
@@ -1720,6 +1738,7 @@
     ],
     "interface HighContrastCtx": [
       "W",
+      "doc",
       "getWorldCanvasNormal",
       "getWorldTexNormal",
       "outlineBg",
@@ -1729,6 +1748,24 @@
       "store",
       "tileAt"
     ],
+    "interface DirectTexSource": [
+      "baseTexture",
+      "frame?",
+      "orig"
+    ],
+    "interface HighContrast": [
+      "clearSpriteTexCache",
+      "clearWorldTexCache",
+      "directBgTexture",
+      "directSpriteCanvas",
+      "directSpriteTexture",
+      "role",
+      "saveRole",
+      "spriteTexFor",
+      "worldTexFor",
+      "worldToTextureDirect"
+    ],
+    "type RolePalette": "Record<HcRoleKey, [number, number, number]>",
     "type HighContrastStore": "Pick<Store, 'getJSON' | 'setJSON'>"
   },
   "render/low-vision-drawing.ts": {
@@ -1736,9 +1773,16 @@
   },
   "render/lq-filter.ts": {
     "interface LqFilterCtx": [
+      "doc",
       "onChange",
       "store"
-    ]
+    ],
+    "interface LqFilter": [
+      "filter",
+      "set",
+      "t"
+    ],
+    "type LqDoc": "Pick<Document, 'getElementById' | 'createElementNS' | 'body'>"
   },
   "render/port.ts": {
     "interface Drawing": [
@@ -1851,9 +1895,11 @@
       "BlurFilter",
       "ColorMatrixFilter",
       "cvdDefsHost",
+      "doc",
       "getLvOverlaySpr",
       "getTreeTexNormal",
       "getVpTex",
+      "hc",
       "parallaxTexNormal",
       "renderInto"
     ],
@@ -1914,9 +1960,11 @@
       "getSharedViz",
       "getVpDots",
       "getVpSpr",
+      "hc",
       "hideTouchControls",
       "invalidateSharedViz",
       "itemTexId",
+      "lqFilter",
       "parallaxLayers",
       "parallaxTexFor",
       "pixiFilterFor",
@@ -2232,7 +2280,18 @@
     ],
     "interface Scale": [
       "kDev"
-    ]
+    ],
+    "interface LayoutCtx": [
+      "afterScale",
+      "debug?",
+      "doc",
+      "numPlayers",
+      "win"
+    ],
+    "interface Layout": [
+      "layout"
+    ],
+    "type LayoutDoc": "Pick<Document, 'querySelector'>"
   },
   "ui/locale-flags.ts": {
     "type CycleLocale": "(typeof LOCALE_CYCLE)[number]"
@@ -2679,6 +2738,7 @@
     "interface SettingsMotionCtx": [
       "$",
       "characterLabel?",
+      "crt",
       "fillExplain?",
       "frontOverlay",
       "getNumPlayers",
@@ -2709,7 +2769,9 @@
     "interface SettingsMotionApi": [
       "close",
       "open",
-      "render"
+      "render",
+      "selectedPlayer",
+      "setSelectedPlayer"
     ],
     "type MotionSceneKey": "ChaveDeCenaLeaf",
     "type MotionCharProp": "PropDoPersonagemLeaf",

@@ -11,13 +11,6 @@
       "noiseBuffer",
       "setMasterMuted"
     ],
-    "render/canvas.ts": [
-      "pixelCanvas",
-      "pixelTexture"
-    ],
-    "ui/layout.ts": [
-      "initLayout"
-    ],
     "ui/menu-items.ts": [
       "ITEM_SELECTOR"
     ],

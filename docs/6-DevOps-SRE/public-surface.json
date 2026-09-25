@@ -938,6 +938,7 @@
     "loadVoskRuntime"
   ],
   "render/canvas.ts": [
+    "CanvasDoc",
     "PixelBrush",
     "PixelPainter",
     "makeCanvas",
@@ -947,11 +948,11 @@
     "tex"
   ],
   "render/crt.ts": [
-    "CRT",
     "CRT_DEFAULT",
-    "applyCrt",
-    "crtScanVars",
-    "initCrt"
+    "Crt",
+    "CrtCfg",
+    "CrtCtx",
+    "createCrt"
   ],
   "render/cvd-matrices.ts": [
     "CVD_KEYS",
@@ -970,35 +971,26 @@
   "render/high-contrast.ts": [
     "DIRECT_CFG",
     "DirectCfg",
-    "HC_ROLE",
+    "DirectTexSource",
+    "HighContrast",
     "HighContrastCtx",
     "HighContrastStore",
-    "clearSpriteTexCache",
-    "clearWorldTexCache",
+    "RolePalette",
+    "createHighContrast",
     "dcfg",
-    "dimDesat",
-    "directBgTexture",
-    "directSpriteCanvas",
-    "directSpriteTexture",
-    "initHighContrast",
-    "saveHcRole",
-    "spriteTexFor",
-    "worldTexFor",
-    "worldToTextureDirect"
+    "dimDesat"
   ],
   "render/low-vision-drawing.ts": [
     "LowVisionDrawing",
     "drawLowVision"
   ],
   "render/lq-filter.ts": [
+    "LqDoc",
+    "LqFilter",
     "LqFilterCtx",
-    "ensureLqFilter",
-    "getLqT",
-    "initLqFilter",
+    "createLqFilter",
     "lqCurve",
-    "lqFilter",
-    "lqName",
-    "setLq"
+    "lqName"
   ],
   "render/port.ts": [
     "ApplyCssFilter",
@@ -1300,14 +1292,16 @@
   ],
   "ui/layout.ts": [
     "Box",
+    "Layout",
+    "LayoutCtx",
+    "LayoutDoc",
     "NamedBox",
     "NodeMeasure",
     "Scale",
     "applyScale",
     "barIntruders",
     "belowFloor",
-    "initLayout",
-    "layout",
+    "createLayout",
     "minimumTarget",
     "stageScale"
   ],
@@ -1525,9 +1519,7 @@
     "MotionSceneKey",
     "SettingsMotionApi",
     "SettingsMotionCtx",
-    "getSelectedPlayer",
-    "initSettingsMotion",
-    "setSelectedPlayer"
+    "initSettingsMotion"
   ],
   "ui/settings-panel.ts": [
     "EXPLAIN_IDLE",
