@@ -1541,17 +1541,17 @@
       "fanIn": 2
     },
     "ui/menu-items.ts": {
-      "codeLines": 4,
-      "decisionNodes": 0,
-      "maxDepth": 0,
+      "codeLines": 17,
+      "decisionNodes": 5,
+      "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 1,
+      "worstFunction": 13,
       "statefulEdges": 0,
-      "fanIn": 3
+      "fanIn": 5
     },
     "ui/menu-nav.ts": {
-      "codeLines": 279,
+      "codeLines": 278,
       "decisionNodes": 59,
       "maxDepth": 2,
       "fanOut": 7,
@@ -1631,10 +1631,10 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 628,
+      "codeLines": 633,
       "decisionNodes": 85,
       "maxDepth": 3,
-      "fanOut": 18,
+      "fanOut": 19,
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
@@ -1771,10 +1771,10 @@
       "fanIn": 1
     },
     "ui/shell.ts": {
-      "codeLines": 270,
+      "codeLines": 271,
       "decisionNodes": 43,
       "maxDepth": 3,
-      "fanOut": 2,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 10,
       "statefulEdges": 0,

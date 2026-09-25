@@ -67,7 +67,7 @@ export interface NavKeyEvent {
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // the listening port, generic over WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import { backToRoot, PM_VISIBLE_ITEMS } from './pause-icons.js';
+import { backToRoot, markPauseItem, PM_VISIBLE_ITEMS } from './pause-icons.js';
 import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js';
@@ -343,8 +343,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
    */
   function pauseSetSel(menu: HTMLElement, el: HTMLElement | null | undefined): void {
     if (!el) return; // an index outside the list (an empty card): touch nothing
-    menu.querySelectorAll<HTMLElement>('.pm-sel').forEach((b) => b.classList.remove('pm-sel'));
-    el.classList.add('pm-sel');
+    markPauseItem(menu, el); // the one place the card's cursor moves, and is kept in view (issue #134)
   }
 
   function navPause(menu: HTMLElement, playerIndex: number, k: NavKeys): void {

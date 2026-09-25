@@ -271,6 +271,12 @@ body:not(.dbg) .topbar{display:none} /* the PAGE title only under ?debug=true (t
    six items fitted and its card shrank to them, 46 px shorter than the submenu at 640×360 (measured); it now holds the whole
    height too, its items from the top, as a panel's rows are. */
 .screen-pause .pause-card{height:100%;box-sizing:border-box}
+/* THE CARD RUNS UNDER THE BUTTON LEGEND AT THE FOOT OF THE SCREEN, as a panel runs under its explanation (issue #134): the
+   room at its end and the scroll padding let its LAST item, and the one under the cursor, come to rest above the band —
+   and above the HUD row under it (`--rodape-h`), which is drawn over the card too. Measured at 640×360 before: «Sair do jogo»
+   at 288–332 px under a legend at 313–342, a third of it covered. */
+.screen-pause .pause-card{scroll-padding-bottom:calc(var(--rodape-h,0px) + var(--footer-band-h,50px))}
+.screen-pause .pause-card::after{content:"";display:block;height:calc(var(--rodape-h,0px) + var(--footer-band-h,50px))}
 .screen-pause .pause-card h2{font-size:1em;line-height:1.25;margin:0 0 .1rem}
 .screen-pause .pause-menu{gap:.3rem}
 /* The per-player frame tightens the PADDING, never the minimum height: the tight frame is the one of a game with four

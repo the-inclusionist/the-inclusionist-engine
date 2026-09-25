@@ -1325,6 +1325,7 @@
   ],
   "ui/menu-items.ts": [
     "ITEM_SELECTOR",
+    "keepInView",
     "navigableItems"
   ],
   "ui/menu-nav.ts": [
@@ -1432,6 +1433,7 @@
     "iconsThatAct",
     "initPauseIcons",
     "inputModeOf",
+    "markPauseItem",
     "nextInputMode",
     "rootThatActs",
     "showPauseOptions",

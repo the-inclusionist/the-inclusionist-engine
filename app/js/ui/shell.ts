@@ -38,6 +38,7 @@ import type { SceneFacts } from '../core/scenes.js';
 // ONE constant, not a repeated selector: the pause card has more than one list (ADR-0044 item 5), and whoever scans raw
 // `.pm-btn` also sees the hidden ones.
 import { PM_VISIBLE_ITEMS } from './pause-icons.js';
+import { keepInView } from './menu-items.js';
 
 /* ===================== minimal interfaces ===================== */
 
@@ -409,7 +410,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ctx.getPauseScreens().forEach((sp) => {
       const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
       items.forEach((b) => b.classList.remove('pm-sel'));
-      if (items[0]) items[0].classList.add('pm-sel'); // the 1st item (Continue) selected on each screen
+      if (items[0]) { items[0].classList.add('pm-sel'); keepInView(items[0]); } // the 1st item (Continue), and in view (issue #134)
     });
   }
 

@@ -56,6 +56,7 @@ import {
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './audio-choices.js';
 import { announceItem } from './item-announcement.js';
+import { keepInView } from './menu-items.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js'; // from the LEAF, not from ui/menu-nav: see the note there
 // A LIVE BINDING (ESM): the index can be turned off in the menu, and the value here follows without a subscription.
@@ -527,9 +528,22 @@ export const LIST_DOOR: Readonly<Record<PauseSub, string | null>> = Object.freez
 export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
   sp.querySelectorAll<HTMLElement>('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
   const first = sp.querySelector<HTMLElement>(PM_VISIBLE_ITEMS);
-  sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((b) => b.classList.remove('pm-sel', 'pi-sel'));
-  if (first) first.classList.add('pm-sel');
+  sp.querySelectorAll<HTMLElement>('.pi-sel').forEach((b) => b.classList.remove('pi-sel'));
+  markPauseItem(sp, first);
   return first;
+}
+
+/**
+ * PUTS THE CARD'S CURSOR ON `el` — the one place every move of it goes through, whatever moved it: the arrows and the pad
+ * (`ui/menu-nav`), a finger, a held press, a door between lists, «back». The card selects by class, not by browser focus,
+ * so nothing scrolls it by itself: an item past the visible part of a long list would be marked where the child cannot see
+ * it. So the list is scrolled HERE, inside the card, until the item is wholly in view (issue #134, `keepInView`).
+ */
+export function markPauseItem(sp: HTMLElement, el: HTMLElement | null | undefined): void {
+  if (!el) return;
+  sp.querySelectorAll<HTMLElement>('.pm-sel').forEach((b) => b.classList.remove('pm-sel'));
+  el.classList.add('pm-sel');
+  keepInView(el);
 }
 
 /**
@@ -547,8 +561,7 @@ export function backToRoot(sp: HTMLElement): HTMLElement | null {
   const door = left ? LIST_DOOR[left] : null;
   const opener = door ? [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)].find((b) => b.dataset.act === door) : undefined;
   if (!opener || opener === first) return first;
-  first?.classList.remove('pm-sel');
-  opener.classList.add('pm-sel');
+  markPauseItem(sp, opener);
   return opener;
 }
 
@@ -1275,8 +1288,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // 🔴 THE CURSOR GOES WHERE THE CHILD PRESSED (ADR-0130 rule 1). A finger or a mouse opens a panel without walking the
     // arrows, and the mark stayed on the item the arrows had last reached — so «back» from the panel returned her to an
     // item she never chose. The keyboard's press is already on its item; this is the pointer's half.
-    sp.querySelectorAll<HTMLElement>('.pm-sel').forEach((x) => x.classList.remove('pm-sel'));
-    b.classList.add('pm-sel');
+    markPauseItem(sp, b);
     // LOCKED (ADR-0161): pressing it SAYS the reason and does nothing — neither door nor action.
     if (b.getAttribute('aria-disabled') === 'true') {
       const reason = b.dataset.motivo ?? '';

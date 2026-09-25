@@ -203,7 +203,11 @@ describe('o alvo de toque é 44 px a 640×360 e cresce com a escala (ADR-0163)',
       sp.querySelectorAll('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
       expect(itensVisiveis(sp).length, 'o caso mediria uma lista vazia').toBe(n);
       const card = sp.querySelector('.pause-card');
-      const excesso = card.scrollHeight - card.clientHeight;
+      // ⚠️ THE ROOM KEPT AT THE CARD'S END IS NOT CONTENT (issue #134): the band at the foot of the screen and the HUD row are
+      // drawn over the card, so its last item scrolls up past them — a reserve, which this case leaves out of the count of what
+      // the ITEMS take. What it still measures is that seven 44 px items and the title fit the card.
+      const reserva = parseFloat(getComputedStyle(card, '::after').height) || 0;
+      const excesso = Math.round(card.scrollHeight - card.clientHeight - reserva);
       expect(excesso, `${sub}: o cartão transborda ${excesso}px a 640×360`).toBeLessThanOrEqual(0);
     }
   });
