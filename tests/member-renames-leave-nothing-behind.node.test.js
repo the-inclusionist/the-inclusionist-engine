@@ -36,12 +36,18 @@ describe('a renamed member leaves nothing behind', () => {
     // The end state ADR-0230 set: «the language gate reports `membro` at the count of the excluded list and nothing
     // more». Held here as a SET and not a count — a new Portuguese member and a renamed excluded one would cancel out
     // in a number and stay visible in a set.
+    //
+    // ⚠️ Parsed without JSDoc (the walk goes by `forEachChild`, which never enters it) and with parents (`keyOf` climbs to
+    // them); `isMember` is one lookup of the node's kind. Under the load of several suites at once this case went past the
+    // 5 s ceiling while passing alone; the fix is the work shrinking, never the clock growing.
     const lists = readLists();
     const left = [];
+    const PARSE = { languageVersion: ts.ScriptTarget.Latest, jsDocParsingMode: ts.JSDocParsingMode.ParseNone };
+    const { isIdentifier } = ts;
     for (const f of source()) {
-      const sf = ts.createSourceFile(f, readFileSync(join(ROOT, f), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+      const sf = ts.createSourceFile(f, readFileSync(join(ROOT, f), 'utf8'), PARSE, true, ts.ScriptKind.TS);
       (function walk(n) {
-        if (isMember(n) && n.name && ts.isIdentifier(n.name) && words(n.name.text).some((w) => lists.pt.has(w))) left.push(keyOf(n, f.replace('app/js/', '')));
+        if (isMember(n) && n.name && isIdentifier(n.name) && words(n.name.text).some((w) => lists.pt.has(w))) left.push(keyOf(n, f.replace('app/js/', '')));
         n.forEachChild(walk);
       })(sf);
     }

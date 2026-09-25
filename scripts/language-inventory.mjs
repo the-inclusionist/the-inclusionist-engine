@@ -118,8 +118,10 @@ export const EXCEPTIONS = [
  * ⚠️ `--exclude-standard` keeps `.gitignore` in force, so `dist/` and temporaries stay out. `code-health.mjs` was given the
  * same treatment at birth for the same reason; this file is the one that taught it.
  */
+// ONE `git` process asks both questions: `--cached` is what `ls-files` lists by default and `--others` adds what is not yet
+// in the index — the same union two processes used to build.
 const listar = (...args) => execFileSync('git', args, { cwd: raiz }).toString().split(/\r?\n/).filter(Boolean);
-export const source = () => [...new Set([...listar('ls-files', 'app/js'), ...listar('ls-files', '--others', '--exclude-standard', 'app/js')])]
+export const source = () => [...new Set(listar('ls-files', '--cached', '--others', '--exclude-standard', 'app/js'))]
   .filter((f) => f.endsWith('.ts') && !EXCEPTIONS.some(([p]) => f.startsWith(p)));
 
 /** camelCase, PascalCase and snake_case into the words a reader actually reads; anything under three letters is noise. */

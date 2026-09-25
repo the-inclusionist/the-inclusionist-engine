@@ -37,8 +37,23 @@ const readMap = () => JSON.parse(readFileSync(MAP, 'utf8'));
 const layerOf = (rel) => rel.split('/')[0];
 const relOf = (abs) => relative(APP, abs).split('\\').join('/');
 
-export const isMember = (n) => ts.isPropertySignature(n) || ts.isPropertyDeclaration(n) || ts.isMethodSignature(n)
-  || ts.isMethodDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n) || ts.isEnumMember(n);
+/**
+ * A member declaration: a property or method signature or declaration, a get or set accessor, an enum member.
+ *
+ * ⚠️ ONE LOOKUP OF THE NODE'S KIND, and not seven `ts.isX` calls — each `ts.isX` is exactly `node.kind === SyntaxKind.X`,
+ * so the set says the same thing. The difference is the cost: the gates call this on EVERY node of ~560 files, and under
+ * Vitest each `ts.isX` is a read through a transformed module. 📏 Measured inside a Vitest worker on 2026-09-25: the walk
+ * took ~590 ms with the seven calls and ~50 ms with the set.
+ */
+const MEMBER_KINDS = new Set([
+  ts.SyntaxKind.PropertySignature, ts.SyntaxKind.PropertyDeclaration, ts.SyntaxKind.MethodSignature,
+  ts.SyntaxKind.MethodDeclaration, ts.SyntaxKind.GetAccessor, ts.SyntaxKind.SetAccessor, ts.SyntaxKind.EnumMember,
+]);
+export const isMember = (n) => MEMBER_KINDS.has(n.kind);
+
+/** The parse the gates below ask for: JSDoc is left out, because every walk here goes by `forEachChild`, which never enters
+ *  a JSDoc node — so a name inside a comment was never read, and parsing it was work nobody used. */
+const PARSE = { languageVersion: ts.ScriptTarget.Latest, jsDocParsingMode: ts.JSDocParsingMode.ParseNone };
 
 /**
  * The name a member is filed under: the nearest named type-like declaration around it — interface, type alias, class,
@@ -220,30 +235,38 @@ export function leftovers() {
   // and the map themselves are left out: they carry the old names as DATA, by design.
   const scripts = ts.sys.readDirectory(join(ROOT, 'scripts'), ['.mjs', '.js'], undefined, undefined, 1)
     .filter((f) => !/apply-member-rename|\.tmp\./.test(f));
+  // Parents are kept (`namesAMember` and `isTParams` climb to them); JSDoc is not (see `PARSE`).
   const sources = [...cfg.fileNames, ...scripts].filter((f) => !f.includes('/app/js/i18n/'))
-    .map((f) => ts.createSourceFile(f, readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true, f.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS));
+    .map((f) => ts.createSourceFile(f, readFileSync(f, 'utf8'), PARSE, true, f.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS));
+  // ⚠️ Bound once, for the reason `isMember` gives: this walk runs on every node of every file.
+  const {
+    isIdentifier, isCallExpression, isPropertyAssignment, isShorthandPropertyAssignment, isMethodDeclaration,
+    isObjectLiteralExpression, isPropertyAccessExpression, isBindingElement, isObjectBindingPattern, isLiteralTypeNode,
+    isStringLiteral, isBinaryExpression, SyntaxKind,
+  } = ts;
   const stillDeclared = new Set();
   for (const sf of sources) (function walk(n) {
-    if (isMember(n) && n.name && ts.isIdentifier(n.name) && oldNames.has(n.name.text)) stillDeclared.add(n.name.text);
+    if (isMember(n) && n.name && isIdentifier(n.name) && oldNames.has(n.name.text)) stillDeclared.add(n.name.text);
     n.forEachChild(walk);
   })(sf);
   const watched = new Set([...oldNames].filter((n) => !stillDeclared.has(n)));
-  const isTParams = (lit) => ts.isCallExpression(lit.parent) && lit.parent.arguments[1] === lit
+  const isTParams = (lit) => isCallExpression(lit.parent) && lit.parent.arguments[1] === lit
     && /(^|\.)t$/.test(lit.parent.expression.getText());
   const out = [];
   for (const sf of sources) (function walk(n) {
     let name = null, kind = '';
-    if ((ts.isPropertyAssignment(n) || ts.isShorthandPropertyAssignment(n) || ts.isMethodDeclaration(n)) && n.name && ts.isIdentifier(n.name)
-      && !(ts.isObjectLiteralExpression(n.parent) && isTParams(n.parent))) { name = n.name.text; kind = 'object key'; }
-    else if (ts.isPropertyAccessExpression(n)) { name = n.name.text; kind = 'access'; }
-    else if (ts.isBindingElement(n) && n.propertyName && ts.isIdentifier(n.propertyName)) { name = n.propertyName.text; kind = 'destructured'; }
-    else if (ts.isBindingElement(n) && !n.propertyName && ts.isIdentifier(n.name) && ts.isObjectBindingPattern(n.parent)) { name = n.name.text; kind = 'destructured'; }
-    else if (ts.isLiteralTypeNode(n) && ts.isStringLiteral(n.literal) && namesAMember(n)) { name = n.literal.text; kind = 'string in a type'; }
+    if ((isPropertyAssignment(n) || isShorthandPropertyAssignment(n) || isMethodDeclaration(n)) && n.name && isIdentifier(n.name)
+      && !(isObjectLiteralExpression(n.parent) && isTParams(n.parent))) { name = n.name.text; kind = 'object key'; }
+    else if (isPropertyAccessExpression(n)) { name = n.name.text; kind = 'access'; }
+    else if (isBindingElement(n) && n.propertyName && isIdentifier(n.propertyName)) { name = n.propertyName.text; kind = 'destructured'; }
+    else if (isBindingElement(n) && !n.propertyName && isIdentifier(n.name) && isObjectBindingPattern(n.parent)) { name = n.name.text; kind = 'destructured'; }
+    else if (isLiteralTypeNode(n) && isStringLiteral(n.literal) && namesAMember(n)) { name = n.literal.text; kind = 'string in a type'; }
     // `'x' in obj` names a member as a STRING. 📏 Measured on the ui layer: `'contentor' in piece` survived the language
     // service and this gate, and only the type checker noticed — because the narrowing it did stopped working.
-    else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InKeyword && ts.isStringLiteral(n.left)) { name = n.left.text; kind = 'string in an `in` check'; }
-    const file = relative(ROOT, sf.fileName).split('\\').join('/');
-    if (name && watched.has(name) && !map.dataKeys?.[`${file} ${name}`]) {
+    else if (isBinaryExpression(n) && n.operatorToken.kind === SyntaxKind.InKeyword && isStringLiteral(n.left)) { name = n.left.text; kind = 'string in an `in` check'; }
+    // The file's path only where a name was found — it was built for every node, and nodes are ~80 thousand.
+    const file = name && watched.has(name) ? relative(ROOT, sf.fileName).split('\\').join('/') : null;
+    if (file && !map.dataKeys?.[`${file} ${name}`]) {
       const { line } = sf.getLineAndCharacterOfPosition(n.getStart(sf));
       out.push({ file, line: line + 1, name, kind });
     }
