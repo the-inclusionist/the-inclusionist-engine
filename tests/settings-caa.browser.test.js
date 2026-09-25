@@ -5,6 +5,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsCaa, mountCaaInside } from '../app/js/ui/settings-caa.js';
 import { sectionHeader } from '../app/js/ui/panel-widgets.js';
 import { CAA_SETS } from '../app/js/ui/caa-sets.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -12,6 +14,7 @@ function fullCtx(over = {}) {
   const said = [];
   let caso = 'upper';
   return {
+    t: translate,
     $,
     srSay: (m) => said.push(m),
     getLetterCase: () => caso,
@@ -49,6 +52,19 @@ describe('ui/settings-caa — escolher', () => {
     $('#caa-caixa-alta').click();
     expect(ctx.getCaso()).toBe('upper');
     expect(ctx.said.at(-1)).toContain('caixa alta');
+  });
+
+  it('🔴 [Right] every section and row is written in the language of the ctx\'s `t`, never as a key (ADR-0232 D3)', () => {
+    // The literals, so the case cannot pass by reading the same table the code reads. The letters row, a set in
+    // preparation and a set under negotiation each carry a different key, and each section its own title.
+    initSettingsCaa(fullCtx()).render();
+    const list = $('#caa-list');
+    const words = [list.textContent, ...[...list.querySelectorAll('[aria-label]')].map((n) => n.getAttribute('aria-label'))].join(' | ');
+    expect(words, 'a raw key reached the menu').not.toMatch(/\bcaa\.[a-zA-Z]/);
+    expect(list.textContent).toContain('Disponível agora');
+    expect($('#caa-caixa-alta').closest('.ctrl-row').textContent).toContain('Letras maiúsculas');
+    expect(words, 'a set in preparation does not say so').toContain('Mulberry Symbols, em preparação');
+    expect(words, 'a set under negotiation does not say so').toContain('Sclera, aguardando negociação');
   });
 
   it('[Right] o interruptor LIGADO parece ligado, e o desligado não', () => {
@@ -172,10 +188,10 @@ describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
     // ⚠️ And relabelling is not thrift: redoing the row would leave a control in the document WITHOUT a listener — a dead
     // button that looks alive (ADR-0106 §5). It is what the kit's `labelRow` exists to do.
     const lista = $('#caa-list');
-    mountCaaInside(kit(), lista);
+    mountCaaInside(translate, kit(), lista);
     const antes = lista.querySelectorAll('.ctrl-row').length;
     const botao = $('#caa-caixa-alta');
-    mountCaaInside(kit(), lista);
+    mountCaaInside(translate, kit(), lista);
     expect(lista.querySelectorAll('.ctrl-row')).toHaveLength(antes);
     expect(lista.querySelectorAll('.panel-sub')).toHaveLength(3);
     expect($('#caa-caixa-alta'), 'o MESMO nó, ou a escuta ligada nele ficou para trás').toBe(botao);

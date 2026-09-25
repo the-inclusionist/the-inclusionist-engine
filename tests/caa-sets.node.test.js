@@ -84,35 +84,35 @@ describe('o interruptor das letras', () => {
   it('[Interface] a linha explica o DESLIGADO — senão "off" fica sem significado', () => {
     // Off is not no letters: it is upper AND lower case. A switch whose off is not explained leaves the child guessing
     // what she loses by switching it off.
-    expect(lettersRowSpec().hint).toContain('minúsculas');
+    expect(lettersRowSpec(translate).hint).toContain('minúsculas');
   });
 
   it('[Interface] o interruptor das letras é o piso: sem motivo, porque não depende de arquivo nenhum', () => {
     // Every pictogram set carries a reason for not serving; this one has none to carry. If one day it does, it is because
     // it became dependent on something — and then the reason shows up here before it shows up on screen.
-    expect(lettersRowSpec().ariaLabel).toBeUndefined();
+    expect(lettersRowSpec(translate).ariaLabel).toBeUndefined();
   });
 });
 
 describe('caaRowSpec — o que a linha de um conjunto DIZ, antes de existir nó nenhum', () => {
   it('[Interface] o motivo entra no NOME ACESSÍVEL — quem não vê a linha ouve por que ela não serve', () => {
-    expect(caaRowSpec(CAA_BY_KEY.sclera).ariaLabel).toMatch(/^Sclera, .*negocia/);
+    expect(caaRowSpec(translate, CAA_BY_KEY.sclera).ariaLabel).toMatch(/^Sclera, .*negocia/);
   });
 
   it('[Interface] Tawasol carrega a nota sobre cultura — é o que muda o significado da escolha', () => {
     // A pictogram is not neutral: it is drawn by and for a culture. Without the note, Tawasol is just a strange name on
     // the list, and the educator has no way to know which child it is the right choice for.
-    expect(caaRowSpec(CAA_BY_KEY.tawasol).hint).toContain('árabe');
+    expect(caaRowSpec(translate, CAA_BY_KEY.tawasol).hint).toContain('árabe');
   });
 
   it('[Interface] a licença vai na MESMA dica, não numa segunda linha de prosa', () => {
     // The CLAUDE.md §4 menu rule: a single `.opt-hint` per row. Two gave two descriptions to the same control, and the
     // footer showed the first — the other stayed in the row, becoming the manual the rule forbids.
-    expect(caaRowSpec(CAA_BY_KEY.mulberry).hint).toContain('Licença: ');
+    expect(caaRowSpec(translate, CAA_BY_KEY.mulberry).hint).toContain('Licença: ');
   });
 
   it('[Right] o id sai do key do catálogo, que é único por construção', () => {
-    const ids = CAA_SETS.map((s) => caaRowSpec(s).id);
+    const ids = CAA_SETS.map((s) => caaRowSpec(translate, s).id);
     expect(new Set(ids).size).toBe(CAA_SETS.length);
     expect(ids).toContain(caaControlId('widgit'));
   });
@@ -120,7 +120,7 @@ describe('caaRowSpec — o que a linha de um conjunto DIZ, antes de existir nó 
 
 describe('CAA_SECTIONS — três seções, e a primeira NÃO sai do catálogo', () => {
   it('[Right] o interruptor das letras é a seção «agora»; os 8 conjuntos dividem-se nas outras duas', () => {
-    const [agora, preparo, negociacao] = CAA_SECTIONS.map((s) => s.rows());
+    const [agora, preparo, negociacao] = CAA_SECTIONS.map((s) => s.rows(translate));
     expect(agora.map((l) => l.id)).toEqual(['caa-caixa-alta']);
     expect(preparo.length + negociacao.length).toBe(CAA_SETS.length);
     expect(negociacao.map((l) => l.id))

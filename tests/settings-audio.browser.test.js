@@ -14,6 +14,8 @@ import * as settingsStore from '../app/js/core/state.js';
 import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
 // The sentence is asked of the dictionary and not copied: a copy here would end up measuring itself.
 import { t as tr } from '../app/js/core/i18n.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const AUDIO_HTML = `
   <div id="audio">
@@ -85,6 +87,7 @@ function fullCtx(over = {}) {
     narrate: (t) => { tts.narrated = tts.narrated || []; tts.narrated.push(t); },
   };
   const ctx = {
+    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     // the test plays the root: the page's settings store and its bus (ADR-0232)
     settings: settingsStore, on: settingsStore.on,
     $: (sel) => document.querySelector(sel),

@@ -26,6 +26,7 @@ function fullCtx(over = {}) {
   let oneButton = false, wheelchair = false;
   const players = [{ viz: 'normal' }, { viz: 'normal' }];
   return {
+    t: translate,
     $,
     srSay: (msg) => said.push(msg),
     store: fakeStore(),
@@ -333,6 +334,7 @@ describe('⚠️ ui/settings-empathy — a lista é reconstruída pelo renderViz
   function bootReal() {
     document.body.innerHTML = COM_CARTAO;
     const painel = initSettingsPanel({
+      t: translate,
       $, $$: (sel) => [...document.querySelectorAll(sel)],
       doc: document,
       computedZ: (el) => +getComputedStyle(el).zIndex || 0,

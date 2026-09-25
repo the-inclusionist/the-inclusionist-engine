@@ -959,7 +959,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // 3. The dialog stack. The ctx is the same in every game — it is boilerplate, and repeated boilerplate is where
   //    consumers diverge without meaning to.
   const overlays = initSettingsPanel({
-    $, $$, doc,
+    t: translator.t, $, $$, doc,
     computedZ: (el) => +win.getComputedStyle(el).zIndex || 0,
   });
 
@@ -1494,7 +1494,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * access to the document, so it runs without the shell.
      */
     typo = initSettingsTypo({
-      $, srSay, store, root: doc.documentElement,
+      t: translator.t, $, srSay, store, root: doc.documentElement,
       // The rows' prose goes to the footer at EVERY render, or it appears twice on the first click.
       fillExplain: overlays.fillExplain,
       // ⚠️ `doc.fonts` IS A BROWSER GLOBAL — FINDING 15 of this file. Here it comes from the host's `doc` and is still
@@ -1646,7 +1646,7 @@ export function createGame(o: CreateGameOptions): Engine {
     animPanel.shell.card.insertBefore(animMaster, animPanel.shell.list);
 
     motion = initSettingsMotion({
-      $, srSay, store, matchMedia: win.matchMedia,
+      t: translator.t, $, srSay, store, matchMedia: win.matchMedia,
       // the SAME flags the quick bar's calm icon writes (see `sceneMotion`, above)
       rm: sceneMotion, saveRM: saveSceneMotion,
       getNumPlayers: () => (cartridge.players ?? [null]).length,
@@ -1808,7 +1808,7 @@ export function createGame(o: CreateGameOptions): Engine {
     offerOwnerAndOutlines();
     const noEffect = (): void => {};
     const visual = initSettingsVisual({
-      $, srSay,
+      t: translator.t, $, srSay,
       getNumPlayers: () => players().length,
       getPlayers: () => cartridge.players ?? [],
       getVisualSettings: () => ({
@@ -1904,7 +1904,7 @@ export function createGame(o: CreateGameOptions): Engine {
       picked: (key) => { simulate(0, key); empathy.render(); },
     });
     const empathy = initSettingsEmpathy({
-      $, srSay, store,
+      t: translator.t, $, srSay, store,
       renderVizGroup: (listSelector) => { simulationPicker.render(listSelector); },
       reflectMobilityEmpathy: reflectMobilitySimulations,
       reflectVizButtons: noEffect,
@@ -1971,12 +1971,12 @@ export function createGame(o: CreateGameOptions): Engine {
        * document with no listener. And no unit test catches this: they all run in one language.
        */
       render: () => {
-        mountAudioInside(panelCtx, audioPanel.shell.card, audioPanel.shell.list);
+        mountAudioInside(translator.t, panelCtx, audioPanel.shell.card, audioPanel.shell.list);
         hideRowsWithoutSubject();
         audio?.renderAudio();
       },
     });
-    mountAudioInside(panelCtx, audioPanel.shell.card, audioPanel.shell.list);
+    mountAudioInside(translator.t, panelCtx, audioPanel.shell.card, audioPanel.shell.list);
     /*
      * AUDIO — general sound and the four taste categories (ADR-0151 §2 item 4), apart from hearing accessibility.
      * ⚠️ MOUNTED BEFORE `initSettingsAudio`, by the siblings' order rule: this panel's master switch, volume and «restore»
@@ -1992,11 +1992,11 @@ export function createGame(o: CreateGameOptions): Engine {
         closeLabel: t('pause.pmback'),
       }),
       render: () => {
-        mountSoundInside(panelCtx, soundPanel.shell.card, soundPanel.shell.list);
+        mountSoundInside(translator.t, panelCtx, soundPanel.shell.card, soundPanel.shell.list);
         audio?.renderAudio();
       },
     });
-    mountSoundInside(panelCtx, soundPanel.shell.card, soundPanel.shell.list);
+    mountSoundInside(translator.t, panelCtx, soundPanel.shell.card, soundPanel.shell.list);
     // The two hearing-panel rows that exist only where there is a subject — `ui/audio-rows-that-apply` says why, and it
     // is not wiring. ⚠️ Read at every opening: the topology is a function, and a game changes its demands between phases (ADR-0084).
     const hideRowsWithoutSubject = (): void => showOnlyRowsThatApply({
@@ -2010,7 +2010,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     hideRowsWithoutSubject();
     audio = initSettingsAudio({
-      $, srSay, store,
+      translator, $, srSay, store,
       // the page's settings store, and the ROOT'S door to its bus: the panel's subscription ends with `dispose()` (ADR-0220)
       settings: state, on: stateOn,
       /*
@@ -3140,7 +3140,7 @@ export function createGame(o: CreateGameOptions): Engine {
       });
     };
     keyboardControls = initSettingsControls({
-      $, srSay, srAlert,
+      t: translator.t, $, srSay, srAlert,
       gameActions: actionsToMap,
       store: {
         saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); saveKB(store, conf); },

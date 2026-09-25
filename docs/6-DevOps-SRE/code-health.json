@@ -319,7 +319,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 14,
+      "fanIn": 4,
       "holds": [
         "let dict",
         "let locale",
@@ -1976,127 +1976,106 @@
       "fanIn": 1
     },
     "ui/settings-audio.ts": {
-      "codeLines": 399,
+      "codeLines": 401,
       "decisionNodes": 66,
       "maxDepth": 4,
-      "fanOut": 8,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/settings-caa.ts": {
-      "codeLines": 136,
+      "codeLines": 138,
       "decisionNodes": 21,
       "maxDepth": 3,
-      "fanOut": 6,
-      "globalReach": 0,
-      "worstFunction": 6,
-      "statefulEdges": 1,
-      "fanIn": 0,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
-    },
-    "ui/settings-controls.ts": {
-      "codeLines": 176,
-      "decisionNodes": 18,
-      "maxDepth": 2,
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
+      "fanIn": 0
+    },
+    "ui/settings-controls.ts": {
+      "codeLines": 178,
+      "decisionNodes": 18,
+      "maxDepth": 2,
+      "fanOut": 4,
+      "globalReach": 0,
+      "worstFunction": 6,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
+    "ui/settings-empathy.ts": {
+      "codeLines": 97,
+      "decisionNodes": 17,
+      "maxDepth": 2,
+      "fanOut": 5,
+      "globalReach": 0,
+      "worstFunction": 8,
       "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts"
-      ]
-    },
-    "ui/settings-empathy.ts": {
-      "codeLines": 95,
-      "decisionNodes": 17,
-      "maxDepth": 2,
-      "fanOut": 6,
-      "globalReach": 0,
-      "worstFunction": 8,
-      "statefulEdges": 2,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts",
         "platform/audio.ts"
       ]
     },
     "ui/settings-mobility.ts": {
-      "codeLines": 231,
+      "codeLines": 236,
       "decisionNodes": 29,
-      "maxDepth": 3,
-      "fanOut": 9,
-      "globalReach": 0,
-      "worstFunction": 9,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
-    },
-    "ui/settings-motion.ts": {
-      "codeLines": 315,
-      "decisionNodes": 46,
       "maxDepth": 3,
       "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 2,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
+    "ui/settings-motion.ts": {
+      "codeLines": 317,
+      "decisionNodes": 46,
+      "maxDepth": 3,
+      "fanOut": 7,
+      "globalReach": 0,
+      "worstFunction": 9,
+      "statefulEdges": 1,
       "fanIn": 1,
       "holds": [
         "let selectedPlayer"
       ],
       "statefulImports": [
-        "core/i18n.ts",
         "render/crt.ts"
       ]
     },
     "ui/settings-panel.ts": {
-      "codeLines": 141,
+      "codeLines": 143,
       "decisionNodes": 25,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 10,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
+    "ui/settings-typo.ts": {
+      "codeLines": 136,
+      "decisionNodes": 20,
+      "maxDepth": 3,
+      "fanOut": 4,
+      "globalReach": 0,
+      "worstFunction": 7,
       "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts"
-      ]
-    },
-    "ui/settings-typo.ts": {
-      "codeLines": 134,
-      "decisionNodes": 20,
-      "maxDepth": 3,
-      "fanOut": 5,
-      "globalReach": 0,
-      "worstFunction": 7,
-      "statefulEdges": 2,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts",
         "ui/fonts.ts"
       ]
     },
     "ui/settings-visual.ts": {
-      "codeLines": 251,
+      "codeLines": 253,
       "decisionNodes": 42,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/shell.ts": {
       "codeLines": 272,
@@ -2245,17 +2224,14 @@
       ]
     },
     "ui/voice-settings.ts": {
-      "codeLines": 236,
+      "codeLines": 238,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 4,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/where-the-child-is.ts": {
       "codeLines": 43,

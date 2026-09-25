@@ -3239,6 +3239,10 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 | `ui/eye-control.js` `EyeControlDeps` · `ui/face-control.js` `FaceControlDeps` · `ui/hand-control.js` `HandControlDeps` · `ui/voice-control.js` `VoiceControlDeps` · `ui/loop-crash.js` `CrashNoticeCtx` · `ui/simulation-list.js` `SimulationListCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
 | `ui/hud.js` `counterLabel`, `applyCounterLabel`, `waitBadgeHtml`, `hudRowView` · `ui/hud-bands.js` `mountHudBands` · `ui/shell.js` `spokenGlyph`, `pauseLegendHtml`, `legendRow1` · `ui/vlibras.js` `toggleLibras` · `ui/gaze-overlay.js` `drawGazeOverlay` | each takes `t: Translate` as its FIRST parameter and stays a function; `drawGazeOverlay` loses its `say` option, which that parameter replaces | pass your root's `t` first: `toggleLibras(t)`, `pauseLegendHtml(t, sim, no)` |
 | `ui/hud.js` `HudCtx` · `ui/shell.js` `ShellCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
+| `ui/settings-panel.js` `SettingsPanelCtx` · `ui/settings-empathy.js` `EmpathySettingsCtx` · `ui/settings-typo.js` `SettingsTypoCtx` · `ui/settings-caa.js` `SettingsCaaCtx` · `ui/settings-controls.js` `SettingsControlsCtx` · `ui/settings-mobility.js` `SettingsMobilityCtx`, `LatchWriteCtx` · `ui/settings-motion.js` `SettingsMotionCtx` · `ui/settings-visual.js` `SettingsVisualCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
+| `ui/settings-audio.js` `SettingsAudioCtx` · `ui/voice-settings.js` `VoiceSettingsCtx` | each gains a REQUIRED `translator: Pick<Translator, 't' \| 'bcp47'>` — the voice list reads the page's language | pass your root's translator |
+| `ui/settings-audio.js` `mountAudioInside`, `mountSoundInside` · `ui/settings-caa.js` `lettersRowSpec`, `caaRowSpec`, `mountCaaInside` · `ui/settings-controls.js` `drawKeys` · `ui/settings-mobility.js` `mountMobilityInside` · `ui/settings-typo.js` `mountTypoInside` | each takes `t: Translate` as its FIRST parameter and stays a function | pass your root's `t` first: `drawKeys(t, button, codes)` |
+| `ui/settings-caa.js` `CAA_SECTIONS` | each section's `rows` takes the `t` to write them in: `rows(t)` | pass your root's `t` |
 
 📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).
 `game-platformer` calls `initKeydown`, `initGamepad` and `initTouch` (`app/js/main.ts`); `game-soccer` calls `initGamepad`
@@ -3247,7 +3251,11 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 (`app/js/audio/sound.ts`). Of the ui helpers, only `game-platformer` calls any (`playerPrefix` ×3, `toggleLabel` ×2 and
 `initMenuNav`, in `app/js/main.ts`). No game builds a camera, voice, crash-notice or simulation-list ctx by hand.
 `game-platformer` calls `initHud`, `initShell` and `pauseLegendHtml` (`app/js/main.ts`); `game-soccer` calls
-`toggleLibras` (`app/js/boot/main.ts`, and its `tests/libras.browser.test.ts`).
+`toggleLibras` (`app/js/boot/main.ts`, and its `tests/libras.browser.test.ts`). Of the settings panels, `game-platformer`
+calls `initSettingsPanel`, `initSettingsCaa`, `initSettingsEmpathy`, `initSettingsVisual`, `initSettingsTypo`,
+`initSettingsAudio`, `initSettingsControls` and `initSettingsMotion` (`app/js/main.ts`); `game-2048` calls
+`initSettingsTypo` and `initSettingsControls` (`src/standalone.ts`); `game-soccer` calls `initSettingsControls`
+(`app/js/ui/controls-panel.ts`).
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

@@ -14,6 +14,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createVoiceSettings } from '../app/js/ui/voice-settings.js';
 import { t } from '../app/js/core/i18n.js';
 import * as state from '../app/js/core/state.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -31,6 +33,7 @@ function mount({ voices = [{ voice: 'pf_dora' }, { voice: 'pm_alex' }], setVozOk
   let current = voices[0] ?? null;
   const system = [{ name: 'Maria', lang: 'pt-BR' }, { name: 'Luciana', lang: 'pt-BR' }];
   const ctx = {
+    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     settings: state, // the test plays the root: the page's settings store (ADR-0232)
     $, srSay: (m) => said.push(m),
     toggleBtn: (b, on) => b.classList.toggle('is-on', on),

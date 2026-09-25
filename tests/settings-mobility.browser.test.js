@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // the announcements come from the dictionary (item 14)
 import { initSettingsMobility } from '../app/js/ui/settings-mobility.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -18,6 +20,7 @@ function fullCtx(over = {}) {
   let rebuildCoinsCalls = 0;
   const players = over.players ?? [{ easy: false, toggleMove: false }];
   return {
+    t: translate,
     $,
     srSay: (msg) => said.push(msg),
     store: { setBool: (k, on) => storeMap.set(k, on ? '1' : '0'), get: (k) => (escolhido.has(k) ? '1' : null) },
@@ -398,7 +401,7 @@ describe('o ctx que a ENGINE consegue montar sozinha (ADR-0106 §1)', () => {
     const guardado = new Map();
     const ditos = [];
     initSettingsMobility({
-      $,
+      t: translate, $,
       srSay: (m) => ditos.push(m),
       store: { setBool: (k, on) => guardado.set(k, on ? '1' : '0'), get: () => null },
       players,

@@ -6,7 +6,7 @@
 // catalog itself (FONT_GROUPS/FONT_BY_KEY) lives in ./fonts.js — imported here, never duplicated.
 
 // (No on/off toggle label here: this menu is a CHOICE, not a switch.)
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { FONT_BY_KEY, DEFAULT_FONT_KEY, faceAvailable, faceScale } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
@@ -22,6 +22,8 @@ export interface TypoStore {
 }
 
 export interface SettingsTypoCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
   /** Screen-reader announcement (core/a11y-sr's srSay), injected. */
@@ -107,7 +109,7 @@ const OFFERED_MARK = '○';
  * beside it stays in the READING face on purpose — it explains the choice, it is not the choice. (With `fillExplain`,
  * it does not even stay on the row: it goes to the footer.)
  */
-export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
+export function mountTypoInside(t: Translate, ctx: PanelShellCtx, list: HTMLElement,
   fontKey: string, isInstalled?: (family: string) => boolean): void {
   let radios = list.querySelector<HTMLElement>('[role="radiogroup"]');
   if (!radios) {
@@ -170,6 +172,7 @@ function reflectTypo(list: HTMLElement, fontKey: string, isInstalled?: (family: 
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
+  const { t } = ctx;
   let fontKey = resolveFontKey(ctx.store);
 
   /*
@@ -221,7 +224,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   function render(): void {
     const el = ctx.$<HTMLElement>('#typo-list');
     if (!el) return;
-    mountTypoInside(panelCtx(el), el, fontKey, ctx.fontInstalled);
+    mountTypoInside(t, panelCtx(el), el, fontKey, ctx.fontInstalled);
     reflectTypo(el, fontKey, ctx.fontInstalled);
     if (!listening) {
       listening = true;

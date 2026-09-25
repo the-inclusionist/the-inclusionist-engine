@@ -12,6 +12,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { controlRow, labelRow } from '../app/js/ui/panel-widgets.js';
 import { mountMobilityInside } from '../app/js/ui/settings-mobility.js';
 import { mountAudioInside, mountSoundInside } from '../app/js/ui/settings-audio.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { mountShell } from '../app/js/ui/panel-shell.js';
 
 const ctx = {
@@ -120,7 +122,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // 📏 `settings-mobility` looks for `#movement-players`, `#opt-facil`, `#opt-altmove` and `#opt-togglerun`. Without
     // this inside, the panel would open with the card, the title and the reset button, and NONE of the three choices.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.list);
+    mountMobilityInside(translate, ctx, c.card, c.list);
     for (const id of ['movement-players', 'opt-facil', 'opt-altmove', 'opt-togglerun']) {
       expect(document.getElementById(id), `#${id} não foi criado`).not.toBeNull();
     }
@@ -130,7 +132,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // The list is the `div[role=group]` the screen reader announces as the set of choices. The tabs say WHOSE the choices
     // are: putting them inside would make the group announce the seat selector as one more setting.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.list);
+    mountMobilityInside(translate, ctx, c.card, c.list);
     for (const id of ['opt-facil', 'opt-altmove', 'opt-togglerun']) {
       expect(c.list.contains(document.getElementById(id)), `#${id} ficou fora da lista`).toBe(true);
     }
@@ -144,8 +146,8 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // The root mounts more than once: the player count changes the screen grid, and ADR-0142 puts two cartridges on the
     // same page.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.list);
-    mountMobilityInside(ctx, c.card, c.list);
+    mountMobilityInside(translate, ctx, c.card, c.list);
+    mountMobilityInside(translate, ctx, c.card, c.list);
     for (const id of ['movement-players', 'opt-facil', 'opt-altmove', 'opt-togglerun']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
@@ -157,7 +159,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // Creating it only when it applies would put the same rule in two places, and the day they diverged is the day the
     // row appears in a game where it does nothing.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.list);
+    mountMobilityInside(translate, ctx, c.card, c.list);
     const alt = document.getElementById('opt-altmove');
     expect(alt, 'a linha da alternância não foi criada').not.toBeNull();
     expect(alt.closest('.ctrl-row').hidden, 'nasceu escondida: a construção assumiu uma decisão que não é dela')
@@ -166,7 +168,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
 
   it('[Right] cada escolha tem a sua explicação, e ela vai para o rodapé pelo caminho da casca', () => {
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.list);
+    mountMobilityInside(translate, ctx, c.card, c.list);
     for (const id of ['opt-facil', 'opt-altmove', 'opt-togglerun']) {
       const linha = document.getElementById(id).closest('.ctrl-row');
       expect(linha.querySelector('.opt-hint'), `#${id} ficou sem explicação`).not.toBeNull();
@@ -202,7 +204,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // ⚠️ THE TAG IS THE SILENT DEFECT. `renderAudio` does `ctx.$<HTMLSelectElement>('#cane-div').value = …`; on a
     // `<button>` that creates a property nobody reads, with no error at all, and the choice vanishes.
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     for (const [id, tag] of Object.entries(CONTROLES)) {
       const el = document.getElementById(id);
       expect(el, `#${id} não foi criado`).not.toBeNull();
@@ -221,7 +223,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
 
   it('🎯 [Right] a lista da casca — a da navegação sonora — fica no cartão', () => {
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     expect(c.list.id).toBe('navsound-list');
     expect(c.card.contains(c.list), 'a lista da casca saiu do cartão').toBe(true);
   });
@@ -230,7 +232,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // Blind mode first, because in it the other sounds become the screen; the index right after the narration, because
     // it is the narration it shortens.
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     const ordem = [...c.card.children];
     const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
     const seq = ['#opt-modocego', '#cane-div', '#navsound-list', '#opt-tts', '#tts-vol', '#opt-menuindex'].map(posicao);
@@ -240,14 +242,14 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
 
   it('🔴 [Zero] o modo cego NÃO tem dica — «quem precisa sabe o que é» (ADR-0151)', () => {
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     expect(document.getElementById('opt-modocego').closest('.ctrl-row').querySelector('.opt-hint')).toBeNull();
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM de cada — a raiz monta mais do que uma vez', () => {
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     for (const id of [...Object.keys(CONTROLES), 'navsound-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
@@ -262,11 +264,11 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // instead of rebuilding it: rebuilding would leave the controls with no listeners.
     const { setLocale } = await import('../app/js/core/i18n.js');
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     const antes = document.querySelector('#opt-tts').closest('.ctrl-row').querySelector('strong').textContent;
 
     await setLocale('en');
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     const linha = document.querySelector('#opt-tts').closest('.ctrl-row');
     expect(linha.querySelector('strong').textContent, 'a linha ficou no idioma de recuo').not.toBe(antes);
     // «(TTS)» left the label on 2026-09-12 (ADR-0158): an explanation in parentheses goes to the footer
@@ -278,7 +280,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // Creating it here would put TWO mirrors of the same setting in the document, and `reflectMaster` would light the one
     // inside the panel while the bar went on saying the opposite.
     const c = casca();
-    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(translate, ctx, c.card, c.list);
     expect(document.getElementById('opt-sound')).toBeNull();
   });
 });
@@ -295,14 +297,14 @@ describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', ()
   it('🎯 [Right] o som geral VOLTOU — interruptor e volume, com as tags que `initSettingsAudio` escreve', () => {
     // The Dev's decision: «toggle + barra para som geral voltam».
     const c = casca();
-    mountSoundInside(ctx, c.card, c.list);
+    mountSoundInside(translate, ctx, c.card, c.list);
     expect(document.getElementById('audio-master')?.tagName).toBe('BUTTON');
     expect(document.getElementById('audio-master-vol')?.type, 'o volume geral não é um cursor').toBe('range');
   });
 
   it('⚠️ [Right] o som geral vem ANTES da lista das categorias, e a lista fica no cartão', () => {
     const c = casca();
-    mountSoundInside(ctx, c.card, c.list);
+    mountSoundInside(translate, ctx, c.card, c.list);
     const ordem = [...c.card.children];
     const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
     expect(posicao('#audio-master')).toBeGreaterThanOrEqual(0);
@@ -312,8 +314,8 @@ describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', ()
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM de cada', () => {
     const c = casca();
-    mountSoundInside(ctx, c.card, c.list);
-    mountSoundInside(ctx, c.card, c.list);
+    mountSoundInside(translate, ctx, c.card, c.list);
+    mountSoundInside(translate, ctx, c.card, c.list);
     for (const id of ['audio-master', 'audio-master-vol', 'audio-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }

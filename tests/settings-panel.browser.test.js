@@ -12,6 +12,8 @@ import { t } from '../app/js/core/i18n.js';
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
 import { initSettingsMotion, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
  * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
@@ -28,7 +30,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
 function panelCtx() {
-  return { $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 };
+  return { t: translate, $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 };
 }
 
 // Lean markup but FAITHFUL where it matters here: the dialogs live inside #game-region, each has an .overlay__card with
@@ -71,6 +73,7 @@ function boot() {
   const panel = initSettingsPanel(panelCtx());
   const noop = () => {};
   const motion = initSettingsMotion({
+    t: translate,
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $, srSay: noop, store: { setBool: noop }, frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     matchMedia: () => ({ matches: false }), // mandatory (ADR-0232): the reduced-motion question is injected
@@ -79,6 +82,7 @@ function boot() {
     rmKeys: RM_KEYS, rmChar: RM_CHAR,
   });
   const empathy = initSettingsEmpathy({
+    t: translate,
     $, srSay: noop, store: { getBool: () => false },
     renderVizGroup: noop, reflectMobilityEmpathy: noop, reflectVizButtons: noop,
     frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,

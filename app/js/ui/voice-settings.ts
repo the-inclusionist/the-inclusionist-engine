@@ -17,7 +17,7 @@
 // her.
 
 import { toggleLabel } from './dom.js';
-import { t, bcp47 } from '../core/i18n.js';
+import type { Translator } from '../core/i18n.js';
 import { SPEECH_RATES } from '../core/speech-rate.js';
 import type { DomQuery } from '../core/dom-query.js';
 import {
@@ -88,6 +88,11 @@ export interface VoiceSettingsStore {
 }
 
 export interface VoiceSettingsCtx {
+  /**
+   * The root's translator (ADR-0232 D3): its `t`, and the page's language as a BCP-47 tag, which picks the system voices the
+   * list offers. A Pick and not a bare `t`, because the voice list reads the language.
+   */
+  translator: Pick<Translator, 't' | 'bcp47'>;
   /** The page's settings store (see `VoiceSettingsStore`). REQUIRED: a section reading from nowhere would show the defaults. */
   settings: VoiceSettingsStore;
   $: DomQuery;
@@ -130,6 +135,7 @@ function panelVoiceLabel(v: PanelVoice): string {
 const SPEECH_ROWS: readonly string[] = ['#opt-tts', '#tts-vol', '#tts-ppm', '#opt-menuindex', '#tts-voz'];
 
 export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): VoiceSettings {
+  const { t, bcp47 } = ctx.translator;
   function reflectTts(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-tts');
     const cat = ctx.getAudioCat();

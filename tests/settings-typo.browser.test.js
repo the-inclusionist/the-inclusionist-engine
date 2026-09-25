@@ -5,6 +5,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import cssDoJogo from '../app/css/style.css?raw'; // the game's stylesheet, so the spacing case measures the computed value
 import { initSettingsTypo, mountTypoInside } from '../app/js/ui/settings-typo.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 // A fake of platform/storage.ts (the same get/set shape), in memory.
 function fakeStore(seed = {}) {
@@ -17,6 +19,7 @@ const $ = (sel) => document.querySelector(sel);
 function fullCtx(over = {}) {
   const said = [];
   return {
+    t: translate,
     $,
     srSay: (msg) => said.push(msg),
     store: fakeStore(),
@@ -47,6 +50,15 @@ describe('ui/settings-typo', () => {
     const api = initSettingsTypo(ctx);
     expect(api.getFontKey()).toBe('lexend');
     expect(document.documentElement.dataset.fonte).toBe('dislexia');
+  });
+
+  it('🔴 [Right] render() writes the list in the language of the ctx\'s `t`, never as a key (ADR-0232 D3)', () => {
+    // The literal, so the case cannot pass by reading the same table the code reads: the group's name in pt.
+    initSettingsTypo(fullCtx()).render();
+    const list = $('#typo-list');
+    const named = [...list.querySelectorAll('[aria-label]')].map((n) => n.getAttribute('aria-label'));
+    expect(named, 'the group of faces has no name in the language of the ctx').toContain('Família de letra');
+    expect([list.textContent, ...named].join(' | '), 'a raw key reached the list').not.toMatch(/\b(font|typo)\.[a-zA-Z]/);
   });
 
   it('[Interface] render() preenche #typo-list e marca a fonte ativa como is-on', () => {
@@ -262,10 +274,10 @@ describe('ui/settings-typo', () => {
     // were swapped it would survive, but the focus would drop at every click.
     const kit = { find: (s) => document.querySelector(s), create: (tag) => document.createElement(tag) };
     const lista = $('#typo-list');
-    mountTypoInside(kit, lista, 'atkinson');
+    mountTypoInside(translate, kit, lista, 'atkinson');
     const antes = lista.querySelectorAll('.ctrl-row').length;
     const primeiro = lista.querySelector('button[data-font]');
-    mountTypoInside(kit, lista, 'andika');
+    mountTypoInside(translate, kit, lista, 'andika');
     expect(lista.querySelectorAll('.ctrl-row')).toHaveLength(antes);
     expect(lista.querySelectorAll('[role="radiogroup"]')).toHaveLength(1);
     expect(lista.querySelector('button[data-font]'), 'o MESMO nó, ou a escuta perde o foco').toBe(primeiro);

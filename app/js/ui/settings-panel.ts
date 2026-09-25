@@ -18,7 +18,7 @@
 // `contains` for focus return) and computedZ (the effective z-index). No I/O on import; all state (the z counter and the
 // overlay registry) lives in the init's closure — two inits do not leak into each other.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 /** Scope of the accessibility overlays: they all live inside #game-region ("no screen outside the canvas"). */
 export const OVERLAY_SCOPE_SELECTOR = '#game-region .overlay';
@@ -39,6 +39,8 @@ export const EXPLAIN_IDLE = 'menu.explainIdle';
 export const OVERLAY_BASE_Z = 60;
 
 export interface SettingsPanelCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** ui/dom.ts `$` — used only to resolve `#<id>` and check visibility in the Escape chain. Injected, not imported,
    *  so the node test can pass a fake DOM. */
   $: <T extends Element = Element>(sel: string) => T | null;
@@ -187,6 +189,7 @@ export function topByZ<T>(overlays: readonly T[], zOf: (el: T) => number): T | n
 // ---------------------------------------------------------------------------------------------------------
 
 export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
+  const { t } = ctx;
   // The z counter lives in the closure (not the module) so each init starts clean — otherwise a test would inherit the
   // previous one's stack.
   let ovZ = OVERLAY_BASE_Z;

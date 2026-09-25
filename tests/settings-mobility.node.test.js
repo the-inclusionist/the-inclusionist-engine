@@ -127,6 +127,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     return {
       escrito, ditos,
       ctx: {
+        t: translate,
         players: jogadores,
         store: { setBool: (k, on) => { escrito[k] = on; } },
         srSay: (m) => ditos.push(m),

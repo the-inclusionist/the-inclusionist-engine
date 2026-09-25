@@ -4,7 +4,7 @@
 // `srSay`/`srAlert`, `store` (save/reset persistence), the live `kb` value + `setKB` setter, and the shared per-player
 // helpers (`kbFor`/`getNumPlayers`/`applyControls`/`assignControls`) the host also uses elsewhere, injected. Overlay
 // open/close plumbing (focus management, Escape-closes-dialog) is shared infrastructure.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
 import { isAction, type Action } from '../core/actions.js';
@@ -38,6 +38,8 @@ export interface ControlsStore {
 }
 
 export interface SettingsControlsCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
   /**
@@ -157,7 +159,7 @@ export const ctrlControlId = (action: string): string => `ctrl-act-${action}`;
  * 📌 Through the DOM API and not a string: `keyName` returns a code's READABLE name, which may be translated tomorrow —
  * translated text interpolated into markup is the door issue #106 closed.
  */
-export function drawKeys(button: HTMLElement, codes: readonly string[]): void {
+export function drawKeys(t: Translate, button: HTMLElement, codes: readonly string[]): void {
   button.textContent = '';
   if (!codes.length) { button.textContent = t('ctrl.change'); return; }
   for (const code of codes) {
@@ -168,6 +170,7 @@ export function drawKeys(button: HTMLElement, codes: readonly string[]): void {
 }
 
 export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControlsApi {
+  const { t } = ctx;
   let kb = ctx.kb;
   let capture: CaptureState | null = null;
   let lastPlayer = 0;
@@ -277,7 +280,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
       // `data-act` stays, and the difference from `label` is the reason: `a` is the position's ABSTRACT name, which the
       // engine enumerates in `core/actions`, and `label` is the GAME's word (ADR-0086).
       control.dataset.act = a;
-      drawKeys(control, map[a] ?? []);
+      drawKeys(t, control, map[a] ?? []);
       el.appendChild(row);
     }
 

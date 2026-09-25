@@ -1123,6 +1123,48 @@ describe('createGame num documento de verdade', () => {
       document.getElementById('animation-close')?.click();
     });
 
+    /** Every word of `el` a reader meets — text and the names that ride on attributes — to look for a raw key in. */
+    const wordsOf = (el) => [el.textContent, ...[...el.querySelectorAll('[aria-label], [title]')]
+      .flatMap((n) => [n.getAttribute('aria-label'), n.getAttribute('title')])].filter(Boolean).join(' | ');
+
+    it('🔴 [Right] the empathy panel speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', () => {
+      // `ui/settings-empathy` no longer imports `t`; its switches are labelled by the `t` its ctx receives.
+      const motor = abrir();
+      motor.pause.show(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
+      const hearing = document.querySelector('#empathy #opt-hearing');
+      expect(hearing, 'no hearing switch in the empathy panel — this case would measure nothing').not.toBeNull();
+      expect(['Ligado', 'Desligado'], 'the hearing switch is not labelled in the root\'s language').toContain(hearing.textContent.trim());
+      for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
+    });
+
+    it('🔴 [Right] the keyboard map speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', () => {
+      // `ui/settings-controls` no longer imports `t`; each key's button and its name for a screen reader come from its ctx.
+      // A preset that names two actions, so there is something to map.
+      const motor = abrir({ preset: { action1: { label: 'Confirm' }, action2: { label: 'Back' } } });
+      motor.pause.show(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]').click();
+      document.querySelector('#opt-teclado-1').click();
+      const panel = document.querySelector('#ctrl');
+      expect(panel?.querySelectorAll('[id^="ctrl-act-"]').length, 'the keyboard map drew no key — this case would measure nothing')
+        .toBeGreaterThan(0);
+      expect(wordsOf(panel), 'the keyboard map shows a raw key').not.toMatch(/\bctrl\.[a-zA-Z]/);
+      for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
+    });
+
+    it('🔴 [Right] the hearing and sound panels are mounted in the root\'s language at boot, before any opening (ADR-0232 D3)', () => {
+      // The root mounts both insides once at boot and again at each opening. What the boot mount wrote stays in the document
+      // until the first opening, so it is measured here, with no panel opened.
+      abrir();
+      for (const id of ['#audio', '#som']) {
+        const panel = document.querySelector(id);
+        expect(panel?.querySelectorAll('.ctrl-row').length, `${id} has no rows at boot — this case would measure nothing`).toBeGreaterThan(0);
+        expect(wordsOf(panel), `${id} was mounted with a raw key`).not.toMatch(/\b(audio|som|sr|state|ui)\.[a-zA-Z]/);
+      }
+    });
+
     it('🔴 [Right] the sonar speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', async () => {
       // The sonar no longer imports `t`; what it says comes from the `t` its ctx receives. A root that handed it anything
       // else would read a raw key to a blind child.

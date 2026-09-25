@@ -12,7 +12,7 @@
 import { toggleLabel } from './dom.js';
 import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-modes.js';
 import { hearingLoss, setHearingLossGraph } from '../platform/audio.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
@@ -33,6 +33,8 @@ export const EMPATHY_VIZ_MODES: VizMode[] = VIZ_MODES.filter((m) => simulatesDis
 // `toggleLabel` lives in ui/dom, beside `toggleBtn`.
 
 export interface EmpathySettingsCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** ui/dom.ts querySelector shortcut. */
   $<T extends Element = Element>(sel: string): T | null;
   /** core/a11y-sr.ts screen-reader announcer. */
@@ -91,6 +93,7 @@ export interface EmpathySettingsApi {
 
 /** Wires the empathy panel's DOM (buttons + boot restore) and returns render/open/close for the host to call. */
 export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi {
+  const { t } = ctx;
   function render(): void {
     ctx.renderVizGroup('#empathy-list', '#empathy-players', EMPATHY_VIZ_MODES);
     const h = ctx.$<HTMLElement>('#opt-hearing');

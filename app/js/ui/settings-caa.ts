@@ -28,7 +28,7 @@
 //
 // 📌 And mounting happens ONCE, with render REFLECTING: rebuilding the list on every click would force rewiring the
 // listeners on every render and drop the focus. Relabelling instead of rebuilding is what `labelRow` exists for.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import type { LetterCase } from '../core/state.js';
 import { CAA_SETS, CAA_BY_KEY, caaReason, type CaaSet } from './caa-sets.js';
@@ -49,7 +49,7 @@ export function upperCaseOn(letterCase: LetterCase): boolean {
 export const caaControlId = (key: string): string => `caa-set-${key}`;
 
 /** The letters switch. Always available: it is the offline floor, and never depended on any file. */
-export function lettersRowSpec(): ControlRowSpec {
+export function lettersRowSpec(t: Translate): ControlRowSpec {
   return { id: 'caa-caixa-alta', label: t('caa.letras'), hint: t('caa.letras.dica') };
 }
 
@@ -63,7 +63,7 @@ export function lettersRowSpec(): ControlRowSpec {
  * `ariaLabel` carries the reason, so whoever navigates by keyboard hears why the row does not respond without hunting
  * for the footer. `disabled` belongs to the CONTROL and not the text: the status leaves the label, never the button.
  */
-export function caaRowSpec(s: CaaSet): ControlRowSpec {
+export function caaRowSpec(t: Translate, s: CaaSet): ControlRowSpec {
   const reason = caaReason(s);
   const explains = [s.note, s.license ? `Licença: ${s.license}` : '', reason ? t(reason) : '']
     .filter(Boolean).join(' · ');
@@ -82,17 +82,17 @@ export function caaRowSpec(s: CaaSet): ControlRowSpec {
  * — the letters are a switch and not a set, the Dev's decision that took them out of the list. A table whose first row
  * is the exception to all the others lies about what it is.
  */
-export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: () => ControlRowSpec[] }> = [
-  { title: 'caa.secao.agora', tag: 'caa.secao.agoraTag', rows: () => [lettersRowSpec()] },
+export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: (t: Translate) => ControlRowSpec[] }> = [
+  { title: 'caa.secao.agora', tag: 'caa.secao.agoraTag', rows: (t) => [lettersRowSpec(t)] },
   {
     title: 'caa.secao.preparo',
     tag: 'caa.secao.preparoTag',
-    rows: () => CAA_SETS.filter((s) => s.tier !== 'negotiating').map(caaRowSpec),
+    rows: (t) => CAA_SETS.filter((s) => s.tier !== 'negotiating').map((s) => caaRowSpec(t, s)),
   },
   {
     title: 'caa.secao.negociacao',
     tag: 'caa.secao.negociacaoTag',
-    rows: () => CAA_SETS.filter((s) => s.tier === 'negotiating').map(caaRowSpec),
+    rows: (t) => CAA_SETS.filter((s) => s.tier === 'negotiating').map((s) => caaRowSpec(t, s)),
   },
 ];
 
@@ -103,9 +103,9 @@ export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: () 
  * row would leave a control in the document with no listener — a dead button that looks alive (ADR-0106 §5). And the
  * text may have been captured at boot, while the language was still the fallback.
  */
-export function mountCaaInside(ctx: PanelShellCtx, list: HTMLElement): void {
+export function mountCaaInside(t: Translate, ctx: PanelShellCtx, list: HTMLElement): void {
   for (const section of CAA_SECTIONS) {
-    const specs = section.rows();
+    const specs = section.rows(t);
     const header = sectionHeader(ctx, t(section.title), t(section.tag), specs.length);
     if (header && !list.querySelector(`[data-caa-section="${section.title}"]`)) {
       header.setAttribute('data-caa-section', section.title);
@@ -135,6 +135,8 @@ function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
 }
 
 export interface SettingsCaaCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   $: <T extends Element = Element>(sel: string) => T | null;
   srSay: (msg: string) => void;
   /** Live read of core/state `letterCase` (the binding is reassigned by the setter). */
@@ -156,6 +158,7 @@ export interface SettingsCaaApi {
 }
 
 export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
+  const { t } = ctx;
   /*
    * 📌 THE KIT'S CTX COMES FROM THE LIST NODE ITSELF, not from a global `document` nor a new contract field.
    * `ownerDocument` is the document that list LIVES in — exactly the document the rows must be born in —, so this
@@ -180,7 +183,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   function render(): void {
     const el = ctx.$<HTMLElement>('#caa-list');
     if (!el) return;
-    mountCaaInside(panelCtx(el), el);
+    mountCaaInside(t, panelCtx(el), el);
     reflect();
     ctx.fillExplain(ctx.$<HTMLElement>('#caa .overlay__card'));
     refreshMarks();

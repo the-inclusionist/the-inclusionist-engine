@@ -22,6 +22,8 @@ import { CRT, applyCrt } from '../app/js/render/crt.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { t } from '../app/js/core/i18n.js';
 import { RM_LABEL } from '../app/js/ui/motion-choices.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -52,6 +54,7 @@ function makeCtx(over = {}) {
   const calls = { srSay: [], setBool: [], frontOverlay: [], toggleBtn: [], saveRM: 0 };
   const rm = { parallax: false, decor: false, items: false, particles: false };
   const ctx = {
+    t: translate,
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     srSay: (t) => calls.srSay.push(t),

@@ -11,6 +11,8 @@ import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/visual-choices.js';
 import pt from '../app/js/i18n/pt.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
  * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
@@ -47,6 +49,7 @@ function makeCtx(overrides = {}) {
     renderVisualAxes: [],
   };
   const ctx = {
+    t: translate,
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $: (sel) => document.querySelector(sel),
     srSay: (t) => calls.srSay.push(t),

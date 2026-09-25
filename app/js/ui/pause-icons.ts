@@ -760,7 +760,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   const setToggleMove = ctx.setToggleMove
     ?? ((i: number, on: boolean) => setMoveLatch(
       {
-        players: P(), store: ctx.store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
+        t, players: P(), store: ctx.store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
         // Passed through, not resolved here: the icon and the panel must write the SAME thing, and resolving the
         // device in one of them only is how two surfaces of the same engine come to disagree.
         transportInUse: ctx.transportInUse,

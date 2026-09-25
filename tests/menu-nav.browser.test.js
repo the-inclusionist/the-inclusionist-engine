@@ -92,7 +92,7 @@ function boot(over = {}) {
   setPhaseValue('paused');
   const log = { phase: [], actor: [], padWiz: [], bar: [], said: [] };
   const naBarra = over.naBarra || new Set();
-  const panel = initSettingsPanel({ $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 });
+  const panel = initSettingsPanel({ t: translate, $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 });
 
   // The dialogs that matter here, registered in the Escape chain in this order — #help included, as the last case of
   // this file asserts.

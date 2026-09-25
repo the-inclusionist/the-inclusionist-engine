@@ -2502,6 +2502,7 @@
       "srSay",
       "store",
       "toggleBtn",
+      "translator",
       "tts"
     ],
     "interface SettingsAudioApi": [
@@ -2519,7 +2520,8 @@
       "getLetterCase",
       "restoreFocus?",
       "setLetterCase",
-      "srSay"
+      "srSay",
+      "t"
     ],
     "interface SettingsCaaApi": [
       "close",
@@ -2545,7 +2547,8 @@
       "setKB",
       "srAlert",
       "srSay",
-      "store"
+      "store",
+      "t"
     ],
     "interface SettingsControlsApi": [
       "cancelCapture",
@@ -2572,7 +2575,8 @@
       "setPlayerViz",
       "setWheelchair",
       "srSay",
-      "store"
+      "store",
+      "t"
     ],
     "interface EmpathySettingsApi": [
       "close",
@@ -2596,6 +2600,7 @@
       "setToggleRun?",
       "srSay",
       "store",
+      "t",
       "transportInUse?"
     ],
     "interface SettingsMobilityApi": [
@@ -2612,6 +2617,7 @@
       "players",
       "srSay",
       "store",
+      "t",
       "transportInUse?"
     ],
     "type MobilityPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
@@ -2634,6 +2640,7 @@
       "saveRM?",
       "srSay",
       "store",
+      "t",
       "toggleBtn"
     ],
     "interface MotionInsideSpec": [
@@ -2663,7 +2670,8 @@
       "$",
       "$$",
       "computedZ",
-      "doc"
+      "doc",
+      "t"
     ],
     "interface OverlayEntry": [
       "close",
@@ -2691,7 +2699,8 @@
       "fontInstalled?",
       "root",
       "srSay",
-      "store"
+      "store",
+      "t"
     ],
     "interface SettingsTypoApi": [
       "getFontKey",
@@ -2726,7 +2735,8 @@
       "setPlayerViz",
       "setRoleColor",
       "setSelectedPlayer",
-      "srSay"
+      "srSay",
+      "t"
     ],
     "interface VisualRowsOffered": [
       "owner"
@@ -2957,6 +2967,7 @@
       "srSay",
       "store",
       "toggleBtn",
+      "translator",
       "tts"
     ],
     "interface VoiceSettings": [

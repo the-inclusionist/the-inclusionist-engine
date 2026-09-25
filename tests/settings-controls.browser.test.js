@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsControls, drawKeys, ctrlControlId } from '../app/js/ui/settings-controls.js';
 import { keyUsedByOther } from '../app/js/ui/control-choices.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -34,6 +36,7 @@ function buildCtx(over = {}) {
     resetKB() { this.reposicoes++; return makeKB(); },
   };
   return {
+    t: translate,
     $,
     // The positions THIS 'game' uses. In a test, the game is the fixture — and that is why the list lives here and not
     // in an engine table: that would be the engine deciding every game has four verbs.
@@ -196,9 +199,9 @@ describe('ui/settings-controls', () => {
     // `drawKeys` is called on every render and every capture. If it appended instead of rewriting, the button would pile
     // up the keys of every time the child opened the menu — and the target would grow until it broke the row.
     const b = document.createElement('button');
-    drawKeys(b, ['KeyA', 'ArrowLeft']);
+    drawKeys(translate, b, ['KeyA', 'ArrowLeft']);
     expect([...b.querySelectorAll('kbd')].map((k) => k.textContent)).toEqual(['A', '←']);
-    drawKeys(b, ['KeyP']);
+    drawKeys(translate, b, ['KeyP']);
     expect([...b.querySelectorAll('kbd')].map((k) => k.textContent), 'as teclas antigas ficaram').toEqual(['P']);
   });
 

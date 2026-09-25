@@ -10,7 +10,7 @@
 // Overlay open/close plumbing (frontOverlay, Escape handling) is the SHARED helper every settings panel uses.
 
 import type { PlayerView } from '../core/entity.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import type { DomQuery } from '../core/dom-query.js';
@@ -44,6 +44,8 @@ export interface MobilityStore {
 export type MobilityPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>;
 
 export interface SettingsMobilityCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
   /** Screen-reader announcement (core/a11y-sr's srSay), injected. */
@@ -170,6 +172,8 @@ export type LatchPlayer = JogadorDaAlternanciaDaAresta;
 
 /** What the write needs to know. Everything here already lives in `SettingsMobilityCtx` and `PauseIconsCtx`. */
 export interface LatchWriteCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  readonly t: Translate;
   readonly players: readonly LatchPlayer[];
   readonly store: { setBool(key: string, on: boolean): void };
   readonly srSay: (msg: string) => void;
@@ -213,6 +217,7 @@ export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   if (transport) writeLatch((key, isOn) => ctx.store.setBool(key, isOn), BASE_DA_MARCHA, i, transport, on);
   // 📌 THE ANNOUNCEMENT IS UNCONDITIONAL, unlike `applyLatch`, which returns "changed". The child pressed the icon:
   // staying silent because the value already was that would leave the button with no answer for whoever listens.
+  const { t } = ctx;
   ctx.srSay(playerPrefix(t, i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
 
@@ -236,6 +241,7 @@ export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   if (!p) return;
   p.toggleRun = on;
   ctx.store.setBool(toggleRunKey(i), on);
+  const { t } = ctx;
   ctx.srSay(playerPrefix(t, i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleRunOn' : 'sr.motor.toggleRunOff'));
 }
 
@@ -260,7 +266,7 @@ export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
  *
  * Idempotent: calling it twice reuses the list instead of duplicating it.
  */
-export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
+export function mountMobilityInside(t: Translate, ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   if (!ctx.find('#movement-players')) {
     const abas = ctx.create('div');
     abas.id = 'movement-players';
@@ -293,6 +299,7 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, list:
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobilityApi {
+  const { t } = ctx;
   // ⚠️ RESOLVED ONCE: whoever injects rules, whoever does not still gets it — the engine does it itself (`setMoveLatch`).
   const setToggleMove = ctx.setToggleMove ?? ((i: number, on: boolean) => setMoveLatch(ctx, i, on));
   // Its sibling, by the same rule and for the same reason — see `setRunLatch`.

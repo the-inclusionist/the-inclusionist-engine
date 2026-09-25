@@ -5,7 +5,7 @@
 // `setOutlineFg`/`setOutlineBg`/`setRoleColor`/`resetRoleColors` are INJECTED — they reach texture caches and the
 // world, which belong to the host. The player count and players come from the round the root owns.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { mountSteps, updateSteps, nextStep, controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
 
@@ -41,6 +41,8 @@ export interface VisualSettings {
 }
 
 export interface SettingsVisualCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the root owns — a module `let` would
    *  be shared by any second game the same page loads. */
   getNumPlayers: () => number;
@@ -119,12 +121,12 @@ export interface VisualRowsOffered { readonly owner: boolean; readonly roles: bo
 const EVERY_ROW_OFFERED: VisualRowsOffered = { owner: true, roles: true };
 
 /** The OWNER-COLOURED ITEMS row, already translated. A switch. */
-function ownerRowSpec(): ControlRowSpec {
+function ownerRowSpec(t: Translate): ControlRowSpec {
   return { id: 'opt-ownercolors', label: t('visual.dono'), hint: t('visual.dono.dica') };
 }
 
 /** The SAFE PALETTE (Okabe-Ito) row, already translated. */
-function cbSafeRowSpec(): ControlRowSpec {
+function cbSafeRowSpec(t: Translate): ControlRowSpec {
   return { id: 'opt-cbsafe', label: t('visual.cbsafe'), hint: t('visual.cbsafe.dica') };
 }
 
@@ -138,7 +140,7 @@ function cbSafeRowSpec(): ControlRowSpec {
  * ⚠️ Relabel and not rebuild, for the reason `labelRow` already states: listeners are wired at boot, and remaking the
  * row would leave a control in the document with no listener — a dead button that looks alive (ADR-0106 §5).
  */
-function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, offered: VisualRowsOffered = EVERY_ROW_OFFERED): void {
+function mountVisualInside(t: Translate, ctx: PanelShellCtx, list: HTMLElement, offered: VisualRowsOffered = EVERY_ROW_OFFERED): void {
   /*
    * 🔴 THE CONTRAST BOOST, IN STEPS AND WITH THE PROSE IN THE RIGHT PLACE (ADR-0151). The explanation lives in an
    * `.opt-hint` from birth (`CLAUDE.md` §4), and THE LABEL GOES INSIDE THE STEPS — «◀ Realce de contraste: linear ▶»
@@ -161,13 +163,13 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, offered: Visua
   const enhanceHint = enhanceRow.querySelector<HTMLElement>('.opt-hint');
   if (enhanceHint) enhanceHint.textContent = t('visual.lq.dica');
 
-  for (const spec of [...(offered.owner ? [ownerRowSpec()] : []), cbSafeRowSpec()]) {
+  for (const spec of [...(offered.owner ? [ownerRowSpec(t)] : []), cbSafeRowSpec(t)]) {
     const already = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
     if (already) labelRow(already, spec);
     else list.appendChild(controlRow(ctx, spec).row);
   }
 
-  if (offered.roles) mountRoleColoursRow(ctx, list);
+  if (offered.roles) mountRoleColoursRow(t, ctx, list);
 }
 
 /**
@@ -182,7 +184,7 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, offered: Visua
  * through `t()`; the role's name is the word of the GAME mounting this panel, and the engine neither translates nor
  * invents it — it passes through `{param}`, so the sentence stays true in a cartridge with other roles.
  */
-function mountRoleColoursRow(ctx: PanelShellCtx, list: HTMLElement): void {
+function mountRoleColoursRow(t: Translate, ctx: PanelShellCtx, list: HTMLElement): void {
   let row = ctx.find('#opt-role-reset')?.closest<HTMLElement>('.ctrl-row') ?? null;
   if (!row) {
     row = ctx.create('div');
@@ -237,6 +239,7 @@ export interface SettingsVisual {
 }
 
 export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
+  const { t } = ctx;
   /*
    * 📌 THE KIT'S CTX COMES FROM THE LIST NODE ITSELF, not from a global `document` nor a new contract field.
    * `ownerDocument` is the document that list LIVES in — exactly the document the rows must be born in —, so this
@@ -331,7 +334,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     // adding this one would put the two axes into the simulation list — the separation prevents it.
     ctx.renderVisualAxes('#visual-modes', '#visual-players');
     void contrastValue; // not read: `refreshMarks` compares through the new model, not this mirror
-    mountVisualInside(kitCtx(el), el, ctx.offer);
+    mountVisualInside(t, kitCtx(el), el, ctx.offer);
     wireOnce(el);
     reflectControls(settings);
     reflectOutlines();

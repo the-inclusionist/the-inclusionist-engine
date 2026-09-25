@@ -10,7 +10,7 @@ import { toggleLabel, toggleAria } from './dom.js';
 import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
 import { defaultReducedMotion, type MediaQuery } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { mountSteps, updateSteps, nextStep, controlRow, labelRow, sectionHeader } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import type { Store } from '../platform/storage.js';
@@ -50,6 +50,8 @@ export type MotionPlayer = JogadorDeMovimentoLeaf;
 export type MotionSceneFlags = BandeirasDeCenaLeaf;
 
 export interface SettingsMotionCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the root owns — a module `let` would
    *  be shared by any second game the same page loads. */
   getNumPlayers: () => number;
@@ -291,6 +293,7 @@ export interface SettingsMotionApi {
 }
 
 export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
+  const { t } = ctx;
   /*
    * ⚠️ RESOLVED ONCE, AT BOOT, not on every use. `rm` is mutated in place and shared by REFERENCE with whoever draws
    * the scene; resolving it on every read would create a new object per call, the switch would stop reaching the

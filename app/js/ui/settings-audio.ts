@@ -11,7 +11,7 @@
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { toggleLabel } from './dom.js';
-import { t } from '../core/i18n.js';
+import type { Translate, Translator } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
@@ -67,6 +67,11 @@ export interface SettingsAudioSettings extends VoiceSettingsStore {
 }
 
 export interface SettingsAudioCtx {
+  /**
+   * The root's translator (ADR-0232 D3): its `t`, and the page's language as a BCP-47 tag, which picks the system voices the
+   * list offers. A Pick and not a bare `t`, because the voice list reads the language.
+   */
+  translator: Pick<Translator, 't' | 'bcp47'>;
   /** The page's settings store (see `SettingsAudioSettings`). REQUIRED (ADR-0232): no module reads it by import. */
   settings: SettingsAudioSettings;
   /**
@@ -182,7 +187,7 @@ export interface SettingsAudioApi {
  *
  * Idempotent: calling it twice reuses what exists instead of duplicating it.
  */
-export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
+export function mountAudioInside(t: Translate, ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   // Each entry is either a control row or a CONTAINER the panel fills with rows of its own.
   const pieces: (ControlRowSpec | { readonly container: string; readonly label?: string })[] = [
     /*
@@ -259,7 +264,7 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, list: HT
  * ⚠️ THE IDS ARE THE ONES `initSettingsAudio` ALREADY LISTENS TO (`#audio-master`, `#audio-master-vol`, `#audio-list`). And
  * the same order rule: mount BEFORE `init`. Idempotent and relabellable, like its hearing sibling.
  */
-export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
+export function mountSoundInside(t: Translate, ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   const rows: ControlRowSpec[] = [
     { id: 'audio-master', label: t('audio.som'), hint: t('audio.som.dica') },
@@ -282,6 +287,7 @@ export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, list: HT
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
+  const { t } = ctx.translator;
   // ⚠️ THE ENGINE'S DEFAULT (ADR-0106 §4): whoever injects rules; whoever does not still gets blind mode.
   // `setBlindModeValue` does the three things `core/state` says a setter does — store, persist, notify — and nothing
   // more: the effects are reactions, and whoever reacts subscribes to the event.

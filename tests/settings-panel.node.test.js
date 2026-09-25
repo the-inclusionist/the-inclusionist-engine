@@ -8,6 +8,8 @@
 // produces (label on the row, description in an aria-live footer).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import {
   initSettingsPanel, rowExplainText, topByZ, EXPLAIN_IDLE, OVERLAY_BASE_Z, OVERLAY_SCOPE_SELECTOR,
 } from '../app/js/ui/settings-panel.js';
@@ -79,6 +81,7 @@ function overlay(id, { rows = [], hidden = true, withCard = true } = {}) {
 /** A complete ctx over a map of `#id` → FakeEl. `zOf` simulates the browser's getComputedStyle. */
 function makeCtx(elements = {}, { scope = [], zOf = (el) => Number(el.style.zIndex) || 0 } = {}) {
   return {
+    t: translate,
     $: (sel) => elements[sel] ?? null,
     $$: (sel) => (sel === OVERLAY_SCOPE_SELECTOR ? scope : []),
     doc: fakeDoc,
