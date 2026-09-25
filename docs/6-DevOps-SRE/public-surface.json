@@ -1251,8 +1251,16 @@
     "HudBandsMounted",
     "HudBar",
     "HudNumber",
+    "HudRowSlots",
+    "fiveDigits",
     "hudNumbersProblems",
     "mountHudBands"
+  ],
+  "ui/hud-row.ts": [
+    "BottomBandCtx",
+    "HudRow",
+    "mountHudRow",
+    "reserveBottomBand"
   ],
   "ui/hud.ts": [
     "HudApi",
@@ -1451,6 +1459,11 @@
     "ScanOverlay",
     "mountScanOverlay",
     "scanItemText"
+  ],
+  "ui/session-clock.ts": [
+    "SessionClockCtx",
+    "SessionClockMounted",
+    "mountSessionClock"
   ],
   "ui/settings-aac.ts": [
     "AAC_SECTIONS",

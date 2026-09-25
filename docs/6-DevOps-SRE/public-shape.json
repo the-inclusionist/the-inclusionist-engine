@@ -62,6 +62,7 @@
       "keyboardConfig",
       "localeReady",
       "lq",
+      "mapSlot",
       "measureFlashes",
       "menuIndexOn",
       "mirrorAnnouncements",
@@ -2332,15 +2333,34 @@
       "cor",
       "segmentos"
     ],
+    "interface HudRowSlots": [
+      "learning",
+      "score"
+    ],
     "interface HudBandsMounted": [
       "learning",
       "left",
+      "points",
       "refresh",
       "remove",
       "right"
     ],
     "type HudBand": "'identity' | 'mission' | 'power' | 'learning'",
     "type HudNumber": "| { readonly band: 'identity' | 'mission' | 'power'"
+  },
+  "ui/hud-row.ts": {
+    "interface HudRow": [
+      "clock",
+      "learning",
+      "map",
+      "row",
+      "score"
+    ],
+    "interface BottomBandCtx": [
+      "pad",
+      "region",
+      "row"
+    ]
   },
   "ui/hud.ts": {
     "interface ScreenRect": [
@@ -2706,6 +2726,27 @@
       "hide",
       "remove",
       "showing"
+    ]
+  },
+  "ui/session-clock.ts": {
+    "interface SessionClockCtx": [
+      "announce",
+      "clearInterval",
+      "doc",
+      "drawn",
+      "ending",
+      "minutes",
+      "performance",
+      "sceneMotion",
+      "setInterval",
+      "slot",
+      "systemReducedMotion",
+      "t"
+    ],
+    "interface SessionClockMounted": [
+      "el",
+      "refresh",
+      "remove"
     ]
   },
   "ui/settings-aac.ts": {

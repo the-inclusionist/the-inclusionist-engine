@@ -70,10 +70,13 @@ const pt: Record<string, string> = {
   'hud.barra': '{nome}: {azuis} de primeira, {verdes} com ajuda, {vermelhos} sem acertar',
   'hud.barra.sobe': 'o nível sobe',
   'hud.barra.desce': 'o nível desce',
+  // The score in the HUD row is drawn as five digits (ADR-0238, ADR-0239); a listener hears the number itself, not the zeros.
+  'hud.points': '{count} {name}',
   // The session clock's accessible name (ADR-0236): the time left in words, never «0:45». Rewritten each whole minute.
   'clock.left': 'Tempo de jogo: faltam {minutes} minutos',
   'clock.left.one': 'Tempo de jogo: falta 1 minuto',
   'clock.over': 'Tempo de jogo: acabou',
+  'clock.label': 'TEMPO', // the small word over the clock's digits (ADR-0239)
   // O NOME do que este jogo junta. Currículo não se traduz (pilar 3), mas "moedas" não é currículo — é um
   // substantivo comum da interface, e a criança que joga em inglês tem de ouvir "coins". Por isso o nome
   // atravessa por `{nome}` JÁ RESOLVIDO pelo jogo, e a chave mora aqui.

@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE ENGINE MOUNTS THE HUD, AND THE GAME DECLARES ITS NUMBERS BY BAND (ADR-0168; ADR-0059 §1; issue #162).
+// THE ENGINE MOUNTS THE HUD, AND THE GAME DECLARES ITS NUMBERS BY BAND (ADR-0168; ADR-0059 §1; issue #162) — and the HUD is ONE
+// ROW AT THE BOTTOM (ADR-0239; issue #94): the learning bars left, the session clock centred, the power over the score between
+// the centre and the right, the game's map right; the mission at the top centre, just under the quick bar (ADR-0239 erratum).
 //
 // 📏 Measured on 2026-09-13: six sibling games, six HUDs of their own — 2048 a left column, pinball four corners, whack-whack
 // and 15-puzzle panels, soccer a line under the pitch —, none in the bands. The Dev: «a engine deve passar a montar o HUD com
-// o jogo declarando os números por faixa», and «Superpoder e contador de objetivo ficam ABAIXO da barra de acessibilidade
-// rápida».
+// o jogo declarando os números por faixa». And on 2026-09-25, with Super Mario World's HUD as the reference: «Inferior
+// esquerda: barra(s) de pontuação(ões) de ZDP. Inferior centro: relógio […]. inferior entre centro e direita: pontuação com 5
+// dígitos e acima da pontuação, poder em uso. Inferior direita: mapa em jogos que tenham mapa.»
 //
-// 📌 Geometry, so a real stylesheet and a 640×360 stage. The session clock is the adult's (ADR-0050) and nothing holds a session
-// length yet: it is not mounted, and nothing here measures it.
+// ⚠️ THE PLACES PINNED HERE MOVED ON 2026-09-25 (ADR-0239 and its erratum): the points left the top left for the score, the
+// power left the top right for the place above it, the learning bars left the footer's centre for the row's left, and the
+// mission left the top left for the top centre under the bar. The cases that pinned the old places were rewritten.
+//
+// 📌 Geometry, so a real stylesheet and a 640×360 stage. The clock itself is measured in `tests/session-clock.browser.test.js`.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -49,6 +55,7 @@ const abrir = (extra = {}) => createGame({
   accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...extra,
 });
 const caixa = (sel) => document.querySelector(sel).getBoundingClientRect();
+const variavel = (nomeVar) => parseFloat(getComputedStyle(document.getElementById('game-region')).getPropertyValue(nomeVar));
 
 beforeAll(async () => {
   const style = document.createElement('style');
@@ -68,73 +75,129 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  motor?.unmount();
+  motor?.dispose();
   motor = null;
   raiz.remove();
   document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
 });
 
-describe('the HUD the engine mounts (issue #162)', () => {
-  it('🔴 [Right] points top left and the mission under them, level with the quick bar, touching it nowhere (ADR-0175)', async () => {
+describe('the HUD the engine mounts (issue #162), in one row at the bottom (ADR-0239)', () => {
+  it('🔴 [Right] the mission sits at the TOP CENTRE, just under the quick bar, touching it nowhere (ADR-0239 erratum)', async () => {
     motor = abrir({ hud: HUD() });
     await esperar(150);
     const regiao = caixa('#game-region');
-    const esquerda = caixa('.hud-esquerda');
+    const missao = caixa('.hud-esquerda');
     const barra = caixa('#title-icons');
-    const [pontosP, missao] = document.querySelectorAll('.hud-esquerda .hud-numero');
-    expect(pontosP.textContent, 'the points are not the first line — declared after the mission, they must still lead').toBe('Pontos: 12');
-    expect(missao.textContent).toMatch(/^3 (de|of) 10 moedas$/);
-    expect(missao.getBoundingClientRect().top, 'the mission is not under the points').toBeGreaterThanOrEqual(pontosP.getBoundingClientRect().bottom);
-    expect(esquerda.left - regiao.left, 'not at the left edge').toBeLessThanOrEqual(8);
-    expect(Math.abs(esquerda.top - barra.top), 'not level with the bar').toBeLessThanOrEqual(2);
-    expect(cruza(esquerda, barra), 'the left column covers the quick bar').toBe(false);
+    expect(document.querySelector('.hud-esquerda').textContent).toMatch(/^3 (de|of) 10 moedas$/);
+    expect(Math.abs((missao.left + missao.right) / 2 - (regiao.left + regiao.right) / 2), 'not centred').toBeLessThanOrEqual(2);
+    expect(missao.top, 'not under the bar').toBeGreaterThanOrEqual(barra.bottom);
+    expect(missao.top - barra.bottom, 'not JUST under the bar').toBeLessThanOrEqual(8);
+    expect(cruza(missao, barra), 'the mission covers the quick bar').toBe(false);
+    const sala = parseFloat(document.getElementById('game-region').style.getPropertyValue('--barra-a11y-h'));
+    expect(sala, 'the room the game leaves at the top ends above the mission').toBeGreaterThan(missao.bottom - regiao.top);
+    expect(document.querySelector('.hud-esquerda .hud-points, .hud-esquerda [data-band="identity"]'), 'the points are still at the top').toBeNull();
   });
 
-  it('🔴 [Right] the power sits top right, level with the bar, touching it nowhere — and nothing sits under the bar', async () => {
+  it('🔴 [Right] while an icon\'s name shows, the NAME covers the mission — it is momentary, the mission is not', async () => {
+    motor = abrir({ hud: HUD() });
+    await esperar(150);
+    const icone = document.querySelector('#title-icons .pi-btn');
+    icone.focus();
+    icone.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    await esperar();
+    const nomeDoIcone = document.querySelector('#title-icons .pause-icons-cap');
+    expect(nomeDoIcone.textContent, 'no name showing — the case measures nothing').not.toBe('');
+    const n = nomeDoIcone.getBoundingClientRect();
+    const m = caixa('.hud-esquerda');
+    expect(cruza(n, m), 'the case needs the name over the mission').toBe(true);
+    // both are `pointer-events: none`, which `elementFromPoint` skips: turned on here only, so the hit test reads paint order
+    const tocar = document.createElement('style');
+    tocar.textContent = '.hud-faixa, .hud-faixa *, .pause-icons-cap { pointer-events: auto !important }';
+    document.head.appendChild(tocar);
+    try {
+      const x = Math.max(n.left, m.left) + 2;
+      const y = (Math.max(n.top, m.top) + Math.min(n.bottom, m.bottom)) / 2;
+      expect(document.elementFromPoint(x, y)?.closest('.pause-icons-cap'), 'the mission is drawn over the name').not.toBeNull();
+    } finally { tocar.remove(); }
+  });
+
+  it('🔴 [Right] the SCORE sits in the row between the clock and the right edge, the power ABOVE it', async () => {
     motor = abrir({ hud: HUD() });
     await esperar(150);
     const regiao = caixa('#game-region');
-    const direita = caixa('.hud-direita');
-    const barra = caixa('#title-icons');
+    const relogio = caixa('.session-clock');
+    const pontosBox = caixa('.hud-points');
+    const poder = caixa('.hud-direita');
+    expect(regiao.bottom - pontosBox.bottom, 'the score is not at the bottom').toBeLessThanOrEqual(8);
+    expect(pontosBox.left, 'the score is not to the right of the clock').toBeGreaterThanOrEqual(relogio.right);
+    expect(pontosBox.right).toBeLessThanOrEqual(regiao.right);
+    expect(poder.bottom, 'the power is not above the score').toBeLessThanOrEqual(pontosBox.top + 0.5);
+    expect(Math.abs((poder.left + poder.right) / 2 - (pontosBox.left + pontosBox.right) / 2), 'the power is not over the score').toBeLessThanOrEqual(2);
     expect(document.querySelector('.hud-direita').textContent).toBe('Superpoder: 1');
-    expect(regiao.right - direita.right, 'not at the right edge').toBeLessThanOrEqual(8);
-    expect(Math.abs(direita.top - barra.top), 'not level with the bar').toBeLessThanOrEqual(2);
-    expect(cruza(direita, barra), 'the right column covers the quick bar').toBe(false);
-    const sobABarra = [...document.querySelectorAll('.hud-numero')].filter((p) => {
-      const r = p.getBoundingClientRect();
-      return r.left < barra.right && barra.left < r.right && r.top >= barra.bottom;
-    });
-    expect(sobABarra.map((p) => p.textContent), 'a HUD number sits under the quick bar').toEqual([]);
   });
 
-  it('🔴 [Right] a long line on either side is narrowed before it reaches the bar, and the room holds it', async () => {
-    pontos = 1234567890;
+  it('🔴 [Right] the score is FIVE DIGITS with leading zeros, and a listener hears the number, never the zeros (ADR-0238)', async () => {
+    motor = abrir({ hud: HUD() });
+    await esperar(80);
+    const p = document.querySelector('.hud-points .hud-numero');
+    expect(p.textContent).toBe('00012');
+    expect(p.getAttribute('role')).toBe('img');
+    expect(p.getAttribute('aria-label')).toBe('12 Pontos');
+    expect(parseFloat(getComputedStyle(p).fontSize), 'the digits under the text floor').toBeGreaterThanOrEqual(16);
+  });
+
+  it('🔴 [Boundary] above 99999 the score stays 99999; below zero, 00000; a fraction is not a digit', async () => {
+    pontos = 123_456;
+    motor = abrir({ hud: HUD() });
+    await esperar(80);
+    const p = document.querySelector('.hud-points .hud-numero');
+    expect(p.textContent, 'a sixth digit grew').toBe('99999');
+    expect(p.getAttribute('aria-label')).toBe('99999 Pontos');
+    pontos = -3;
+    await esperar(80);
+    expect(p.textContent).toBe('00000');
+    pontos = 7.9;
+    await esperar(80);
+    expect(p.textContent).toBe('00007');
+  });
+
+  it('🔴 [Right] five digits keep one width: the score does not move as it grows', async () => {
+    pontos = 1;
+    motor = abrir({ hud: HUD() });
+    await esperar(80);
+    const antes = caixa('.hud-points .hud-numero');
+    pontos = 88_888;
+    await esperar(80);
+    const depois = caixa('.hud-points .hud-numero');
+    expect(Math.abs(depois.width - antes.width), 'the width changed with the digits').toBeLessThanOrEqual(0.5);
+    expect(Math.abs(depois.left - antes.left)).toBeLessThanOrEqual(0.5);
+  });
+
+  it('🔴 [Right] a long mission wraps inside the screen, never onto the bar, and the room holds it', async () => {
     motor = abrir({ hud: [
-      { band: 'identity', name: nome('Pontos acumulados nesta escola inteira'), value: () => pontos },
-      { band: 'power', name: nome('Superpoder que dura uma rodada inteira'), value: () => 3 },
+      { band: 'mission', name: nome('estrelas escondidas em todas as salas desta escola inteira, do porão até o telhado'), value: () => ({ have: 3, need: 10 }) },
     ] });
     await esperar(150);
-    const barra = caixa('#title-icons');
-    expect(cruza(caixa('.hud-esquerda'), barra), 'a long left line ran into the bar').toBe(false);
-    expect(cruza(caixa('.hud-direita'), barra), 'a long right line ran into the bar').toBe(false);
-    const regiao = document.getElementById('game-region');
-    const topo = regiao.getBoundingClientRect().top;
-    const maisBaixa = Math.max(caixa('.hud-esquerda').bottom, caixa('.hud-direita').bottom) - topo;
-    expect(maisBaixa, 'the case needs a column taller than the bar room').toBeGreaterThan(90);
-    expect(parseFloat(regiao.style.getPropertyValue('--barra-a11y-h')), 'a wrapped column reaches into the game\'s room').toBeGreaterThan(maisBaixa);
+    const regiao = caixa('#game-region');
+    const missao = caixa('.hud-esquerda');
+    expect(cruza(missao, caixa('#title-icons')), 'a long mission ran into the bar').toBe(false);
+    expect(missao.left, 'it left the screen').toBeGreaterThanOrEqual(regiao.left);
+    expect(missao.right).toBeLessThanOrEqual(regiao.right);
+    const maisBaixa = missao.bottom - regiao.top;
+    expect(maisBaixa, 'the case needs a mission taller than the bar room').toBeGreaterThan(100);
+    expect(parseFloat(document.getElementById('game-region').style.getPropertyValue('--barra-a11y-h')), 'a wrapped mission reaches into the game\'s room').toBeGreaterThan(maisBaixa);
   });
 
-  it('🔴 [Right] the room the game leaves free at the top holds both columns — whichever reaches lower', async () => {
+  it('🔴 [Right] the room the game leaves at the TOP no longer holds the row: the row\'s room is at the bottom', async () => {
     const poderes = ['Escudo', 'Ímã', 'Asas', 'Fôlego'].map((n) => ({ band: 'power', name: nome(n), value: () => 1 }));
     motor = abrir({ hud: [...HUD(), ...poderes] });
     await esperar(150);
     const regiao = document.getElementById('game-region');
-    const sala = parseFloat(regiao.style.getPropertyValue('--barra-a11y-h'));
     const topo = regiao.getBoundingClientRect().top;
-    expect(sala, 'the room ends above the left column').toBeGreaterThan(caixa('.hud-esquerda').bottom - topo);
-    expect(sala, 'the room ends above the right column').toBeGreaterThan(caixa('.hud-direita').bottom - topo);
-    expect(caixa('.hud-direita').bottom, 'the case needs the right column to reach lower than the left').toBeGreaterThan(caixa('.hud-esquerda').bottom);
-    expect(caixa('.hud-direita').bottom - topo, 'the case needs the right column below the bar room').toBeGreaterThan(90);
+    expect(variavel('--barra-a11y-h'), 'the bottom row\'s power column became room at the top').toBeLessThan(caixa('.hud-direita').top - topo);
+    const linha = caixa('.hud-row');
+    expect(variavel('--hud-row-h'), 'the row\'s room does not hold its tallest cell').toBeGreaterThanOrEqual(Math.floor(linha.height));
+    expect(caixa('.hud-direita').top, 'the power column climbed out of the row').toBeGreaterThanOrEqual(linha.top);
   });
 
   it('🔴 [Right] a number that changes shows on the next frame, with nothing called', async () => {
@@ -142,24 +205,26 @@ describe('the HUD the engine mounts (issue #162)', () => {
     await esperar(50);
     pontos = 13;
     await esperar(80);
-    expect(document.querySelector('.hud-esquerda .hud-numero').textContent).toBe('Pontos: 13');
+    expect(document.querySelector('.hud-points .hud-numero').textContent).toBe('00013');
+    expect(document.querySelector('.hud-points .hud-numero').getAttribute('aria-label')).toBe('13 Pontos');
   });
 
-  it('🎯 [Zero] a game that declares no numbers gets no HUD, and its room is the bar\'s alone', async () => {
+  it('🎯 [Zero] a game that declares no numbers gets no bands — the row holds the clock alone', async () => {
     motor = abrir();
     await esperar(150);
     expect(document.querySelectorAll('.hud-faixa').length).toBe(0);
-    const semHud = parseFloat(document.getElementById('game-region').style.getPropertyValue('--barra-a11y-h'));
+    expect(document.querySelectorAll('.hud-row .session-clock').length).toBe(1);
+    const semHud = variavel('--hud-row-h');
     motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [...HUD(), { band: 'power', name: nome('Escudo'), value: () => 2 }, { band: 'power', name: nome('Ímã'), value: () => 1 }] });
     await esperar(80);
-    const comHud = parseFloat(document.getElementById('game-region').style.getPropertyValue('--barra-a11y-h'));
-    expect(comHud, 'mounting a cartridge with a tall column did not grow the room').toBeGreaterThan(semHud);
+    expect(variavel('--hud-row-h'), 'mounting a cartridge with a tall score cell did not grow the row\'s room').toBeGreaterThan(semHud);
   });
 
-  it('🔴 [Right] a column with no number is not shown', async () => {
+  it('🔴 [Right] a band with no number is not shown', async () => {
     motor = abrir({ hud: [HUD()[2]] });
     await esperar(80);
     expect(document.querySelector('.hud-esquerda').hidden).toBe(true);
+    expect(document.querySelector('.hud-points').hidden).toBe(true);
     expect(document.querySelector('.hud-direita').hidden).toBe(false);
   });
 
@@ -174,26 +239,26 @@ describe('the HUD the engine mounts (issue #162)', () => {
   });
 
   it('🔴 [Right] the engine does not accuse its own HUD of drawing over the bar or under the text floor', async () => {
-    motor = abrir({ hud: HUD() });
+    motor = abrir({ hud: [...HUD(), ...BARRAS()] });
     await esperar(150);
-    expect(motor.problems.filter((l) => /hud-/.test(l)), 'a problems line blames the HUD the engine mounted').toEqual([]);
+    expect(motor.problems.filter((l) => /hud-|session-clock/.test(l)), 'a problems line blames the HUD the engine mounted').toEqual([]);
     // and even where the HUD is small (read when `problems` is), its sizes are the engine's own gates', not the cartridge's
-    document.querySelectorAll('.hud-numero').forEach((p) => { p.style.fontSize = '10px'; });
-    expect(motor.problems.filter((l) => /hud-/.test(l)), 'the text floor blamed the cartridge for the engine HUD').toEqual([]);
+    document.querySelectorAll('.hud-numero, .session-clock-text > *').forEach((p) => { p.style.fontSize = '10px'; });
+    expect(motor.problems.filter((l) => /hud-|session-clock/.test(l)), 'the text floor blamed the cartridge for the engine HUD').toEqual([]);
   });
 
   it('🔴 [Right] where the HUD does reach the bar — the engine\'s own defect — the game is not blamed for it', async () => {
     const forcar = document.createElement('style');
-    forcar.textContent = '.hud-direita{right:auto!important;left:50%!important;max-width:none!important}';
+    forcar.textContent = '.hud-row{bottom:auto!important;top:0!important}';
     document.head.appendChild(forcar);
     try {
       motor = abrir({ hud: HUD() });
-      expect(cruza(caixa('.hud-direita'), caixa('#title-icons')), 'the case needs the column over the bar').toBe(true);
-      expect(motor.problems.filter((l) => /hud-/.test(l)), 'the bar check blamed the game for the engine HUD').toEqual([]);
+      expect(cruza(caixa('.session-clock'), caixa('#title-icons')), 'the case needs the row over the bar').toBe(true);
+      expect(motor.problems.filter((l) => /hud-|session-clock/.test(l)), 'the bar check blamed the game for the engine HUD').toEqual([]);
     } finally { forcar.remove(); }
   });
 
-  it('🔴 [Right] one learning bar per skill, side by side, centred at the bottom', async () => {
+  it('🔴 [Right] one learning bar per skill, stacked at the bottom LEFT, left of the clock', async () => {
     motor = abrir({ hud: BARRAS() });
     await esperar(80);
     const regiao = caixa('#game-region');
@@ -201,10 +266,11 @@ describe('the HUD the engine mounts (issue #162)', () => {
     expect(barras.length).toBe(2);
     const faixa = caixa('.hud-aprendizagem');
     expect(regiao.bottom - faixa.bottom, 'not at the bottom').toBeLessThanOrEqual(8);
-    expect(Math.abs((faixa.left + faixa.right) / 2 - (regiao.left + regiao.right) / 2), 'not centred').toBeLessThanOrEqual(2);
-    expect(Math.abs(barras[0].top - barras[1].top), 'not side by side').toBeLessThanOrEqual(1);
+    expect(faixa.left - regiao.left, 'not at the left').toBeLessThanOrEqual(8);
+    expect(faixa.right, 'the bars reach the clock').toBeLessThanOrEqual(caixa('.session-clock').left);
+    expect(barras[1].top, 'not stacked').toBeGreaterThanOrEqual(barras[0].bottom);
     expect(cruza(barras[0], barras[1])).toBe(false);
-    expect(getComputedStyle(document.querySelector('.hud-aprendizagem')).visibility, 'no explanation shows, and the bars are hidden').toBe('visible');
+    expect(getComputedStyle(document.querySelector('.hud-row')).visibility, 'no explanation shows, and the row is hidden').toBe('visible');
   });
 
   it('🔴 [Right] a bar shows the last ten segments, oldest first, and each state has a cue besides colour', async () => {
@@ -234,38 +300,72 @@ describe('the HUD the engine mounts (issue #162)', () => {
     expect(leitura.getAttribute('aria-label')).not.toMatch(/sobe|goes up|sube|desce|goes down|baja/);
   });
 
-  it('🔴 [Right] the explanation band covers the bars while it shows — also when the footer was there first', async () => {
-    // both are `pointer-events: none`, which `elementFromPoint` skips: turned on here only, so the hit test reads paint order
-    const tocar = document.createElement('style');
-    tocar.textContent = '.rodape-da-tela, .rodape-da-tela *, .hud-faixa, .hud-faixa * { pointer-events: auto !important }';
-    document.head.appendChild(tocar);
-    const coberta = () => [...document.querySelectorAll('.hud-barra')].every((b) => {
-      const r = b.getBoundingClientRect();
-      // the runner's frame can be narrower than the 640 px stage, and a point outside it hits nothing: sample inside both
-      const x = Math.max(r.left + 2, Math.min((r.left + r.right) / 2, window.innerWidth - 2));
-      if (x >= r.right) throw new Error('the bar is outside the runner viewport; nothing to measure');
-      return document.elementFromPoint(x, (r.top + r.bottom) / 2)?.closest('.rodape-da-tela') != null;
-    });
-    motor = abrir({ hud: BARRAS() });
+  it('🔴 [Right] the explanation covers the row while it shows: the row is not drawn, and the band stands where it stood', async () => {
+    motor = abrir({ hud: [...HUD(), ...BARRAS()] });
     await esperar(80);
+    const linhaAntes = caixa('.hud-row');
     const icone = document.querySelector('#title-icons .pi-btn');
     icone.focus();
     icone.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
     await esperar();
     expect(document.querySelector('.barra-explicacao')?.hidden, 'no explanation showing — the case measures nothing').toBe(false);
-    expect(coberta(), 'the explanation does not cover the learning bars').toBe(true);
-    // and not only on top: the band is translucent, and seen in a demo page the segments showed through its words
-    expect(getComputedStyle(document.querySelector('.hud-aprendizagem')).visibility, 'the bars show through the explanation').toBe('hidden');
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: BARRAS() });
+    expect(getComputedStyle(document.querySelector('.hud-row')).visibility, 'the row shows through the explanation').toBe('hidden');
+    expect(Math.abs(caixa('.barra-explicacao').bottom - linhaAntes.bottom), 'the explanation is not where the row stands').toBeLessThanOrEqual(1);
+    // the ORDER: the row comes before the footer in the region, so the footer paints over it on the same layer
+    const filhos = [...document.getElementById('game-region').children];
+    expect(filhos.indexOf(document.querySelector('.hud-row'))).toBeLessThan(filhos.indexOf(document.querySelector('.rodape-da-tela')));
+  });
+
+  it('🔴 [Right] the sound caption stands ABOVE the row, not over it (ADR-0239 point 6)', async () => {
+    motor = abrir({ hud: [...HUD(), ...BARRAS()] });
     await esperar(80);
-    expect(coberta(), 'a cartridge mounted after the footer drew its bars over the explanation').toBe(true);
-    // the ORDER on its own: the button legend and the sound caption share the footer and do not hide the bars, so the bars
-    // must come before the footer in the region even when they are drawn
-    const visiveis = document.createElement('style');
-    visiveis.textContent = '.hud-aprendizagem{visibility:visible!important}';
-    document.head.appendChild(visiveis);
-    try { expect(coberta(), 'drawn, the bars paint over the footer').toBe(true); } finally { visiveis.remove(); }
-    tocar.remove();
+    motor.captionSound('Porta rangendo');
+    await esperar(80);
+    const legenda = document.querySelector('.legenda-de-som');
+    expect(legenda?.hidden, 'no caption showing — the case measures nothing').toBe(false);
+    expect(legenda.getBoundingClientRect().bottom, 'the caption covers the row').toBeLessThanOrEqual(caixa('.hud-row').top + 0.5);
+    // `--rodape-h` is a `calc()` a custom property keeps unresolved: a probe of that height resolves it, as a game reads it
+    const sonda = document.createElement('div');
+    sonda.style.cssText = 'position:absolute;height:var(--rodape-h)';
+    document.getElementById('game-region').appendChild(sonda);
+    const rodapeH = sonda.getBoundingClientRect().height;
+    sonda.remove();
+    expect(rodapeH, 'a game\'s workspace does not end above the row and the footer').toBeGreaterThanOrEqual(
+      caixa('#game-region').bottom - legenda.getBoundingClientRect().top - 1);
+  });
+
+  it('🔴 [Right] where the on-screen pad shows, the row stands ABOVE the pad', async () => {
+    motor = abrir({ hud: HUD(), onScreenPad: true });
+    await esperar(80);
+    const pad = document.getElementById('touch-controls');
+    expect(pad, 'the case needs the pad').not.toBeNull();
+    pad.hidden = false;
+    await esperar(1150); // measured at the clock's next tick
+    const partes = [...pad.children].map((c) => c.getBoundingClientRect()).filter((b) => b.height > 0);
+    expect(partes.length, 'the case needs pad parts on the screen').toBeGreaterThan(0);
+    const topoDoPad = Math.min(...partes.filter((b) => caixa('#game-region').bottom - b.bottom <= 24).map((b) => b.top));
+    expect(caixa('.hud-row').bottom, 'the row sits over the pad').toBeLessThanOrEqual(topoDoPad + 0.5);
+    pad.hidden = true;
+    await esperar(1150);
+    expect(caixa('#game-region').bottom - caixa('.hud-row').bottom, 'the row did not come back down').toBeLessThanOrEqual(1);
+  });
+
+  it('🔴 [Right] the MAP slot: empty it is not drawn; a game\'s map shows at the bottom right; unmount clears it', async () => {
+    motor = abrir({ hud: HUD() });
+    await esperar(80);
+    expect(motor.mapSlot, 'the engine offers no map slot').not.toBeNull();
+    expect(motor.mapSlot.getBoundingClientRect().width, 'an empty map slot takes room').toBe(0);
+    const mapa = document.createElement('canvas');
+    mapa.width = 60; mapa.height = 40;
+    motor.mapSlot.appendChild(mapa);
+    await esperar(80);
+    const regiao = caixa('#game-region');
+    const m = mapa.getBoundingClientRect();
+    expect(regiao.right - m.right, 'the map is not at the right').toBeLessThanOrEqual(8);
+    expect(regiao.bottom - m.bottom, 'the map is not at the bottom').toBeLessThanOrEqual(8);
+    expect(m.left, 'the map covers the score').toBeGreaterThanOrEqual(caixa('.hud-points').right);
+    motor.unmount();
+    expect(motor.mapSlot.children.length, 'the released cartridge\'s map stayed').toBe(0);
   });
 
   it('🔴 [Right] a malformed list is refused, at boot and at mount', () => {
@@ -279,14 +379,12 @@ describe('the HUD the engine mounts (issue #162)', () => {
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-// (the two-column layout of ADR-0175 replaced the round band; the list was run again on it)
-//   C1/C2 a column not narrowed from the bar             🔴 long line on either side
-//   C3/C4 the room ignores the left / right column         🔴 long line · both columns (C4 SURVIVED until the right column was made the taller one)
-//   C5 mission before identity in declared order           🔴 points first · next frame
-//   C6 power in the left column · C7 right column on the left  🔴 power top right
-//   C8 left column lower than the bar                      🔴 level with the bar
-//   C9 no frame loop · C10 empty column shown · C11 no validation · C12 mount does not remount · C13 unmount keeps it  🔴
+// (the two-column layout of ADR-0175 replaced the round band; the list was run again on it — and again on 2026-09-25 on
+// ADR-0239's bottom row; the results of that run are in the commit that brought it)
+//   C1 the top column not narrowed from the bar                    🔴 long line at the top
+//   C5 mission before identity in declared order                   (retired: the points left the column)
+//   C8 left column lower than the bar                              🔴 level with the bar
+//   C9 no frame loop · C10 empty band shown · C11 no validation · C12 mount does not remount · C13 unmount keeps it  🔴
 //   C14/C15 the HUD not excluded from the text floor / the bar check   🔴 not blamed
-//   C16 the unpublished `round` band still accepted        🔴 refused
-//   L1 bars after the footer (SURVIVED while hidden under the explanation: order checked with the bars forced visible)
-//   L2 no accessible name · L3 not the last ten · L4 four bars · L8 off the bottom · L13 drawn under the explanation  🔴
+//   C16 the unpublished `round` band still accepted                🔴 refused
+//   L2 no accessible name · L3 not the last ten · L4 four bars      🔴

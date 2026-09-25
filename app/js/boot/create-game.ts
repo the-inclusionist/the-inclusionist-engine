@@ -134,6 +134,9 @@ import { createEmpathyFilter } from '../input/empathy-filter.js';
 import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
+import { mountSessionClock, type SessionClockMounted } from '../ui/session-clock.js';
+import { mountHudRow, reserveBottomBand } from '../ui/hud-row.js';
+import { sessionEndingProblems } from '../core/session-clock.js';
 import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/game-options.js';
 import { createStorage, keysOutsideScopes, type StorageLike } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
@@ -553,6 +556,13 @@ export interface Engine {
    * a factory now: a second store would read the same storage but hear none of this root's changes.
    */
   readonly settings: SettingsStore;
+
+  /**
+   * WHERE A GAME MOUNTS ITS MAP (ADR-0239 point 4): the bottom-right cell of the HUD row. The engine draws nothing in it — an
+   * empty slot takes no room — and a game with a map appends its own element here. `null` where the page has no
+   * `#game-region` to hold the row.
+   */
+  readonly mapSlot: HTMLElement | null;
 
   /**
    * THIS ROOT'S INPUT STATE (ADR-0232 D4): the held keys and who pressed them, the transport in use per player, the pads'
@@ -2513,8 +2523,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 The name line is counted whether or not a name is showing — reserving only while pointing would move the game
    * under the child's finger. Measured again at every scale and every typography step: both change the text's size.
    * ⚠️ Zero without a bar: nothing to reserve.
-   * 📌 With a HUD (ADR-0175) the room also holds the two top columns — points and mission on the left, power on the right —
-   * when either reaches lower than the bar's room; each is narrowed so it never reaches the bar.
+   * 📌 With a HUD the room also holds the mission, centred just under the bar (ADR-0239 erratum), when it reaches lower than
+   * the bar's room. The rest of the HUD is the row at the bottom, measured with it.
    */
   function reserveBarBand(): void {
     reserveTopBand({
@@ -2523,6 +2533,18 @@ export function createGame(o: CreateGameOptions): Engine {
       hud: hudMounted,
       ...(typeof win.getComputedStyle === 'function' ? { computedStyle: (el: HTMLElement) => win.getComputedStyle(el) } : {}),
     });
+    reserveRowBand();
+  }
+  /*
+   * THE HUD ROW AT THE BOTTOM (ADR-0239; issue #94): learning bars · the session clock · the power over the score · the game's
+   * map, left to right. The ROOT's, for its whole life — the clock lives in it and the session is the root's — and the bands
+   * of each cartridge go into its cells. Measured (`--hud-row-h`, `--hud-row-bottom`) at every measure of the top and at every
+   * tick of the clock: the on-screen pad shows and hides with the child's hands, and the row must stand above it.
+   */
+  const hudRow = mountHudRow(doc, $<HTMLElement>('#game-region'));
+  whenDisposed(() => { hudRow?.row.parentNode?.removeChild(hudRow.row); });
+  function reserveRowBand(): void {
+    reserveBottomBand({ region: $<HTMLElement>('#game-region'), row: hudRow?.row ?? null, pad: $<HTMLElement>('#touch-controls') });
   }
   /*
    * THE HUD the engine mounts from the cartridge's `hud` (ADR-0168; issue #162). Read on every animation frame while mounted —
@@ -2531,12 +2553,28 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let hudMounted: HudBandsMounted | null = null;
   let hudFrame = false;
+  /*
+   * THE SESSION CLOCK (ADR-0236, ADR-0239, ADR-0050 §3; issue #94): a label over the time left in digits and a Time Timer pie,
+   * in the centre of the HUD row, for every cartridge — it measures the SESSION, which is this root's life, so a `mount()` does
+   * not restart it and only `dispose()` takes it away. The length and the ending are the store's (60 minutes and red until an
+   * adult sets them); a stored «lock» is reported, not built (`core/session-clock.clockLook`).
+   */
+  const sessionClock: SessionClockMounted | null = mountSessionClock({
+    doc, slot: hudRow?.clock ?? null, t: translator.t,
+    // as the host has them: a host with no clock mounts none, answered in the module (ADR-0232)
+    performance: win.performance, setInterval: win.setInterval, clearInterval: win.clearInterval,
+    minutes: () => state.sessionMinutes, ending: () => state.sessionEnding,
+    systemReducedMotion: () => defaultReducedMotion(win.matchMedia), sceneMotion,
+    announce: srSay, drawn: reserveRowBand,
+  });
+  whenDisposed(() => { sessionClock?.remove(); });
+  localeOn(() => { sessionClock?.refresh(); });
   function mountHud(): void {
     hudMounted?.remove();
     hudMounted = null;
     const regionEl = $<HTMLElement>('#game-region');
     const numbers = cartridge.hud ?? [];
-    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(translator.t, doc, regionEl, numbers);
+    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(translator.t, doc, regionEl, numbers, 0, hudRow ?? undefined);
     reserveBarBand();
     if (hudMounted && !hudFrame && typeof win.requestAnimationFrame === 'function') {
       hudFrame = true;
@@ -4144,6 +4182,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     removeReachNotice();
     hudMounted?.remove();
     hudMounted = null;
+    // the map was the released cartridge's; the next one mounts its own (ADR-0239)
+    while (hudRow?.map.firstChild) hudRow.map.removeChild(hudRow.map.firstChild);
     reserveBarBand();
     // ⚠️ `pop()` AND NOT A `clear()`: each `exit()` is that scene's DOM cleanup, and skipping it would leave on the page
     // what the previous cartridge drew. The loop ends because `pop()` returns `null` on an empty stack.
@@ -4179,6 +4219,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     deafMode: { isOn: deafMode.isOn, toggle: deafMode.toggle, captionsOn: deafMode.captionsOn },
 
     settings: state,
+    mapSlot: hudRow?.map ?? null,
 
     input,
     keyboardConfig,
@@ -4198,7 +4239,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
+    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope(), ...sessionEndingProblems(state.sessionEnding)]; },
     onFailure: announceFailure,
     get reach() { return currentReach; },
   };

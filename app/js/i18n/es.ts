@@ -68,10 +68,13 @@ const es: Record<string, string> = {
   'hud.barra': '{nome}: {azuis} a la primera, {verdes} con ayuda, {vermelhos} sin acertar',
   'hud.barra.sobe': 'el nivel sube',
   'hud.barra.desce': 'el nivel baja',
+  // The score in the HUD row is drawn as five digits (ADR-0238, ADR-0239); a listener hears the number itself, not the zeros.
+  'hud.points': '{count} {name}',
   // The session clock's accessible name (ADR-0236): the time left in words, never «0:45». Rewritten each whole minute.
   'clock.left': 'Tiempo de juego: quedan {minutes} minutos',
   'clock.left.one': 'Tiempo de juego: queda 1 minuto',
   'clock.over': 'Tiempo de juego: se acabó',
+  'clock.label': 'TIEMPO', // the small word over the clock's digits (ADR-0239)
   'pause.nivel': '📚 Nivel {n} · {nome}',
 
   'skip.toGame': 'Saltar al juego',

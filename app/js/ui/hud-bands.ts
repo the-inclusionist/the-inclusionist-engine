@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/hud-bands — the HUD the engine mounts from the numbers a cartridge declares by band (ADR-0168, ADR-0175; issue #162).
 //
-// A number sits with what it is ABOUT (ADR-0059 §1). Four bands are the game's to fill, in the two corners the quick bar
-// leaves and in the footer — nothing under the bar (ADR-0175):
-//   · identity — true of the PERSON and surviving the round (the point count): top left;
-//   · mission — a round's objective counter: top left, under the identity;
-//   · power — the super-power: top right, under the clock's place (the clock is issue #94's; until it exists, the power is
-//     that column's first line);
-//   · learning — where the child stands in a skill: one ten-segment bar per skill, one to three, centred in the footer and
-//     covered by the explanation band while it shows (ADR-0168 §3; ADR-0049 §5).
-// 📌 The session clock is not declared by a game: it is the adult's (ADR-0050 §3), and nothing in the engine holds a session
-// length yet, so it is not mounted.
+// A number sits with what it is ABOUT (ADR-0059 §1). Four bands are the game's to fill: the mission at the top centre, the
+// rest in the HUD ROW at the bottom (ADR-0239; the row's cells are `ui/hud-row`'s):
+//   · identity — true of the PERSON and surviving the round (the point count): the SCORE, between the row's centre and its
+//     right, a count drawn as five digits with leading zeros and clamped at 99999, and named for a listener as the number
+//     itself (ADR-0238);
+//   · mission — a round's objective counter: top centre, just under the quick bar (ADR-0239 erratum; `ui/top-band` places
+//     it from the bar's box), in the column still named `left`/`.hud-esquerda`;
+//   · power — the super-power in use: above the score;
+//   · learning — where the child stands in a skill: one ten-segment bar per skill, one to three, at the row's left and
+//     covered, with the whole row, by the explanation band while it shows (ADR-0049 §5).
+// 📌 The session clock, in the row's centre, is not declared by a game: it measures the session, never an activity
+// (ADR-0050 §3), and the ROOT mounts it for every cartridge (`ui/session-clock`, ADR-0236).
 //
 // The HUD is STATE: consulted, never announced — no live region here (ADR-0059; `core/contract` §7).
 //
@@ -63,23 +65,49 @@ export function hudNumbersProblems(numbers: unknown): string[] {
   return out;
 }
 
+/** The HUD row's cells the bands go into (`ui/hud-row`, ADR-0239). */
+export interface HudRowSlots {
+  readonly learning: HTMLElement;
+  readonly score: HTMLElement;
+}
+
 export interface HudBandsMounted {
-  /** The top-left column: identity, then mission. */
+  /** The mission, at the top centre under the quick bar (the name is from when it sat top left). */
   readonly left: HTMLElement;
-  /** The top-right column: power (under the clock, when #94 builds it). */
+  /** The power in use, above the score. */
   readonly right: HTMLElement;
+  /** The identity numbers — the score — in five digits (ADR-0238). */
+  readonly points: HTMLElement;
   readonly learning: HTMLElement;
   /** Rewrites what changed; `true` when a text at the top did, so the caller measures the room again. */
   refresh(): boolean;
   remove(): void;
 }
 
-/** What the child reads, or hears on the bar: the frame in the dictionary, the name through a parameter (pillar 3). */
-function numberText(t: Translate, n: HudNumber & { band: 'identity' | 'mission' | 'power' }, seat: number): string {
+/** The highest count five digits hold; a larger score is shown as this (ADR-0238). */
+const MAX_POINTS = 99_999;
+
+/**
+ * A count as FIVE DIGITS WITH LEADING ZEROS, clamped to 0…99999 (ADR-0238): 12 is «00012». `shown` is the number those digits
+ * say, which is what a listener hears — the same number a sighted child sees, never the zeros.
+ */
+export function fiveDigits(count: number): { readonly digits: string; readonly shown: number } {
+  const shown = Math.min(MAX_POINTS, Math.max(0, Math.floor(count) || 0));
+  return { digits: String(shown).padStart(5, '0'), shown };
+}
+
+type TopNumber = HudNumber & { band: 'identity' | 'mission' | 'power' };
+
+/**
+ * What the child reads, and — for the points — what a listener hears instead (`label`): the frame in the dictionary, the name
+ * through a parameter (pillar 3). A count of objectives keeps its «3 of 10» wherever it is declared.
+ */
+function lineFace(t: Translate, n: TopNumber, seat: number): { readonly text: string; readonly label: string | null } {
   const v = n.value(seat);
-  return typeof v === 'number'
-    ? t('hud.numero', { nome: n.name.text, valor: String(v) })
-    : t('hud.contador', { have: String(v.have), need: String(v.need), nome: n.name.text });
+  if (typeof v !== 'number') return { text: t('hud.contador', { have: String(v.have), need: String(v.need), nome: n.name.text }), label: null };
+  if (n.band !== 'identity') return { text: t('hud.numero', { nome: n.name.text, valor: String(v) }), label: null };
+  const { digits, shown } = fiveDigits(v);
+  return { text: digits, label: t('hud.points', { count: String(shown), name: n.name.text }) };
 }
 function barLabel(t: Translate, name: string, bar: HudBar): string {
   const count = (c: string): string => String(bar.segmentos.filter((s) => s === c).length);
@@ -88,30 +116,32 @@ function barLabel(t: Translate, name: string, bar: HudBar): string {
 }
 
 /**
- * Mounts the two top columns and the footer bars in the game region, one element per declared number, and fills them. A
- * column with no number is hidden. The learning band goes in BEFORE the screen footer when one exists, so the explanation band, drawn later on the
- * same layer, covers it.
+ * Mounts the bands, one element per declared number, and fills them: the mission in the game region, the rest in the HUD
+ * row's cells (`row`). A place with no number is hidden. Without a row every band goes in the region itself — the learning
+ * band BEFORE the screen footer when one exists, so the explanation band, drawn later on the same layer, covers it.
  */
-export function mountHudBands(t: Translate, doc: Document, region: HTMLElement, numbers: readonly HudNumber[], seat = 0): HudBandsMounted {
+export function mountHudBands(
+  t: Translate, doc: Document, region: HTMLElement, numbers: readonly HudNumber[], seat = 0, row?: HudRowSlots,
+): HudBandsMounted {
   const band = (cls: string, count: number): HTMLElement => {
     const el = doc.createElement('div');
     el.className = `hud-faixa ${cls}`;
     el.hidden = count === 0;
     return el;
   };
-  const texts = numbers.filter((n): n is HudNumber & { band: 'identity' | 'mission' | 'power' } => n.band !== 'learning');
+  const texts = numbers.filter((n): n is TopNumber => n.band !== 'learning');
   const bars = numbers.filter((n): n is HudNumber & { band: 'learning' } => n.band === 'learning');
-  // the identity lines first and the mission under them, whatever order the game declared them in
-  const leftTexts = [...texts.filter((n) => n.band === 'identity'), ...texts.filter((n) => n.band === 'mission')];
-  const rightTexts = texts.filter((n) => n.band === 'power');
-  const left = band('hud-esquerda', leftTexts.length);
-  const right = band('hud-direita', rightTexts.length);
+  const ofBand = (b: TopNumber['band']): TopNumber[] => texts.filter((n) => n.band === b);
+  const left = band('hud-esquerda', ofBand('mission').length);
+  const right = band('hud-direita', ofBand('power').length);
+  const points = band('hud-points', ofBand('identity').length);
   const learning = band('hud-aprendizagem', bars.length);
-  const lines = [...leftTexts, ...rightTexts].map((n): [typeof n, HTMLElement] => {
+  const place = { identity: points, mission: left, power: right } as const;
+  const lines = texts.map((n): [typeof n, HTMLElement] => {
     const p = doc.createElement('p');
     p.className = 'hud-numero';
     p.dataset.band = n.band;
-    (n.band === 'power' ? right : left).appendChild(p);
+    place[n.band].appendChild(p);
     return [n, p];
   });
   const bardivs = bars.map((n): [typeof n, HTMLElement] => {
@@ -123,14 +153,18 @@ export function mountHudBands(t: Translate, doc: Document, region: HTMLElement, 
     return [n, div];
   });
   region.appendChild(left);
-  region.appendChild(right);
-  region.insertBefore(learning, [...region.children].find((c) => c.classList.contains('rodape-da-tela')) ?? null);
+  // the power ABOVE the score (ADR-0239 point 3): the order of the two in their cell is the order on screen
+  (row?.score ?? region).append(right, points);
+  if (row) row.learning.appendChild(learning);
+  else region.insertBefore(learning, [...region.children].find((c) => c.classList.contains('rodape-da-tela')) ?? null);
 
   function refresh(): boolean {
     let changed = false;
     for (const [n, p] of lines) {
-      const text = numberText(t, n, seat);
-      if (p.textContent !== text) { p.textContent = text; changed = true; }
+      const face = lineFace(t, n, seat);
+      if (p.textContent !== face.text) { p.textContent = face.text; changed = true; }
+      // the points are an image of a number for a listener: the name says «12 points», never «zero zero zero one two»
+      if (face.label !== null && p.getAttribute('aria-label') !== face.label) { p.setAttribute('role', 'img'); p.setAttribute('aria-label', face.label); }
     }
     for (const [n, div] of bardivs) {
       const bar = n.value(seat);
@@ -149,8 +183,9 @@ export function mountHudBands(t: Translate, doc: Document, region: HTMLElement, 
   return {
     left,
     right,
+    points,
     learning,
     refresh,
-    remove: () => { left.remove(); right.remove(); learning.remove(); },
+    remove: () => { left.remove(); points.remove(); right.remove(); learning.remove(); },
   };
 }

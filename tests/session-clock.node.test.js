@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import {
   readSession, clockLook, clockWords, clockFormat, clockDigits, toSessionMinutes, toSessionEnding, sessionEndingProblems,
 } from '../app/js/core/session-clock.js';
+import { fiveDigits } from '../app/js/ui/hud-bands.js';
 import { DEFAULTS } from '../app/js/core/setting-defaults.js';
 import { createSettingsStore } from '../app/js/core/state.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
@@ -115,6 +116,21 @@ describe('the digits: one format for the whole session (ADR-0239, ADR-0236)', ()
     expect(clockDigits(999, 'hms')).toBe('0:00:01');
     expect(clockDigits(0, 'ms')).toBe('00:00');
     expect(clockDigits(-5000, 'hms')).toBe('0:00:00');
+  });
+});
+
+describe('the score: five digits with leading zeros (ADR-0238)', () => {
+  it('🔴 [Right] 12 is 00012, and the number said is 12', () => {
+    expect(fiveDigits(12)).toEqual({ digits: '00012', shown: 12 });
+    expect(fiveDigits(0)).toEqual({ digits: '00000', shown: 0 });
+  });
+
+  it('🔴 [Boundary] clamped at 99999 — no sixth digit — and at zero; a fraction and a NaN are not digits', () => {
+    expect(fiveDigits(99_999)).toEqual({ digits: '99999', shown: 99_999 });
+    expect(fiveDigits(100_000)).toEqual({ digits: '99999', shown: 99_999 });
+    expect(fiveDigits(-1)).toEqual({ digits: '00000', shown: 0 });
+    expect(fiveDigits(7.9)).toEqual({ digits: '00007', shown: 7 });
+    expect(fiveDigits(Number.NaN)).toEqual({ digits: '00000', shown: 0 });
   });
 });
 

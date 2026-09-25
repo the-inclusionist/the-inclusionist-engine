@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/top-band.ts — HOW MUCH SPACE THE ENGINE KEEPS FOR ITSELF AT THE TOP OF THE SCREEN (ADR-0148 §3; issue #160).
 //
-// The engine draws things over the game — the accessibility bar, the name of the pointed icon, the two HUD columns and
-// the scan chip — and the game has to know how much of the top is not its own. This module measures what is there and
+// The engine draws things over the game — the accessibility bar, the name of the pointed icon, the HUD's mission line
+// under the bar (the rest of the HUD is a row at the bottom, `ui/hud-row`) and the scan chip — and the game has to know how much of the top is not its own. This module measures what is there and
 // writes two variables on the region: `--barra-a11y-h`, the whole band, and `--scan-top`, where the chip sits.
 //
 // 📌 It is a calculation, not wiring, which is exactly what a composition root should not hold (Seemann; Fowler): a root
@@ -24,8 +24,11 @@ export interface TopBandCtx {
   /** The accessibility bar. ⚠️ Absent = a ZERO band: there is nothing to reserve, and reserving anyway would take the
    *  first line of the screen from the game — 12% of the height at 640×360. */
   readonly bar: HTMLElement | null;
-  /** The two HUD columns (ADR-0175), when mounted. */
-  readonly hud: { readonly left: HTMLElement; readonly right: HTMLElement } | null;
+  /**
+   * The HUD column that sits at the TOP, when mounted: the mission's, centred under the bar (ADR-0239 erratum). The rest of
+   * the HUD is a row at the bottom (`ui/hud-row`), and counting it here would give the game's top to the bottom row.
+   */
+  readonly hud: { readonly left: HTMLElement } | null;
   /** `getComputedStyle`, injected. Absent in a document that lacks it, and then the name line is not measured. */
   readonly computedStyle?: (el: HTMLElement) => CSSStyleDeclaration;
 }
@@ -65,27 +68,18 @@ function barRoom(ctx: TopBandCtx, top: number): { room: number; breath: number }
 }
 
 /**
- * The room the HUD asks for, and the width each column accepts.
- *
- * 📌 Each column is NARROWED so it never reaches the bar: otherwise a long number touches the icons and the child can no
- * longer point at one of them.
+ * Where the mission sits, and the room it asks for: TOP CENTRE, just under the quick bar (ADR-0239 erratum), a light gap
+ * below the bar's own box. 📌 The bar's momentary name line may cover it while a name shows — the Dev's call: «a legenda é
+ * momentânea, a escrita da missão aparece o tempo todo» — so the mission is placed by the BAR and not by the name line, and
+ * the room below the top counts whichever of the two reaches lower.
  */
 function hudRoom(ctx: TopBandCtx, top: number, breath: number, room: number): number {
   const { region, bar, hud } = ctx;
-  if (!region || !hud) return room;
-  const regionBox = region.getBoundingClientRect();
+  if (!region || !hud || hud.left.hidden) return room;
   const barBox = bar && typeof bar.getBoundingClientRect === 'function' ? bar.getBoundingClientRect() : null;
   const gap = Math.max(breath, 4);
-  let out = room;
-  if (!hud.left.hidden) {
-    hud.left.style.maxWidth = barBox ? `${Math.max(0, Math.floor(barBox.left - regionBox.left - 2 * gap))}px` : '';
-    out = Math.max(out, hud.left.getBoundingClientRect().bottom - top + gap);
-  }
-  if (!hud.right.hidden) {
-    hud.right.style.maxWidth = barBox ? `${Math.max(0, Math.floor(regionBox.right - barBox.right - 2 * gap))}px` : '';
-    out = Math.max(out, hud.right.getBoundingClientRect().bottom - top + gap);
-  }
-  return out;
+  hud.left.style.top = barBox ? `${Math.ceil(barBox.bottom - top + gap)}px` : '';
+  return Math.max(room, hud.left.getBoundingClientRect().bottom - top + gap);
 }
 
 /**

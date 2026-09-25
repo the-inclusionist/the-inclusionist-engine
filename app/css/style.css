@@ -181,6 +181,9 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 #title-icons .pause-icons-cap{position:absolute;top:100%;line-height:1.25;left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0;padding:calc(var(--ui-fs,16px) * .2) calc(var(--ui-fs,16px) * .6)}
 /* the padding stays when empty: the room `createGame` reserves under the bar reads it (issue #160) */
 #title-icons .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px}
+/* While a name shows, the bar rises over the HUD so the name covers the mission under it, not the other way round (ADR-0239
+   erratum: the name is momentary, and it is what the child is pointing at). Only then: at rest the bar keeps its layer. */
+#title-icons:has(.pause-icons-cap:not(:empty)),.screen-a11y:has(.pause-icons-cap:not(:empty)){z-index:13}
 /* Player-count selector = ONE button ("◀ No. of players: X ▶"); the side clicked decides +1/−1 */
 #np-btn{letter-spacing:var(--ls)}
 #np-btn #np-n{display:inline-block;min-width:1.1em;text-align:center}
@@ -589,7 +592,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    letters and no background. White on black at .82 over pure white composes to ~13:1 (the panel footer's arithmetic).
    With the quick-pause legend also showing, each keeps ONE line, so the band never grows past two.
    `--rodape-h` is the room it takes, declared so a game's workspace can end above it (the `--barra-a11y-h` model). */
-#game-region{--rodape-h:calc(var(--ui-fs,16px) * 2.6 + 8px)}
+#game-region{--rodape-h:calc(var(--ui-fs,16px) * 2.6 + 8px + var(--hud-row-h,0px))} /* + the HUD row the footer stands on (ADR-0239) */
 /* ADR-0163 rule 3: the region's text grows with the scale the engine forces — 16 px at 640×360, 32 at 1280×720 — times the
    communication cycle's type scale, which the root size also carries. Without it everything in the region read the ROOT
    16 px: measured at 1280×720, quiz options at 16 px and the bar's emoji at 20 px under a `--ui-fs` of 32. */
@@ -602,7 +605,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    icon's name; no pointer events, so a finger passes through to the game. */
 .hud-faixa{position:absolute;z-index:12;margin:0;pointer-events:none;font-size:var(--ui-fs,16px);line-height:1.25;display:flex;gap:2px}
 .hud-faixa[hidden]{display:none}
-.hud-esquerda{top:0;left:4px;flex-direction:column;align-items:flex-start}
+/* The MISSION sits at the TOP CENTRE, just under the quick bar (ADR-0239 erratum): `ui/top-band` writes its `top` from the
+   bar's box. The class keeps its old name — a page-surface name is not renamed in passing. The bar's momentary name line is
+   drawn over it while a name shows (the Dev: «a legenda é momentânea, a escrita da missão aparece o tempo todo»). */
+.hud-esquerda{top:0;left:50%;transform:translateX(-50%);max-width:calc(100% - 8px);flex-direction:column;align-items:center;text-align:center}
 .hud-direita{top:0;right:4px;flex-direction:column;align-items:flex-end;text-align:right}
 /* The learning bars (ADR-0049 §5): one ten-segment bar per skill, side by side, centred at the bottom — under the footer
    column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and a second cue beside
@@ -624,7 +630,61 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .hud-barra[data-cor="roxa"]::after{content:"▲"}
 .hud-barra[data-cor="laranja"]::after{content:"▼"}
 .hud-numero{margin:0;padding:0 .3em;color:#f6f5f0;background:rgba(8,8,16,.92);border-radius:8px;max-width:100%;overflow-wrap:anywhere}
+/* ===================== THE HUD ROW AT THE BOTTOM (ADR-0239; issue #94) =====================
+   One row along the lower edge, left to right: the learning bars · the session clock, centred · the power over the score ·
+   the game's map. `ui/hud-row` writes where it stands (`--hud-row-bottom`: above the on-screen pad while it shows) and its
+   height (`--hud-row-h`, which the footer and `--rodape-h` read). Three columns of which the outer two are equal, so the
+   clock is at the true centre; `minmax(0,…)` so a long cell never pushes it off. No pointer events: a finger passes through
+   to the game. Empty — no clock, no band, no map — it is not drawn. */
+.hud-row{position:absolute;left:0;right:0;bottom:var(--hud-row-bottom,0px);z-index:12;pointer-events:none;box-sizing:border-box;
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;column-gap:8px;padding:0 4px 4px;
+  font-family:var(--font);font-size:var(--ui-fs,16px)}
+.hud-row:not(:has(.session-clock, .hud-faixa:not([hidden]), .hud-map > *)){display:none}
+.hud-row-learning{justify-self:start;min-width:0}
+.hud-row-clock{justify-self:center}
+.hud-row-end{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;column-gap:8px;min-width:0}
+.hud-score{justify-self:center;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.hud-map{display:flex;align-items:flex-end} /* empty, it is 0 px wide: nothing is drawn until a game mounts its map */
+/* In the row the bands are laid out by their cell, not placed on the region; the learning bars stack, one skill a line,
+   because three side by side do not fit a third of 640 px. */
+.hud-row .hud-faixa{position:static;transform:none}
+.hud-row .hud-aprendizagem{flex-direction:column;align-items:flex-start;gap:2px}
+.hud-row .hud-direita{align-items:center;text-align:center}
+/* The explanation band covers the row while it shows (a menu is open, the game is paused): the row is not drawn under its
+   translucent band, and the band sits where the row stands. The caption and the legend otherwise stand ABOVE the row. */
+.game-region:has(.barra-explicacao:not([hidden])) .hud-row,#game-region:has(.barra-explicacao:not([hidden])) .hud-row{visibility:hidden}
+/* THE LOOK OF THE CLOCK AND THE SCORE: a small label over bold digits, white with a dark outline — the reference is Super
+   Mario World's HUD, and nothing of its art or face is taken: the engine's own faces, the mathematics one with tabular
+   figures for the digits, so they never change width. Text at the 16 px floor and above (ADR-0163); white on its black
+   outline, so it holds its contrast over any scene. */
+.session-clock-text,.hud-points .hud-numero{color:#fff;font-weight:800;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
+  text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000}
+.session-clock-digits,.hud-points .hud-numero{font-family:var(--font-math);font-variant-numeric:tabular-nums;
+  font-size:calc(var(--ui-fs,16px) * 1.25);line-height:1.1;white-space:nowrap}
+.hud-points .hud-numero{background:none;padding:0}
+.hud-points{top:0;right:4px;flex-direction:column;align-items:flex-end} /* only where a caller mounts the bands with no row */
+/* THE SESSION CLOCK (ADR-0236, ADR-0239): the label over the time left, and the Time Timer pie to their right, as tall as a
+   target. The pie is the share still to go (`--left`, written by `ui/session-clock`), green on a white face (ADR-0050 §3)
+   inside a dark rim and a white ring, drawn inside its box. At the end the WHOLE pie turns red — an almost empty face
+   becoming a full one, so the change is not told by colour alone (WCAG 1.4.1). Okabe-Ito green and vermillion. */
+.session-clock{display:flex;align-items:center;gap:6px;pointer-events:none}
+.session-clock-text{display:flex;flex-direction:column;align-items:center;line-height:1.1}
+.session-clock-label{font-size:var(--ui-fs,16px);letter-spacing:var(--ls)}
+.session-clock-pie{flex:none;box-sizing:border-box;width:var(--alvo-min,44px);height:var(--alvo-min,44px);border-radius:50%;
+  border:2px solid #08080f;box-shadow:inset 0 0 0 2px #f6f5f0;
+  background:conic-gradient(#009E73 0 calc(var(--left,1) * 1turn),#f6f5f0 0)}
+.session-clock[data-look="red"] .session-clock-pie,.session-clock[data-look="pulse"] .session-clock-pie{background:#D55E00}
+/* The gentle pulse: one slow breath every 2.4 s — 0.4 a second, far below the three flashes a second of WCAG 2.3.1 — and
+   never under reduced motion: the root writes `pulse` only when neither the engine's switches nor the system ask for less
+   motion, and the media query below is the second lock. */
+.session-clock[data-look="pulse"] .session-clock-pie{animation:session-clock-pulse 2.4s ease-in-out infinite}
+@keyframes session-clock-pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){ .session-clock-pie{animation:none} }
 .rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;pointer-events:none}
+/* WITH THE HUD ROW (ADR-0239 point 6): the caption and the legend stand ABOVE the row; while the explanation shows, the column
+   comes down to where the row stands, and the explanation covers it. */
+#game-region:has(> .hud-row) .rodape-da-tela{bottom:calc(var(--hud-row-bottom,0px) + var(--hud-row-h,0px))}
+#game-region:has(> .hud-row) .rodape-da-tela:has(> .barra-explicacao:not([hidden])){bottom:var(--hud-row-bottom,0px)}
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
 .pausa-legenda,.barra-explicacao{color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);
   line-height:1.3;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}

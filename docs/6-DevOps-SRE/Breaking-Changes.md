@@ -3798,6 +3798,36 @@ adds the two entries. `DEFAULTS` gains `sessionMinutes: 60` and `sessionEnding: 
 only receives an `Engine` (`game-2048`, `game-chess`, `game-pinball`, `game-platformer`, `game-soccer`, `game-whackwhack`).
 `pixi-15-puzzle` names neither.
 
+## DK · The HUD is one row at the bottom, around the session clock (ADR-0239 and its erratum, ADR-0238, issue #94)
+
+**Who is affected:** code that IMPLEMENTS `Engine` or `HudBandsMounted` (a hand-made double), and a page or game that relied
+on where the engine drew a HUD band or on how much `--rodape-h` reserves. A game that only declares `hud` and reads
+`--barra-a11y-h` and `--rodape-h` changes no code — its bands move with the engine.
+
+📌 **Why:** the Dev reorganised the HUD into one row along the bottom of the game region, with Super Mario World's clock and
+score as the visual reference: the learning bars at the left, the session clock centred (a label over the time left in
+digits, the Time Timer pie to their right), the power over the score between the centre and the right, and a slot for the
+game's map at the right. The mission sits at the top centre, just under the quick bar. The score is five digits with leading
+zeros, clamped at 99999, and a listener hears the number («12 points»), never the zeros.
+
+| was | is | migration |
+|---|---|---|
+| `Engine` | gains the REQUIRED `mapSlot: HTMLElement \| null` — the row's bottom-right cell; empty, it takes no room | a double of `Engine` adds it; a game with a map appends its element there. `unmount()` empties it |
+| `HudBandsMounted` (`left`, `right`, `learning`) | gains the REQUIRED `points` (the identity band, the score); `left` holds the mission alone | a double adds `points` |
+| `mountHudBands(t, doc, region, numbers, seat)` | an optional sixth argument, `row?: HudRowSlots` (`learning`, `score` cells); without it every band goes in the region as before | — |
+| identity band: «Pontos: 12», top left | «00012» in the row, `role="img"` named «12 Pontos» (`hud.points`) | a game that styled `.hud-esquerda .hud-numero` for its points styles `.hud-points .hud-numero` |
+| mission: top left, level with the bar | top centre, just under the bar (`ui/top-band` writes its `top`); the bar's momentary name line covers it while a name shows | — |
+| power: top right | above the score, in the row | — |
+| learning bars: centred in the footer | stacked at the row's left; the whole row is hidden while the explanation shows | — |
+| `--rodape-h` = the footer's 2.6 lines + 8 px | + `--hud-row-h`, the row's height: the caption and the legend stand ABOVE the row | a game's workspace that ends at `--rodape-h` ends higher (98 px at 640×360 with only the clock in the row) |
+| `TopBandCtx.hud: { left, right }` | `{ left }` — the right column is in the row and no longer room at the top | a caller that passes `right` may keep passing it; it is not read |
+| — | new: `ui/hud-row` (`mountHudRow`, `reserveBottomBand`, `--hud-row-h`, `--hud-row-bottom`), `ui/session-clock` (`mountSessionClock`), `ui/hud-bands.fiveDigits`, the i18n keys `clock.label`, `hud.points` | — |
+
+📏 **Measured in the seven games, read-only, as information:** none declares a HUD band, styles `.hud-*`, reads `--rodape-h`
+or implements `Engine` or `HudBandsMounted`; each only receives an `Engine`. On the bump every one that has a `#game-region`
+gains the row with the session clock at the bottom of it — drawn OVER the bottom of its world, since none reads `--rodape-h`
+to end its workspace above it. That is the visible change each game meets.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

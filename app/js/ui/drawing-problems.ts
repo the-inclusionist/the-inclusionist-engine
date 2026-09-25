@@ -14,7 +14,7 @@
 import { barIntruders, belowFloor, minimumTarget, type Box, type NodeMeasure, type Scale } from './layout.js';
 
 /** The engine's OWN nodes inside the region — their sizes are held by their own gates — and what is not drawn for the eye. */
-const ENGINE_NODES = '#title-icons, .screen-pause, .overlay, #touch-controls, .rodape-da-tela, .pausa-rapida, #incl-parou, .sr-only, .hud-faixa';
+const ENGINE_NODES = '#title-icons, .screen-pause, .overlay, #touch-controls, .rodape-da-tela, .pausa-rapida, #incl-parou, .sr-only, .hud-faixa, .hud-row';
 /** What a finger is meant to hit; anything else has no target floor to fail. */
 const TOUCH_TARGET = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
 
@@ -96,8 +96,9 @@ export function barIntruderProblems(ctx: DrawingProblemsCtx): string[] {
   const nodes = [...region.querySelectorAll('*')].filter((el) => paints(el)).map((el) => ({
     name: nodeName(el),
     box: boxOf(el),
-    // the engine's HUD bands are placed by the ENGINE: if one reaches the bar, that is the engine's defect and not the game's
-    isBar: el === bar || bar.contains(el) || el.closest('.hud-faixa') !== null,
+    // the engine's HUD bands and HUD row are placed by the ENGINE: if one reaches the bar, that is the engine's defect and
+    // not the game's
+    isBar: el === bar || bar.contains(el) || el.closest('.hud-faixa, .hud-row') !== null,
   }));
   return barIntruders(boxOf(bar), nodes);
 }
