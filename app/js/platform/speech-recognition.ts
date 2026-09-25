@@ -76,33 +76,47 @@ export interface CommandReader {
   read(index: number, text: string, final: boolean): readonly HeardCommand[];
 }
 
+/**
+ * What two spoken forms are COMPARED by: `spokenText` without its accents. The grammar asks the model for «ação» (it would drop
+ * «acao»), but a recogniser that writes «acao» back — or a browser recogniser with no closed vocabulary — still said «ação».
+ */
+const compareKey = (t: string): string => spokenText(t).normalize('NFD').replace(/\p{M}/gu, '');
+
+/** The phrases a reader knows, by comparison key → the spoken form it answers with (the first one to claim the key). */
+function byKey(phrases: readonly string[]): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const p of phrases) { const k = compareKey(p); if (k && !m.has(k)) m.set(k, spokenText(p)); }
+  return m;
+}
+
 export function createCommandReader(vocabulary: readonly string[]): CommandReader {
-  const spokenForms = vocabulary.map(spokenText);
-  let spokenItems: readonly string[] = [];
+  const words = byKey(vocabulary);
+  let items = new Map<string, string>();
   const firedCount = new Map<number, number>();
   const phrasesIn = (text: string): string[] => {
-    const p = spokenText(text).split(' ').filter(Boolean);
+    const p = compareKey(text).split(' ').filter(Boolean);
     const found: string[] = [];
     for (let i = 0; i < p.length;) {
       let matched: string | null = null;
       for (let n = p.length - i; n >= 1; n--) {
         const f = p.slice(i, i + n).join(' ');
-        if (spokenItems.includes(f) || spokenForms.includes(f)) { matched = f; i += n; break; }
+        if (items.has(f) || words.has(f)) { matched = f; i += n; break; }
       }
       if (matched) found.push(matched); else i++;
     }
     return found;
   };
   return {
-    items(names) { spokenItems = names.map(spokenText); },
+    items(names) { items = byKey(names); },
     read(index, text, final) {
       const found = phrasesIn(text);
       const alreadyFired = firedCount.get(index) ?? 0;
       const newCommands: HeardCommand[] = [];
       for (let i = alreadyFired; i < found.length; i++) {
         const f = found[i]!;
-        if (!final && i === found.length - 1 && spokenItems.some((o) => o !== f && o.startsWith(f + ' '))) break;
-        newCommands.push(spokenItems.includes(f) ? { kind: 'item', name: f } : { kind: 'palavra', word: f });
+        if (!final && i === found.length - 1 && [...items.keys()].some((o) => o !== f && o.startsWith(f + ' '))) break;
+        const item = items.get(f);
+        newCommands.push(item !== undefined ? { kind: 'item', name: item } : { kind: 'palavra', word: words.get(f)! });
         firedCount.set(index, i + 1);
       }
       if (final) firedCount.delete(index);

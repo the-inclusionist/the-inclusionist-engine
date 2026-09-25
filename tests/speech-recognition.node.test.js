@@ -65,6 +65,14 @@ describe('what a command is in what was heard (ADR-0194)', () => {
     expect(m.read(1, 'voltar', true)).toEqual([{ kind: 'item', name: 'voltar' }]);
   });
 
+  it('🔴 [Right] accents do not decide a match, and the command answers with the name as the language writes it', () => {
+    // The grammar asks the model for «configurações» (it would drop the unaccented word); a recogniser that writes it back
+    // without accents still heard the item — and the name returned is the one on screen, not the recogniser's spelling.
+    expect(leitor().read(0, 'configuracoes de inclusao', true)).toEqual([{ kind: 'item', name: 'configurações de inclusão' }]);
+    const l = createCommandReader(['ação']);
+    expect(l.read(0, 'acao', true)).toEqual([{ kind: 'palavra', word: 'ação' }]);
+  });
+
   it('[Zero] other words command nothing; punctuation and case do not matter', () => {
     expect(leitor().read(0, 'o gato subiu no telhado', true)).toEqual([]);
     expect(spokenText('Ajuda — Como jogar!')).toBe('ajuda como jogar');
@@ -78,3 +86,5 @@ describe('what a command is in what was heard (ADR-0194)', () => {
 //   SR4 shortest phrase first                               🔴 voltar waits (a partial «voltar» fires before «voltar ao jogo»)
 //   SR5 a partial re-fires what it fired                    🔴 fires each once
 //   SR6 a continued name fires on the partial               🔴 voltar waits
+//   SR7 the comparison keeps accents (compareKey = spokenText) 🔴 accents do not decide a match
+//   SR8 an item answers with its comparison key, not its spoken form   🔴 accents do not decide a match

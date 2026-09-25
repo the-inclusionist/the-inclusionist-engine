@@ -1011,8 +1011,8 @@
       "fanIn": 1
     },
     "platform/speech-recognition.ts": {
-      "codeLines": 72,
-      "decisionNodes": 13,
+      "codeLines": 79,
+      "decisionNodes": 15,
       "maxDepth": 3,
       "fanOut": 0,
       "globalReach": 0,
