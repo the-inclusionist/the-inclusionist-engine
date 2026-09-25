@@ -135,7 +135,7 @@ describe('the game options panel', () => {
   });
 });
 
-// ============================== MUTATIONS CHECKED (with `opcoes-do-jogo.node`) ==============================
+// ============================== MUTATIONS CHECKED (with `game-options.node`) ==============================
 //   G1 steps past five · G2 repeated id · G3 writer unchecked · G4 one position · G5 repeated value   🔴 each (node; G3 also here)
 //   R1 mount not refused · R2 boot not refused                                                         🔴 malformed
 //   P1 door not live by its action (node) · P2 the door switches to the host's list                      🔴 each

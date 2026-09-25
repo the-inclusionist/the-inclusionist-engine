@@ -214,8 +214,9 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
 });
 
 // ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
-// 1. removing `ui/webcam.ts` from `BUSCAS_A_MAO`       → [Feliz] fails, naming the WebGazer URL (a module since removed,
-//    ADR-0214)
+// 1. renaming the `platform/kokoro.ts` key of `BUSCAS_A_MAO` → [Feliz] fails, naming the Kokoro URL, and the exit
+//    [Fronteira] fails on the key that no longer fetches anything (re-measured on 2026-09-24: the entry first used here,
+//    `ui/webcam.ts`, left with its module, ADR-0214)
 // 2. adding an already-resolved entry to the list       → the exit [Fronteira] fails
 // 3. `semComentarios` without the `(^|[^:])` (the stripper defect) → the [Vácuo], the EXIT and the pair fail. 🎯 And what
 //    matters is which does NOT fail: **[Feliz] stays green**, because an empty list has no new entries — exactly how a

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // input/keyboard-runtime.ts — keyboard ROUTING at play time: which key belongs to which player, which action
-// it fires. Extracted from game.js (kbFor/actionOf/whichPlayer/assignControls/applyControls). Pure logic, DI
-// via initKeyboardRuntime(ctx): reads the live KB config (input/keyboard.ts owns load/save/reset) and the live
-// numPlayers/players (still in game.js) through injected getters — never imports game.js, never touches
-// `document`. KJUMP/KLEFT/.../GAME_KEYS come back as a plain VALUE object (computeControlsState) instead of
-// being reassigned here: imported bindings can't be reassigned from outside their own module, so the game.js
-// wrapper is the one that copies the returned fields onto its own `let`s (same trap `core/state.ts` documents
-// for `coins`/`players`).
+// it fires. Extracted from the monolith (kbFor/actionOf/whichPlayer/assignControls/applyControls). Pure logic, DI
+// via initKeyboardRuntime(ctx), which `boot/create-game` calls: reads the live KB config (input/keyboard.ts owns
+// load/save/reset) and the live player count and players through injected getters — never imports the composition
+// root, never touches `document`. The per-action aliases and GAME_KEYS come back as a plain VALUE object
+// (`ControlsState`) instead of exported `let`s, because imported bindings can't be reassigned from outside their own
+// module; `controlsState()` memoises it and `refreshControls()` is the one way to recompute it.
 
 import type { ControlledPlayer } from '../core/entity.js';
 import type { KeyScheme } from '../core/entity.js';

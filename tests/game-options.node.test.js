@@ -2,7 +2,7 @@
 // THE GAME OPTIONS A CARTRIDGE DECLARES (ADR-0182; issue #178) — the pure half: what a well-formed declaration is, and when
 // the «Opções do jogo» door is live.
 //
-// MUTATIONS CHECKED — at the end of `opcoes-do-jogo.browser.test.js`.
+// MUTATIONS CHECKED — at the end of `game-options.browser.test.js`.
 import { describe, it, expect } from 'vitest';
 import { gameOptionsProblems } from '../app/js/ui/game-options.js';
 import { rootThatActs } from '../app/js/ui/pause-icons.js';

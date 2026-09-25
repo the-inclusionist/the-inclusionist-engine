@@ -121,8 +121,8 @@ describe('User-Stories.md · o que ele afirma sobre o código tem de existir (#3
 });
 
 // ========================= MUTATIONS CHECKED =========================
-//   · replacing `app/js/ui/webcam.ts` with `app/js/ui/webcam-x.ts` in the document → "[Right] todo caminho citado
-//     EXISTE" fails naming the file and the line.
+//   · replacing `app/js/input/keydown.ts` with `app/js/input/keydown-x.ts` in the document → "[Right] todo caminho
+//     citado EXISTE" fails, naming the missing file.
 //   · removing the gate from a ✅ line (leaving only the module) → `[Right] toda história ✅` fails with
 //     `(módulo: true, gate: false)`.
 //   · removing the `**#92**` from a ⬜ line → `[Interface] toda história ⬜` fails.

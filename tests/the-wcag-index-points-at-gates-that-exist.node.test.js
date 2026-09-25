@@ -97,13 +97,12 @@ describe('o índice de critérios de acessibilidade (#13)', () => {
 });
 
 // ========================= MUTATIONS CHECKED =========================
-//   · replacing `tests/weather.node.test.js` with `tests/weather-x.node.test.js` in the document → the [Right] case of
-//     every cited file EXISTING fails, naming it.
+//   · replacing `tests/game-speed.node.test.js` with `tests/game-speed-x.node.test.js` in the document → the [Right] case
+//     of every cited file EXISTING fails, naming it.
 //   · removing the `tests/` file from the 1.3.1 row (leaving only the promise) → the [Right] case of every MEASURED row
 //     fails, the case that keeps a citation from passing for a gate.
-//   · deleting from `core/layers.ts` the sentence «FLASH_LIMIT ainda NÃO está implementado» → the [Interface] case of
-//     the 2.3.1 hole fails with the message telling to move the criterion to the table above. ⚠️ It is the mutation that
-//     makes this file useful the day the debt is paid, instead of it describing a past. (Measured against the earlier
-//     form of the case, which read `core/layers.ts`; the module has since left, ADR-0228.)
+//   · declaring `export const FLASH_LIMIT = 3` in an engine module (`core/flash-threshold`) → the [Interface] case of
+//     the 2.3.1 hole fails with the message telling to review the 2.3.1 row of this index. ⚠️ It is the mutation that
+//     makes this file useful the day the debt is paid, instead of it describing a past.
 //   · replacing `RE_CAMINHO` with one that matches nothing → [Zero] and [Error] fail. Without [Zero], a broken check
 //     would leave the [Right] case of every cited file green over an empty set.

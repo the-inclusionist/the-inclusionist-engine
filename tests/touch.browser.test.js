@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of input/touch — real render/DOM (BROWSER project: uses document + querySelector). Injection by closure (the same
-// pattern as ui/settings-motion.browser.test.js): a ctx with FAKE $/srSay/store/root/isMobile/viewport/frontOverlay/
+// pattern as tests/settings-motion.browser.test.js):a ctx with FAKE $/srSay/store/root/isMobile/viewport/frontOverlay/
 // onPadDesignApplied (spies); the round and the phase are local to this file.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouch } from '../app/js/input/touch.js';

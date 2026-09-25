@@ -46,7 +46,7 @@ export function nextContrast(cur: string | undefined): string {
  * The next colour-correction step.
  *
  * 🔴 NOTE THE ASYMMETRY WITH `nextContrast`, and it is the reason the two live in one file: an unknown `viz` lands on index
- * **1** (`fix-protan`) and not on 0. It is verbatim from `game.js` (`idx = idx<0 ? 1 : (idx+1)%seq.length`), and the effect on
+ * **1** (`fix-protan`) and not on 0. It is the monolith's rule, kept verbatim (`idx = idx<0 ? 1 : (idx+1)%seq.length`), and the effect on
  * the child is concrete: starting from a mode that is not a correction, contrast switches on at its first level while
  * correction skips «normal» and goes straight into protanopia. Apart, a reader fixes one by the other and deletes a decision
  * without knowing it existed.

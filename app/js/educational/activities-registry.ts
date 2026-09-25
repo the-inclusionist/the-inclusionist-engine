@@ -25,13 +25,14 @@
 //     independe de língua". "Tabuada", "Divisão" e "Soma e subtração com meios" nomeiam operações que
 //     existem iguais em qualquer língua, e o lúdico ("Coletar 10 moedas") nem currículo é.
 //
-// MECANICAMENTE: quem traduz declara `nomeKey`/`dKey`; quem não traduz não declara. Este módulo continua sem
-// importar NADA — guarda a CHAVE, e quem resolve é o ponto de exibição (`nomeDaAtividade` em
-// ui/activities-menu), pelo mesmo motivo de `TOUCH_ACT_LABELS` e `PAD_GLYPH_SPOKEN`: uma `const` de módulo é
-// avaliada uma vez no import, e texto já resolvido congelaria o idioma no boot.
+// MECHANICALLY: an activity that translates declares `nomeKey`/`dKey`; one that does not, declares neither. This
+// module still imports NOTHING — it keeps the KEY, and the display point resolves it (`nomeDaAtividade` in the title
+// menu, `ui/activities-menu`, which left for `game-platformer` with ADR-0174), for the same reason as
+// `TOUCH_ACT_LABELS` and `PAD_GLYPH_SPOKEN`: a module `const` is evaluated once at import, and text already resolved
+// would freeze the boot language.
 //
-// O gate é `tests/atividades-matematica-traduzem.node.test.js`, e ele vigia os DOIS lados: atividade
-// traduzível sem chave reprova, e atividade de alfabetização COM chave reprova também.
+// The gate went with the menu: `game-platformer`'s `tests/atividades-matematica-traduzem.node.test.js`, which watches
+// BOTH sides — a translatable activity without a key fails, and a literacy activity WITH a key fails too.
 
 /** One entry of the activities catalog. `cat` drives menu placement + MODE; `d` is the minigame footer text. */
 export interface ActivityDef {
@@ -85,7 +86,7 @@ export function isValidActivityId(id: string): boolean {
   return ACTIVITIES.has(id);
 }
 
-/** Same check, spelled as the game.js call sites read it (`ACTIVITIES[id]` truthiness). */
+/** Same check, under the name `game-platformer`'s title menu (`ui/activities-menu`) calls it by. */
 export function hasActivity(id: string): boolean {
   return isValidActivityId(id);
 }

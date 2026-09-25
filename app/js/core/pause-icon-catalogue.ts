@@ -29,7 +29,8 @@ export interface PauseIcon {
 
 /** The accessibility shortcut bar at the top of every pause screen (and of the splash `#title-icons`).
  *  Sound-bound icons (blind/TTS) require a private audio output; the webcam and the voice require the device to have one.
- *  VERBATIM from game.js in order and behaviour; the names became i18n keys in the Fase-5 pass. */
+ *  The order and behaviour came verbatim from the monolith, which left with the cartridge (#111); the names became
+ *  i18n keys in the Phase-5 pass. */
 // `n` is the i18n KEY of the icon's name (the emoji `e` is NOT translated — it is the same glyph in every language).
 export const PAUSE_ICONS: readonly PauseIcon[] = [
   // FIRST, the menus (the Dev, 2026-09-16: «Menu deve ser o primeiro ícone»): the SELECT door as an icon, for a hand with no
