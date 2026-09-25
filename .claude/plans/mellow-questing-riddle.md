@@ -44,7 +44,7 @@
 - ✅ **Prosa estragada pelo renomeador** («isInside») no `app/quiz.html:57` e em mensagens de teste — é código (cadeias), vai num commit próprio. ✅ (25/09) Feito (o `quiz.html:57` em `a3ef0e89`, o resto na leva de higiene).
 
 **Do Dev (rodar, empurrar ou decidir):**
-- 📋 **F10 · a 10.0** — push, CHANGELOG conferido, tag.
+- ✅ **F10 · a 10.0** — publicada 25/09 14h33 UTC pelo Dev (`npx release-it` + `git push --follow-tags`): npm `@the-inclusionist/engine@10.0.0`, tag `v10.0.0` = `00f292a7`. CHANGELOG conferido: 129 entradas BREAKING = 128 rodapés + 1 commit `!` sem rodapé (`69052a12`). #202 fechada. ⚠️ A tag leva o `Breaking-Changes.md` duplicado pelo meu `6f91dd4c`; o conserto `f15ce7ff` veio depois da tag.
 - 📋 **F11** — o segredo `records-token` para a CI de um jogo validar a própria árvore.
 - 📋 **Item 7/15 · leitura em voz alta** — a rodada com microfone real (`localhost:8205`).
 - 📋 **Item 9 · espelho** — enviar os 5 ficheiros (espeak-ng e onnxruntime) ao balde antes do push.
