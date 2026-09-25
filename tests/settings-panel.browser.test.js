@@ -85,6 +85,7 @@ function boot() {
   const empathy = initSettingsEmpathy({
     t: translate,
     $, srSay: noop, store: { getBool: () => false },
+    hearing: { hearingLoss: false, setHearingLossGraph: noop }, // the root's sound (ADR-0232 D4); not measured here
     renderVizGroup: noop, reflectMobilityEmpathy: noop, reflectVizButtons: noop,
     frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     setHearingLoss: noop, setOneButton: noop, setWheelchair: noop,

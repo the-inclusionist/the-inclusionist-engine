@@ -3498,7 +3498,41 @@ exists because a game still WRITES the keyboard config: `game-2048` mounts its o
 
 ## DB · ADR-0232 D4-B4: audio and speech receive the browser (issue #207)
 
-_Reserved: the rows land with the batch._
+**Who is affected:** a game that imports anything BY VALUE from `@the-inclusionist/engine/platform/audio.js` except
+`noiseBuffer`, that calls `platform/speech`'s `gameSay`, or that builds a `SonarCtx` or `EmpathySettingsCtx` by hand. A game
+that only calls `createGame` changes nothing in what the root mounts: the root makes the audio context from `host.win` and
+hands it down.
+
+📌 **Why:** `platform/audio` held one audio context, one master, one mixer and one step counter per page, in module
+`let`s, so two roots on one page shared them (ADR-0142, ADR-0232 D3); and `platform/audio`, `speech` and `audio-sonar` reached `window` or
+`SpeechSynthesisUtterance` (ADR-0232 point 2). The audio becomes a factory the root builds; `gameSay`, a helper that holds nothing, takes what it uses
+as a parameter and stays a function (erratum D3 point 2); every port that fell back to a global is now REQUIRED
+(ADR-0224/0227, erratum D2b).
+
+| old | new | migration |
+|---|---|---|
+| `platform/audio.js` `soundOn`, `volume`, `audioCtx`, `hearingLoss`, `audioCat`, `_footCount` (live bindings) and `setSoundOn`, `setVolume`, `ensureAC`, `audioOut`, `setHearingLossGraph`, `setMasterMuted`, `catNode`, `setCatGain`, `tone`, `tonePan`, `noiseHit` | removed as module exports. `createAudio({ newContext, store })` returns an `Audio`: the six reads as live GETTERS (`_footCount` → `footCount`) and the eleven functions as members, with no `this` (they can be destructured). `newContext: () => AudioContext \| null` is called at the FIRST sound, never at construction. `noiseBuffer` stays; `AudioDeps`, `Audio` and `CatState` are new types | under `createGame`: `engine.audio` (new, below) — `engine.audio.ensureAC()`, `engine.audio.audioCat.tts.on`, `engine.audio.soundOn`. A game that is its own root builds one: `const audio = createAudio({ newContext: () => new AudioContext(), store })` |
+| `platform/audio.js` `initAudioMixer(store)` | removed: `createAudio` reads the mixer from its `store` as it is built, so `audioCat` is never `null` and «the mixer before the voice» is the order of construction | pass the store to `createAudio` |
+| `platform/speech.js` `gameSay(text)` | `gameSay(voice, text)` — `voice: GameVoice` = `{ synth(): SpeechSynthesis \| null; utterance(text): SpeechSynthesisUtterance; soundOn(): boolean; volume(): number }`. `SpeechPort` (the first two) and `GameVoice` are new types | `gameSay({ synth: () => window.speechSynthesis ?? null, utterance: (t) => new SpeechSynthesisUtterance(t), soundOn: () => audio.soundOn, volume: () => audio.volume }, text)` — build the voice once and close over it |
+| `platform/audio-sonar.js` `SonarCtx` | gains a REQUIRED `newContext: () => AudioContext \| null` — the per-player context a child with an audio device of their own is routed through (it read `window.AudioContext`) | pass the same maker your `createAudio` receives |
+| `ui/settings-empathy.js` `EmpathySettingsCtx` | gains a REQUIRED `hearing: Pick<Audio, 'hearingLoss' \| 'setHearingLossGraph'>` — the button, the mark, the reset and the boot restore read the ROOT's sound (they imported the page-wide one) | pass your `Audio` itself: a copied `hearingLoss` would freeze the button |
+
+The additive half, on the `gameSpeed`/`menuIndexOn`/`t` precedent: **`Engine.audio`**, the root's `Audio` — the one its
+voice, sonar, hearing and sound panels and empathy panel use, so what a game switches through it is what the child hears.
+A game must not build a second one under `createGame`: it would make a second context and a second mixer, deaf to the
+panels.
+
+📏 **Measured in the seven games, read-only, as information:**
+- `game-pinball` — `app/js/main.ts:92` imports `ensureAC` (called at 1057, 1973 and 1982) → `engine.audio.ensureAC()`;
+  `tests/the-game-speaks.browser.test.ts:16` imports `audioCat` and switches `audioCat.tts.on` → `engine.audio.audioCat`.
+- `game-soccer` — `app/js/boot/main.ts:45` imports the namespace, calls `mixer.initAudioMixer()` (602; the 9.0 shape, with
+  no store) and reads `ensureAC`, `catNode`, `audioOut`, `noiseHit`, `tone`, `soundOn` and `volume` (628-636) → drop the
+  init and read the same names on `motor.audio`.
+- `game-platformer` is its own root (it calls no `createGame`): `app/js/main.ts:98` imports nineteen names of
+  `platform/audio` (`initAudioMixer`, `_footCount` and `noiseBuffer` among them), `:99` `gameSay` (handed to
+  `game/quiz.ts` as `c.gameSay`), `:102` `createAudioSonar` and `:85` `initSettingsEmpathy` — it builds `createAudio({ newContext,
+  store })` and a `GameVoice` for `gameSay`, and passes `newContext` and `hearing: audio`. `app/js/platform/audio-nav.ts:27` imports only types of `audio-sonar`, which keep their shape.
+- `game-2048`, `game-chess`, `game-whackwhack` and `pixi-15-puzzle` import none of these modules.
 
 ## DC · ADR-0232 D4-B5: heavy files and the recognisers receive the browser (issue #207)
 

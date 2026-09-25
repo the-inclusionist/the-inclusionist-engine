@@ -88,6 +88,8 @@ function setup(over = {}) {
     // without it — the compatibility promise the optional field makes.
     roleAt: over.roleAt,
     catNode: over.catNode, audioOut: over.audioOut, getVolume: over.getVolume,
+    // The root's context maker (ADR-0232 D4). A host with none by default: only the per-player cases below make one.
+    newContext: over.newContext || (() => null),
   };
   return { som: createAudioSonar(ctx), tone, said, narrated };
 }
@@ -520,6 +522,43 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
     expect(worldStep(GRADE)).toBe(1);
     expect(worldStep(LISTA)).toBe(0);
     expect(PAN_PACES, '11 e a releitura de 176/16; mudar isto muda o que a crianca ja ouve').toBe(11);
+  });
+});
+
+describe('playerCtx — a child with an audio device of their own gets a context of their own (ADR-0232 D4)', () => {
+  // The context comes from the ROOT's maker (`newContext`, from `host.win`), no longer from `window`: these cases are what
+  // tell whether the injected maker is the one used, and that a sink is honoured on the context it made.
+  function sinkContext() {
+    const sinks = [];
+    const f = fakeAC();
+    const ac = Object.assign(f.ac, { state: 'running', setSinkId: (id) => { sinks.push(id); return Promise.resolve(); } });
+    return { ac, sinks, ganhos: f.ganhos, destinos: f.destinos };
+  }
+
+  it('🔴 [Right] the context is the one the root\'s maker made, sent to the child\'s device, with an output of its own', () => {
+    const { ac, sinks, ganhos, destinos } = sinkContext();
+    let made = 0;
+    const { som } = setup({ newContext: () => { made++; return ac; } });
+    const pl = { i: 0, x: 0, y: 0, audioSink: 'fones-da-ana' };
+    const out = som.playerCtx(pl);
+    expect(out?.ac, 'the context did not come from the injected maker').toBe(ac);
+    expect(out.out).toBe(ganhos[0]);
+    expect(destinos.at(-1)).toEqual({ de: ganhos[0], para: ac.destination });
+    expect(sinks).toEqual(['fones-da-ana']);
+    som.playerCtx(pl);
+    expect(made, 'a second cue made a second context for the same child').toBe(1);
+  });
+
+  it('📌 [Zero] a host with no audio context: no player context, and nothing thrown', () => {
+    const { som } = setup({ newContext: () => null });
+    expect(som.playerCtx({ i: 0, x: 0, y: 0, audioSink: 'fones' })).toBeNull();
+  });
+
+  it('📌 [Zero] a child without a device of their own is not given a context: the maker is not even asked', () => {
+    let made = 0;
+    const { som } = setup({ newContext: () => { made++; return sinkContext().ac; } });
+    expect(som.playerCtx({ i: 0, x: 0, y: 0 })).toBeNull();
+    expect(made).toBe(0);
   });
 });
 

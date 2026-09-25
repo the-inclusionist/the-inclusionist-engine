@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PURE-LOGIC tests (node project — no PIXI/document/localStorage). Patterns: ZOMBIES (order/teaching) + Right-BICEP
 // (rigour). Labels in the test name. See docs/3-Sprint-Design/plan-unit-tests-at-extraction.md. Modules: core/constants, input/state,
-// platform/audio (the mixer), core/rng.
+// platform/audio (the mixer a built sound loads), core/rng.
 import { describe, it, expect } from 'vitest';
 import * as C from '../app/js/core/constants.js';
 import { createInputState } from '../app/js/input/state.js';
@@ -47,21 +47,21 @@ describe('core/constants', () => {
 });
 
 
-describe('platform/audio — mixer (import PURO, init explícito; dívida paga Fase 2.25)', () => {
-  // [Zero] runs BEFORE any init (it is the block's 1st test and nothing else calls initAudioMixer):
-  it('[Zero] import não carrega o mixer — audioCat === null até initAudioMixer() (sem I/O no import)', () => {
-    expect(AUDIO.audioCat).toBe(null);
-    expect(typeof AUDIO.initAudioMixer).toBe('function');
+describe('platform/audio — the mixer, loaded when a root builds its sound (ADR-0232 D4)', () => {
+  // The import is still pure: the module holds no mixer until `createAudio` is called with the root's store.
+  const mixerOf = () => AUDIO.createAudio({ newContext: () => null, store: createStorage(memoryBackend()) }).audioCat;
+  it('[Zero] importing loads no mixer — the module exports a factory and holds no state (no I/O at import)', () => {
+    expect('audioCat' in AUDIO, 'a page-wide mixer came back to the module').toBe(false);
+    expect(typeof AUDIO.createAudio).toBe('function');
   });
-  it('[Interface] após init, audioCat tem exatamente as 9 categorias do AUDIO_CATS', () => {
-    AUDIO.initAudioMixer(createStorage(memoryBackend()));
-    expect(Object.keys(AUDIO.audioCat).sort()).toEqual(AUDIO_CATS.map((c) => c.k).sort());
+  it('[Interface] a built sound\'s audioCat has exactly the categories of AUDIO_CATS', () => {
+    expect(Object.keys(mixerOf()).sort()).toEqual(AUDIO_CATS.map((c) => c.k).sort());
   });
-  it('[Right/a11y] TTS geral nasce DESLIGADO (TEA-safe) e as demais LIGADAS', () => {
-    AUDIO.initAudioMixer(createStorage(memoryBackend())); // idempotente
-    expect(AUDIO.audioCat.tts.on).toBe(false);
-    expect(AUDIO.audioCat.music.on).toBe(true);
-    expect(AUDIO.audioCat.ambient.on).toBe(true);
+  it('[Right/a11y] general TTS is born OFF (autism-safe) and the others ON', () => {
+    const cat = mixerOf();
+    expect(cat.tts.on).toBe(false);
+    expect(cat.music.on).toBe(true);
+    expect(cat.ambient.on).toBe(true);
   });
 });
 

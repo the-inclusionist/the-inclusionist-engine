@@ -33,7 +33,8 @@
 // one cell on a grid, and nothing in a list — which has no space.
 //
 // ========================= NO I/O AT IMPORT =========================
-// Nothing here touches `window` outside `playerCtx`, which is called, not imported. It runs in the `node` project.
+// Nothing here touches `window`: a player's own context comes from the injected `newContext` (ADR-0232 D4). It runs in the
+// `node` project.
 import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable, type Role } from '../core/contract.js';
 import type { Translate } from '../core/i18n.js';
 // THE GUIDE (#84 item 2) is made of these two and nothing else: the ROUTE says how many steps remain going round walls,
@@ -243,6 +244,12 @@ export interface SonarCtx {
   getAudioCtx: () => AudioContext | null;
   getSoundOn: () => boolean;
   getAudioCat: () => Record<string, { on: boolean }> | null;
+  /**
+   * Makes a NEW AudioContext, or `null` where the host has none: each player with an audio device of their own gets one, so
+   * `setSinkId` can send that child's cues to that device. The root's maker, from `host.win` — the same one its `createAudio`
+   * receives. REQUIRED (ADR-0232 D4): a default would be the page's window reached from `platform/`.
+   */
+  newContext: () => AudioContext | null;
 }
 
 export interface AudioSonar {
@@ -269,9 +276,9 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     if (!pl || !pl.audioSink) return null;
     try {
       if (!pl._ac) {
-        const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (!AC) return null;
-        pl._ac = new AC(); pl._acOut = pl._ac.createGain(); pl._acOut.connect(pl._ac.destination);
+        const ac = ctx.newContext();
+        if (!ac) return null;
+        pl._ac = ac; pl._acOut = pl._ac.createGain(); pl._acOut.connect(pl._ac.destination);
         if (pl._ac.setSinkId) pl._ac.setSinkId(pl.audioSink).catch(() => {});
       }
       if (pl._ac.state === 'suspended') pl._ac.resume();

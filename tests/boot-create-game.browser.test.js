@@ -19,7 +19,8 @@
 // it, and whether a real click walks the whole path.
 //
 // MUTATIONS CHECKED (at the end of the file).
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let createGame;
@@ -677,8 +678,8 @@ describe('createGame num documento de verdade', () => {
     };
 
     it('🔴 [Right] the EMPATHY panel offers the simulations the engine can draw, and hearing loss — nothing it cannot', async () => {
-      const audio = await import('../app/js/platform/audio.js');
       const motor = abrir();
+      const audio = motor.audio; // THIS root's sound (ADR-0232 D4): the row must switch the root's graph, not a page-wide one
       const mundo = document.querySelector('#game-region');
       motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]');
@@ -704,7 +705,7 @@ describe('createGame num documento de verdade', () => {
         expect(document.getElementById('opt-simulacao').value, 'the reopened list forgot the running simulation').toBe('sim-deuter');
         escolherSimulacao('normal');
         expect(mundo.style.filter).toBe('');
-        // hearing loss switches the audio graph, both ways
+        // hearing loss switches the ROOT's audio graph, both ways
         const antes = audio.hearingLoss;
         document.getElementById('opt-hearing').click();
         expect(audio.hearingLoss, 'the hearing-loss row did nothing').toBe(!antes);
@@ -1655,6 +1656,92 @@ describe('createGame num documento de verdade', () => {
     } finally {
       await setLocale('pt');
     }
+  });
+});
+
+/*
+ * D4-B4 — THE ROOT'S SOUND AND SPEECH COME FROM THE HOST'S WINDOW (ADR-0232 D4, issue #207).
+ *
+ * The host here is the real window with a few answers replaced by spies, so a root that reached the page's globals instead of
+ * `host.win` would be seen: its context would not be the spy's, and its utterance would not be the host's class.
+ */
+describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
+  let raiz;
+  beforeEach(async () => {
+    if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
+    raiz = montarHospedeiro();
+  });
+  afterEach(() => {
+    for (const motor of raizesAbertas.splice(0)) motor.dispose();
+    raiz.remove(); document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
+    localStorage.removeItem('incl_modocego'); // the guide case turns blind mode on, and it persists
+  });
+
+  /** The real window, with `own` answering first; every other method bound to the window, as the root's own scope does. */
+  const hostWith = (own) => new Proxy(window, {
+    get(target, prop) {
+      if (Object.hasOwn(own, prop)) return own[prop];
+      const v = Reflect.get(target, prop);
+      return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(target) : v;
+    },
+  });
+
+  it('🔴 [Right] no audio context at boot; the child\'s first gesture makes one from the HOST\'s maker, and it runs', async () => {
+    const made = [];
+    class HostAudioContext extends window.AudioContext { constructor() { super(); made.push(this); } }
+    const motor = abrir({ host: { doc: document, win: hostWith({ AudioContext: HostAudioContext }) } });
+    expect(motor.audio.audioCtx, 'a context made at boot is born suspended, outside any gesture').toBeNull();
+    expect(made).toHaveLength(0);
+    const botao = document.createElement('button');
+    botao.textContent = 'tocar';
+    raiz.appendChild(botao);
+    botao.addEventListener('click', () => { motor.audio.tone(440, 0.05); }, { once: true });
+    await userEvent.click(botao); // a REAL click: the browser's user activation, which is what lets a context run
+    const ac = motor.audio.audioCtx;
+    expect(made, 'the context did not come from the host\'s window').toEqual([ac]);
+    await vi.waitFor(() => expect(ac.state).toBe('running'));
+    // and a child with an audio device of their own gets a context from the SAME maker (the sonar's per-player routing)
+    const pc = motor.sonar.playerCtx({ i: 0, x: 0, y: 0, audioSink: 'default' });
+    expect(made, 'the per-player context did not come from the host\'s window').toEqual([ac, pc.ac]);
+    await Promise.all([ac.close(), pc.ac.close()]);
+  });
+
+  it('🔴 [Right] the sonar\'s guide plays in the root\'s OWN context, at the root\'s master volume', async () => {
+    const pl = { i: 0, x: 0, y: 0 };
+    const motor = abrir({
+      declaration: {
+        ...declaracaoValida(),
+        topology: () => ({ kind: 'continuous', size: [100, 100], unit: 1, move: 'free', frame: 'clock' }),
+        targetsOf: () => [{ x: 6, y: 0 }],
+      },
+      sonarPlayers: () => [pl],
+    });
+    motor.settings.setBlindModeValue(true); // the guide plays for a child who does not see
+    motor.audio.audioCat.guide.on = true;
+    motor.sonar.updateGuide();
+    expect(motor.sonar.guideCount, 'the guide sounded before the root had a context').toBe(0);
+    const botao = document.createElement('button');
+    raiz.appendChild(botao);
+    botao.addEventListener('click', () => { motor.audio.ensureAC(); }, { once: true });
+    await userEvent.click(botao);
+    motor.sonar.updateGuide();
+    expect(motor.sonar.guideCount, 'the root\'s context started and the guide stayed off').toBe(1);
+    expect(pl._guide.ac).toBe(motor.audio.audioCtx);
+    const levels = [];
+    pl._guide.gain.gain.setTargetAtTime = (v) => { levels.push(v); };
+    motor.audio.setVolume(1); motor.sonar.updateGuide();
+    motor.audio.setVolume(0.5); motor.sonar.updateGuide();
+    expect(levels[1] / levels[0], 'the guide did not follow the root\'s master volume').toBeCloseTo(0.5, 6);
+    await motor.audio.audioCtx.close();
+  });
+
+  it('📌 [Right] the root\'s sound is the one its game reaches: `engine.audio` moves what the root\'s voice reads', () => {
+    const motor = abrir();
+    motor.audio.setSoundOn(false);
+    motor.audio.audioCat.tts.on = true;
+    const antes = motor.tts.narrateCount;
+    motor.tts.narrate('olá');
+    expect(motor.tts.narrateCount, 'the game switched its sound off and the root\'s voice still spoke').toBe(antes);
   });
 });
 

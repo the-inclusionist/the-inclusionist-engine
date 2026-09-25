@@ -3,9 +3,8 @@
 // (ctx.$/srSay/store/setters/getters/reflect-helpers), no access to globals outside the ctx. The pure logic
 // (catalogue/labels) is covered in settings-empathy.node.test.js. Model: tests/a11y-sr.browser.test.js,
 // tests/settings-typo.browser.test.js.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsEmpathy, EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
-import { hearingLoss, setHearingLossGraph } from '../app/js/platform/audio.js';
 // The two REAL collaborators of the last block: the one that rebuilds the list and the one that puts the prose back in the footer.
 import { vizGroupHtml } from '../app/js/render/viz-setters.js';
 import { createTranslator } from '../app/js/core/i18n.js';
@@ -20,6 +19,15 @@ function fakeStore(seed = {}) {
   return { map: m, getBool: (k, fallback = false) => (m.has(k) ? m.get(k) === '1' : fallback) };
 }
 
+/**
+ * The root's sound, narrowed to the hearing-loss simulation (ADR-0232 D4): each case its own, so a simulation one case switches
+ * on is not the next case's starting state. `graph` records what the panel asked of the audio graph.
+ */
+function fakeHearing(on = false) {
+  const h = { graph: [], get hearingLoss() { return on; }, setHearingLossGraph: (v) => { on = v; h.graph.push(v); } };
+  return h;
+}
+
 function fullCtx(over = {}) {
   const said = [];
   const calls = { renderVizGroup: [], reflectMobilityEmpathy: 0, reflectVizButtons: 0, frontOverlay: [], setHearingLoss: [], setOneButton: [], setWheelchair: [], setEmpathyOpen: [], setPlayerViz: [] };
@@ -30,6 +38,7 @@ function fullCtx(over = {}) {
     $,
     srSay: (msg) => said.push(msg),
     store: fakeStore(),
+    hearing: fakeHearing(),
     renderVizGroup: (listSel, tabsSel, modes) => { calls.renderVizGroup.push([listSel, tabsSel, modes]); },
     reflectMobilityEmpathy: () => { calls.reflectMobilityEmpathy++; },
     reflectVizButtons: () => { calls.reflectVizButtons++; },
@@ -67,10 +76,6 @@ describe('ui/settings-empathy', () => {
     document.body.innerHTML = EMPATHY_HTML;
   });
 
-  // `hearingLoss` lives in platform/audio, not in the ctx: a case that turns it on and does not give it back contaminates
-  // every following case, silently and in file order — and then accuses the right code of the state another case left
-  // behind.
-  afterEach(() => { if (hearingLoss) setHearingLossGraph(false); });
 
   it('[Right] render() desenha a lista de simulação via renderVizGroup injetado com EMPATHY_VIZ_MODES', () => {
     const ctx = fullCtx();
@@ -98,7 +103,7 @@ describe('ui/settings-empathy', () => {
     const ctx = fullCtx();
     initSettingsEmpathy(ctx);
     $('#opt-hearing').click();
-    expect(ctx.calls.setHearingLoss).toEqual([true]); // hearingLoss real (platform/audio.ts) começa false
+    expect(ctx.calls.setHearingLoss).toEqual([true]); // the root's hearingLoss starts false
     expect(ctx.calls.renderVizGroup.length).toBeGreaterThan(0); // render() rodou de novo
     expect(ctx.calls.reflectVizButtons).toBe(1);
   });
@@ -120,14 +125,15 @@ describe('ui/settings-empathy', () => {
   it('[Zero] sem incl_hearingloss persistido, initSettingsEmpathy NÃO restaura o grafo de áudio', () => {
     const ctx = fullCtx({ store: fakeStore() });
     expect(() => initSettingsEmpathy(ctx)).not.toThrow();
+    expect(ctx.hearing.graph, 'the graph was touched with nothing stored').toEqual([]);
   });
 
   it('[Boundary] com incl_hearingloss persistido, initSettingsEmpathy restaura sem lançar e sem chamar setHearingLoss', () => {
     const ctx = fullCtx({ store: fakeStore({ incl_hearingloss: '1' }) });
     initSettingsEmpathy(ctx);
     expect(ctx.calls.setHearingLoss).toHaveLength(0); // restoring uses the graph directly, not the setter (it does not persist/announce again)
-    expect(hearingLoss).toBe(true);
-    setHearingLossGraph(false); // GIVES the graph BACK: `hearingLoss` is MODULE state, not the ctx's
+    expect(ctx.hearing.graph, 'the stored simulation did not reach the ROOT\'s audio graph').toEqual([true]);
+    expect(ctx.hearing.hearingLoss).toBe(true);
   });
 
   it('[Right] open() renderiza, mostra o overlay, chama frontOverlay, e foca o 1º botão', () => {
@@ -211,7 +217,7 @@ describe('ui/settings-empathy', () => {
     it('[Right] desliga a simulação de perda auditiva quando ela está ligada', () => {
       const ctx = fullCtx();
       initSettingsEmpathy(ctx);
-      setHearingLossGraph(true);
+      ctx.hearing.setHearingLossGraph(true);
 
       $('#empathy-reset').click();
 
@@ -280,6 +286,19 @@ describe('ui/settings-empathy — marca o que saiu do padrão (ADR-0029)', () =>
     $('#opt-onebtn').click();
     expect($('#opt-onebtn').closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
     expect($('[data-act="empatia"]').classList.contains('is-changed')).toBe(false);
+  });
+
+  it('🔴 [Right] the hearing-loss simulation ON in the ROOT\'s sound shows on its button and marks its row (ADR-0232 D4)', () => {
+    // Read live from `ctx.hearing`, the root's `Audio`: a panel that read anything else would show «off» over a simulation
+    // the child hears.
+    const ctx = fullCtx({ hearing: fakeHearing(true) });
+    initSettingsEmpathy(ctx).render();
+    const h = $('#opt-hearing');
+    expect([h.classList.contains('is-on'), h.getAttribute('aria-pressed'), h.textContent]).toEqual([true, 'true', 'Ligado']);
+    expect(h.closest('.ctrl-row').classList.contains('is-changed')).toBe(true);
+    expect($('[data-act="empatia"]').classList.contains('is-changed')).toBe(true);
+    $('#opt-hearing').click();
+    expect(ctx.calls.setHearingLoss, 'the click did not ask to switch the ROOT\'s simulation off').toEqual([false]);
   });
 
   it('[Interface] uma SIMULAÇÃO ligada marca a lista; uma CORREÇÃO de daltonismo não', () => {

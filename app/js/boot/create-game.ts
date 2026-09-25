@@ -13,9 +13,9 @@
 // Not a framework. It is the sequence that switches the engine on, which every consumer would otherwise rewrite by
 // hand — and the second consumer measured the price of rewriting it (`consumer-quiz`, findings 3, 6 and 12):
 //
-//  · FINDING 3 — `initAudioMixer()` MUST run before `createTts`, or `audioCat` is null and `narrate` gives up
-//    SILENTLY. An order dependency no type declares, found by the silence. Here it cannot be got wrong: the caller
-//    does not choose the order.
+//  · FINDING 3 — the mixer MUST be loaded before `createTts`, or `audioCat` is null and `narrate` gives up
+//    SILENTLY. An order dependency no type declared, found by the silence. Here it cannot be got wrong: `createAudio`
+//    loads the mixer as it is built, and the voice is built after it.
 //  · FINDING 6 — the panels need fixed ids in the document and, when they are missing, OPEN EMPTY, with no error.
 //    Here the engine builds its panels, and what the page lacks becomes `problems`, a list the consumer can read.
 //  · FINDING 12 — every consumer wrote the same one-line adapter for `window`. Written once.
@@ -85,7 +85,7 @@ import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts } from '../platform/tts.js';
 import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
-import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
+import { createAudio, type Audio } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // The root is the layer that MAY know both axes: `render/` is below it, and it is the root's job to answer
 // `platform/audio-sonar`, which cannot import from here without inverting an edge (#104).
@@ -579,7 +579,13 @@ export interface Engine {
   readonly keyboardConfig: KeyboardConfigApi;
 
   // D4-B4 (audio)
-
+  /**
+   * THIS ROOT'S SOUND (ADR-0232 D4): the context (made at the first sound, from the host's window), the master, the mixer and
+   * the syntheses. Read through live getters (`audio.soundOn`, `audio.audioCat`) and moved by its methods (`ensureAC()`,
+   * `tone(…)`). A game asks HERE instead of importing `platform/audio`, which is a factory now: a second one would make a
+   * second context and a second mixer, deaf to this root's volume and categories.
+   */
+  readonly audio: Audio;
 
   // D4-B5 (heavy files, recognisers)
 
@@ -971,11 +977,20 @@ export function createGame(o: CreateGameOptions): Engine {
   initI18n(doc);
   translator.applyDom(doc); // the host's markup, with THIS game's dictionary too — the module's pass reads only the page's
 
-  // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: the caller cannot swap these two lines.
-  initAudioMixer(store);
+  // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: `createAudio` loads the mixer, and the voice reads it.
+  //    🔴 THE BROWSER'S SOUND IS LENT HERE, from the host's window (ADR-0232 D4): the audio context — made at the first sound,
+  //    never at boot, so it is born inside the child's gesture and the browser lets it run. The sonar's per-player contexts
+  //    come from the same maker.
+  const audioHost = win as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+  const newAudioContext = (): AudioContext | null => {
+    const AC = audioHost.AudioContext ?? audioHost.webkitAudioContext;
+    return AC ? new AC() : null;
+  };
+  const mixer = createAudio({ newContext: newAudioContext, store });
+  const { ensureAC, catNode, audioOut, setSoundOn, setVolume, tonePan, setCatGain, setHearingLossGraph } = mixer;
   const tts = createTts({
     store, translator, srSay, srAlert, ensureAC, catNode, audioOut,
-    getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
+    getSoundOn: () => mixer.soundOn, getVolume: () => mixer.volume, getAudioCat: () => mixer.audioCat,
     neuralVoice: !!o.uses?.neuralVoice, // ADR-0216 §3: the game says it wants one; the engine loads it
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
   });
@@ -1360,7 +1375,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // whoever injected the document. The right question is the one `barUsable` asks — can it be a bar?
     getA11yBars: () => (barUsable && a11yBar ? [a11yBar as HTMLElement] : []),
     getBlindMode: readBlindMode,
-    getAudioCat: () => audioCat,
+    getAudioCat: () => mixer.audioCat,
     setCatGain,
     /*
      * ⚠️ THE ROOT ANSWERS FOR THE DEVICE IN USE, and here ADR-0109's automaton gets its reader. `input/state.inputOf(i)`
@@ -2014,6 +2029,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     const empathy = initSettingsEmpathy({
       t: translator.t, $, srSay, store,
+      hearing: mixer,
       renderVizGroup: (listSelector) => { simulationPicker.render(listSelector); },
       reflectMobilityEmpathy: reflectMobilitySimulations,
       reflectVizButtons: noEffect,
@@ -2175,11 +2191,11 @@ export function createGame(o: CreateGameOptions): Engine {
       toggleBtn,
       getNumPlayers: () => players().length,
       getPlayers: () => cartridge.players ?? [],
-      getSoundOn: () => soundOn,
+      getSoundOn: () => mixer.soundOn,
       setSoundOn,
-      getVolume: () => volume,
+      getVolume: () => mixer.volume,
       setVolume,
-      getAudioCat: () => audioCat,
+      getAudioCat: () => mixer.audioCat,
       setCatGain,
       tts,
       getBlindMode: readBlindMode,
@@ -2205,7 +2221,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // all the rest of the audio.
     roleAt: (at) => cartridge.declaration.roleAt(at),
     tonePan, srSay, narrate: (text) => tts.narrate(text),
-    catNode, audioOut, getVolume: () => volume,
+    catNode, audioOut, getVolume: () => mixer.volume,
     // ⚠️ THE ANSWER, NOT THE TABLE (#104): `platform/audio-sonar` does not know what a visual mode is, so it is answered
     // here — the root is the only layer that knows both axes AND may import from `render/`.
     visionImpaired: (pl) => {
@@ -2220,7 +2236,8 @@ export function createGame(o: CreateGameOptions): Engine {
       return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: DEFAULT_VISUAL }] : [];
     }),
     getNumPlayers: () => (cartridge.players ?? [null]).length,
-    getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,
+    getAudioCtx: () => mixer.audioCtx, getSoundOn: () => mixer.soundOn, getAudioCat: () => mixer.audioCat,
+    newContext: newAudioContext,
   });
 
   // 5. Remappable keyboard — the best cut of the base (finding 11): a key scheme, no world.
@@ -4152,7 +4169,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     keyboardConfig,
 
     // D4-B4
-
+    audio: mixer,
 
     // D4-B5
 

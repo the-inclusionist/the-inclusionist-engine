@@ -5,18 +5,17 @@
 // consumes `gameSay` through the published surface `./platform/*.js` —, so without a test here it would be **published
 // without a gate** (see `tests/published-without-a-gate.node.test.js`).
 //
-// ⚠️ THIS MODULE DOES NOT RECEIVE `soundOn`/`volume` BY INJECTION — it reads the live bindings of `platform/audio`, unlike
-// `platform/tts`, which receives them in its ctx. That is not a defect to fix here: it is why the test drives the module
-// through the setters (`setSoundOn`/`setVolume`) instead of through a double.
+// 📌 THE VOICE ARRIVES AS A PARAMETER (ADR-0232 D4): the browser's speech (`synth`, `utterance`) and the master sound it obeys
+// (`soundOn`, `volume`). The module reads no window and no `platform/audio` binding, so each case builds the voice it speaks
+// through — nothing is left on `globalThis` for the next file.
 //
 // ⚠️ AND WHAT THIS FILE DOES **NOT** ASSERT, so it does not look decided: the module forces `pt-BR` everywhere, while
 // ADR-0065 gives the engine THREE languages. That comes from its original design (it is the voice of a Brazilian
 // literacy game) and changing it is behaviour, not coverage. It stays measured and named, not fixed in passing.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { gameSay } from '../app/js/platform/speech.js';
-import { setSoundOn, setVolume } from '../app/js/platform/audio.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { gameSay as sayWith } from '../app/js/platform/speech.js';
 
-let spoke, cancels, vozes, getVoicesLanca;
+let spoke, cancels, vozes, getVoicesLanca, som, volume, synth;
 
 /** The voices a school browser may offer, with pt-PT in the middle on purpose. */
 const PT_BR = { lang: 'pt-BR', name: 'Microsoft Daniel' };
@@ -25,25 +24,29 @@ const PT_SEM_REGIAO_BR = { lang: 'pt', name: 'Google português do Brasil' };
 const PT_SEM_REGIAO = { lang: 'pt', name: 'Voz genérica' };
 const EN = { lang: 'en-US', name: 'Microsoft Zira' };
 
-beforeEach(() => {
-  spoke = []; cancels = 0; vozes = []; getVoicesLanca = false;
-  globalThis.window = {
-    speechSynthesis: {
-      cancel: () => { cancels++; },
-      speak: (u) => spoke.push(u),
-      getVoices: () => { if (getVoicesLanca) throw new Error('sem vozes carregadas'); return vozes; },
-    },
-  };
-  globalThis.SpeechSynthesisUtterance = class {
-    constructor(t) { this.text = t; this.lang = ''; this.volume = 0; this.voice = null; }
-  };
-  setSoundOn(true); setVolume(0.6);
-});
-afterEach(() => {
-  delete globalThis.window; delete globalThis.SpeechSynthesisUtterance;
-  setSoundOn(true); setVolume(0.6);
-});
+class FakeUtterance {
+  constructor(t) { this.text = t; this.lang = ''; this.volume = 0; this.voice = null; }
+}
 
+/** The voice every case speaks through: the fake speech, and the master sound the case sets. */
+const voice = {
+  synth: () => synth,
+  utterance: (t) => new FakeUtterance(t),
+  soundOn: () => som,
+  volume: () => volume,
+};
+const gameSay = (text) => sayWith(voice, text);
+const setSoundOn = (v) => { som = v; };
+const setVolume = (v) => { volume = v; };
+
+beforeEach(() => {
+  spoke = []; cancels = 0; vozes = []; getVoicesLanca = false; som = true; volume = 0.6;
+  synth = {
+    cancel: () => { cancels++; },
+    speak: (u) => spoke.push(u),
+    getVoices: () => { if (getVoicesLanca) throw new Error('sem vozes carregadas'); return vozes; },
+  };
+});
 describe('platform/speech · gameSay só fala quando há o que dizer e o som está ligado', () => {
   it('[Feliz] fala o texto, forçando pt-BR', () => {
     gameSay('lata é metal');
@@ -81,7 +84,7 @@ describe('platform/speech · gameSay só fala quando há o que dizer e o som est
   });
 
   it('[Fronteira] sem speechSynthesis no navegador, não rebenta e não fala', () => {
-    globalThis.window = {};
+    synth = null;
     expect(() => gameSay('lata')).not.toThrow();
     expect(spoke).toHaveLength(0);
   });

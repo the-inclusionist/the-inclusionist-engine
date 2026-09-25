@@ -11,7 +11,7 @@
 
 import { toggleLabel } from './dom.js';
 import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-modes.js';
-import { hearingLoss, setHearingLossGraph } from '../platform/audio.js';
+import type { Audio } from '../platform/audio.js';
 import type { Translate } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
@@ -67,6 +67,12 @@ export interface EmpathySettingsCtx {
   /** Returns focus to whoever opened the dialog (ui/settings-panel `restoreFocus`). Injected, not a fixed `#opt-*`:
    *  that id does not exist in the document, so closing would leave focus on `<body>`. */
   restoreFocus?: (id: string) => boolean;
+  /**
+   * THE ROOT'S SOUND, narrowed to the hearing-loss simulation (ADR-0232 D4): `hearingLoss` read live for the button and the
+   * mark, and `setHearingLossGraph` to restore the stored simulation at boot. REQUIRED: the graph lives in the root's `Audio`,
+   * and there is no page-wide one to fall back on. Pass the `Audio` itself — a copied `hearingLoss` would freeze the button.
+   */
+  hearing: Pick<Audio, 'hearingLoss' | 'setHearingLossGraph'>;
   /** Persists + applies the audio graph change (and announces); the body is the host's. */
   setHearingLoss(on: boolean): void;
   /** Persists + applies one-button-only play (and announces); the body is the host's. */
@@ -98,9 +104,9 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     ctx.renderVizGroup('#empathy-list', '#empathy-players', EMPATHY_VIZ_MODES);
     const h = ctx.$<HTMLElement>('#opt-hearing');
     if (h) {
-      h.classList.toggle('is-on', hearingLoss);
-      h.setAttribute('aria-pressed', String(hearingLoss));
-      h.textContent = toggleLabel(t, hearingLoss);  // ui/dom
+      h.classList.toggle('is-on', ctx.hearing.hearingLoss);
+      h.setAttribute('aria-pressed', String(ctx.hearing.hearingLoss));
+      h.textContent = toggleLabel(t, ctx.hearing.hearingLoss);  // ui/dom
     }
     ctx.reflectMobilityEmpathy();
     refreshMarks();
@@ -119,7 +125,7 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
    */
   function refreshMarks(): void {
     const simulating = ctx.getPlayers().some((p) => simulatesDisability(p.viz));
-    const deafness = hearingLoss;
+    const deafness = ctx.hearing.hearingLoss;
     const um = ctx.getOneButton() !== DEFAULTS.oneButton;
     const wheelchair = ctx.getWheelchair() !== DEFAULTS.wheelchair;
     const rowOf = (sel: string): HTMLElement | null =>
@@ -156,8 +162,8 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
   if (empathyClose) empathyClose.addEventListener('click', close);
 
   const hearingBtn = ctx.$<HTMLElement>('#opt-hearing');
-  if (hearingBtn) hearingBtn.addEventListener('click', () => { ctx.setHearingLoss(!hearingLoss); render(); ctx.reflectVizButtons(); });
-  if (ctx.store.getBool('incl_hearingloss')) setHearingLossGraph(true); // restores the persisted audio graph at boot
+  if (hearingBtn) hearingBtn.addEventListener('click', () => { ctx.setHearingLoss(!ctx.hearing.hearingLoss); render(); ctx.reflectVizButtons(); });
+  if (ctx.store.getBool('incl_hearingloss')) ctx.hearing.setHearingLossGraph(true); // restores the persisted audio graph at boot
 
   // `refreshMarks()` after EACH one: these two setters do not go through `render()` — they reflect the button on
   // their own —, so the mark has to be pulled here or it never follows the change.
@@ -180,7 +186,7 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     // "off" announcement for something that was never on. The summary announcement comes last, and it is what stays in
     // `#sr-status` — one action, one sentence, instead of three.
     ctx.getPlayers().forEach((p, i) => { if (simulatesDisability(p.viz)) ctx.setPlayerViz(i, 'normal'); });
-    if (hearingLoss) ctx.setHearingLoss(false);
+    if (ctx.hearing.hearingLoss) ctx.setHearingLoss(false);
     if (ctx.getOneButton() !== DEFAULTS.oneButton) ctx.setOneButton(DEFAULTS.oneButton);
     if (ctx.getWheelchair() !== DEFAULTS.wheelchair) ctx.setWheelchair(DEFAULTS.wheelchair);
     render(); ctx.reflectVizButtons();

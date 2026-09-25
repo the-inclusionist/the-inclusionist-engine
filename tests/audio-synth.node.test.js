@@ -11,8 +11,8 @@
 // and which needs no browser window. The context writes down what is built and where it is connected.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as audio from '../app/js/platform/audio.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createAudio } from '../app/js/platform/audio.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 function contextoDoJogador() {
@@ -41,7 +41,9 @@ function contextoDoJogador() {
   return { rec, pc: { ac, out: no('saida-do-jogador') } };
 }
 
-beforeEach(() => { audio.setSoundOn(true); audio.setVolume(0.6); });
+// One root's sound (ADR-0232 D4), whose own context is never asked for by the player's-device cases: a host with none.
+let audio;
+beforeEach(() => { audio = createAudio({ newContext: () => null, store: createStorage(memoryBackend()) }); });
 
 describe('tonePan — a tone, panned, on a child\'s device', () => {
   it('🔴 [Right] plays ONE oscillator of the asked timbre and pitch, at the asked level times the master, for the asked time', () => {
@@ -93,11 +95,11 @@ describe('tonePan — a tone, panned, on a child\'s device', () => {
 describe('noiseHit — a material, heard', () => {
   it('🔴 [Right] each material has its own filter, on the player\'s device, and a hit is counted', () => {
     const { rec, pc } = contextoDoJogador();
-    const antes = audio._footCount;
+    const antes = audio.footCount;
     audio.noiseHit('agua', null, pc);
     expect([rec.filtros[0].type, rec.filtros[0].frequency.value]).toEqual(['lowpass', 330]);
     expect(rec.destinos.at(-1)).toEqual(['ganho', 'saida-do-jogador']);
-    expect(audio._footCount).toBe(antes + 1);
+    expect(audio.footCount).toBe(antes + 1);
   });
 
   it('📌 [Boundary] a material the table does not know sounds like the floor, not like nothing', () => {
@@ -113,23 +115,18 @@ describe('noiseHit — a material, heard', () => {
     expect(rec.destinos.at(-1)).toEqual(['panner', 'saida-do-jogador']);
   });
 
-  it('🔴 [Right] with no player\'s device, a hit goes out through the `interact` category — the slider that says so moves it', async () => {
-    // The only path that runs the engine's OWN context, so it needs a window: one is lent, with the same recording context, and
-    // the module is imported afresh so its context is this one. `interact` is switched off and `earcons` on: a hit on the right
-    // bus lands on a silent category gain, on the wrong one it is heard.
+  it('🔴 [Right] with no player\'s device, a hit goes out through the `interact` category — the slider that says so moves it', () => {
+    // The only path that runs the engine's OWN context: the root's maker hands in the same recording context. `interact` is
+    // switched off and `earcons` on: a hit on the right bus lands on a silent category gain, on the wrong one it is heard.
     const { rec, pc } = contextoDoJogador();
     const ganhos = [];
     const criarGanho = pc.ac.createGain;
     pc.ac.createGain = () => { const g = criarGanho(); ganhos.push(g); return g; };
     pc.ac.state = 'running';
-    vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
-    vi.resetModules();
-    const novo = await import('../app/js/platform/audio.js');
-    novo.initAudioMixer(createStorage(memoryBackend()));
+    const novo = createAudio({ newContext: () => pc.ac, store: createStorage(memoryBackend()) });
     novo.audioCat.interact.on = false;
     novo.audioCat.earcons.on = true;
     novo.noiseHit('piso', null);
-    vi.unstubAllGlobals();
     expect(rec.fontes).toBe(1);
     expect(ganhos.at(-1).gain.value, 'the hit went to a category that is on — not `interact`').toBe(0);
   });
@@ -143,9 +140,9 @@ describe('noiseHit — a material, heard', () => {
 });
 
 describe('tone — the engine\'s own earcon synth', () => {
-  // `tone` has no player's device: it only ever plays in the ENGINE's context, so every case lends a window with a recording
-  // context and imports the module afresh, the way the `interact` case above does. It was left out of the cut of 2026-09-23
-  // because it had no case at all; these are written against its current shape.
+  // `tone` has no player's device: it only ever plays in the ENGINE's context, so every case hands the root's maker a recording
+  // context, the way the `interact` case above does. It was left out of the cut of 2026-09-23 because it had no case at all;
+  // these are written against its current shape.
   async function engineWith(setup = () => {}) {
     const { rec, pc } = contextoDoJogador();
     const ganhos = [];
@@ -154,12 +151,9 @@ describe('tone — the engine\'s own earcon synth', () => {
     // routing case, because the master is never set by the engine and would pass for a silenced category (the probe caught it).
     pc.ac.createGain = () => { const g = criarGanho(); g.gain.value = 1; ganhos.push(g); return g; };
     pc.ac.state = 'running';
-    vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
-    vi.resetModules();
-    const fresh = await import('../app/js/platform/audio.js');
-    fresh.setSoundOn(true); fresh.setVolume(0.6);
+    const fresh = createAudio({ newContext: () => pc.ac, store: createStorage(memoryBackend()) });
     setup(fresh);
-    return { rec, ganhos, fresh, done: () => vi.unstubAllGlobals() };
+    return { rec, ganhos, fresh, done: () => {} };
   }
 
   it('🔴 [Right] one square oscillator by default, at 0.22 of the master, stopped after its time plus a tail, delayed by `when`', async () => {
@@ -190,7 +184,6 @@ describe('tone — the engine\'s own earcon synth', () => {
 
   it('🔴 [Right] it goes out through the `earcons` category — the slider that says so silences it', async () => {
     const { ganhos, fresh, done } = await engineWith((m) => {
-      m.initAudioMixer(createStorage(memoryBackend()));
       m.audioCat.earcons.on = false;
       m.audioCat.interact.on = true;
     });
@@ -215,13 +208,9 @@ describe('the mixer — each category\'s level, when its bus is made and when th
       return g;
     };
     pc.ac.state = 'running';
-    vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
-    vi.resetModules();
-    const fresh = await import('../app/js/platform/audio.js');
-    fresh.setSoundOn(true); fresh.setVolume(0.6);
     const store = createStorage(memoryBackend());
-    fresh.initAudioMixer(store);
-    return { fresh, ganhos, store, done: () => vi.unstubAllGlobals() };
+    const fresh = createAudio({ newContext: () => pc.ac, store });
+    return { fresh, ganhos, store, done: () => {} };
   }
 
   it('🔴 [Right] a category that is ON is born at ITS volume, not at full', async () => {
@@ -245,8 +234,134 @@ describe('the mixer — each category\'s level, when its bus is made and when th
     fresh.setCatGain('earcons');
     done();
     expect(bus.gain.alvo, 'the slider moved and the bus did not follow').toBeCloseTo(0.5, 6);
-    // and it is kept in the store the root handed to `initAudioMixer` (ADR-0232), not in a storage of its own
+    // and it is kept in the store the root handed to `createAudio` (ADR-0232), not in a storage of its own
     expect(store.getJSON('incl_audiocat_earcons'), 'the change was not kept in the injected store').toEqual({ on: true, vol: 0.5 });
+  });
+});
+
+describe('one root\'s sound — `createAudio` (ADR-0232 D4)', () => {
+  // The module held ONE context, ONE master and ONE mixer per page; two roots shared them. These cases hold what the factory
+  // promises instead: the context comes from the root's maker at the first sound, the mixer from the root's store, and a
+  // second root's sound is a second everything.
+  function graphContext() {
+    const links = [];
+    const made = { gains: [], filters: [], processors: [] };
+    const node = (name, extra = {}) => {
+      const n = {
+        _nome: name,
+        connect(to) { links.push([n, to]); return to; },
+        disconnect() { for (let i = links.length - 1; i >= 0; i--) if (links[i][0] === n) links.splice(i, 1); },
+        ...extra,
+      };
+      return n;
+    };
+    const ac = {
+      state: 'running', currentTime: 0, resumed: 0,
+      destination: node('destination'),
+      resume() { this.resumed++; this.state = 'running'; },
+      createGain: () => { const g = node('gain', { gain: { value: 1, alvo: null, setTargetAtTime(v) { this.alvo = v; } } }); made.gains.push(g); return g; },
+      createBiquadFilter: () => { const f = node('lowpass', { type: '', frequency: { value: 0 }, Q: { value: 0 } }); made.filters.push(f); return f; },
+      createScriptProcessor: () => { const p = node('processor', { onaudioprocess: null }); made.processors.push(p); return p; },
+    };
+    const targetsOf = (n) => links.filter(([from]) => from === n).map(([, to]) => to);
+    return { ac, made, targetsOf };
+  }
+  const built = (newContext, store = createStorage(memoryBackend())) => createAudio({ newContext, store });
+
+  it('🔴 [Right] no context is made at construction; the first sound asks the root\'s maker ONCE, and the getter shows it', () => {
+    const { ac } = graphContext();
+    let asked = 0;
+    const a = built(() => { asked++; return ac; });
+    expect([a.audioCtx, asked], 'a context made before the child\'s first gesture is born suspended').toEqual([null, 0]);
+    expect(a.ensureAC()).toBe(ac);
+    expect(a.ensureAC()).toBe(ac);
+    expect(asked, 'every sound made a new context').toBe(1);
+    expect(a.audioCtx).toBe(ac);
+  });
+
+  it('🔴 [Right] a context the browser suspended is resumed at the next sound, and a running one is left alone', () => {
+    const { ac } = graphContext();
+    const a = built(() => ac);
+    a.ensureAC();
+    expect(ac.resumed).toBe(0);
+    ac.state = 'suspended';
+    a.ensureAC();
+    expect(ac.resumed).toBe(1);
+  });
+
+  it('📌 [Zero] a host with no audio context: every question answers null and no cue throws', () => {
+    const a = built(() => null);
+    expect([a.ensureAC(), a.audioOut(), a.catNode('earcons')]).toEqual([null, null, null]);
+    expect(() => { a.tone(440, 0.1); a.noiseHit('piso'); a.tonePan(440, 0.1, 'guide'); a.setMasterMuted(true); a.setHearingLossGraph(true); }).not.toThrow();
+  });
+
+  it('🔴 [Right] TWO ROOTS SHARE NOTHING: each its own context, master volume, switch and categories', () => {
+    const one = graphContext(), two = graphContext();
+    const a = built(() => one.ac), b = built(() => two.ac);
+    a.setVolume(0.1); a.setSoundOn(false); a.audioCat.earcons.on = false;
+    expect([b.volume, b.soundOn, b.audioCat.earcons.on], 'the second root heard the first one\'s mixer').toEqual([0.6, true, true]);
+    expect([a.volume, a.soundOn]).toEqual([0.1, false]);
+    expect(a.ensureAC()).not.toBe(b.ensureAC());
+  });
+
+  it('🔴 [Right] the mixer is read from the root\'s store as the sound is built — the voice built after it finds its categories', () => {
+    const store = createStorage(memoryBackend());
+    store.setJSON('incl_audiocat_earcons', { on: false, vol: 0.2 });
+    const a = built(() => null, store);
+    expect(a.audioCat.earcons).toEqual({ on: false, vol: 0.2 });
+  });
+
+  it('🔴 [Right] the master goes to the device; hearing loss sends it through the filter, and switching it off brings it back', () => {
+    const { ac, made, targetsOf } = graphContext();
+    const a = built(() => ac);
+    const master = a.audioOut();
+    expect(targetsOf(master)).toEqual([ac.destination]);
+    a.setHearingLossGraph(true);
+    expect(a.hearingLoss).toBe(true);
+    expect(targetsOf(master), 'the simulation did not reach the master').toEqual([made.filters[0]]);
+    expect(targetsOf(made.filters[0])).toEqual([made.processors[0]]);
+    expect(targetsOf(made.processors[0])).toEqual([ac.destination]);
+    a.setHearingLossGraph(false);
+    expect(a.hearingLoss).toBe(false);
+    expect(targetsOf(master), 'switched off, the simulation kept filtering').toEqual([ac.destination]);
+    a.setHearingLossGraph(true);
+    expect(made.filters, 'the filter was built again at every switch').toHaveLength(1);
+  });
+
+  it('📌 [Boundary] hearing loss switched on before any sound makes no context for it; the first master is born filtered', () => {
+    const { ac, made, targetsOf } = graphContext();
+    let asked = 0;
+    const a = built(() => { asked++; return ac; });
+    a.setHearingLossGraph(true);
+    expect(asked, 'restoring the simulation at boot made a context outside a gesture').toBe(0);
+    expect(targetsOf(a.audioOut())).toEqual([made.filters[0]]);
+  });
+
+  it('🔴 [Right] the filter lowers a quiet frame to 0.12 and lets a loud one through — hearing loss, not silence', () => {
+    const { ac, made } = graphContext();
+    const a = built(() => ac);
+    a.audioOut();
+    a.setHearingLossGraph(true);
+    const run = (level) => {
+      const inp = new Float32Array(512).fill(level), out = new Float32Array(512);
+      made.processors[0].onaudioprocess({ inputBuffer: { getChannelData: () => inp }, outputBuffer: { getChannelData: () => out } });
+      return out[0];
+    };
+    expect(run(0.05)).toBeCloseTo(0.05 * 0.12, 6);
+    expect(run(0.5)).toBeCloseTo(0.5, 6);
+    expect(made.filters[0].frequency.value, 'the highs go first').toBe(1400);
+  });
+
+  it('🔴 [Right] the pause mutes the master and playing brings it back — and a mute with no master makes none', () => {
+    const { ac, made } = graphContext();
+    const a = built(() => ac);
+    a.setMasterMuted(true);
+    expect([a.audioCtx, made.gains.length], 'muting made a context and a master for nothing').toEqual([null, 0]);
+    const master = a.audioOut();
+    a.setMasterMuted(true);
+    expect(master.gain.alvo).toBe(0);
+    a.setMasterMuted(false);
+    expect(master.gain.alvo).toBe(1);
   });
 });
 
