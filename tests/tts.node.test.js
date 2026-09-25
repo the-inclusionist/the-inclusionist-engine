@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { createTts } from '../app/js/platform/tts.js';
+import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 let spoke, cancels;
@@ -23,6 +24,7 @@ function setup(over = {}) {
   const said = [], alerted = [];
   const ctx = {
     store: createStorage(memoryBackend()),
+    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: (t) => said.push(t), srAlert: (t) => alerted.push(t),
     ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => over.soundOn === undefined ? true : over.soundOn,

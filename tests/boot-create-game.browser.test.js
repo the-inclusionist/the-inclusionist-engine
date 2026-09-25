@@ -1109,6 +1109,17 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Right] the sonar speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', async () => {
+      // The sonar no longer imports `t`; what it says comes from the `t` its ctx receives. A root that handed it anything
+      // else would read a raw key to a blind child.
+      const motor = abrir();
+      const status = document.querySelector('#sr-status');
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      for (let i = 0; i < 40 && !status.textContent; i++) await new Promise((r) => { setTimeout(r, 10); });
+      expect(status.textContent, 'the sonar said nothing — this case would measure nothing').not.toBe('');
+      expect(status.textContent, 'the sonar spoke a raw key').not.toMatch(/\bsr\.nav\./);
+    });
+
     it('🔴 [Right] the handle answers the spoken index from the settings store, LIVE (ADR-0044 item 3; ADR-0232 D2c)', async () => {
       // A game that announces its own items — the demo quiz does — asks the engine instead of reading `core/state` by import.
       const state = await import('../app/js/core/state.js');

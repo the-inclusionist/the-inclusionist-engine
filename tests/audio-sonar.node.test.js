@@ -10,6 +10,8 @@
 // SAME sonar over three topologies — continuous, grid and list — because that is the only way to assert that it travels:
 // if a genre needed a special case, the cut would be in the wrong place.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import {
   createAudioSonar, worldStep, PAN_PACES, GUIDE_WAVE, GUIDE_VOL, FRAMES_BETWEEN_ROUTES,
 } from '../app/js/platform/audio-sonar.js';
@@ -56,6 +58,7 @@ const LISTA = { kind: 'hotspots', order: ['q1', 'q2', 'q3', 'q4'] };
 function setup(over = {}) {
   const tone = [], said = [], narrated = [];
   const ctx = {
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     // `over.topology` is a VALUE (the topology), not a function. Worth saying: passing `() => GRADE` here made the ctx
     // hand the FUNCTION to the module, `t.kind` became undefined, `distance` fell into the continuous branch and divided
     // by `undefined` — NaN, no target chosen, nothing nearby. A wrong fixture that fails as if the module were wrong costs

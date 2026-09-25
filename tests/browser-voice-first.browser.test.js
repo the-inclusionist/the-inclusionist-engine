@@ -5,6 +5,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
+import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { setLocale } from '../app/js/core/i18n.ts';
 
@@ -20,6 +21,7 @@ function montar({ vozesDoNavegador, comPorta = true }) {
   ss.getVoices = () => vozesDoNavegador;
   return createTts({
     store: createStorage(memoryBackend()), // each boot its own store (ADR-0232): no stored voice is inherited
+    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
     // `comPorta` is now the GAME'S ANSWER (ADR-0216 §3): declared, the neural voice is listed and loadable — and the loader is

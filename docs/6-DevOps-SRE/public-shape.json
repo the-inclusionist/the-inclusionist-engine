@@ -1121,7 +1121,8 @@
       "getSoundOn",
       "getVolume",
       "noiseHit",
-      "showCaption"
+      "showCaption",
+      "t"
     ],
     "interface AudioEarcons": [
       "doorSound",
@@ -1186,6 +1187,7 @@
       "narrate",
       "roleAt?",
       "srSay",
+      "t",
       "targetsOf",
       "tonePan",
       "topology",
@@ -1516,7 +1518,8 @@
       "neuralVoice?",
       "srAlert",
       "srSay",
-      "store"
+      "store",
+      "translator"
     ],
     "interface Tts": [
       "currentVoice",

@@ -868,7 +868,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: the caller cannot swap these two lines.
   initAudioMixer(store);
   const tts = createTts({
-    store, srSay, srAlert, ensureAC, catNode, audioOut,
+    store, translator, srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     neuralVoice: !!o.uses?.neuralVoice, // ADR-0216 §3: the game says it wants one; the engine loads it
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
@@ -2086,6 +2086,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 4b. NAVIGATION SOUND. Only the contract goes in: no tile, collision box or coin array.
   const sonar = createAudioSonar({
+    t: translator.t,
     topology: () => cartridge.declaration.topology(),
     targetsOf: (i) => cartridge.declaration.targetsOf(i),
     nameAt: (at) => cartridge.declaration.nameAt(at),

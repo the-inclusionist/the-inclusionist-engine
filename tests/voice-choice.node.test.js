@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { voicesForLocale } from '../app/js/platform/voice-plan.js';
 import { KOKORO_VOICES } from '../app/js/platform/kokoro.js';
 import { createTts } from '../app/js/platform/tts.js';
+import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
 
@@ -38,6 +39,7 @@ function montar(comPorta) {
   const registro = {};
   const ctx = {
     store: createStorage(guardado),
+    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }),
   };

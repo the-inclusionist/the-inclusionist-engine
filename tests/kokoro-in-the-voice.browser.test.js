@@ -8,6 +8,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
+import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { setLocale } from '../app/js/core/i18n.ts';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
@@ -42,6 +43,7 @@ let vozGuardada;
 function ttsCom(porta) {
   return createTts({
     store: createStorage(memoryBackend()),
+    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
     neuralVoice: true, loadKokoro: porta.carregar, getSpeechPpm: () => 254,
@@ -78,7 +80,7 @@ describe('the voice list with the Kokoro port', () => {
   });
 
   it('🔴 [Zero] without the port no Kokoro voice is listed', () => {
-    const tts = createTts({ store: createStorage(memoryBackend()), srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
+    const tts = createTts({ store: createStorage(memoryBackend()), translator: createTranslator(), srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
       getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => null });
     expect(tts.voices(), 'a browser offering no voice and no port: nothing to list').toEqual([]);
   });

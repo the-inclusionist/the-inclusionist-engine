@@ -3,13 +3,13 @@
 // and a new pick reloads the engine; in a language no voice speaks, narration is locked and no other language's voice is borrowed.
 //
 // 📌 The engine's three languages all have a Kokoro voice, so the page's language is replaced here by one that has none — through
-// the module that answers it (`core/i18n.bcp47`), and not through a hook in `platform/tts` that only a test would use.
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
-const lingua = vi.hoisted(() => ({ tag: 'fr-FR' }));
-vi.mock(import('../app/js/core/i18n.js'), async (original) => ({ ...(await original()), bcp47: () => lingua.tag }));
-const { createTts } = await import('../app/js/platform/tts.js');
+// the translator the narration receives (ADR-0232 D3), whose `bcp47` answers the page's tag: the same port the root fills.
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTts } from '../app/js/platform/tts.js';
+import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+
+const lingua = { tag: 'fr-FR' };
 
 let spoke, store;
 beforeEach(() => {
@@ -21,7 +21,8 @@ beforeEach(() => {
 afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
 
 const montar = (over = {}) => createTts({
-  store, srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
+  store, translator: { ...createTranslator(), bcp47: () => lingua.tag },
+  srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
   getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }), ...over,
 });
 

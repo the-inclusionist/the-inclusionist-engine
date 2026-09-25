@@ -35,7 +35,7 @@
 // ========================= NO I/O AT IMPORT =========================
 // Nothing here touches `window` outside `playerCtx`, which is called, not imported. It runs in the `node` project.
 import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable, type Role } from '../core/contract.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 // THE GUIDE (#84 item 2) is made of these two and nothing else: the ROUTE says how many steps remain going round walls,
 // and the INTENSITY turns that number into brightness and volume. Neither touches Web Audio; the wiring — the only part
 // that does — is `updateGuide` below, which is why the design can be checked in `node`.
@@ -179,6 +179,8 @@ export interface PlayerAudioOut {
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
 
 export interface SonarCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /* --- the CONTRACT: what was platformer and became a question (ADR-0030) --- */
   /** Field 1: the metric. A function, because a game with stages changes topology between them. */
   topology: () => Topology;
@@ -259,6 +261,7 @@ export interface AudioSonar {
 }
 
 export function createAudioSonar(ctx: SonarCtx): AudioSonar {
+  const { t } = ctx;
   let _sonarCount = 0, _guideCount = 0;
 
   /** The player's AudioContext (for `setSinkId` on their device), or null → the global context. */

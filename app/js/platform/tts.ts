@@ -6,7 +6,7 @@
 
 import type { Store } from './storage.js';
 import { KEYS } from './storage-keys.js';
-import { t, bcp47 } from '../core/i18n.js';
+import type { Translator } from '../core/i18n.js';
 import { createInterruptibleSpeech } from './interruptible-speech.js';
 import { voicesForLocale, type NeuralVoice } from './voice-plan.js';
 import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
@@ -38,6 +38,12 @@ export interface TtsCtx {
    * one would lose it in silence.
    */
   store: Pick<Store, 'get' | 'set'>;
+  /**
+   * The root's translator, narrowed to what narration needs (ADR-0232 D3): `t` for what it announces, and `bcp47()` — the
+   * PAGE's language tag, read at every utterance and every voice list — because narration speaks the language of now.
+   * REQUIRED: a voice that did not know the page's language would read English words with Portuguese phonetics.
+   */
+  translator: Pick<Translator, 't' | 'bcp47'>;
   srSay: (t: string) => void;
   srAlert: (t: string) => void;
   ensureAC: () => AudioContext | null;
@@ -100,6 +106,7 @@ export interface Tts {
 /** An engine the child may have stored before it left the engine (ADR-0207): read as no explicit choice, so the voice in use speaks. */
 const ENGINES_THAT_LEFT: readonly string[] = ['piper'];
 export function createTts(ctx: TtsCtx): Tts {
+  const { t, bcp47 } = ctx.translator;
   let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _narrateCount = 0;
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // the selected Web Speech voice
   // An engine set explicitly (stored, or by the panel) wins; otherwise the engine of the voice in use, which is the browser's when it

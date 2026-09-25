@@ -3,6 +3,8 @@
 // The key a11y contract: the CAPTION goes out BEFORE the sound check → a deaf child sees the earcon even with audio OFF.
 // sfx plays 1 oscillator; doorSound picks a timbre by material + fires noiseHit. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { createAudioEarcons } from '../app/js/platform/audio-earcons.js';
 import { t } from '../app/js/core/i18n.js';
 
@@ -27,6 +29,7 @@ function setup(over = {}) {
   const caps = [], hits = [];
   const { rec, ac } = fakeAC();
   const ctx = {
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     SFX,
     ensureAC: () => ac,
     catNode: () => null,
@@ -123,6 +126,7 @@ describe('platform/audio-earcons — a figura do earcon (#124)', () => {
   function toca(def) {
     const { freq, ac } = acQueAnota();
     const earcons = createAudioEarcons({
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
       SFX: { alvo: def },
       ensureAC: () => ac, catNode: () => null, audioOut: () => ({ connect: () => ({}) }),
       noiseHit: () => {}, getSoundOn: () => true, getVolume: () => 0.6,
@@ -168,6 +172,7 @@ describe('platform/audio-earcons — a figura do earcon (#124)', () => {
     const caps = [];
     const { ac } = acQueAnota();
     const earcons = createAudioEarcons({
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
       SFX: { alvo: { t: 'triangle', f: 300, d: 0.4, f2: 900, cap: 'sfx.teste' } },
       ensureAC: () => ac, catNode: () => null, audioOut: () => ({ connect: () => ({}) }),
       noiseHit: () => {}, getSoundOn: () => false, getVolume: () => 0,
@@ -220,6 +225,7 @@ describe('platform/audio-earcons — the bus, the level, the length, and the doo
     const { rec, ac, no } = acQueGrava();
     const caps = [], hits = [], pedidos = [];
     const earcons = createAudioEarcons({
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
       SFX: { alvo: { t: 'square', f: 880, d: 0.1, cap: 'gaze.lookHere' } },
       ensureAC: () => ac,
       catNode: (cat) => { pedidos.push(cat); return over.barramento ? no(`${cat}-bus`) : null; },

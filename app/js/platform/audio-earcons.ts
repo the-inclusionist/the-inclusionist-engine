@@ -37,9 +37,11 @@ export interface SfxDef {
    */
   f2?: number;
 }
-import { t } from '../core/i18n.js'; // `cap` holds a KEY, and whoever shows it resolves it
+import type { Translate } from '../core/i18n.js'; // `cap` holds a KEY, and whoever shows it resolves it
 
 export interface AudioEarconsCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   SFX: Record<string, SfxDef | undefined>;      // the earcon table (the game's)
   ensureAC: () => AudioContext | null;
   catNode: (cat: string) => AudioNode | null;   // the per-category bus (earcons/interact)
@@ -57,6 +59,7 @@ export interface AudioEarcons {
 }
 
 export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
+  const { t } = ctx;
   /** Whether a sound may play at all: the game's sound on, and a volume above zero. */
   const audible = (): boolean => ctx.getSoundOn() && ctx.getVolume() > 0;
   /** A category's bus; without one, the master; without that, the device itself. */
