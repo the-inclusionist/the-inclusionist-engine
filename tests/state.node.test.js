@@ -144,9 +144,57 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
   });
 });
 
+/*
+ * EVERY SETTER TELLS ITS EVENT, and the third of its three effects is checked for all of them — the lifetime gate checks the
+ * second (persist) for all, and until this block only blind mode had the third checked. A setter that stored and persisted
+ * but told nobody leaves every panel that subscribes to it showing the old value, with no error anywhere.
+ * The setters are DISCOVERED on the store, so a new one without an entry below fails here instead of passing unseen.
+ */
+describe('core/state — cada setter avisa o seu evento, com o valor guardado', () => {
+  /** The event each setter tells, where it is not the setter's own name (`setXValue` → `x`). */
+  const EVENTO = { setOutlineFgValue: 'hcOutlineFg', setOutlineBgValue: 'hcOutlineBg' };
+  /** Two values per setter: whatever the store holds, at least one call crosses the equality guard. */
+  const VALORES = {
+    setVizModeValue: ['sim-deuter', 'normal'], setBlindModeValue: [true, false], setLetterCaseValue: ['mixed', 'upper'],
+    setCaptionsOnValue: [false, true], setMenuIndexOnValue: [false, true], setCbSafeValue: [true, false],
+    setOwnerColorsValue: [false, true], setOutlineFgValue: [2, 0], setOutlineBgValue: [2, 0], setCaneBlockDivValue: [4, 2],
+    setWheelchairValue: [true, false], setOneButtonValue: [true, false], setNoGripStrengthValue: [true, false],
+    setInputCooldownValue: [500, 0], setSwitchScanValue: [true, false], setVoiceControlValue: [true, false],
+    // 'no-such-mode' reads as off: what is told must be the SANITISED value the store kept, not what the caller passed
+    setCameraControlValue: ['eyes', 'no-such-mode'], setGameSpeedValue: [0.5, 1], setCaptionPpmValue: [175, 125],
+    setSpeechPpmValue: [404, 254],
+  };
+  const setters = () => Object.keys(state).filter((k) => /^set\w+Value$/.test(k));
+
+  it('a descoberta é MECÂNICA, e cada setter descoberto tem par de valores', () => {
+    expect(setters().length).toBe(20);
+    expect(setters().filter((s) => !(s in VALORES)), 'setter novo sem par de valores').toEqual([]);
+  });
+
+  it('🔴 [Right] cada setter avisa o SEU evento com o valor que o store passou a ler', () => {
+    const mudos = [];
+    for (const nome of setters()) {
+      const evento = EVENTO[nome] ?? nome.replace(/^set(\w)(\w*)Value$/, (_, a, b) => a.toLowerCase() + b);
+      const ouvidos = [];
+      desinscrever.push(on(evento, (v) => ouvidos.push(v)));
+      for (const v of VALORES[nome]) state[nome](v);
+      if (!ouvidos.length || ouvidos.at(-1) !== state[evento]) mudos.push(`${nome} → ${evento}`);
+    }
+    expect(mudos, 'setters that changed the store and told nobody (or told another value)').toEqual([]);
+  });
+});
+
 // `defaultReducedMotion` left this module with the defaults (ADR-0232): its cases are in `tests/setting-defaults.node.test.js`.
 
 // ========================= WHAT IS NOT HERE =========================
 // Round state (`ended`, `selVizPlayer`, `pauseActor`, `players`, `numPlayers`, the phase…) does not live in
 // `core/state`: nothing of it persists, and not persisting is the ROUND criterion (ADR-0038); the round left the engine
 // with `core/run-state` (ADR-0228). What `core/state` keeps is PAGE state — accessibility, language, device.
+
+// ========================= MUTATIONS CHECKED (ADR-0232 D4) =========================
+// Each applied, seen RED, and undone:
+//   · the bus hoisted out of the factory (one map for every store)        🔴 [Independence] — an event in one store reached the other
+//   · `blindMode` hoisted out of the factory (one binding for every store)  🔴 [Independence] — a write in one store changed the other
+//   · `setMenuIndexOnValue` without its `emit`                             🔴 cada setter avisa — it was GREEN before this block existed
+//   · `setOutlineBgValue` telling `hcOutlineFg`                              🔴 cada setter avisa
+//   · `setCameraControlValue` telling the raw value, not the sanitised one 🔴 cada setter avisa

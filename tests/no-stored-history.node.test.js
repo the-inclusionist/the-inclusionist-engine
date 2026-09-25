@@ -26,15 +26,15 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
 /**
  * Every write to storage, in any of the forms this repository uses.
- * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root hands them (`port.set(`/`port.setBool(` in the
- * settings store the root builds, ADR-0232 D4; `port.set(` in `setLocale`): without that form this sieve went blind to them, and
- * their inventory lines read as orphans.
+ * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root hands them (`port.set(` in the settings store
+ * the root builds, ADR-0232 D4, and in `setLocale`): without that form this sieve went blind to them, and their inventory lines
+ * read as orphans.
  * ⚠️ And since ADR-0232 D2b a module keeps the store the root hands it under its own name (`_store?.setJSON(` in `render/crt`,
  * `lqStore?.set(` in `render/lq-filter`, `ctx?.store.setJSON(` in `render/high-contrast`): any `…store`/`…Store` binding, with
  * optional chaining, is a write — the same blindness, one refactor later. And `platform/storage` itself writes through the
  * backend it is GIVEN (`backend.setItem(`), no longer through the global.
  */
-const ESCREVE = /(?:^|[^\w.])(?:ctx\??\.)?\w*[sS]tore\??\.(?:set|setBool|setJSON)\s*\(|port\.set(?:Bool)?\s*\(|(?:localStorage|sessionStorage|backend)\??\.setItem|indexedDB/;
+const ESCREVE = /(?:^|[^\w.])(?:ctx\??\.)?\w*[sS]tore\??\.(?:set|setBool|setJSON)\s*\(|port\.set\s*\(|(?:localStorage|sessionStorage|backend)\??\.setItem|indexedDB/;
 
 function ficheirosTs(dir = RAIZ) {
   const saida = [];
