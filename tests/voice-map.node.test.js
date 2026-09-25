@@ -68,7 +68,16 @@ describe('a gramática fechada é o que o reconhecedor pode devolver', () => {
   it('🔴 [Right] e os nomes do MENU entram enquanto ele está aberto (ADR-0194)', () => {
     const g = voiceGrammar('pt', ['Voltar ao jogo', 'Configurações de inclusão']);
     expect(g, 'dizer o nome de um item não o alcançaria').toContain('voltar ao jogo');
-    expect(g).toContain('configuracoes de inclusao');
+    // 🔴 AS THE LANGUAGE WRITES IT (ADR-0194 §1): stripped of its accents, «configuracoes» is outside the model's vocabulary and
+    // the recogniser drops it — the name goes mute, the defect «acao» already was for the first position.
+    expect(g, 'o nome entrou sem acento e o modelo não o conhece').toContain('configurações de inclusão');
+    expect(g).not.toContain('configuracoes de inclusao');
+  });
+
+  it('⚠️ [Boundary] o número de um nome fica — «Jogador 1» e «Jogador 2» não viram o mesmo nome', () => {
+    const g = voiceGrammar('pt', ['Jogador 1', 'Jogador 2']);
+    expect(g).toContain('jogador 1');
+    expect(g).toContain('jogador 2');
   });
 
   it('[Zero] um nome vazio não entra — uma cadeia vazia casaria com tudo', () => {
@@ -114,3 +123,6 @@ describe('quando uma palavra ouvida vira uma pressão', () => {
 });
 
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-voz-em-comando.py`.
+// 2026-09-25 (ADR-0194 §1):
+//   VM-A a menu name enters the grammar through the accent-stripping `wordsOf` again   🔴 «os nomes do MENU entram»
+//   VM-B `spokenText` drops digits                                                    🔴 «o número de um nome fica»

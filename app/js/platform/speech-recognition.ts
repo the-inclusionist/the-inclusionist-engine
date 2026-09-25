@@ -59,8 +59,12 @@ export function createOnDeviceRecognition(api: RecognitionApi, language: string)
 /** A command heard: a direction word, or the name of an item of the open menu. */
 export type HeardCommand = { readonly kind: 'palavra'; readonly word: string } | { readonly kind: 'item'; readonly name: string };
 
-/** How a heard text is compared: lower case, letters and spaces only. */
-export const spokenText = (t: string): string => t.toLowerCase().normalize('NFC').replace(/[^\p{L}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+/**
+ * A name or a heard text as a recogniser writes it: lower case, letters, digits and single spaces — and the ACCENTS KEPT, because
+ * a closed grammar word spelled without them is not in the model's vocabulary and is dropped (`input/voice-map`, «ação»).
+ * The digit stays so «Jogador 1» and «Jogador 2» never collapse into one name.
+ */
+export const spokenText = (t: string): string => t.toLowerCase().normalize('NFC').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
 export interface CommandReader {
   /** The menu's item names now on screen (already as spoken). */

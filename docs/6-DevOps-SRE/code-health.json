@@ -761,10 +761,10 @@
       "fanIn": 3
     },
     "input/voice-map.ts": {
-      "codeLines": 70,
+      "codeLines": 71,
       "decisionNodes": 10,
       "maxDepth": 2,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 5,
       "statefulEdges": 0,
@@ -1018,7 +1018,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "platform/speech.ts": {
       "codeLines": 21,

@@ -15,6 +15,7 @@
 // table, which is the Dev's decision written down.
 
 import type { Action } from '../core/actions.js';
+import { spokenText } from '../platform/speech-recognition.js';
 
 /**
  * Every word of one language, by position.
@@ -81,12 +82,13 @@ function wordsOf(sentence: string): string[] {
  * says something that is not a command: the lab measured free speech being pushed to the nearest word («configurações de
  * inclusão» → «quatro»). That is the cost of the closed list and the reason the words are short and unlike each other.
  * ⚠️ `extra` is what the MENU is showing right now (ADR-0194): saying the name of an item activates it, so those words join the
- * grammar while that menu is open and leave with it.
+ * grammar while that menu is open and leave with it — AS THE LANGUAGE WRITES THEM (§1, «as shown»), accents kept: stripped,
+ * «configurações» is not in the model's vocabulary and the name goes mute, the same defect «acao» was.
  */
 export function voiceGrammar(language: string, extra: readonly string[] = []): readonly string[] {
   const all = new Set<string>();
   for (const words of Object.values(voiceWordsFor(language))) for (const p of words) all.add(p.toLowerCase());
-  for (const e of extra) { const clean = wordsOf(e).join(' '); if (clean) all.add(clean); }
+  for (const e of extra) { const clean = spokenText(e); if (clean) all.add(clean); }
   return [...all];
 }
 
