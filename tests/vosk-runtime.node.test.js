@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadVoskRuntime, commandModelId, createBundleLoader, VOICE_RUNTIME_FILES } from '../app/js/platform/vosk-runtime.js';
 import { HEAVY_FILES, deliveryPath } from '../app/js/platform/heavy.js';
+import { modelArchive, wordGraph, streamOf } from './fixtures/vosk-archive.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
 const urlOf = (id) => HEAVY_FILES.find((p) => p.id === id).url;
@@ -150,4 +151,45 @@ describe('nada é carregado sem ter sido conferido', () => {
   });
 });
 
+/*
+ * 🔴 THE LOADED MODEL'S VOCABULARY (ADR-0194 §4): the runtime keeps the model's words inside its worker, so the load hands the
+ * page a way to read them from the archive — THE SAME ADDRESS the worker was given, so the words are the loaded model's and
+ * never another language's. Through the `fetch` the root lends (ADR-0232 D4); without one there is no `vocabulary` at all.
+ */
+describe('the loaded model\'s vocabulary', () => {
+  const graph = (words) => modelArchive([{ path: 'vosk-model-small-pt-0.3/Gr.fst', data: wordGraph({ input: words, output: words }) }]);
+  const fetchOf = (bytes) => {
+    const asked = [];
+    return { asked, fetch: async (u) => { asked.push(u); return { ok: true, body: streamOf(bytes).stream }; } };
+  };
+
+  it('🔴 [Right] read from the MODEL the worker opened, at its delivery address, through the lent fetch', async () => {
+    const api = apiFalsa();
+    const lent = fetchOf(await graph(['<eps>', 'configurações']));
+    const r = await loadVoskRuntime({ base: BASE, language: 'pt-BR', hasFile: cacheCom(), ...api, fetch: lent.fetch });
+    expect(lent.asked, 'the archive was read before anyone asked for the words').toEqual([]);
+    const words = await r.vocabulary();
+    expect(lent.asked, 'the words were read from another file than the model the worker opened').toEqual([api.pedidos[1][1]]);
+    expect(lent.asked[0]).toBe(BASE + deliveryPath(urlOf('commands:model:pt')));
+    expect(words.has('configurações')).toBe(true);
+  });
+
+  it('🎯 [Zero] no fetch lent: the load carries no vocabulary — nothing claims to know what it cannot read', async () => {
+    const r = await loadVoskRuntime({ base: BASE, language: 'pt-BR', hasFile: cacheCom(), ...apiFalsa() });
+    expect(r.ok).toBe(true);
+    expect(r.vocabulary).toBeUndefined();
+  });
+
+  it('⚠️ [Error] a fetch that fails or answers not-ok is «unknown» (null), never a rejection', async () => {
+    const failing = await loadVoskRuntime({ base: BASE, language: 'pt-BR', hasFile: cacheCom(), ...apiFalsa(), fetch: async () => { throw new Error('offline'); } });
+    await expect(failing.vocabulary()).resolves.toBeNull();
+    const notOk = await loadVoskRuntime({ base: BASE, language: 'pt-BR', hasFile: cacheCom(), ...apiFalsa(), fetch: async () => ({ ok: false, body: null }) });
+    await expect(notOk.vocabulary()).resolves.toBeNull();
+  });
+});
+
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-vosk-runtime.py`.
+// MUTATIONS CHECKED (2026-09-25, the vocabulary):
+//   R1 the words read from another file than the model's             🔴 read from the MODEL the worker opened
+//   R2 a vocabulary offered with no fetch to read it                 🔴 no fetch lent: the load carries no vocabulary
+//   R3 a failing fetch rejects instead of answering null             🔴 a fetch that fails or answers not-ok

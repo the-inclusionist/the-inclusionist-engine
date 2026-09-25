@@ -149,6 +149,12 @@ const TOCAM_NA_REDE = {
     + 'that points its worker threads at the delivery too (ADR-0216): a worker left to itself asks the CDN the library was '
     + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '
     + 'The voice and the reading both load it from here, so the rule is written once',
+  'platform/vosk-runtime.ts': 'LOCAL. The host\'s `fetch`, lent by the root (ADR-0232 D4), reads the command MODEL\'S archive — '
+    + 'the same `heavy/` address on the page\'s own origin the recogniser\'s worker opens, answered from the checked cache — only '
+    + 'to learn the words the model knows (ADR-0194 §4, `platform/vosk-vocabulary`); the read stops once the word list is read',
+  'ui/voice-control.ts': 'LOCAL. It names the host\'s `fetch` only to hand it on to `platform/vosk-runtime` above, which reads '
+    + 'the model\'s vocabulary with it at `heavy/` on the page\'s own origin (ADR-0194 §4) — here because the primitive is named '
+    + 'where it is handed over, like the reading worker\'s',
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `heavy/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `deliveryPath`, never an upstream host, and only '
     + 'after the checked cache holds every file',

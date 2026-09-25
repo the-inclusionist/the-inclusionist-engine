@@ -241,6 +241,110 @@ describe('ui/voice-control — a name heard activates its item', () => {
   });
 });
 
+/* ===================== A NAME THE MODEL CANNOT HEAR IS REPORTED (ADR-0194 §4, ADR-0169) ===================== */
+// 🎯 Kaldi drops a grammar word its vocabulary lacks, in silence, inside the runtime's worker — the item goes mute for the
+// child, who can still walk to it with the direction words. The adult reads it once in `problems`: the item and the word by
+// name, what it costs, and the fix. The vocabulary here is the fake runtime's (`load.vocabulary`), as the real one reads it
+// from the model's archive (`platform/vosk-vocabulary`).
+describe('ui/voice-control — a menu name with a word the model lacks is reported', () => {
+  const KNOWN = new Set(['configurações', 'de', 'inclusão', 'voltar', 'ao', 'jogo', 'acima', 'abaixo']);
+  /** A bench whose runtime knows `words`, answered when `release()` is called (or at once), and whose menu a case can change. */
+  const withVocabulary = async (words = KNOWN, { menu: first = [], held = false } = {}) => {
+    let menu = first, release;
+    const answer = held ? new Promise((r) => { release = () => r(words); }) : Promise.resolve(words);
+    const b = bench({
+      menuWords: () => menu,
+      loadRuntime: async (d) => { b.log.loads += 1; b.log.lastLoad = d; return { ok: true, model: MODEL, vocabulary: () => answer }; },
+    });
+    await b.control.apply(true);
+    if (!held) { await answer; await Promise.resolve(); }
+    return { ...b, show: (names) => { menu = names; b.control.refreshGrammar(); }, release: async () => { release(); await answer; await Promise.resolve(); } };
+  };
+
+  it('🔴 [Right] one line, in English, naming the item, the word, the cost for the child and the fix', async () => {
+    const b = await withVocabulary();
+    b.show(['Voltar ao jogo', 'Boreste']);
+    expect(b.log.reported, 'the unsayable name went unreported').toHaveLength(1);
+    const line = b.log.reported[0];
+    expect(line, 'the line does not name the item').toContain('"Boreste"');
+    expect(line, 'the line does not name the word the model lacks').toContain('"boreste"');
+    expect(line, 'the line does not say what it costs the child').toMatch(/cannot choose this item by saying its name/);
+    expect(line, 'the line does not give the fix').toMatch(/reword the item's label in the pt-BR dictionary/);
+    expect(line).toMatch(/ADR-0194/);
+  });
+
+  it('🔴 [Right] only the words the model lacks are named — and accents are the model\'s spelling, not noise', async () => {
+    const b = await withVocabulary();
+    b.show(['Configurações de inclusão', 'Configuracoes do jogo']);
+    expect(b.log.reported).toHaveLength(1);
+    expect(b.log.reported[0]).toContain('"Configuracoes do jogo"');
+    expect(b.log.reported[0], 'a word the model knows was named as missing').not.toContain('"jogo"');
+    expect(b.log.reported[0]).toContain('"configuracoes", "do"');
+  });
+
+  it('⚠️ [Boundary] reported ONCE per item — a menu that opens again does not fill `problems` with the same line', async () => {
+    const b = await withVocabulary();
+    b.show(['Boreste']);
+    b.show([]);
+    b.show(['Boreste']);
+    expect(b.log.reported).toHaveLength(1);
+  });
+
+  it('🔴 [Right] names already showing when the vocabulary arrives are checked then — it is read after the child can speak', async () => {
+    const b = await withVocabulary(KNOWN, { menu: ['Boreste'], held: true });
+    expect(b.log.said, 'the vocabulary delayed «ready»').toEqual([pt['sr.voice.ready']]);
+    expect(b.log.reported).toEqual([]);
+    await b.release();
+    expect(b.log.reported, 'the name on screen when the words arrived was never checked').toHaveLength(1);
+    expect(b.log.reported[0]).toContain('"Boreste"');
+  });
+
+  it('🎯 [Zero] every word known: nothing is reported', async () => {
+    const b = await withVocabulary();
+    b.show(['Voltar ao jogo', 'Configurações de inclusão']);
+    expect(b.log.reported).toEqual([]);
+  });
+
+  it('🎯 [Zero] a vocabulary that cannot be read (null), or a runtime with none: nothing is reported — no line beats a false one', async () => {
+    const unknown = await withVocabulary(null);
+    unknown.show(['Boreste']);
+    expect(unknown.log.reported).toEqual([]);
+    let menu = [];
+    const none = bench({ menuWords: () => menu });
+    await none.control.apply(true);
+    menu = ['Boreste'];
+    none.control.refreshGrammar();
+    expect(none.log.reported).toEqual([]);
+  });
+
+  it('⚠️ [Boundary] the words of a recogniser already replaced are dropped — a late pt vocabulary does not judge es names', async () => {
+    let lang = 'pt-BR', release;
+    const late = new Promise((r) => { release = () => r(new Set(['voltar'])); });
+    const b = bench({
+      language: () => lang,
+      menuWords: () => ['Volver al juego'],
+      loadRuntime: async (d) => {
+        b.log.loads += 1; b.log.lastLoad = d;
+        return { ok: true, model: MODEL, vocabulary: () => (d.language === 'pt-BR' ? late : Promise.resolve(null)) };
+      },
+    });
+    await b.control.apply(true);
+    lang = 'es-MX';
+    await b.control.languageChanged();
+    release();
+    await late;
+    await Promise.resolve();
+    expect(b.log.reported, 'the old model\'s words reported the new language\'s names').toEqual([]);
+  });
+
+  it('🔴 [Right] the runtime is handed the fetch the root lent — it is how the real vocabulary is read', async () => {
+    const fetch = async () => ({ ok: false, body: null });
+    const b = bench({ fetch });
+    await b.control.apply(true);
+    expect(b.log.lastLoad.fetch, 'the runtime reads the archive with another fetch than the lent one').toBe(fetch);
+  });
+});
+
 describe('ui/voice-control — what cannot start is SAID, and the icon goes back to off', () => {
   it('🔴 [Right] files that never came down: the microphone is NEVER opened, the child hears why, and the 👄 turns off', async () => {
     const b = bench({ loadRuntime: async () => ({ ok: false, missing: ['comandos:pt:modelo'] }) });
@@ -508,3 +612,11 @@ describe('the language changed', () => {
 //   W11 an item command answers with the spoken form, not the shown name   🔴 a whole name …; «voltar» waits (and voice-map)
 //   W12 the confirm position is another one (`MENU_CONFIRM = 'action1'`)    🔴 a whole name …; «voltar» waits
 //   W13 position commands dropped                                           🔴 a word heard PRESSES …; a partial that GROWS …
+// ADR-0194 §4 (2026-09-25):
+//   C1 a menu change does not check its names                               🔴 one line …; only the words …; reported ONCE
+//   C2 the same item reported on every opening                              🔴 reported ONCE per item
+//   C3 names showing when the vocabulary arrives are not checked            🔴 names already showing …
+//   C4 a replaced recogniser's vocabulary is kept                           🔴 the words of a recogniser already replaced
+//   C5 names compared without their accents                                 🔴 only the words …; every word known
+//   C6 the lent fetch not handed to the runtime                             🔴 the runtime is handed the fetch
+//   C8 an unknown vocabulary taken as an empty one                          🔴 names already showing; a vocabulary that cannot be read; replaced

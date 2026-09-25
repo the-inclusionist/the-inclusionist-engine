@@ -30,7 +30,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2219,
+      "codeLines": 2220,
       "decisionNodes": 283,
       "maxDepth": 4,
       "fanOut": 93,
@@ -1111,14 +1111,24 @@
       "fanIn": 1
     },
     "platform/vosk-runtime.ts": {
-      "codeLines": 63,
-      "decisionNodes": 9,
+      "codeLines": 80,
+      "decisionNodes": 12,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 7,
+      "worstFunction": 8,
       "statefulEdges": 0,
       "fanIn": 2
+    },
+    "platform/vosk-vocabulary.ts": {
+      "codeLines": 116,
+      "decisionNodes": 20,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 9,
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "render/canvas.ts": {
       "codeLines": 13,
@@ -1891,12 +1901,12 @@
       "fanIn": 1
     },
     "ui/voice-control.ts": {
-      "codeLines": 132,
-      "decisionNodes": 15,
+      "codeLines": 162,
+      "decisionNodes": 21,
       "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,
-      "worstFunction": 6,
+      "worstFunction": 7,
       "statefulEdges": 0,
       "fanIn": 1
     },

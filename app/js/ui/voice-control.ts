@@ -13,7 +13,9 @@
 // named item (`pointAt`), and the confirm position is pressed on the virtual controller like any other spoken word — so the
 // item is activated by the same path, with the same spoken feedback, as a child confirming it with the cursor on it. WHEN a
 // name fires is the reader's (`input/voice-map` over `platform/speech-recognition`): at once, unless another item's name
-// continues it («voltar» / «voltar ao jogo»), which waits for the end of the utterance (§3).
+// continues it («voltar» / «voltar ao jogo»), which waits for the end of the utterance (§3). A LOCKED item's name is heard
+// too and takes the same path: the confirm reaches the item's own press, which says its reason and does nothing (§5, ADR-0161).
+// A name with a word the loaded model lacks cannot be heard at all, and is a line of `problems` (§4).
 //
 // ⚠️ A SPOKEN COMMAND IS A TAP, NOT A HOLD. The word arrives, the position is pressed and let go — and the latch (ADR-0211,
 // always on for speech) is what keeps a direction held afterwards. That division is the whole reason the latch is forced there:
@@ -58,6 +60,8 @@ export interface VoiceControlDeps {
    */
   readonly hasFile: VoskDeps['hasFile'];
   readonly loadBundle: VoskDeps['loadBundle'];
+  /** The host's `fetch`, handed on to read the loaded model's vocabulary (ADR-0194 §4). Without it an unsayable name goes unreported. */
+  readonly fetch?: VoskDeps['fetch'];
   readonly getUserMedia: VoiceListenerDeps['getUserMedia'];
   readonly createContext: VoiceListenerDeps['createContext'];
   readonly loadRuntime?: (deps: VoskDeps) => Promise<VoskLoad>;
@@ -90,14 +94,40 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
   let listener: VoiceListener | null = null;
   let commands: VoiceCommands | null = null;
   let grammarGiven = '';
+  /** The words the model now listening knows, once read (`platform/vosk-vocabulary`); `null` while unknown. */
+  let vocabulary: ReadonlySet<string> | null = null;
+  /** Bumped by every stop, so a vocabulary that arrives for a recogniser already replaced is dropped. */
+  let generation = 0;
+
+  /** The open menu's names that can enter the grammar. A one-letter name stays out: in a closed grammar every short noise lands on it. */
+  const sayableNames = (): readonly string[] => d.menuWords().filter((n) => spokenText(n).length > 1);
 
   /**
-   * The open menu's names, handed to the reader, and the grammar with them. A one-letter name stays out: in a closed grammar
-   * it is where every short noise would land.
+   * 🔴 A NAME THE MODEL CANNOT HEAR IS SAID TO THE ADULT (ADR-0194 §4, ADR-0169): Kaldi drops a grammar word its vocabulary lacks,
+   * in silence, and the item goes mute for the child — she can still walk to it with the direction words. One line per item and
+   * language, naming the words, the cost and the fix. Nothing is said while the vocabulary is unknown: no line beats a false one.
    */
+  const reportUnsayable = (names: readonly string[]): void => {
+    const known = vocabulary;
+    if (!known) return;
+    const language = d.language();
+    for (const name of names) {
+      const lacking = [...new Set(spokenText(name).split(' '))].filter((w) => w && !known.has(w));
+      const kind = `unsayable:${language}:${name}`;
+      if (!lacking.length || said.has(kind)) continue;
+      said.add(kind);
+      d.report(`voice control: the menu item "${name}" has ${lacking.length === 1 ? 'a word' : 'words'} the ${language} speech `
+        + `model does not know (${lacking.map((w) => `"${w}"`).join(', ')}) — the child cannot choose this item by saying its name, `
+        + `only by walking to it with the direction words; reword the item's label in the ${language} dictionary with words the `
+        + 'model knows (ADR-0194 §4)');
+    }
+  };
+
+  /** The open menu's names, handed to the reader and checked against the model, and the grammar with them. */
   const followMenu = (): readonly string[] => {
-    const names = d.menuWords().filter((n) => spokenText(n).length > 1);
+    const names = sayableNames();
     commands?.items(names);
+    reportUnsayable(names);
     return voiceGrammar(d.language(), names);
   };
 
@@ -117,6 +147,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     const going = listener;
     listener = null;
     commands = null;
+    vocabulary = null;
+    generation += 1;
     void going?.stop();
   };
 
@@ -141,7 +173,9 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     let load: VoskLoad;
     const language = d.language();
     try {
-      load = await loadRuntime({ base: d.base, language, hasFile: d.hasFile, loadBundle: d.loadBundle });
+      load = await loadRuntime({
+        base: d.base, language, hasFile: d.hasFile, loadBundle: d.loadBundle, ...(d.fetch ? { fetch: d.fetch } : {}),
+      });
     } catch (e) {
       failed('runtime', `voice control: the recogniser did not open (${e instanceof Error ? e.message : String(e)}) — the child `
         + 'cannot play by speaking; check that the delivery carries the command files', t('sr.voice.failed'));
@@ -182,6 +216,14 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     // a menu that opened or closed while the microphone was opening changed the names after the grammar above was built
     api.refreshGrammar();
     d.say(t('sr.voice.ready'));
+    // 📌 THE VOCABULARY IS READ AFTER THE CHILD CAN SPEAK, never before: it is a report for the adult, and reading the model's
+    // archive a second time must not delay the first command. It checks the names showing when it arrives and every later menu.
+    const mine = generation;
+    void load.vocabulary?.().then((words) => {
+      if (mine !== generation || !listener) return;
+      vocabulary = words;
+      reportUnsayable(sayableNames());
+    });
   };
 
   const api: VoiceControl = {

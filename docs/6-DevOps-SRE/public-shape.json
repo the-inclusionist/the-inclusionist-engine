@@ -1827,6 +1827,7 @@
     ],
     "interface VoskDeps": [
       "base",
+      "fetch?",
       "hasFile",
       "language",
       "loadBundle"
@@ -3235,6 +3236,7 @@
       "base",
       "controller",
       "createContext",
+      "fetch?",
       "getUserMedia",
       "hasFile",
       "language",

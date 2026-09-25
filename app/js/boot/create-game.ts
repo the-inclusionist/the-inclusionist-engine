@@ -4190,6 +4190,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       after: (fn, ms) => { win.setTimeout(fn, ms); },
       // ⚠️ THE ADDRESS IS ABSOLUTE AND THE BUNDLER MUST NOT FOLLOW IT: the recogniser arrives with the delivery at runtime.
       hasFile: hasHeavyFile, loadBundle: createBundleLoader((url) => import(/* @vite-ignore */ url)),
+      // the model's vocabulary is read from its archive, so a menu name the model cannot hear is a line of `problems` (ADR-0194 §4)
+      fetch: (url) => win.fetch(url),
       getUserMedia, createContext: () => new HostAudioContext!() as never,
     });
     stateOn('voiceControl', (on) => { void voiceControl?.apply(on); });

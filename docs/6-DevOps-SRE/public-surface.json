@@ -918,6 +918,9 @@
     "createBundleLoader",
     "loadVoskRuntime"
   ],
+  "platform/vosk-vocabulary.ts": [
+    "readModelVocabulary"
+  ],
   "render/canvas.ts": [
     "CanvasDoc",
     "PixelBrush",

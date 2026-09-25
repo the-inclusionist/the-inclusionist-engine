@@ -23,6 +23,7 @@
 
 import { HEAVY_FILES, deliveryPath } from './heavy.js';
 import { commandsLanguageOf } from './heavy-catalogue.js';
+import { readModelVocabulary } from './vosk-vocabulary.js';
 
 /** The three files of the runtime. The model is chosen by language, below. */
 export const VOICE_RUNTIME_FILES = ['commands:runtime', 'commands:runtime:worker', 'commands:runtime:wasm'] as const;
@@ -72,10 +73,24 @@ export interface VoskDeps {
    * put in the page once per address. REQUIRED, and injected so a gate never imports 3 MiB of wasm loader.
    */
   readonly loadBundle: (absoluteUrl: string) => Promise<VoskApi>;
+  /**
+   * The host's `fetch`, lent by the root, to read the MODEL'S VOCABULARY from the archive the recogniser opens
+   * (`platform/vosk-vocabulary`, ADR-0194 §4): the runtime keeps it inside its worker and tells the page nothing. Optional; without
+   * it the load carries no `vocabulary`, and a name with a word the model lacks goes unreported.
+   */
+  readonly fetch?: (absoluteUrl: string) => Promise<{ readonly ok: boolean; readonly body: ReadableStream<BufferSource> | null }>;
 }
 
 export type VoskLoad =
-  | { readonly ok: true; readonly model: VoskModel }
+  | {
+    readonly ok: true;
+    readonly model: VoskModel;
+    /**
+     * The words the loaded model knows, read from its archive once asked — `null` when they cannot be read. Present only when the
+     * deps lent a `fetch`.
+     */
+    readonly vocabulary?: () => Promise<ReadonlySet<string> | null>;
+  }
   /** The catalogue ids that are not in the checked cache — `language` when the project has no model for it. */
   | { readonly ok: false; readonly missing: readonly string[] };
 
@@ -135,5 +150,18 @@ export async function loadVoskRuntime(d: VoskDeps): Promise<VoskLoad> {
     throw new Error(`vosk-runtime: the bundle asked for a file this delivery does not carry: ${logicalPath}`);
   };
   // 📌 `-1` is the bundle's «say nothing»: a recogniser that logs every frame fills a school machine's console with noise.
-  return { ok: true, model: await api.createModel(at(modelId), beside, -1) };
+  const model = await api.createModel(at(modelId), beside, -1);
+  const { fetch } = d;
+  if (!fetch) return { ok: true, model };
+  // the SAME address the worker was given: the service worker answers both from the checked cache, and the words read are the
+  // words of the model that was loaded, never another language's
+  const vocabulary = async (): Promise<ReadonlySet<string> | null> => {
+    try {
+      const r = await fetch(at(modelId));
+      return r.ok && r.body ? await readModelVocabulary(r.body) : null;
+    } catch {
+      return null;
+    }
+  };
+  return { ok: true, model, vocabulary };
 }

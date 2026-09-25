@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A NAME SAID IN A MENU ACTIVATES ITS ITEM — THROUGH THE ROOT THE CHILD ACTUALLY USES (ADR-0194 §1–§3, §5; issue #184).
+// A NAME SAID IN A MENU ACTIVATES ITS ITEM — THROUGH THE ROOT THE CHILD ACTUALLY USES (ADR-0194 §1–§5; issue #184).
 //
 // `tests/voice-control.node.test.js` proves the control against doubles of the menu. What only a real root can prove is the
 // WIRING: that the 👄 path hands the open menu's names to the reader, that a menu opening is what refreshes them, and that a name
@@ -14,10 +14,14 @@ import { spokenText } from '../app/js/platform/speech-recognition.js';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 /** What the fake microphone received: the grammars, and the recogniser's two callbacks. `vi.mock` is hoisted, so it reads this. */
-const heard = { listens: 0, grammars: [], onPartial: null, onFinal: null };
+const heard = { listens: 0, grammars: [], onPartial: null, onFinal: null, vocabulary: null };
 vi.mock('../app/js/platform/vosk-runtime.js', async (original) => ({
   ...(await original()),
-  loadVoskRuntime: async () => ({ ok: true, model: { KaldiRecognizer: function () { /* never built: the listener is a double */ } } }),
+  // the model's words, when a case sets them — and only if the ROOT lent a `fetch` to read them with, as the real runtime needs
+  loadVoskRuntime: async (d) => ({
+    ok: true, model: { KaldiRecognizer: function () { /* never built: the listener is a double */ } },
+    ...(heard.vocabulary && typeof d.fetch === 'function' ? { vocabulary: async () => heard.vocabulary } : {}),
+  }),
 }));
 vi.mock('../app/js/platform/voice-listener.js', async (original) => ({
   ...(await original()),
@@ -48,7 +52,7 @@ const visible = (el) => !!el && el.offsetParent !== null;
 
 let motor;
 beforeEach(async () => {
-  Object.assign(heard, { listens: 0, grammars: [], onPartial: null, onFinal: null });
+  Object.assign(heard, { listens: 0, grammars: [], onPartial: null, onFinal: null, vocabulary: null });
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
@@ -138,6 +142,30 @@ describe('the 👄 in a real root: a name said activates its item', () => {
       .toBe(false);
   });
 
+  /*
+   * 🔴 ADR-0194 §4 THROUGH THE ROOT: a name with a word the loaded model lacks is a line of `problems`. The fake runtime answers
+   * a vocabulary only when the root lent it a `fetch` — the real one reads the words from the model's archive with it — so this
+   * holds the wiring as well as the line.
+   */
+  it('🔴 [Right] a pause item whose name has a word the model lacks is a line of `problems` naming both, when its menu opens', async () => {
+    // the card is built but closed: its names are known here, and are not yet names the child can say
+    const name = accessibleLabel(pauseItem('options'));
+    const lacking = spokenText(name).split(' ').at(-1);
+    const names = [...document.querySelectorAll('#vp-pause-0 .pm-btn')].map(accessibleLabel);
+    heard.vocabulary = new Set(names.flatMap((n) => spokenText(n).split(' ')).filter((w) => w !== lacking));
+    motor.settings.setVoiceControlValue(false);
+    heard.onPartial = null;
+    motor.settings.setVoiceControlValue(true);
+    await until(() => heard.onPartial);
+    await tick();
+    const line = () => motor.problems.find((l) => l.includes(`"${name}"`));
+    expect(line(), 'a name nobody could say yet — its menu is closed — was reported').toBeUndefined();
+    motor.pause.show(0);
+    await until(line);
+    expect(line(), 'the menu opened and its unsayable name never reached `problems`').toBeTruthy();
+    expect(line(), 'the line does not name the word the model lacks').toContain(`"${lacking}"`);
+  });
+
   // 📌 §3 («voltar» waits while «voltar ao jogo» may follow) is held with a fixed pair in the node suites
   // (`speech-recognition`, `voice-map`, `voice-control`): the engine's own pause card has no two names where one continues the
   // other, so a case here would pass by having nothing to wait for.
@@ -156,5 +184,9 @@ describe('the 👄 in a real root: a name said activates its item', () => {
 //   L3 a locked pause item pressed does not say its reason                 🔴 a LOCKED item's name
 //   L4 a locked pause item pressed goes on to act (its door opens)         🔴 a LOCKED item's name — it survived while the case
 //      said the first locked item, which has no action to take; it now says the game's options, which is a door
+//   W8 the root lends the recogniser no `fetch`                            🔴 a pause item whose name has a word the model lacks
+//   C1 a menu opening does not check its names (`voice-control`)           🔴 a pause item whose name … — it survived while the
+//      case opened the card before the vocabulary arrived (the arrival's own check answered); it opens the card after
+//   C6 the voice control does not hand the fetch on                        🔴 a pause item whose name …
 //   (the panel case first said the back item, «Voltar», and survived W2 and W6: «voltar» is also the word for button 3,
 //    which closes a panel by itself — so it said a switch instead)
