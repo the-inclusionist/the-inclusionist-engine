@@ -123,8 +123,8 @@ import { readStoredScene, storeScene } from '../ui/motion-scene.js';
 import { initSettingsVisual } from '../ui/settings-visual.js';
 import { initSettingsEmpathy } from '../ui/settings-empathy.js';
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
-import { initLqFilter, setLq, getLqT, lqFilter } from '../render/lq-filter.js';
-import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
+import { createLqFilter, type LqFilter } from '../render/lq-filter.js';
+import { createCrt, type Crt } from '../render/crt.js';
 import { initSettingsAudio, mountAudioInside, mountSoundInside, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn, toggleLabel } from '../ui/dom.js';
@@ -549,7 +549,19 @@ export interface Engine {
 
 
   // D4-B6 (render, layout)
-
+  /**
+   * THIS ROOT'S CRT (ADR-0232 D4): its live config, `apply()` (classes on `#game-region`, kept in the store) and
+   * `scanVars()`, which re-anchors the scanlines to real pixels. A game that scales its own stage with `ui/layout`'s
+   * `createLayout` passes `engine.crt.scanVars` as `afterScale`; a game with a CRT menu of its own reads and writes `cfg`
+   * and calls `apply()` here instead of importing `render/crt`, as it asks `gameSpeed`.
+   */
+  readonly crt: Crt;
+  /**
+   * THIS ROOT'S L→Q CONTRAST ENHANCEMENT (ADR-0232 D4): `filter()` for composing a CSS filter, `t()` the amount, `set(t)`
+   * to change it (kept in the store; the root recomposes the world's filter). A game asks here instead of importing
+   * `render/lq-filter`.
+   */
+  readonly lq: LqFilter;
 
   /**
    * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
@@ -978,7 +990,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function recomposeWorldFilter(): void {
     // what HELPS (the colour correction, the contrast enhancement) stays on the world as before; the SIMULATION is laid apart
     const enhancementKey = filterKey({ ...worldState, simulacao: null });
-    const enhancement = [enhancementKey ? (VIZ_FILTER[enhancementKey] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
+    const enhancement = [enhancementKey ? (VIZ_FILTER[enhancementKey] ?? '') : '', lq.filter()].filter(Boolean).join(' ');
     setVisionFilter(enhancement, 'mundo');
     const simulation = simulationSuspended() ? null : worldState.simulacao;
     simulationOverWorld.onlyInPlay(simulation ? (VIZ_FILTER[simulation] ?? '') : '', enhancement);
@@ -990,14 +1002,17 @@ export function createGame(o: CreateGameOptions): Engine {
    * CRT class until a toggle was pressed — `render/crt` was never started under `createGame`. It yields to a colour
    * correction, a simulation and the contrast enhancement; its scanlines are re-anchored to real pixels at every scale.
    */
-  initCrt({
+  const crt: Crt = createCrt({
+    region: () => $<HTMLElement>('#game-region'),
+    win,
     // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
     numPlayers: () => Math.max(1, (cartridge.players ?? []).length),
-    a11yVisualOn: () => filterKey(worldState) !== null || getLqT() > 0,
+    a11yVisualOn: () => filterKey(worldState) !== null || lq.t() > 0,
     store,
   });
-  initLqFilter({ onChange: recomposeWorldFilter, store });
-  if (getLqT() > 0) recomposeWorldFilter(); // the stored enhancement holds from boot
+  const { apply: applyCrt, scanVars: crtScanVars } = crt;
+  const lq: LqFilter = createLqFilter({ doc, onChange: recomposeWorldFilter, store });
+  if (lq.t() > 0) recomposeWorldFilter(); // the stored enhancement holds from boot
   else applyCrt(); // and the stored CRT too (the recompose above applies it when it runs)
 
   // 3. The dialog stack. The ctx is the same in every game — it is boilerplate, and repeated boilerplate is where
@@ -1690,7 +1705,7 @@ export function createGame(o: CreateGameOptions): Engine {
     animPanel.shell.card.insertBefore(animMaster, animPanel.shell.list);
 
     motion = initSettingsMotion({
-      t: translator.t, $, srSay, store, matchMedia: win.matchMedia,
+      t: translator.t, $, srSay, store, matchMedia: win.matchMedia, crt,
       // the SAME flags the quick bar's calm icon writes (see `sceneMotion`, above)
       rm: sceneMotion, saveRM: saveSceneMotion,
       getNumPlayers: () => (cartridge.players ?? [null]).length,
@@ -1856,7 +1871,7 @@ export function createGame(o: CreateGameOptions): Engine {
       getNumPlayers: () => players().length,
       getPlayers: () => cartridge.players ?? [],
       getVisualSettings: () => ({
-        lq: getLqT(), cbSafe: state.cbSafe,
+        lq: lq.t(), cbSafe: state.cbSafe,
         ownerColors: state.ownerColors, outlineFg: state.hcOutlineFg, outlineBg: state.hcOutlineBg,
         roleColors: { ...HC_ROLE_DEF },
       }),
@@ -1864,7 +1879,7 @@ export function createGame(o: CreateGameOptions): Engine {
       setSelectedPlayer: noEffect,
       setPlayerViz: noEffect,
       renderVisualAxes: noEffect,
-      setLq,
+      setLq: lq.set,
       setCbSafe: state.setCbSafeValue,
       // the panel's «restore» puts these back too (ADR-0188): their rows now exist where the game answered them
       setOwnerColors: state.setOwnerColorsValue, setOutlineFg: state.setOutlineFgValue, setOutlineBg: state.setOutlineBgValue,
@@ -4070,7 +4085,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
 
 
     // D4-B6
-
+    crt,
+    lq,
 
     measureFlashes: sampleWorldFlashes,
     overlays,

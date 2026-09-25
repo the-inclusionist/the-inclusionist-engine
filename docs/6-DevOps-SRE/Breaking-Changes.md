@@ -3408,7 +3408,52 @@ _Reserved: the rows land with the batch._
 
 ## DD · ADR-0232 D4-B6: render and layout become factories (issue #207)
 
-_Reserved: the rows land with the batch._
+**Who is affected:** a game that imports `render/canvas`'s canvas makers, `render/sprite-fx`'s `spriteToCanvas`, or
+anything stateful from `render/crt`, `render/lq-filter`, `render/high-contrast`, `ui/layout` or `ui/settings-motion`, or
+builds a `ViewportsCtx`, `VizSettersCtx` or `SettingsMotionCtx` by hand. A game that only calls `createGame` changes
+nothing in what the root mounts: the root builds its own CRT and L→Q enhancement and hands them down.
+
+📌 **Why:** outside the composition root a module imports by value only what holds no state and reaches no global
+(ADR-0232). The CRT config, the L→Q amount, the high-contrast palette and texture caches, the layout's player-count getter
+and the motion panel's selected player were one per page (module `let`s and mutated constants), so a second root read and
+wrote the first one's; and `render/canvas`, `render/crt`, `render/lq-filter` and `ui/layout` reached `document`, `window` or
+`location`. The helpers that hold nothing take the document as a parameter and stay functions; the modules that hold state
+become factories. 📏 One defect this cures, measured in the node suite: under an injected document (`host.doc`), the root's
+CRT looked `#game-region` up in the GLOBAL document, so it drew on the page's region or on none — never on the injected one.
+
+| old | new | migration |
+|---|---|---|
+| `render/canvas.js` `makeCanvas(w, h)` · `pixelCanvas(w, h, paint)` · `pixelTexture(w, h, paint)` | each takes the document FIRST: `makeCanvas(doc, w, h)`, `pixelCanvas(doc, w, h, paint)`, `pixelTexture(doc, w, h, paint)`; the new type `CanvasDoc` is `Pick<Document, 'createElement'>`. `tex` and `pixDisc` are unchanged | pass your root's document: `makeCanvas(doc, 16, 16)` |
+| `render/sprite-fx.js` `spriteToCanvas(art)` | `spriteToCanvas(doc, art)`; `outlineCanvas(src, thick)` keeps its shape and makes its canvases in `src.ownerDocument` | pass your root's document first |
+| `render/crt.js` `CRT`, `initCrt(deps)`, `applyCrt()`, `crtScanVars()` | removed. `createCrt({ region, win, numPlayers, a11yVisualOn, store })` returns a `Crt`: `cfg` (the live config), `apply()`, `scanVars()`. `region` is a getter for `#game-region`; `win` gives the pixel ratio. `CRT_DEFAULT` stays; `CrtCfg`, `CrtCtx` and `Crt` are new types | under `createGame`: use `engine.crt` (new, below) — `engine.crt.cfg` for `CRT`, `engine.crt.apply()` for `applyCrt()`. A game that is its own root builds one: `const crt = createCrt({ region: () => doc.querySelector('#game-region'), win, numPlayers, a11yVisualOn, store })` |
+| `render/lq-filter.js` `initLqFilter(ctx)`, `setLq(t)`, `getLqT()`, `lqFilter()`, `ensureLqFilter()` | removed. `createLqFilter({ doc, onChange, store })` returns an `LqFilter`: `filter()`, `t()`, `set(t)`; the `<filter>` node is created in `doc`. `LqFilterCtx` gains a REQUIRED `doc`. `lqCurve` and `lqName` stay pure | under `createGame`: `engine.lq` (new) — `engine.lq.set(t)`, `engine.lq.t()`, `engine.lq.filter()`. Its own root: `createLqFilter({ doc, onChange, store })` |
+| `render/high-contrast.js` `HC_ROLE`, `saveHcRole`, `initHighContrast`, `worldToTextureDirect`, `directBgTexture`, `directSpriteCanvas`, `directSpriteTexture`, `worldTexFor`, `spriteTexFor`, `clearWorldTexCache`, `clearSpriteTexCache` | removed as module functions. `createHighContrast(ctx)` returns a `HighContrast` with the same ten as members (`HC_ROLE` → `role`, `saveHcRole` → `saveRole`); `HighContrastCtx` gains a REQUIRED `doc: CanvasDoc`. `DIRECT_CFG`, `dcfg`, `dimDesat`, `HC_ROLE_DEF` and `HC_ROLE_KEYS` stay; `RolePalette` and `DirectTexSource` are now exported. **`createGame` does not build one** — the root has no world; a game that draws a tile world does | `const hc = createHighContrast({ ...yourCtx, doc })`, then `hc.role[k] = rgb; hc.saveRole()`, `hc.spriteTexFor('coin', mode)`, `hc.clearWorldTexCache()` |
+| `render/viewports.js` `ViewportsCtx` | gains REQUIRED `doc: CanvasDoc` (the low-vision overlay's canvas) and `hc: Pick<HighContrast, 'directBgTexture' \| 'directSpriteTexture'>` | pass your document and the world's `HighContrast` |
+| `render/viz-setters.js` `VizSettersCtx` | gains REQUIRED `hc: Pick<HighContrast, 'worldTexFor' \| 'spriteTexFor' \| 'clearWorldTexCache' \| 'clearSpriteTexCache'>` and `lqFilter: () => string` | pass the world's `HighContrast` and your `LqFilter`'s `filter` |
+| `ui/layout.js` `initLayout(deps)`, `layout()` | removed. `createLayout({ doc, win, numPlayers, afterScale, debug? })` returns a `Layout` with `layout()`. `afterScale` is REQUIRED: it runs after every scale, and is what re-anchors the scanlines — `layout()` used to call the page's one CRT by import. `debug` (optional) replaces reading `?debug=true` from `location`. `stageScale`, `applyScale`, `minimumTarget`, `belowFloor` and `barIntruders` stay pure; `LayoutCtx`, `LayoutDoc` and `Layout` are new types | see «how a game gets `afterScale`» below |
+| `ui/settings-motion.js` `getSelectedPlayer()`, `setSelectedPlayer(i)` | removed. The selected player lives in the panel: `SettingsMotionApi` gains `selectedPlayer()` and `setSelectedPlayer(i)` | `const motion = initSettingsMotion(ctx); motion.setSelectedPlayer(i)` |
+| `ui/settings-motion.js` `SettingsMotionCtx` | gains a REQUIRED `crt: Pick<Crt, 'cfg' \| 'apply'>` — the three CRT rows read and write that config | pass your root's CRT (`engine.crt` under `createGame`) |
+
+**How a game gets `afterScale` now.** Under `createGame`, the root ALREADY scales `#game-region` and re-anchors the CRT on
+every `resize` (its `applyResolution`), so a game that calls `layout()` only repeats it; it can drop the call. A game that
+keeps its own scaler passes the root's CRT: `createLayout({ doc, win, numPlayers: () => 1, afterScale: engine.crt.scanVars
+}).layout()`. A game that is its own root passes the `scanVars` of the CRT it built, or `() => {}` if it has none.
+
+The additive half, on the `gameSpeed`/`menuIndexOn`/`t` precedent: **`Engine.crt`** (the root's `Crt`) and **`Engine.lq`**
+(the root's `LqFilter`) — the instances the root's own motion and visual panels and its world-filter recomposition use, so
+what a game does through them reaches the world.
+
+📏 **Measured in the seven games, read-only, as information:** `game-2048` imports `initLayout` and `layout`
+(`app/js/boot/main.ts:15`, called at 183-185 with a `resize` listener) and has `ctx.engine`, so `engine.crt.scanVars` is
+its `afterScale` — or it drops the call. `pixi-15-puzzle` does the same (`app/js/boot/standalone.ts:30`, called at
+197-199) and holds `engine` from its own `createGame` (line 91). `game-platformer` is its own root (it calls no
+`createGame`): it imports `initLayout`/`layout` (`app/js/main.ts:167`, 225, 2076), `CRT`/`applyCrt`/`initCrt` (164,
+229, 1222), `lqFilter`/`setLq`/`getLqT`/`initLqFilter` (115, 883), eight names of `render/high-contrast` (120; `HC_ROLE`
+written at 1805-1812), `setSelectedPlayer` of `ui/settings-motion` (87, 2106), `initViewports` and `initVizSetters` (144,
+147), `spriteToCanvas` (`app/js/render/textures.ts:10`) and `makeCanvas`/`pixelCanvas`/`pixelTexture` in nine files
+(`main.ts`, `game/props.ts` and seven under `render/`) plus `tests/city-tex.node.test.js` — it builds `createCrt`, `createLqFilter`, `createHighContrast` and `createLayout`
+itself, with `afterScale: crt.scanVars`, and passes `doc` to every canvas maker. `game-whackwhack` and `pixi-15-puzzle`'s cartridge
+import only pure functions of `render/viz-setters`, which keep their shape; `game-chess`, `game-pinball` and `game-soccer` use none of this.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/layout.ts — the game's SCALE. Locks #game-region to a whole multiple of REAL PIXELS of 320×180 (per player) and
-// rescales the UI variables scoped to the canvas. Deps: ui/dom ($), core/screens, render/crt (crtScanVars). The player
-// count comes in through `initLayout`.
+// rescales the UI variables scoped to the canvas. Deps: core/screens. The pure arithmetic (`stageScale`, `applyScale`,
+// the target floor, the reporters' rules) is exported as functions; `createLayout` is the shell that measures a
+// document it is HANDED and calls `afterScale` (the root's CRT re-anchoring its scanlines) — ADR-0232 D4, issue #207.
 //
 // IT RESERVES NO SPACE FOR THE INTERPRETER: the Dev decided the interpreter appears IN FRONT of the screen while audio
 // plays, and disappears (see ui/vlibras), so the layout does not shift the game for it.
-import { $ } from './dom.js';
 import { screenBaseSize } from '../core/screens.js';
-
-import { crtScanVars } from '../render/crt.js';
 
 /**
  * THE TOUCH TARGET FLOOR, in CSS px, for a CSS scale factor `k` (ADR-0163).
@@ -80,12 +78,8 @@ export function barIntruders(barBox: Box | null, nodes: readonly NamedBox[]): st
 }
 
 
-// THE PLAYER COUNT COMES IN BY INJECTION. A module `let` imported as a live binding would be shared by any second game
-// the same page loads (ADR-0038). What comes in is the GETTER of the round the root owns; the remaining `let` holds the
-// function, not the number.
-let _countPlayers: () => number = () => 1;
-/** Wires the player count. Meant to be called once by the root, before the first `layout()`. */
-export function initLayout(deps: { numPlayers: () => number }): void { _countPlayers = deps.numPlayers; }
+/** The document a layout measures — only the lookup it uses. */
+export type LayoutDoc = Pick<Document, 'querySelector'>;
 
 /**
  * THE SHELL THAT GIVES THE AVAILABLE SPACE — by id OR by class, and both forms count the same.
@@ -96,8 +90,8 @@ export function initLayout(deps: { numPlayers: () => number }): void { _countPla
  * The consumer is not wrong to use the class: a document can have several screens, and an id is unique. Accepting both
  * is what makes the engine consumable by whoever did not copy its markup.
  */
-function findStageWrap(): HTMLElement | null {
-  return $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap');
+function findStageWrap(doc: LayoutDoc): HTMLElement | null {
+  return doc.querySelector<HTMLElement>('#stage-wrap') ?? doc.querySelector<HTMLElement>('.stage-wrap');
 }
 
 /**
@@ -138,28 +132,61 @@ export function applyScale(region: HTMLElement, e: Scale): void {
   region.style.setProperty('--alvo-min', minimumTarget(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
 }
 
-export function layout(): void {
-  const wrap = findStageWrap(); if (!wrap) return;
-  wrap.style.paddingRight = '0px';
-  const availW = wrap.clientWidth || 320;
-  const availH = wrap.clientHeight || 180;
-  // The screen grid sets the base (1=320×180, 2=640×180, 3-4=640×360).
-  const n = _countPlayers();
-  const { w: baseW, h: baseH } = screenBaseSize(n);
-  // Floor k=2: EACH viewport is at least 640×360, so 2×2 = 1280×720 fits a government Chromebook (1366×768).
-  // ADR-0001: SCALE locked to WHOLE REAL PIXELS. Each art pixel = kDev PHYSICAL pixels (whole) → scanlines ALWAYS regular
-  // and uniform art at ANY dpr. Tolerates ≤5 logical px of crop per side (the −10): base·kDev − avail·dpr ≤ 10·kDev ⇒
-  // kDev ≤ avail·dpr/(base−10). (The Dev chose whole REAL pixels.) The arithmetic lives in `stageScale` (ADR-0163), so the
-  // engine applies it to every cartridge.
-  const dpr = window.devicePixelRatio || 1;
-  const ratio = stageScale(availW, availH, dpr, baseW, baseH);
-  const { kDev, k } = ratio;
-  // The UI variables' SCALE is SCOPED to #game-region: only the UI INSIDE the canvas (menus/HUD/pause/quiz) scales with
-  // k. Outside the canvas (top bar, debug panel) it inherits :root → text ALWAYS 16px, touch 44px (the Dev).
-  const gr = $<HTMLElement>('#game-region'); if (gr) {
-    // `--tap` is the PREFERRED size (22·k) and `--alvo-min` the FLOOR (22·k, 44 px at 640×360 — ADR-0163), written in `applyScale`.
-    applyScale(gr, ratio);
+export interface LayoutCtx {
+  /** The document holding the stage shell and `#game-region` — passed, never the global one (ADR-0232). */
+  doc: LayoutDoc;
+  /** The window, for its pixel ratio only: the scale is locked to whole REAL pixels. */
+  win: Pick<Window, 'devicePixelRatio'>;
+  /**
+   * THE PLAYER COUNT, as the GETTER of the round the game owns (ADR-0038): the screen grid sets the base size. A number
+   * would freeze the count at the first layout.
+   */
+  numPlayers: () => number;
+  /**
+   * CALLED AFTER EVERY SCALE — the root's CRT re-anchoring its scanlines to real pixels (`engine.crt.scanVars`).
+   * REQUIRED: the layout used to call the page's one CRT by import, and a game that forgets this would get scanlines
+   * spaced for the previous scale, with no error. A game with no CRT passes `() => {}` and says so.
+   */
+  afterScale: () => void;
+  /** Logs the scale to the console (`?debug=true`). Optional: absent, nothing is logged. */
+  debug?: () => boolean;
+}
+
+/** A game's stage scaler. */
+export interface Layout {
+  /** Measures the shell, scales `#game-region` and calls `afterScale`. Call it at boot and on every `resize`. */
+  layout(): void;
+}
+
+/**
+ * Builds a stage scaler over the document and window it is handed. It keeps nothing between calls: every `layout()`
+ * measures again, reads the player count again, and writes onto the region.
+ */
+export function createLayout(ctx: LayoutCtx): Layout {
+  function layout(): void {
+    const wrap = findStageWrap(ctx.doc); if (!wrap) return;
+    wrap.style.paddingRight = '0px';
+    const availW = wrap.clientWidth || 320;
+    const availH = wrap.clientHeight || 180;
+    // The screen grid sets the base (1=320×180, 2=640×180, 3-4=640×360).
+    const n = ctx.numPlayers();
+    const { w: baseW, h: baseH } = screenBaseSize(n);
+    // Floor k=2: EACH viewport is at least 640×360, so 2×2 = 1280×720 fits a government Chromebook (1366×768).
+    // ADR-0001: SCALE locked to WHOLE REAL PIXELS. Each art pixel = kDev PHYSICAL pixels (whole) → scanlines ALWAYS regular
+    // and uniform art at ANY dpr. Tolerates ≤5 logical px of crop per side (the −10): base·kDev − avail·dpr ≤ 10·kDev ⇒
+    // kDev ≤ avail·dpr/(base−10). (The Dev chose whole REAL pixels.) The arithmetic lives in `stageScale` (ADR-0163), so the
+    // engine applies it to every cartridge.
+    const dpr = ctx.win.devicePixelRatio || 1;
+    const ratio = stageScale(availW, availH, dpr, baseW, baseH);
+    const { kDev, k } = ratio;
+    // The UI variables' SCALE is SCOPED to #game-region: only the UI INSIDE the canvas (menus/HUD/pause/quiz) scales with
+    // k. Outside the canvas (top bar, debug panel) it inherits :root → text ALWAYS 16px, touch 44px (the Dev).
+    const gr = ctx.doc.querySelector<HTMLElement>('#game-region'); if (gr) {
+      // `--tap` is the PREFERRED size (22·k) and `--alvo-min` the FLOOR (22·k, 44 px at 640×360 — ADR-0163), written in `applyScale`.
+      applyScale(gr, ratio);
+    }
+    ctx.afterScale(); // scanlines realign when the scale k changes
+    if (ctx.debug?.()) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);
   }
-  crtScanVars(); // scanlines realign when the scale k changes
-  if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);
+  return { layout };
 }

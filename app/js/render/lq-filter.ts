@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // render/lq-filter.ts — the Linear→Quadratic contrast enhancement (low vision, RESEARCH-HIGH-CONTRAST §2.3).
 // A PER-PIXEL tone curve over the whole screen, composed through an SVG feComponentTransfer (17 samples, sRGB) in the
-// canvas's CSS filter. `lqCurve`/`lqName` are pure (node project); `ensureLqFilter`/`setLq` are the thin shell that
-// creates the SVG node and writes to the DOM. Recomposing the final CSS filter (with the colour modes) belongs to the
-// host, through the injected `onChange` — this module does not duplicate the other subsystems' caches.
+// canvas's CSS filter. `lqCurve`/`lqName` are pure (node project); `createLqFilter` is the thin shell that keeps the amount,
+// creates the SVG node in the document it is HANDED and writes to it (ADR-0232 D4, issue #207: one per root, the root
+// builds it). Recomposing the final CSS filter (with the colour modes) belongs to the host, through the injected
+// `onChange` — this module does not duplicate the other subsystems' caches.
 
 import type { Store } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
@@ -43,56 +44,16 @@ export function lqName(t: number): string {
 
 // ---------- Thin DOM shell ----------
 
-/** Current L→Q amount (0..1), kept under `KEYS.lq` ('incl_lq') in the injected store; 0 until `initLqFilter` reads it.
- *  Module-local state. */
-let lqT = 0;
-/** Where lqT is kept: the page's store, handed over by `initLqFilter` (ADR-0232, issue #207). */
-let lqStore: Pick<Store, 'getNum' | 'set'> | null = null;
-
-/** Reads (or lazily creates) the shared `<filter id="lq-enh">` SVG node, appended once to `document.body`. */
-export function ensureLqFilter(): SVGFilterElement {
-  const existing = document.getElementById(FILTER_ID);
-  if (existing) return existing as unknown as SVGFilterElement;
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg') as unknown as SVGSVGElement;
-  svg.setAttribute('width', '0');
-  svg.setAttribute('height', '0');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.style.position = 'absolute';
-  const f = document.createElementNS(NS, 'filter') as unknown as SVGFilterElement;
-  f.id = FILTER_ID;
-  f.setAttribute('color-interpolation-filters', 'sRGB');
-  const ct = document.createElementNS(NS, 'feComponentTransfer');
-  (['feFuncR', 'feFuncG', 'feFuncB'] as const).forEach((ch) => {
-    const fn = document.createElementNS(NS, ch);
-    fn.setAttribute('type', 'table');
-    fn.setAttribute('tableValues', lqCurve(lqT));
-    ct.appendChild(fn);
-  });
-  f.appendChild(ct);
-  svg.appendChild(f);
-  document.body.appendChild(svg);
-  return f;
-}
-
-/** CSS `filter` fragment for the current lqT ('' when off) — ensures the SVG node exists BEFORE returning the
- * `url()` reference (a dangling reference would hide the canvas). Composed by callers with viz-mode filters. */
-export function lqFilter(): string {
-  if (lqT <= 0) return '';
-  ensureLqFilter();
-  return `url(#${FILTER_ID})`;
-}
-
-/** Current lqT (0..1) — read by the visual-settings panel and the debug/`__incl` surface. */
-export function getLqT(): number {
-  return lqT;
-}
+/** The document the `<filter>` node lives in — only what the shell touches. */
+export type LqDoc = Pick<Document, 'getElementById' | 'createElementNS' | 'body'>;
 
 export interface LqFilterCtx {
+  /** The document the SVG `<filter>` is created in and looked up from — passed, never the global one (ADR-0232). */
+  doc: LqDoc;
   /**
-   * Recomposes the app's CSS filter after lqT changes — composed with the active colour/simulation filter, and with
-   * whatever texture-cache invalidation that triggers elsewhere. That composition belongs to other subsystems and
-   * stays with the host; this module only owns lqT + the SVG filter node.
+   * Recomposes the app's CSS filter after the amount changes — composed with the active colour/simulation filter, and
+   * with whatever texture-cache invalidation that triggers elsewhere. That composition belongs to other subsystems and
+   * stays with the host; this module only owns the amount + the SVG filter node.
    */
   onChange: () => void;
   /**
@@ -102,25 +63,68 @@ export interface LqFilterCtx {
   store: Pick<Store, 'getNum' | 'set'>;
 }
 
-let onChange: () => void = () => {};
-
-/** Wires the injected recompose callback and READS the stored amount — at init, never at import (ADR-0232). Call once
- *  during the host's boot. */
-export function initLqFilter(ctx: LqFilterCtx): void {
-  onChange = ctx.onChange;
-  lqStore = ctx.store;
-  lqT = clamp01(ctx.store.getNum(KEYS.lq, 0));
+/** One root's L→Q enhancement. */
+export interface LqFilter {
+  /** CSS `filter` fragment for the current amount ('' when off) — ensures the SVG node exists BEFORE returning the
+   *  `url()` reference (a dangling reference would hide the canvas). Composed by callers with viz-mode filters. */
+  filter(): string;
+  /** The current amount (0..1) — read by the visual-settings panel and the debug/`__incl` surface. */
+  t(): number;
+  /** Sets the amount (clamped to 0..1), persists it, updates the live SVG table (if the filter is already on-screen),
+   *  then calls the injected `onChange` to let the host recompose the CSS filter. */
+  set(t: number): void;
 }
 
-/** Sets lqT (clamped to 0..1), persists it, updates the live SVG table (if the filter is already on-screen),
- * then calls the injected `onChange` to let the host recompose the CSS filter. */
-export function setLq(t: number): void {
-  lqT = clamp01(t);
-  lqStore?.set(KEYS.lq, lqT);
-  if (lqT > 0) {
-    const f = ensureLqFilter();
-    const tv = lqCurve(lqT);
-    f.querySelectorAll('feFuncR,feFuncG,feFuncB').forEach((fn) => fn.setAttribute('tableValues', tv));
+/**
+ * Builds the enhancement and READS the stored amount — at build, never at import (ADR-0232). The amount lives in this
+ * closure: two roots on one page each keep their own.
+ */
+export function createLqFilter(ctx: LqFilterCtx): LqFilter {
+  const { doc, store, onChange } = ctx;
+  let amount = clamp01(store.getNum(KEYS.lq, 0));
+
+  /** Reads (or lazily creates) the `<filter id="lq-enh">` SVG node, appended once to the document's body. */
+  function ensureNode(): SVGFilterElement {
+    const existing = doc.getElementById(FILTER_ID);
+    if (existing) return existing as unknown as SVGFilterElement;
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = doc.createElementNS(NS, 'svg') as unknown as SVGSVGElement;
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.position = 'absolute';
+    const f = doc.createElementNS(NS, 'filter') as unknown as SVGFilterElement;
+    f.id = FILTER_ID;
+    f.setAttribute('color-interpolation-filters', 'sRGB');
+    const ct = doc.createElementNS(NS, 'feComponentTransfer');
+    (['feFuncR', 'feFuncG', 'feFuncB'] as const).forEach((ch) => {
+      const fn = doc.createElementNS(NS, ch);
+      fn.setAttribute('type', 'table');
+      fn.setAttribute('tableValues', lqCurve(amount));
+      ct.appendChild(fn);
+    });
+    f.appendChild(ct);
+    svg.appendChild(f);
+    doc.body.appendChild(svg);
+    return f;
   }
-  onChange();
+
+  function filter(): string {
+    if (amount <= 0) return '';
+    ensureNode();
+    return `url(#${FILTER_ID})`;
+  }
+
+  function set(t: number): void {
+    amount = clamp01(t);
+    store.set(KEYS.lq, amount);
+    if (amount > 0) {
+      const f = ensureNode();
+      const tv = lqCurve(amount);
+      f.querySelectorAll('feFuncR,feFuncG,feFuncB').forEach((fn) => fn.setAttribute('tableValues', tv));
+    }
+    onChange();
+  }
+
+  return { filter, t: () => amount, set };
 }

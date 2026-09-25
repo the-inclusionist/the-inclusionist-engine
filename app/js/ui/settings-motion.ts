@@ -3,11 +3,12 @@
 // CHARACTER (walk/breath/flavour) and per SCENE (parallax/decor/items/particles), the stop/resume-all master button, the
 // player selection and the CRT look (scanlines/vignette/corners), which lives on the SAME screen. What a choice IS lives in
 // ./motion-choices.js. INJECTED via initSettingsMotion(ctx): $ (selector), srSay, store (persistence), matchMedia (the
-// operating system's reduced-motion answer, ADR-0232), frontOverlay/toggleBtn (helpers shared with the sibling panels), and optionally rm/saveRM/rmKeys/rmChar (reduced-motion
-// state, which a cartridge may share by reference). CRT/applyCrt (render/crt.ts) are imported DIRECTLY.
+// operating system's reduced-motion answer, ADR-0232), frontOverlay/toggleBtn (helpers shared with the sibling panels),
+// the root's CRT (`crt`, ADR-0232 D4), and optionally rm/saveRM/rmKeys/rmChar (reduced-motion state, which a cartridge may
+// share by reference). Only the factory default (`CRT_DEFAULT`, a frozen constant) is imported from render/crt.ts.
 import { toggleLabel, toggleAria } from './dom.js';
 
-import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
+import { CRT_DEFAULT, type Crt } from '../render/crt.js';
 import { defaultReducedMotion, type MediaQuery } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import type { Translate } from '../core/i18n.js';
@@ -73,6 +74,12 @@ export interface SettingsMotionCtx {
    * reaches no global, and an optional port would let a host forget it and turn the animation back on at the reset.
    */
   matchMedia: MediaQuery;
+  /**
+   * The root's CRT (`render/crt`'s `createCrt`, ADR-0232 D4): the live config the three CRT rows read and write, and its
+   * `apply`. REQUIRED: the panel used to reach the page's one CRT by import, and a second root would have toggled the
+   * first root's scanlines.
+   */
+  crt: Pick<Crt, 'cfg' | 'apply'>;
   /** Stacks the overlay (z-index) + wires the explanation footer — shared by every settings panel. */
   frontOverlay: (el: HTMLElement | null) => void;
   /** Returns focus to whoever opened the dialog (ui/settings-panel `restoreFocus`). Injected, not a fixed `#opt-*`: that
@@ -274,15 +281,6 @@ function reconcile(list: HTMLElement, parts: readonly MotionPart[]): void {
 
 
 // ---------------------------------------------------------------------------------------------------------
-// Module state — the selected player.
-// ---------------------------------------------------------------------------------------------------------
-
-let selectedPlayer = 0;
-export function getSelectedPlayer(): number { return selectedPlayer; }
-/** Called from outside (e.g. the pause menu's "anim" entry) before open(). */
-export function setSelectedPlayer(i: number): void { selectedPlayer = i; }
-
-// ---------------------------------------------------------------------------------------------------------
 // Render/DOM — a thin shell around the pure logic above.
 // ---------------------------------------------------------------------------------------------------------
 
@@ -290,10 +288,18 @@ export interface SettingsMotionApi {
   render: () => void;
   open: () => void;
   close: () => void;
+  /** The player whose character rows the panel edits. */
+  selectedPlayer: () => number;
+  /** Chooses that player — called from outside (e.g. the pause menu's "anim" entry) before `open()`. */
+  setSelectedPlayer: (i: number) => void;
 }
 
 export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   const { t } = ctx;
+  const crtCfg = ctx.crt.cfg;
+  const applyCrt = (): void => { ctx.crt.apply(); };
+  /** The selected player: THIS panel's, in its closure (ADR-0232 D4) — a module `let` was shared by every root's panel. */
+  let selectedPlayer = 0;
   /*
    * ⚠️ RESOLVED ONCE, AT BOOT, not on every use. `rm` is mutated in place and shared by REFERENCE with whoever draws
    * the scene; resolving it on every read would create a new object per call, the switch would stop reaching the
@@ -326,7 +332,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     create: (tag) => list.ownerDocument.createElement(tag),
   });
 
-  const roundSpec = () => ({ label: t(CRT_LBL.round), values: [0, 1, 2].map((level) => crtLevelLabel(t, level)), current: CRT.round });
+  const roundSpec = () => ({ label: t(CRT_LBL.round), values: [0, 1, 2].map((level) => crtLevelLabel(t, level)), current: crtCfg.round });
 
   /** Each switch's STATE — what the kit does not write, because the panel knows the value. */
   function reflectSwitches(el: HTMLElement): void {
@@ -342,8 +348,8 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     // `allMotionFrozen`, and the inversion lives here, in one place.
     for (const c of rmChar()) writeSwitch(`[data-rmc="${c.prop}"]`, !(player && player[c.prop]), t(c.lbl));
     for (const k of rmKeys) writeSwitch(`[data-rm="${k}"]`, !rm[k], t(RM_LABEL[k]));
-    writeSwitch('[data-crt-tgl="scan"]', !!CRT.scan, t(CRT_LBL.scan));
-    writeSwitch('[data-crt-tgl="vig"]', !!CRT.vig, t(CRT_LBL.vig));
+    writeSwitch('[data-crt-tgl="scan"]', !!crtCfg.scan, t(CRT_LBL.scan));
+    writeSwitch('[data-crt-tgl="vig"]', !!crtCfg.vig, t(CRT_LBL.vig));
   }
 
   /** The listeners, ONCE and by delegation: the character rows come and go with the cartridge (ADR-0153), and wiring
@@ -357,11 +363,11 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       if (!b || !el.contains(b)) return;
       const crt = b.dataset.crtTgl as 'scan' | 'vig' | undefined;
       if (crt) {
-        CRT[crt] = CRT[crt] ? 0 : 1;
+        crtCfg[crt] = crtCfg[crt] ? 0 : 1;
         applyCrt();
         reflectSwitches(el);
         refreshMarks();
-        ctx.srSay(crtToggleAnnouncement(t, t(CRT_LBL[crt]), !!CRT[crt]));
+        ctx.srSay(crtToggleAnnouncement(t, t(CRT_LBL[crt]), !!crtCfg[crt]));
         return;
       }
       const prop = b.dataset.rmc as MotionCharProp | undefined;
@@ -383,14 +389,14 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     el.addEventListener('passo', (ev) => {
       const stepper = (ev.target as HTMLElement | null)?.closest<HTMLElement>('[data-crt="round"]');
       if (!stepper) return;
-      const next = nextStep(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
+      const next = nextStep(crtCfg.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
       // ⚠️ AT THE END NOTHING IS ANNOUNCED: repeating the largest level to someone already there would sound like a step.
-      if (next === CRT.round) return;
-      CRT.round = next;
+      if (next === crtCfg.round) return;
+      crtCfg.round = next;
       applyCrt();
       updateSteps(stepper, roundSpec());
       refreshMarks();
-      ctx.srSay(crtRoundAnnouncement(t, t(CRT_LBL.round), CRT.round));
+      ctx.srSay(crtRoundAnnouncement(t, t(CRT_LBL.round), crtCfg.round));
     });
   }
 
@@ -450,9 +456,9 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     };
     for (const c of rmChar()) markRow(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== reducedByDefault);
     for (const k of rmKeys) markRow(`[data-rm="${k}"]`, !!rm[k] !== reducedByDefault);
-    markRow('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
-    markRow('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
-    markRow('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
+    markRow('[data-crt-tgl="scan"]', !!crtCfg.scan !== !!CRT_DEFAULT.scan);
+    markRow('[data-crt-tgl="vig"]', !!crtCfg.vig !== !!CRT_DEFAULT.vig);
+    markRow('[data-crt="round"]', crtCfg.round !== CRT_DEFAULT.round);
     markMenuChanged(t, ctx.$<HTMLElement>('[data-act="anim"]'), changedFlags);
   }
 
@@ -476,7 +482,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
         ctx.store.setBool('incl_' + c.prop + '_p' + i, reducedByDefault);
       }
     });
-    CRT.scan = CRT_DEFAULT.scan; CRT.vig = CRT_DEFAULT.vig; CRT.round = CRT_DEFAULT.round;
+    crtCfg.scan = CRT_DEFAULT.scan; crtCfg.vig = CRT_DEFAULT.vig; crtCfg.round = CRT_DEFAULT.round;
     applyCrt();
     render();
     ctx.srSay(t('sr.motion.reset'));
@@ -518,5 +524,9 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
 
   reflectMotionBtn(); // initial state (e.g. prefers-reduced-motion switches it on by default)
 
-  return { render, open, close };
+  return {
+    render, open, close,
+    selectedPlayer: () => selectedPlayer,
+    setSelectedPlayer: (i: number) => { selectedPlayer = i; },
+  };
 }

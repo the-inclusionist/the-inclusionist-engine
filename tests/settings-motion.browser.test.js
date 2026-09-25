@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of ui/settings-motion — real render/DOM (BROWSER project: uses document + querySelector). Injection by closure
 // (the same pattern as ui/debug-panel): a ctx with FAKE $/srSay/store/frontOverlay/toggleBtn/rm/saveRM/rmKeys/rmChar
-// (spies), a local round double for `players`/`numPlayers`, and the REAL `CRT`/`applyCrt` (render/crt.ts) — the same
-// module initSettingsMotion imports directly. See docs/5-Refactoring/plan-modularization-map.md.
+// (spies), a local round double for `players`/`numPlayers`, and a REAL CRT (render/crt.ts's `createCrt`) handed in as `ctx.crt`,
+// rebuilt before each case (ADR-0232 D4: the root's CRT, not a module the panel imports). See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  initSettingsMotion, getSelectedPlayer, setSelectedPlayer,
-} from '../app/js/ui/settings-motion.js';
+import { initSettingsMotion } from '../app/js/ui/settings-motion.js';
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
  * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
@@ -18,7 +16,7 @@ const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
-import { CRT, applyCrt } from '../app/js/render/crt.js';
+import { createCrt } from '../app/js/render/crt.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { t } from '../app/js/core/i18n.js';
 import { RM_LABEL } from '../app/js/ui/motion-choices.js';
@@ -26,6 +24,14 @@ import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);
+
+/** The root's CRT the panel is handed, and the two names the cases read it by — rebuilt before each case. */
+let crt, CRT, applyCrt;
+function freshCrt() {
+  crt = createCrt({ region: () => $('#game-region'), win: window, numPlayers: () => rodada.numPlayers,
+    a11yVisualOn: () => false, store: createStorage(memoryBackend()) });
+  CRT = crt.cfg; applyCrt = crt.apply;
+}
 
 const RM_KEYS = ['parallax', 'decor', 'items', 'particles'];
 const RM_CHAR = [
@@ -66,6 +72,7 @@ function makeCtx(over = {}) {
     toggleBtn: (el, on) => { calls.toggleBtn.push(on); el.classList.toggle('is-on', on); el.setAttribute('aria-pressed', String(on)); },
     rm, saveRM: () => { calls.saveRM++; },
     rmKeys: RM_KEYS, rmChar: RM_CHAR,
+    crt,
     ...over,
   };
   return { ctx, calls };
@@ -76,8 +83,7 @@ beforeEach(() => {
   players.length = 0;
   players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
   setNumPlayersValue(1);
-  CRT.scan = 1; CRT.vig = 0; CRT.round = 1;
-  setSelectedPlayer(0);
+  freshCrt();
 });
 
 describe('initSettingsMotion — render()', () => {
@@ -113,11 +119,12 @@ describe('initSettingsMotion — render()', () => {
   });
 
   it('[Boundary] selectedPlayer fora do nº de telas volta a 0 no próximo render (encolheu de 4p→1p)', () => {
-    setSelectedPlayer(3);
     setNumPlayersValue(1);
     const { ctx } = makeCtx();
-    initSettingsMotion(ctx).render();
-    expect(getSelectedPlayer()).toBe(0);
+    const api = initSettingsMotion(ctx);
+    api.setSelectedPlayer(3);
+    api.render();
+    expect(api.selectedPlayer()).toBe(0);
   });
 });
 
@@ -263,11 +270,28 @@ describe('initSettingsMotion — open()/close()', () => {
   });
 });
 
-describe('getSelectedPlayer / setSelectedPlayer', () => {
-  it('[Right] setSelectedPlayer muda o valor lido por getSelectedPlayer (usado pelo atalho "anim" do pause)', () => {
-    setSelectedPlayer(2);
-    expect(getSelectedPlayer()).toBe(2);
-    setSelectedPlayer(0);
+describe('selectedPlayer / setSelectedPlayer — the panel\'s own (ADR-0232 D4)', () => {
+  it('[Right] setSelectedPlayer muda o valor lido por selectedPlayer (usado pelo atalho "anim" do pause)', () => {
+    const api = initSettingsMotion(makeCtx().ctx);
+    api.setSelectedPlayer(2);
+    expect(api.selectedPlayer()).toBe(2);
+  });
+  it('🔴 [Right] TWO panels keep their own selected player — it was one module `let` shared by every root', () => {
+    const a = initSettingsMotion(makeCtx().ctx), b = initSettingsMotion(makeCtx().ctx);
+    a.setSelectedPlayer(1);
+    expect(b.selectedPlayer(), 'the second panel sees the first panel\'s player').toBe(0);
+  });
+  it('🔴 [Right] the selected player is the one whose character row a click writes', () => {
+    players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
+    setNumPlayersValue(2);
+    const { ctx, calls } = makeCtx();
+    const api = initSettingsMotion(ctx);
+    api.setSelectedPlayer(1);
+    api.render();
+    $('#motion-list').querySelector('button[data-rmc="rmWalk"]').click();
+    expect(players[1].rmWalk, 'the click did not reach player 2').toBe(true);
+    expect(players[0].rmWalk).toBe(false);
+    expect(calls.setBool).toContainEqual(['incl_rmWalk_p1', true]);
   });
 });
 
@@ -280,7 +304,7 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
     players.length = 0;
     players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
     setNumPlayersValue(1);
-    CRT.scan = 1; CRT.vig = 0; CRT.round = 1;
+    freshCrt();
     applyCrt();
   });
 

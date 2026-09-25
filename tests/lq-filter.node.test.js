@@ -2,7 +2,7 @@
 // Tests of render/lq-filter — the Linear→Quadratic enhancement curve and the low-vision label (node project).
 // `lqCurve`/`lqName` are pure, deterministic maths — the module's best test target (ZOMBIES + Right-BICEP): the 0/1
 // edges, the label's three thresholds, and out-of-range values (not clamped, verbatim).
-// The DOM shell (ensureLqFilter/lqFilter/setLq) stays out of here — it needs `document` (browser project).
+// The DOM shell (createLqFilter's filter/set) stays out of here — it needs `document` (browser project).
 import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { lqCurve, lqName } from '../app/js/render/lq-filter.js';

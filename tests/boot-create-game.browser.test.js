@@ -569,7 +569,6 @@ describe('createGame num documento de verdade', () => {
     it('🔴 [Right] the contrast enhancement COMPOSES with the colour correction — one never switches the other off', async () => {
       // Two writers of one `style.filter`: written apart, the last one erased the first, and turning the enhancement on
       // would silently undo the correction a colour-blind child had chosen.
-      const { setLq } = await import('../app/js/render/lq-filter.js');
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       raiz.appendChild(svg);
       const motor = abrir({ host: { doc: document, win: window, cvdHost: svg } });
@@ -586,9 +585,34 @@ describe('createGame num documento de verdade', () => {
         expect(mundo.style.filter, 'turning the enhancement off erased the correction').toMatch(/cvd-fix-/);
         expect(mundo.style.filter).not.toMatch(/lq-enh/);
       } finally {
-        setLq(0);
+        motor.lq.set(0);
         document.getElementById('visual-close')?.click();
         motor.pause.hide(0);
+      }
+    });
+
+    it('🔴 [Right] `engine.lq` and `engine.crt` ARE the root\'s own — what a game does through them reaches the world (ADR-0232 D4)', () => {
+      // A game used to import `render/lq-filter` and `render/crt`, one per page; now it asks the handle, and the handle has to
+      // be the instance the root's own panels and filter recomposition use, or a game's change would land nowhere.
+      const motor = abrir();
+      const mundo = document.querySelector('#game-region');
+      try {
+        motor.crt.cfg.scan = 1;
+        motor.crt.cfg.vig = 1;
+        motor.crt.apply();
+        expect(mundo.classList.contains('crt-vig-1'), 'the vignette set through the handle is not on the region').toBe(true);
+        motor.lq.set(0.5);
+        expect(motor.lq.t()).toBe(0.5);
+        expect(mundo.style.filter, 'the enhancement set through the handle did not reach the world').toMatch(/lq-enh/);
+        // the enhancement is a visual accessibility mode: the decorative CRT yields to it (ADR-0047)
+        expect(mundo.classList.contains('crt-scan-1'), 'the scanlines stayed over the contrast enhancement').toBe(false);
+        motor.lq.set(0);
+        expect(mundo.style.filter).not.toMatch(/lq-enh/);
+        expect(mundo.classList.contains('crt-scan-1'), 'the scanlines did not come back after the enhancement').toBe(true);
+      } finally {
+        motor.lq.set(0);
+        Object.assign(motor.crt.cfg, { scan: 1, vig: 0, round: 1 }); // the factory CRT, as the page's storage expects it
+        motor.crt.apply();
       }
     });
 

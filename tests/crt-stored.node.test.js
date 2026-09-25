@@ -6,12 +6,13 @@
 // mapping of `true`/`false`, the clamp to 0–2, the scanlines and the vignette being on/off only, a partial record keeping the
 // defaults it does not name. The only stored value any case wrote was the factory one, so every answer looked right.
 //
-// The load runs in `initCrt`, from the store it receives (ADR-0232), so each case hands it a machine — a backend made of a
-// Map — through a fresh import: the `CRT` object is module state, and a case must not start from the previous one's.
+// The load runs in `createCrt`, from the store it receives (ADR-0232), so each case hands it a machine — a backend made of a
+// Map. The config lives in the instance (ADR-0232 D4), so each case starts from its own.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createStorage } from '../app/js/platform/storage.js';
+import { createCrt } from '../app/js/render/crt.js';
 
 /** A machine's storage, holding exactly what a case says it holds. */
 function maquina(guardado) {
@@ -25,10 +26,9 @@ function maquina(guardado) {
 
 /** The CRT the engine starts with on a machine that kept `guardado`. */
 async function arrancarCom(guardado) {
-  vi.resetModules();
-  const { CRT, initCrt } = await import('../app/js/render/crt.js');
-  initCrt({ numPlayers: () => 1, a11yVisualOn: () => false, store: createStorage(maquina(guardado)) });
-  return { ...CRT };
+  const { cfg } = createCrt({ region: () => null, win: { devicePixelRatio: 1 }, numPlayers: () => 1, a11yVisualOn: () => false,
+    store: createStorage(maquina(guardado)) });
+  return { ...cfg };
 }
 
 const ATUAL = 'incl_crt2';

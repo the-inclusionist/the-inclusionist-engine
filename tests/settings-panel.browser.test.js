@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js';
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
-import { initSettingsMotion, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
+import { initSettingsMotion } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
@@ -80,6 +80,7 @@ function boot() {
     toggleBtn: (el, on) => { el.classList.toggle('is-on', on); el.setAttribute('aria-pressed', String(on)); },
     rm: { parallax: false, decor: false, items: false, particles: false }, saveRM: noop,
     rmKeys: RM_KEYS, rmChar: RM_CHAR,
+    crt: { cfg: { scan: 1, vig: 0, round: 1 }, apply: noop }, // the root's CRT (ADR-0232 D4); its classes are not measured here
   });
   const empathy = initSettingsEmpathy({
     t: translate,
@@ -101,8 +102,7 @@ beforeEach(() => {
   document.body.innerHTML = MARKUP;
   players.length = 0;
   players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
-  setNumPlayersValue(1);
-  setSelectedPlayer(0);
+  setNumPlayersValue(1); // each `boot()` builds a new motion panel, whose selected player starts at 0 (ADR-0232 D4)
   $('#opt-animation').focus(); // a known focus before each scenario
 });
 

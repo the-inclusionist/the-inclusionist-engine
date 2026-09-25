@@ -210,6 +210,13 @@ function regiaoFalsa() {
     // `contains` tells the truth about itself and about its children — the question the engine asks.
     contains(n) { return n === this || this.filhos.includes(n); },
     addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
+    // ⚠️ `classList` and `style`, since the root's CRT draws on THIS region (ADR-0232 D4): it used to look `#game-region`
+    // up in the global document, which this project does not have, so it never reached the injected one at all.
+    classList: (() => {
+      const s = new Set();
+      return { add: (c) => s.add(c), remove: (c) => s.delete(c), contains: (c) => s.has(c) };
+    })(),
+    style: { setProperty() {}, removeProperty() {} },
   };
 }
 
@@ -775,7 +782,10 @@ describe('createGame em execução', () => {
     // and this case would assert the opposite of what it promises.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const alerta = { textContent: '' };
-    const regiao = { filhos: [], appendChild(f) { this.filhos.push(f); }, style: {}, contains: () => false };
+    // `classList` and `style.setProperty` since the root's CRT draws on the injected region (ADR-0232 D4); the CRT is not
+    // this case's subject.
+    const regiao = { filhos: [], appendChild(f) { this.filhos.push(f); }, style: { setProperty() {} }, contains: () => false,
+      classList: { add() {}, remove() {} } };
     const { doc, win } = domFalso({
       map: { '#sr-alert': alerta, '#game-region': regiao },
       ausentes: ['#incl-parou'],
@@ -1093,4 +1103,22 @@ describe('the shape of a line of `problems` (ADR-0169, issue #163)', () => {
   // MUTATIONS CHECKED (2026-09-13): the neural-voice line back in Portuguese 🔴 · «child» taken out of the pause-actor
   // line 🔴. ⚠️ Browser-only lines (stylesheet, bar, resolution, floor, storage, flashes, dictionaries) are not reached by
   // this node host; their Portuguese is still counted by `engine-i18n`, their «child» by review.
+});
+
+// ADR-0232 D4-B6 — the root's CRT draws on the INJECTED document's region.
+describe('the root\'s CRT and L→Q enhancement live in the injected document (ADR-0232 D4)', () => {
+  beforeAll(async () => { await import('../app/js/boot/create-game.js'); }, 30000);
+
+  it('🔴 [Right] the stored scanlines land on the injected `#game-region` at boot — this project has no global document', async () => {
+    // `render/crt` used to look the region up with `core/dom-query`'s `$`, over the GLOBAL document: under an injected
+    // document (an iframe, an editor, this project) the CRT drew nowhere, and the panel's «Scanlines: on» was a lie.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const regiao = regiaoFalsa();
+    const { doc, win } = domFalso({ map: { '#game-region': regiao } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    expect(typeof globalThis.document, 'the premise: no global document here').toBe('undefined');
+    expect(regiao.classList.contains('crt-scan-1'), 'the factory scanlines did not reach the injected region').toBe(true);
+    expect(motor.crt.cfg.scan).toBe(1);
+    expect(typeof motor.lq.filter, 'the enhancement handle is missing').toBe('function');
+  });
 });
