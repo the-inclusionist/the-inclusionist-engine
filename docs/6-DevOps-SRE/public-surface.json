@@ -1186,6 +1186,7 @@
     "faceAvailable",
     "faceFamilies",
     "faceScale",
+    "familyStack",
     "fontRole",
     "handsForTag",
     "persistFontKey",
