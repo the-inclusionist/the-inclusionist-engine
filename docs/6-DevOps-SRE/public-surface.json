@@ -1087,7 +1087,9 @@
     "AacTier",
     "aacAvailable",
     "aacLabel",
-    "aacReason"
+    "aacMenuLocked",
+    "aacReason",
+    "aacSelectable"
   ],
   "ui/audio-choices.ts": [
     "AudioCatDef",

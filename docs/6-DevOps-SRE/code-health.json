@@ -401,7 +401,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 647,
+      "codeLines": 645,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -411,7 +411,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 647,
+      "codeLines": 645,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -421,7 +421,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 647,
+      "codeLines": 645,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1271,14 +1271,14 @@
       "fanIn": 0
     },
     "ui/aac-sets.ts": {
-      "codeLines": 37,
-      "decisionNodes": 3,
+      "codeLines": 33,
+      "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 3,
+      "worstFunction": 2,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/audio-choices.ts": {
       "codeLines": 45,
@@ -1611,10 +1611,10 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 611,
+      "codeLines": 615,
       "decisionNodes": 81,
       "maxDepth": 3,
-      "fanOut": 17,
+      "fanOut": 18,
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
@@ -1651,8 +1651,8 @@
       "fanIn": 1
     },
     "ui/settings-aac.ts": {
-      "codeLines": 138,
-      "decisionNodes": 21,
+      "codeLines": 142,
+      "decisionNodes": 23,
       "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,

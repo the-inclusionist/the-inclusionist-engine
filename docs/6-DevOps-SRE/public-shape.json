@@ -2112,15 +2112,8 @@
     "type VisualStore": "Pick<Store, 'get' | 'getJSON' | 'set' | 'setJSON'>"
   },
   "ui/aac-sets.ts": {
-    "interface AacSet": [
-      "available",
-      "key",
-      "license",
-      "name",
-      "note?",
-      "tier"
-    ],
-    "type AacTier": "| 'bundled' | 'fetched' | 'negotiating'"
+    "type AacTier": "| 'licensed' | 'unlicensed'",
+    "type AacSet": "| (AacSetBase & { readonly tier: 'licensed'"
   },
   "ui/audio-choices.ts": {
     "interface AudioCatDef": [
