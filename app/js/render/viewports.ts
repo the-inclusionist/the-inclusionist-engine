@@ -32,8 +32,8 @@
 // which is precisely the point of curing the duplication.
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import { makeCanvas, tex } from './canvas.js';
-import { DIRECT_CFG, directBgTexture, directSpriteTexture } from './high-contrast.js';
+import { makeCanvas, tex, type CanvasDoc } from './canvas.js';
+import { DIRECT_CFG, type HighContrast } from './high-contrast.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
 import { drawLowVision } from './low-vision-drawing.js';
 import { CVD_MATRIX, installCvdFilters, type CvdKey } from './cvd-matrices.js';
@@ -104,6 +104,12 @@ export interface ViewportsCtx {
 
   /* --- DOM: the host of the generated <filter>s (the cure for the duplicated matrices) --- */
   cvdDefsHost: Element | null;  // an SVG `<defs>`; absent = the six filters are not generated
+  /** The document the overlay canvases are made in — passed, never the global one (ADR-0232, issue #207). */
+  doc: CanvasDoc;
+
+  /* --- the world's high contrast (`createHighContrast`), built by whoever has the world --- */
+  /** The two recolours this module asks of it. REQUIRED: the palette and the outline level are that instance's. */
+  hc: Pick<HighContrast, 'directBgTexture' | 'directSpriteTexture'>;
 }
 
 export interface ViewportsApi {
@@ -138,7 +144,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
   function parallaxTexFor(i: number, mode: string): unknown {
     if (DIRECT_CFG[mode]) {
       (_parallaxTexHC[mode] = _parallaxTexHC[mode] || []);
-      if (!_parallaxTexHC[mode][i]) _parallaxTexHC[mode][i] = directBgTexture(ctx.parallaxTexNormal[i] as never, mode);
+      if (!_parallaxTexHC[mode][i]) _parallaxTexHC[mode][i] = ctx.hc.directBgTexture(ctx.parallaxTexNormal[i] as never, mode);
       return _parallaxTexHC[mode][i]; // direct: the background steps back
     }
     return ctx.parallaxTexNormal[i];
@@ -148,7 +154,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
   const _treeTexHC: Record<string, unknown> = {};
   function treeTexFor(mode: string): unknown {
     if (DIRECT_CFG[mode]) {
-      if (!_treeTexHC[mode]) _treeTexHC[mode] = directBgTexture(ctx.getTreeTexNormal() as never, mode);
+      if (!_treeTexHC[mode]) _treeTexHC[mode] = ctx.hc.directBgTexture(ctx.getTreeTexNormal() as never, mode);
       return _treeTexHC[mode]; // direct: the decoration steps back
     }
     return ctx.getTreeTexNormal();
@@ -163,7 +169,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
     if (!base) return base;
     if (DIRECT_CFG[mode]) {
       const mm = (_playerDirect[mode] = _playerDirect[mode] || new Map());
-      if (!mm.has(base)) mm.set(base, directSpriteTexture(base as never, mode));
+      if (!mm.has(base)) mm.set(base, ctx.hc.directSpriteTexture(base as never, mode));
       return mm.get(base); // direct: the player with a dark outline → it jumps out
     }
     return base;
@@ -186,7 +192,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
   // What the GPU filter cannot do: a cataract's haze, glaucoma's tunnel, macular degeneration's central spot and
   // retinopathy's scattered spots. They are drawing, not a colour transform — they come as a texture.
   function lvOverlayCanvas(lv: string): HTMLCanvasElement {
-    const W = LOGICAL_W, H = LOGICAL_H, cv = makeCanvas(W, H), c = cv.getContext('2d')!;
+    const W = LOGICAL_W, H = LOGICAL_H, cv = makeCanvas(ctx.doc, W, H), c = cv.getContext('2d')!;
     drawLowVision(c, lv, W, H); // one drawing for the viewports and for the world `createGame` declares (issue #182)
     return cv;
   }

@@ -26,7 +26,7 @@ export const HC_ROLE_KEYS: readonly HcRoleKey[] = ['hazard', 'climb', 'water', '
 /**
  * Default colours per role (RGB 0-255). Color-blocking: hazard = warm orange, climbable/interactive (ladder/trampoline)
  * = cyan, water = blue, gate = magenta. Structure (stone/wall) stays in the level's blue-grey and so is not a role.
- * Customisable and persisted — see `HC_ROLE` in render/high-contrast.
+ * Customisable and persisted — see the `role` palette of render/high-contrast's `createHighContrast`.
  */
 export const HC_ROLE_DEF: Record<HcRoleKey, [number, number, number]> = {
   hazard: [255, 110, 45], climb: [55, 225, 205], water: [70, 140, 255], gate: [194, 58, 212],

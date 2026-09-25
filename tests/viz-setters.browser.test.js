@@ -12,9 +12,8 @@ import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it
 
-// lqT is no longer read at the IMPORT of render/lq-filter: it is 0 until `initLqFilter` reads the store it is given
-// (ADR-0232), and this file never calls it — so no leftover 'incl_lq' can enter the exact-string assertions, and nothing
-// here clears the page's storage out from under the files that share the origin.
+// The L→Q enhancement is the ctx's `lqFilter` (ADR-0232 D4): this file hands in one that is off, so no leftover amount can
+// enter the exact-string assertions, and nothing here reads the page's storage.
 
 const { TILE } = await import('../app/js/core/constants.js');
 const { VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
@@ -44,7 +43,8 @@ const worldCanvasNormal = flatCanvas(W * TILE, H * TILE, 'rgb(120,120,140)');
 const itemCanvasNormal = flatCanvas(8, 8, 'rgb(240,200,60)');
 const TEX_WORLD_NORMAL = { NORMAL: 'world' };
 const TEX_ITEM_NORMAL = { NORMAL: 'alvo' };
-HC.initHighContrast({ store: createStorage(memoryBackend()), roleOf,
+// The world's high contrast, handed to every ctx as `hc` (ADR-0232 D4).
+const hc = HC.createHighContrast({ doc: document, store: createStorage(memoryBackend()), roleOf,
   W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => TEX_WORLD_NORMAL,
   sprites: () => ({ alvo: { canvas: itemCanvasNormal, tex: TEX_ITEM_NORMAL } }),
@@ -106,11 +106,12 @@ function setup(over = {}) {
     rebuildExtras: () => {}, rebuildCoins: () => {},
     setBlindMode: () => {}, setVizMode: () => {}, hideTouchControls: (r) => env.log.hideTouch.push(r),
     reflectVizButtons: () => {}, renderVisualPanel: () => {}, renderEmpathyPanel: () => {},
+    hc, lqFilter: () => '',
   };
   return { env, api: initVizSetters(ctx) };
 }
 
-beforeEach(() => { document.body.className = ''; HC.clearWorldTexCache(); HC.clearSpriteTexCache(); });
+beforeEach(() => { document.body.className = ''; hc.clearWorldTexCache(); hc.clearSpriteTexCache(); });
 
 /* ===================================================================================================== */
 

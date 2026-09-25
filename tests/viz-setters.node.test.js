@@ -28,15 +28,17 @@ const memGet = (k) => (mem.has(k) ? mem.get(k) : null);
 const { setVizModeValue } = createSettingsStore({ ...shared, KEYS });
 
 const { VIZ_MODES, VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
-const { initHighContrast } = await import('../app/js/render/high-contrast.js');
+const { createHighContrast } = await import('../app/js/render/high-contrast.js');
+
 const {
   initVizSetters, resolveViz, isDirectMode, cssFilterFor, vizDotFor, vizIndicatorFor,
   lvOverlayClassFor, vizGroupHtml, vizGroupSay, reachOfMode,
 } = await import('../app/js/render/viz-setters.js');
 
-// worldTexFor/spriteTexFor need the high-contrast ctx. In NON-direct modes they return the normal texture without
-// touching a canvas — which is exactly the detour exercised here.
-initHighContrast({ store: createStorage(memoryBackend()),
+// The world's high contrast (ADR-0232 D4: an instance the ctx receives as `hc`). In NON-direct modes worldTexFor/spriteTexFor
+// return the normal texture without touching a canvas — which is exactly the detour exercised here.
+const hc = createHighContrast({ doc: { createElement: () => { throw new Error('no canvas in the node project'); } },
+  store: createStorage(memoryBackend()),
   W: 1, H: 1, outlineFg: () => 0, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => 'TEX_WORLD_NORMAL',
   // The high-contrast sprite registry is keyed by ID, and the id here is the same the ctx declares (`itemTexId: 'alvo'`)
@@ -111,6 +113,7 @@ function setup(over = {}) {
     powerups: over.powerups || [],
     vpSpr: over.vpSpr || [],
     vpDots: over.vpDots || [],
+    lq: over.lq === undefined ? '' : over.lq,
     log: {
       frontDim: [], blindMode: [], hideTouch: [], say: [], selWrites: [],
       rebuildExtras: 0, rebuildCoins: 0, reflect: 0, visual: 0, empathy: 0, filtrosCss: [], hcNoDom: [],
@@ -168,6 +171,9 @@ function setup(over = {}) {
     reflectVizButtons: () => { env.log.reflect++; },
     renderVisualPanel: () => { env.log.visual++; },
     renderEmpathyPanel: () => { env.log.empathy++; },
+    // the world's high contrast and the root's L→Q enhancement, both handed in (ADR-0232 D4)
+    hc: over.hc || hc,
+    lqFilter: () => env.lq,
   };
   const bodyClasses = ctx.body.classes;
   ctx.body.classList = {
@@ -641,6 +647,30 @@ describe('rebakeDirect — invalida os caches de textura direta e re-renderiza',
     expect(mp.env.log.rebuildCoins).toBe(0);
     expect(mp.env.bodyClasses.size).toBe(0);
     expect(mp.env.vpSpr[1].filters).toBe('FILTER:blind');
+  });
+  it('🔴 [Right] the caches it clears are the INJECTED world\'s high contrast (ADR-0232 D4), world and sprites both', () => {
+    const cleared = [];
+    const spyHc = { ...hc,
+      clearWorldTexCache: () => { cleared.push('world'); },
+      clearSpriteTexCache: (id) => { cleared.push(id === undefined ? 'sprites' : 'sprite:' + id); } };
+    const { api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1, hc: spyHc });
+    api.rebakeDirect();
+    expect(cleared).toEqual(['world', 'sprites']);
+  });
+});
+
+describe('the L→Q enhancement comes from the ctx (ADR-0232 D4)', () => {
+  // The fragment used to be read from `render/lq-filter`'s module amount, one per page; now it is the root's instance,
+  // handed in as `lqFilter`. These cases give it a value and see it composed on both paths.
+  it('🔴 [Right] SOLO: composed after the colour filter', () => {
+    const { env, api } = setup({ players: [{ viz: 'sim-deuter' }], numPlayers: 1, lq: 'url(#lq-enh)' });
+    api.reapplyVizAll();
+    expect(env.app.view.style.filter).toBe('url(#cvd-deuter) url(#lq-enh)');
+  });
+  it('🔴 [Right] MULTI-SCREEN: the enhancement alone reaches the canvas and the menus', () => {
+    const { env, api } = setup({ players: [{ viz: 'blind' }, { viz: 'normal' }], numPlayers: 2, vpSpr: [filtered(), filtered()], lq: 'url(#lq-enh)' });
+    api.reapplyVizAll();
+    expect(env.app.view.style.filter).toBe('url(#lq-enh)');
   });
 });
 

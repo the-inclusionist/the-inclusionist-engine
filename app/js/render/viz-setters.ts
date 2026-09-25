@@ -28,9 +28,7 @@ import {
   axesHtml, buttonChoice, THEME_LABEL, CORRECTION_LABEL,
 } from './viz-axes-labels.js';
 import { simulationRefusal } from './viz-refusal.js';
-import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
-
-import { lqFilter } from './lq-filter.js';
+import { DIRECT_CFG, type HighContrast } from './high-contrast.js';
 import type { Store } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
 /** What each player's visual state is read and written through. */
@@ -202,6 +200,16 @@ export interface VizSettersCtx {
    */
   pupTexFor: (kind: string, mode: string) => unknown;
   resetPupTexCache: () => void;
+  /**
+   * THE WORLD'S HIGH CONTRAST (`render/high-contrast`'s `createHighContrast`), built by whoever has the world — the root
+   * has none (ADR-0232 D4, issue #207). REQUIRED: the recoloured world and sprites, and their caches, are that instance's.
+   */
+  hc: Pick<HighContrast, 'worldTexFor' | 'spriteTexFor' | 'clearWorldTexCache' | 'clearSpriteTexCache'>;
+  /**
+   * The L→Q contrast enhancement's CSS fragment (`render/lq-filter`'s `createLqFilter().filter`), '' when off. REQUIRED:
+   * the enhancement is a low-vision child's, and a filter recomposed without it would drop it in silence.
+   */
+  lqFilter: () => string;
 
   /* --- side effects of other subsystems (the game's) --- */
   setFrontDim: (on: boolean) => void;               // foreground props (cars/signs/lights) darken like the background
@@ -264,10 +272,10 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     if (mode !== ctx.getSharedViz()) {
       ctx.setSharedViz(mode);
       ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: foreground props darken like the background
-      ctx.worldSprite.texture = worldTexFor(mode);
+      ctx.worldSprite.texture = ctx.hc.worldTexFor(mode);
       ctx.parallaxLayers.forEach((ts, j) => { ts.texture = ctx.parallaxTexFor(j, mode); });
       ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(mode); });
-      for (const s of ctx.getItemSprites()) { if (s) s.texture = spriteTexFor(ctx.itemTexId, mode); }
+      for (const s of ctx.getItemSprites()) { if (s) s.texture = ctx.hc.spriteTexFor(ctx.itemTexId, mode); }
       for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.texture = ctx.pupTexFor(pu.kind, mode); }
     }
     for (const pl of ctx.getPlayers()) { if (pl.sprite && pl._tx) pl.sprite.texture = ctx.playerVizTex(pl._tx, mode); } // the player changes frame every tick
@@ -368,12 +376,12 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // There is no separate "high contrast is on" flag: deriving it from VIZ_BY_KEY costs a comparison and cannot drift,
     // where a copied flag once disagreed with its own setter.
     // --- the CORRECTION/SIMULATION axis: the CSS filter ---
-    ctx.applyCssFilter(cssFilterFor(filterName ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
+    ctx.applyCssFilter(cssFilterFor(filterName ?? '', ctx.lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
     // --- the THEME axis: DOM and texture. It is not a filter (see `ApplyHighContrastToDom`), which is why it composes.
     ctx.applyHighContrastToDom(hasHighContrast(v));
     ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textureForMode) : null; // solo: high contrast on the camera
     ctx.setFrontDim(hasHighContrast(v)); // HC: the foreground props darken like the background
-    ctx.worldSprite.texture = worldTexFor(textureForMode);         // direct high contrast = Direct Rendering · else normal
+    ctx.worldSprite.texture = ctx.hc.worldTexFor(textureForMode);         // direct high contrast = Direct Rendering · else normal
     ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, textureForMode); });
     ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(textureForMode); });
     ctx.rebuildExtras(); ctx.rebuildCoins();
@@ -403,7 +411,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].visual ?? DEFAULT_VISUAL); }
     else {
-      ctx.applyCssFilter(lqFilter(), 'mundo-e-menus'); // the L/Q enhancement is an enhancement: it reaches the menu
+      ctx.applyCssFilter(ctx.lqFilter(), 'mundo-e-menus'); // the L/Q enhancement is an enhancement: it reaches the menu
       ctx.camera.filters = null;
       ctx.body.classList.remove('lowvision-mode', 'blind-mode');
       const ov = ctx.$('#viz-overlay'); if (ov) ov.hidden = true;
@@ -413,7 +421,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   // invalidates the direct texture caches (the world depends on bg; sprites on fg) and re-renders
   function rebakeDirect(): void {
-    clearWorldTexCache(); clearSpriteTexCache(); ctx.resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
+    ctx.hc.clearWorldTexCache(); ctx.hc.clearSpriteTexCache(); ctx.resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].visual ?? DEFAULT_VISUAL); else applyVpFilters();
   }
 

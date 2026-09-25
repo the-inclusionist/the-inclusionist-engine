@@ -14,13 +14,13 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { CVD_KEYS, CVD_MATRIX, CVD_SVG_ID, installCvdFilters } from '../app/js/render/cvd-matrices.js';
 import { initViewports } from '../app/js/render/viewports.js';
-import { initHighContrast } from '../app/js/render/high-contrast.js';
+import { createHighContrast } from '../app/js/render/high-contrast.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // outlineFg > 0 → directSpriteTexture really outlines (with 0 it returns the source and the player cache test could not
-// fail). The world/coin fields are not exercised here.
-initHighContrast({ store: createStorage(memoryBackend()),
+// fail). The world/coin fields are not exercised here. The world's instance, handed to every viewports ctx (ADR-0232 D4).
+const hc = createHighContrast({ doc: document, store: createStorage(memoryBackend()),
   W: 1, H: 1, outlineFg: () => 1, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => null,
   sprites: () => ({}), roleOf: () => null,
@@ -48,6 +48,8 @@ function mkCtx(over = {}) {
     renderInto: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
     getVpTex: () => ['RT0', 'RT1'],
     cvdDefsHost: null,
+    doc: document,
+    hc,
     ...over,
   };
   return { ctx, rendered, spr, treeTexNormal };
@@ -123,6 +125,11 @@ describe('render/viewports — lvOverlayCanvas', () => {
   it('[Right] o overlay tem o tamanho lógico da tela (320×180)', () => {
     const cv = vp().lvOverlayCanvas('haze');
     expect([cv.width, cv.height]).toEqual([W, H]);
+  });
+
+  it('🔴 [Right] the overlay is drawn in the document the ctx HANDS over, never the global one (ADR-0232 D4)', () => {
+    const other = document.implementation.createHTMLDocument('other');
+    expect(initViewports(mkCtx({ doc: other }).ctx).lvOverlayCanvas('haze').ownerDocument).toBe(other);
   });
 
   it('[Right] haze (catarata) cobre a tela INTEIRA com o mesmo véu claro', () => {

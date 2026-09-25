@@ -71,6 +71,13 @@ function mkCtx(over = {}) {
     renderInto: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
     getVpTex: () => ['RT0', 'RT1'],
     cvdDefsHost: null,
+    // no canvas in the node project: a document that is touched throws, so a case that draws says so
+    doc: { createElement: () => { throw new Error('no canvas in the node project'); } },
+    // the world's high contrast (ADR-0232 D4): recorded, so a case can see which instance the recolour went through
+    hc: {
+      directBgTexture: (src, mode) => ({ bg: src, mode }),
+      directSpriteTexture: (src, mode) => ({ sprite: src, mode }),
+    },
     ...over,
   };
   return { ctx, rendered, spr };
@@ -386,6 +393,25 @@ describe('render/viewports — playerVizTex', () => {
   it('[Zombie] limpar o cache sem nunca ter cacheado nada não estoura', () => {
     const { ctx } = mkCtx();
     expect(() => initViewports(ctx).clearPlayerDirectCache()).not.toThrow();
+  });
+});
+
+describe('render/viewports — high contrast goes through the INJECTED world instance (ADR-0232 D4)', () => {
+  // The recolours used to be module functions over the page's one palette and outline; now they are the world's
+  // `createHighContrast` instance, handed in as `ctx.hc`. These cases see each recolour arrive THERE, with the mode.
+  it('🔴 [Right] parallax, tree and player are recoloured by `ctx.hc`, once per mode (cached)', () => {
+    const calls = [];
+    const { ctx } = mkCtx({ hc: {
+      directBgTexture: (src, mode) => { calls.push(['bg', src, mode]); return 'BG:' + src; },
+      directSpriteTexture: (src, mode) => { calls.push(['sprite', src.q, mode]); return 'SPR'; },
+    } });
+    const vp = initViewports(ctx);
+    expect(vp.parallaxTexFor(1, 'hc-direto')).toBe('BG:TEX_FAR');
+    expect(vp.treeTexFor('hc-direto-7')).toBe('BG:TEX_TREE');
+    const base = { q: 1 };
+    expect(vp.playerVizTex(base, 'hc-direto-45')).toBe('SPR');
+    vp.parallaxTexFor(1, 'hc-direto'); vp.treeTexFor('hc-direto-7'); vp.playerVizTex(base, 'hc-direto-45'); // cached
+    expect(calls).toEqual([['bg', 'TEX_FAR', 'hc-direto'], ['bg', 'TEX_TREE', 'hc-direto-7'], ['sprite', 1, 'hc-direto-45']]);
   });
 });
 

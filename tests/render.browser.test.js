@@ -21,32 +21,46 @@ describe('ui/dom — atalhos de seleção', () => {
 
 describe('render/canvas — primitivas', () => {
   it('[Right] makeCanvas dimensiona o offscreen', () => {
-    const c = CV.makeCanvas(7, 5);
+    const c = CV.makeCanvas(document, 7, 5);
     expect([c.width, c.height]).toEqual([7, 5]);
   });
   it('[Right] pixDisc pinta o pixel central opaco', () => {
-    const c = CV.makeCanvas(9, 9), x = c.getContext('2d');
+    const c = CV.makeCanvas(document, 9, 9), x = c.getContext('2d');
     CV.pixDisc(x, 4, 4, 3, '#ff0000');
     const p = x.getImageData(4, 4, 1, 1).data;
     expect([p[0], p[3]]).toEqual([255, 255]);
   });
   it('[Interface] tex usa SCALE_MODES.NEAREST (pixel art)', () => {
-    expect(CV.tex(CV.makeCanvas(2, 2)).baseTexture.scaleMode).toBe(PIXI.SCALE_MODES.NEAREST);
+    expect(CV.tex(CV.makeCanvas(document, 2, 2)).baseTexture.scaleMode).toBe(PIXI.SCALE_MODES.NEAREST);
   });
   it('[Boundary] pixDisc de raio pequeno não estoura', () => {
-    const x = CV.makeCanvas(3, 3).getContext('2d');
+    const x = CV.makeCanvas(document, 3, 3).getContext('2d');
     expect(() => CV.pixDisc(x, 1, 1, 0.5, '#0f0')).not.toThrow();
+  });
+  it('🔴 [Right] the canvas is made in the document it is HANDED, never the global one (ADR-0232 D4)', () => {
+    // A root serving another document (a second root, a test) must get its canvases there: a canvas made in the page's
+    // global document would belong to the wrong one.
+    const other = document.implementation.createHTMLDocument('other');
+    expect(CV.makeCanvas(other, 2, 2).ownerDocument, 'makeCanvas').toBe(other);
+    expect(CV.pixelCanvas(other, 2, 2, (px) => px(0, 0, 1, 1, '#f00')).ownerDocument, 'pixelCanvas').toBe(other);
+    expect(CV.pixelTexture(other, 2, 2, () => {}).baseTexture.resource.source.ownerDocument, 'pixelTexture').toBe(other);
   });
 });
 
 describe('render/sprite-fx — ASCII + contorno', () => {
   it('[Right] spriteToCanvas devolve 16×32', () => {
-    const c = FX.spriteToCanvas(['SS']);
+    const c = FX.spriteToCanvas(document, ['SS']);
     expect([c.width, c.height]).toEqual([16, 32]);
   });
   it('[Inverse-ish] outlineCanvas preserva a largura da fonte', () => {
-    const s = FX.spriteToCanvas(['SS']);
+    const s = FX.spriteToCanvas(document, ['SS']);
     expect(FX.outlineCanvas(s, 1).width).toBe(s.width);
+  });
+  it('🔴 [Right] the art is painted in the document handed over, and the outline in its SOURCE canvas\'s document (ADR-0232 D4)', () => {
+    const other = document.implementation.createHTMLDocument('other');
+    const s = FX.spriteToCanvas(other, ['SS']);
+    expect(s.ownerDocument, 'spriteToCanvas').toBe(other);
+    expect(FX.outlineCanvas(s, 1).ownerDocument, 'outlineCanvas').toBe(other);
   });
 });
 

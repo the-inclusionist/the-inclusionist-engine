@@ -11,7 +11,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
-import { initHighContrast, directSpriteTexture } from '../app/js/render/high-contrast.js';
+import { createHighContrast } from '../app/js/render/high-contrast.js';
 
 /** A "sheet" with 4 frames of 10×10 side by side — the atlas in miniature. */
 function folhaDeQuadros() {
@@ -31,9 +31,11 @@ function texturaComRecorte(fonte, recorte) {
   };
 }
 
-/** `initHighContrast` asks for a handful of the game's reads; here only the outline matters. */
+/** The world's high contrast, rebuilt per case (ADR-0232 D4: an instance, not module state). */
+let hc;
+/** `createHighContrast` asks for a handful of the game's reads; here only the outline matters. */
 function ligarHC(espessura) {
-  initHighContrast({ store: createStorage(memoryBackend()),
+  hc = createHighContrast({ doc: document, store: createStorage(memoryBackend()),
     outlineFg: () => espessura,
     outlineBg: () => 0,
     getWorldCanvasNormal: () => document.createElement('canvas'),
@@ -47,7 +49,7 @@ describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
     // The defect's case, written inside out: a 10×10 crop inside a 40×10 sheet. Without respecting the crop, the result
     // is 40 wide — the four frames at once, which is the kage bunshin.
     ligarHC(1);
-    const t = directSpriteTexture(texturaComRecorte(folhaDeQuadros(), { x: 20, y: 0, width: 10, height: 10 }), 'hc-direto');
+    const t = hc.directSpriteTexture(texturaComRecorte(folhaDeQuadros(), { x: 20, y: 0, width: 10, height: 10 }), 'hc-direto');
     const cv = t.baseTexture.resource.source;
     expect(cv.width, 'o contorno pegou a folha inteira — é o "kage bunshin"').toBeLessThan(20);
     expect(cv.height).toBeLessThan(20);
@@ -60,7 +62,7 @@ describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
     // Thickness 1, not 0: thickness 0 is a shortcut that never crops, and with it the case passed with the mutation
     // "always crop at 0,0" applied. Reading the PIXEL is what makes it bite.
     ligarHC(1);
-    const t = directSpriteTexture(texturaComRecorte(folhaDeQuadros(), { x: 20, y: 0, width: 10, height: 10 }), 'hc-direto');
+    const t = hc.directSpriteTexture(texturaComRecorte(folhaDeQuadros(), { x: 20, y: 0, width: 10, height: 10 }), 'hc-direto');
     const cv = t.baseTexture.resource.source;
     const c = cv.getContext('2d');
     const meio = c.getImageData(Math.floor(cv.width / 2), Math.floor(cv.height / 2), 1, 1).data;
@@ -73,7 +75,7 @@ describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
     // already right.
     ligarHC(1);
     const fonte = folhaDeQuadros();
-    const t = directSpriteTexture(texturaComRecorte(fonte, { x: 0, y: 0, width: 40, height: 10 }), 'hc-direto');
+    const t = hc.directSpriteTexture(texturaComRecorte(fonte, { x: 0, y: 0, width: 40, height: 10 }), 'hc-direto');
     const cv = t.baseTexture.resource.source;
     expect(cv.width).toBeGreaterThanOrEqual(40);
   });
@@ -81,7 +83,7 @@ describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
   it('[Zero] espessura 0 devolve a origem — sem canvas novo, sem cópia', () => {
     ligarHC(0);
     const orig = texturaComRecorte(folhaDeQuadros(), { x: 0, y: 0, width: 10, height: 10 });
-    expect(directSpriteTexture(orig, 'hc-direto')).toBe(orig);
+    expect(hc.directSpriteTexture(orig, 'hc-direto')).toBe(orig);
   });
 });
 
