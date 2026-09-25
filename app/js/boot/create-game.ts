@@ -80,7 +80,8 @@ import { reserveTopBand } from '../ui/top-band.js';
 import { createSettingsStore, type SettingsStore, type LetterCase } from '../core/state.js';
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
-import { createDeafMode, NO_INTERPRETER } from '../ui/vlibras.js';
+import { createDeafMode, NO_INTERPRETER, type Interpreter } from '../ui/vlibras.js';
+import { screenText, unreadableWorldProblems, menuSonarPress, type ScreenTextCtx } from '../ui/screen-text.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts, type LoadKokoro } from '../platform/tts.js';
@@ -203,6 +204,12 @@ export interface EngineHost {
    * `memoryBackend()`, so no file inherits or races another's keys; a page with two roots one each (ADR-0142).
    */
   readonly storage?: StorageLike;
+  /**
+   * WHO SIGNS IN DEAF MODE (ADR-0234): the Libras player behind the `Interpreter` port, handed the text the sonar reads. Absent:
+   * `NO_INTERPRETER`, which answers «signing unavailable» — a line of `problems` and a notice to the child, with the captions and
+   * the text intact. A test hands its double here.
+   */
+  readonly interpreter?: Interpreter;
 }
 
 /**
@@ -212,6 +219,11 @@ export interface EngineHost {
 function hostStorage(host: EngineHost): StorageLike | null {
   if (host.storage) return host.storage;
   try { return host.win.localStorage ?? null; } catch { return null; }
+}
+
+/** The interpreter the host lent, else the one that says no player is installed. */
+function hostInterpreter(host: EngineHost): Interpreter {
+  return host.interpreter ?? NO_INTERPRETER;
 }
 
 /**
@@ -903,10 +915,10 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4, ADR-0234): the screen reader's two regions written in the HOST's
    * document on the host's frames, and deaf mode over its store. A window with no frames (a test double) is the announcer's to answer.
-   * 📌 Deaf mode hands the interpreter what the SONAR finds, never the announcements, and the sonar text is spoken with the
-   * mode off. The interpreter is `NO_INTERPRETER` until the Dev chooses a Libras player (ADR-0234): the sonar's text is
-   * captioned, and «signing unavailable» goes to `problems` and to the child. The ports it calls later (`tts`, the caption,
-   * `measuredProblems`) are read when it calls.
+   * 📌 Deaf mode hands the interpreter what the SONAR reads — the text on screen (`ui/screen-text`) — never the announcements,
+   * and that text is spoken with the mode off. The interpreter is the host's, else `NO_INTERPRETER` until a Libras player is
+   * installed (ADR-0234): the sonar's text is captioned, and «signing unavailable» goes to `problems` and to the child. The
+   * ports it calls later (`tts`, the caption, `measuredProblems`) are read when it calls.
    */
   const announcer = createAnnouncer({
     doc,
@@ -917,7 +929,7 @@ export function createGame(o: CreateGameOptions): Engine {
     store,
     captionsSetting: () => state.captionsOn,
     t: translator.t,
-    interpreter: NO_INTERPRETER,
+    interpreter: hostInterpreter(o.host),
     speak: (text) => { tts.narrate(text); },
     caption: (text) => { writeSoundCaption(text); },
     tell: srSay,
@@ -2255,8 +2267,11 @@ export function createGame(o: CreateGameOptions): Engine {
     engineActions.som = soundPanel.open;
   }
 
-  // 4b. NAVIGATION SOUND. Only the contract goes in: no tile, collision box or coin array.
+  // 4b. THE SONAR. Only the contract goes in: no tile, collision box or coin array. Its WORDS are the text on screen at the
+  //     press, read from the page by `ui/screen-text` (ADR-0234: «sonar do que está na tela»); its tone points at the target.
+  const screen: ScreenTextCtx = { doc, world: () => cartridge.declaration.world() };
   const sonar = createAudioSonar({
+    screenText: () => screenText(screen),
     t: translator.t,
     topology: () => cartridge.declaration.topology(),
     targetsOf: (i) => cartridge.declaration.targetsOf(i),
@@ -2265,7 +2280,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // the route go round a wall; `catNode`/`audioOut`/`getVolume` put a PERMANENT graph on the same volume slider as
     // all the rest of the audio.
     roleAt: (at) => cartridge.declaration.roleAt(at),
-    // what the sonar found is read aloud — or, in deaf mode, captioned and signed by the interpreter (ADR-0234)
+    // what the sonar reads is spoken — or, in deaf mode, captioned and signed by the interpreter (ADR-0234)
     tonePan, srSay, narrate: deafMode.sonar,
     catNode, audioOut, getVolume: () => mixer.volume,
     // ⚠️ THE ANSWER, NOT THE TABLE (#104): `platform/audio-sonar` does not know what a visual mode is, so it is answered
@@ -4001,6 +4016,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // `input/state`.
     holdKey: markKeyFrom,
     releaseKey: releaseKey, menuKey: keyToMenu, deliver: deliverCommand,
+    // With a menu open the game hears no press, so the engine answers the sonar there: R1 reads the menu in front, spoken or,
+    // in deaf mode, captioned and signed — the same two doors the play sonar's words take (ADR-0234).
+    menuAnswers: (action) => menuSonarPress(action, screen, (text) => { srSay(text); deafMode.sonar(text); }),
   });
   /*
    * 🔴 THE KEYBOARD CONDUCTOR, AND ONLY THAT (ADR-0223). It resolves the action and PRESSES the virtual controller, like the
@@ -4258,7 +4276,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
+    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope(), ...unreadableWorldProblems(screen)]; },
     onFailure: announceFailure,
     get reach() { return currentReach; },
   };

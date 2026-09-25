@@ -4,7 +4,8 @@
 // The Dev: «a engine lida com o hardware e passa para o jogo o nome virtual do botão, o jogo por sua vez devolve o nome do que é executado
 // ao apertar cada botão… a engine leva o evento para o jogo». A transport that reads positions (the eyes, and later the face and the
 // hands) presses and releases a position here, with its source; this decides what that reaches:
-// · with a menu open, the position is the menu's key — the way the touch pad already moves menus (ADR-0157), since menus read keys;
+// · with a menu open, the position is the menu's key — the way the touch pad already moves menus (ADR-0157), since menus read keys —
+//   unless the engine answers it there itself (`menuAnswers`: the sonar reads the menu, ADR-0234);
 // · in play, the child's key for that position is held (games that ask what is held keep answering), and the command is delivered to the
 //   cartridge: the position, pressed or released, the source, the seat. The cartridge's map (its `preset`) says what it executes.
 // A position the child's scheme gives no key is still delivered: the map belongs to the game, not to the keyboard.
@@ -42,6 +43,11 @@ export interface VirtualControllerDeps {
    */
   readonly menuKey: (code: string, source: TransportName | undefined) => void;
   readonly deliver: (command: VirtualCommand) => void;
+  /**
+   * A position the ENGINE answers itself while a menu is open, before it becomes a menu key: the sonar reads the menu in
+   * front (ADR-0234, `ui/screen-text.menuSonarPress`). Answers whether it took the press. Absent: every position is a key.
+   */
+  readonly menuAnswers?: (action: Action, player: number) => boolean;
 }
 
 export interface VirtualController {
@@ -64,7 +70,10 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
   return {
     press(action, source, player = 0) {
       const code = d.scheme(player)[action]?.[0];
-      if (d.menuOpen()) { if (code) d.menuKey(code, source); return false; }
+      if (d.menuOpen()) {
+        if (!d.menuAnswers?.(action, player) && code) d.menuKey(code, source);
+        return false;
+      }
       if (code) d.holdKey(code, source);
       held.set(`${player}:${action}`, code ?? null);
       d.deliver({ action, pressed: true, source, player });

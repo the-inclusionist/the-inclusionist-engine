@@ -204,6 +204,12 @@ export interface SonarCtx {
   srSay: (text: string) => void;
   narrate: (text: string) => void;
   /**
+   * WHAT IS ON THE SCREEN NOW, as text in reading order — `''` when there is none the engine can read (ADR-0234: «sonar do que
+   * está na tela»). With text, the sonar's WORDS are that text, read at the press; the tone still points at the nearest
+   * target. Without (a world drawn on a canvas, or no text), the words are the navigation sentence. Absent: always the latter.
+   */
+  screenText?: () => string;
+  /**
    * A mixer category's bus. The SAME shape the other audio modules receive — the guide cannot use `tonePan`, because
    * `tonePan` plays and forgets, and a continuous presence is a graph that STAYS.
    *
@@ -363,16 +369,23 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   const distanceKey = (d: number): string =>
     d < 4 ? 'sr.nav.veryClose' : d < 9 ? 'sr.nav.close' : 'sr.nav.far';
 
+  /**
+   * THE SONAR: a tone that points, and words (ADR-0234). The tone is the same with or without text on screen — pitch says how
+   * near the nearest target is, the pan which side, and a low tone that there is none. The WORDS are what is on the screen
+   * when there is text there, read now; only a screen with no text the engine can read gets the navigation sentence.
+   */
   function sonar(pl: SonarPlayer): void {
     _sonarCount++;
     const pc = playerCtx(pl);
     const target = nearestSpot(pl);
+    if (target) ctx.tonePan(380 + 740 * Math.max(0, 1 - target.d / 12), 0.16, 'sonar', panFor(target.at.x, pl), 0.26, 'sine', pc); // nearer = higher
+    else ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc);
+
+    const onScreen = ctx.screenText?.() ?? '';
+    if (onScreen) { ctx.srSay(onScreen); ctx.narrate(onScreen); return; }
     // A sonar that no longer knows what the target is cannot name it when there is NO target at all: it says "nothing
     // nearby", which is true in any genre.
-    if (!target) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay(t('sr.nav.noTargetNear')); return; }
-
-    const pan = panFor(target.at.x, pl), near = Math.max(0, 1 - target.d / 12);
-    ctx.tonePan(380 + 740 * near, 0.16, 'sonar', pan, 0.26, 'sine', pc); // nearer = higher
+    if (!target) { ctx.srSay(t('sr.nav.noTargetNear')); return; }
 
     // The NAME comes from the game (field 3); the engine used to say "coin" because it only knew coins. The fallback is
     // for a game that declares a target without a name: "target" is better than a raw key.

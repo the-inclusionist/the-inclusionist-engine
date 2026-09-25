@@ -71,6 +71,8 @@ function setup(over = {}) {
     nameAt: over.nameAt || (() => ({ text: 'alvo', gender: 'm', plural: false })),
     tonePan: (freq, dur, cat, pan) => tone.push({ freq, cat, pan }),
     srSay: (t) => said.push(t), narrate: (t) => narrated.push(t),
+    // What is on screen (ADR-0234). OMITTED by default: a sonar without a reader keeps the navigation sentence.
+    screenText: over.screenText,
     // ⚠️ THE MODES TABLE LEFT (#104), and the fixture got better for it. It declared `{ normal, cego, baixa }` — three keys
     // that do NOT EXIST in the real catalogue (`normal`, `blind`, `lv-*`) — and the module went through it with `pl.viz`.
     // That is: the test invented a vocabulary for the module to consult, and passed because of it. Now the ctx answers
@@ -562,7 +564,61 @@ describe('playerCtx — a child with an audio device of their own gets a context
   });
 });
 
+/*
+ * THE SONAR OF WHAT IS ON SCREEN (ADR-0234): «O sonar, ao ser apertado com texto na tela faz com que o texto seja lido». The
+ * words are the screen's, read at the press; the TONE is the navigation sonar's, unchanged — it still points at the target.
+ */
+describe('platform/audio-sonar · with text on screen, the words are the screen\'s (ADR-0234)', () => {
+  const SCREEN = 'Qual animal põe ovos e tem bico? Gato. Galinha.';
+
+  it('🔴 [Right] the words are the text on screen — said and narrated — and no navigation sentence', () => {
+    const { som, said, narrated } = setup({ alvos: [{ x: 48, y: 32 }], screenText: () => SCREEN });
+    som.sonar(pl());
+    expect(narrated, 'the voice (or, in deaf mode, the interpreter) was not handed the screen').toEqual([SCREEN]);
+    expect(said, 'the screen reader was not handed the screen').toEqual([SCREEN]);
+  });
+
+  it('🔴 [Right] the tone still points at the target: the same pitch and side as without text on screen', () => {
+    const sem = setup({ alvos: [{ x: 300, y: 32 }] });
+    sem.som.sonar(pl());
+    const com = setup({ alvos: [{ x: 300, y: 32 }], screenText: () => SCREEN });
+    com.som.sonar(pl());
+    expect(com.tone, 'reading the screen changed or silenced the navigation tone').toEqual(sem.tone);
+    expect(com.tone[0].pan, 'the tone stopped pointing to the right').toBeGreaterThan(0);
+  });
+
+  it('🔴 [Right] the screen is read at EVERY press — never a copy taken earlier', () => {
+    let screen = 'Pergunta um.';
+    const { som, narrated } = setup({ alvos: [{ x: 48, y: 32 }], screenText: () => screen });
+    som.sonar(pl());
+    screen = 'Pergunta dois.';
+    som.sonar(pl());
+    expect(narrated).toEqual(['Pergunta um.', 'Pergunta dois.']);
+  });
+
+  it('🔴 [Zero] no text the engine can read (`\'\'`): the navigation sentence, as before', () => {
+    const { som, said, narrated } = setup({ alvos: [{ x: 300, y: 32 }], screenText: () => '' });
+    som.sonar(pl());
+    expect(said[0]).toContain('às 3 horas');
+    expect(narrated).toEqual(said);
+  });
+
+  it('🔴 [Zero] no target, text on screen: the low tone that says «nothing to find», and the screen\'s words', () => {
+    const { som, said, narrated, tone } = setup({ alvos: [], screenText: () => SCREEN });
+    som.sonar(pl());
+    expect(tone.map((x) => x.freq)).toEqual([300]);
+    expect(narrated).toEqual([SCREEN]);
+    expect(said, '«nothing nearby» was said over a screen that has text').toEqual([SCREEN]);
+  });
+});
+
 // ========================= MUTATIONS CHECKED =========================
+// THE SCREEN'S WORDS (ADR-0234), each run on its own against the block above:
+//   · the words stay the navigation sentence (`screenText` never read) → the [Right] words, every-press and no-target cases fail;
+//   · the text is read at the FIRST press and kept → the every-press case fails («Pergunta um.» twice);
+//   · only `narrate` gets the text (no `srSay`) → the [Right] words and no-target cases fail;
+//   · the tone is skipped when there is text → the tone case fails (`[]` against the navigation tone);
+//   · an empty text is taken as text → the [Zero] navigation case fails (it narrates `''`).
 //   · putting back `(ctx.LOGICAL_W * 0.55)` as the denominator → TWO fail: the metres-pitch case with **0.0568** — the
 //     exact number the audit measured — and the one-step-is-one-cell grid case. It is #121 reproduced, and the
 //     `[Cross-check]` beside it confirms the issue's number was right.

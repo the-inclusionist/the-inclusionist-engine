@@ -55,7 +55,8 @@ describe('o consumidor obedece à própria regra', () => {
   it('🔴 [Right] it boots only when the PAGE calls it, with the page\'s document and window — never at import (ADR-0232 D4)', () => {
     expect(FONTE, 'the module boots itself at import again').not.toMatch(/^\s*if\s*\(.*\bdocument\b.*\)\s*bootQuiz\(/m);
     expect(typeof bootQuiz, 'the page has no entry to call').toBe('function');
-    expect(FONTE).toMatch(/export function bootQuiz\(\{ doc, win \}: QuizHost\): Engine/);
+    // the page's document and window, and the optional interpreter a test lends (ADR-0234) — nothing read from a global
+    expect(FONTE).toMatch(/export function bootQuiz\(\{ doc, win, interpreter \}: QuizHost\): Engine/);
     const pagina = readFileSync(join(process.cwd(), 'app', 'quiz.html'), 'utf8');
     expect(pagina, 'the page does not hand the quiz its document and window')
       .toMatch(/import \{ bootQuiz \} from '\.\/js\/consumer-quiz\/main-quiz\.ts';\s*bootQuiz\(\{ doc: document, win: window \}\);/);

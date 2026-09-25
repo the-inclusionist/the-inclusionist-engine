@@ -3842,6 +3842,32 @@ handed the game's writer straight through and never learned of the theme (ADR-00
 
 📏 **Measured in the sibling repositories, read-only:** no game builds `createCrt` or names `a11yVisualOn`.
 
+## DM · The sonar reads what is on the screen now (ADR-0234)
+
+**Who is affected:** every game that rings `engine.sonar.sonar(…)`, by what the child hears — no code has to change for it;
+a game whose tests read `engine.problems` over a world with a `<canvas>` in it; and code that builds `createAudioSonar` or
+`createVirtualController` itself, which may pass the two new optional members.
+
+📌 **Why:** the Dev, testing the demo quiz: «O sonar não está lendo o que aparece na tela: a tela só é lida ao carregar.»
+ADR-0234 decided «sonar do que está na tela» and it was never built: the sonar spoke the NAVIGATION sentence («Sonar: pergunta
+1, aqui, bem perto»), and in deaf mode the interpreter was handed that sentence, not the screen.
+
+| was | is | migration |
+|---|---|---|
+| the sonar's words: always the navigation sentence (the nearest target's name, side and distance) | the text ON SCREEN at the press when there is any: the dialog in front (the focused one, else the last open; `inert` layers skipped), else the declared world, in DOM order, one sentence per block — skipping what is not rendered, `aria-hidden`, and the engine's chrome (quick bar, footer, scan chip, pad, camera overlays, `.sr-only`, the session clock). The navigation sentence stays for a screen with no text the engine can read. The TONE is unchanged | none; a game that relied on the sentence naming its target hears its screen instead — that is the decision |
+| R1 (`rightShoulder`) with a menu open: a key the menus ignored | the ENGINE's sonar: it reads the menu in front, spoken or, in deaf mode, captioned and signed | none |
+| a world with a `<canvas>` (not the engine's own) | a line in `problems`: «the sonar cannot read this game's screen: its world draws on a <canvas>…» — the sonar keeps its navigation sentence there | a test that expects `problems` to be `[]` over such a world expects that line, or the game writes its words as page text in the world |
+| — | `SonarCtx.screenText?: () => string`, `VirtualControllerDeps.menuAnswers?: (action, player) => boolean`, `EngineHost.interpreter?: Interpreter` (absent: `NO_INTERPRETER`), new module `ui/screen-text` (`screenText`, `unreadableWorldProblems`, `menuSonarPress`, `ScreenTextCtx`) — all additive | — |
+
+📏 **Measured in the sibling repositories, read-only, as information:** `game-chess`, `game-pinball`, `game-soccer` (`app/js/boot/main.ts:590`)
+and `game-2048` ring `engine.sonar.sonar`; `game-chess`, `game-pinball`, `game-whackwhack`, `game-2048` and `game-platformer`
+declare an element world, and every one of the seven draws on a canvas somewhere (grep for `<canvas`/`createElement('canvas')`/a
+PIXI application), so where the canvas sits inside the declared world the sonar keeps its sentence and `problems` gains the line.
+`game-pinball` asserts `problems` is `[]` in three browser tests (`tests/accessibility.browser.test.ts:271`,
+`tests/art-reaches-the-screen.browser.test.ts:126`, `tests/boot.browser.test.ts:82`) over `#game-region` — those three meet this
+note on the bump. `game-platformer` builds its own `createAudioSonar` (`app/js/main.ts:747`) without `screenText`, so its
+sonar keeps the navigation sentence, unchanged; no game builds `createVirtualController`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

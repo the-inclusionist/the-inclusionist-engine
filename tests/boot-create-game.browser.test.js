@@ -1605,6 +1605,64 @@ describe('createGame num documento de verdade', () => {
     }
   });
 
+  /*
+   * THE SONAR'S WORDS ARE THE SCREEN'S (ADR-0234) — and a world drawn on a canvas has none the engine can read. Then the sonar
+   * keeps its navigation sentence and `problems` says why (ADR-0169); a contract field for a game to hand its screen's text
+   * is the Dev's decision, not built. The quiz page holds the DOM half: `the-sonar-reads-the-screen.browser.test.js`.
+   */
+  it('🔴 [Right] a DOM world: the sonar reads its text; with a canvas in it: the navigation sentence, and `problems` says why', async () => {
+    const { vi } = await import('vitest');
+    const motor = abrir();
+    const narrate = vi.spyOn(motor.tts, 'narrate').mockImplementation(() => {});
+    const region = document.getElementById('game-region');
+    const words = document.createElement('div');
+    // a line, an image of a number, a chosen option and a picture: each said by what it SHOWS, not by its markup
+    words.innerHTML = '<p>Texto do jogo</p><div role="img" aria-label="12 pontos">00012</div>'
+      + '<select><option>um</option><option selected>dois</option></select><img alt="uma casa">';
+    region.prepend(words);
+    const canvas = document.createElement('canvas');
+    try {
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      expect(narrate.mock.calls.at(-1)?.[0], 'a DOM world\'s text was not read').toBe('Texto do jogo. 12 pontos. dois. uma casa.');
+      expect(motor.problems.join('\n')).not.toMatch(/the sonar cannot read this game's screen/);
+
+      canvas.width = 64; canvas.height = 32;
+      region.prepend(canvas);
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      const said = narrate.mock.calls.at(-1)?.[0] ?? '';
+      expect(said, 'over a canvas the sonar read only the DOM part and called it the screen').not.toContain('Texto do jogo');
+      expect(said, 'over a canvas the sonar lost its navigation sentence').toContain('primeira pergunta');
+      expect(motor.problems.join('\n'), 'a world the sonar cannot read is not in `problems`')
+        .toMatch(/the sonar cannot read this game's screen: its world draws on a <canvas>/);
+    } finally {
+      narrate.mockRestore();
+      words.remove();
+      canvas.remove();
+    }
+  });
+
+  it('🔴 [Right] of a game\'s own dialogs, the sonar reads the one in FRONT: the focused, else the last open — never an inert layer', async () => {
+    const { vi } = await import('vitest');
+    const motor = abrir();
+    const narrate = vi.spyOn(motor.tts, 'narrate').mockImplementation(() => {});
+    const region = document.getElementById('game-region');
+    const dialogs = document.createElement('div');
+    dialogs.innerHTML = '<p>Mundo</p><div role="dialog"><button type="button">Primeiro</button></div>'
+      + '<div role="dialog"><p>Segundo</p></div><div role="dialog" inert><p>Por baixo</p></div>';
+    region.prepend(dialogs);
+    const said = () => narrate.mock.calls.at(-1)?.[0];
+    try {
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      expect(said(), 'with no focus in a dialog, the LAST one open is in front (the inert one is under it)').toBe('Segundo.');
+      dialogs.querySelector('button').focus();
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      expect(said(), 'the dialog holding the focus is the one in front').toBe('Primeiro.');
+    } finally {
+      narrate.mockRestore();
+      dialogs.remove();
+    }
+  });
+
   it('🔴 [Right] `engine.say` and `engine.alert` write THIS root\'s regions, on the next frame', async () => {
     const motor = abrir();
     const status = document.querySelector('#sr-status');
@@ -1861,3 +1919,11 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 //      read the icon's `aria-pressed`: the engine's state flipped and the icon said off, and nothing asked the icon
 //   D10 the caption host gated on the setting alone           🔴 «every sound is captioned»
 //   D11 `engine.deafMode.isOn`, `toggle`, `captionsOn` each cut from deaf mode  🔴 the 🦻, the restored choice, the captions
+
+// ---- ADR-0234 the sonar reads the screen (2026-09-25, `node .mut`-style probe: each alone, restored — all red) ----
+//   S1 no line breaks between blocks                         🔴 «a DOM world: the sonar reads its text…»
+//   S2 a canvas world read as DOM · S3 its `problems` line dropped  🔴 the same case
+//   S4 an image of a number read by its digits · S5 a select read with every option · S6 a picture that says nothing  🔴 the same
+//   S7 the FIRST open dialog · S8 the LAST, the focus not asked · S9 an `inert` layer counted as shown  🔴 «of a game's own dialogs…»
+//      ⚠️ S7 and S9 each SURVIVED the quiz file alone: the engine makes the layers under the front card `inert`, so either rule
+//      held the other there. A game's own dialogs, which nobody inerts, are what tells them apart.

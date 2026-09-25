@@ -256,6 +256,9 @@ const CRU_CONHECIDO = {
                                    // English prose has the same shape as Portuguese. Recording is cheaper than teaching
                                    // the sieve to tell languages apart, and more honest: an exception without a count is
                                    // an open door. Whoever reads these writes a preset (ADR-0085).
+  'ui/screen-text.ts': 1,          // the `problems` line for a world drawn on a canvas, which the sonar cannot read (ADR-0234):
+                                   // English, for whoever INTEGRATES the game — the subject, the child's cost and the fix
+                                   // (ADR-0169). No child reads it. 📏 The sieve counts one of its literals, measured.
 };
 
 describe('texto cru em português nas camadas de ENGINE (o buraco do gate do item 14)', () => {

@@ -130,7 +130,7 @@ import type { Translate } from '../core/i18n.js';
 import { captionDuration } from '../core/caption-duration.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { announceItem } from '../ui/item-announcement.js';
-import { createGame, type Engine, type VirtualCommand } from '../boot/create-game.js';
+import { createGame, type Engine, type EngineHost, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
@@ -265,10 +265,12 @@ export function endText(t: Translate, gotItRight: number, total: number): string
 export interface QuizHost {
   readonly doc: Document;
   readonly win: Window;
+  /** Who signs in deaf mode, lent to the engine (`EngineHost.interpreter`); absent, the engine's own answer. A test's double. */
+  readonly interpreter?: EngineHost['interpreter'];
 }
 
 /** Boot. The page calls it; a test calls it over the page it built. Returns the engine it mounted. */
-export function bootQuiz({ doc, win }: QuizHost): Engine {
+export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
   let atual = 0;
   let foco = 0;
   let correctCount = 0;
@@ -396,8 +398,9 @@ export function bootQuiz({ doc, win }: QuizHost): Engine {
     // changed her mind should not have to wait out the ceiling with the microphone open.
     action1: () => { void listenForAnswer(); },
     action3: () => { if (listening) motor?.reading.stop(); },
-    // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
-    // option under the cursor: pointing at the right option would be cheating.
+    // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). Its words are what is on screen now — the
+    // statement and the options — read by the engine (ADR-0234); its tone points from `atual`, the QUESTION, not the option under
+    // the cursor: pointing at the right option would be cheating.
     rightShoulder: () => { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); },
   };
 
@@ -413,7 +416,7 @@ export function bootQuiz({ doc, win }: QuizHost): Engine {
   // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
   const engine = createGame({
     declaration: declareQuiz(QUESTIONS, { current: () => atual, focus: () => foco, correct: () => correctCount }),
-    host: { doc, win, cvdHost: $<SVGElement>('#q-cvd') },
+    host: { doc, win, cvdHost: $<SVGElement>('#q-cvd'), interpreter },
     // Um quiz não tem ator de pausa. Declarado, e não deduzido de getters que devolvem null — ver o achado 10 e o
     // cabeçalho do `boot/create-game`. (O assistente de mapear controle não se declina: ADR-0231.)
     // ⚠️ O `semMenuDePausa` SAIU daqui em 2026-09-09 (ADR-0120), e este jogo é o motivo de ele ter existido:
@@ -596,9 +599,9 @@ function declareQuiz(questions: readonly Question[], round: QuizRound): GameDecl
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === round.current() ? 'goal' : 'free'),
-    // O nome é curto DE PROPÓSITO: quem ouve o sonar quer saber PARA ONDE ir, não o enunciado inteiro. O
-    // enunciado a criança já recebe pela narração, ao entrar na pergunta. Confundir os dois faz o sonar ler
-    // um parágrafo a cada toque — e o sonar existe para ser tocado muitas vezes.
+    // The target's name, for the navigation sentence. ⚠️ This DOM quiz never says it: with text on screen the sonar reads
+    // the screen — statement and options — at every press (ADR-0234, «sonar do que está na tela»); the name is heard only
+    // where the engine cannot read the screen.
     nameAt: (at) => (questions[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
     // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
     focusOf: () => ({ id: 'p0', at: { x: round.current(), y: round.focus() }, heading: 'none' }),
