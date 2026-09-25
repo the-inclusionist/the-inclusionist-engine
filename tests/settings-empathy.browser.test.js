@@ -8,6 +8,8 @@ import { initSettingsEmpathy, EMPATHY_VIZ_MODES } from '../app/js/ui/settings-em
 import { hearingLoss, setHearingLossGraph } from '../app/js/platform/audio.js';
 // The two REAL collaborators of the last block: the one that rebuilds the list and the one that puts the prose back in the footer.
 import { vizGroupHtml } from '../app/js/render/viz-setters.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { initSettingsPanel } from '../app/js/ui/settings-panel.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -336,10 +338,10 @@ describe('⚠️ ui/settings-empathy — a lista é reconstruída pelo renderViz
       computedZ: (el) => +getComputedStyle(el).zIndex || 0,
     });
     const ctx = fullCtx({
-      // The REAL rebuilder, in the exact shape of `render/viz-setters`: `el.innerHTML = vizGroupHtml(…)`.
+      // The REAL rebuilder, in the exact shape of `render/viz-setters`: `el.innerHTML = vizGroupHtml(translate, …)`.
       renderVizGroup: (listSel, _tabsSel, modes) => {
         const el = $(listSel);
-        if (el) el.innerHTML = vizGroupHtml(modes, 'normal');
+        if (el) el.innerHTML = vizGroupHtml(translate, modes, 'normal');
       },
       frontOverlay: (el) => painel.frontOverlay(el),
       fillExplain: (card) => painel.fillExplain(card),
@@ -359,7 +361,7 @@ describe('⚠️ ui/settings-empathy — a lista é reconstruída pelo renderViz
   it('⚠️ [Cross-check] o construtor da lista EMITE `.opt-hint` — sem isto, tudo abaixo seria vazio', () => {
     // A case counting zero `.opt-hint` goes green for free if the builder never emits any. This one anchors the premise
     // in the real generator, and it is what fails if `vizGroupHtml` changes shape.
-    const html = vizGroupHtml(EMPATHY_VIZ_MODES, 'normal');
+    const html = vizGroupHtml(translate, EMPATHY_VIZ_MODES, 'normal');
     expect(html).toContain('opt-hint');
     expect(html).toContain('ctrl-row');
   });

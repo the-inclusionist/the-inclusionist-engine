@@ -1885,6 +1885,7 @@
       "setVizMode",
       "srSay",
       "store",
+      "t",
       "treeTexFor",
       "worldSprite"
     ],

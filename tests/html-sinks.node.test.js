@@ -68,7 +68,7 @@ const SEGUROS = [
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(getLocale", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
-  ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
+  ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(t, modes, cur)', 'modos enumerados + i18n'],
   // ⚠️ THE TWO AXES (#104). Same class as the one above and for the same reason: `axesHtml` interpolates only ENUMERATED
   // values (`THEMES`/`CORRECTIONS`, frozen in `viz-axes`) and text that went through `t()`. Nothing here comes from
   // storage, from a URL or from what a child typed — the boundary this census guards.

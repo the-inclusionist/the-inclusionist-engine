@@ -319,7 +319,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 36,
+      "fanIn": 35,
       "holds": [
         "let dict",
         "let locale",
@@ -1533,16 +1533,15 @@
       "fanIn": 2
     },
     "render/viz-setters.ts": {
-      "codeLines": 272,
+      "codeLines": 274,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 8,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 3,
+      "statefulEdges": 2,
       "fanIn": 0,
       "statefulImports": [
-        "core/i18n.ts",
         "render/high-contrast.ts",
         "render/lq-filter.ts"
       ]

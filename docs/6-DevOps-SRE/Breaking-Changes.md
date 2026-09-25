@@ -3232,6 +3232,7 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 | `core/i18n.js` `applyDom(root)` | the root's `translator.applyDom(root)` — no longer published by the module | a game's markup is translated by its root; `createTranslator().applyDom` where a page translates its own |
 | `input/gamepad.js` `GamepadCtx` · `input/keydown.js` `KeydownCtx` · `input/pad-wizard.js` `PadWizardCtx` · `input/touch.js` `TouchCtx`, `TouchMarkupCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` (`createGame`'s engine answers for its own mounts) |
 | `platform/audio-earcons.js` `AudioEarconsCtx` · `platform/audio-sonar.js` `SonarCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
+| `render/viz-setters.js` `VizSettersCtx` · `vizGroupHtml(modes, cur)` | `VizSettersCtx` gains a REQUIRED `t: Translate`; `vizGroupHtml(t, modes, cur)` | pass your root's `t` |
 | `platform/tts.js` `TtsCtx` | gains a REQUIRED `translator: Pick<Translator, 't' \| 'bcp47'>` — narration speaks the page's language, read at every utterance | pass your root's translator |
 
 📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).

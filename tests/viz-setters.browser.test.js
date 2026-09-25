@@ -6,6 +6,8 @@
 //      querySelectorAll, including the tabs' querySelectorAll that finds NOTHING — see the case near the end).
 // ZOMBIES + Right-BICEP. See ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it
@@ -79,6 +81,7 @@ function setup(over = {}) {
   };
   const ctx = {
     store: createStorage(memoryBackend()),
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
     $: (sel) => document.querySelector(sel),
     body: document.body,
     srSay: (s) => env.log.say.push(s),

@@ -54,7 +54,7 @@ function linhasDeCodigo(texto) {
  *
  * Asking only for `\.innerHTML\s*=` in the panel's file misses `settings-empathy`: it has none, and it rebuilds all the
  * same, because it calls `ctx.renderVizGroup('#empathy-list', …)`, which is injected and whose implementation
- * (`render/viz-setters.ts`) does `el.innerHTML = vizGroupHtml(modes, cur)`. The new rows come back with the `.opt-hint`
+ * (`render/viz-setters.ts`) does `el.innerHTML = vizGroupHtml(t, modes, cur)`. The new rows come back with the `.opt-hint`
  * inside exactly like any other panel's; what changes is only WHO wrote them, and the check read by the author instead
  * of by the effect.
  *

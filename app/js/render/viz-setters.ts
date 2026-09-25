@@ -23,7 +23,7 @@ import {
   type Theme, type Correction,
   type VisualState,
 } from './viz-axes.js';
-import { t } from '../core/i18n.js'; // VIZ_MODES keeps i18n KEYS; whoever shows them resolves them
+import type { Translate } from '../core/i18n.js'; // VIZ_MODES keeps i18n KEYS; whoever shows them resolves them
 import {
   axesHtml, buttonChoice, THEME_LABEL, CORRECTION_LABEL,
 } from './viz-axes-labels.js';
@@ -109,7 +109,7 @@ export function lvOverlayClassFor(m: VizMode): string {
 }
 
 /** The HTML of the vision modes' radio group (one row per mode; the current one marked). */
-export function vizGroupHtml(modes: readonly VizMode[], cur: string): string {
+export function vizGroupHtml(t: Translate, modes: readonly VizMode[], cur: string): string {
   return modes.map((m) => {
     const sel = m.key === cur;
     return `<div class="ctrl-row"><span><strong>${t(m.name)}</strong><br><span class="opt-hint" style="margin:0">${t(m.desc)}</span></span>`
@@ -139,6 +139,8 @@ interface Pl { viz: string; visual?: VisualState; sprite?: Textured | null; _tx?
 interface Pu { kind: string; sprite?: Textured | null }
 
 export interface VizSettersCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /**
    * Where each player's visual state is kept — the page's store, built by the root (ADR-0232, issue #207). Required: a
    * correction written nowhere is gone at the next visit, for the child who chose it because that is how they see.
@@ -256,6 +258,7 @@ export interface VizSettersApi {
 }
 
 export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
+  const { t } = ctx;
   // the statics (world/parallax/items) only reapply when the mode changes (the host keeps the record)
   function applySharedTextures(mode: string): void {
     if (mode !== ctx.getSharedViz()) {
@@ -430,7 +433,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const players = ctx.getPlayers(), sel = ctx.getSelVizPlayer();
     const v = players[sel]?.visual ?? DEFAULT_VISUAL;
     const cur = legacyKey(v);
-    el.innerHTML = vizGroupHtml(modes, cur);
+    el.innerHTML = vizGroupHtml(t, modes, cur);
     // ⚠️ THE SIMULATION'S REFUSAL (#104, ADR-0076 §4). With either axis off its default, a demonstration does not show
     // the disability — it shows the SETTING it runs over, and that teaches something false. The row STAYS on screen,
     // disabled and with the reason: vanishing would teach that the thing does not exist, and an adult would conclude it

@@ -7,6 +7,8 @@
 // ZOMBIES + Right-BICEP. (setPlayerViz/applyVizGlobal/reapplyVizAll/applySharedTextures/applyVpFilters/updateVpDots/
 // _rebakeDirect/updateVizIndicator/renderVizGroup.)
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
 import { loadState, setVizModeValue } from '../app/js/core/state.js';
@@ -117,6 +119,7 @@ function setup(over = {}) {
   };
   const ctx = {
     store: shared,
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
     $: (sel) => env.els[sel] || null,
     body: { classes: new Set(), classList: null },
     srSay: (s) => env.log.say.push(s),
@@ -278,27 +281,27 @@ describe('lvOverlayClassFor — classe do overlay DOM de baixa visão', () => {
 
 describe('vizGroupHtml — grupo de rádios dos modos', () => {
   it('[Right] marca EXATAMENTE um botão (o modo atual) como selecionado', () => {
-    const html = vizGroupHtml(VIZ_MODES, 'lv-haze');
+    const html = vizGroupHtml(translate, VIZ_MODES, 'lv-haze');
     expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
     expect(html).toContain('data-viz="lv-haze" type="button">✓ Selecionado');
   });
   it('[Right] os não selecionados ficam com aria-checked=false e sem a classe is-on', () => {
-    const html = vizGroupHtml([VIZ_BY_KEY.normal, VIZ_BY_KEY.blind], 'blind');
+    const html = vizGroupHtml(translate, [VIZ_BY_KEY.normal, VIZ_BY_KEY.blind], 'blind');
     expect(html).toContain('<button class="mode-btn" role="radio" aria-checked="false" data-viz="normal"');
     expect(html).toContain('<button class="mode-btn is-on" role="radio" aria-checked="true" data-viz="blind"');
   });
   it('[Many] uma linha por modo — nem a mais nem a menos', () => {
-    expect(vizGroupHtml(VIZ_MODES, 'normal').match(/class="ctrl-row"/g)).toHaveLength(VIZ_MODES.length);
+    expect(vizGroupHtml(translate, VIZ_MODES, 'normal').match(/class="ctrl-row"/g)).toHaveLength(VIZ_MODES.length);
   });
   it('[Zero] lista vazia gera string vazia', () => {
-    expect(vizGroupHtml([], 'normal')).toBe('');
+    expect(vizGroupHtml(translate, [], 'normal')).toBe('');
   });
   it('[Error] modo atual FORA da lista exibida → nenhum marcado (o painel não inventa seleção)', () => {
-    const html = vizGroupHtml([VIZ_BY_KEY.normal, VIZ_BY_KEY.blind], 'lv-blur');
+    const html = vizGroupHtml(translate, [VIZ_BY_KEY.normal, VIZ_BY_KEY.blind], 'lv-blur');
     expect(html).not.toContain('aria-checked="true"');
   });
   it('[Right] nome e descrição de cada modo entram na linha (é o que o leitor de tela lê)', () => {
-    const html = vizGroupHtml([VIZ_BY_KEY.blind], 'normal');
+    const html = vizGroupHtml(translate, [VIZ_BY_KEY.blind], 'normal');
     // `nome`/`desc` hold KEYS (item 14); the row has to carry the TEXT. Comparing with the raw key would pass accepting
     // `viz.blind` on screen — which is key-based i18n's silent way of failing.
     expect(html).toContain(t(VIZ_BY_KEY.blind.name));
