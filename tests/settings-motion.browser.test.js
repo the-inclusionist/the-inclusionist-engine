@@ -154,9 +154,12 @@ describe('initSettingsMotion — estética CRT', () => {
     const { ctx, calls } = makeCtx();
     initSettingsMotion(ctx).render();
     CRT.scan = 1;
+    applyCrt();
     const btn = $('#motion-list').querySelector('button[data-crt-tgl="scan"]');
     btn.click();
     expect(CRT.scan).toBe(0);
+    // the toggle APPLIES through the root's CRT it was handed (ADR-0232 D4): the class leaves the region
+    expect($('#game-region').classList.contains('crt-scan-1'), 'the toggle changed the config and never applied it').toBe(false);
     expect(calls.srSay.at(-1)).toBe('Scanlines desligada.');
   });
 

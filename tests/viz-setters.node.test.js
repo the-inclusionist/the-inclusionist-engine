@@ -659,6 +659,15 @@ describe('rebakeDirect — invalida os caches de textura direta e re-renderiza',
   });
 });
 
+describe('the world texture comes from the INJECTED high contrast (ADR-0232 D4)', () => {
+  it('🔴 [Right] SOLO: the world sprite gets the texture the ctx\'s `hc` answers for the theme', () => {
+    const own = { ...hc, worldTexFor: (m) => 'WORLD:' + m };
+    const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1, hc: own });
+    api.reapplyVizAll();
+    expect(env.worldSprite.texture, 'the world texture did not come from the injected instance').toBe('WORLD:normal');
+  });
+});
+
 describe('the L→Q enhancement comes from the ctx (ADR-0232 D4)', () => {
   // The fragment used to be read from `render/lq-filter`'s module amount, one per page; now it is the root's instance,
   // handed in as `lqFilter`. These cases give it a value and see it composed on both paths.

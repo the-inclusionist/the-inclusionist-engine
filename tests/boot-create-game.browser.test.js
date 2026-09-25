@@ -616,6 +616,42 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Right] the motion panel\'s CRT rows drive the ROOT\'s CRT — the one on the region and on `engine.crt`', () => {
+      // The panel used to import the page's one CRT; now the root hands it its own (ADR-0232 D4). Handed a copy, the
+      // switch would flip a config nobody draws.
+      const motor = abrir();
+      const mundo = document.querySelector('#game-region');
+      try {
+        Object.assign(motor.crt.cfg, { scan: 1, vig: 0, round: 1 });
+        motor.crt.apply();
+        motor.pause.show(0);
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
+        document.querySelector('#motion-list button[data-crt-tgl="scan"]').click();
+        expect(motor.crt.cfg.scan, 'the switch did not reach the root\'s CRT').toBe(0);
+        expect(mundo.classList.contains('crt-scan-1'), 'the scanlines stayed on the region').toBe(false);
+      } finally {
+        document.getElementById('animation-close')?.click();
+        motor.pause.hide(0);
+        Object.assign(motor.crt.cfg, { scan: 1, vig: 0, round: 1 });
+        motor.crt.apply();
+      }
+    });
+
+    it('🔴 [Right] the visual panel reads the ROOT\'s enhancement: one set through `engine.lq` is marked as changed', () => {
+      const motor = abrir();
+      try {
+        motor.lq.set(0.5);
+        motor.pause.show(0);
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
+        const row = document.getElementById('opt-lq').closest('.ctrl-row');
+        expect(row.classList.contains('is-changed'), 'the panel does not see the enhancement the root holds').toBe(true);
+      } finally {
+        motor.lq.set(0);
+        document.getElementById('visual-close')?.click();
+        motor.pause.hide(0);
+      }
+    });
+
     it('🔴 [Right] the VISUAL panel offers the two rows the engine can drive — and none of a game it does not know', () => {
       const motor = abrir();
       motor.pause.show(0);

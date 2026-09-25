@@ -107,7 +107,9 @@ describe('ui/layout — createLayout receives what it touches (ADR-0232 D4)', ()
   it('🔴 [Right] it scales the region of the document it is HANDED, not the page\'s', () => {
     const other = document.implementation.createHTMLDocument('other');
     const theirs = hostIn(other);
-    const ours = hostIn(document);
+    // the page holds a region but NO shell: a layout that looked the shell up in the page would find none and scale nothing
+    document.body.innerHTML = '<div id="game-region"></div>';
+    const ours = document.querySelector('#game-region');
     createLayout({ doc: other, win: { devicePixelRatio: 1 }, numPlayers: () => 1, afterScale: () => {} }).layout();
     expect(theirs.style.getPropertyValue('--ui-fs'), 'the handed document was not scaled').toMatch(/px$/);
     expect(ours.style.getPropertyValue('--ui-fs'), 'the page\'s document was scaled instead').toBe('');

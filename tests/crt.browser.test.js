@@ -76,6 +76,16 @@ describe('render/crt — everything it touches arrives by injection (ADR-0232 D4
     expect(at(1, 3), 'the player count was not the injected one').toEqual(['2px', '1px']);
   });
 
+  it('🔴 [Right] `apply()` keeps the config in the store it was built with — the next visit reads it back', () => {
+    region();
+    const store = createStorage(memoryBackend());
+    const crt = crtWith(() => false, store);
+    crt.cfg.vig = 1; crt.cfg.round = 2;
+    crt.apply();
+    expect(store.getJSON('incl_crt2', null), 'the look the child chose was not kept').toEqual({ scan: 1, vig: 1, round: 2 });
+    expect({ ...crtWith(() => false, store).cfg }, 'the next build did not read it back').toEqual({ scan: 1, vig: 1, round: 2 });
+  });
+
   it('🔴 [Right] TWO instances keep their own config (ADR-0142: two roots share nothing)', () => {
     const a = crtWith(), b = crtWith();
     a.cfg.vig = 1;
