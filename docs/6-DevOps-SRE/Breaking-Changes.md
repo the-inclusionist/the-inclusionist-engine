@@ -3477,11 +3477,12 @@ transports hold, the pads it polls, the device each child is on) and **`Engine.k
 exists because a game still WRITES the keyboard config: `game-2048` mounts its own remapping screen over the engine's map.
 
 📏 **Measured in the seven games, read-only, as information** (under the 9.0 names they are pinned at):
-- `game-2048` — `src/standalone.ts:25` imports `fabricaComOJogo`, `kb`, `resetKB`, `saveKB`, `setKB` and hands them to its
-  own `initSettingsControls` (228-238): `store: { saveKB: (e) => motor.keyboardConfig.save(semNulos(e)), resetKB:
-  motor.keyboardConfig.reset }`, `kb: motor.keyboardConfig.kb()`, `setKB: motor.keyboardConfig.set`, `kbPadraoFor: () =>
-  motor.keyboardConfig.factoryWithGame().solo`. `tests/keyboard-save.node.test.ts` reads only `KB_DEFAULTS` (unchanged);
-  `padPxPerMm` from `input/touch` is pure and unchanged.
+- `game-2048` — `src/standalone.ts:25` imports the factory-with-game reader, `kb`, `resetKB`, `saveKB` and `setKB`, and
+  hands them to its own `initSettingsControls` (228-238). On the bump: `kb` → `motor.keyboardConfig.kb()`, `setKB` →
+  `motor.keyboardConfig.set`, the store's `saveKB` → `motor.keyboardConfig.save(conf)` (after its own null filter, as
+  today), `resetKB` → `motor.keyboardConfig.reset`, and the default scheme → `motor.keyboardConfig.factoryWithGame().solo`.
+  `tests/keyboard-save.node.test.ts` reads only `KB_DEFAULTS` (unchanged); `padPxPerMm` from `input/touch` is pure and
+  unchanged.
 - `game-platformer` — its own root (it calls no `createGame`): `app/js/main.ts:74` (`kb`, `initKB`, `setKB`, `saveKB`,
   `resetKB`, `fabricaComOJogo`; `initKB()` at 541), `:96` (`keys`, `padCur`, `padPrevAct`, `held`, the key doors), `:97`
   and 593 (`criarArestaComAlternancia` — now needs `input`), `:1640` (`initGamepad` — now `padMaps`, `padTable`, `input`),
