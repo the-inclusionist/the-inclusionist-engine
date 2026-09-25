@@ -550,11 +550,11 @@ export interface PauseIconsCtx {
    */
   translator: Pick<Translator, 't' | 'locale' | 'setLocale'>;
   /**
-   * The DOCUMENT where the pause card and the bar are BUILT. Absent, the global one (ADR-0232 is to remove that fallback).
-   * `createGame` receives its document through `host.doc` and may be building in another one (an iframe, an editor beside
-   * the game), so building on the global would put the card in the wrong document.
+   * The DOCUMENT where the pause card and the bar are BUILT. REQUIRED (ADR-0232 D4): `createGame` receives its document
+   * through `host.doc` and may be building in another one (an iframe, an editor beside the game), and a fallback to the
+   * global would put the card in the wrong document — or throw where there is none.
    */
-  doc?: Document;
+  doc: Pick<Document, 'createElement'>;
   /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the host owns — a module-level
    *  binding would be shared by a second game on the same page. */
   getNumPlayers: () => number;
@@ -779,9 +779,6 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    */
   const writeBlindMode = ctx.setBlindMode ?? ((on: boolean): void => { ctx.settings.setBlindModeValue(on); });
 
-  /** The document to build in. Resolved on each use, through `globalThis` — in node the `document` identifier does not
-   *  even exist, and a `??` on it would throw a ReferenceError instead of falling back. */
-  const mountDoc = (): Document => ctx.doc ?? (globalThis as { document?: Document }).document as Document;
 
   /*
    * CONTRAST AND COLOUR ONLY APPEAR IF SOMEONE CAN WRITE THEM (ADR-0106 §5): the theme and the correction are written by
@@ -1210,7 +1207,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   function buildScreenPause(i: number): HTMLElement {
-    const sp = mountDoc().createElement('div');
+    const sp = ctx.doc.createElement('div');
     sp.className = 'screen-pause';
     sp.hidden = true;
     sp.dataset.player = String(i);
@@ -1265,7 +1262,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * on purpose — a simulation creates difficulty — and degrading what exists to GIVE access would be the opposite.
    */
   function buildQuickBar(i: number): HTMLElement {
-    const bar = mountDoc().createElement('div');
+    const bar = ctx.doc.createElement('div');
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
     bar.innerHTML = quickBarMarkup(ctx.translator, gameIcons);

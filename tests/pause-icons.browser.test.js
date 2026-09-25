@@ -58,6 +58,7 @@ function makeCtx(over = {}) {
   };
   const ctx = {
     translator,
+    doc: document, // required (ADR-0232 D4): where the card and the bar are built
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
@@ -928,6 +929,7 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
     const bars = [];
     return {
       translator,
+      doc: document, // required (ADR-0232 D4)
       getPlayers: () => [{ visual: DEFAULT_VISUAL, toggleMove: false, walkDir: 0 }],
       getNumPlayers: () => 1,
       srSay: () => {}, srAlert: () => {},
@@ -993,7 +995,15 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
     botao.click();
     expect(saiu).toBe(1);
   });
-});
+
+  it('🔴 [Right] the card and the bar are built in the INJECTED document, never in the global one (ADR-0232 D4)', () => {
+    // `createGame` receives its document through `host.doc` (an iframe, an editor beside the game). The fallback to the
+    // global that `doc` used to have would build the card in the page's document instead of the host's.
+    const other = document.implementation.createHTMLDocument('another host');
+    const api = initPauseIcons(ctxMinimo({ doc: other }));
+    expect(api.buildScreenPause(0).ownerDocument, 'the pause card was built outside the injected document').toBe(other);
+    expect(api.buildQuickBar(0).ownerDocument, 'the quick bar was built outside the injected document').toBe(other);
+  });});
 
 describe('the 🌐 reads and sets the language through the bar\'s translator (ADR-0232 D3)', () => {
   it('🔴 [Right] the flag and the name show the translator\'s language, and a press sets the next one through it', async () => {

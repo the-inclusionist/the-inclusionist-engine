@@ -134,6 +134,8 @@ function buildCtx(over = {}) {
   };
   const ctx = {
     translator,
+    // required (ADR-0232 D4); this project has no DOM, so a case that builds the card or the bar fails loudly here
+    doc: { createElement: () => { throw new Error('pause-icons.node builds no element — that case belongs in the browser project'); } },
     store: createStorage(memoryBackend()), // each ctx its own store (ADR-0232)
     settings: estado, // the test plays the root: the page's settings store
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
