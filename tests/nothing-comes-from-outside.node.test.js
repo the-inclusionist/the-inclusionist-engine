@@ -139,6 +139,9 @@ const TOCAM_NA_REDE = {
     + 'and the two configs — at `heavy/` on the page\'s own origin (ADR-0216 §2): the addresses come from the catalogue, the '
     + 'build put them in the delivery, and a school with no network has them or the reading refuses by name. The child\'s voice '
     + 'never becomes a request: it is heard here, on her machine (ADR-0200 erratum)',
+  'platform/reading-worker.ts': 'LOCAL. The worker realm\'s own `fetch`, lent by its scope to `platform/reading-runtime` above '
+    + '(ADR-0232 D4), which fetches the reading model with it at `heavy/` on the page\'s own origin. The thread asks for nothing '
+    + 'the runtime would not; it is here because the primitive is named where it is handed over, not where it is called',
   'platform/onnx-runtime.ts': 'LOCAL. `import()` of onnxruntime-web at `heavy/` on the page\'s own origin, and the ONE place '
     + 'that points its worker threads at the delivery too (ADR-0216): a worker left to itself asks the CDN the library was '
     + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '

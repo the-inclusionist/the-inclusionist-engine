@@ -19,8 +19,13 @@ import { serveReading } from '../app/js/platform/reading-worker.js';
 
 /** The fake thread: delivers messages both ways, and records what went through it. */
 function fio({ load, adiar = false } = {}) {
-  const log = { pedidos: [], transferidos: [], terminado: 0 };
-  const scope = { onmessage: null, postMessage: (answer) => { cliente.onmessage?.({ data: answer }); } };
+  const log = { pedidos: [], transferidos: [], terminado: 0, buscados: [] };
+  const scope = {
+    onmessage: null,
+    postMessage: (answer) => { cliente.onmessage?.({ data: answer }); },
+    // the worker realm's own fetch (ADR-0232 D4); it records `this`, because a detached `fetch` is an «Illegal invocation»
+    fetch(url) { log.buscados.push([url, this === scope]); return Promise.resolve({ ok: true }); },
+  };
   const cliente = {
     onmessage: null,
     onerror: null,
@@ -44,9 +49,21 @@ describe('o cliente e o worker falam a mesma língua', () => {
     const t = fio({ load: async (d) => { abertos.push(d); return { transcribe: async () => 'a casa é amarela' }; } });
     const leitura = createReadingInWorker({ base: 'https://escola.exemplo/jogo/', language: 'pt-BR', spawn: t.spawn });
     expect(abertos, 'o modelo não foi aberto na thread — ou foi aberto na linha principal').toEqual([
-      { base: 'https://escola.exemplo/jogo/', language: 'pt-BR' },
+      { base: 'https://escola.exemplo/jogo/', language: 'pt-BR', fetch: expect.any(Function) },
     ]);
     expect(await leitura.transcribe(amostras())).toBe('a casa é amarela');
+  });
+
+  /*
+   * 🔴 THE MODEL IS FETCHED WITH THE WORKER'S OWN `fetch` (ADR-0232 D4): the runtime receives it from the scope, so neither the
+   * runtime nor the worker's entry reaches a bare global — and it is called ON the scope, the way a realm's `fetch` must be.
+   */
+  it('🔴 [Right] o runtime busca o modelo com o `fetch` da PRÓPRIA thread, chamado nela', async () => {
+    let buscar = null;
+    const t = fio({ load: async (d) => { buscar = d.fetch; return { transcribe: async () => 'x' }; } });
+    createReadingInWorker({ base: 'b/', language: 'pt', spawn: t.spawn });
+    await buscar('https://escola.exemplo/heavy/modelo.onnx');
+    expect(t.log.buscados, 'o modelo foi buscado por outro fetch que não o da thread').toEqual([['https://escola.exemplo/heavy/modelo.onnx', true]]);
   });
 
   it('🔴 [Right] as amostras são TRANSFERIDAS e não copiadas — 30 s são 1,9 MB na thread que desenha o jogo', async () => {

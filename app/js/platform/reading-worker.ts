@@ -34,6 +34,11 @@ export type ReadingAnswer =
 export interface WorkerScope {
   onmessage: ((event: { data: ReadingRequest }) => void) | null;
   postMessage(answer: ReadingAnswer): void;
+  /**
+   * The worker realm's own `fetch`, which the model's files are fetched with (ADR-0232 D4): the runtime receives it from the
+   * scope, so the worker's entry reaches no bare global either.
+   */
+  fetch(url: string): Promise<Response>;
 }
 
 const reason = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -49,7 +54,8 @@ export function serveReading(scope: WorkerScope, load = loadReadingRuntime): voi
     if (msg.kind === 'load') {
       void (async (): Promise<void> => {
         try {
-          transcriber = await load({ base: msg.base, language: msg.language });
+          // a METHOD call on the scope: `fetch` detached from its realm throws «Illegal invocation»
+          transcriber = await load({ base: msg.base, language: msg.language, fetch: (url) => scope.fetch(url) });
           scope.postMessage({ kind: 'ready' });
         } catch (e) {
           scope.postMessage({ kind: 'failed', message: reason(e) });

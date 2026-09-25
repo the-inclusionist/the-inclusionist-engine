@@ -29,11 +29,14 @@ export interface AudioContextLike {
 /** A stream, in the one thing that matters after the reading: letting go of it. */
 export interface StreamLike { getTracks(): readonly { stop(): void }[] }
 
+/** What the microphone uses of the browser, lent by the root from the host's window (ADR-0232 D4). All REQUIRED. */
 export interface MicrophoneDeps {
-  /** `navigator.mediaDevices.getUserMedia`. Absent is a device with no microphone, which is REFUSED and said, not hidden. */
-  readonly getUserMedia?: (constraints: { audio: boolean }) => Promise<StreamLike>;
-  readonly createContext?: (rate: number) => AudioContextLike;
-  readonly now?: () => number;
+  /** The host's `navigator.mediaDevices.getUserMedia`. `undefined` is a device with no microphone: REFUSED and said, not hidden. */
+  readonly getUserMedia: ((constraints: { audio: boolean }) => Promise<StreamLike>) | undefined;
+  /** A new audio context at this rate, from the host's `AudioContext`. */
+  readonly createContext: (rate: number) => AudioContextLike;
+  /** The host's clock, `performance.now()`: what the silence and the ceiling are measured against. */
+  readonly now: () => number;
 }
 
 export interface RecordOptions {
@@ -80,17 +83,16 @@ function atReadingRate(samples: Float32Array, from: number): Float32Array {
   return out;
 }
 
-export function createMicrophone(d: MicrophoneDeps = {}): Microphone {
-  const now = d.now ?? (() => performance.now());
+export function createMicrophone(d: MicrophoneDeps): Microphone {
+  const { now } = d;
   let askToStop: (() => void) | null = null;
 
   return {
     stop() { askToStop?.(); },
     async record(options: RecordOptions = {}): Promise<Float32Array> {
-      const getUserMedia = d.getUserMedia
-        ?? (navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices) as MicrophoneDeps['getUserMedia']);
+      const { getUserMedia } = d;
       if (!getUserMedia) throw new Error('microphone: this device offers none, so a reading cannot be heard here');
-      const makeContext = d.createContext ?? ((rate: number) => new AudioContext({ sampleRate: rate }) as unknown as AudioContextLike);
+      const makeContext = d.createContext;
 
       const silenceMs = options.silenceMs ?? SILENCE_MS;
       const maxMs = options.maxMs ?? MAX_MS;

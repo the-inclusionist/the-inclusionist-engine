@@ -3557,6 +3557,19 @@ export function createGame(o: CreateGameOptions): Engine {
   }, true);
 
   /*
+   * 🔴 THE BROWSER THE HEAVY FILES AND THE RECOGNISERS USE IS LENT HERE, ONCE (ADR-0232 D4, issue #207): the checked cache, the
+   * hash and `fetch` are read from the HOST's window, and the modules below receive them instead of reaching the globals.
+   * 📌 `caches` and `crypto.subtle` are ABSENT outside a secure context, and absent is an answer each module already gives: the
+   * download reports every file, a loader names the files it cannot find, and nothing is kept unverified.
+   */
+  const heavyCaches = (win as { caches?: CacheStorage }).caches;
+  const hasHeavyFile = checkedCacheHas(heavyCaches);
+  // 📌 The microphone and the audio context the recognisers open, from the same window: `undefined` is a device without one.
+  const mediaDevices = win.navigator?.mediaDevices;
+  const getUserMedia = mediaDevices?.getUserMedia?.bind(mediaDevices);
+  const HostAudioContext = (win as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
+
+  /*
    * THE HEAVY FILES START COMING DOWN HERE, and the line is deliberately the LAST thing of the boot.
    *
    * ⚠️ NO `await`. The start does not wait for the heavy files — if it did, a 3G school's first screen would stay blank for minutes
@@ -3575,18 +3588,6 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 The right channel is the one the function already has: `onHeavyProgress`, handed to whoever calls. A consumer who
    * wants to show «N MB left» or «the voice did not come down» has a way; the engine invents no surface.
    */
-  /*
-   * 🔴 THE BROWSER THE HEAVY FILES AND THE RECOGNISERS USE IS LENT HERE, ONCE (ADR-0232 D4, issue #207): the checked cache, the
-   * hash and `fetch` are read from the HOST's window, and the modules below receive them instead of reaching the globals.
-   * 📌 `caches` and `crypto.subtle` are ABSENT outside a secure context, and absent is an answer each module already gives: the
-   * download reports every file, a loader names the files it cannot find, and nothing is kept unverified.
-   */
-  const heavyCaches = (win as { caches?: CacheStorage }).caches;
-  const hasHeavyFile = checkedCacheHas(heavyCaches);
-  // 📌 The microphone and the audio context the recognisers open, from the same window: `undefined` is a device without one.
-  const mediaDevices = win.navigator?.mediaDevices;
-  const getUserMedia = mediaDevices?.getUserMedia?.bind(mediaDevices);
-  const HostAudioContext = (win as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
   if (o.downloadHeavy !== false) {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
     // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
@@ -3708,7 +3709,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    */
   let closeReadingThread = (): void => {};
   const reading: Reading = (() => {
-    const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown; Worker?: typeof Worker };
     let microphone: { record(o: ListenOptions): Promise<Float32Array>; stop(): void } | null = null;
     /** The reading thread, kept between readings (opening it compiles the model again) and let go with the game. */
     let readingThread: { transcribe(samples: Float32Array): Promise<string>; close(): void } | null = null;
@@ -3733,12 +3734,21 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
        */
       model: o.uses?.reading
         ? async (language) => {
-          if (typeof (win as unknown as { Worker?: unknown }).Worker === 'function') {
+          /*
+           * ⚠️ A LOCAL NAMED `Worker`, HOLDING THE HOST'S, AND THE LITERAL BELOW IN EXACTLY THIS FORM (ADR-0232 D4). A bundler
+           * emits the worker's file and rewrites its address only for `new Worker(new URL('…', import.meta.url), { … })`
+           * written out — which is what makes the thread travel with whoever installs the package; a plain string would
+           * resolve against the PAGE and 404 in every game whose folders differ. The bundler reads the NAME; the VALUE is the
+           * window this root was lent, so the thread is opened by the host and no global is reached.
+           */
+          const Worker = browserApis.Worker;
+          if (typeof Worker === 'function') {
             const { createReadingInWorker } = await import('../platform/reading-in-worker.js');
             readingThread?.close();
             readingThread = createReadingInWorker({
               base: doc.baseURI,
               language,
+              spawn: () => new Worker(new URL('../platform/reading-worker.js', import.meta.url), { type: 'module' }) as never,
               // 📌 THE SENTENCE IS WRITTEN HERE and the module hands over only the REASON: a thread that fails to open when
               // nobody is waiting for the answer had nowhere to be said (ADR-0169), and whoever knows what the child loses
               // is the diagnostic channel, not a thread's protocol.
@@ -3756,7 +3766,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
             + 'draws the game and feeds the microphone — measured, that cuts the recording in gaps of seconds and the child '
             + 'loses the words she said meanwhile; serve the game where workers are available');
           const { loadReadingRuntime } = await import('../platform/reading-runtime.js');
-          return loadReadingRuntime({ base: doc.baseURI, language });
+          return loadReadingRuntime({ base: doc.baseURI, language, fetch: (url) => win.fetch(url) });
         }
         : undefined,
       /**
@@ -3766,7 +3776,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       record: o.uses?.reading
         ? async (options) => {
           const { createMicrophone } = await import('../platform/microphone.js');
-          microphone ??= createMicrophone({});
+          microphone ??= createMicrophone({
+            getUserMedia, createContext: (rate) => new HostAudioContext!({ sampleRate: rate }) as never, now: () => win.performance.now(),
+          });
           return microphone.record(options);
         }
         : undefined,

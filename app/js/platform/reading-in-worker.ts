@@ -23,8 +23,12 @@ export interface ReadingInWorkerDeps {
   /** The page's address: the worker resolves `heavy/` against it, because IT is who fetches the model. */
   readonly base: string;
   readonly language: string;
-  /** Injected by the gate; by default the module beside this one, started as a module worker. */
-  readonly spawn?: () => ReadingWorkerLike;
+  /**
+   * Opens the thread: `platform/reading-worker` started as a module worker. REQUIRED (ADR-0232 D4), and the root writes it,
+   * because the one form a bundler recognises — `new Worker(new URL('…', import.meta.url), { type: 'module' })`, literally —
+   * has to sit where the `Worker` is the host's.
+   */
+  readonly spawn: () => ReadingWorkerLike;
   /**
    * WHY THE THREAD COULD NOT OPEN, WHEN NOBODY IS THERE TO BE TOLD (ADR-0169).
    *
@@ -45,16 +49,8 @@ export interface ReadingInWorker {
   close(): void;
 }
 
-/*
- * ⚠️ `new URL(…, import.meta.url)` AND NOT A STRING: this is the form a bundler recognises, and it is what makes the worker
- * travel with whoever installs the package — the consumer's Vite emits the file and rewrites the address. A plain string would
- * resolve against the PAGE at runtime and 404 in every game but the one whose folders happen to match.
- */
-const defaultSpawn = (): ReadingWorkerLike =>
-  new Worker(new URL('./reading-worker.js', import.meta.url), { type: 'module' }) as unknown as ReadingWorkerLike;
-
 export function createReadingInWorker(d: ReadingInWorkerDeps): ReadingInWorker {
-  const worker = (d.spawn ?? defaultSpawn)();
+  const worker = d.spawn();
   let nextId = 1;
   const waiting = new Map<number, { resolve: (text: string) => void; reject: (e: Error) => void }>();
   let opened: { resolve: () => void; reject: (e: Error) => void } | null = null;

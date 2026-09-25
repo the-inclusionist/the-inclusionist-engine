@@ -33,7 +33,11 @@ export interface ReadingRuntimeDeps {
   readonly base: string;
   /** The child's language tag (`pt-BR`). A language the project has no model for is refused BY NAME. */
   readonly language: string;
-  readonly fetch?: (url: string) => Promise<Response>;
+  /**
+   * The `fetch` of the realm this runs in, lent by whoever opens the reading (ADR-0232 D4): the root's window where there is
+   * no worker, the worker's own scope inside `platform/reading-worker`. REQUIRED — this module reaches no global.
+   */
+  readonly fetch: (url: string) => Promise<Response>;
   /** Injected so a case can replay a real model's numbers without its 378 MiB; the default is the delivery's runtime. */
   readonly ort?: OnnxRuntime;
   readonly importModule?: (url: string) => Promise<unknown>;
@@ -55,7 +59,7 @@ const MAX_TOKENS = 200;
 export async function loadReadingRuntime(d: ReadingRuntimeDeps): Promise<ReadingTranscriber> {
   const plan = readingModelFor(d.language);
   if (!plan) throw new Error(`reading: the project has no model for ${d.language}`);
-  const get = d.fetch ?? ((url: string) => fetch(url));
+  const get = d.fetch;
   const ort = d.ort ?? await loadOnnxRuntime({ base: d.base, importModule: d.importModule });
 
   const asJson = async <T>(id: string): Promise<T> => {

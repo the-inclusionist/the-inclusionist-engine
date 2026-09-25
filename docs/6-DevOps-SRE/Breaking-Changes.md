@@ -3427,12 +3427,24 @@ module already gave: every file reported, nothing kept unverified.
 | — | `platform/vosk-runtime.js` `createBundleLoader(load)` (new): the once-per-address loader, its memo per instance (a rejection is forgotten, so a failed load can be retried) | see the row above |
 | `platform/voice-listener.js` `VoiceListenerDeps.getUserMedia`, `createContext` | both REQUIRED; `getUserMedia` may be `undefined`, which is a device with no microphone and is refused as before | `getUserMedia: navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)`, `createContext: () => new AudioContext()` |
 | `ui/voice-control.js` `VoiceControlDeps` | gains REQUIRED `hasFile`, `loadBundle`, `getUserMedia` and `createContext`, handed to the recogniser's loader and to the listener | pass the four above |
+| `platform/microphone.js` `createMicrophone(d = {})` | `createMicrophone(d)` — `MicrophoneDeps.getUserMedia` (may be `undefined`: no microphone, refused as before), `createContext` and `now` are REQUIRED | `createMicrophone({ getUserMedia: navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices), createContext: (rate) => new AudioContext({ sampleRate: rate }), now: () => performance.now() })` |
+| `platform/reading-in-worker.js` `ReadingInWorkerDeps.spawn` | REQUIRED; the module no longer opens `reading-worker.js` itself | `spawn: () => new Worker(new URL('<path to>/platform/reading-worker.js', import.meta.url), { type: 'module' })` — written in exactly this form in YOUR module, or your bundler will not emit the worker's file |
+| `platform/reading-runtime.js` `ReadingRuntimeDeps.fetch` | REQUIRED | pass your realm's `fetch`: `(url) => window.fetch(url)` |
+| `platform/reading-worker.js` `WorkerScope` | gains `fetch(url)`, the worker realm's own, which `serveReading` hands to the runtime | a real `self` has it; a test double needs one |
 
 📏 **Measured in the seven games, read-only, as information:** `pixi-15-puzzle` calls the download itself
 (`app/js/boot/standalone.ts`, under the 9.0 names `baixarPesados({ apenas })` from `platform/pesados.js`): on the bump it
 must pass the four ports, as in the migration above. The other six only set `createGame`'s `downloadHeavy: false` (9.0:
 `baixarPesados: false`), which is unchanged. No game calls `sha256Hex`, the vision or command loaders, the voice listener,
-or builds a camera or voice control's deps.
+the microphone, the reading runtime or its thread, or builds a camera or voice control's deps: the reading reaches games
+through `engine.reading`, which is unchanged.
+
+📌 **The worker's literal moved into `createGame`, and the root's reach to globals did NOT grow for it.** A bundler emits the
+worker's file only for `new Worker(new URL('…', import.meta.url), { type: 'module' })` written out, so the literal has to sit
+where the thread is opened. In the root the `Worker` it names is a LOCAL holding `host.win.Worker`: the bundler reads the
+name, the value is the host's, and the code-health measure sees injection. Measured: `npm run build` still emits
+`dist/assets/reading-worker-*.js`, now referenced from the root's chunk; the same build with the address written as a plain
+string emits none, and the browser case that opens the thread through `createGame` goes red.
 
 ## DD · ADR-0232 D4-B6: render and layout become factories (issue #207)
 

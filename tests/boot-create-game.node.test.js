@@ -1064,6 +1064,78 @@ describe('D4-B5 · the root lends the heavy files and the recognisers the host\'
       vi.resetModules();
     }
   });
+
+  /** Waits for `ready()` over real ticks: the reading loads its modules lazily, and each `import()` is its own turn. */
+  const until = async (ready) => { for (let i = 0; i < 300 && !ready(); i++) await new Promise((r) => { setTimeout(r, 10); }); };
+
+  /*
+   * 🔴 THE THREAD IS OPENED BY THE HOST'S `Worker` (ADR-0232 D4). The literal `new Worker(new URL(…, import.meta.url))` lives in
+   * the root because a bundler only emits the worker's file for that form; the `Worker` it names is a local holding the host's.
+   * Node has no global `Worker`: a root that reached for one would throw here instead of opening this double.
+   */
+  it('🔴 [Right] a reading opens its thread with the host\'s Worker, and hears through the host\'s microphone, audio and clock', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    doc.baseURI = 'https://escola.example/jogo/';
+    const abertas = [], microfones = [], contextos = [], parados = [];
+    class HostWorker {
+      constructor(url, options) { abertas.push([String(url), options]); this.onmessage = null; this.onerror = null; }
+      postMessage() {} terminate() {}
+    }
+    let processador = null;
+    class HostAudioContext {
+      constructor(options) { contextos.push(options); this.sampleRate = 16000; this.destination = {}; }
+      createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
+      createScriptProcessor() { processador = { onaudioprocess: null, connect() {}, disconnect() {} }; return processador; }
+      close() {}
+    }
+    let relogio = 0;
+    const host = {
+      ...win, Worker: HostWorker, AudioContext: HostAudioContext, removeEventListener: () => {},
+      // every read of the host's clock jumps 50 s: the first block of sound is already past the 30 s ceiling
+      performance: { now: () => (relogio += 50_000) },
+      navigator: { mediaDevices: { getUserMedia: async (c) => { microfones.push(c); return { getTracks: () => [{ stop: () => parados.push('track') }] }; } } },
+    };
+    doc.defaultView = host;
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false, uses: { reading: true } });
+    void motor.reading.listen().catch(() => {});
+    await until(() => abertas.length && processador);
+    expect(abertas, 'the thread was not opened by the host\'s Worker, as a module, on the worker\'s file')
+      .toEqual([[expect.stringMatching(/reading-worker/), { type: 'module' }]]);
+    expect(microfones, 'the reading did not open the host\'s microphone').toEqual([{ audio: true }]);
+    expect(contextos, 'the reading did not build the host\'s audio context at the model\'s rate').toEqual([{ sampleRate: 16000 }]);
+    processador.onaudioprocess({ inputBuffer: { getChannelData: () => new Float32Array(4) } });
+    expect(parados, 'the reading was not timed by the host\'s clock: its ceiling never fell').toEqual(['track']);
+    motor.dispose();
+  });
+
+  it('🔴 [Right] where the host has no Worker, the model on this thread fetches through the host\'s fetch — and `problems` says so', async () => {
+    let recebido = null;
+    vi.doMock('../app/js/platform/reading-runtime.js', async (original) => ({
+      ...(await original()),
+      loadReadingRuntime: async (d) => { recebido = d; return { transcribe: async () => '' }; },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { doc, win } = domFalso();
+      doc.baseURI = 'https://escola.example/jogo/';
+      const log = newLog();
+      const host = { ...hostWith(win, log), removeEventListener: () => {}, navigator: { mediaDevices: { getUserMedia: async () => { throw new Error('no microphone in this case'); } } } };
+      doc.defaultView = host;
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false, uses: { reading: true } });
+      await motor.reading.listen().catch(() => {});
+      await until(() => recebido);
+      expect(recebido, 'the runtime was not opened on this thread').toMatchObject({ base: 'https://escola.example/jogo/' });
+      await recebido.fetch('https://escola.example/jogo/heavy/modelo.onnx');
+      expect(log.fetched, 'the model is fetched by another fetch than the host\'s').toEqual(['https://escola.example/jogo/heavy/modelo.onnx']);
+      expect(motor.problems.join(' ')).toMatch(/has no `Worker`/);
+      motor.dispose();
+    } finally {
+      vi.doUnmock('../app/js/platform/reading-runtime.js');
+      vi.resetModules();
+    }
+  });
 });
 
 /*

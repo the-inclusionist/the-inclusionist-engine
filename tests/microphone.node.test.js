@@ -6,7 +6,7 @@
 // the microphone is closed, which is the difference between a game that listened and a game that is listening.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createMicrophone, READING_RATE } from '../app/js/platform/microphone.js';
 
 /** A device: a stream whose tracks remember being stopped, and a context that hands blocks to whoever connected. */
@@ -146,8 +146,36 @@ describe('the microphone, for a reading', () => {
   });
 
   it('⚠️ [Error] a device with no microphone is SAID, never silently empty', async () => {
-    const mic = createMicrophone({ getUserMedia: undefined, createContext: () => { throw new Error('never'); } });
+    const mic = createMicrophone({ getUserMedia: undefined, createContext: () => { throw new Error('never'); }, now: () => 0 });
     await expect(mic.record()).rejects.toThrow(/microphone/);
+  });
+
+  /*
+   * 🔴 THE MICROPHONE, THE AUDIO CONTEXT AND THE CLOCK ARE THE ONES THE ROOT LENT (ADR-0232 D4). The case above passed with a
+   * fallback to the page's `navigator` in place, because node has no `mediaDevices`; here the page HAS all three, and a
+   * reading must not touch any of them.
+   */
+  it('🔴 [Right] the page\'s own microphone, AudioContext and clock are never reached — even where they exist', async () => {
+    const globalMic = vi.fn(async () => ({ getTracks: () => [] }));
+    const GlobalContext = vi.fn();
+    const globalNow = vi.fn(() => 0);
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: globalMic } });
+    vi.stubGlobal('AudioContext', GlobalContext);
+    vi.stubGlobal('performance', { now: globalNow });
+    try {
+      await expect(createMicrophone({ getUserMedia: undefined, createContext: () => ({}), now: () => 0 }).record())
+        .rejects.toThrow(/microphone/);
+      const dev = aparelho();
+      const leitura = createMicrophone(dev.deps).record({ silenceMs: 300 });
+      await Promise.resolve(); await Promise.resolve();
+      dev.bloco(0.001, 100); dev.bloco(0.001, 100); dev.bloco(0.001, 100); dev.bloco(0.5); dev.bloco(0.001, 400);
+      expect((await leitura).length, 'the lent device was not the one heard').toBeGreaterThan(0);
+      expect(globalMic, 'the page\'s microphone was opened in place of the lent one').not.toHaveBeenCalled();
+      expect(GlobalContext, 'the page\'s AudioContext was built in place of the lent one').not.toHaveBeenCalled();
+      expect(globalNow, 'the silence was timed by the page\'s clock, not the lent one').not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

@@ -12,7 +12,7 @@
 // What the replay CANNOT see is whether the tensors would be accepted by a real session — that is the rodada in `dist`.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { loadReadingRuntime } from '../app/js/platform/reading-runtime.js';
 import { atDelivery } from '../app/js/platform/onnx-runtime.js';
@@ -225,7 +225,24 @@ describe('the reading loop, on the real models\' numbers', () => {
   });
 
   it('🔴 [Zero] a language the project has no model for is REFUSED by name, never half-answered', async () => {
-    await expect(loadReadingRuntime({ base: 'https://escola.exemplo/', language: 'fr-FR' })).rejects.toThrow(/fr-FR/);
+    const nuncaPedido = async () => { throw new Error('a file was asked for a language with no model'); };
+    await expect(loadReadingRuntime({ base: 'https://escola.exemplo/', language: 'fr-FR', fetch: nuncaPedido })).rejects.toThrow(/fr-FR/);
+  });
+
+  // 🔴 ADR-0232 D4: the files come through the `fetch` the reading was LENT — the page's global is never asked in its place.
+  it('🔴 [Right] the model\'s files are fetched only through the lent fetch — the global one is never reached', async () => {
+    const global = vi.fn(async () => { throw new Error('the global fetch was reached'); });
+    vi.stubGlobal('fetch', global);
+    try {
+      const { ort } = ortFalso('pt');
+      const pedidos = [];
+      const semFicheiro = async (u) => { pedidos.push(u); return { ok: false, status: 404 }; };
+      await expect(loadReadingRuntime({ base: 'https://escola.exemplo/', language: 'pt', fetch: semFicheiro, ort })).rejects.toThrow(/HTTP 404/);
+      expect(global).not.toHaveBeenCalled();
+      expect(pedidos.length, 'nothing was asked of the lent fetch').toBeGreaterThan(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('⚠️ [Error] a delivery without this language says WHICH file is missing', async () => {
