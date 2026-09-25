@@ -47,6 +47,7 @@
     "interface Engine": [
       "alert",
       "applyVisionFilter",
+      "audio",
       "captionSound",
       "controller",
       "crt",
@@ -1303,6 +1304,7 @@
       "getVolume?",
       "nameAt",
       "narrate",
+      "newContext",
       "roleAt?",
       "srSay",
       "t",
@@ -1321,6 +1323,32 @@
       "updateGuide"
     ],
     "type SinkAC": "AudioContext & { setSinkId?: (id: string) => Promise<void> }"
+  },
+  "platform/audio.ts": {
+    "interface AudioDeps": [
+      "newContext",
+      "store"
+    ],
+    "interface Audio": [
+      "audioCat",
+      "audioCtx",
+      "audioOut",
+      "catNode",
+      "ensureAC",
+      "footCount",
+      "hearingLoss",
+      "noiseHit",
+      "setCatGain",
+      "setHearingLossGraph",
+      "setMasterMuted",
+      "setSoundOn",
+      "setVolume",
+      "soundOn",
+      "tone",
+      "tonePan",
+      "volume"
+    ],
+    "type CatState": "{ on: boolean"
   },
   "platform/flash-sampler.ts": {
     "interface FlashMeasurement": [
@@ -1395,10 +1423,10 @@
   "platform/kokoro-runtime.ts": {
     "interface KokoroRuntimeDeps": [
       "base",
-      "compileWasm?",
-      "fetch?",
+      "compileWasm",
+      "fetch",
       "importModule?",
-      "instantiateWasm?"
+      "instantiateWasm"
     ]
   },
   "platform/kokoro.ts": {
@@ -1604,6 +1632,16 @@
     "type OnDeviceAvailability": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
     "type HeardCommand": "{ readonly kind: 'palavra'"
   },
+  "platform/speech.ts": {
+    "interface SpeechPort": [
+      "synth",
+      "utterance"
+    ],
+    "interface GameVoice": [
+      "soundOn",
+      "volume"
+    ]
+  },
   "platform/storage.ts": {
     "interface StorageLike": [
       "getItem",
@@ -1627,14 +1665,16 @@
     "interface TtsCtx": [
       "audioOut",
       "catNode",
-      "createAudio?",
+      "createAudio",
       "ensureAC",
       "getAudioCat",
       "getSoundOn",
       "getSpeechPpm?",
       "getVolume",
-      "loadKokoro?",
+      "loadKokoro",
       "neuralVoice?",
+      "now",
+      "speech",
       "srAlert",
       "srSay",
       "store",
@@ -2750,6 +2790,7 @@
       "getOneButton",
       "getPlayers",
       "getWheelchair",
+      "hearing",
       "reflectMobilityEmpathy",
       "reflectVizButtons",
       "renderVizGroup",

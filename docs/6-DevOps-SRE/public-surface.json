@@ -673,25 +673,11 @@
     "worldStep"
   ],
   "platform/audio.ts": [
-    "_footCount",
-    "audioCat",
-    "audioCtx",
-    "audioOut",
-    "catNode",
-    "ensureAC",
-    "hearingLoss",
-    "initAudioMixer",
-    "noiseBuffer",
-    "noiseHit",
-    "setCatGain",
-    "setHearingLossGraph",
-    "setMasterMuted",
-    "setSoundOn",
-    "setVolume",
-    "soundOn",
-    "tone",
-    "tonePan",
-    "volume"
+    "Audio",
+    "AudioDeps",
+    "CatState",
+    "createAudio",
+    "noiseBuffer"
   ],
   "platform/flash-sampler.ts": [
     "FlashMeasurement",
@@ -850,6 +836,8 @@
     "spokenText"
   ],
   "platform/speech.ts": [
+    "GameVoice",
+    "SpeechPort",
     "gameSay"
   ],
   "platform/storage-keys.ts": [

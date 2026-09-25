@@ -8,8 +8,7 @@
       "holds"
     ],
     "platform/audio.ts": [
-      "noiseBuffer",
-      "setMasterMuted"
+      "noiseBuffer"
     ],
     "ui/menu-items.ts": [
       "ITEM_SELECTOR"
