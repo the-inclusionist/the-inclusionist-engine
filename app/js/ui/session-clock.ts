@@ -53,7 +53,14 @@ function write(node: Element, text: string): void {
   if (node.textContent !== text) node.textContent = text;
 }
 
-/** Builds the clock's three parts: the label and the digits in a column, the pie to their right. */
+/**
+ * Builds the clock's three parts: the label and the digits in a column, the pie to their right.
+ *
+ * 🔴 THE PARTS ARE `aria-hidden`: they are the picture, and the image's name is what a listener gets. ARIA calls an image's
+ * children presentational, but not every accessibility API prunes them — Gecko keeps a graphic's children unless it has exactly
+ * one text child, and NVDA then read «TEMPO. 56:07.» instead of the words (the Dev, 2026-09-25). Hidden here, no API has any
+ * text under the image to hand out. Gate: `tests/quiz-accessibility-tree.browser.test.js`, on the browser's own tree.
+ */
 function build(doc: Document): { el: HTMLElement; label: HTMLElement; digits: HTMLElement; pie: HTMLElement } {
   const part = (cls: string): HTMLElement => { const n = doc.createElement('span'); n.className = cls; return n; };
   const el = doc.createElement('div');
@@ -63,6 +70,8 @@ function build(doc: Document): { el: HTMLElement; label: HTMLElement; digits: HT
   const label = part('session-clock-label');
   const digits = part('session-clock-digits');
   const pie = part('session-clock-pie');
+  text.setAttribute('aria-hidden', 'true');
+  pie.setAttribute('aria-hidden', 'true');
   text.append(label, digits);
   el.append(text, pie);
   return { el, label, digits, pie };
