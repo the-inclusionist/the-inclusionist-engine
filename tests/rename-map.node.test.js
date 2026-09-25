@@ -123,8 +123,14 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
     // The two forms of each moved path (`.ts` on disk, `.js` in an import), in one alternation. The `Set` keeps one entry
     // per distinct FORM found in the file, not per occurrence.
     const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const FORMAS_MOVIDAS = new RegExp(
-      [...new Set(movidos.flatMap((v) => [v, v.replace(/\.ts$/, '.js')]))].map(escapar).join('|'), 'g');
+    const formas = [...new Set(movidos.flatMap((v) => [v, v.replace(/\.ts$/, '.js')]))];
+    const FORMAS_MOVIDAS = new RegExp(formas.map(escapar).join('|'), 'g');
+    // ⚠️ THE TREE IS READ AS BYTES (`latin1`), NOT DECODED AS UTF-8, and the finding is the same: every form is ASCII
+    // (checked here: the day one is not, the read goes back to UTF-8 by itself), and in UTF-8 an ASCII byte only ever
+    // stands for itself — a multi-byte character is made of bytes ≥ 0x80, which no ASCII form can match. What is skipped
+    // is decoding ~20 MB the pattern never needed decoded: measured on 2026-09-25, 303 ms → 174 ms of this case's ~430 ms.
+    const soAscii = formas.every((f) => /^[\x20-\x7e]*$/.test(f));
+    const leitura = soAscii ? 'latin1' : 'utf8';
     const rastreados = execFileSync('git', ['ls-files'], { cwd: RAIZ, encoding: 'utf8' }).trim().split(/\r?\n/);
     const sobras = [];
     for (const f of rastreados) {
@@ -133,7 +139,7 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
       if (f === 'tests/rename-map.node.test.js') continue;                                     // and this file cites them too
       if (f === 'tests/records-pointing-at-dead-gates.node.test.js') continue;
       if (f.startsWith('.claude/plans/')) continue; // the working plan is the HISTORY of the work: it names what moved, as a log
-      const texto = readFileSync(join(RAIZ, f), 'utf8');
+      const texto = readFileSync(join(RAIZ, f), leitura);
       // ⚠️ ONE PASS PER FILE, not one per moved path: an `includes` for each of the ~320 forms inside the loop over the
       // ~1050 tracked files — ~335 thousand scans of the whole text — blew the 5 s ceiling in about one run in five under
       // the suite's load. A red that comes from the machine and not from the code invalidates whatever is being measured

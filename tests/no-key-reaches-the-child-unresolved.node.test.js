@@ -36,42 +36,72 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  * question here is «what exists». A module still outside the index is exactly where a key typed yesterday is hiding.
  */
 function modulesOfTheEngine() {
+  // ONE `git` process asks both questions: `--cached` is what `ls-files` lists by default, and `--others` adds what is not
+  // yet in the index — the union two processes used to build by hand.
   const list = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
-  return [...new Set([...list('ls-files', 'app/js'), ...list('ls-files', '--others', '--exclude-standard', 'app/js')])]
+  return [...new Set(list('ls-files', '--cached', '--others', '--exclude-standard', 'app/js'))]
     .filter((f) => f.endsWith('.ts') && !f.startsWith('app/js/i18n/'));
 }
+
+// ⚠️ The predicates are bound once, and neither JSDoc nor parent links are built, for the reasons
+// `scripts/lib/module-specifiers.mjs` gives: under Vitest each `ts.isX` in a walk over every node of the tree is a read
+// through a transformed module; `forEachChild` never enters a JSDoc node, so a `t()` inside a comment was never a call; and
+// the walk never climbs to a parent — `getStart(sf)` reads the text it is handed.
+const {
+  createSourceFile, ScriptTarget, ScriptKind, JSDocParsingMode, isCallExpression, isIdentifier, isStringLiteral, forEachChild,
+} = ts;
+const PARSE = { languageVersion: ScriptTarget.Latest, jsDocParsingMode: JSDocParsingMode.ParseNone };
+
+/**
+ * ⚠️ A FILE THAT CANNOT HOLD A CALL TO `t` IS NOT PARSED — and that is not the expression this header refuses, because it
+ * never says what IS a call: the parser still decides that, in every file this lets through. It only says which files
+ * cannot have one, and it is exact. A call the walk counts is the identifier `t`, then only what may stand between a callee
+ * and its arguments — whitespace, a comment (which opens with `/`), type arguments (`<`) or an optional call (`?.`) — then
+ * `(`. The identifier is spelled `t`, not glued to a word character before it (that would be a longer name), or through an
+ * escape (`t`), which puts a backslash in the text. 📏 2026-09-25: 65 of 181 modules, ~1.2 of ~2.0 MB, are parsed.
+ */
+const CAN_CALL_T = /\bt\s*[(<?/]/;
+const canCallT = (text) => CAN_CALL_T.test(text) || text.includes('\\');
 
 /** Every `t('key')` in a file, by position — a literal first argument, and nothing else. */
 function literalKeysOf(file) {
   const text = readFileSync(join(ROOT, file), 'utf8');
-  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  if (!canCallT(text)) return [];
+  const sf = createSourceFile(file, text, PARSE, false, ScriptKind.TS);
   const found = [];
   const walk = (node) => {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 't') {
+    if (isCallExpression(node) && isIdentifier(node.expression) && node.expression.text === 't') {
       const arg = node.arguments[0];
-      if (arg && ts.isStringLiteral(arg)) {
+      if (arg && isStringLiteral(arg)) {
         const { line } = sf.getLineAndCharacterOfPosition(arg.getStart(sf));
         found.push({ key: arg.text, where: `${file}:${line + 1}` });
       }
     }
-    ts.forEachChild(node, walk);
+    forEachChild(node, walk);
   };
   walk(sf);
   return found;
 }
 
+/**
+ * Every literal call site of the engine, the tree listed and parsed ONCE for the whole file. Both cases below read the same
+ * tree, and each used to list it (two `git` processes) and parse it again — the repeat that pushed them past the 5 s
+ * ceiling under the load of several suites at once. A red that comes from the machine and not the code invalidates
+ * whatever is measured beside it; the fix is the work shrinking, never the clock growing.
+ */
+let callSites;
+const literalKeysOfTheEngine = () => (callSites ??= modulesOfTheEngine().flatMap((f) => literalKeysOf(f)));
+
 describe('every key a module asks for is declared', () => {
   it('🔴 [Right] no `t(\'literal\')` in app/js resolves to nothing', () => {
     const missing = [];
-    for (const file of modulesOfTheEngine()) {
-      for (const { key, where } of literalKeysOf(file)) if (!(key in pt)) missing.push(`${where}  ${key}`);
-    }
+    for (const { key, where } of literalKeysOfTheEngine()) if (!(key in pt)) missing.push(`${where}  ${key}`);
     expect(missing, 'a key with no entry is shown to the child AS THE KEY — `t()` falls back to it').toEqual([]);
   });
 
   it('🎯 [Cross-check] the gate is reading real call sites — a case that finds nothing would pass empty', () => {
     // Without this, a walk that never matched a `t()` would report zero missing keys and look like a clean tree.
-    const all = modulesOfTheEngine().flatMap((f) => literalKeysOf(f));
+    const all = literalKeysOfTheEngine();
     expect(all.length, 'no `t()` call site was found at all — the walk is broken, not the tree clean').toBeGreaterThan(200);
     expect(all.some(({ key }) => key === 'motor.espera.dica')).toBe(true);
   });
@@ -87,9 +117,15 @@ describe('every key a module asks for is declared', () => {
 // ============================== MUTATIONS CHECKED ==============================
 //   K1 the root's key back to `motor.cooldown.dica` (the shipped typo)  🔴 resolves to nothing · Cross-check
 //   K2 `sr.libras.on` removed from pt.ts (the shipped hole)             🔴 resolves to nothing
-//   K3 GATE: `ts.forEachChild` dropped, so the walk stops descending    🔴 Cross-check — 0 call sites found, and that is
+//   K3 GATE: `forEachChild` dropped, so the walk stops descending   🔴 Cross-check — 0 call sites found, and that is
 //                                                                          exactly the empty pass the case exists to refuse
 //   K4 GATE: any first argument taken as a key, built ones included     🔴 resolves to nothing
+//   (2026-09-25, when a file that cannot call `t` stopped being parsed — each in a module with no `t(` and no backslash:)
+//   P1 `t /* why */ ('missing')`                                        🔴 resolves to nothing
+//   P2 `t?.('missing')`                                                 🔴 resolves to nothing
+//   P3 `t<string>('missing')`                                           🔴 resolves to nothing
+//   P4 `t('missing')` — the callee spelled with an escape          🔴 resolves to nothing
+//   P5 GATE: the filter answering «cannot» for every file              🔴 Cross-check — 0 call sites found
 //
 //   ⚠️ [Boundary] is NOT red under K4, and my prediction that it would be was wrong. Measured: with any argument accepted,
 //   a built key arrives as a BinaryExpression whose `.text` is `undefined` — so it is reported as a missing key and not as

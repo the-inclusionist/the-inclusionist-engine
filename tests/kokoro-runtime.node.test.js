@@ -8,6 +8,9 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { canNameSpecifierContaining, specifiersOfFile } from './fixtures/parsed-sources.js';
 import { loadKokoroRuntime } from '../app/js/platform/kokoro-runtime.js';
 import { URL_DO_TOKENIZADOR_KOKORO } from '../app/js/platform/kokoro.js';
 import { deliveryPath } from '../app/js/platform/heavy.js';
@@ -111,8 +114,7 @@ describe('the neural voice, loaded by the engine', () => {
     await expect(loadKokoroRuntime({ ...semEspeak, importModule: async () => ({}) })).rejects.toThrow(/voz:runtime:fonemas/);
   });
 
-  it('🎯 [Zero] nothing is imported from npm: the module names no bare specifier', async () => {
-    const { readFileSync } = await import('node:fs');
+  it('🎯 [Zero] nothing is imported from npm: the module names no bare specifier', () => {
     const src = readFileSync('app/js/platform/kokoro-runtime.ts', 'utf8');
     const imports = [...src.matchAll(/^import[^;]*from '([^']+)'/gm)].map((m) => m[1]);
     expect(imports.every((s) => s.startsWith('./') || s.startsWith('../')), `a bare import entered: ${imports.join(' ')}`).toBe(true);
@@ -127,9 +129,7 @@ describe('the neural voice, loaded by the engine', () => {
    * ⚠️ It is asserted over the WHOLE tree and not over `platform/tts` alone, because the next module to want the voice would be
    * the one to pay the cost, and it would not be reading this file.
    */
-  it('🔴 [Zero] no module imports the runtime statically — it is reached by `import()` or not at all', async () => {
-    const { readFileSync, readdirSync } = await import('node:fs');
-    const { join } = await import('node:path');
+  it('🔴 [Zero] no module imports the runtime statically — it is reached by `import()` or not at all', () => {
     const ficheiros = [];
     const descer = (dir) => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -143,10 +143,19 @@ describe('the neural voice, loaded by the engine', () => {
     // `export * from` put the runtime in the chunk exactly like `import … from`, and a pattern over `import … from '…'`
     // let all three through. What stays allowed is the literal `import()` — the late load this case exists to demand —
     // and a type-only import, which the build erases and so bundles nothing.
-    const { specifiersOf } = await import('../scripts/lib/module-specifiers.mjs');
-    const estaticos = ficheiros.flatMap((f) => specifiersOf(readFileSync(f, 'utf8'), f)
-      .filter((s) => /(^|\/)kokoro-runtime\.js$/.test(s.spec ?? '') && s.kind !== 'dynamic' && !s.typeOnly)
-      .map((s) => `${f}:${s.line} ${s.kind}`));
+    //
+    // ⚠️ AND ONLY A FILE THAT CAN NAME THE RUNTIME IS PARSED. Parsing all ~180 modules to ask about one specifier was the
+    // work that took this case past the 5 s ceiling under the load of several suites at once; a file whose text holds
+    // neither `kokoro-runtime` nor a backslash cannot yield it, and `canNameSpecifierContaining` says why that is exact
+    // (📏 2026-09-25: 29 of 184 files, ~0.6 of ~2.1 MB, are parsed). The parser, and the compiler behind it, are imported
+    // at the top of the file: loading ~9 MB of compiler inside the case billed it to this case's 5 s.
+    const referencias = ficheiros.filter((f) => canNameSpecifierContaining(f, 'kokoro-runtime'))
+      .flatMap((f) => specifiersOfFile(f).filter((s) => /(^|\/)kokoro-runtime\.js$/.test(s.spec ?? ''))
+        .map((s) => ({ ...s, f })));
+    // 🎯 The late load the case demands IS found — without it, a filter that parsed nothing would pass this case empty.
+    expect(referencias.some((s) => s.kind === 'dynamic'), 'not even the late `import()` was seen: the reading is broken')
+      .toBe(true);
+    const estaticos = referencias.filter((s) => s.kind !== 'dynamic' && !s.typeOnly).map((s) => `${s.f}:${s.line} ${s.kind}`);
     expect(estaticos, 'a static import would bundle espeak-ng and onnxruntime into every game').toEqual([]);
   });
 });
@@ -162,3 +171,8 @@ describe('the neural voice, loaded by the engine', () => {
 //     and a double-quoted specifier, each alone                   → «no module imports the runtime statically»
 //   · an `import type` of it                                       → stays green: erased, nothing bundled
 //   · the walk stopped at the top folder (empty tree)             → «the walk found nothing»
+// (2026-09-25, when only the files that can name the runtime began to be parsed):
+//   · the static import re-run, and the re-export                 → «no module imports the runtime statically»
+//   · the specifier spelled with an escape, `'./kokoro-runtime.js'`
+//     — the one form whose text lacks the name                    → «no module imports the runtime statically»
+//   · the filter answering «cannot» for every file                → «not even the late `import()` was seen»

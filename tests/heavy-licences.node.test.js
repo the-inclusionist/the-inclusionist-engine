@@ -7,7 +7,7 @@
 // `heavy/THIRD-PARTY-NOTICES.md`.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -40,6 +40,21 @@ const MARKERS = {
 };
 
 describe('the licences travel with the heavy files', () => {
+  /*
+   * ⚠️ THE WHOLE CATALOGUE IS DELIVERED ONCE, and the three cases that only READ a normal delivery read this one. Each used
+   * to deliver its own: ~50 files and every licence text written to disk, three times over, each ~0.45 s alone — and under
+   * the load of several suites at once, the writes pushed all three past the 5 s ceiling. A red that comes from the machine
+   * and not the code invalidates whatever is measured beside it; the fix is the work shrinking, never the clock growing.
+   * 📌 The delivery is the same one each built — same catalogue, same fake bodies, nothing a case changes — and no case
+   * writes into it. The two cases that deliver something ELSE (an unknown licence, two projects in a folder) keep their own.
+   */
+  let destino, entrega;
+  beforeAll(async () => {
+    destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    entrega = await deliverAll(destino);
+  });
+  afterAll(() => { if (destino) rmSync(destino, { recursive: true, force: true }); });
+
   it('🎯 [Vacuum] every catalogue entry with an address belongs to exactly one licence group', () => {
     expect(WITH_URL.length, 'the catalogue read as empty — the gate would pass by checking nothing').toBeGreaterThan(40);
     const orphans = WITH_URL.filter((p) => !groupOf(p.id)).map((p) => p.id);
@@ -48,61 +63,50 @@ describe('the licences travel with the heavy files', () => {
     expect(twice).toEqual([]);
   });
 
-  it('🔴 [Right] every folder that receives a heavy file holds its project\'s LICENSE and NOTICE, and the notices list it', async () => {
-    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
-    try {
-      const { ok, linhas, licences } = await deliverAll(destino);
-      expect(ok, linhas.filter((l) => l.error).map((l) => `${l.id}: ${l.error}`).join('\n')).toBe(true);
-      expect(licences.map((l) => l.key).sort()).toEqual(['espeak-ng', 'kokoro', 'mediapipe-tasks-vision', 'moonshine-streaming-small-en',
-        'moonshine-streaming-small-es', 'onnxruntime-web', 'vosk-browser', 'vosk-models', 'whisper-small']);
+  it('🔴 [Right] every folder that receives a heavy file holds its project\'s LICENSE and NOTICE, and the notices list it', () => {
+    const { ok, linhas, licences } = entrega;
+    expect(ok, linhas.filter((l) => l.error).map((l) => `${l.id}: ${l.error}`).join('\n')).toBe(true);
+    expect(licences.map((l) => l.key).sort()).toEqual(['espeak-ng', 'kokoro', 'mediapipe-tasks-vision', 'moonshine-streaming-small-en',
+      'moonshine-streaming-small-es', 'onnxruntime-web', 'vosk-browser', 'vosk-models', 'whisper-small']);
 
-      const notices = join(destino, 'heavy', 'THIRD-PARTY-NOTICES.md');
-      expect(existsSync(notices), 'heavy/THIRD-PARTY-NOTICES.md was not written').toBe(true);
-      const list = readFileSync(notices, 'utf8');
+    const notices = join(destino, 'heavy', 'THIRD-PARTY-NOTICES.md');
+    expect(existsSync(notices), 'heavy/THIRD-PARTY-NOTICES.md was not written').toBe(true);
+    const list = readFileSync(notices, 'utf8');
 
-      const missing = [];
-      for (const p of WITH_URL) {
-        const folder = folderOf(p);
-        const group = groupOf(p.id);
-        for (const name of ['LICENSE', 'NOTICE']) if (!existsSync(join(destino, folder, name))) missing.push(`${folder}/${name} (${p.id})`);
-        if (!existsSync(join(destino, folder, 'LICENSE'))) continue;
-        const text = readFileSync(join(destino, folder, 'LICENSE'), 'utf8');
-        for (const m of MARKERS[group.spdx]) if (!text.includes(m)) missing.push(`${folder}/LICENSE lacks «${m}» (${group.spdx})`);
-        const listed = `\`${folder.replace(/^heavy\//, '')}/LICENSE\``;
-        if (!list.includes(listed)) missing.push(`THIRD-PARTY-NOTICES.md does not list ${listed}`);
-      }
-      expect(missing).toEqual([]);
-      for (const g of THIRD_PARTY) {
-        expect(list, `${g.key} is not named in the notices`).toContain(`## ${g.project}`);
-        expect(list).toContain(`\`${g.spdx}\``);
-      }
-    } finally { rmSync(destino, { recursive: true, force: true }); }
+    const missing = [];
+    for (const p of WITH_URL) {
+      const folder = folderOf(p);
+      const group = groupOf(p.id);
+      for (const name of ['LICENSE', 'NOTICE']) if (!existsSync(join(destino, folder, name))) missing.push(`${folder}/${name} (${p.id})`);
+      if (!existsSync(join(destino, folder, 'LICENSE'))) continue;
+      const text = readFileSync(join(destino, folder, 'LICENSE'), 'utf8');
+      for (const m of MARKERS[group.spdx]) if (!text.includes(m)) missing.push(`${folder}/LICENSE lacks «${m}» (${group.spdx})`);
+      const listed = `\`${folder.replace(/^heavy\//, '')}/LICENSE\``;
+      if (!list.includes(listed)) missing.push(`THIRD-PARTY-NOTICES.md does not list ${listed}`);
+    }
+    expect(missing).toEqual([]);
+    for (const g of THIRD_PARTY) {
+      expect(list, `${g.key} is not named in the notices`).toContain(`## ${g.project}`);
+      expect(list).toContain(`\`${g.spdx}\``);
+    }
   });
 
-  it('🔴 [Right] eSpeak NG (GPL-3.0) carries a SOURCE note that says where the source is, and what is unverified', async () => {
-    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
-    try {
-      await deliverAll(destino);
-      const folder = folderOf(WITH_URL.find((p) => p.id === 'voz:runtime:fonemas:wasm'));
-      const source = readFileSync(join(destino, folder, 'SOURCE'), 'utf8');
-      expect(source).toContain('https://github.com/espeak-ng/espeak-ng.git');
-      expect(source).toContain('git+https://github.com/ianmarmour/espeak-ng.js.git');
-      expect(source).toContain('1.0.2');
-      expect(source).toMatch(/exact eSpeak NG revision .* is UNVERIFIED/);
-    } finally { rmSync(destino, { recursive: true, force: true }); }
+  it('🔴 [Right] eSpeak NG (GPL-3.0) carries a SOURCE note that says where the source is, and what is unverified', () => {
+    const folder = folderOf(WITH_URL.find((p) => p.id === 'voz:runtime:fonemas:wasm'));
+    const source = readFileSync(join(destino, folder, 'SOURCE'), 'utf8');
+    expect(source).toContain('https://github.com/espeak-ng/espeak-ng.git');
+    expect(source).toContain('git+https://github.com/ianmarmour/espeak-ng.js.git');
+    expect(source).toContain('1.0.2');
+    expect(source).toMatch(/exact eSpeak NG revision .* is UNVERIFIED/);
   });
 
-  it('🔴 [Right] MIT carries its copyright line, or says it is unverified; the Vosk NOTICE is the upstream one, whole', async () => {
-    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
-    try {
-      await deliverAll(destino);
-      const read = (id, name) => readFileSync(join(destino, folderOf(WITH_URL.find((p) => p.id === id)), name), 'utf8');
-      expect(read('voz:runtime:onnx', 'LICENSE')).toMatch(/^MIT License\n\nCopyright \(c\) Microsoft Corporation\. All rights reserved\.\n\nPermission/);
-      expect(read('reading:en:encoder', 'LICENSE')).toMatch(/^MIT License\n\nCopyright: UNVERIFIED/);
-      const upstream = readFileSync(join(ROOT, 'scripts', 'licences', 'vosk-browser.NOTICE.txt'), 'utf8').trimEnd();
-      expect(read('commands:runtime', 'NOTICE').startsWith(upstream), 'the Vosk runtime NOTICE is not the upstream one').toBe(true);
-      expect(read('commands:runtime', 'NOTICE')).toContain('DYNAMIC_EXECUTION=0');
-    } finally { rmSync(destino, { recursive: true, force: true }); }
+  it('🔴 [Right] MIT carries its copyright line, or says it is unverified; the Vosk NOTICE is the upstream one, whole', () => {
+    const read = (id, name) => readFileSync(join(destino, folderOf(WITH_URL.find((p) => p.id === id)), name), 'utf8');
+    expect(read('voz:runtime:onnx', 'LICENSE')).toMatch(/^MIT License\n\nCopyright \(c\) Microsoft Corporation\. All rights reserved\.\n\nPermission/);
+    expect(read('reading:en:encoder', 'LICENSE')).toMatch(/^MIT License\n\nCopyright: UNVERIFIED/);
+    const upstream = readFileSync(join(ROOT, 'scripts', 'licences', 'vosk-browser.NOTICE.txt'), 'utf8').trimEnd();
+    expect(read('commands:runtime', 'NOTICE').startsWith(upstream), 'the Vosk runtime NOTICE is not the upstream one').toBe(true);
+    expect(read('commands:runtime', 'NOTICE')).toContain('DYNAMIC_EXECUTION=0');
   });
 
   it('🔴 [Right] a file whose licence nobody recorded is NOT written, and the run fails', async () => {

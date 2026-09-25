@@ -24,6 +24,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, relative, sep } from 'node:path';
 import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
+import { sourceText, specifiersOfFile } from './fixtures/parsed-sources.js';
 
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const RAIZ = join(RAIZ_REPO, 'app', 'js');
@@ -67,16 +68,20 @@ const MODULOS_DE_ARESTA = camadasPublicadas().filter((c) => c !== 'educational')
 // LINE ENDINGS ARE NORMALISED on reading, and that is not hygiene: with CRLF each line ends in CR, and CR is a LINE
 // TERMINATOR for a regex — `.` does not reach it, so the end anchor in /\/\/.*$/ never arrives and the comment stripper
 // REMOVES NOTHING, and end-of-line comments get accused as dependencies. A filter that fails OPEN is worse than none: it
-// produces a false debt list, and whoever goes to fix it finds nothing to fix.
-const CR = String.fromCharCode(13);
-const fonte = (m) => readFileSync(join(RAIZ, ...m.split('/')), 'utf8').split(CR).join('');
+// produces a false debt list, and whoever goes to fix it finds nothing to fix. (`sourceText` does the normalising.)
+//
+// ⚠️ And each file is READ ONCE AND PARSED ONCE for the whole file (`tests/fixtures/parsed-sources.js`): the edge cases
+// below ask about `game/` and about `educational/` over the same modules, and parsing the tree once per question is what
+// pushed them past the 5 s ceiling under the load of several suites at once.
+const caminhoDe = (m) => join(RAIZ, ...m.split('/'));
+const fonte = (m) => sourceText(caminhoDe(m));
 
 /**
  * What module `m` (`core/rng.ts`) names by a RELATIVE specifier, as a path under `app/js` (`game/x.js`), in every form the
  * parser returns: static, side-effect, re-export, `import type`, literal `import()`, `require()`.
  */
 function alvosDe(m) {
-  return specifiersOf(fonte(m), m)
+  return specifiersOfFile(caminhoDe(m))
     .filter((s) => s.spec?.startsWith('.'))
     .map((s) => relative(RAIZ, resolve(RAIZ, dirname(m), s.spec)).split(sep).join('/'));
 }
@@ -337,16 +342,13 @@ const PROSA_EM_STRING = new Set([
 
 /** A test's CODE lines, without comments and without case titles. */
 function linhasDeFixture(arquivo) {
-  const txt = readFileSync(join(T_DIR, arquivo), 'utf8').split(CR).join('');
-  return linhasDeCodigo(txt).filter(([, ln]) => !TITULO_DE_CASO.test(ln));
+  return linhasDeCodigo(sourceText(join(T_DIR, arquivo))).filter(([, ln]) => !TITULO_DE_CASO.test(ln));
 }
 
-/** Tests that exercise an ENGINE module and none of `game/`. A `game/` test talks about the game by duty. */
-function testesDeEngine() {
-  return readdirSync(T_DIR).filter((f) => f.endsWith('.test.js')).sort().filter((f) => {
-    const specs = specifiersOf(readFileSync(join(T_DIR, f), 'utf8'), f).map((s) => s.spec ?? '');
-    return specs.some((s) => IMPORTA_ENGINE.test(s)) && !specs.some((s) => IMPORTA_JOGO.test(s));
-  });
+/** Does this test exercise an ENGINE module and none of `game/`? A `game/` test talks about the game by duty. */
+function eTesteDeEngine(f) {
+  const specs = specifiersOfFile(join(T_DIR, f)).map((s) => s.spec ?? '');
+  return specs.some((s) => IMPORTA_ENGINE.test(s)) && !specs.some((s) => IMPORTA_JOGO.test(s));
 }
 
 /** How many code lines of this test talk about coin/quiz. */
@@ -356,10 +358,16 @@ function sujeira(arquivo) {
 
 describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova decisiva)', () => {
   it('[Right] nenhum teste de engine NOVO precisa de moeda ou de quiz para rodar', () => {
-    const novos = testesDeEngine()
+    // ⚠️ THE VOCABULARY IS READ FIRST, AND ONLY A TEST THAT HAS IT IS PARSED. A test with no coin/quiz line adds nothing to
+    // this list whatever it imports, so classifying it was work whose answer nobody used — and it was the dearest work in
+    // the file: the TypeScript parser over all ~340 tests, which alone took this case past the 5 s ceiling under the load
+    // of several suites at once. The verdict is the same set of lines; what shrank is the parsing, from every test to the
+    // handful that name the game's words.
+    const novos = readdirSync(T_DIR).filter((f) => f.endsWith('.test.js')).sort()
       .filter((f) => !(f in FIXTURES_CONHECIDOS) && !PROSA_EM_STRING.has(f))
-      .flatMap((f) => linhasDeFixture(f).filter(([, ln]) => VOCAB_JOGO.test(ln))
-        .map(([n, ln]) => `${f}:${n}  ${ln.trim().slice(0, 90)}`));
+      .map((f) => [f, linhasDeFixture(f).filter(([, ln]) => VOCAB_JOGO.test(ln))])
+      .filter(([f, sujas]) => sujas.length > 0 && eTesteDeEngine(f))
+      .flatMap(([f, sujas]) => sujas.map(([n, ln]) => `${f}:${n}  ${ln.trim().slice(0, 90)}`));
     expect(novos, 'fixture de engine exigindo moeda/quiz — o corte não pegou aqui').toEqual([]);
   });
 
@@ -483,14 +491,17 @@ describe('educational/ e DADO: nao importa nada (CLAUDE.md, ADR-0032)', () => {
     ? readdirSync(join(RAIZ, 'educational')).filter((f) => f.endsWith('.ts'))
     : [];
   /** Every specifier `texto` names, as `line: kind 'spec'`. A re-export counts: `export * from` loads code as surely. */
-  const importacoes = (texto) => specifiersOf(texto).map((s) => `${s.line}: ${s.kind} '${s.spec ?? '(computed)'}'`);
+  const legivel = (especificadores) => especificadores.map((s) => `${s.line}: ${s.kind} '${s.spec ?? '(computed)'}'`);
+  const importacoes = (texto) => legivel(specifiersOf(texto));
 
   it('[Interface] a camada existe e tem ficheiros — senao o caso abaixo nao mede nada', () => {
     expect(FICHEIROS.length, 'nao ha `app/js/educational/`; a regra ficou sem sujeito').toBeGreaterThan(0);
   });
 
   it('⚠️ [Zero] NENHUM ficheiro de educational/ tem um import', () => {
-    const comImport = FICHEIROS.flatMap((f) => importacoes(fonte('educational/' + f)).map((i) => `educational/${f}:${i}`));
+    // The same parse the `[Boundary]` above already made of these files, not a second one.
+    const comImport = FICHEIROS.flatMap((f) => legivel(specifiersOfFile(caminhoDe('educational/' + f)))
+      .map((i) => `educational/${f}:${i}`));
     expect(comImport, 'o curriculo passou a depender de codigo; ele deixa de viajar sozinho').toEqual([]);
   });
 

@@ -24,6 +24,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
+import { sourceText, specifiersOfFile } from './fixtures/parsed-sources.js';
 
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const CR = String.fromCharCode(13);
@@ -57,7 +58,11 @@ function modulosDoPacote() {
 }
 
 const MODULOS = modulosDoPacote();
-const fonte = (rel) => readFileSync(join(RAIZ_REPO, rel), 'utf8').split(CR).join('');
+// ⚠️ Each shipped module is READ ONCE AND PARSED ONCE for the whole file (`tests/fixtures/parsed-sources.js`): three cases
+// below ask the package's specifiers, and parsing it once per case is what pushed them past the 5 s ceiling under the load
+// of several suites at once. The sample lines of the `[Cross-check]` cases are still parsed on the spot.
+const fonte = (rel) => sourceText(join(RAIZ_REPO, rel));
+const especificadoresDe = (rel) => specifiersOfFile(join(RAIZ_REPO, rel));
 
 /** CODE lines. Prose that MENTIONS `import.meta.glob` is not `import.meta.glob` — and this file and `core/i18n` are full of
  *  prose mentioning it, precisely to explain why it left. */
@@ -88,13 +93,13 @@ const SO_NO_VITE_ESPECIFICADOR = [
   { nome: 'import com sufixo ?raw/?url/?worker', casa: (s) => /\?(raw|url|worker|inline)$/.test(s) },
 ];
 
-/** [line, construct] for everything the sieve catches in a source text. */
-function construcoesDoVite(texto) {
+/** [line, construct] for everything the sieve catches in a source text (whose specifiers are parsed unless handed in). */
+function construcoesDoVite(texto, especificadores = specifiersOf(texto)) {
   const achados = [];
   for (const [n, linha] of linhasDeCodigo(texto)) {
     for (const { nome, re } of SO_NO_VITE) if (re.test(linha)) achados.push([n, nome]);
   }
-  for (const { spec, line } of specifiersOf(texto)) {
+  for (const { spec, line } of especificadores) {
     for (const { nome, casa } of SO_NO_VITE_ESPECIFICADOR) if (spec && casa(spec)) achados.push([line, nome]);
   }
   return achados;
@@ -102,7 +107,7 @@ function construcoesDoVite(texto) {
 
 /** [module, line, construct] for everything the sieve catches. */
 function ocorrencias(modulos = MODULOS) {
-  return modulos.flatMap((m) => construcoesDoVite(fonte(m)).map(([n, nome]) => [m, n, nome]));
+  return modulos.flatMap((m) => construcoesDoVite(fonte(m), especificadoresDe(m)).map(([n, nome]) => [m, n, nome]));
 }
 
 describe('o pacote publicável não carrega construção que só o Vite entende (ADR-0072 §4)', () => {
@@ -180,19 +185,19 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
    *  `virtual:` is already failed by the sieve above, so failing it here again would only duplicate the error.
    *  📌 Read by the TypeScript parser, in every form a module names another: `from`, side-effect `import`, re-export,
    *  literal `import()`, `require()`. A pattern had missed `require()`, and the parser also skips comments and strings. */
-  function pacotesNomeados(texto) {
+  function pacotesNomeados(especificadores) {
     const out = [];
-    for (const { spec: s, line } of specifiersOf(texto)) {
+    for (const { spec: s, line } of especificadores) {
       if (!s || s.startsWith('.') || s.startsWith('/') || s.startsWith('node:') || s.startsWith('virtual:')) continue;
       out.push([line, nomeDoPacote(s)]);
     }
     return out;
   }
-  const especificadoresNus = (texto) => pacotesNomeados(texto).map(([, nome]) => nome);
+  const especificadoresNus = (texto) => pacotesNomeados(specifiersOf(texto)).map(([, nome]) => nome);
 
-  /** [module, line, package] for everything the shipped modules name. */
+  /** [module, line, package] for everything the shipped modules name — over the parse the first sieve already made. */
   function nomeados(modulos = MODULOS) {
-    return modulos.flatMap((m) => pacotesNomeados(fonte(m)).map(([n, nome]) => [m, n, nome]));
+    return modulos.flatMap((m) => pacotesNomeados(especificadoresDe(m)).map(([n, nome]) => [m, n, nome]));
   }
 
   it('[Zero] NENHUM módulo embarcado nomeia pacote fora de dependencies/peerDependencies', () => {
