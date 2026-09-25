@@ -33,8 +33,12 @@ export interface VoiceListenerDeps {
   readonly createContext: () => AudioContextLike;
   /** What the recogniser has heard so far in this utterance. */
   readonly onPartial: (text: string) => void;
-  /** The utterance ended: whoever counts what was already answered for starts a new sentence. */
-  readonly onFinal?: () => void;
+  /**
+   * The utterance ended, with the recogniser's last word on it: a name the partials held back because another item's name
+   * continued it («voltar» while «voltar ao jogo» could follow) is decided HERE (ADR-0194 §3), and whoever counts what was
+   * already answered for starts a new sentence. `''` when the recogniser heard nothing it knows.
+   */
+  readonly onFinal?: (text: string) => void;
 }
 
 export interface VoiceListener {
@@ -60,7 +64,7 @@ export async function startVoiceListening(d: VoiceListenerDeps): Promise<VoiceLi
   let recognizer: VoskRecognizer = new d.model.KaldiRecognizer(context.sampleRate, withUnknown(d.grammar));
   const listen = (r: VoskRecognizer): void => {
     r.on('partialresult', (heard) => { const t = heard.result.partial; if (t) d.onPartial(t); });
-    r.on('result', () => { d.onFinal?.(); });
+    r.on('result', (heard) => { d.onFinal?.(heard.result.text ?? ''); });
   };
   listen(recognizer);
 

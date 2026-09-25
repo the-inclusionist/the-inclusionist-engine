@@ -50,7 +50,7 @@ const abrir = async (extra = {}) => {
   const ouvinte = await startVoiceListening({
     model: modelo, grammar: ['acima', 'abaixo'],
     getUserMedia: amb.getUserMedia, createContext: () => amb.context,
-    onPartial: (t) => ouvidas.push(t), onFinal: () => fins.push(1), ...extra,
+    onPartial: (t) => ouvidas.push(t), onFinal: (t) => fins.push(t), ...extra,
   });
   return { ouvinte, modelo, feitos, amb, ouvidas, fins };
 };
@@ -100,6 +100,14 @@ describe('o que a criança ouve de volta', () => {
     const { feitos, fins } = await abrir();
     feitos[0].ouvintes.result({ result: { text: 'acima' } });
     expect(fins.length, 'sem isto, a mesma palavra dita outra vez não seria um comando novo').toBe(1);
+  });
+
+  it('🔴 [Right] com a ÚLTIMA palavra do reconhecedor — é nela que um nome retido pelo parcial se decide (ADR-0194 §3)', async () => {
+    // «voltar» waits on the partial while «voltar ao jogo» may follow; if the sentence ends there, only the final text says so.
+    const { feitos, fins } = await abrir();
+    feitos[0].ouvintes.result({ result: { text: 'voltar' } });
+    feitos[0].ouvintes.result({ result: {} });
+    expect(fins, 'o fim chegou sem o que foi dito, e o «voltar» retido nunca dispara').toEqual(['voltar', '']);
   });
 });
 
@@ -172,3 +180,4 @@ describe('um aparelho sem microfone', () => {
 });
 
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-voice-listener.py`.
+// 2026-09-25 (ADR-0194 §3): VL-final — the end of the utterance reported with `''` instead of its text   🔴 «com a ÚLTIMA palavra»
