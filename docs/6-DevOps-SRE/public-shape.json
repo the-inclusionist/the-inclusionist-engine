@@ -391,6 +391,17 @@
       "cols"
     ]
   },
+  "core/session-clock.ts": {
+    "interface SessionReading": [
+      "left",
+      "leftMs",
+      "minutesLeft",
+      "over"
+    ],
+    "type SessionEnding": "'red' | 'pulse' | 'lock'",
+    "type ClockLook": "'running' | 'red' | 'pulse'",
+    "type ClockFormat": "'hms' | 'ms'"
+  },
   "core/setting-defaults.ts": {
     "type MediaQuery": "(query: string) => { readonly matches: boolean }"
   },
@@ -423,6 +434,8 @@
       "numPlayers",
       "oneButton",
       "ownerColors",
+      "sessionEnding",
+      "sessionMinutes",
       "speechPpm",
       "switchScan",
       "vizMode",
@@ -452,6 +465,8 @@
       "on",
       "oneButton",
       "ownerColors",
+      "sessionEnding",
+      "sessionMinutes",
       "setBlindModeValue",
       "setCameraControlValue",
       "setCaneBlockDivValue",
@@ -467,6 +482,8 @@
       "setOutlineBgValue",
       "setOutlineFgValue",
       "setOwnerColorsValue",
+      "setSessionEndingValue",
+      "setSessionMinutesValue",
       "setSpeechPpmValue",
       "setSwitchScanValue",
       "setVizModeValue",

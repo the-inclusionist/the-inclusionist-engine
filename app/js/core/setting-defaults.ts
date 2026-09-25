@@ -7,6 +7,7 @@
 // so a panel that only compares against them must not import `core/state`, the page's one settings store, to read them.
 // `core/state` imports them from here.
 import type { CameraControl } from './camera-cycle.js';
+import type { SessionEnding } from './session-clock.js';
 
 /**
  * The browser's media-query question, as the composition root passes it (`win.matchMedia`). Only `matches` is read.
@@ -79,4 +80,8 @@ export const DEFAULTS = Object.freeze({
   //     string that happened to match no mode.
   calmMode: 0,
   viz: 'normal',
+  // the session clock (ADR-0236 and its erratum of 2026-09-25): an hour, and at the end the clock turns red — the screen does
+  // not lock. Both apply whenever no adult has set a value.
+  sessionMinutes: 60,
+  sessionEnding: 'red' as SessionEnding,
 } as const);

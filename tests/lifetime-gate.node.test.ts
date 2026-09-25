@@ -55,6 +55,7 @@ const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
   setWheelchairValue: [true, false], setOneButtonValue: [true, false], setGameSpeedValue: [0.5, 1], setNoGripStrengthValue: [true, false], setCameraControlValue: ['eyes', 'off'], setCaptionPpmValue: [175, 125],
   setSpeechPpmValue: [404, 254], setInputCooldownValue: [500, 0],
   setMenuIndexOnValue: [false, true], setSwitchScanValue: [true, false], setVoiceControlValue: [true, false],
+  setSessionMinutesValue: [30, 60], setSessionEndingValue: ['pulse', 'red'],
 };
 
 let escritas: string[] = [];

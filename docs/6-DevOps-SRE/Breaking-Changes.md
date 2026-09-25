@@ -3775,6 +3775,29 @@ New, additive: `ui/menu-intent.MENU_CONFIRM` (the menu's «yes» position, `acti
 📏 **Not measured in the games:** this change was made without reading the sibling repositories. Before the bump, `git grep`
 them for `createVoiceControl`, `createVoiceCommands`, `VoiceCommands` and `MenuNavApi` doubles.
 
+## DJ · The session clock's two options join the settings store (ADR-0236 and its erratum, issue #94)
+
+**Who is affected:** only code that IMPLEMENTS `SettingsStore` or declares a full `GameEvent` map itself — a hand-made double
+of `engine.settings`, for instance. Code that reads `engine.settings` or subscribes to its bus changes nothing.
+
+📌 **Why:** the session clock is a Time Timer whose length and ending are stored settings (60 minutes and «red» until an
+adult sets them, `incl_session_minutes` and `incl_session_ending`), written and announced like every other setting, so the
+store's interface and its event map gain them as REQUIRED members.
+
+| new, required | what it is |
+|---|---|
+| `SettingsStore.sessionMinutes` · `setSessionMinutesValue(minutes)` | the session's length in whole minutes; anything under one or not a number reads as 60 |
+| `SettingsStore.sessionEnding` · `setSessionEndingValue(ending)` | `'red' \| 'pulse' \| 'lock'`; anything else reads as `'red'`. `'lock'` is stored and NOT built — the clock turns red and `problems` says why (ADR-0050 §4 names no way for an adult to lift it) |
+| `GameEvent.sessionMinutes: number` · `GameEvent.sessionEnding: SessionEnding` | the two events their setters tell |
+| `core/session-clock` (new module) | the vocabulary and the arithmetic: `SessionEnding`, `toSessionMinutes`, `toSessionEnding`, `readSession`, `clockLook`, `clockWords`, `clockFormat`, `clockDigits`, `sessionEndingProblems` |
+
+**Migration:** a double of `SettingsStore` adds the four members (a getter each and a setter each); a full `GameEvent` map
+adds the two entries. `DEFAULTS` gains `sessionMinutes: 60` and `sessionEnding: 'red'`.
+
+📏 **Measured in the seven games, read-only, as information:** none implements `SettingsStore` or declares `GameEvent`; each
+only receives an `Engine` (`game-2048`, `game-chess`, `game-pinball`, `game-platformer`, `game-soccer`, `game-whackwhack`).
+`pixi-15-puzzle` names neither.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

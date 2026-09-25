@@ -310,8 +310,18 @@
       "statefulEdges": 0,
       "fanIn": 5
     },
+    "core/session-clock.ts": {
+      "codeLines": 47,
+      "decisionNodes": 9,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 4,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
     "core/setting-defaults.ts": {
-      "codeLines": 32,
+      "codeLines": 35,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -331,10 +341,10 @@
       "fanIn": 3
     },
     "core/state.ts": {
-      "codeLines": 244,
-      "decisionNodes": 26,
+      "codeLines": 265,
+      "decisionNodes": 28,
       "maxDepth": 3,
-      "fanOut": 5,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
@@ -401,7 +411,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 646,
+      "codeLines": 649,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -411,7 +421,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 646,
+      "codeLines": 649,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -421,7 +431,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 646,
+      "codeLines": 649,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1031,7 +1041,7 @@
       "fanIn": 0
     },
     "platform/storage-keys.ts": {
-      "codeLines": 32,
+      "codeLines": 33,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
