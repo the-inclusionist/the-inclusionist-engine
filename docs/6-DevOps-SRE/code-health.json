@@ -29,11 +29,6 @@
     "boot/create-game.ts",
     "core/dom-query.ts",
     "core/i18n.ts",
-    "input/keyboard.ts",
-    "input/pad-defaults.ts",
-    "input/pad-wizard.ts",
-    "input/state.ts",
-    "input/touch.ts",
     "platform/audio-sonar.ts",
     "platform/audio.ts",
     "platform/kokoro-runtime.ts",
@@ -42,24 +37,19 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2147,
+      "codeLines": 2154,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 89,
       "globalReach": 1,
       "worstFunction": 70,
-      "statefulEdges": 9,
+      "statefulEdges": 4,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
       ],
       "statefulImports": [
         "core/i18n.ts",
-        "input/keyboard.ts",
-        "input/pad-defaults.ts",
-        "input/pad-wizard.ts",
-        "input/state.ts",
-        "input/touch.ts",
         "platform/audio-sonar.ts",
         "platform/audio.ts",
         "platform/tts.ts"
@@ -520,19 +510,14 @@
       "fanIn": 1
     },
     "input/gamepad.ts": {
-      "codeLines": 304,
+      "codeLines": 307,
       "decisionNodes": 58,
       "maxDepth": 2,
-      "fanOut": 5,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 3,
-      "fanIn": 1,
-      "statefulImports": [
-        "input/pad-defaults.ts",
-        "input/pad-wizard.ts",
-        "input/state.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/gaze-cycle.ts": {
       "codeLines": 109,
@@ -585,18 +570,14 @@
       "fanIn": 1
     },
     "input/keyboard.ts": {
-      "codeLines": 55,
+      "codeLines": 73,
       "decisionNodes": 10,
       "maxDepth": 4,
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 5,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "holds": [
-        "let gameMapping",
-        "let kb"
-      ]
+      "fanIn": 1
     },
     "input/keydown.ts": {
       "codeLines": 282,
@@ -609,17 +590,14 @@
       "fanIn": 0
     },
     "input/latch-edge.ts": {
-      "codeLines": 21,
+      "codeLines": 23,
       "decisionNodes": 1,
       "maxDepth": 1,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 2,
-      "statefulEdges": 1,
-      "fanIn": 0,
-      "statefulImports": [
-        "input/state.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "input/latch-scope.ts": {
       "codeLines": 24,
@@ -662,44 +640,34 @@
       "fanIn": 0
     },
     "input/pad-defaults.ts": {
-      "codeLines": 20,
+      "codeLines": 18,
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 2,
-      "holds": [
-        "let gameMapping",
-        "mutated memo"
-      ]
+      "fanIn": 1
     },
     "input/pad-reading.ts": {
       "codeLines": 98,
       "decisionNodes": 18,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "input/state.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/pad-wizard.ts": {
-      "codeLines": 163,
+      "codeLines": 172,
       "decisionNodes": 31,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 2,
-      "holds": [
-        "mutated maps"
-      ]
+      "fanIn": 2
     },
     "input/pointer-space.ts": {
       "codeLines": 12,
@@ -722,19 +690,14 @@
       "fanIn": 0
     },
     "input/state.ts": {
-      "codeLines": 60,
+      "codeLines": 67,
       "decisionNodes": 4,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 4,
-      "holds": [
-        "mutated inputByPlayer",
-        "mutated keySource",
-        "mutated keys"
-      ]
+      "fanIn": 1
     },
     "input/switch-scan.ts": {
       "codeLines": 38,
@@ -768,16 +731,13 @@
     },
     "input/touch.ts": {
       "codeLines": 418,
-      "decisionNodes": 57,
+      "decisionNodes": 56,
       "maxDepth": 2,
       "fanOut": 3,
-      "globalReach": 1,
+      "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "globalThis"
-      ]
+      "fanIn": 1
     },
     "input/transport-in-use.ts": {
       "codeLines": 32,

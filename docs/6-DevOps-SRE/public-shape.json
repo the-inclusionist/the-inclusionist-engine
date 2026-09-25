@@ -55,7 +55,9 @@
       "declines",
       "dispose",
       "gameSpeed",
+      "input",
       "keyboard",
+      "keyboardConfig",
       "libras",
       "localeReady",
       "lq",
@@ -616,6 +618,7 @@
       "getPlayers",
       "hasModal",
       "hideTouchControls",
+      "input",
       "isAttractActive",
       "isTouchMode",
       "joinPlayer",
@@ -626,6 +629,8 @@
       "navTitle",
       "onBar",
       "oneButton",
+      "padMaps",
+      "padTable",
       "pause",
       "pauseMenu",
       "playerEdge",
@@ -638,7 +643,6 @@
       "srAlert",
       "srSay",
       "stopAttract",
-      "store",
       "t",
       "wizardStep",
       "wizardTick",
@@ -768,6 +772,18 @@
     "type KeyboardRuntimePlayer": "Pick<ControlledPlayer, 'ctrl'>"
   },
   "input/keyboard.ts": {
+    "interface KeyboardConfigOptions": [
+      "mapping",
+      "store"
+    ],
+    "interface KeyboardConfigApi": [
+      "factoryWithGame",
+      "kb",
+      "load",
+      "reset",
+      "save",
+      "set"
+    ],
     "type KeyboardStore": "Pick<Store, 'getJSON' | 'setJSON' | 'remove'>",
     "type KBDefaults": "{ solo: KeyScheme",
     "type KeyboardMapping": "(players: number, seat: number) => Partial<KeyScheme> | null"
@@ -850,6 +866,7 @@
   "input/latch-edge.ts": {
     "interface LatchedEdgeOptions": [
       "byDefault?",
+      "input",
       "store"
     ]
   },
@@ -874,7 +891,8 @@
   },
   "input/pad-defaults.ts": {
     "type PadMapping": "(players: number, seat: number) => Partial<Record<Action, number | null>> | null",
-    "type PadTable": "Readonly<Record<Action, Binding<number>>>"
+    "type PadTable": "Readonly<Record<Action, Binding<number>>>",
+    "type PadTableFor": "(players: number, seat: number) => PadTable"
   },
   "input/pad-reading.ts": {
     "interface PadButtonLike": [
@@ -903,16 +921,21 @@
     "type ActionKey": "'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3'"
   },
   "input/pad-wizard.ts": {
+    "interface PadMaps": [
+      "padMap",
+      "skip",
+      "store"
+    ],
     "interface PadWizardCtx": [
       "actionLabel",
       "getGamepads",
+      "maps",
       "onClose?",
       "onStep?",
       "onTick?",
       "progress",
       "say",
       "srAlert",
-      "store",
       "t"
     ],
     "interface PadWizard": [
@@ -943,6 +966,28 @@
       "source"
     ],
     "type PressEdge": "'desceu' | 'subiu' | null"
+  },
+  "input/state.ts": {
+    "interface LiveInput": [
+      "disableAssistedFor",
+      "enableAssistedFor",
+      "forgetInputs",
+      "held",
+      "inputOf",
+      "keySource",
+      "keys",
+      "letGoOfTheKeyboard",
+      "markKey",
+      "markKeyFrom",
+      "markKeyWithoutSource",
+      "padCur",
+      "padPrevAct",
+      "padPrevStart",
+      "playerEdge",
+      "releaseAllKeys",
+      "releaseKey",
+      "sourceOf"
+    ]
   },
   "input/switch-scan.ts": {
     "interface SwitchScanOptions": [
@@ -1041,7 +1086,7 @@
       "store",
       "t",
       "viewport",
-      "win?"
+      "win"
     ],
     "interface PadMm": [
       "btn"

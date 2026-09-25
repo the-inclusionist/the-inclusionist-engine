@@ -405,16 +405,14 @@
   "input/keyboard.ts": [
     "KBDefaults",
     "KB_DEFAULTS",
+    "KeyboardConfigApi",
+    "KeyboardConfigOptions",
     "KeyboardMapping",
     "KeyboardStore",
+    "createKeyboardConfig",
     "factoryWithGame",
-    "initKB",
-    "kb",
     "loadKB",
-    "registerKeyboardMapping",
-    "resetKB",
-    "saveKB",
-    "setKB"
+    "saveKB"
   ],
   "input/keydown.ts": [
     "ControlsSnapshot",
@@ -476,8 +474,8 @@
   "input/pad-defaults.ts": [
     "PadMapping",
     "PadTable",
-    "padTable",
-    "registerPadMapping"
+    "PadTableFor",
+    "createPadTable"
   ],
   "input/pad-reading.ts": [
     "ActionKey",
@@ -496,10 +494,11 @@
   "input/pad-wizard.ts": [
     "PADWIZ_ORDER",
     "PadMapStore",
+    "PadMaps",
     "PadWizard",
     "PadWizardCtx",
-    "createPadWizard",
-    "padMap"
+    "createPadMaps",
+    "createPadWizard"
   ],
   "input/pointer-space.ts": [
     "AsFraction",
@@ -518,25 +517,8 @@
     "switchedTransport"
   ],
   "input/state.ts": [
-    "PAD_DEAD",
-    "disableAssistedFor",
-    "enableAssistedFor",
-    "forgetInputs",
-    "held",
-    "inputOf",
-    "keySource",
-    "keys",
-    "letGoOfTheKeyboard",
-    "markKey",
-    "markKeyFrom",
-    "markKeyWithoutSource",
-    "padCur",
-    "padPrevAct",
-    "padPrevStart",
-    "playerEdge",
-    "releaseAllKeys",
-    "releaseKey",
-    "sourceOf"
+    "LiveInput",
+    "createInputState"
   ],
   "input/switch-scan.ts": [
     "SCAN_CANCEL",
