@@ -44,7 +44,7 @@
 // game with a title screen. What it covers is what is the SAME in every game: language, screen reader, mixer, voice,
 // the dialog stack, the colour filters, the remappable keyboard, menu navigation, the pause card and the accessibility
 // bar, the settings panels, the navigation sonar, and every input transport.
-import i18nObject, { initI18n, dictionaryGaps, loadLocale, createTranslator } from '../core/i18n.js';
+import i18nObject, { initI18n, dictionaryGaps, loadLocale, createTranslator, type Translate } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
 import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
@@ -511,6 +511,16 @@ export interface Engine {
    * (ADR-0232 D2c), as it asks `gameSpeed` — the demo quiz does.
    */
   readonly menuIndexOn: () => boolean;
+  /**
+   * TRANSLATES IN THIS ROOT'S LANGUAGE (ADR-0232 D3): the root's own `t`, the one every engine module receives. A game that
+   * writes its own words asks here instead of importing `core/i18n` — the demo quiz does — as it asks `gameSpeed`.
+   */
+  readonly t: Translate;
+  /**
+   * Resolves when the language chosen at boot has loaded — at once for pt (ADR-0232 D3). A game that draws its first screen
+   * waits on it, or the screen is born in the fallback language.
+   */
+  readonly localeReady: () => Promise<void>;
   /**
    * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
    * `core/flash-threshold`). Only when called — reading pixels every frame costs a school machine (pillar 1), so play never
@@ -4008,6 +4018,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     captionSound: writeSoundCaption,
     gameSpeed: () => state.gameSpeed,
     menuIndexOn: () => state.menuIndexOn,
+    t: translator.t,
+    localeReady: translator.ready,
     measureFlashes: sampleWorldFlashes,
     overlays,
     nav,

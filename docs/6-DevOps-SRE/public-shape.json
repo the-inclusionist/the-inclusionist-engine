@@ -53,6 +53,7 @@
       "dispose",
       "gameSpeed",
       "keyboard",
+      "localeReady",
       "measureFlashes",
       "menuIndexOn",
       "mount",
@@ -66,6 +67,7 @@
       "reading",
       "scenes",
       "sonar",
+      "t",
       "tts",
       "unmount"
     ],

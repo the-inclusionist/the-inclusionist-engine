@@ -14,6 +14,18 @@ import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 import { questionHtml, nextFocus, answerText, endText, questionNarration, narrationOnDraw, heardAlternative } from '../app/js/consumer-quiz/main-quiz.js';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'consumer-quiz', 'main-quiz.ts'), 'utf8');
+/**
+ * The root's `t` (ADR-0232 D3), played by the test from the pt dictionary READ AS A FILE, as the case on the frames below
+ * reads it: importing `core/i18n` or a dictionary would make this the test of an ENGINE module, and the boundary gate would
+ * then count the consumer's own key names as a debt (measured). A key it does not find is itself, as the engine's is.
+ */
+const PT = readFileSync(join(process.cwd(), 'app', 'js', 'i18n', 'pt.ts'), 'utf8');
+const translate = (key, params = {}) => {
+  const found = PT.match(new RegExp(`'${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*'((?:[^'\\\\]|\\\\.)*)'`));
+  let text = found ? found[1].replace(/\\'/g, "'") : key;
+  for (const [k, v] of Object.entries(params)) text = text.replaceAll(`{${k}}`, String(v));
+  return text;
+};
 /** Every specifier the consumer names, read by the parser in every form — a literal `import()` and a side-effect
  *  `import 'pixi.js'` load code as surely as `from`, and a pattern over `from '…'` let both through. Type-only imports
  *  count: the case is about what the consumer is TIED to, not only about bytes. */
@@ -60,8 +72,8 @@ describe('respostaTexto — o que a criança cega RECEBE', () => {
   it('[Right] o acerto e o erro dizem coisas diferentes, e o erro DIZ A RESPOSTA', () => {
     // A not-yet without the right answer leaves the child nothing to learn from the mistake — and whoever depends on the
     // screen reader cannot simply look at the screen to find out.
-    expect(answerText(true, 'Galinha')).toContain('Certo');
-    expect(answerText(false, 'Galinha')).toContain('Galinha');
+    expect(answerText(translate, true, 'Galinha')).toContain('Certo');
+    expect(answerText(translate, false, 'Galinha')).toContain('Galinha');
   });
 });
 
@@ -89,10 +101,10 @@ describe('the quiz\'s own sentences come from the dictionary (study item E4, loc
   });
 
   it('🎯 [Right] in Portuguese the child hears the same words as before — literals, not the dictionary read back', () => {
-    expect(answerText(true, 'Galinha')).toBe('Certo! Galinha.');
-    expect(answerText(false, 'Galinha')).toBe('Ainda não. A resposta certa é Galinha.');
-    expect(endText(3, 4)).toBe('Fim! 3 de 4.');
-    expect(questionHtml({ enunciado: 'Quantos?', alternativas: ['Um'], certa: 0 }, 0)).toContain('aria-label="Alternativas"');
+    expect(answerText(translate, true, 'Galinha')).toBe('Certo! Galinha.');
+    expect(answerText(translate, false, 'Galinha')).toBe('Ainda não. A resposta certa é Galinha.');
+    expect(endText(translate, 3, 4)).toBe('Fim! 3 de 4.');
+    expect(questionHtml(translate, { enunciado: 'Quantos?', alternativas: ['Um'], certa: 0 }, 0)).toContain('aria-label="Alternativas"');
   });
   // MUTATIONS CHECKED (2026-09-13), 6 of 6 red: the answer frames back to literals · `quiz.fim` missing in es · en equal to
   // pt · the group name a literal again · one key for both answers · right and total swapped in the closing line.
@@ -102,14 +114,14 @@ describe('perguntaHtml — a marcação', () => {
   const p = { enunciado: 'Quantos?', alternativas: ['Um', 'Dois'], certa: 1 };
 
   it('[Right] cada alternativa é um rádio com estado, não um botão mudo', () => {
-    const html = questionHtml(p, 1);
+    const html = questionHtml(translate, p, 1);
     expect(html).toMatch(/role="radiogroup"/);
     expect(html).toMatch(/data-alt="1"[^>]*aria-checked="true"/);
     expect(html).toMatch(/data-alt="0"[^>]*aria-checked="false"/);
   });
 
   it('[Zero] sem alternativas, ainda monta o enunciado sem quebrar', () => {
-    expect(questionHtml({ enunciado: 'Vazio?', alternativas: [], certa: 0 }, 0)).toContain('Vazio?');
+    expect(questionHtml(translate, { enunciado: 'Vazio?', alternativas: [], certa: 0 }, 0)).toContain('Vazio?');
   });
 
   it('[Right] ⚠️ o CONTEÚDO DA PERGUNTA não vira marcação (issue #106)', () => {
@@ -117,13 +129,13 @@ describe('perguntaHtml — a marcação', () => {
     // ADR-0052 makes them AUTHORED, and issue #106 demands this be fixed BEFORE that: «assim que um profissional puder
     // digitar numa atividade, deixa de ser censo e vira incidente».
     const FUGA = '"><i id="fugiu"></i><b>x';
-    const html = questionHtml({ enunciado: FUGA, alternativas: [FUGA], certa: 0 }, 0);
+    const html = questionHtml(translate, { enunciado: FUGA, alternativas: [FUGA], certa: 0 }, 0);
     expect(html, 'o conteúdo fechou um atributo e injetou um elemento').not.toContain('<i id=');
     expect(html).toContain('&lt;'); // escaped, not deleted
   });
 
   it('[Zero] e texto normal atravessa INTACTO — um escape que estraga a pergunta não serve a ninguém', () => {
-    const html = questionHtml({ enunciado: 'Quanto é 2 + 3?', alternativas: ['5', 'não sei'], certa: 0 }, 0);
+    const html = questionHtml(translate, { enunciado: 'Quanto é 2 + 3?', alternativas: ['5', 'não sei'], certa: 0 }, 0);
     expect(html).toContain('Quanto é 2 + 3?');
     expect(html).toContain('não sei');
   });
@@ -135,26 +147,26 @@ describe('the voice of a question — the statement, then each option with its p
 
   it('🔴 [Right] opening a question says the statement and then «Gato, 1 de 4. Galinha, 2 de 4. …»', () => {
     // A literal: a format computed in the test would move with the code. The place comes AFTER the name (ADR-0167).
-    expect(questionNarration(galinha, true)).toBe(ABERTA);
+    expect(questionNarration(translate, galinha, true)).toBe(ABERTA);
   });
 
   it('[Zero] a question with no options says only its statement — no dangling space', () => {
-    expect(questionNarration({ enunciado: 'Vazio?', alternativas: [], certa: 0 }, true)).toBe('Vazio?');
+    expect(questionNarration(translate, { enunciado: 'Vazio?', alternativas: [], certa: 0 }, true)).toBe('Vazio?');
   });
 
   it('🔴 [Right] the WHOLE question only when it opens; a move on the same question says only the option reached', () => {
-    const abre = narrationOnDraw(galinha, 0, 0, -1, true);
+    const abre = narrationOnDraw(translate, galinha, 0, 0, -1, true);
     expect(abre).toEqual({ texto: ABERTA, narrada: 0 });
     // before, every arrow press re-read the statement and never said where the cursor was
-    expect(narrationOnDraw(galinha, 0, 1, abre.narrada, true)).toEqual({ texto: 'Galinha, 2 de 4', narrada: 0 });
+    expect(narrationOnDraw(translate, galinha, 0, 1, abre.narrada, true)).toEqual({ texto: 'Galinha, 2 de 4', narrada: 0 });
     // and the next question opens whole again
-    expect(narrationOnDraw(galinha, 1, 0, 0, true).narrada).toBe(1);
+    expect(narrationOnDraw(translate, galinha, 1, 0, 0, true).narrada).toBe(1);
   });
 
   it('🔴 [Right] the place is said only while the child keeps the index on — the quiz asks the engine, not the store (ADR-0232)', () => {
     // `indexOn` is what the quiz page reads from its engine handle (`Engine.menuIndexOn()`); with it off, the names alone.
-    expect(questionNarration(galinha, false)).toBe('Qual animal põe ovos e tem bico? Gato. Galinha. Cavalo. Peixe');
-    expect(narrationOnDraw(galinha, 0, 1, 0, false)).toEqual({ texto: 'Galinha', narrada: 0 });
+    expect(questionNarration(translate, galinha, false)).toBe('Qual animal põe ovos e tem bico? Gato. Galinha. Cavalo. Peixe');
+    expect(narrationOnDraw(translate, galinha, 0, 1, 0, false)).toEqual({ texto: 'Galinha', narrada: 0 });
   });
 });
 

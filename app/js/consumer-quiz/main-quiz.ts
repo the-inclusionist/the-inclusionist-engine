@@ -126,7 +126,7 @@
 //     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
 import { escapeHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
-import { t, localeReady } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { captionDuration } from '../core/caption-duration.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
@@ -163,11 +163,20 @@ let correctCount = 0;
 /** The question whose statement and options were last narrated — see `narrationOnDraw`. */
 let narratedQuestion = -1;
 let motor: Engine | null = null;
+/**
+ * THE QUIZ'S WORDS, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
+ *
+ * 📌 LATE-BOUND, because the words this quiz hands `createGame` — the «how to play» texts, the positions' names, the
+ * accommodations' labels — are asked for WHILE the engine is being built, before its handle exists: the boot checks that
+ * none is blank. Until then this answers the key itself, which is not blank and is never shown; every word a child
+ * reads is read later, through a getter, in the engine's language.
+ */
+const translate: Translate = (key, params) => (motor ? motor.t(key, params) : key);
 
 const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
 
 /** Marcação de uma pergunta. Pura: recebe estado, devolve texto — testável sem DOM. */
-export function questionHtml(p: Question, selecionada: number): string {
+export function questionHtml(t: Translate, p: Question, selecionada: number): string {
   // O enunciado e as alternativas são CHAVES: resolvem-se no instante de desenhar, e é isso que faz a troca de
   // idioma alcançar a atividade e não só a moldura (ADR-0225).
   const alts = p.alternativas.map((a, i) =>
@@ -193,13 +202,13 @@ export function nextFocus(currentIdx: number, delta: number, total: number): num
  * the Dev asked for «uma única função que capture a posição de item e a totalidade de itens», and it is the engine's.
  * `indexOn` is the child's choice of saying it, which the quiz page asks its engine for (`Engine.menuIndexOn()`, ADR-0232).
  */
-export function questionNarration(p: Question, indexOn: boolean): string {
-  const opcoes = p.alternativas.map((_, i) => spokenOption(p, i, indexOn)).join('. ');
+export function questionNarration(t: Translate, p: Question, indexOn: boolean): string {
+  const opcoes = p.alternativas.map((_, i) => spokenOption(t, p, i, indexOn)).join('. ');
   return opcoes ? `${t(p.enunciado)} ${opcoes}` : t(p.enunciado);
 }
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
-function spokenOption(p: Question, i: number, indexOn: boolean): string {
+function spokenOption(t: Translate, p: Question, i: number, indexOn: boolean): string {
   return announceItem(t, { label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, indexOn);
 }
 
@@ -209,10 +218,10 @@ function spokenOption(p: Question, i: number, indexOn: boolean): string {
  * The whole question only when it OPENS; a draw on the same question is the cursor moving, and then only the option
  * under it is said. 🔴 Before this, every arrow press re-read the statement and never said which option was reached.
  */
-export function narrationOnDraw(p: Question, question: number, focusIdx: number, alreadyNarrated: number, indexOn: boolean): { texto: string; narrada: number } {
+export function narrationOnDraw(t: Translate, p: Question, question: number, focusIdx: number, alreadyNarrated: number, indexOn: boolean): { texto: string; narrada: number } {
   return question === alreadyNarrated
-    ? { texto: spokenOption(p, focusIdx, indexOn), narrada: alreadyNarrated }
-    : { texto: questionNarration(p, indexOn), narrada: question };
+    ? { texto: spokenOption(t, p, focusIdx, indexOn), narrada: alreadyNarrated }
+    : { texto: questionNarration(t, p, indexOn), narrada: question };
 }
 
 /**
@@ -256,12 +265,12 @@ export function heardAlternative(heard: string, alternativas: readonly string[])
  * O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE.
  * The frame is the dictionary's (study item E4): the right answer crosses as `{certa}`, the words around it translate.
  */
-export function answerText(gotItRight: boolean, certa: string): string {
+export function answerText(t: Translate, gotItRight: boolean, certa: string): string {
   return t(gotItRight ? 'quiz.resposta.certa' : 'quiz.resposta.errada', { certa });
 }
 
 /** The closing line — how many were right out of how many — in the child's language. */
-export function endText(gotItRight: number, total: number): string {
+export function endText(t: Translate, gotItRight: number, total: number): string {
   return t('quiz.fim', { n: gotItRight, m: total });
 }
 
@@ -269,11 +278,11 @@ function render(): void {
   const app = $<HTMLElement>('#quiz-app');
   if (!app) return;
   const p = QUESTIONS[atual];
-  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(correctCount, QUESTIONS.length))}</h2>`; return; }
-  app.innerHTML = questionHtml(p, foco);
+  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(translate, correctCount, QUESTIONS.length))}</h2>`; return; }
+  app.innerHTML = questionHtml(translate, p, foco);
   // a narração é do consumidor: a engine só empresta a voz
   // the «N de M» follows the child's choice, which the page asks its engine for — it reads no settings store (ADR-0232)
-  const fala = narrationOnDraw(p, atual, foco, narratedQuestion, motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
+  const fala = narrationOnDraw(translate, p, atual, foco, narratedQuestion, motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
   narratedQuestion = fala.narrada;
   motor?.tts.narrate(fala.texto);
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
@@ -317,7 +326,7 @@ function sayInStatement(texto: string, backToStatement = true): void {
   // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
   if (backToStatement && p) setTimeout(() => {
     const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
-    if (alvo && !listening) alvo.textContent = t(p.enunciado);
+    if (alvo && !listening) alvo.textContent = translate(p.enunciado);
   }, captionDuration(texto, 125));
 }
 
@@ -325,20 +334,20 @@ async function listenForAnswer(): Promise<void> {
   const p = QUESTIONS[atual];
   if (!motor || !p || listening) return;
   const pode = await motor.reading.ready();
-  if (!pode.can) { sayInStatement(t('quiz.semLeitura')); return; }
+  if (!pode.can) { sayInStatement(translate('quiz.semLeitura')); return; }
   listening = true;
-  sayInStatement(t('quiz.ouvindo'), false);
+  sayInStatement(translate('quiz.ouvindo'), false);
   try {
     const heard = await motor.reading.listen();
     listening = false;
     const chosen = heardAlternative(heard.text, p.alternativas);
     if (chosen !== null) { answer(chosen); return; }
     const texto = heard.text.trim();
-    sayInStatement(texto ? t('quiz.naoEntendi', { texto }) : t('quiz.ouviNada'));
+    sayInStatement(texto ? translate('quiz.naoEntendi', { texto }) : translate('quiz.ouviNada'));
   } catch {
     // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
     listening = false;
-    sayInStatement(t('quiz.semLeitura'));
+    sayInStatement(translate('quiz.semLeitura'));
   }
 }
 
@@ -347,7 +356,7 @@ function answer(i: number): void {
   if (!p) return;
   const gotItRight = i === p.certa;
   if (gotItRight) correctCount++;
-  srAlert(answerText(gotItRight, t(p.alternativas[p.certa] ?? '')));
+  srAlert(answerText(translate, gotItRight, translate(p.alternativas[p.certa] ?? '')));
   atual++;
   foco = 0;
   setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
@@ -470,21 +479,21 @@ function bootQuiz(): void {
     onCommand: handleCommand,
     howToPlay: [
       {
-        text: () => t('quiz.comoJogar.ler'),
+        text: () => translate('quiz.comoJogar.ler'),
         figure: ({ ctx, width, height }) => drawQuizFigure(ctx, width, height, -1),
       },
       {
-        text: () => t('quiz.comoJogar.escolher'),
+        text: () => translate('quiz.comoJogar.escolher'),
         figure: ({ ctx, width, height, time }) => drawQuizFigure(ctx, width, height, Math.floor(time / 0.9) % 4),
       },
     ],
     preset: {
-      up: { get label() { return t('quiz.pos.up'); } },
-      down: { get label() { return t('quiz.pos.down'); } },
-      action2: { get label() { return t('quiz.pos.confirm'); } },
-      action1: { get label() { return t('quiz.pos.falar'); } },
-      action3: { get label() { return t('quiz.pos.back'); } },
-      rightShoulder: { get label() { return t('quiz.pos.sonar'); } },
+      up: { get label() { return translate('quiz.pos.up'); } },
+      down: { get label() { return translate('quiz.pos.down'); } },
+      action2: { get label() { return translate('quiz.pos.confirm'); } },
+      action1: { get label() { return translate('quiz.pos.falar'); } },
+      action3: { get label() { return translate('quiz.pos.back'); } },
+      rightShoulder: { get label() { return translate('quiz.pos.sonar'); } },
     },
     /*
      * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO (ADR-0153) — a resposta é obrigatória, e o arranque recusa sem ela.
@@ -493,15 +502,16 @@ function bootQuiz(): void {
      * MATÉRIA — logo dicas, ritmo do texto, dificuldade das palavras e realce de palavras têm assunto aqui. Não há
      * personagem, câmara, peças, bengala, detecção, sustos nem janela de acerto: as outras doze são «não», escritas.
      *
-     * ⚠️ As palavras são resolvidas no arranque, como as outras deste boot; nenhuma linha as mostra ainda.
+     * 📌 GETTERS, like the preset's: read before the engine exists they are keys (see `translate`), and read after it they are
+     * words in its language. No row shows them yet.
      */
     accommodations: {
       cameraSway: false, easyMode: false, wheelchairMode: false, detectionLeniency: false, intensity: false,
-      hints: { label: t('quiz.acom.hints') },
+      hints: { get label() { return translate('quiz.acom.hints'); } },
       reducedCharacterMotion: false, caneSpacing: false,
-      textPace: { label: t('quiz.acom.textPace') },
-      lexicalDifficulty: { label: t('quiz.acom.lexicalDifficulty') },
-      wordHighlight: { label: t('quiz.acom.wordHighlight') },
+      textPace: { get label() { return translate('quiz.acom.textPace'); } },
+      lexicalDifficulty: { get label() { return translate('quiz.acom.lexicalDifficulty'); } },
+      wordHighlight: { get label() { return translate('quiz.acom.wordHighlight'); } },
       pieceSets: false, distinguishableSuits: false, timingWindow: false, aimAssist: false, repeatedInput: false,
       ownerColors: false, contrastOutlines: false,
     },
@@ -556,9 +566,9 @@ function bootQuiz(): void {
 
   // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
-  void localeReady().then(() => {
+  void motor.localeReady().then(() => {
     motor?.scenes.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
-    srSay(t('sr.quiz.bemVindo'));
+    srSay(translate('sr.quiz.bemVindo'));
   });
 
   /*

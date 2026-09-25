@@ -65,7 +65,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2101,
+      "codeLines": 2105,
       "decisionNodes": 280,
       "maxDepth": 4,
       "fanOut": 88,
@@ -104,13 +104,13 @@
       ]
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 233,
-      "decisionNodes": 35,
+      "codeLines": 234,
+      "decisionNodes": 36,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 1,
       "worstFunction": 8,
-      "statefulEdges": 3,
+      "statefulEdges": 2,
       "fanIn": 0,
       "reached": [
         "document"
@@ -125,8 +125,7 @@
       ],
       "statefulImports": [
         "boot/create-game.ts",
-        "core/a11y-sr.ts",
-        "core/i18n.ts"
+        "core/a11y-sr.ts"
       ]
     },
     "core/a11y-sr.ts": {
@@ -319,7 +318,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 2,
+      "fanIn": 1,
       "holds": [
         "let dict",
         "let locale",
