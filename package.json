@@ -111,7 +111,12 @@
     "scripts/heavy-into-the-delivery.mjs",
     "scripts/licences",
     "scripts/vlibras-player.mjs",
-    "scripts/vlibras-player"
+    "scripts/vlibras-player",
+    "scripts/libras-glosses.mjs",
+    "scripts/libras-glosses/pyproject.toml",
+    "scripts/libras-glosses/uv.lock",
+    "scripts/libras-glosses/gloss.py",
+    "scripts/libras-signs.json"
   ],
   "bin": {
     "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"
@@ -146,6 +151,7 @@
     "prepare": "npm run build:pkg",
     "prepack": "npm run build:pkg",
     "heavy:delivery": "npm run build:pkg && node scripts/heavy-into-the-delivery.mjs dist --kokoro",
+    "libras:setup": "node scripts/heavy-into-the-delivery.mjs --libras-setup",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "validate": "npm run typecheck && vitest run && npm run build:pkg && vite build",

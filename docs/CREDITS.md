@@ -203,6 +203,30 @@ The avatar deaf mode's interpreter drives (ADR-0234, route A; catalogue `libras:
 - **Copyright line: UNVERIFIED** — the four files carry none, and nothing of the repository beyond their metadata and its
   declared licence was read.
 
+## VLibras translator — LAViD-UFPB `vlibras-translator` 1.3.3 — LGPL-3.0 — BUILD TIME ONLY
+
+What turns the Portuguese a child is shown into the Libras glosses the player signs (ADR-0234, route A; plan item 5b):
+`inclusionist-heavy --libras` runs it once, on the build machine, over the engine's Portuguese dictionary and the game's
+(`scripts/libras-glosses.mjs`, `scripts/libras-glosses/gloss.py`), in its **rule-based mode only** — the neural mode fetches a
+model that declares no licence, and is never asked for. Published on test.pypi.org only; pinned with its hashes in
+`scripts/libras-glosses/uv.lock`.
+
+- **Licence:** **LGPL-3.0**, the `LICENSE` in its 1.3.3 source distribution (the same text `scripts/licences/LGPL-3.0.txt` holds).
+- **Distributed: none of it.** It runs in an environment outside the repository and nothing of it enters a delivery or the npm
+  package; what a delivery carries is its OUTPUT, `libras/player/glosses.json`.
+- **Copyright line** as its sources state it: «Copyright (c) Laboratório de Aplicações de Vídeo Digital - LAViD».
+
+## spaCy and its Portuguese model `pt_core_news_md` 3.8.0 — MIT and CC BY-SA 4.0 — BUILD TIME ONLY
+
+The Portuguese pipeline the translator's rules read (part of speech, morphology, dependencies, entities): spaCy 3.8 (Explosion,
+**MIT**) and the model `pt_core_news_md` 3.8.0 (Explosion, **CC BY-SA 4.0**, from the GitHub release of `explosion/spacy-models`),
+both pinned in `scripts/libras-glosses/uv.lock` with the other Python packages they pull.
+
+- **Distributed: none of it** — build time only, outside the repository, like the translator.
+- ⚠️ **Whether a gloss the model helped produce is a derivative of the model** (and so under CC BY-SA 4.0) is **not determined**;
+  this project believes it is not, and that is not a legal opinion. The glosses a delivery writes say what made them
+  (`"made"` in `glosses.json`).
+
 ## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
 
 The eye control draws four arrows over the game (`app/js/ui/gaze-overlay.ts`): Lucide's `arrow-up`, `arrow-right`, `arrow-down` and

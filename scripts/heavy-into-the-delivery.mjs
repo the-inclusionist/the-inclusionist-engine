@@ -26,6 +26,7 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
 import { deliverLibrasPlayer } from './vlibras-player.mjs';
+import { deliverLibrasGlosses, readSignPins, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
@@ -101,7 +102,11 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  * · `--libras`: the Libras player deaf mode's interpreter drives (ADR-0234, route A) — the four published VLibras files, 19.3 MiB,
  *   and then the player page with the patched framework (`scripts/vlibras-player.mjs`). No game declares it: deaf mode is the
  *   person's, like speaking is, so the DELIVERY says whether it can sign. Without it the sonar in deaf mode says «signing
- *   unavailable», as it always did.
+ *   unavailable», as it always did. The same step GLOSSES the text a child can be shown (`scripts/libras-glosses.mjs`): the engine's
+ *   Portuguese dictionary, always, and the game's own with `--libras-texts <file>`, repeatable (which implies `--libras`). It
+ *   needs the glosser's environment, built once by `--libras-setup`; without it the delivery STOPS instead of shipping a player
+ *   with nothing to sign but letters.
+ * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
@@ -109,14 +114,17 @@ export function argumentosDaEntrega(args, ambiente = process.env) {
   const reading = [];
   const commands = [];
   let libras = false;
+  const librasTexts = [];
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--libras') { libras = true; continue; }
+    if (args[i] === '--libras-texts') { const v = args[++i]; if (v) { librasTexts.push(v); libras = true; } continue; }
     if (args[i] === '--base') { base = args[++i]; continue; }
     if (args[i] === '--reading') { const v = args[++i]; if (v) reading.push(v); continue; }
     if (args[i] === '--commands') { const v = args[++i]; if (v) commands.push(v); continue; }
     if (!args[i].startsWith('--') && destino === undefined) destino = args[i];
   }
-  return { destino, kokoro: args.includes('--kokoro'), reading, commands, libras, base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
+  return { destino, kokoro: args.includes('--kokoro'), reading, commands, libras, librasTexts, librasSetup: args.includes('--libras-setup'),
+    base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
 }
 
 /** A `.env` beside the build, if there is one: Node reads it into `process.env`, and the command line still wins. */
@@ -128,12 +136,39 @@ export function carregarEnv(caminho = join(process.cwd(), '.env'), carregar = pr
 const executado = (() => { try { return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
 if (executado) {
   carregarEnv();
-  const { destino, kokoro, reading, commands, libras, base } = argumentosDaEntrega(process.argv.slice(2));
-  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]… [--libras]'); process.exit(2); }
+  const { destino, kokoro, reading, commands, libras, librasTexts, librasSetup, base } = argumentosDaEntrega(process.argv.slice(2));
+  if (librasSetup) {
+    try { console.log(`the Libras glosser's environment is ready: ${setUpGlosser()}`); process.exit(0); }
+    catch (e) { console.error(e instanceof Error ? e.message : String(e)); process.exit(1); }
+  }
+  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]… [--libras] [--libras-texts <file>]… | --libras-setup'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
+  // 📌 THE GLOSSES FIRST, before a byte is downloaded: a build machine with no glosser learns it in a second, not after 19 MiB
+  const { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
+  let librasSigns = [];
+  if (libras) {
+    const { LIBRAS_GLOSSES_FILE } = await import(new URL('../dist-pkg/ui/libras-glosses.js', import.meta.url).href);
+    const { default: enginePt } = await import(new URL('../dist-pkg/i18n/pt.js', import.meta.url).href);
+    try {
+      const games = await Promise.all(librasTexts.map((file) => readTexts(file)));
+      const made = await deliverLibrasGlosses({
+        destino, playerFolder: LIBRAS_PLAYER_FOLDER, signsFolder: LIBRAS_SIGNS_FOLDER, glossesFile: LIBRAS_GLOSSES_FILE,
+        dictionaries: [enginePt, ...games], translate: (inputs) => runGlosser(inputs), pins: readSignPins(),
+      });
+      console.log(`glosses   ${made.path} — ${made.texts} texts (the engine's${games.length ? ` and ${games.length} of the game's` : ''}), `
+        + `${made.tokens} sign names`);
+      console.log(`signs     ${made.signs.length} carried; ${made.unpinned.length} with no pinned sign are fingerspelled `
+        + '(scripts/libras-signs.json)');
+      librasSigns = made.signs;
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      console.error('the Libras glosses were not made: a delivery built with --libras is not written without them');
+      process.exit(1);
+    }
+  }
   // one pass per language, because the start asks for ONE and the delivery may hold several
   const ids = [...new Set([
     ...heavyAtBoot({ kokoro }),
@@ -150,9 +185,9 @@ if (executado) {
   if (licences.length) console.log('notices   heavy/THIRD-PARTY-NOTICES.md');
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
   if (libras) {
-    const { LIBRAS_PLAYER_FOLDER } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
     try {
-      const written = deliverLibrasPlayer({ destino, catalogue: HEAVY_FILES, deliveryPath, playerFolder: LIBRAS_PLAYER_FOLDER });
+      const written = deliverLibrasPlayer({ destino, catalogue: HEAVY_FILES, deliveryPath, playerFolder: LIBRAS_PLAYER_FOLDER,
+        signs: librasSigns });
       for (const path of written) console.log(`player    ${path}`);
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));

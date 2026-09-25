@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# THE BUILD-TIME GLOSSER'S ENVIRONMENT (ADR-0234, route A — plan item 5b). Not a package: a pinned set of tools the delivery's
+# `--libras` runs once, on the build machine, to turn the Portuguese a child can be shown into Libras glosses. Nothing here is
+# delivered to a device, and the environment is created OUTSIDE the repository (`scripts/libras-glosses.mjs --setup`).
+#
+# · `vlibras-translator` 1.3.3 (LAViD-UFPB, LGPL-3.0), published on test.pypi only — the RULE-BASED mode, never `neural`: the
+#   neural extra fetches a model that declares no licence, and `gloss.py` calls `translate(text, neural=False)`.
+# · spaCy's `pt_core_news_md` 3.8.0 (Explosion, CC BY-SA 4.0), the Portuguese pipeline the rules read; from its GitHub release.
+# `uv.lock` pins every one of them, with hashes. Regenerate it with `uv lock --project scripts/libras-glosses` after editing here.
+[project]
+name = "inclusionist-libras-glosses"
+version = "0.0.0"
+description = "Build-time glosses for the engine's Libras interpreter (ADR-0234)"
+requires-python = "==3.12.*"
+dependencies = [
+  "vlibras-translator==1.3.3",
+  "spacy>=3.8,<3.9",
+  "pt-core-news-md==3.8.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+vlibras-translator = { index = "testpypi" }
+pt-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/pt_core_news_md-3.8.0/pt_core_news_md-3.8.0-py3-none-any.whl" }
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true

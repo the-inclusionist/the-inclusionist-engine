@@ -81,6 +81,13 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     JavaScript (its `eval` replaced by a parser; `scripts/vlibras-player.mjs`). It is carried as a **declared, temporary
     exception** until route B, a free player, replaces it. What is ours around it — the player page, its glue, the CSP shim
     and the parser (`scripts/vlibras-player/`) — is AGPL-3.0-or-later like the rest of the engine.
+    The Libras **glosses** that delivery carries (`libras/player/glosses.json`) are made at build time by LAViD's
+    `vlibras-translator` 1.3.3 (**LGPL-3.0**, rule-based mode only) over spaCy (**MIT**) and its Portuguese model
+    `pt_core_news_md` 3.8.0 (**CC BY-SA 4.0**) — tools the build machine runs, **none of which is distributed**
+    (`scripts/libras-glosses/`). Whether a gloss is a derivative of the model is **not determined**; the project believes it
+    is not, which is not a legal opinion. The **sign bundles** the glosses use are LAViD's dictionary (**GPL-3.0**), and a
+    delivery carries only those pinned by sha256 in `scripts/libras-signs.json` — **none yet**, pending the Dev's permission
+    to fetch them — with the GPL-3.0 text beside them when it does.
 
   ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
   lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.

@@ -1,0 +1,10 @@
+{
+  "comment": [
+    "THE SIGNS A DELIVERY BUILT WITH --libras CARRIES (ADR-0234, route A; scripts/libras-glosses.mjs): each one a Unity 2018.3.1 WebGL",
+    "AssetBundle of LAViD-UFPB's VLibras dictionary (vlibras-dictionary-sources, GPL-3.0), pinned by sha256 and byte count.",
+    "EMPTY ON PURPOSE: fetching the bundles waits for the Dev's permission. Until a sign is pinned here the delivery carries none,",
+    "and the player fingerspells every token of the glosses. `source` is the dictionary's address; `--base` points elsewhere."
+  ],
+  "source": "https://dicionario2.vlibras.gov.br/static/BUNDLES/2018.3.1/WEBGL/BR/",
+  "signs": {}
+}

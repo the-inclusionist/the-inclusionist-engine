@@ -47,3 +47,7 @@ __pycache__/
 
 # the machine's own answer to «where do the heavy files come from» (.env.example is the versioned one)
 .env
+
+# the Libras glosser's uv environment, if someone syncs it in place: it belongs outside the repository
+# (INCLUSIONIST_LIBRAS_ENV, scripts/libras-glosses.mjs)
+scripts/libras-glosses/.venv/
