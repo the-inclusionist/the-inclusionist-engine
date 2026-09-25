@@ -27,53 +27,75 @@
 // one's types, a folder that must import nothing) keeps it. Each gate says which, in its own header.
 import ts from 'typescript';
 
+// ⚠️ THE PREDICATES ARE BOUND ONCE, HERE, and that is the cost of the whole walk, not style. Under Vitest this module is
+// transformed, and every `ts.isX` in the walk becomes a property read through the transformed module's namespace — several
+// per node, for every node of every file a gate reads. Measured on 2026-09-25 over the 184 modules of `app/js`: the same
+// walk took ~300 ms inside a Vitest worker and ~150 ms in plain Node, while the bare parse took ~110 ms in both.
+const {
+  createSourceFile, ScriptTarget, ScriptKind, SyntaxKind, JSDocParsingMode,
+  isExportDeclaration, isNamedExports, isNamedImports, isStringLiteral, isNoSubstitutionTemplateLiteral,
+  isImportDeclaration, isImportEqualsDeclaration, isExternalModuleReference, isImportTypeNode, isLiteralTypeNode,
+  isCallExpression, isIdentifier, isNewExpression, isPropertyAccessExpression, isMetaProperty,
+} = ts;
+
 /**
  * Is this import or re-export declaration TYPE-ONLY? `import type …`, `export type … from`, or named bindings that are ALL
  * marked `type`. A bare `import './x'` and a default or namespace import load the module, so they are value imports.
  */
 export const isTypeOnlyImport = (node) => {
-  if (ts.isExportDeclaration(node)) {
+  if (isExportDeclaration(node)) {
     if (node.isTypeOnly) return true;
     const c = node.exportClause;
-    return !!c && ts.isNamedExports(c) && c.elements.length > 0 && c.elements.every((e) => e.isTypeOnly);
+    return !!c && isNamedExports(c) && c.elements.length > 0 && c.elements.every((e) => e.isTypeOnly);
   }
   const c = node.importClause;
   if (!c) return false;
   if (c.isTypeOnly) return true;
-  return !c.name && !!c.namedBindings && ts.isNamedImports(c.namedBindings)
+  return !c.name && !!c.namedBindings && isNamedImports(c.namedBindings)
     && c.namedBindings.elements.length > 0 && c.namedBindings.elements.every((e) => e.isTypeOnly);
 };
 
-const literal = (n) => (n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) ? n.text : null);
+const literal = (n) => (n && (isStringLiteral(n) || isNoSubstitutionTemplateLiteral(n)) ? n.text : null);
 
-const scriptKind = (fileName) => (/\.tsx$/.test(fileName) ? ts.ScriptKind.TSX
-  : /\.(m?js|cjs)$/.test(fileName) ? ts.ScriptKind.JS : /\.jsx$/.test(fileName) ? ts.ScriptKind.JSX : ts.ScriptKind.TS);
+const scriptKind = (fileName) => (/\.tsx$/.test(fileName) ? ScriptKind.TSX
+  : /\.(m?js|cjs)$/.test(fileName) ? ScriptKind.JS : /\.jsx$/.test(fileName) ? ScriptKind.JSX : ScriptKind.TS);
+
+/**
+ * Two pieces of the parse no entry used, left out:
+ *   · the JSDoc inside comments (`ParseNone`) — the walk goes by `forEachChild`, which never enters a JSDoc node, so an
+ *     `import('…')` written in a `@type` was never an entry; and this tree's comments are long;
+ *   · the parent links (`setParentNodes: false`) — nothing below climbs to a parent; `getStart(sf)` reads the text it is
+ *     handed.
+ * 📏 Checked when they left (2026-09-25): the entries of all 569 tracked `.ts`/`.js`/`.mjs` files are byte-for-byte the
+ * same with and without them.
+ */
+const PARSE = { languageVersion: ScriptTarget.Latest, jsDocParsingMode: JSDocParsingMode.ParseNone };
 
 /** Every module specifier `text` names (see the header for the shape of an entry). */
 export function specifiersOf(text, fileName = 'x.ts') {
-  const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, scriptKind(fileName));
+  const sf = createSourceFile(fileName, text, PARSE, false, scriptKind(fileName));
   const out = [];
   const add = (node, kind, spec, typeOnly) =>
     out.push({ kind, spec, typeOnly, line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1 });
 
   const walk = (node) => {
-    if (ts.isImportDeclaration(node)) {
+    if (isImportDeclaration(node)) {
       add(node, node.importClause ? 'import' : 'side-effect', literal(node.moduleSpecifier), isTypeOnlyImport(node));
-    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
+    } else if (isExportDeclaration(node) && node.moduleSpecifier) {
       add(node, 're-export', literal(node.moduleSpecifier), isTypeOnlyImport(node));
-    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+    } else if (isImportEqualsDeclaration(node) && isExternalModuleReference(node.moduleReference)) {
       add(node, 'require', literal(node.moduleReference.expression), node.isTypeOnly);
-    } else if (ts.isImportTypeNode(node)) {
+    } else if (isImportTypeNode(node)) {
       const arg = node.argument;
-      add(node, 'type-query', ts.isLiteralTypeNode(arg) ? literal(arg.literal) : null, true);
-    } else if (ts.isCallExpression(node)) {
-      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node, 'dynamic', literal(node.arguments[0]), false);
-      else if (ts.isIdentifier(node.expression) && node.expression.text === 'require' && node.arguments.length === 1) {
+      add(node, 'type-query', isLiteralTypeNode(arg) ? literal(arg.literal) : null, true);
+    } else if (isCallExpression(node)) {
+      if (node.expression.kind === SyntaxKind.ImportKeyword) add(node, 'dynamic', literal(node.arguments[0]), false);
+      else if (isIdentifier(node.expression) && node.expression.text === 'require' && node.arguments.length === 1) {
         add(node, 'require', literal(node.arguments[0]), false);
       }
-    } else if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'URL'
-      && node.arguments?.length === 2 && ts.isPropertyAccessExpression(node.arguments[1])
-      && ts.isMetaProperty(node.arguments[1].expression) && node.arguments[1].name.text === 'url') {
+    } else if (isNewExpression(node) && isIdentifier(node.expression) && node.expression.text === 'URL'
+      && node.arguments?.length === 2 && isPropertyAccessExpression(node.arguments[1])
+      && isMetaProperty(node.arguments[1].expression) && node.arguments[1].name.text === 'url') {
       add(node, 'worker-url', literal(node.arguments[0]), false);
     }
     node.forEachChild(walk);
