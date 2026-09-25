@@ -1520,6 +1520,16 @@
       "statefulEdges": 0,
       "fanIn": 2
     },
+    "ui/libras-glosses.ts": {
+      "codeLines": 104,
+      "decisionNodes": 22,
+      "maxDepth": 4,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 8,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
     "ui/locale-flags.ts": {
       "codeLines": 20,
       "decisionNodes": 1,
@@ -1891,12 +1901,12 @@
       "fanIn": 1
     },
     "ui/vlibras-player.ts": {
-      "codeLines": 146,
+      "codeLines": 148,
       "decisionNodes": 23,
       "maxDepth": 3,
-      "fanOut": 2,
+      "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 8,
+      "worstFunction": 9,
       "statefulEdges": 0,
       "fanIn": 1
     },

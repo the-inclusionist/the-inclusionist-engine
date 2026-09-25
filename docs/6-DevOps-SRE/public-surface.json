@@ -1303,6 +1303,14 @@
     "minimumTarget",
     "stageScale"
   ],
+  "ui/libras-glosses.ts": [
+    "GlossFile",
+    "Glosser",
+    "LIBRAS_GLOSSES_FILE",
+    "glosserOf",
+    "loadGlosser",
+    "provisionalGloss"
+  ],
   "ui/locale-flags.ts": [
     "CycleLocale",
     "FLAG_SVG",

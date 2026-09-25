@@ -2440,6 +2440,14 @@
     ],
     "type LayoutDoc": "Pick<Document, 'querySelector'>"
   },
+  "ui/libras-glosses.ts": {
+    "interface GlossFile": [
+      "format",
+      "glosses",
+      "made"
+    ],
+    "type Glosser": "(text: string) => string"
+  },
   "ui/locale-flags.ts": {
     "type CycleLocale": "(typeof LOCALE_CYCLE)[number]"
   },
