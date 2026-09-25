@@ -3243,6 +3243,10 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 | `ui/settings-audio.js` `SettingsAudioCtx` · `ui/voice-settings.js` `VoiceSettingsCtx` | each gains a REQUIRED `translator: Pick<Translator, 't' \| 'bcp47'>` — the voice list reads the page's language | pass your root's translator |
 | `ui/settings-audio.js` `mountAudioInside`, `mountSoundInside` · `ui/settings-caa.js` `lettersRowSpec`, `caaRowSpec`, `mountCaaInside` · `ui/settings-controls.js` `drawKeys` · `ui/settings-mobility.js` `mountMobilityInside` · `ui/settings-typo.js` `mountTypoInside` | each takes `t: Translate` as its FIRST parameter and stays a function | pass your root's `t` first: `drawKeys(t, button, codes)` |
 | `ui/settings-caa.js` `CAA_SECTIONS` | each section's `rows` takes the `t` to write them in: `rows(t)` | pass your root's `t` |
+| `ui/pause-icons.js` `PauseIconsCtx` | gains a REQUIRED `translator: Pick<Translator, 't' \| 'locale' \| 'setLocale'>` — the 🌐 shows the page's language and sets the next one through it | pass your root's translator |
+| `ui/pause-icons.js` `computeIconLabel` | takes `t: Translate` as its FIRST parameter and stays a function | `computeIconLabel(t, k, snapshot)` |
+| `ui/pause-markup.js` (also re-exported by `ui/pause-icons.js`) `iconBtnMarkup`, `iconsMarkup`, `quickBarMarkup` | each takes the new `BarTranslator` (`Pick<Translator, 't' \| 'locale'>`) as its FIRST parameter — the 🌐 flag reads the language | `iconsMarkup(translator)`, `quickBarMarkup(translator, icons)` |
+| `ui/pause-markup.js` `ScreenPauseMarkupOpts.t` | is a `Translate` (it carries `{param}`s) and now names the dialog and the seat too, which the module's own `t` used to | pass your root's `t` |
 
 📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).
 `game-platformer` calls `initKeydown`, `initGamepad` and `initTouch` (`app/js/main.ts`); `game-soccer` calls `initGamepad`
@@ -3255,7 +3259,8 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 calls `initSettingsPanel`, `initSettingsCaa`, `initSettingsEmpathy`, `initSettingsVisual`, `initSettingsTypo`,
 `initSettingsAudio`, `initSettingsControls` and `initSettingsMotion` (`app/js/main.ts`); `game-2048` calls
 `initSettingsTypo` and `initSettingsControls` (`src/standalone.ts`); `game-soccer` calls `initSettingsControls`
-(`app/js/ui/controls-panel.ts`).
+(`app/js/ui/controls-panel.ts`). `game-platformer` calls `initPauseIcons` and `iconsMarkup()` (`app/js/main.ts`); no
+game calls `computeIconLabel`, `iconBtnMarkup`, `quickBarMarkup` or `screenPauseMarkup`.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

@@ -16,10 +16,16 @@
 // later (state, seat, dynamic rows) the element that carries it is rendered with its own `<span>` or `data-i18n`, which is the
 // seam `ui/pause-icons` writes through.
 
-import { t, getLocale } from '../core/i18n.js';
+import type { Translate, Translator } from '../core/i18n.js';
 import { type PauseIcon, PAUSE_ICONS } from '../core/pause-icon-catalogue.js';
 import { flagOf } from './locale-flags.js';
 import { PM_GAME_BTNS } from './pause-buttons.js';
+
+/**
+ * What the bar's markup reads of the root's translator (ADR-0232 D3 erratum): its `t`, and the page's language, which the
+ * 🌐 button shows as a flag. A Pick and not a bare `t`, because the flag reads the language.
+ */
+export type BarTranslator = Pick<Translator, 't' | 'locale'>;
 
 /** One `.pm-btn` descriptor — the shape of an entry of `PM_BTNS` (owned by ui/pause-buttons). */
 export interface PauseMenuButton {
@@ -36,17 +42,17 @@ export interface PauseMenuButton {
 /** One `.pi-btn`. The label is the RESTING one: reflectIconBtn overwrites it with the stateful label as soon as the bar is
  *  reflected. `ic.n` is an i18n key, so it must be resolved here too — the markup is rendered once at build
  *  time and would otherwise ship the raw key to a screen reader. */
-export function iconBtnMarkup(ic: PauseIcon): string {
+export function iconBtnMarkup(tr: BarTranslator, ic: PauseIcon): string {
   return '<button class="pi-btn" type="button" data-pi="' + ic.k +
-    '" aria-label="' + t(ic.n) + '">' + (ic.k === 'idioma' ? flagOf(getLocale()) : ic.e) + '</button>';
+    '" aria-label="' + tr.t(ic.n) + '">' + (ic.k === 'idioma' ? flagOf(tr.locale()) : ic.e) + '</button>';
 }
 
 /** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` — one builder, so the two bars
  *  cannot drift apart.
  *  The parameter is ADDITIVE and the default is the whole list: whoever already called it with no arguments gets the same
  *  string back. */
-export function iconsMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
-  return icons.map(iconBtnMarkup).join('');
+export function iconsMarkup(tr: BarTranslator, icons: readonly PauseIcon[] = PAUSE_ICONS): string {
+  return icons.map((ic) => iconBtnMarkup(tr, ic)).join('');
 }
 
 /**
@@ -132,8 +138,8 @@ function pauseMenuHtml(
  * THE CAPTION TRAVELS WITH IT. It is the hint that replaces, for whoever does not see, the `title` only a mouse reveals;
  * leaving it behind in the card would have made the HUD bar mute.
  */
-export function quickBarMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
-  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup(icons) +
+export function quickBarMarkup(tr: BarTranslator, icons: readonly PauseIcon[] = PAUSE_ICONS): string {
+  return '<div class="pause-icons" role="group" aria-label="' + tr.t('pause.iconBarAria') + '">' + iconsMarkup(tr, icons) +
     '</div><p class="pause-icons-cap" aria-live="polite"></p>';
 }
 
@@ -150,7 +156,8 @@ export interface ScreenPauseMarkupOpts {
   gameButtons?: readonly PauseMenuButton[];
   /** The finished label of a DYNAMIC button, or `null` if that button has none. The game is who builds the phrase. */
   dynLabel: (b: PauseMenuButton) => string | null;
-  t: (key: string) => string;
+  /** Translates in the page's language — the root's translator (ADR-0232 D3), with the {param}s the seat needs. */
+  t: Translate;
 }
 
 /** The full innerHTML of a `.screen-pause`. Pure — every input is a parameter. */
@@ -160,15 +167,14 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
   // whoever listened got the menu announced in Portuguese — the same asymmetry as item 4 of ADR-0044, one level up. And
   // `aria-label`, not `aria-labelledby`: the `<h2>` is a VISUAL label, which is why hiding it in a tight frame does not take
   // the dialog's name away from whoever listens.
-  return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="' + t('pause.cardAria', { n: o.player + 1 }) + '">' +
+  return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="' + o.t('pause.cardAria', { n: o.player + 1 }) + '">' +
     '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>'
     // ⚠️ THE SEAT SUFFIX USED TO BE `' · Jogador ' + (o.player + 1)` — raw Portuguese inside an engine module, and an English
     // game read «Paused · Jogador 2». It is a key now, and it lives in a `<span>` of its own because the item refresh needs
     // somewhere to REPAINT it: since `pause.cardSeat` takes a parameter, the `data-i18n` path of `applyDom` — which calls
     // `t(k)` with no parameters — does not serve here.
-    // 📌 The module's `t` and not `o.t`, for the same reason the `aria-label` line above already uses it: the injected port is
-    // `(key) => string` and does not carry parameters across.
-    + '<span class="pause-seat">' + (o.numPlayers > 1 ? t('pause.cardSeat', { n: o.player + 1 }) : '') + '</span></h2>' +
+    // 📌 `o.t` is the root's `Translate` (ADR-0232 D3), which carries the seat's `{n}` across.
+    + '<span class="pause-seat">' + (o.numPlayers > 1 ? o.t('pause.cardSeat', { n: o.player + 1 }) : '') + '</span></h2>' +
     pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
     pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
     // ⚠️ THE THIRD LIST IS ALWAYS IN THE MARKUP, even for a game that declares nothing — and it is not waste: it is the same

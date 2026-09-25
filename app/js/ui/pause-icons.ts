@@ -21,7 +21,7 @@
 
 import type { PlayerView } from '../core/entity.js';
 import type { NavKeys } from '../input/edges.js'; // the SAME intent the keyboard, controller, eyes and speech build
-import { t, getLocale, setLocale } from '../core/i18n.js';
+import type { Translate, Translator } from '../core/i18n.js';
 import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
 /*
  * 🔴 THE TWO VISUAL CYCLES MOVED HOUSE to `core/visual-cycles` (ADR-0221, issue #203). They lived in TWO modules — the list of
@@ -154,7 +154,7 @@ export function wireBarCaption(bar: HTMLElement, explain: (k: string | null) => 
  * reads already carries the STATE («Alto contraste, ativado»): `reflectIconBtn` rewrites it on every change, which is why
  * this reads it back instead of rebuilding the text.
  */
-function iconCaption(barEl: ParentNode, el: HTMLElement, menuIndexOn: boolean): string {
+function iconCaption(t: Translate, barEl: ParentNode, el: HTMLElement, menuIndexOn: boolean): string {
   const icons = [...barEl.querySelectorAll<HTMLElement>('.pi-btn')];
   // «A declared label wins» is `core/accessible-label`'s rule, shared with the pause list and every menu: one answer to
   // «what is this control called».
@@ -256,31 +256,31 @@ export function hasPrivateOutputIn(list: readonly PausePlayer[], count: number, 
 
 /** The `aria-label` of one icon — it MUST reflect the current state, on/off or level. This is the whole
  *  point of the function: a toggle that looks pressed but does not say so is invisible to a screen reader. */
-export function computeIconLabel(k: string, s: IconStateSnapshot): string {
+export function computeIconLabel(t: Translate, k: string, s: IconStateSnapshot): string {
   const ic = pauseIcon(k);
   if (!ic) return '';
   const state = STATE_OF_ICON[k];
   // The state is ALWAYS a parameter (`{v}`), never a concatenation: a language that puts the state before the name needs
   // the dictionary to reorder it. «name: state» is the frame; the state is the content, and it is translated too.
-  return state ? t('icon.state', { nome: t(SHORT_NAME[k] ?? ic.n), v: state(s) }) : t(ic.n);
+  return state ? t('icon.state', { nome: t(SHORT_NAME[k] ?? ic.n), v: state(t, s) }) : t(ic.n);
 }
 
-const onOff = (on: boolean | undefined): string => t(on ? 'state.on' : 'state.off');
+const onOff = (t: Translate, on: boolean | undefined): string => t(on ? 'state.on' : 'state.off');
 
 /** What each icon with a state says after its name, already in the child's language. An icon not here has no state to say. */
-const STATE_OF_ICON: { readonly [k: string]: (s: IconStateSnapshot) => string } = {
-  blind: (s) => onOff(s.blindMode),
-  tts: (s) => onOff(s.ttsOn),
-  libras: (s) => onOff(s.librasOn),
-  tea: (s) => t(CALM_NAMES[s.calmMode]!),
-  altmove: (s) => t(INPUT_MODE_NAME[inputModeOf(s)]),
-  contrast: (s) => t(SHORT_THEME[s.visual.tema]),
-  cvd: (s) => t(SHORT_CORRECTION[s.visual.correcao]),
-  camera: (s) => t(CAMERA_MODE_NAME[s.camera ?? 'off']),
-  voice: (s) => onOff(s.voice),
+const STATE_OF_ICON: { readonly [k: string]: (t: Translate, s: IconStateSnapshot) => string } = {
+  blind: (t, s) => onOff(t, s.blindMode),
+  tts: (t, s) => onOff(t, s.ttsOn),
+  libras: (t, s) => onOff(t, s.librasOn),
+  tea: (t, s) => t(CALM_NAMES[s.calmMode]!),
+  altmove: (t, s) => t(INPUT_MODE_NAME[inputModeOf(s)]),
+  contrast: (t, s) => t(SHORT_THEME[s.visual.tema]),
+  cvd: (t, s) => t(SHORT_CORRECTION[s.visual.correcao]),
+  camera: (t, s) => t(CAMERA_MODE_NAME[s.camera ?? 'off']),
+  voice: (t, s) => onOff(t, s.voice),
   // a language's own name is not translated: «Español» reads the same in every interface
-  idioma: (s) => LANGUAGE_NAME[(s.locale ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt,
-  velocidade: (s) => t('icon.velocidade.valor', { pct: Math.round((s.speed ?? 1) * 100) }),
+  idioma: (_t, s) => LANGUAGE_NAME[(s.locale ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt,
+  velocidade: (t, s) => t('icon.velocidade.valor', { pct: Math.round((s.speed ?? 1) * 100) }),
 };
 
 /**
@@ -443,7 +443,7 @@ const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'p
  * refresh, so it follows the language of the moment the card opens.
  */
 const OWN_REASONS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
-function itemReason(act: string): string {
+function itemReason(t: Translate, act: string): string {
   return t(OWN_REASONS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
 
@@ -544,6 +544,11 @@ export function barAction(k: NavKeys, hasStart: boolean): BarAction {
 // ---------------------------------------------------------------------------------------------
 
 export interface PauseIconsCtx {
+  /**
+   * The root's translator (ADR-0232 D3 erratum): its `t`, the page's language — the 🌐 shows it as a flag — and the setter
+   * the 🌐 switches it with. A Pick and not a bare `t`, because the bar reads and sets the language.
+   */
+  translator: Pick<Translator, 't' | 'locale' | 'setLocale'>;
   /**
    * The DOCUMENT where the pause card and the bar are BUILT. Absent, the global one (ADR-0232 is to remove that fallback).
    * `createGame` receives its document through `host.doc` and may be building in another one (an iframe, an editor beside
@@ -744,6 +749,7 @@ export interface PauseIconsApi {
 // ---------------------------------------------------------------------------------------------
 
 export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
+  const { t } = ctx.translator;
   // THE CALM LEVEL PERSISTS (issue #61; ADR-0028: every menu setting persists). The child who uses the SILENT mode is the
   // one for whom unexpected noise costs most, and a setting that is forgotten is a daily chore, not a setting.
   //
@@ -841,7 +847,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       visual: p.visual ?? DEFAULT_VISUAL,
       speed: ctx.settings.gameSpeed,
       camera: ctx.settings.cameraControl,
-      locale: getLocale(),
+      locale: ctx.translator.locale(),
       privateOutput: hasPrivateOutput(i),
       latchRequired: refusalNow(i) !== null,
       noVoice: !!ctx.noVoice?.(),
@@ -958,8 +964,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
     // language, once it has loaded.
     idioma: () => {
-      const v = nextLocale(getLocale());
-      void setLocale(v).then(() => ctx.srSay(t('sr.icon.idioma', { v: LANGUAGE_NAME[v] })));
+      const v = nextLocale(ctx.translator.locale());
+      void ctx.translator.setLocale(v).then(() => ctx.srSay(t('sr.icon.idioma', { v: LANGUAGE_NAME[v] })));
     },
     // THE GAME SPEED (ADR-0180): one step down, wrapping at 50%; stored, and felt on the next frame of `startLoop`.
     velocidade: () => {
@@ -994,13 +1000,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   // --- reflection --------------------------------------------------------------------------
 
-  function iconLabel(k: string, i: number): string { return computeIconLabel(k, iconState(i)); }
+  function iconLabel(k: string, i: number): string { return computeIconLabel(t, k, iconState(i)); }
 
   function reflectIconBtn(b: HTMLElement, i: number): void {
     const k = b.dataset.pi || '';
     // the hourglass follows the CURRENT cartridge's clock (ADR-0180): a turn game mounted later hides it, a clock game shows it
     if (k === 'velocidade') b.hidden = !ctx.clock?.();
-    if (k === 'idioma') { const flag = flagOf(getLocale()); if (b.innerHTML !== flag) b.innerHTML = flag; }
+    if (k === 'idioma') { const flag = flagOf(ctx.translator.locale()); if (b.innerHTML !== flag) b.innerHTML = flag; }
     const st = iconState(i);
     const v = computeIconVisual(k, st);
     b.classList.remove(...ICON_STATE_CLASSES);
@@ -1023,7 +1029,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // run in the same language. `initI18n` loads en/es asynchronously, so the markup is born in pt and only the reflection
     // corrects it. 📌 Measured in a browser back when a guard skipped some of them: five icons in English and three still in
     // Portuguese, on the same bar.
-    b.setAttribute('aria-label', computeIconLabel(k, st));
+    b.setAttribute('aria-label', computeIconLabel(t, k, st));
   }
 
   function reflectIconsIn(root: ParentNode | null, i: number): void {
@@ -1087,7 +1093,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
           delete btn.dataset.motivo;
         } else {
           btn.setAttribute('aria-disabled', 'true');
-          btn.dataset.motivo = itemReason(act);
+          btn.dataset.motivo = itemReason(t, act);
         }
       }
     }
@@ -1134,7 +1140,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
     if (cap) cap.textContent = accessibleLabel(el);
-    ctx.srSay(iconCaption(bar, el, ctx.settings.menuIndexOn)); // the spoken one carries the place (ADR-0167)
+    ctx.srSay(iconCaption(t, bar, el, ctx.settings.menuIndexOn)); // the spoken one carries the place (ADR-0167)
     ctx.explainIcon?.(i, el.dataset.pi ?? null);
   }
 
@@ -1262,7 +1268,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const bar = mountDoc().createElement('div');
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
-    bar.innerHTML = quickBarMarkup(gameIcons);
+    bar.innerHTML = quickBarMarkup(ctx.translator, gameIcons);
     // OUT OF THE TAB ORDER during play (ADR-0044 item 7): a stop per icon between the child and the game would be the price
     // of leaving them in, and keyboard reach is not lost — it becomes the `accessibility` mode, opened from the pause. The
     // bar the root mounts in `#title-icons` is unaffected: the `tabindex` is set HERE, on the element, not in the shared markup.

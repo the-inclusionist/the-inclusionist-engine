@@ -34,7 +34,7 @@ import { t } from '../app/js/core/i18n.js';
 
 const SEM_DIN = () => null;
 const markup = () => screenPauseMarkup({
-  player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTIONS_BTNS, dynLabel: SEM_DIN, t: (k) => k,
+  player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTIONS_BTNS, dynLabel: SEM_DIN, t,
 });
 
 /** The `data-act`s of a list, in the order the markup puts them. */

@@ -35,6 +35,9 @@ import * as estado from '../app/js/core/state.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
 import { filePort } from './fixtures/file-storage.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
+const translate = translator.t;
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0038, ADR-0228): the round's state is not in `core/state` and `core/run-state` left
  * the engine. This file never tested the round — it HANDS one to the pause card, and what it measures is the card. The
@@ -129,6 +132,7 @@ function buildCtx(over = {}) {
     acts: {},
   };
   const ctx = {
+    translator,
     store: createStorage(memoryBackend()), // each ctx its own store (ADR-0232)
     settings: estado, // the test plays the root: the page's settings store
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
@@ -326,8 +330,8 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
   it('INTERFACE: todo ícone com estado produz rótulo não-vazio nas duas pontas do toggle', () => {
     const on = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'hc-direto' });
     for (const ic of PAUSE_ICONS) {
-      expect(computeIconLabel(ic.k, snap()).length).toBeGreaterThan(0);
-      expect(computeIconLabel(ic.k, on).length).toBeGreaterThan(0);
+      expect(computeIconLabel(translate, ic.k, snap()).length).toBeGreaterThan(0);
+      expect(computeIconLabel(translate, ic.k, on).length).toBeGreaterThan(0);
     }
   });
 
@@ -341,8 +345,8 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     for (const [k, flag, prefix] of cases) {
       // 'on'/'off' would be ENGLISH words inside a Portuguese sentence — the exact defect the i18n pass exists
       // to remove. The state goes through the dictionary too.
-      expect(computeIconLabel(k, snap({ [flag]: false }))).toBe(prefix + ': desligado');
-      expect(computeIconLabel(k, snap({ [flag]: true }))).toBe(prefix + ': ligado');
+      expect(computeIconLabel(translate, k, snap({ [flag]: false }))).toBe(prefix + ': desligado');
+      expect(computeIconLabel(translate, k, snap({ [flag]: true }))).toBe(prefix + ': ligado');
     }
   });
 
@@ -351,12 +355,12 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
    * the same shape as the camera's. A label of «on» would no longer answer the child's question, which is «on WHAT».
    */
   it('🔴 [Right] o ☝️ diz a POSIÇÃO — padrão, não precisa segurar, um botão só', () => {
-    expect(computeIconLabel('altmove', snap({ toggleMove: false }))).toBe('Jeito de apertar: padrão');
-    expect(computeIconLabel('altmove', snap({ toggleMove: true }))).toBe('Jeito de apertar: não precisa segurar');
-    expect(computeIconLabel('altmove', snap({ switchScan: true }))).toBe('Jeito de apertar: um botão só');
+    expect(computeIconLabel(translate, 'altmove', snap({ toggleMove: false }))).toBe('Jeito de apertar: padrão');
+    expect(computeIconLabel(translate, 'altmove', snap({ toggleMove: true }))).toBe('Jeito de apertar: não precisa segurar');
+    expect(computeIconLabel(translate, 'altmove', snap({ switchScan: true }))).toBe('Jeito de apertar: um botão só');
     // 🔴 AND THE SCAN WINS OVER THE LATCH: with one button only there is nothing to hold, and a stored latch value would
     // make the icon announce a position the child is not in.
-    expect(computeIconLabel('altmove', snap({ toggleMove: true, switchScan: true }))).toBe('Jeito de apertar: um botão só');
+    expect(computeIconLabel(translate, 'altmove', snap({ toggleMove: true, switchScan: true }))).toBe('Jeito de apertar: um botão só');
   });
 
   /*
@@ -372,13 +376,13 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
    *   · an absent language read as `pt`, because the fallback right after it answers the same — the two together are held below.
    */
   it('🔴 [Zero] um valor AUSENTE diz o que a engine faz sem ele: câmera desligada, português, velocidade a 100%', () => {
-    expect(computeIconLabel('camera', snap())).toBe(computeIconLabel('camera', snap({ camera: 'off' })));
-    expect(computeIconLabel('idioma', snap())).toBe(computeIconLabel('idioma', snap({ locale: 'pt' })));
-    expect(computeIconLabel('velocidade', snap())).toMatch(/: 100%$/);
+    expect(computeIconLabel(translate, 'camera', snap())).toBe(computeIconLabel(translate, 'camera', snap({ camera: 'off' })));
+    expect(computeIconLabel(translate, 'idioma', snap())).toBe(computeIconLabel(translate, 'idioma', snap({ locale: 'pt' })));
+    expect(computeIconLabel(translate, 'velocidade', snap())).toMatch(/: 100%$/);
   });
 
   it('🔴 [Boundary] uma língua fora do ciclo lê-se como português, e não como «undefined»', () => {
-    expect(computeIconLabel('idioma', snap({ locale: 'fr' }))).toBe(computeIconLabel('idioma', snap({ locale: 'pt' })));
+    expect(computeIconLabel(translate, 'idioma', snap({ locale: 'fr' }))).toBe(computeIconLabel(translate, 'idioma', snap({ locale: 'pt' })));
   });
 
   it('🔴 [Right] e ele só se acende fora do padrão — as outras duas posições são «ligado»', () => {
@@ -419,30 +423,30 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
   });
 
   it('TEA tem TRÊS estados no rótulo — não é booleano', () => {
-    expect([0, 1, 2].map((c) => computeIconLabel('tea', snap({ calmMode: c }))))
+    expect([0, 1, 2].map((c) => computeIconLabel(translate, 'tea', snap({ calmMode: c }))))
       .toEqual(['Modo TEA: desligado', 'Modo TEA: calmo', 'Modo TEA: silencioso']);
   });
 
   it('contraste diz a RAZÃO de contraste do nível, e "off" fora da lista', () => {
-    expect(computeIconLabel('contrast', snap({ viz: 'normal' }))).toBe('Alto contraste: desligado');
-    expect(computeIconLabel('contrast', snap({ viz: 'hc-direto' }))).toBe('Alto contraste: 3:1');
-    expect(computeIconLabel('contrast', snap({ viz: 'hc-direto-45' }))).toBe('Alto contraste: 4,5:1');
-    expect(computeIconLabel('contrast', snap({ viz: 'hc-direto-7' }))).toBe('Alto contraste: 7:1');
-    expect(computeIconLabel('contrast', snap({ viz: 'fix-protan' }))).toBe('Alto contraste: desligado');
+    expect(computeIconLabel(translate, 'contrast', snap({ viz: 'normal' }))).toBe('Alto contraste: desligado');
+    expect(computeIconLabel(translate, 'contrast', snap({ viz: 'hc-direto' }))).toBe('Alto contraste: 3:1');
+    expect(computeIconLabel(translate, 'contrast', snap({ viz: 'hc-direto-45' }))).toBe('Alto contraste: 4,5:1');
+    expect(computeIconLabel(translate, 'contrast', snap({ viz: 'hc-direto-7' }))).toBe('Alto contraste: 7:1');
+    expect(computeIconLabel(translate, 'contrast', snap({ viz: 'fix-protan' }))).toBe('Alto contraste: desligado');
   });
 
   it('a quarta ESCOLHA nomeia a visão; o FALLBACK continua `desligado` — e não são a mesma chave', () => {
-    expect(computeIconLabel('cvd', snap({ viz: 'fix-protan' }))).toBe('Correção de daltonismo: protanopia');
-    expect(computeIconLabel('cvd', snap({ viz: 'fix-deuter' }))).toBe('Correção de daltonismo: deuteranopia');
-    expect(computeIconLabel('cvd', snap({ viz: 'fix-tritan' }))).toBe('Correção de daltonismo: tritanopia');
+    expect(computeIconLabel(translate, 'cvd', snap({ viz: 'fix-protan' }))).toBe('Correção de daltonismo: protanopia');
+    expect(computeIconLabel(translate, 'cvd', snap({ viz: 'fix-deuter' }))).toBe('Correção de daltonismo: deuteranopia');
+    expect(computeIconLabel(translate, 'cvd', snap({ viz: 'fix-tritan' }))).toBe('Correção de daltonismo: tritanopia');
     // ⚠️ THIS IS THE FALLBACK, AND IT STAYS `desligado` ON PURPOSE. `hc-direto` is high contrast: no colour-blindness
     // correction is on, and that is all the label may assert. Saying `visão tricromática` would be the software
     // asserting what the child SEES — and the fallback covers 13 of the 16 modes, including the three colour-blindness
     // SIMULATIONS, low vision and blind mode. The fourth CHOICE of the cycle names the vision (`cvd.tricro`, in the
     // invariant test above); the fallback names the switch. They are different keys.
-    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: desligado');
+    expect(computeIconLabel(translate, 'cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: desligado');
     // and the simulation is the case that makes the distinction mandatory, not a subtlety:
-    expect(computeIconLabel('cvd', snap({ viz: 'sim-deuter' }))).toBe('Correção de daltonismo: desligado');
+    expect(computeIconLabel(translate, 'cvd', snap({ viz: 'sim-deuter' }))).toBe('Correção de daltonismo: desligado');
   });
 
   /*
@@ -455,14 +459,14 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     const tudoLigado = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voice: true });
     for (const ic of PAUSE_ICONS) {
       expect(ic, `${ic.k} trouxe o campo \`soon\` de volta sem mecanismo por trás`).not.toHaveProperty('soon');
-      expect(computeIconLabel(ic.k, tudoLigado), ic.k).not.toMatch(/em constru|under construction|en construcci/i);
+      expect(computeIconLabel(translate, ic.k, tudoLigado), ic.k).not.toMatch(/em constru|under construction|en construcci/i);
     }
-    expect(computeIconLabel('voice', tudoLigado)).toBe('Comando de voz: ligado');
-    expect(computeIconLabel('voice', snap({ voice: false }))).toBe('Comando de voz: desligado');
+    expect(computeIconLabel(translate, 'voice', tudoLigado)).toBe('Comando de voz: ligado');
+    expect(computeIconLabel(translate, 'voice', snap({ voice: false }))).toBe('Comando de voz: desligado');
   });
 
   it('EXCEÇÃO: chave desconhecida devolve string vazia (não lança, não inventa rótulo)', () => {
-    expect(computeIconLabel('nao-existe', snap())).toBe('');
+    expect(computeIconLabel(translate, 'nao-existe', snap())).toBe('');
   });
 });
 
@@ -547,17 +551,17 @@ describe('markup dos ícones e do menu', () => {
     expect(alt.e).toBe('☝️');
   });
   it('a barra tem um botão por ícone declarado', () => {
-    expect(iconsMarkup().match(/class="pi-btn/g)).toHaveLength(PAUSE_ICONS.length);
+    expect(iconsMarkup(translator).match(/class="pi-btn/g)).toHaveLength(PAUSE_ICONS.length);
   });
 
   it('INVARIANTE DE ACESSIBILIDADE: todo .pi-btn nasce com aria-label NÃO-VAZIO', () => {
-    const labels = [...iconsMarkup().matchAll(/aria-label="([^"]*)"/g)].map((m) => m[1]);
+    const labels = [...iconsMarkup(translator).matchAll(/aria-label="([^"]*)"/g)].map((m) => m[1]);
     expect(labels).toHaveLength(PAUSE_ICONS.length);
     for (const l of labels) expect(l.trim().length).toBeGreaterThan(0);
   });
 
   it('todo .pi-btn é type="button" (não submete formulário) e carrega seu data-pi', () => {
-    const html = iconsMarkup();
+    const html = iconsMarkup(translator);
     expect(html.match(/type="button"/g)).toHaveLength(PAUSE_ICONS.length);
     for (const ic of PAUSE_ICONS) expect(html).toContain('data-pi="' + ic.k + '"');
   });
@@ -567,7 +571,7 @@ describe('markup dos ícones e do menu', () => {
     // carried the suffix. Both left together, and the class left `style.css` too — a class the CSS still painted would
     // grey a live button again the day someone wrote it by mistake.
     for (const ic of PAUSE_ICONS) {
-      const h = iconBtnMarkup(ic);
+      const h = iconBtnMarkup(translator, ic);
       expect(h, `${ic.k} nasceu com \`pi-soon\``).not.toContain('pi-soon');
       expect(h, `${ic.k} nasceu «em construção»`).not.toContain(', em construção');
     }
@@ -582,19 +586,19 @@ describe('markup dos ícones e do menu', () => {
     // key and a raw literal produce the SAME string — an assertion «não contém Jogador» would be measuring the
     // dictionary and not the mechanism, and would stay green with the literal back. What tells literal from key is
     // BOOTING IN `en`: `tests/bar-in-the-boot-language.browser.test.js`.
-    const h = screenPauseMarkup({ player: 1, numPlayers: 2, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    const h = screenPauseMarkup({ player: 1, numPlayers: 2, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: translate });
     // The `<span>` of its own is what `refreshPauseItems` needs to REPAINT the suffix when the pause opens —
     // without a named place, the language fix has nowhere to land.
     expect(h, 'o sufixo do assento desapareceu em multijogador').toContain('class="pause-seat"');
     expect(h.match(/class="pause-seat">([^<]*)</)[1].trim().length,
       'o `<span>` do assento existe e está vazio com dois jogadores').toBeGreaterThan(0);
     // And with ONE player it stays empty — the suffix is multiplayer information, not decoration.
-    const solo = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    const solo = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: translate });
     expect(solo).toContain('<span class="pause-seat"></span>');
   });
 
   it('ZERO botões de menu: o cartão, o título, as duas listas e o rodapé continuam lá', () => {
-    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: translate });
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');
     // The BAR and the LEGEND are not in the card (ADR-0044, item 7) — they live in the HUD, in `quickBarMarkup`. This
     // case ASSERTS the absence: if they came back here, the pause would be a two-zone grid again and the ring of
@@ -611,7 +615,7 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('UM jogador: o título NÃO ganha sufixo; MUITOS: ganha "· Jogador N" (1-based)', () => {
-    const mk = (player, n) => screenPauseMarkup({ player, numPlayers: n, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    const mk = (player, n) => screenPauseMarkup({ player, numPlayers: n, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: translate });
     expect(mk(0, 1)).not.toContain('· Jogador');
     expect(mk(1, 2)).toContain('· Jogador 2');
     expect(mk(3, 4)).toContain('aria-label="Menu de pausa do jogador 4"');
@@ -641,7 +645,7 @@ describe('markup dos ícones e do menu', () => {
   it('o menu monta um .pm-btn por entrada de PM_BTNS, na ordem recebida — e o submenu depois dele', () => {
     // The order of the TWO lists in the markup matters to whoever reads the document in sequence: the root comes first,
     // and it is the visible one. The NAVIGATION order comes from `PM_VISIBLE_ITEMS` and never mixes the two.
-    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTS, dynLabel: SEM_DIN, t: (k) => k });
+    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTS, dynLabel: SEM_DIN, t: translate });
     const acts = [...h.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
     // ⚠️ And the THIRD list comes last (ADR-0146): with no `jogoButtons` it is the default, only «voltar».
     expect(acts).toEqual(['resume', 'letra', 'quit', 'pmback', 'caa', 'pmback']);
@@ -766,6 +770,15 @@ describe('initPauseIcons — ações dos ícones', () => {
       initPauseIcons(ctx).iconAct('altmove', 0);
       expect(Object.keys(guardado)).toEqual(['incl_togglemove_p0']);
     }
+  });
+
+  it('🔴 [Right] the latch the icon writes is announced in the language of the bar\'s translator (ADR-0232 D3)', () => {
+    // With no host writer, the icon writes through `setMoveLatch`, which speaks with the `t` the bar hands it.
+    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+    const { ctx, said } = buildCtx();
+    delete ctx.setToggleMove;
+    initPauseIcons(ctx).iconAct('altmove', 0);
+    expect(said.join(' | '), 'the latch was announced with a raw key').toContain(pt['sr.motor.toggleMoveOn']);
   });
 
   // ========================= CLAUSE 3 OF ADR-0113, ON THE BAR'S ICON =========================
@@ -1128,7 +1141,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
   it('⚠️ [Right] o reflexo ESCREVE em todo ícone: o rótulo com estado por cima do de repouso, e a mesma string onde não há estado', () => {
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
-    const daMarcacao = (k) => /aria-label="([^"]*)"/.exec(iconBtnMarkup(PAUSE_ICONS.find((i) => i.k === k)))?.[1];
+    const daMarcacao = (k) => /aria-label="([^"]*)"/.exec(iconBtnMarkup(translator, PAUSE_ICONS.find((i) => i.k === k)))?.[1];
     for (const ic of PAUSE_ICONS) {
       const b = fakeIconBtn(ic.k);
       api.reflectIconBtn(b, 0);
@@ -1192,7 +1205,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     const api = initPauseIcons(ctx);
     api.setCalmMode(2);
     const s = api.iconState(0);
-    for (const ic of PAUSE_ICONS) expect(api.iconLabel(ic.k, 0)).toBe(computeIconLabel(ic.k, s));
+    for (const ic of PAUSE_ICONS) expect(api.iconLabel(ic.k, 0)).toBe(computeIconLabel(translate, ic.k, s));
   });
 
   it('o snapshot lê os bindings VIVOS de core/state (mutar players muda o rótulo sem re-init)', () => {

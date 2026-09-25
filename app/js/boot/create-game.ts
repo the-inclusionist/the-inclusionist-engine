@@ -1200,7 +1200,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const saveSceneMotion = (): void => { storeScene(store, sceneMotion); };
   initLibras(store); // deaf mode's stored choice, read before the bar asks `isLibrasOn` (ADR-0232)
   const pauseIcons = initPauseIcons({
-    store,
+    translator, store,
     settings: state, // the page's settings store itself: its live bindings are the reads the bar asks for (ADR-0232)
     doc, matchMedia: win.matchMedia, // the reduced-motion default when nothing is stored (ADR-0232)
     rm: sceneMotion, saveRM: saveSceneMotion,
@@ -1380,7 +1380,7 @@ export function createGame(o: CreateGameOptions): Engine {
   if (a11yBar && barUsable) {
     // 🔴 WITH THE NAME CAPTION under the row: the bar the engine mounted had none, and the Dev saw it mute when navigating
     // and hovering. `aria-hidden` because the name is already SPOKEN (`srSay` on the cursor, the `aria-label` on focus).
-    a11yBar.innerHTML = iconsMarkup(pauseIcons.mountedIcons) + '<p class="pause-icons-cap" aria-hidden="true"></p>';
+    a11yBar.innerHTML = iconsMarkup(translator, pauseIcons.mountedIcons) + '<p class="pause-icons-cap" aria-hidden="true"></p>';
     wireBarCaption(a11yBar as HTMLElement, explainIconInFooter);
     a11yBar.addEventListener('click', (e) => {
       const rowButton = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');

@@ -12,6 +12,9 @@ import { getLocale } from '../app/js/core/i18n.js';
 import { LOCALE_CYCLE, nextLocale, FLAG_SVG, flagOf, LANGUAGE_NAME } from '../app/js/ui/locale-flags.js';
 import { bcp47 } from '../app/js/core/i18n.js';
 import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
+const translate = translator.t;
 
 const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: DEFAULT_VISUAL, privateOutput: true, ...over });
 
@@ -32,14 +35,14 @@ describe('the language button', () => {
     expect(flagOf('fr')).toBe(FLAG_SVG.pt);
   });
   it('the bar itself draws the flag of the current locale, and no flag emoji', () => {
-    const b = quickBarMarkup();
+    const b = quickBarMarkup(translator);
     const botao = b.slice(b.indexOf('data-pi="idioma"'));
     expect(botao.slice(0, botao.indexOf('</button>'))).toContain(flagOf(getLocale()));
     expect(b).not.toContain('🇧🇷');
   });
   it('its name says the language in itself, with its place', () => {
-    expect(computeIconLabel('idioma', snap({ locale: 'en' }))).toMatch(/English \(United States\)/);
-    expect(computeIconLabel('idioma', snap({ locale: 'es' }))).toMatch(/Español \(México\)/);
+    expect(computeIconLabel(translate, 'idioma', snap({ locale: 'en' }))).toMatch(/English \(United States\)/);
+    expect(computeIconLabel(translate, 'idioma', snap({ locale: 'es' }))).toMatch(/Español \(México\)/);
     expect(LANGUAGE_NAME.pt).toBe('Português (Brasil)');
   });
 });

@@ -2410,6 +2410,7 @@
       "srSay",
       "store",
       "toggleLibras",
+      "translator",
       "transportInUse?"
     ],
     "interface PauseIconsApi": [
@@ -2452,6 +2453,7 @@
       "pmButtons",
       "t"
     ],
+    "type BarTranslator": "Pick<Translator, 't' | 'locale'>",
     "type PauseSub": "'raiz' | 'opcoes' | 'jogo'"
   },
   "ui/reach-notice.ts": {

@@ -1127,6 +1127,15 @@ describe('createGame num documento de verdade', () => {
     const wordsOf = (el) => [el.textContent, ...[...el.querySelectorAll('[aria-label], [title]')]
       .flatMap((n) => [n.getAttribute('aria-label'), n.getAttribute('title')])].filter(Boolean).join(' | ');
 
+    it('🔴 [Right] the bar the root mounts names every icon in the root\'s language (ADR-0232 D3)', () => {
+      // The root writes `#title-icons` from `iconsMarkup(translator, …)`; a root that handed it anything else would name
+      // the icons by key to a screen reader.
+      abrir();
+      const icons = [...document.querySelectorAll('#title-icons .pi-btn')];
+      expect(icons.length, 'the root mounted no bar — this case would measure nothing').toBeGreaterThan(0);
+      for (const b of icons) expect(b.getAttribute('aria-label'), `${b.dataset.pi} is named by a raw key`).not.toMatch(/\b(icon|state)\.[a-zA-Z]/);
+    });
+
     it('🔴 [Right] the empathy panel speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', () => {
       // `ui/settings-empathy` no longer imports `t`; its switches are labelled by the `t` its ctx receives.
       const motor = abrir();

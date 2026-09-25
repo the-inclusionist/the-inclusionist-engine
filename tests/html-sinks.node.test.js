@@ -67,7 +67,7 @@ const SEGUROS = [
   // document as text and no longer through markup (`ui/help-panel.showSlide`).
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
-  ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(getLocale", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
+  ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(ctx.transl", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(t, modes, cur)', 'modos enumerados + i18n'],
   // ⚠️ THE TWO AXES (#104). Same class as the one above and for the same reason: `axesHtml` interpolates only ENUMERATED
   // values (`THEMES`/`CORRECTIONS`, frozen in `viz-axes`) and text that went through `t()`. Nothing here comes from
@@ -84,11 +84,11 @@ const SEGUROS = [
   // `core/pause-icon-catalogue` (ADR-0221). Nothing from outside the repository reaches this sink.
   // 📌 The excerpt is SHORT on purpose: the key is the start of the line cut at 52 characters (see `sinksDeHoje`), and an
   // entry LONGER than that cut never matches.
-  ['boot/create-game.ts', 'a11yBar.innerHTML = iconsMarkup(', 'markup da engine + i18n'],
+  ['boot/create-game.ts', 'a11yBar.innerHTML = iconsMarkup(translator, ', 'markup da engine + i18n'],
   ['ui/pause-icons.ts', 'sp.innerHTML = screenPauseMarkup({', 'markup da engine + i18n'],
   // ⚠️ The argument (ADR-0106 §5) does NOT change the classification: `gameIcons` is a sub-list of `PAUSE_ICONS`, a
   // constant of `core/pause-icon-catalogue` — nothing from outside the repository reaches this sink.
-  ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(gameIcons);', 'markup da engine + i18n'],
+  ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(ctx.translator, gameI', 'markup da engine + i18n'],
   // The system voice list lives with the voice section (ADR-0221, issue #203): `ui/voice-settings` clears this `<select>`.
   // What enters is an empty string.
   ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],

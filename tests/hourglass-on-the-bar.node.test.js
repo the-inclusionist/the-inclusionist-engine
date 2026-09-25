@@ -10,6 +10,9 @@ import { iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { DEFAULTS } from '../app/js/core/setting-defaults.js';
 import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
+const translate = translator.t;
 
 const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: DEFAULT_VISUAL, privateOutput: true, speed: DEFAULTS.gameSpeed, ...over });
 const todos = { theme: true, correction: true, holdsKeys: () => true, typography: true };
@@ -32,8 +35,8 @@ describe('the hourglass icon', () => {
   });
 
   it('🔴 [Right] its name says the speed', () => {
-    expect(computeIconLabel('velocidade', snap({ speed: 0.8 }))).toMatch(/80\s?%/);
-    expect(computeIconLabel('velocidade', snap({ speed: 1 }))).toMatch(/100\s?%/);
+    expect(computeIconLabel(translate, 'velocidade', snap({ speed: 0.8 }))).toMatch(/80\s?%/);
+    expect(computeIconLabel(translate, 'velocidade', snap({ speed: 1 }))).toMatch(/100\s?%/);
   });
 
   it('🎯 [Right] it shows as on while the game is slowed, and off at 100%', () => {

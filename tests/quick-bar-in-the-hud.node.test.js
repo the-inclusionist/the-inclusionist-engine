@@ -25,6 +25,9 @@ import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-markup.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
 import { stepInRing } from '../app/js/ui/menu-nav.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
+const translate = translator.t;
 
 const markup = () => screenPauseMarkup({
   player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTIONS_BTNS, dynLabel: () => null, t: (k) => k,
@@ -38,7 +41,7 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
   });
 
   it('[Right] a barra existe por si, com os treze ícones e a sua legenda (o ☰ primeiro; um 📷 só, ADR-0215; o idioma por último)', () => {
-    const b = quickBarMarkup();
+    const b = quickBarMarkup(translator);
     expect(b).toContain('class="pause-icons"');
     // ⚠️ The number is written literally on purpose — an icon entering or leaving the bar without anyone noticing is a
     // product decision, not a label.
@@ -72,7 +75,7 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
     // `quickBarMarkup` is a pure string: two player screens receive the SAME markup and each reflects ITS player's state
     // afterwards (colour blindness is per player). If the function kept state, the second screen would be born with
     // the first one's label.
-    expect(quickBarMarkup()).toBe(quickBarMarkup());
+    expect(quickBarMarkup(translator)).toBe(quickBarMarkup(translator));
   });
 });
 

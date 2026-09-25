@@ -319,7 +319,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 4,
+      "fanIn": 2,
       "holds": [
         "let dict",
         "let locale",
@@ -1927,33 +1927,27 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 610,
+      "codeLines": 612,
       "decisionNodes": 81,
       "maxDepth": 3,
-      "fanOut": 18,
+      "fanOut": 17,
       "globalReach": 1,
       "worstFunction": 9,
-      "statefulEdges": 1,
+      "statefulEdges": 0,
       "fanIn": 4,
       "reached": [
         "globalThis"
-      ],
-      "statefulImports": [
-        "core/i18n.ts"
       ]
     },
     "ui/pause-markup.ts": {
-      "codeLines": 63,
+      "codeLines": 64,
       "decisionNodes": 8,
       "maxDepth": 1,
-      "fanOut": 4,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 1,
-      "fanIn": 2,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "ui/reach-notice.ts": {
       "codeLines": 55,

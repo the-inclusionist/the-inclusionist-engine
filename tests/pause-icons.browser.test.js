@@ -11,6 +11,10 @@ import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import * as settingsStore from '../app/js/core/state.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+import { flagOf } from '../app/js/ui/locale-flags.js';
+const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
+const translate = translator.t;
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228: `core/run-state` moved to `game-platformer` with the tile-world stack). This
  * file never tests the round — it HANDS one to what it measures — and the three members below are exactly the ones it
@@ -50,6 +54,7 @@ function makeCtx(over = {}) {
     // 'quit' deliberately ABSENT: the menu must not offer it live (see the ADR-0161 case below).
   };
   const ctx = {
+    translator,
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
@@ -919,6 +924,7 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
   function ctxMinimo(over = {}) {
     const bars = [];
     return {
+      translator,
       getPlayers: () => [{ visual: DEFAULT_VISUAL, toggleMove: false, walkDir: 0 }],
       getNumPlayers: () => 1,
       srSay: () => {}, srAlert: () => {},
@@ -983,5 +989,23 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
     expect(botao, 'a tabela trocada depois do init não foi lida').toBeTruthy();
     botao.click();
     expect(saiu).toBe(1);
+  });
+});
+
+describe('the 🌐 reads and sets the language through the bar\'s translator (ADR-0232 D3)', () => {
+  it('🔴 [Right] the flag and the name show the translator\'s language, and a press sets the next one through it', async () => {
+    // A translator whose page is in English, and whose setter records: the bar must ask IT, never a language of its own.
+    const set = [];
+    const english = { t: translate, locale: () => 'en', setLocale: async (code) => { set.push(code); } };
+    const { api, bar } = mount(0, { translator: english });
+    api.reflectPauseIcons();
+    const globe = bar.querySelector('[data-pi="idioma"]');
+    expect(globe, 'no 🌐 on the bar — this case would measure nothing').not.toBeNull();
+    const drawn = document.createElement('span'); drawn.innerHTML = flagOf('en'); // the browser's own serialisation of the flag
+    expect(globe.innerHTML, 'the flag is not the translator\'s language').toBe(drawn.innerHTML);
+    expect(globe.getAttribute('aria-label'), 'the name is not the translator\'s language').toContain('English (United States)');
+    api.iconAct('idioma', 0);
+    await Promise.resolve();
+    expect(set, 'the 🌐 did not set the language after English through the translator').toEqual(['es']);
   });
 });

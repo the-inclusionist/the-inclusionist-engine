@@ -10,6 +10,9 @@ import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import * as state from '../app/js/core/state.js';
 import { nextCameraControl } from '../app/js/core/camera-cycle.js';
 import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
+const translate = translator.t;
 
 const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: DEFAULT_VISUAL, privateOutput: true, ...over });
 const todos = { theme: true, correction: true, holdsKeys: () => true, typography: true, clock: () => true, menus: true };
@@ -38,10 +41,10 @@ describe('the 📷 icon', () => {
     expect(iconsThatAct(todos).map((ic) => ic.k), 'no answer is no 📷').not.toContain('camera');
   });
   it('its name says the mode, and it shows as on in every mode that plays', () => {
-    expect(computeIconLabel('camera', snap({ camera: 'off' }))).toBe('Webcam: desligado');
-    expect(computeIconLabel('camera', snap({ camera: 'hands' }))).toBe('Webcam: gestos das mãos');
-    expect(computeIconLabel('camera', snap({ camera: 'face' }))).toBe('Webcam: rosto');
-    expect(computeIconLabel('camera', snap({ camera: 'eyes' }))).toBe('Webcam: olhos');
+    expect(computeIconLabel(translate, 'camera', snap({ camera: 'off' }))).toBe('Webcam: desligado');
+    expect(computeIconLabel(translate, 'camera', snap({ camera: 'hands' }))).toBe('Webcam: gestos das mãos');
+    expect(computeIconLabel(translate, 'camera', snap({ camera: 'face' }))).toBe('Webcam: rosto');
+    expect(computeIconLabel(translate, 'camera', snap({ camera: 'eyes' }))).toBe('Webcam: olhos');
     expect(computeIconVisual('camera', snap({ camera: 'off' })).on).toBe(false);
     for (const modo of ['hands', 'face', 'eyes']) expect(computeIconVisual('camera', snap({ camera: modo })).on, modo).toBe(true);
   });

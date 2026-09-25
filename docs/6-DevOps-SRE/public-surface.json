@@ -1486,6 +1486,7 @@
     "wireBarCaption"
   ],
   "ui/pause-markup.ts": [
+    "BarTranslator",
     "PauseMenuButton",
     "PauseSub",
     "ScreenPauseMarkupOpts",
