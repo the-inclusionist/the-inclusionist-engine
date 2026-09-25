@@ -50,6 +50,18 @@ describe('ui/vlibras-player — the protocol, in the order route A measured', ()
     expect(frame().tabIndex, 'the player took the keyboard from the game').toBe(-1);
   });
 
+  it('🔴 [Right] the player is handed the GLOSS the delivery wrote beside it — a template\'s value fingerspelled in its hole', async () => {
+    const vl = interpreter();
+    const first = vl.sign('Bem-vindo à escola.');
+    await until(() => { expect(methods()).toEqual(['setBaseUrl', 'playNow']); });
+    expect(received()[1].params, 'the text was spelled where the delivery had its gloss').toBe('BEM VIR ESCOLA [PONTO]');
+    frame().contentWindow.emit('counter_gloss', [3, 3]);
+    await first;
+    void vl.sign('Jogador 2 entrou!');
+    await until(() => { expect(methods()).toEqual(['setBaseUrl', 'playNow', 'playNow']); });
+    expect(received()[2].params).toBe('JOGADOR 2 ENTRAR [EXCLAMAÇÃO]');
+  });
+
   it('🔴 [Right] with a player slow to load, nothing is sent before `on_load_player` — and then the base URL goes first', async () => {
     window.fakeVlibras = { load: 'never' };
     const vl = interpreter();
@@ -187,3 +199,4 @@ describe('ui/vlibras-player — hide and dispose', () => {
 //   I9 the generation check after the load removed                      🔴 a request still waiting … is never played
 //   I10 `dispose()` not removing the frame                              🔴 `dispose()` removes the frame
 //   I11 the load timer never armed                                      🔴 a player that never loads is given up on
+//   I12 the glosses never read (`glossOf` replaced by today's rule)      🔴 the player is handed the GLOSS the delivery wrote

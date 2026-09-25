@@ -16,14 +16,15 @@
 // configuration, which only the delivery step writes. No configuration — a delivery built without `--libras`, or the engine's own
 // tests — and it answers exactly as `NO_INTERPRETER` does, so `problems` and the child hear the same «signing unavailable».
 //
-// 🔴 NOT A GLOSS YET. The player signs a GLOSS — Libras word order, in sign names — and the text the sonar found is Portuguese.
-// The real glosses come with plan item 5b (the rule-based VLibras translator, run at build time), which waits for a download
-// permission. Until then the text becomes the simplest honest thing: its words in capitals, with the accents stripped. A word
-// the delivery has no sign for — today every word, since the signs arrive with 5b — is fingerspelled by the player from the
-// letters it carries; the accents go because the player has no clip for an accented letter (📏 `Ã` measured: «Clip Ã não foi
-// encontrado»). So a deaf child sees the text spelled in Libras letters, not translated into Libras.
+// THE GLOSS. The player signs a GLOSS — Libras word order, in sign names — and the text the sonar found is Portuguese. The
+// delivery glossed the engine's and the game's texts at build time and wrote them beside the player (`glosses.json`); the
+// interpreter reads that file once, with the configuration, and hands the player the gloss `ui/libras-glosses` looks up. A text
+// the file does not cover — a delivery without it, a sentence no dictionary holds, a `{param}`'s value — becomes its words in
+// capitals with the accents stripped, which the player fingerspells. A word the delivery carries no sign for is fingerspelled
+// too, from the letters the player carries.
 import { NO_INTERPRETER, type Interpreter, type SignResult } from './vlibras.js';
 import { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER } from '../platform/heavy-catalogue.js';
+import { LIBRAS_GLOSSES_FILE, loadGlosser, provisionalGloss, type Glosser } from './libras-glosses.js';
 
 /** What the interpreter is built over. Every port is the root's. */
 export interface VlibrasPlayerPorts {
@@ -47,15 +48,6 @@ export interface VlibrasPlayerPorts {
 const PLAYER = 'PlayerManager';
 /** 📏 Measured on localhost: 3.6–3.9 s to `on_load_player`. A school machine gets many times that before it is given up on. */
 const LOAD_TIMEOUT_MS = 60_000;
-
-/**
- * The text as the player is handed it UNTIL PLAN ITEM 5b: its words in capitals, accents stripped, anything that is not a letter or
- * a digit a separator. Not a gloss — see the header.
- */
-function provisionalGloss(text: string): string {
-  return text.normalize('NFD').replace(/\p{M}+/gu, '').toUpperCase()
-    .split(/[^\p{L}\p{N}]+/u).filter(Boolean).join(' ');
-}
 
 /** The player's configuration marks a delivery that shipped it: JSON naming its data and code, never a fallback page. */
 async function playerShipped(fetchFile: VlibrasPlayerPorts['fetch'], url: string): Promise<boolean> {
@@ -96,19 +88,23 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
    * The addresses, resolved at the FIRST request and not at build: a root boots on a host whose document has no address (a
    * test's double), and an address it cannot resolve is a player it cannot find — an answer, never a failed boot.
    */
-  let where: { readonly page: string; readonly origin: string; readonly config: string; readonly signs: string } | null = null;
+  let where: {
+    readonly page: string; readonly origin: string; readonly config: string; readonly glosses: string; readonly signs: string;
+  } | null = null;
   const addresses = (): typeof where => {
     if (where) return where;
     try {
       const page = new URL(`${folder}index.html`, ports.base);
       where = { page: page.href, origin: page.origin, config: new URL('playerweb.json', page).href,
-        signs: new URL(LIBRAS_SIGNS_FOLDER, ports.base).href };
+        glosses: new URL(LIBRAS_GLOSSES_FILE, page).href, signs: new URL(LIBRAS_SIGNS_FOLDER, ports.base).href };
     } catch { /* no address to resolve against: no player can be found, and the request says so below */ }
     return where;
   };
   const loadTimeoutMs = ports.loadTimeoutMs ?? LOAD_TIMEOUT_MS;
 
   let shipped: Promise<boolean> | null = null;
+  /** The delivery's glosses, read once — alongside the player's first load, never before the player is known to be there. */
+  let glosser: Promise<Glosser> | null = null;
   let frame: HTMLIFrameElement | null = null;
   let loading: Promise<SignResult> | null = null;
   /** Hears the load's outcome while the frame is loading. */
@@ -176,17 +172,20 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
 
   return {
     sign: async (text) => {
-      const gloss = provisionalGloss(text);
-      if (!gloss) return { signed: true }; // nothing to sign is not a failure, and nothing goes to `problems`
+      // nothing to sign is not a failure, and nothing goes to `problems`
+      if (!provisionalGloss(text)) return { signed: true };
       const asked = generation;
       const at = addresses();
       if (!at || !(await (shipped ??= playerShipped(ports.fetch, at.config)))) {
         return NO_INTERPRETER.sign(text);
       }
       if (overtaken(asked)) return released();
+      const glossing = (glosser ??= loadGlosser(ports.fetch, at.glosses));
       const ready = await load(at);
       if (!ready.signed) return ready;
+      const glossOf = await glossing;
       if (overtaken(asked) || !frame) return released();
+      const gloss = glossOf(text) || provisionalGloss(text);
       frame.hidden = false;
       // 📌 A new press replaces what was being signed — the Dev: the sonar signs what is on screen, not a queue. The one it
       // replaced is not a failure: the child asked again.
