@@ -340,7 +340,8 @@ async function listenForAnswer(): Promise<void> {
   try {
     const heard = await motor.reading.listen();
     listening = false;
-    const chosen = heardAlternative(heard.text, p.alternativas);
+    // the options' WORDS in the child's language, never their keys: she says «galinha», not «quiz.p1.b»
+    const chosen = heardAlternative(heard.text, p.alternativas.map((a) => translate(a)));
     if (chosen !== null) { answer(chosen); return; }
     const texto = heard.text.trim();
     sayInStatement(texto ? translate('quiz.naoEntendi', { texto }) : translate('quiz.ouviNada'));

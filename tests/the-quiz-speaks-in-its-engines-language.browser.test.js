@@ -97,6 +97,18 @@ describe('the demo quiz, in its engine\'s language', () => {
     expect(alerts.join(' | '), 'the failure was said with a raw key').not.toMatch(RAW_KEY);
   });
 
+  it('🔴 [Right] saying an option\'s WORD answers with that option (ADR-0216)', async () => {
+    // The options are dictionary keys since 2026-09-23; what the child says is a word of her language. Comparing the heard
+    // text with the KEYS (`quiz.p1.b`) meant no spoken answer could ever match.
+    const word = document.querySelector('#quiz-app button[data-alt="1"]').textContent.trim();
+    expect(word, 'the option has no word — this case would measure nothing').not.toMatch(RAW_KEY);
+    await listenHearing({ text: `é ${word.toLowerCase()}` });
+    // Answered, the quiz draws the NEXT question; not understood, it only writes a line where the statement is.
+    const optionNow = () => document.querySelector('#quiz-app button[data-alt="1"]')?.textContent.trim();
+    for (let i = 0; i < 60 && optionNow() === word; i++) await esperar(50);
+    expect(optionNow(), `saying «${word}» did not answer the question`).not.toBe(word);
+  });
+
   it('🔴 [Right] the help\'s slides — how to play, then each position — are written in words', () => {
     regiao.focus();
     tecla('KeyF'); // the pause card
@@ -125,7 +137,7 @@ describe('the demo quiz, in its engine\'s language', () => {
   });
 
   it('🔴 [Right] the answer and the end are said in words', async () => {
-    for (let q = 0; q < 3; q++) {
+    for (let q = 0; q < 3 && document.querySelector('#quiz-app button[data-alt="0"]'); q++) {
       alerts.length = 0;
       document.querySelector('#quiz-app button[data-alt="0"]').click();
       await esperar(100); // the alert is written on the next frame
