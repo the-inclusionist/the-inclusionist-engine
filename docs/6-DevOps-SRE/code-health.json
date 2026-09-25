@@ -27,12 +27,8 @@
   },
   "stateful": [
     "boot/create-game.ts",
-    "consumer-quiz/main-quiz.ts",
-    "core/a11y-sr.ts",
     "core/dom-query.ts",
     "core/i18n.ts",
-    "core/loop.ts",
-    "core/rng.ts",
     "input/keyboard.ts",
     "input/pad-defaults.ts",
     "input/pad-wizard.ts",
@@ -42,30 +38,23 @@
     "platform/audio.ts",
     "platform/kokoro-runtime.ts",
     "platform/speech.ts",
-    "platform/tts.ts",
-    "ui/debug-panel.ts",
-    "ui/fonts.ts",
-    "ui/mount-panel.ts",
-    "ui/pause-icons.ts",
-    "ui/vlibras.ts"
+    "platform/tts.ts"
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2130,
+      "codeLines": 2147,
       "decisionNodes": 281,
       "maxDepth": 4,
-      "fanOut": 90,
+      "fanOut": 89,
       "globalReach": 1,
       "worstFunction": 70,
-      "statefulEdges": 15,
+      "statefulEdges": 9,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
       ],
       "statefulImports": [
-        "core/a11y-sr.ts",
         "core/i18n.ts",
-        "core/loop.ts",
         "input/keyboard.ts",
         "input/pad-defaults.ts",
         "input/pad-wizard.ts",
@@ -73,56 +62,31 @@
         "input/touch.ts",
         "platform/audio-sonar.ts",
         "platform/audio.ts",
-        "platform/tts.ts",
-        "ui/fonts.ts",
-        "ui/mount-panel.ts",
-        "ui/pause-icons.ts",
-        "ui/vlibras.ts"
+        "platform/tts.ts"
       ]
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 234,
-      "decisionNodes": 36,
+      "codeLines": 245,
+      "decisionNodes": 35,
       "maxDepth": 2,
-      "fanOut": 6,
-      "globalReach": 1,
+      "fanOut": 5,
+      "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 0,
-      "reached": [
-        "document"
-      ],
-      "holds": [
-        "let atual",
-        "let correctCount",
-        "let foco",
-        "let listening",
-        "let motor",
-        "let narratedQuestion"
-      ],
       "statefulImports": [
-        "boot/create-game.ts",
-        "core/a11y-sr.ts"
+        "boot/create-game.ts"
       ]
     },
     "core/a11y-sr.ts": {
-      "codeLines": 5,
-      "decisionNodes": 2,
+      "codeLines": 27,
+      "decisionNodes": 3,
       "maxDepth": 1,
-      "fanOut": 1,
-      "globalReach": 1,
+      "fanOut": 0,
+      "globalReach": 0,
       "worstFunction": 2,
-      "statefulEdges": 1,
-      "fanIn": 2,
-      "reached": [
-        "requestAnimationFrame"
-      ],
-      "holds": [
-        "let _vlibrasSay"
-      ],
-      "statefulImports": [
-        "core/dom-query.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "core/accessible-label.ts": {
       "codeLines": 9,
@@ -232,7 +196,7 @@
       "globalReach": 1,
       "worstFunction": 2,
       "statefulEdges": 0,
-      "fanIn": 2,
+      "fanIn": 1,
       "reached": [
         "globalThis"
       ]
@@ -306,17 +270,14 @@
       ]
     },
     "core/loop.ts": {
-      "codeLines": 21,
+      "codeLines": 19,
       "decisionNodes": 3,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 5,
+      "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "holds": [
-        "let registeredNotice"
-      ]
+      "fanIn": 0
     },
     "core/pause-icon-catalogue.ts": {
       "codeLines": 22,
@@ -339,18 +300,14 @@
       "fanIn": 3
     },
     "core/rng.ts": {
-      "codeLines": 28,
+      "codeLines": 22,
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
       "statefulEdges": 0,
-      "fanIn": 0,
-      "holds": [
-        "singleton decorationRng",
-        "singleton sharedRng"
-      ]
+      "fanIn": 0
     },
     "core/route.ts": {
       "codeLines": 97,
@@ -1471,19 +1428,14 @@
       "fanIn": 2
     },
     "ui/debug-panel.ts": {
-      "codeLines": 186,
+      "codeLines": 187,
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 0,
-      "globalReach": 3,
-      "worstFunction": 8,
+      "globalReach": 0,
+      "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 0,
-      "reached": [
-        "document",
-        "location",
-        "window"
-      ]
+      "fanIn": 0
     },
     "ui/dom.ts": {
       "codeLines": 15,
@@ -1546,10 +1498,7 @@
       "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 3,
-      "holds": [
-        "mutated FONT_BY_KEY"
-      ]
+      "fanIn": 3
     },
     "ui/game-options.ts": {
       "codeLines": 142,
@@ -1688,11 +1637,8 @@
       "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 1,
-      "fanIn": 2,
-      "statefulImports": [
-        "ui/pause-icons.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "ui/mobility-choices.ts": {
       "codeLines": 22,
@@ -1725,18 +1671,14 @@
       "fanIn": 3
     },
     "ui/mount-panel.ts": {
-      "codeLines": 60,
-      "decisionNodes": 7,
+      "codeLines": 54,
+      "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "holds": [
-        "mutated alreadyListening",
-        "mutated redrawOf"
-      ]
+      "fanIn": 1
     },
     "ui/panel-shell.ts": {
       "codeLines": 80,
@@ -1769,17 +1711,14 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 612,
+      "codeLines": 611,
       "decisionNodes": 81,
       "maxDepth": 3,
       "fanOut": 17,
-      "globalReach": 1,
+      "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
-      "fanIn": 4,
-      "reached": [
-        "globalThis"
-      ]
+      "fanIn": 4
     },
     "ui/pause-markup.ts": {
       "codeLines": 64,
@@ -1891,11 +1830,8 @@
       "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "ui/fonts.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/settings-visual.ts": {
       "codeLines": 253,
@@ -1914,11 +1850,8 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 1,
-      "fanIn": 0,
-      "statefulImports": [
-        "ui/pause-icons.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "ui/simulation-list.ts": {
       "codeLines": 58,
@@ -1987,11 +1920,8 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 6,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "ui/fonts.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/visual-axes-panel.ts": {
       "codeLines": 17,
@@ -2014,27 +1944,14 @@
       "fanIn": 1
     },
     "ui/vlibras.ts": {
-      "codeLines": 37,
-      "decisionNodes": 10,
+      "codeLines": 50,
+      "decisionNodes": 11,
       "maxDepth": 3,
       "fanOut": 0,
-      "globalReach": 2,
-      "worstFunction": 7,
+      "globalReach": 0,
+      "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "document",
-        "window"
-      ],
-      "holds": [
-        "let _onLibrasChange",
-        "let _store",
-        "let _vlBusyUntil",
-        "let _vlNext",
-        "let _vlNode",
-        "let _vlOpen",
-        "let librasOpen"
-      ]
+      "fanIn": 1
     },
     "ui/voice-control.ts": {
       "codeLines": 110,
@@ -2063,11 +1980,8 @@
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "ui/pause-icons.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     }
   }
 }

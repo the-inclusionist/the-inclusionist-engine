@@ -45,6 +45,7 @@
       "withIndex?"
     ],
     "interface Engine": [
+      "alert",
       "applyVisionFilter",
       "captionSound",
       "controller",
@@ -55,10 +56,12 @@
       "dispose",
       "gameSpeed",
       "keyboard",
+      "libras",
       "localeReady",
       "lq",
       "measureFlashes",
       "menuIndexOn",
+      "mirrorAnnouncements",
       "mount",
       "nav",
       "onFailure",
@@ -68,6 +71,7 @@
       "problems",
       "reach",
       "reading",
+      "say",
       "scenes",
       "settings",
       "sonar",
@@ -76,6 +80,23 @@
       "unmount"
     ],
     "type CartridgeHooks": "Omit<GameHalf, 'declaration'>"
+  },
+  "consumer-quiz/main-quiz.ts": {
+    "interface QuizHost": [
+      "doc",
+      "win"
+    ]
+  },
+  "core/a11y-sr.ts": {
+    "interface AnnouncerPorts": [
+      "doc",
+      "raf"
+    ],
+    "interface Announcer": [
+      "alert",
+      "mirrorTo",
+      "say"
+    ]
   },
   "core/accessible-label.ts": {
     "interface LabelledElement": [
@@ -306,7 +327,7 @@
   },
   "core/loop.ts": {
     "interface LoopOptions": [
-      "onFailure?",
+      "onFailure",
       "speed"
     ]
   },
@@ -2060,10 +2081,12 @@
       "ANIM",
       "JUICE",
       "TUNE",
+      "doc",
+      "expose",
       "onFrame?",
       "sampleCharacter?",
       "saveJuice",
-      "search?"
+      "search"
     ]
   },
   "ui/drawing-problems.ts": {
@@ -2366,6 +2389,7 @@
     ],
     "interface MountPanelCtx": [
       "host",
+      "localeOn",
       "overlays"
     ],
     "interface MountPanelSpec": [
@@ -2485,7 +2509,7 @@
       "clock?",
       "cycleTypography?",
       "declaredPositions?",
-      "doc?",
+      "doc",
       "dynLabel?",
       "explainIcon?",
       "explainItem?",
@@ -3023,6 +3047,19 @@
     "type RGB": "readonly [number, number, number]"
   },
   "ui/vlibras.ts": {
+    "interface LibrasPorts": [
+      "doc",
+      "now",
+      "store",
+      "win"
+    ],
+    "interface Libras": [
+      "isOpen",
+      "onChange",
+      "say",
+      "tick",
+      "toggle"
+    ],
     "type LibrasStore": "Pick<Store, 'getBool' | 'setBool'>"
   },
   "ui/voice-control.ts": {

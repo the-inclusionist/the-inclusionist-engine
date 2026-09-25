@@ -8,7 +8,9 @@
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [
+    "QuizHost",
     "answerText",
+    "bootQuiz",
     "endText",
     "heardAlternative",
     "narrationOnDraw",
@@ -17,9 +19,9 @@
     "questionNarration"
   ],
   "core/a11y-sr.ts": [
-    "setVlibrasSay",
-    "srAlert",
-    "srSay"
+    "Announcer",
+    "AnnouncerPorts",
+    "createAnnouncer"
   ],
   "core/accessible-label.ts": [
     "LabelledElement",
@@ -169,7 +171,6 @@
   ],
   "core/loop.ts": [
     "LoopOptions",
-    "registerCrashNotice",
     "startLoop"
   ],
   "core/pause-icon-catalogue.ts": [
@@ -183,12 +184,7 @@
   "core/rng.ts": [
     "DEFAULT_SEED",
     "Rng",
-    "createRng",
-    "decorationRng",
-    "randInt",
-    "reseed",
-    "rnd",
-    "shuffle"
+    "createRng"
   ],
   "core/route.ts": [
     "Route",
@@ -1647,14 +1643,10 @@
     "rgbToHex"
   ],
   "ui/vlibras.ts": [
+    "Libras",
+    "LibrasPorts",
     "LibrasStore",
-    "initLibras",
-    "librasOpen",
-    "setOnLibrasChange",
-    "toggleLibras",
-    "vlTick",
-    "vlibrasOpen",
-    "vlibrasSay"
+    "createLibras"
   ],
   "ui/voice-control.ts": [
     "VOICE_PULSE_MS",

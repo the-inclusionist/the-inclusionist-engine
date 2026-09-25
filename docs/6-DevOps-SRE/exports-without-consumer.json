@@ -16,9 +16,6 @@
     ],
     "ui/title.ts": [
       "TITLE_MENU_IDS_ORDERED"
-    ],
-    "ui/vlibras.ts": [
-      "vlibrasSay"
     ]
   }
 }
