@@ -5,7 +5,7 @@
 // decides WHEN a heard word becomes a press. Nothing here opens a microphone or loads a model — the same division that let the
 // gaze cycle be measured without a camera.
 //
-// 🎯 THE WORDS ARE THE DEV'S, checked by him against what games use (racing R2 accelerate / L2 brake, shooters L2 aim / R2 fire)
+// 🎯 THE WORDS ARE THE DEV'S, checked by the Dev against what games use (racing R2 accelerate / L2 brake, shooters L2 aim / R2 fire)
 // and then run in the lab's bar protocol in the three languages: pt 23/23, es 24/24, en 24/24 detected, all rated «ok».
 // A position answers to ANY of its words, and L1/R1 are the ship's sides — his adaptation.
 //

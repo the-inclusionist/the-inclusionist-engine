@@ -4,7 +4,7 @@
 // Which exported names does nothing in THIS repository import — no engine module, no engine test, no script
 // (ADR-0170 §3, issue #164)?
 //
-// 🔴 IT STOPPED ASKING THE GAMES ON 2026-09-22, and the correction is the Dev's, in his own words: «ESQUEÇA QUE VOCÊ VÊ
+// 🔴 IT STOPPED ASKING THE GAMES ON 2026-09-22, and the correction is the Dev's, in their own words: «ESQUEÇA QUE VOCÊ VÊ
 // CONSUMIDORES! NENHUMA ENGINE É FEITA COM REPOSITÓRIOS DE CONSUMIDORES VISÍVEIS! SE ESSA ENGINE SOBE NUM REPOSITÓRIO,
 // NEM VERÍAMOS QUEM A CONSOME!» He is right, and the price of the old rule is measured: the ledger could not be
 // regenerated while a sibling repository lagged behind, so it was edited BY HAND three times in two days, and that is

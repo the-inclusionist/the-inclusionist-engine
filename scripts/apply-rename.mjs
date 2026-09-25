@@ -5,7 +5,7 @@
 //
 // The map (`scripts/rename-map.json`) is the source of both the rename and the migration table, so a name cannot be renamed
 // without being written down — which a hand-typed table cannot promise. Nothing outside this repository is touched: the games
-// get the table, and the Dev adapts each one when he goes to it (his decision, 2026-09-21).
+// get the table, and the Dev adapts each one when they go to it (the Dev's decision, 2026-09-21).
 //
 // Use: `node scripts/apply-rename.mjs <layer>` · `--dry` lists what it would change and writes nothing.
 //
@@ -46,7 +46,7 @@ export const readMap = () => JSON.parse(readFileSync(join(ROOT, MAP), 'utf8'));
 const LEFT_OUT = [
   MAP, 'scripts/apply-rename.mjs', 'tests/rename-map.node.test.js', 'docs/6-DevOps-SRE/Breaking-Changes.md',
   'scripts/word-lists.json', 'docs/6-DevOps-SRE/language-debt.json',
-  // 🔴 THE DEV'S OWN FILES AND THE PUBLISHED HISTORY. `research/catalogo_tipografico.json` is his and is not to be edited from
+  // 🔴 THE DEV'S OWN FILES AND THE PUBLISHED HISTORY. `research/catalogo_tipografico.json` is the Dev's and is not to be edited from
   // here at all; `CHANGELOG.md` is what was released, and a released line does not get a new spelling.
   'CHANGELOG.md', '.release-it.json',
 ];

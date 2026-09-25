@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A VOICE NEVER ENTERS THE TREE — recordings are personal data, and a commit is public and permanent.
 //
-// The Dev records himself so the reading and the command tests have real speech to measure (`research/`, ADR-0191). Those files are
+// The Dev records their own voice so the reading and the command tests have real speech to measure (`research/`, ADR-0191). Those files are
 // HIS VOICE: a biometric of a named person, which the project's own pillars would refuse to collect from a child and must equally
 // refuse to publish from him. They are read where they sit and never tracked.
 //

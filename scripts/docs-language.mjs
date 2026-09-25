@@ -12,7 +12,7 @@
  *   · fenced code blocks (``` or ~~~, at any indentation, inside a blockquote too) are not prose;
  *   · inline code between backticks of any length is not prose;
  *   · URLs, link targets and reference definitions are addresses, not prose;
- *   · the Dev's own words between «» stay in the language he said them in, across lines, until the paragraph ends.
+ *   · the Dev's own words between «» stay in the language they said them in, across lines, until the paragraph ends.
  * It is a heuristic that UNDERCOUNTS (short Portuguese lines, headings of two words), so the gate is a ratchet and
  * never a verdict — see the classifier's header for how it was sampled.
  *

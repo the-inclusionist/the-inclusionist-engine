@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PLAYING BY VOICE: THE WORDS AND WHEN THEY PRESS (ADR-0204 erratum; issues #184, #190).
 //
-// The vocabulary is the Dev's, checked by him against what games use and then run in the lab's bar protocol in three languages
+// The vocabulary is the Dev's, checked by the Dev against what games use and then run in the lab's bar protocol in three languages
 // (pt 23/23, es 24/24, en 24/24 detected, all «ok»). What is measured here is that the table SAYS what he decided, that the
 // closed grammar is built from it, and the rule that decides when a growing partial becomes a press — which is where a child
 // either gets her command in a quarter of a second or loses it.
