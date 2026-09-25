@@ -97,8 +97,11 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  * · `--reading <pt|en|es>`, repeatable, for a game that declares `uses: { reading: true }`: each language named puts ITS model in
  *   the delivery (pt 378 MiB, en 162, es 310). A delivery for a school that reads in one language carries one.
  * · `--commands <pt|en|es>`, repeatable: the voice COMMANDS (issue #184), 31–39 MiB a language plus 3.1 MiB of runtime. No game
- *   declares this one — saying «menu» is a way into the controller, not a feature (ADR-0111) — so it is the DELIVERY that says
- *   which languages it serves. Without it a child who speaks is told the delivery carries no model for her language.
+ *   declares this one — saying «menu» is a way into the controller, not a feature (ADR-0111). WITHOUT THE FLAG THE DELIVERY
+ *   CARRIES EVERY LANGUAGE the catalogue has a command model for — pt, en and es, 108 MiB (ADR-0225 erratum, the Dev: «A entrega
+ *   leva as três línguas.») — because the child can switch language mid-game and her model must already be there. The flag
+ *   NARROWS: the languages named, and only those; `--commands none` carries no command model at all. A language left out is
+ *   said to the child who speaks it, and named in `problems` with this fix.
  * · `--libras`: the Libras player deaf mode's interpreter drives (ADR-0234, route A) — the four published VLibras files, 19.3 MiB,
  *   and then the player page with the patched framework (`scripts/vlibras-player.mjs`). No game declares it: deaf mode is the
  *   person's, like speaking is, so the DELIVERY says whether it can sign. Without it the sonar in deaf mode says «signing
@@ -129,6 +132,30 @@ export function argumentosDaEntrega(args, ambiente = process.env) {
     base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
 }
 
+/**
+ * THE SPOKEN LANGUAGES A DELIVERY CARRIES: those `--commands` named (less `none`, which names nothing), or — when the flag was
+ * not given — every language the catalogue has a command model for (ADR-0225 erratum). `languageOf` is the catalogue's
+ * `commandsLanguageOf`, so a fourth language with a model is carried by default the day it enters the catalogue.
+ */
+export function commandLanguagesOfTheDelivery(asked, catalogue, languageOf) {
+  if (asked.length) return asked.filter((lingua) => lingua !== 'none');
+  return [...new Set(catalogue.map((p) => languageOf(p.id)).filter(Boolean))];
+}
+
+/**
+ * THE IDS A DELIVERY CARRIES, from the command's answers. One pass per reading language, because the start asks for ONE and the
+ * delivery may hold several; the spoken languages go in one list, as the start asks for them.
+ */
+export function idsOfTheDelivery({ kokoro, reading, commands, libras }, { heavyAtBoot, catalogue, commandsLanguageOf }) {
+  const spoken = commandLanguagesOfTheDelivery(commands, catalogue, commandsLanguageOf);
+  return [...new Set([
+    ...heavyAtBoot({ kokoro }),
+    ...reading.flatMap((lingua) => heavyAtBoot({ kokoro: false, reading: lingua })),
+    ...heavyAtBoot({ kokoro: false, commands: spoken }),
+    ...(libras ? heavyAtBoot({ kokoro: false, libras: true }) : []),
+  ])];
+}
+
 /** A `.env` beside the build, if there is one: Node reads it into `process.env`, and the command line still wins. */
 export function carregarEnv(caminho = join(process.cwd(), '.env'), carregar = process.loadEnvFile) {
   try { if (existsSync(caminho)) carregar.call(process, caminho); return true; } catch { return false; }
@@ -143,13 +170,13 @@ if (executado) {
     try { console.log(`the Libras glosser's environment is ready: ${setUpGlosser()}`); process.exit(0); }
     catch (e) { console.error(e instanceof Error ? e.message : String(e)); process.exit(1); }
   }
-  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]… [--libras] [--libras-texts <file>]… | --libras-setup'); process.exit(2); }
+  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… | --libras-setup'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
   // 📌 THE GLOSSES FIRST, before a byte is downloaded: a build machine with no glosser learns it in a second, not after 19 MiB
-  const { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
+  const { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER, commandsLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
   let librasSigns = [];
   if (libras) {
     const { LIBRAS_GLOSSES_FILE } = await import(new URL('../dist-pkg/ui/libras-glosses.js', import.meta.url).href);
@@ -175,13 +202,10 @@ if (executado) {
       process.exit(1);
     }
   }
-  // one pass per language, because the start asks for ONE and the delivery may hold several
-  const ids = [...new Set([
-    ...heavyAtBoot({ kokoro }),
-    ...reading.flatMap((lingua) => heavyAtBoot({ kokoro: false, reading: lingua })),
-    ...commands.flatMap((lingua) => heavyAtBoot({ kokoro: false, commands: lingua })),
-    ...(libras ? heavyAtBoot({ kokoro: false, libras: true }) : []),
-  ])];
+  const ids = idsOfTheDelivery({ kokoro, reading, commands, libras },
+    { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf });
+  const spoken = commandLanguagesOfTheDelivery(commands, HEAVY_FILES, commandsLanguageOf);
+  console.log(`commands  ${spoken.length ? spoken.join(', ') : 'none'}${commands.length ? '' : ' (every language, the default)'}`);
   if (base) console.log(`base: ${base}`);
   const { ok, linhas, licences } = await levarPesadosParaEntrega({
     destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf,

@@ -382,8 +382,8 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
 
   /**
    * 🔴 THE COMMAND MODELS ARE NOT A GAME'S TO DECLARE (issue #184; ADR-0111). Saying «menu» instead of pressing it is a way INTO
-   * the controller, like the camera and the gaze, and a cartridge does not get to close one. What decides is the DELIVERY, which
-   * says which languages it serves — 31–39 MiB each, so not all three.
+   * the controller, like the camera and the gaze, and a cartridge does not get to close one. What decides is the LANGUAGES
+   * asked: one, as below, or the list the root asks for (the case after).
    */
   it('🔴 [Right] the command model of the child\'s language, with the runtime that loads it, and no other language', () => {
     const ids = heavyAtBoot({ kokoro: false, commands: 'pt-BR' });
@@ -394,9 +394,39 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     for (const id of runtime) expect(ids, `${id} left out — 32 MiB of model and nothing to load it with`).toContain(id);
   });
 
+  /**
+   * 🔴 A LIST OF LANGUAGES, THE FIRST ONE'S MODEL FIRST (ADR-0225 erratum; the Dev: «A entrega leva as três línguas.»). The root
+   * asks for every language the page can switch to, so a switch mid-game finds its model kept; and the download is one file at a
+   * time, so the order of the list is who waits — the child's language is named first, and her model must come first.
+   */
+  it('🔴 [Right] a list asks for every listed language\'s model, in the list\'s order, with the runtime once', () => {
+    const ids = heavyAtBoot({ kokoro: false, commands: ['es-MX', 'pt', 'en', 'es'] });
+    expect(ids.filter((id) => id.startsWith('commands:model:')), 'the models are not the three, in the order asked')
+      .toEqual(['commands:model:es', 'commands:model:pt', 'commands:model:en']);
+    const runtime = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('commands:runtime'));
+    expect(ids.filter((id) => id.startsWith('commands:runtime')), 'the runtime is not there, once').toEqual(runtime);
+    expect(heavyAtBoot({ kokoro: false, commands: ['en'] }).filter((id) => id.startsWith('commands:model:')))
+      .toEqual(['commands:model:en']);
+  });
+
+  it('🔴 [Right] the download follows the order it is given — the child\'s model is fetched before the others', async () => {
+    const f = cacheFalsa();
+    const pedidos = [];
+    const buscar = async (u) => { pedidos.push(urlDe(u)); return resposta(urlDe(u)); };
+    const ordem = ['commands:model:es', 'commands:model:pt', 'commands:model:en'];
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl, only: ordem });
+    expect(r.map((x) => x.id), 'the reports are not in the order asked').toEqual(ordem);
+    expect(pedidos, 'the fetches are not in the order asked').toEqual(ordem.map((id) => HEAVY_FILES.find((p) => p.id === id).url));
+  });
+
+  // MUTATIONS CHECKED for the list (ADR-0225 erratum), both red: the models left in catalogue order (the child's language no
+  // longer first) · `downloadHeavy` going back to the catalogue's order instead of the order `only` gives. The root asking for
+  // the boot language alone again is red in `kokoro-in-the-voice.browser.test.js`, the case that watches what the start fetches.
+
   it('🔴 [Zero] a delivery that serves no spoken language downloads neither a model nor the runtime', () => {
     // The runtime alone is 3.1 MiB that could never hear a word: it is only useful beside a model.
-    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, commands: null }, { kokoro: false, reading: 'pt' }]) {
+    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, commands: null }, { kokoro: false, commands: [] },
+      { kokoro: false, reading: 'pt' }]) {
       expect(heavyAtBoot(portas).filter((id) => id.startsWith('commands:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
     }
   });

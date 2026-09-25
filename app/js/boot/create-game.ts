@@ -3754,12 +3754,14 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
     // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
     void downloadHeavy({
-      // 📌 AND THE COMMAND MODEL IS ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
-      // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). A delivery built without
-      // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
+      // 📌 AND THE COMMAND MODELS ARE ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
+      // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). ONE PER LANGUAGE THE PAGE
+      // CAN SWITCH TO, the child's first (ADR-0225 erratum): a language changed mid-game, offline the next day, must find its
+      // model kept. A language the delivery's `--commands` left out fails quietly here, and the transport says so when she speaks.
       // 📌 The Libras player only while deaf mode is on (ADR-0234): 19.3 MiB a child who never asks for signing does not pay.
       only: heavyAtBoot({
-        kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47(), libras: deafMode.isOn(),
+        kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null,
+        commands: [bcp47(), ...i18nObject.availableLocales()], libras: deafMode.isOn(),
       }),
       onProgress: o.onHeavyProgress,
       cacheStorage: heavyCaches, fetch: win.fetch, digest: sha256With(win.crypto?.subtle), base: doc.baseURI,

@@ -1779,8 +1779,8 @@ describe('createGame num documento de verdade', () => {
   });
 
   /*
-   * 🔴 SWITCHED TO A LANGUAGE WHOSE COMMAND MODEL IS NOT IN THE DELIVERY (ADR-0225, ADR-0169). The heavy files are chosen at
-   * boot for the boot language, so the flag can reach a language the delivery never carried. The child hears why the 👄 went
+   * 🔴 SWITCHED TO A LANGUAGE WHOSE COMMAND MODEL IS NOT IN THE DELIVERY (ADR-0225, ADR-0169). A delivery whose `--commands`
+   * list narrowed it — the test page carries none — lets the flag reach a language it never carried. The child hears why the 👄 went
    * off; `problems` names the missing model AND the fix for that language — the path runs from `i18n:change` on the window
    * through `languageChanged` to the root's diagnostic channel, which the node double cannot walk (it has no microphone, so
    * the 👄 is never mounted there).
@@ -1800,7 +1800,7 @@ describe('createGame num documento de verdade', () => {
       const line = said();
       expect(line, 'no line in `problems` explains why the 👄 did not start').toBeTruthy();
       expect(line, 'the line does not name the model of the new language').toContain('commands:model:en');
-      expect(line, 'the line does not say how to put that model in the delivery').toContain('npx inclusionist-heavy --commands en');
+      expect(line, 'the line does not say how to put that model in the delivery').toContain('`--commands en` in its list');
       // `srAlert` empties the region and writes the sentence on the NEXT frame (`core/a11y-sr`), so it is read a frame later.
       await new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); });
       expect(document.querySelector('#sr-alert').textContent, 'the child did not hear why')

@@ -25,13 +25,28 @@ delivery; the page asks for it at `heavy/<host><path>` on its own origin and the
 **What goes into a delivery is what the game declared** (ADR-0216 §3), said to the build as flags:
 
 ```powershell
-npx inclusionist-heavy dist                                # a game that neither speaks nor listens: vision only
+npx inclusionist-heavy dist                                # vision + the voice commands in pt, en and es
 npx inclusionist-heavy dist --kokoro                       # uses: { neuralVoice: true }  → +372 MiB
 npx inclusionist-heavy dist --reading pt --reading en    # uses: { reading: true }      → +378 MiB, +162 MiB
+npx inclusionist-heavy dist --commands pt                  # the voice commands narrowed to Portuguese
+npx inclusionist-heavy dist --commands none                # no voice commands at all
 ```
 
 `--reading` takes a language and repeats, because a reading model is **per language** (pt 378 MiB, en 162, es 310) and a school
 reads in one or two of them, not three. At run time the start asks for the one the interface booted in, and for nothing else.
+
+**The voice commands are carried in the three languages by default** (ADR-0225 erratum, the Dev: «A entrega leva as três
+línguas.»). No game declares them — saying «menu» is a way into the controller (ADR-0111) — and a child can switch language
+mid-game, so the delivery carries every language the catalogue has a Vosk model for, and the start asks for **all of them**,
+the child's own first, so a switch the next day, offline, finds its model already kept. `--commands <language>` repeats and
+**narrows**: the languages named, and only those — so a school that adds a language to a narrowed delivery names both, since
+`--commands es` alone would leave the Portuguese out. `--commands none` carries no command model and no Vosk runtime, which was
+the default before. A language the delivery did not carry is still a line of `problems` when the child speaks it, naming this fix.
+📏 **Measured on 2026-09-25**, building from the local staging tree with `--base`: the default delivery is **116,455,039 bytes**
+(111.1 MiB) larger than one built with `--commands none` — the three models (113,224,199 bytes: pt 32,358,733, en 41,116,539, es
+39,748,927), the runtime (3,197,688) and two licence folders with the notice lines (33,152) — and **80,865,466 bytes** (77.1 MiB)
+larger than one built with `--commands pt`. The reading models do not follow: their three-language default waits on the Dev
+(ADR-0225 erratum), so `--reading` still carries only what it names.
 
 **Where the build reads from is a choice** (the Dev, 2026-09-21). Unset, it is upstream. With a base, each file comes from a
 mirror — the project's Cloudflare, a school's own server, or a folder on the build machine, which needs no network at all:

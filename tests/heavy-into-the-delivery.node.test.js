@@ -13,8 +13,11 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { levarPesadosParaEntrega, argumentosDaEntrega } from '../scripts/heavy-into-the-delivery.mjs';
-import { deliveryPath } from '../app/js/platform/heavy.js';
+import {
+  levarPesadosParaEntrega, argumentosDaEntrega, idsOfTheDelivery, commandLanguagesOfTheDelivery,
+} from '../scripts/heavy-into-the-delivery.mjs';
+import { deliveryPath, heavyAtBoot, HEAVY_FILES } from '../app/js/platform/heavy.js';
+import { commandsLanguageOf } from '../app/js/platform/heavy-catalogue.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
 // the ids carry real group prefixes (`voz:kokoro`, `visao`): an id with no licence group is refused (heavy-licences test)
@@ -169,6 +172,37 @@ describe('the script, reachable by a cartridge', () => {
    * ⚠️ `--reading` eats the token after it, like `--base`: without that, `pt` would be read as the delivery folder, which is the
    * defect a surviving mutation already caught once on the other flag.
    */
+  /**
+   * 🔴 THE DELIVERY CARRIES THE THREE SPOKEN LANGUAGES BY DEFAULT (ADR-0225 erratum; the Dev: «A entrega leva as três línguas.»).
+   * A delivery built for the boot language alone met a child who switched mid-game with no model for her new language. The
+   * flag still NARROWS — the languages named, and only those — and `none` keeps the old default of no command model at all.
+   * ⚠️ Measured on the ids the command writes, through the real `heavyAtBoot` and the real catalogue: the arguments alone are
+   * the same `[]` with or without this decision, so a case on them would see nothing.
+   */
+  it('🔴 [Right] without `--commands` the delivery carries the pt, en and es command models; the flag narrows, `none` empties', () => {
+    const ids = (args) => idsOfTheDelivery(argumentosDaEntrega(args, {}), { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf });
+    const modelos = (args) => ids(args).filter((id) => id.startsWith('commands:model:')).sort();
+    const runtime = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('commands:runtime'));
+    expect(runtime.length, 'the catalogue has no command runtime: the case would pass empty').toBeGreaterThan(0);
+
+    expect(modelos(['dist']), 'the default delivery does not carry the three languages').toEqual(['commands:model:en', 'commands:model:es', 'commands:model:pt']);
+    for (const id of runtime) expect(ids(['dist']), `${id} left out of the default delivery`).toContain(id);
+    expect(modelos(['dist', '--kokoro']), 'the npm script\'s delivery lost a language').toHaveLength(3);
+
+    expect(modelos(['dist', '--commands', 'pt']), 'an explicit list did not narrow').toEqual(['commands:model:pt']);
+    expect(modelos(['--commands', 'es', '--commands', 'pt', 'dist'])).toEqual(['commands:model:es', 'commands:model:pt']);
+    expect(ids(['dist', '--commands', 'none']).filter((id) => id.startsWith('commands:')), '`none` still carried a command file')
+      .toEqual([]);
+  });
+
+  it('📌 [Right] the default is every language the catalogue has a command model for — not a list written here', () => {
+    expect(commandLanguagesOfTheDelivery([], HEAVY_FILES, commandsLanguageOf)).toEqual(['pt', 'en', 'es']);
+    const comQuarta = [...HEAVY_FILES, { id: 'commands:model:fr', url: null }];
+    expect(commandLanguagesOfTheDelivery([], comQuarta, commandsLanguageOf), 'a fourth language with a model is left out')
+      .toEqual(['pt', 'en', 'es', 'fr']);
+    expect(commandLanguagesOfTheDelivery(['en', 'none'], HEAVY_FILES, commandsLanguageOf)).toEqual(['en']);
+  });
+
   it('🔴 [Right] each `--reading <language>` adds its model, and its value is never taken for the folder', () => {
     expect(argumentosDaEntrega(['dist'], {}).reading, 'a language appeared where nobody asked for one').toEqual([]);
     expect(argumentosDaEntrega(['dist', '--reading', 'pt'], {}).reading).toEqual(['pt']);
@@ -215,4 +249,8 @@ describe('the script, reachable by a cartridge', () => {
 //   N5 run detection by the shim's name                  🔴 stops with the usage (a direct `node` run is not recognised)
 //   N6 `--kokoro` read as always on                      🔴 only with `--kokoro`
 //   N7 the flag taken as the folder                      🔴 only with `--kokoro`
+//   C1 no `--commands` carries no language (the old default)   🔴 the pt, en and es models
+//   C2 no `--commands` carries one language                    🔴 the pt, en and es models
+//   C3 an explicit `--commands` list does not narrow           🔴 the flag narrows
+//   C4 `--commands none` read as a language                    🔴 `none` empties
 //   ⚠️ The filter's wiring in the program body is not run here: it would download the catalogue.

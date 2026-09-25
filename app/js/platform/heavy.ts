@@ -47,7 +47,10 @@ export interface HeavyOptions {
    * `crypto.subtle`, which is an insecure context) keeps NOTHING: unverifiable is not verified.
    */
   readonly digest: ((payload: ArrayBuffer) => Promise<string>) | null;
-  /** Only these ids, when given. For a consumer that wants the voices and not the rest. */
+  /**
+   * Only these ids, when given, and IN THIS ORDER — the download is one at a time, so the order is who waits (`heavyAtBoot`
+   * puts the child's command model first). For a consumer that wants the voices and not the rest.
+   */
   readonly only?: readonly string[];
   /** The page's address the delivery's `heavy/` folder is resolved against (`document.baseURI`). */
   readonly base: string;
@@ -65,33 +68,45 @@ export interface HeavyOptions {
  *   able to open it, and the first `listen()` asked for a file the build never wrote. Measured on 2026-09-21, building the
  *   very delivery this exists to serve. The PHONEMIZER (`voz:runtime:fonemas`, 18.7 MiB) stays the voice's — nothing else
  *   turns letters into sounds.
- * · The command models (issue #184): one per language too, 112 MiB for the three, and the runtime that loads them. Nothing in
+ * · The command models (issue #184): one per language too, 108 MiB for the three, and the runtime that loads them. Nothing in
  *   the game decides this — speaking instead of pressing is a way INTO the controller, and a cartridge does not get to close
- *   one (ADR-0111). What decides is the delivery: `inclusionist-heavy --commands pt` puts Portuguese in it.
+ *   one (ADR-0111). `commands` is a language or a LIST of them, and the models come in the list's order: the root asks for
+ *   every language the page can switch to, the child's first, because a language changed mid-game must find its model already
+ *   kept (ADR-0225 erratum, the Dev: «A entrega leva as três línguas.»). The delivery carries the three unless its
+ *   `--commands` list narrows it; a language it did not carry is a quiet 404 here and a line of `problems` when she speaks.
  * · The Libras player (ADR-0234, route A), 19.3 MiB, only with `libras`: the root asks for it while deaf mode is on, so a device
  *   whose child never asks for signing never downloads it. No game declares it either — deaf mode is the person's (ADR-0111) —
  *   and a delivery built without `--libras` simply has none, the same quiet 404 as a missing command model.
  */
 export function heavyAtBoot(
   declared: {
-    readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null; readonly libras?: boolean;
+    readonly kokoro: boolean; readonly reading?: string | null;
+    readonly commands?: string | readonly string[] | null; readonly libras?: boolean;
   },
 ): readonly string[] {
-  const reading = declared.reading ? declared.reading.split('-')[0]!.toLowerCase() : null;
-  const commands = declared.commands ? declared.commands.split('-')[0]!.toLowerCase() : null;
-  return HEAVY_FILES.filter((p) => {
+  const baseLanguage = (tag: string): string => tag.split('-')[0]!.toLowerCase();
+  const reading = declared.reading ? baseLanguage(declared.reading) : null;
+  const asked = declared.commands == null ? [] : typeof declared.commands === 'string' ? [declared.commands] : declared.commands;
+  const commands = [...new Set(asked.filter(Boolean).map(baseLanguage))];
+  const chosen = HEAVY_FILES.filter((p) => {
     const language = readingLanguageOf(p.id);
     if (language) return language === reading;
     // 📌 THE COMMAND MODELS ARE A TRANSPORT'S, not a game's: no cartridge declares them, because a child who speaks instead of
-    // pressing is reaching the controller, and a cartridge does not get to deny her a way in (ADR-0111). The LANGUAGE is still
-    // asked — 112 MiB for the three — and the runtime comes with whichever one does.
+    // pressing is reaching the controller, and a cartridge does not get to deny her a way in (ADR-0111). The LANGUAGES are
+    // still asked, and the runtime comes with whichever one is.
     const commanded = commandsLanguageOf(p.id);
-    if (commanded) return commanded === commands;
-    if (p.id.startsWith('commands:runtime')) return !!commands;
+    if (commanded) return commands.includes(commanded);
+    if (p.id.startsWith('commands:runtime')) return commands.length > 0;
     if (p.id.startsWith('libras:')) return !!declared.libras;
     if (p.id.startsWith('voz:runtime:onnx')) return declared.kokoro || !!reading;
     return declared.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
-  }).map((p) => p.id);
+  });
+  // ⚠️ THE CHILD'S MODEL FIRST: the download is one file at a time (rule 1), so the command models take their slots in the order
+  // the languages were asked — a Spanish child does not wait behind 70 MiB of Portuguese and English before her own.
+  const models = chosen.filter((p) => commandsLanguageOf(p.id))
+    .sort((a, b) => commands.indexOf(commandsLanguageOf(a.id)!) - commands.indexOf(commandsLanguageOf(b.id)!));
+  let slot = 0;
+  return chosen.map((p) => (commandsLanguageOf(p.id) ? models[slot++]! : p).id);
 }
 
 /**
@@ -135,7 +150,9 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * missing: the engine PROMISED four things and delivered one, with nothing saying so.
  */
 export async function downloadHeavy(options: HeavyOptions): Promise<HeavyReport[]> {
-  const targets = options.only ? HEAVY_FILES.filter((p) => options.only!.includes(p.id)) : HEAVY_FILES;
+  const targets = options.only
+    ? [...new Set(options.only)].flatMap((id) => HEAVY_FILES.filter((p) => p.id === id))
+    : HEAVY_FILES;
   const out: HeavyReport[] = [];
   const record = (r: HeavyReport): void => { out.push(r); options.onProgress?.(r); };
 

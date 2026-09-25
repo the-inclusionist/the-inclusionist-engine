@@ -179,8 +179,9 @@ export function readingLanguageOf(id: string): string | null {
  * rebuilt from lichess-org/vosk-browser with `-s DYNAMIC_EXECUTION=0` and runs under the policy as it is (`models.md`).
  * The models are alphacephei's small ones, repacked deterministically as the `.tar.gz` that build loads.
  *
- * ⚠️ ONE MODEL PER LANGUAGE, like the reading: pt 30.9 MiB, en 39.2, es 37.9. The start asks for the child's, and a delivery
- * carries the ones it was built with (`inclusionist-heavy --commands pt`). 📌 Unlike the reading, NO GAME DECLARES THIS: a
+ * ⚠️ ONE MODEL PER LANGUAGE, like the reading: pt 30.9 MiB, en 39.2, es 37.9. Unlike the reading, a delivery carries the three
+ * unless `inclusionist-heavy --commands` narrows it, and the start asks for every language the page can switch to, the child's
+ * first (ADR-0225 erratum: a language changed mid-game must find its model). 📌 And NO GAME DECLARES THIS: a
  * child who speaks instead of pressing is using a transport, and a cartridge does not get to deny her one (ADR-0111).
  *
  * ⚠️ sha256 MEASURED on the mirror's own files (2026-09-21), each checked against the `SHA256SUMS` its folder publishes.

@@ -530,9 +530,9 @@ describe('the language changed', () => {
   });
 
   it('🔴 [Zero] a language whose model is NOT in the delivery is SAID, and the icon goes back to off', async () => {
-    // ⚠️ ADR-0169, and this is the path a change reaches: the heavy files are chosen at BOOT for the boot language, so a
-    // child who switches may be asking for a model that never arrived. A microphone listening in the wrong language would
-    // be the silent answer; this is the loud one.
+    // ⚠️ ADR-0169, and this is the path a change reaches: a delivery whose `--commands` list left a language out never carries
+    // its model, so a child who switches to it may be asking for a model that never arrived. A microphone listening in the
+    // wrong language would be the silent answer; this is the loud one.
     let lang = 'pt-BR';
     const b = bench({
       language: () => lang,
@@ -549,10 +549,11 @@ describe('the language changed', () => {
   });
 
   /*
-   * 🔴 THE LINE NAMES THE FIX FOR THE LANGUAGE THE CHILD SWITCHED TO (ADR-0225, ADR-0169). The heavy files are chosen at boot
-   * for the boot language, so a delivery built without `--commands <lang>` never carries the other one — and a line that only
-   * said «open the game once online» sent the adult after a download that cannot happen. The reading's line already names
-   * `inclusionist-heavy --reading <language>`; this is the same fix for the commands.
+   * 🔴 THE LINE NAMES THE FIX FOR THE LANGUAGE THE CHILD SWITCHED TO (ADR-0225 and its erratum, ADR-0169). The delivery carries
+   * every language unless a `--commands` list narrowed it, so a model missing after a switch is one that list left out — and a
+   * line that only said «open the game once online» sent the adult after a download that cannot happen. The fix it names is
+   * both halves of the flag: the default (no `--commands`), or that language in the list — `--commands <lang>` ALONE would
+   * narrow the delivery to it and drop the language the school had. The reading's line names `--reading <language>` the same way.
    */
   const switchedTo = (models) => {
     let lang = 'pt-BR';
@@ -574,7 +575,8 @@ describe('the language changed', () => {
     await b.control.languageChanged();
     expect(b.log.reported, 'the missing model was not said anywhere').toHaveLength(1);
     expect(b.log.reported[0], 'the line does not say how to put this language\'s model in the delivery')
-      .toContain('npx inclusionist-heavy --commands es');
+      .toContain('`npx inclusionist-heavy` without `--commands`');
+    expect(b.log.reported[0], 'the line does not name this language in the flag\'s list').toContain('`--commands es` in its list');
     expect(b.log.reported[0], 'the line does not name the language the child switched to').toContain('es-MX');
     expect(b.log.alerted, 'the child was not told why the 👄 went off').toEqual([pt['sr.voice.needsInternet']]);
   });

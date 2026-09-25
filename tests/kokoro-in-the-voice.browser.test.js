@@ -135,13 +135,45 @@ describe('what the start fetches (ADR-0198 §5)', () => {
       const { heavyAtBoot, HEAVY_FILES } = await import('../app/js/platform/heavy.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
       createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
-      // ⚠️ The command model is asked for WITHOUT the game declaring anything (issue #184), so the expected list is the boot's own
-      // question, language included — a number written here by hand would have to be rewritten every time the catalogue grows.
-      const esperados = heavyAtBoot({ kokoro: false, commands: bcp47() }).filter((id) => HEAVY_FILES.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
+      // ⚠️ The command models are asked for WITHOUT the game declaring anything (issue #184), one per language of the page
+      // (ADR-0225 erratum), so the expected list is that question with the three languages NAMED — a number written here by hand
+      // would have to be rewritten every time the catalogue grows.
+      const esperados = heavyAtBoot({ kokoro: false, commands: [bcp47(), 'pt', 'en', 'es'] }).filter((id) => HEAVY_FILES.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
       for (let i = 0; i < 400 && pedidos.filter((u) => u.includes('/heavy/')).length < esperados; i++) await new Promise((r) => setTimeout(r, 25));
       const daEntrega = pedidos.filter((u) => u.includes('/heavy/'));
       expect(daEntrega.length, 'the start did not ask for the catalogue').toBe(esperados);
       expect(daEntrega.filter((u) => u.includes('Kokoro-82M'))).toEqual([]);
+    } finally {
+      window.fetch = fetchOriginal;
+    }
+  });
+
+  /**
+   * 🔴 THE START ASKS FOR THE COMMAND MODEL OF EVERY LANGUAGE THE PAGE CAN SWITCH TO, THE CHILD'S FIRST (ADR-0225 erratum; the
+   * Dev: «A entrega leva as três línguas.»). Asking for the boot language alone was the defect: a child who switched to Spanish
+   * offline the next day found a model the install had never fetched, although the delivery carried it. And the child's own
+   * comes FIRST, because the download is one file at a time: a Spanish child does not wait behind 70 MiB of the other two.
+   */
+  it('🔴 [Right] the start asks for the pt, en and es command models, the boot language\'s first', async () => {
+    const pedidos = [];
+    const fetchOriginal = window.fetch;
+    window.fetch = async (u) => { pedidos.push(String(u)); return new Response('', { status: 404 }); };
+    try {
+      document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><div id="game-region" tabindex="-1"></div>';
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { HEAVY_FILES, deliveryPath } = await import('../app/js/platform/heavy.js');
+      const { bcp47 } = await import('../app/js/core/i18n.js');
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
+      const modelo = (lingua) => deliveryPath(HEAVY_FILES.find((p) => p.id === `commands:model:${lingua}`).url);
+      const pediu = (lingua) => pedidos.some((u) => u.endsWith(modelo(lingua)));
+      for (let i = 0; i < 400 && !['pt', 'en', 'es'].every(pediu); i++) await new Promise((r) => setTimeout(r, 25));
+      for (const lingua of ['pt', 'en', 'es']) {
+        expect(pediu(lingua), `the start did not ask for the ${lingua} command model: a switch to ${lingua} would find none kept`).toBe(true);
+      }
+      const ordem = pedidos.filter((u) => /\/vosk-models\//.test(u));
+      const doArranque = bcp47().split('-')[0];
+      expect(ordem[0]?.endsWith(modelo(doArranque)), `the child's own model (${doArranque}) waited behind another language's: ${ordem[0]}`).toBe(true);
+      expect(ordem, 'a command model was asked for twice').toHaveLength(3);
     } finally {
       window.fetch = fetchOriginal;
     }
