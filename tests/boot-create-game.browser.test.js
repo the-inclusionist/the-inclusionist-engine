@@ -207,21 +207,19 @@ describe('createGame num documento de verdade', () => {
   });
 
   // 🎯 THE ROOT ANSWERS FOR THE DEVICE IN USE (ADR-0113), and this is the only case that measures it end to end. The
-  // `ui/pause-icons` cases inject their own `transportInUse`, so the ROOT's line — the one that reads
-  // `input/state.inputOf(i)` — had nobody asserting it. Two mutations survived because of that, and this case kills them:
-  // without it, the root could answer keyboard for everyone and nothing would fail.
+  // `ui/pause-icons` cases inject their own `transportInUse`, so the ROOT's line — the one that reads its own input
+  // state's `inputOf(i)` (`Engine.input`, ADR-0232 D4) — had nobody asserting it. Two mutations survived because of that,
+  // and this case kills them: without it, the root could answer keyboard for everyone and nothing would fail.
   it('🎯 [Right] a raiz lê o aparelho do jogador, e o ícone escreve na chave DELE', async () => {
-    const { playerEdge, forgetInputs } = await import('../app/js/input/state.js');
-    forgetInputs();
     try {
-      playerEdge(0, 'gamepad');           // the child picked up the gamepad
       // ⚠️ `holdsKeys: true`, AND THE REASON IS THE CASE'S POINT: since ADR-0115 the root mounts `altmove` only in a game
       // that holds some key, and this file's default fixture is a hotspots one (it declares `false`). Without this line
       // the case would measure the icon's absence instead of the device wiring — green for the wrong reason.
-      abrir({
+      const motor = abrir({
         declaration: { ...declaracaoValida(), holdsKeys: () => true },
         players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
       });
+      motor.input.playerEdge(0, 'gamepad'); // the child picked up the gamepad — in THIS root's input state
 
       const alvo = document.querySelector('#title-icons [data-pi="altmove"]');
       expect(alvo, 'o ícone da alternância não está na barra').not.toBeNull();
@@ -231,7 +229,6 @@ describe('createGame num documento de verdade', () => {
       expect(localStorage.getItem('incl_togglemove_p0_gamepad'),
         'a raiz não levou o aparelho em uso até à escrita').toBe('1');
     } finally {
-      forgetInputs();
       localStorage.removeItem('incl_togglemove_p0_gamepad');
       localStorage.removeItem('incl_togglemove_p0');
     }
@@ -240,22 +237,19 @@ describe('createGame num documento de verdade', () => {
   // 📌 THE PAIR: with ANOTHER device, the key is another. Without it, always writing to the gamepad would pass the case
   // above — exactly the shape of the mutation that survived before this block existed.
   it('📌 [Right] com outro aparelho, a chave é a desse aparelho', async () => {
-    const { playerEdge, forgetInputs } = await import('../app/js/input/state.js');
-    forgetInputs();
     try {
-      playerEdge(0, 'toque');
       // `holdsKeys: true` for the same reason as the case above — without the icon there is no click to measure.
-      abrir({
+      const motor = abrir({
         declaration: { ...declaracaoValida(), holdsKeys: () => true },
         players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
       });
+      motor.input.playerEdge(0, 'toque');
       document.querySelector('#title-icons [data-pi="altmove"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(localStorage.getItem('incl_togglemove_p0_toque'), 'escreveu na chave do aparelho errado').toBe('1');
       expect(localStorage.getItem('incl_togglemove_p0_gamepad'), 'escreveu numa chave que ninguém usou').toBeNull();
     } finally {
-      forgetInputs();
       localStorage.removeItem('incl_togglemove_p0_toque');
       localStorage.removeItem('incl_togglemove_p0');
     }

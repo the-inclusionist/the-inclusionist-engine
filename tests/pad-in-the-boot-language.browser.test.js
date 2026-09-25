@@ -62,7 +62,7 @@ describe('the virtual pad speaks the boot language', () => {
     // ⚠️ Engine keys stand in for a game's words — what is measured is the LANGUAGE, not the meaning (an engine test may
     // not lean on the quiz's vocabulary, ADR-0027). The quiz's shape: words read through GETTERS, so they follow the language — and the pad was drawn before it came.
     const { t } = await import('../app/js/core/i18n.js');
-    createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true,
+    const motor = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true,
       declaration: declaracaoValida(),
       host: { doc: document, win: window },
       downloadHeavy: false,
@@ -84,7 +84,7 @@ describe('the virtual pad speaks the boot language', () => {
 
     // 📌 THE PAIR: the rebuilt buttons must still be wired, or the language fix would leave a dead pad.
     const confirmar = [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].find((b) => funcao(b) === 'Close');
-    const { keys } = await import('../app/js/input/state.js');
+    const { keys } = motor.input; // the ROOT's held keys (ADR-0232 D4)
     const antes = new Set(keys);
     confirmar.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1 }));
     expect([...keys].filter((k) => !antes.has(k)), 'the redrawn button does nothing').toHaveLength(1);

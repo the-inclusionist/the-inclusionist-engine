@@ -10,9 +10,11 @@
 import type { Translate } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE, type PadMapStore } from './pad-wizard.js';
-import { padTable, type PadTable } from './pad-defaults.js';
-import { padCur, padPrevAct, padPrevStart } from './state.js';
+import { createPadWizard, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE, type PadMaps } from './pad-wizard.js';
+import type { PadTable, PadTableFor } from './pad-defaults.js';
+import type { LiveInput } from './state.js';
+// 📌 The pad's frame memory, the stored maps and the game's button table arrive through the ctx, built once by the root
+// (ADR-0232 D4): as module state, two roots on one page shared a pad's previous frame and each other's maps.
 // 📌 `oneButton` (the motor empathy's one-button mode, issue #120) arrives through the ctx, as `input/keydown`'s does:
 // the settings store is built by the root and passed in (ADR-0232, issue #207). The field is REQUIRED, which is what the
 // old live import defended — an optional field would make the accommodation exist only where someone remembered it
@@ -187,10 +189,18 @@ export interface GamepadCtx {
   /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
   t: Translate;
   /**
-   * Where the controller maps a child made are kept — the page's store, built by the root (ADR-0232, issue #207). Required:
-   * a pad whose map is read from nowhere answers with the standard layout, and a custom pad goes dead with no word said.
+   * The controller maps a child made — this root's `createPadMaps(store)` (ADR-0232 D4), the SAME object its own mapping
+   * wizard writes. Required: a pad whose map is read from nowhere answers with the standard layout, and a custom pad goes
+   * dead with no word said.
    */
-  store: PadMapStore;
+  padMaps: PadMaps;
+  /**
+   * THIS GAME'S BUTTON TABLE per arrangement and seat — `createPadTable(declaration.padMapping)` (ADR-0115, ADR-0232 D4).
+   * Required: a transport handed no table would give the ENGINE's map, in silence, to a game that declared another.
+   */
+  padTable: PadTableFor;
+  /** Where each pad's frame is kept — this root's input state (`Engine.input`), mutated in place every poll. */
+  input: Pick<LiveInput, 'padCur' | 'padPrevAct' | 'padPrevStart'>;
   /**
    * Is the ONE-BUTTON mode on (the motor empathy, issue #120)? Read each frame — the child turns it on mid-game. The
    * root answers from the settings store it built (ADR-0232); required, see the note at the imports.
@@ -251,10 +261,10 @@ export interface GamepadCtx {
   /**
    * THIS EDGE IS THIS PLAYER'S, AND IT CAME FROM THE PAD (ADR-0113 clause 4, issue #127).
    *
-   * 🔴 REQUIRED: without it `input/state.playerEdge` has no caller for the pad, so `inputOf(i).inUse` answers `teclado`
-   * for everyone — and the latch read is the keyboard's even with the pad in hand. 📌 Pass
-   * `createLatchedEdge(() => players)` from `input/latch-edge`, not the raw one: it also resolves this device's latch
-   * on the player.
+   * 🔴 REQUIRED: without it the input state's `playerEdge` has no caller for the pad, so `inputOf(i).inUse` answers
+   * `teclado` for everyone — and the latch read is the keyboard's even with the pad in hand. 📌 Pass
+   * `createLatchedEdge(() => players, { store, input })` from `input/latch-edge`, not the raw one: it also resolves this
+   * device's latch on the player.
    *
    * ⚠️ The gamepad is the transport that stays identifiable without the key set — it goes through `padCur` —, and that
    * is exactly why a gap here is invisible: the module knows which pad the edge came from, and the automaton does not.
@@ -359,15 +369,16 @@ const MODAL_BY_POSITION: readonly (readonly [ActionKey, ModalIntent])[] = Object
 
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
   const { t } = ctx;
+  const { padCur, padPrevAct, padPrevStart } = ctx.input;
   let padWizAutoResume = false; // the wizard opened by itself mid-game -> resume when it closes
 
-  // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
-  const padMapFor = (id: string): PadMap | null => padMap(ctx.store, id);
+  // the root's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
+  const padMapFor = (id: string): PadMap | null => ctx.padMaps.padMap(id);
   function actionsFor(gp: PadLike, table?: PadTable): PadActions { return padActions(gp, padMapFor(gp.id), table); }
 
   // the wizard asks; what a position LOOKS like is drawn by the game (note CD), through the two hooks it may answer
   const wizard = createPadWizard({
-    store: ctx.store, t,
+    maps: ctx.padMaps, t,
     getGamepads: () => ctx.getGamepads(),
     actionLabel: (action) => ctx.actionLabel(action),
     say: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },
@@ -419,7 +430,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     // on and a pad in hand WAS NOT in the mode — and nothing anywhere said so.
     const cur = oneButtonAtOnce(
       prev,
-      actionsFor(gp, padTable(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
+      actionsFor(gp, ctx.padTable(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
       ctx.oneButton(),
     );
     const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;

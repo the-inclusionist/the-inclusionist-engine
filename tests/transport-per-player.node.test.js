@@ -16,12 +16,42 @@
 //
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  inputOf, playerEdge, enableAssistedFor, disableAssistedFor, forgetInputs, releaseAllKeys,
-} from '../app/js/input/state.js';
+import { createInputState } from '../app/js/input/state.js';
 import { DEFAULT_INPUT_STATE } from '../app/js/input/transport-in-use.js';
 
+const {
+  inputOf, playerEdge, enableAssistedFor, disableAssistedFor, forgetInputs, releaseAllKeys,
+} = createInputState();
+
 beforeEach(() => { forgetInputs(); });
+
+/*
+ * TWO ROOTS SHARE NOTHING (ADR-0232 D4, ADR-0142). As module state, a second root on the page read the first root's held
+ * keys, the first child's device and a pad's previous frame. Each structure is asserted, because each was one module-level
+ * container and any one of them left shared keeps the leak.
+ */
+describe('input/state — two instances, two roots', () => {
+  it('🔴 [Cross-check] what one root holds, the other does not', () => {
+    const a = createInputState();
+    const b = createInputState();
+    a.markKey('KeyA', 'olhos');
+    a.playerEdge(0, 'gamepad');
+    a.enableAssistedFor(1);
+    a.padCur[0] = { action1: true };
+    a.padPrevAct[0] = { action1: true };
+    a.padPrevStart[0] = true;
+    expect(b.keys.has('KeyA'), 'the second root holds the first root\'s key').toBe(false);
+    expect(b.sourceOf('KeyA'), 'the second root knows who pressed the first root\'s key').toBeUndefined();
+    expect(b.inputOf(0), 'the second root\'s child is on the first child\'s device').toEqual(DEFAULT_INPUT_STATE);
+    expect(b.inputOf(1).assistedOn, 'enabling assistance in one root enabled it in the other').toBe(false);
+    expect(b.held({ ctrl: { action1: [] }, pad: 0 }, 'action1'), 'the second root reads the first root\'s pad').toBe(false);
+    expect(b.padPrevAct[0], 'a pad\'s previous frame is shared').toBeUndefined();
+    expect(b.padPrevStart[0], 'a pad\'s previous START is shared').toBeUndefined();
+    // 📌 THE PAIR: the first root still holds all of it — otherwise a factory that kept nothing would pass above
+    expect(a.held({ ctrl: { action1: ['KeyA'] }, pad: -1 }, 'action1')).toBe(true);
+    expect(a.inputOf(0).inUse).toBe('gamepad');
+  });
+});
 
 describe('entrada por jogador · quem nunca tocou em nada tem uma resposta', () => {
   // ⚠️ `DEFAULT_INPUT_STATE` AND NOT `undefined`, and the contrast with the same module's `sourceOf` is deliberate: there

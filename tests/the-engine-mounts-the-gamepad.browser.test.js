@@ -7,10 +7,10 @@
 // written meaning. This file holds the first confirmation the record asks for: a cartridge that declares NOTHING about
 // controllers still has one, and it reaches the game.
 //
-// ⚠️ ONE ROOT PER FILE, AND THAT IS THE POINT OF THE FILE EXISTING. 📏 Measured while writing it: `padCur`/`padPrevAct`
-// are module state in `input/state`, so two roots on one page poll the SAME controller and the first one to run eats
-// the edge — the second sees a button that was already down. In production there is one root; in a test file with
-// several there is no controller worth measuring. Same family as ADR-0142, one floor down.
+// ⚠️ ONE ROOT PER FILE. When this file was written `padCur`/`padPrevAct` were module state, and two roots on one page
+// ate each other's edges. Since ADR-0232 D4 each root keeps its own pad frames (`Engine.input`), but every root still
+// polls the SAME physical controller through the same `navigator` — a file with several would measure two games
+// answering one button, not one.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';

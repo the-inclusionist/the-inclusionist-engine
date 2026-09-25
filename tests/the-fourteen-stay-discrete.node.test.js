@@ -25,7 +25,9 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACTIONS } from '../app/js/core/actions.js';
-import { held, padCur } from '../app/js/input/state.js';
+import { createInputState } from '../app/js/input/state.js';
+
+const { held, padCur } = createInputState();
 
 const RAIZ_INPUT = fileURLToPath(new URL('../app/js/input/', import.meta.url));
 

@@ -15,12 +15,17 @@
 // of them knowing the toggle exists. A second required field in two contexts would be more public surface, one more
 // thing a cartridge can forget, and the same question asked twice.
 import { DEFAULTS } from '../core/setting-defaults.js';
-import { playerEdge, inputOf } from './state.js';
 import { syncLatch, type LatchPlayer } from './latch-sync.js';
 import type { LatchStore } from './latch-store.js';
 import type { TransportName } from './transport-in-use.js';
+import type { LiveInput } from './state.js';
 
 export interface LatchedEdgeOptions {
+  /**
+   * The input state whose transport automaton records the edge — the root's (`Engine.input`, ADR-0232 D4). REQUIRED: an
+   * edge recorded in another root's state would move THAT root's latch, and this child's would never follow the device.
+   */
+  readonly input: Pick<LiveInput, 'playerEdge' | 'inputOf'>;
   /**
    * The page's store, built by the root (ADR-0232, issue #207). REQUIRED, and the reason is the one that once gave it a
    * default: omitting it would make the child lose their stored choice — in silence, and only in that game. The compiler
@@ -47,6 +52,7 @@ export function createLatchedEdge(
   opts: LatchedEdgeOptions,
 ): (player: number, origin: TransportName) => void {
   const latchStore = opts.store;
+  const { playerEdge, inputOf } = opts.input;
   const fallback = opts.byDefault ?? DEFAULTS.toggleMove;
   return (player: number, origin: TransportName): void => {
     playerEdge(player, origin);

@@ -20,12 +20,14 @@ import { actionForCode } from '../app/js/input/keyboard-runtime.js';
 // and the case would assert that a copy agrees with its own assertion — both move together and neither fails. With the
 // real pair, the `heldKeys` the case reads is the set the game reads, and the origin map beside it is what the latch
 // will ask.
-import {
-  keys as keysReais, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
+// 📌 One input state for this file, built as the root builds its own (ADR-0232 D4): no other file shares it.
+import { createInputState } from '../app/js/input/state.js';
+const {
+  keys: keysReais, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
   // 📌 THE AUTOMATON IS REAL TOO, for the same reason: a fake `playerEdge` here would assert that a copy agrees with its
   // own assertion. With the real one, the `inputOf` the case reads is the one the latch will ask.
   playerEdge, inputOf, forgetInputs,
-} from '../app/js/input/state.js';
+} = createInputState();
 import { stampSource } from '../app/js/input/synthetic-source.js';
 import {
   decideKeydown, initKeydown, isJumpKey, isGameKeyCode, isEasyShortcut,

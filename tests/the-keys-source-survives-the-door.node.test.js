@@ -18,9 +18,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
+import { createInputState } from '../app/js/input/state.js';
+const {
   keys, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys, sourceOf, held,
-} from '../app/js/input/state.js';
+} = createInputState();
 import { stampSource, sourceOfEvent, SOURCE_KEY } from '../app/js/input/synthetic-source.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));

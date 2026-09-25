@@ -12,7 +12,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLatchedEdge } from '../app/js/input/latch-edge.js';
-import { inputOf, forgetInputs } from '../app/js/input/state.js';
+import { createInputState } from '../app/js/input/state.js';
 import { latchKey, legacyLatchKey } from '../app/js/input/latch-scope.js';
 import { BASE_DA_MARCHA } from '../app/js/input/latch-sync.js';
 
@@ -26,6 +26,10 @@ function armazemFalso(inicial = {}) {
   };
 }
 
+// One root's input state (ADR-0232 D4): the latched edge records into THIS one, which the cases read back.
+const input = createInputState();
+const { inputOf, forgetInputs } = input;
+
 const jogador = () => ({ toggleMove: false, walkDir: 0 });
 const chave = (i, transporte) => latchKey(BASE_DA_MARCHA, i, transporte);
 
@@ -36,7 +40,7 @@ describe('a aresta que também resolve a alternância', () => {
   it('[Right] a aresta chega ao autómato E o jogador recebe a alternância daquele aparelho', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [p], { input, store: armazem, byDefault: false });
 
     aresta(0, 'gamepad');
 
@@ -47,7 +51,7 @@ describe('a aresta que também resolve a alternância', () => {
   it('🎯 [Sequência] trocar de aparelho troca a resposta — e o armazenamento não é tocado', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1', [chave(0, 'teclado')]: '0' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [p], { input, store: armazem, byDefault: false });
 
     aresta(0, 'gamepad');
     expect(p.toggleMove).toBe(true);
@@ -65,14 +69,14 @@ describe('a aresta que também resolve a alternância', () => {
       [chave(0, 'olhos')]: '0', [legacyLatchKey(BASE_DA_MARCHA, 0)]: '0',
     });
     const p = jogador();
-    createLatchedEdge(() => [p], { store: armazem, byDefault: false })(0, 'olhos');
+    createLatchedEdge(() => [p], { input, store: armazem, byDefault: false })(0, 'olhos');
     expect(p.toggleMove, 'quem joga por olhar ficou sem a alternância de que a entrada dela depende').toBe(true);
   });
 
   it('[Muitos] cada assento resolve o seu — a aresta do J2 não mexe no J1', () => {
     const armazem = armazemFalso({ [chave(1, 'toque')]: '1' });
     const p0 = jogador(); const p1 = jogador();
-    const aresta = createLatchedEdge(() => [p0, p1], { store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [p0, p1], { input, store: armazem, byDefault: false });
 
     aresta(1, 'toque');
 
@@ -83,7 +87,7 @@ describe('a aresta que também resolve a alternância', () => {
 
   it('[Zero] assento sem jogador: a aresta fica registada à mesma, e nada rebenta', () => {
     const armazem = armazemFalso();
-    const aresta = createLatchedEdge(() => [], { store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [], { input, store: armazem, byDefault: false });
     expect(() => aresta(3, 'toque')).not.toThrow();
     expect(inputOf(3).inUse, 'o transporte em uso é facto sobre a ENTRADA, não sobre quem já entrou').toBe('toque');
   });
@@ -92,7 +96,7 @@ describe('a aresta que também resolve a alternância', () => {
     const { DEFAULTS } = await import('../app/js/core/setting-defaults.js');
     const armazem = armazemFalso();
     const p = { toggleMove: !DEFAULTS.toggleMove, walkDir: 0 };
-    createLatchedEdge(() => [p], { store: armazem })(0, 'teclado');
+    createLatchedEdge(() => [p], { input, store: armazem })(0, 'teclado');
     expect(p.toggleMove, 'sem nada guardado, a resposta tem de ser a de fábrica').toBe(DEFAULTS.toggleMove);
   });
 });

@@ -7,8 +7,8 @@
 // button or an axis against the pad at rest, and the stored map per pad id. The demonstration and what happens around closing
 // (the play phase, the edges of the held button) are the host's, by hooks.
 //
-// ⚠️ ONE CACHE of stored maps for the whole page: a map saved by the engine's wizard is the one `initGamepad` reads on the next
-// frame, not a copy it cached before.
+// ⚠️ ONE CACHE of stored maps per ROOT (`createPadMaps`), handed to its wizard and to `initGamepad`: a map saved by the
+// engine's wizard is the one `initGamepad` reads on the next frame, not a copy it cached before.
 import type { Translate } from '../core/i18n.js';
 import { migrateControlMap } from './vocabulary-migration.js';
 import type { Store } from '../platform/storage.js';
@@ -56,32 +56,49 @@ export const PADWIZ_ORDER: readonly string[] = [
 export type PadMapStore = Pick<Store, 'getJSON' | 'setJSON'>;
 
 const KEY = (id: string): string => 'incl_padmap_' + id;
-const maps = new Map<string, PadMap | null>();
+
+/** ONE ROOT'S STORED PAD MAPS, per pad id — what `createPadMaps` returns. */
+export interface PadMaps {
+  /**
+   * The stored map of pad `id`, or `null`. Read through the vocabulary translator: a map saved before ADR-0086 has the old
+   * action keys, and a custom pad would otherwise stop answering with no word said.
+   */
+  padMap(id: string): PadMap | null;
+  /** Stores the map of pad `id` and makes it the one read from now on. */
+  store(id: string, map: PadMap): void;
+  /** A cancelled wizard: the DEFAULT map for this session, not stored, so the wizard does not reopen in a loop. */
+  skip(id: string): void;
+}
 
 /**
- * The stored map of pad `id`, or `null`. Read through the vocabulary translator: a map saved before ADR-0086 has the old
- * action keys, and a custom pad would otherwise stop answering with no word said.
+ * THE CACHE OF STORED MAPS, one per ROOT (ADR-0232 D4). ⚠️ Not safe to share: two roots on two stores would read each
+ * other's map, and the one the page's first wizard saved would answer in a root whose child never recorded it. The root
+ * builds ONE and hands it to both readers — its own wizard and `initGamepad` — so a map saved by the wizard is the one the
+ * pad reads on the next frame, not a copy cached before.
  */
-export function padMap(store: PadMapStore, id: string): PadMap | null {
-  if (!maps.has(id)) maps.set(id, migrateControlMap(store.getJSON<PadMap>(KEY(id), null)));
-  return maps.get(id) ?? null;
-}
-/** Stores the map of pad `id` and makes it the one read from now on. */
-function storePadMap(store: PadMapStore, id: string, map: PadMap): void {
-  store.setJSON(KEY(id), map);
-  maps.set(id, map);
-}
-/** A cancelled wizard: the DEFAULT map for this session, not stored, so the wizard does not reopen in a loop. */
-function skipInSession(id: string): void {
-  if (!maps.get(id)) maps.set(id, { _skip: true });
+export function createPadMaps(store: PadMapStore): PadMaps {
+  const maps = new Map<string, PadMap | null>();
+  return {
+    padMap(id) {
+      if (!maps.has(id)) maps.set(id, migrateControlMap(store.getJSON<PadMap>(KEY(id), null)));
+      return maps.get(id) ?? null;
+    },
+    store(id, map) {
+      store.setJSON(KEY(id), map);
+      maps.set(id, map);
+    },
+    skip(id) {
+      if (!maps.get(id)) maps.set(id, { _skip: true });
+    },
+  };
 }
 
 export interface PadWizardCtx {
   /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
   t: Translate;
-  /** Where the finished map is stored — the page's store (ADR-0232). Required: a wizard that saved nowhere would ask the
-   *  child the fourteen questions again at every visit, in silence. */
-  store: PadMapStore;
+  /** Where the finished map is stored — this root's maps (`createPadMaps`). Required: a wizard that saved nowhere would ask
+   *  the child the fourteen questions again at every visit, in silence. */
+  maps: PadMaps;
   getGamepads: GetGamepads;
   /** The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped). */
   actionLabel: (action: string) => string | null;
@@ -153,10 +170,10 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     if (!padWiz) return;
     if (padWiz.timer != null) clearInterval(padWiz.timer);
     if (save && padWiz.id) {
-      storePadMap(ctx.store, padWiz.id, padWiz.map);
+      ctx.maps.store(padWiz.id, padWiz.map);
       ctx.srAlert(t('sr.pad.mapSaved', { id: padWiz.id }));
     } else if (padWiz.id) {
-      skipInSession(padWiz.id);
+      ctx.maps.skip(padWiz.id);
     }
     const gi = padWiz.gi;
     const saved = save && !!padWiz.id;

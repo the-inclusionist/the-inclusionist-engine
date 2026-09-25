@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t;
-import { createPadWizard, PADWIZ_ORDER } from '../app/js/input/pad-wizard.js';
+import { createPadWizard, createPadMaps, PADWIZ_ORDER } from '../app/js/input/pad-wizard.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 /** A pad at rest: every button up, every axis centred. */
@@ -32,8 +32,8 @@ function mkCtx(pads, named = THREE) {
   const said = [], steps = [], progress = [], closed = [];
   let ticks = 0;
   const ctx = {
-    store: createStorage(memoryBackend()),
-      t: translate, // the root's translator, played by the test (ADR-0232 D3)
+    maps: createPadMaps(createStorage(memoryBackend())), // each case its own root's maps (ADR-0232 D4)
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     getGamepads: () => pads,
     actionLabel: (a) => (named.includes(a) ? a.toUpperCase() : null),
     say: (p) => said.push(p),
@@ -165,6 +165,39 @@ describe('closing', () => {
     expect(clocks.length, 'the wizard did not start a clock').toBe(1);
     wiz.close(false);
     expect(clocks[0].cleared, 'the interval outlived the wizard: it polls the gamepads for the rest of the session').toBe(true);
+  });
+});
+
+/*
+ * THE STORED MAPS ARE ONE ROOT'S (ADR-0232 D4). As a module cache they were one for the page: two roots on two stores read
+ * each other's map, and a pad a child in one root never recorded answered with the map another child saved.
+ */
+describe('the stored maps, one cache per root', () => {
+  const PULAR = { action2: { b: 9 } };
+
+  it('🔴 [Cross-check] a map one root saves is not read by another root on its own store', () => {
+    const a = createPadMaps(createStorage(memoryBackend()));
+    const b = createPadMaps(createStorage(memoryBackend()));
+    a.store('Generic Pad', PULAR);
+    expect(a.padMap('Generic Pad'), 'the root that saved it lost it').toEqual(PULAR);
+    expect(b.padMap('Generic Pad'), 'the second root read the first root\'s map').toBeNull();
+  });
+
+  it('[Right] what is stored survives into a new root on the same store — it is the child\'s, not the session\'s', () => {
+    const store = createStorage(memoryBackend());
+    createPadMaps(store).store('Generic Pad', PULAR);
+    expect(createPadMaps(store).padMap('Generic Pad'), 'the map was kept only in memory').toEqual(PULAR);
+  });
+
+  it('⚠️ [Boundary] a cancelled wizard does not overwrite a map already stored, and is not stored itself', () => {
+    const store = createStorage(memoryBackend());
+    const maps = createPadMaps(store);
+    maps.store('Generic Pad', PULAR);
+    maps.skip('Generic Pad');
+    expect(maps.padMap('Generic Pad'), 'cancelling a second mapping erased the first').toEqual(PULAR);
+    maps.skip('Unknown Pad');
+    expect(maps.padMap('Unknown Pad'), 'a cancelled wizard must answer the default map for the session').toEqual({ _skip: true });
+    expect(createPadMaps(store).padMap('Unknown Pad'), 'the session sentinel reached the store').toBeNull();
   });
 });
 

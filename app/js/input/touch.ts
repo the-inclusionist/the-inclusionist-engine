@@ -85,10 +85,11 @@ export interface TouchCtx {
    */
   padAllowed: () => boolean;
   /**
-   * The window, only to listen for `resize`. Optional: without it the module falls back to the global when there is
-   * one, and in an environment with no window at all it simply does not listen — the geometry stays as at boot.
+   * The window, only to listen for `resize` — the root's (ADR-0232 D4). REQUIRED, and `null` is an answer: a host with no
+   * window at all does not listen, and the geometry stays as at boot. A fallback to the global would reach a window the
+   * root never handed in, which is what took down every boot in a fake document once this was wired to `createGame`.
    */
-  win?: Pick<Window, 'addEventListener'> | null;
+  win: Pick<Window, 'addEventListener'> | null;
 }
 
 // ===================== PURE (no DOM/store — node project) =====================
@@ -406,9 +407,8 @@ export function initTouch(ctx: TouchCtx): TouchApi {
   }
   wirePanel();
   // Recomputes the px on rotate/resize; the mm are fixed.
-  // ⚠️ THE WINDOW COMES THROUGH THE `ctx`: a bare global `addEventListener('resize', …)` took down every boot in a fake
-  // document once this was wired to `createGame`. Without a window there is nothing to listen to.
-  (ctx.win ?? (typeof addEventListener === 'function' ? globalThis : null))?.addEventListener('resize', applyPadPhysical);
+  // ⚠️ THE WINDOW COMES THROUGH THE `ctx` (see `TouchCtx.win`). Without a window there is nothing to listen to.
+  ctx.win?.addEventListener('resize', applyPadPhysical);
 
   // initial state: the stored design, geometry and direction applied once at boot
   applyPadDesign();

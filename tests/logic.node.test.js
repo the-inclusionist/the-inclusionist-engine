@@ -4,7 +4,7 @@
 // platform/audio (the mixer), core/rng.
 import { describe, it, expect } from 'vitest';
 import * as C from '../app/js/core/constants.js';
-import * as S from '../app/js/input/state.js';
+import { createInputState } from '../app/js/input/state.js';
 import * as AUDIO from '../app/js/platform/audio.js';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
@@ -94,6 +94,7 @@ describe('core/rng — LCG semeado (determinístico)', () => {
 
 
 describe('input/state — held(pl, act)', () => {
+  const S = createInputState(); // one root's input state (ADR-0232 D4)
   const mkPlayer = (over = {}) => ({ ctrl: { jump: ['KeyL'], left: ['KeyA'] }, pad: -1, ...over });
 
   it('[Zero] nada pressionado → held=false', () => {

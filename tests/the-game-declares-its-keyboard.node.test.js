@@ -4,8 +4,8 @@
 // ========================= THE TRAP THIS FILE GUARDS =========================
 // 🔴 There are TWO places that materialise keyboard defaults, and only one of them is obvious:
 //
-//   · `loadKB()`  — factory + what the child stored. The place everyone thinks of.
-//   · `resetKB()` — the controls panel's «restaurar padrões».
+//   · `loadKB()` — factory + what the child stored. The place everyone thinks of.
+//   · `reset()`  — the controls panel's «restaurar padrões», on the root's `createKeyboardConfig`.
 //
 // If only the first knew the game's default, «restaurar padrões» would erase the mapping the GAME chose and give back
 // the ENGINE's. The child presses the button expecting to return to what the game gave her, and returns to something
@@ -18,7 +18,7 @@
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  factoryWithGame, loadKB, resetKB, registerKeyboardMapping, KB_DEFAULTS,
+  factoryWithGame, loadKB, createKeyboardConfig, KB_DEFAULTS,
 } from '../app/js/input/keyboard.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
@@ -32,17 +32,17 @@ const CKEY = 'inclusionist.kbcontrols.v3';
  * builds its own (ADR-0232), so none inherits another's remap.
  */
 let store;
-beforeEach(() => { registerKeyboardMapping(null); store = createStorage(memoryBackend()); });
-afterEach(() => { registerKeyboardMapping(null); });
+beforeEach(() => { store = createStorage(memoryBackend()); });
+/** «Restaurar padrões» as the controls panel reaches it: the root's config, built with the game's mapping (ADR-0232 D4). */
+const resetKB = (s, mapping) => createKeyboardConfig({ store: s, mapping }).reset();
 
 describe('o padrão do jogo entra entre a fábrica e a criança', () => {
   it('[Zero] sem declaração, a fábrica da engine fica intacta', () => {
-    expect(factoryWithGame().solo.action1).toEqual(KB_DEFAULTS.solo.action1);
+    expect(factoryWithGame(null).solo.action1).toEqual(KB_DEFAULTS.solo.action1);
   });
 
   it('[Right] o jogo troca UMA posição e o resto continua a ser da engine', () => {
-    registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
-    const d = factoryWithGame();
+    const d = factoryWithGame(() => ({ action1: ['KeyQ'] }));
     expect(d.solo.action1, 'o padrão do jogo não chegou').toEqual(['KeyQ']);
     expect(d.solo.action2, 'parcial virou substituição: o resto da fábrica desapareceu').toEqual(KB_DEFAULTS.solo.action2);
   });
@@ -51,11 +51,10 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
     // ⚠️ The defect this pins: a default that did not know the seat would give the same keys to two children sitting at
     // the same keyboard, and neither of them could play.
     const vistos = [];
-    registerKeyboardMapping((jogadores, assento) => {
+    const d = factoryWithGame((jogadores, assento) => {
       vistos.push([jogadores, assento]);
       return { action1: [`J${jogadores}A${assento}`] };
     });
-    const d = factoryWithGame();
     expect(vistos, 'a fábrica não perguntou por cada arranjo e assento').toEqual([
       [1, 0], [2, 0], [2, 1], [3, 0], [3, 1], [3, 2], [4, 0], [4, 1], [4, 2], [4, 3],
     ]);
@@ -64,8 +63,7 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
   });
 
   it('📌 devolver `null` para um arranjo deixa esse arranjo com a fábrica', () => {
-    registerKeyboardMapping((jogadores) => (jogadores === 1 ? { action1: ['KeyQ'] } : null));
-    const d = factoryWithGame();
+    const d = factoryWithGame((jogadores) => (jogadores === 1 ? { action1: ['KeyQ'] } : null));
     expect(d.solo.action1).toEqual(['KeyQ']);
     expect(d.p2[0].action1).toEqual(KB_DEFAULTS.p2[0].action1);
   });
@@ -73,16 +71,14 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
 
 describe('a precedência, e o botão que a punha em causa', () => {
   it('[Right] o remapeamento da CRIANÇA vence o padrão do jogo', () => {
-    registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
-    expect(loadKB(store).solo.action1, 'o que ela gravou tem de vir por último').toEqual(['KeyZ']);
+    expect(loadKB(store, () => ({ action1: ['KeyQ'] })).solo.action1, 'o que ela gravou tem de vir por último').toEqual(['KeyZ']);
   });
 
   it('🔴 «restaurar padrões» volta ao padrão do JOGO, não ao da ENGINE', () => {
-    registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
 
-    const d = resetKB(store);
+    const d = resetKB(store, () => ({ action1: ['KeyQ'] }));
 
     expect(d.solo.action1, 'o reset devolveu a fábrica da engine e apagou a escolha do jogo').toEqual(['KeyQ']);
     expect(store.get(CKEY, null), 'o reset tem de apagar o que ela guardou — é isso que ele é').toBeNull();
@@ -90,13 +86,13 @@ describe('a precedência, e o botão que a punha em causa', () => {
 
   it('[Zero] e sem jogo declarado o reset continua a devolver a fábrica da engine', () => {
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
-    expect(resetKB(store).solo.action1).toEqual(KB_DEFAULTS.solo.action1);
+    expect(resetKB(store, null).solo.action1).toEqual(KB_DEFAULTS.solo.action1);
   });
 
   it('⚠️ [Interface] a fábrica devolve CÓPIAS: mexer no resultado não contamina o `KB_DEFAULTS`', () => {
-    const d = factoryWithGame();
+    const d = factoryWithGame(null);
     d.solo.action1 = ['KeyX'];
-    expect(factoryWithGame().solo.action1, 'a fábrica foi mutada por quem a leu').toEqual(KB_DEFAULTS.solo.action1);
+    expect(factoryWithGame(null).solo.action1, 'a fábrica foi mutada por quem a leu').toEqual(KB_DEFAULTS.solo.action1);
   });
 });
 
@@ -140,7 +136,7 @@ function declaracaoMinima() {
 }
 
 // ================================ MUTATIONS CHECKED ================================
-// 1. `resetKB` going back to `JSON.parse(JSON.stringify(KB_DEFAULTS))` → 🔴 the «restaurar padrões» case fails. It is the
+// 1. `reset` going back to `JSON.parse(JSON.stringify(KB_DEFAULTS))` → 🔴 the «restaurar padrões» case fails. It is the
 //    whole trap, and the only mutation on this list that describes a defect a child meets with one click.
 // 2. `factoryWithGame` calling the game only for `solo` → the SEAT case fails, in the list of questions.
 // 3. `Object.assign(alvo, parcial)` → `alvo = parcial` (replace instead of merge) → the partial case fails: the rest of

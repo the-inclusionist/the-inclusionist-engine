@@ -3445,7 +3445,55 @@ The setters and the bus hold no `this` and can be destructured.
 `setBlindModeValue`.)
 ## DA · ADR-0232 D4-B3: the input state, keyboard config, pad tables and pad maps become factories (issue #207)
 
-_Reserved: the rows land with the batch._
+**Who is affected:** a game that imports anything BY VALUE from `input/state.js` (the held keys, the pad frames, `held`,
+the key doors, the transport automaton), the live map or its doors from `input/keyboard.js` (`kb`, `initKB`, `setKB`,
+`resetKB`, `registerKeyboardMapping`), `input/pad-defaults.js`'s `padTable`/`registerPadMapping` or `input/pad-wizard.js`'s
+`padMap`; or that builds a `GamepadCtx`, `PadWizardCtx`, `LatchedEdgeOptions` or `TouchCtx` by hand. A game that only calls
+`createGame` changes nothing in what the root mounts.
+
+📌 **Why:** all of it was one per page — a module `Set`, three `Record`s of pad frames, the per-player automaton, the live
+key map, two mapping registrations and two memos — so a second root read and wrote the first one's held keys, a pad's
+previous frame, the child's device and the stored pad maps (ADR-0142), and two test files inherited each other's. The root
+now builds one of each and hands it down; a game reads the ROOT's through two additive handles. The registrations went for
+the D2b erratum's reason: a registration is module state a second root overwrites, and what once justified it — the
+controls panel resetting without the declaration at hand — is answered by a config built WITH the mapping.
+
+| old | new | migration |
+|---|---|---|
+| `input/state.js` `keys`, `keySource`, `markKey`, `markKeyWithoutSource`, `markKeyFrom`, `releaseKey`, `releaseAllKeys`, `letGoOfTheKeyboard`, `sourceOf`, `inputOf`, `playerEdge`, `enableAssistedFor`, `disableAssistedFor`, `forgetInputs`, `padCur`, `padPrevAct`, `padPrevStart`, `held` | removed as module exports. `createInputState()` returns a `LiveInput` with the same eighteen as members, same names and same behaviour (the containers are still mutated in place) | under `createGame`: `engine.input.keys`, `engine.input.held(pl, act)`, `engine.input.padCur`, … (new, below) — the methods hold no `this` and can be destructured: `const { held, keys } = engine.input`. A game that is its own root: `const input = createInputState()` once, and hand it to everything below |
+| `input/state.js` `PAD_DEAD` | removed; the dead zone is internal to `input/pad-reading`, the reading that uses it | nothing reads it outside the engine |
+| `input/keyboard.js` `kb`, `initKB(store)`, `setKB(next)`, `resetKB(store)`, `registerKeyboardMapping(f)` | removed. `createKeyboardConfig({ store, mapping })` returns a `KeyboardConfigApi`: `kb()` (the live map), `set(next)`, `save(conf?)` (the live map when omitted), `reset()` (erases the stored map, returns the GAME's default — it does not replace the live map, as `resetKB` did not), `factoryWithGame()`, `load()`. Both options are REQUIRED; `mapping` is the game's `KeyboardMapping` or `null` | under `createGame`: `engine.keyboardConfig` (new, below) — `kb` → `engine.keyboardConfig.kb()`, `setKB` → `.set`, `saveKB(store, conf)` → `.save(conf)`, `resetKB(store)` → `.reset()`, `factoryWithGame()` → `.factoryWithGame()`. Its own root: `const config = createKeyboardConfig({ store, mapping: declaration.keyboardMapping ?? null }); config.load()` |
+| `input/keyboard.js` `factoryWithGame()`, `loadKB(store)` | `factoryWithGame(mapping)`, `loadKB(store, mapping)` — the mapping is a REQUIRED parameter (`null` = the engine's factory); `saveKB(store, kb)` and `KB_DEFAULTS` are unchanged | pass the game's mapping, or use the config's members above |
+| `input/pad-defaults.js` `padTable(players, seat)`, `registerPadMapping(f)` | removed. `createPadTable(mapping)` returns a `PadTableFor` — `(players, seat) => PadTable` — with its memo inside; one table per mapping | `createPadTable(declaration.padMapping ?? null)` |
+| `input/pad-wizard.js` `padMap(store, id)` | removed. `createPadMaps(store)` returns a `PadMaps`: `padMap(id)`, `store(id, map)`, `skip(id)` — the cache of stored maps, one per root | build ONE and hand it to the wizard and the gamepad, so a map the wizard saves is the one the pad reads next frame |
+| `input/pad-wizard.js` `PadWizardCtx.store` | replaced by a REQUIRED `maps: PadMaps` | `createPadWizard({ ...ctx, maps })` |
+| `input/gamepad.js` `GamepadCtx.store` | replaced by three REQUIRED ports: `padMaps: PadMaps`, `padTable: PadTableFor` and `input: Pick<LiveInput, 'padCur' \| 'padPrevAct' \| 'padPrevStart'>` — the pad's frames are written THERE | `initGamepad({ ...ctx, padMaps, padTable: createPadTable(mapping), input: engine.input })` |
+| `input/latch-edge.js` `LatchedEdgeOptions` | gains a REQUIRED `input: Pick<LiveInput, 'playerEdge' \| 'inputOf'>`: the automaton the edge records into | `createLatchedEdge(() => players, { store, input: engine.input })` |
+| `input/touch.js` `TouchCtx.win` | REQUIRED (was optional, falling back to the global): the window whose `resize` re-measures the pad; `null` for a host with none | `initTouch({ ...ctx, win: window })` |
+
+The additive half, on the `gameSpeed`/`menuIndexOn`/`t` precedent: **`Engine.input`** (the root's `LiveInput` — the keys its
+transports hold, the pads it polls, the device each child is on) and **`Engine.keyboardConfig`** (the root's
+`KeyboardConfigApi` — the map its keyboard conductor, its virtual controller and its controls panel read). `keyboardConfig`
+exists because a game still WRITES the keyboard config: `game-2048` mounts its own remapping screen over the engine's map.
+
+📏 **Measured in the seven games, read-only, as information** (under the 9.0 names they are pinned at):
+- `game-2048` — `src/standalone.ts:25` imports `fabricaComOJogo`, `kb`, `resetKB`, `saveKB`, `setKB` and hands them to its
+  own `initSettingsControls` (228-238): `store: { saveKB: (e) => motor.keyboardConfig.save(semNulos(e)), resetKB:
+  motor.keyboardConfig.reset }`, `kb: motor.keyboardConfig.kb()`, `setKB: motor.keyboardConfig.set`, `kbPadraoFor: () =>
+  motor.keyboardConfig.factoryWithGame().solo`. `tests/keyboard-save.node.test.ts` reads only `KB_DEFAULTS` (unchanged);
+  `padPxPerMm` from `input/touch` is pure and unchanged.
+- `game-platformer` — its own root (it calls no `createGame`): `app/js/main.ts:74` (`kb`, `initKB`, `setKB`, `saveKB`,
+  `resetKB`, `fabricaComOJogo`; `initKB()` at 541), `:96` (`keys`, `padCur`, `padPrevAct`, `held`, the key doors), `:97`
+  and 593 (`criarArestaComAlternancia` — now needs `input`), `:1640` (`initGamepad` — now `padMaps`, `padTable`, `input`),
+  `:1876` (`initTouch` — now `win`); `app/js/game/physics.ts:28` imports `held`; `tests/physics.node.test.js:13` and
+  `tests/physics-golden.node.test.js:16` import `keys`. It builds `createInputState`, `createKeyboardConfig`,
+  `createPadTable` and `createPadMaps` once and passes the same `input` to its physics.
+- `game-soccer` — `app/js/boot/main.ts:42` imports `padCur` (read at 793) and mounts its own `initGamepad` (466) and
+  `criarArestaComAlternancia` (543) beside `createGame` (166): read `motor.input.padCur`, and hand its gamepad
+  `input: motor.input` so the frames it polls are the ones it reads. `tests/boot.browser.test.ts:18` imports `padCur`.
+- `game-pinball` — `tests/shell-cabinet-declaration.node.test.ts:30` imports `registrarMapeamentoDoTeclado` and `resetKB`:
+  `createKeyboardConfig({ store, mapping }).reset()` or `factoryWithGame(mapping)`.
+- `game-chess`, `game-whackwhack` and `pixi-15-puzzle` import none of this.
 
 ## DB · ADR-0232 D4-B4: audio and speech receive the browser (issue #207)
 

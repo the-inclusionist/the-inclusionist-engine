@@ -16,9 +16,10 @@ const translate = createTranslator().t;
 import { initKeydown } from '../app/js/input/keydown.js';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
 // The `input/state` PAIR (ADR-0109) — the same one `keydown.node.test.js` injects, for the same reason.
-import {
-  keys as keysReais, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
-} from '../app/js/input/state.js';
+import { createInputState } from '../app/js/input/state.js';
+const {
+  keys: keysReais, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
+} = createInputState();
 // The SCENE belongs to the TEST: the phase is the `core/scenes` stack and its three names live in the composition root
 // (ADR-0030 C3); engine code receives BOOLEANS. This `let` plays that role.
 let faseFalsa = 'playing';

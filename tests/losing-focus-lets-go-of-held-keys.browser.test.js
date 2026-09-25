@@ -14,7 +14,6 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
-import { keys, sourceOf } from '../app/js/input/state.js';
 
 let engine;
 let root;
@@ -61,9 +60,9 @@ beforeEach(() => {
 describe('the window losing focus is the keyup that never arrives', () => {
   it('🔴 [Right] a key the keyboard holds is let go of, and the game hears the release', () => {
     press(KEY.up);
-    expect(keys.has(KEY.up), 'the premise: the key is held').toBe(true);
+    expect(engine.input.keys.has(KEY.up), 'the premise: the key is held').toBe(true);
     loseFocus();
-    expect(keys.has(KEY.up), 'the key is still held after the window lost focus').toBe(false);
+    expect(engine.input.keys.has(KEY.up), 'the key is still held after the window lost focus').toBe(false);
     expect(received(), 'the game was left believing the button is still down').toEqual(['up:true', 'up:false']);
   });
 
@@ -71,15 +70,15 @@ describe('the window losing focus is the keyup that never arrives', () => {
     press(KEY.up);
     press(KEY.down);
     loseFocus();
-    expect([keys.has(KEY.up), keys.has(KEY.down)]).toEqual([false, false]);
+    expect([engine.input.keys.has(KEY.up), engine.input.keys.has(KEY.down)]).toEqual([false, false]);
     expect(received().filter((c) => c.endsWith(':false')).sort()).toEqual(['down:false', 'up:false']);
   });
 
   it('🔴 [Boundary] a position the CAMERA holds is not let go of', () => {
     engine.controller.press('up', 'olhos', 0);
-    expect(sourceOf(KEY.up), 'the premise: the key is held by the camera').toBe('olhos');
+    expect(engine.input.sourceOf(KEY.up), 'the premise: the key is held by the camera').toBe('olhos');
     loseFocus();
-    expect(keys.has(KEY.up), 'losing focus took a held position from the camera').toBe(true);
+    expect(engine.input.keys.has(KEY.up), 'losing focus took a held position from the camera').toBe(true);
     expect(received(), 'a release reached the game for a press that is still held').toEqual(['up:true']);
     engine.controller.release('up', 'olhos', 0);
   });

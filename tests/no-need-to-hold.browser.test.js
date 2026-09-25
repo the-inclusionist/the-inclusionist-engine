@@ -48,8 +48,7 @@ beforeAll(async () => {
   });
 });
 afterAll(async () => {
-  const { disableAssistedFor } = await import('../app/js/input/state.js');
-  disableAssistedFor(0);
+  // (no assisted transport to switch back off: it was enabled in THIS root's input state, which no other file reads — ADR-0232 D4)
   for (const k of CHAVES) { if (guardadas[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, guardadas[k]); }
   motor?.unmount?.();
   raiz?.remove();

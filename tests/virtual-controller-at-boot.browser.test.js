@@ -12,7 +12,6 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
-import { keys, sourceOf } from '../app/js/input/state.js';
 import { stampSource } from '../app/js/input/synthetic-source.js';
 
 let motor;
@@ -112,9 +111,9 @@ describe('createGame mounts the virtual pad from the preset', () => {
       expect(r.right - r2.right, 'the right pair is not in the right corner').toBeLessThan(r.width / 4);
       expect(l2.top - r.top, 'the shoulders are not at the top').toBeLessThan(r.height / 4);
       // wired: L1 holds the key the child mapped to «leftShoulder»
-      const antes = new Set(keys);
+      const antes = new Set(motor.input.keys);
       toque(botao('L-one'), 'pointerdown');
-      expect([...keys].filter((k) => !antes.has(k)), 'the shoulder does nothing').toHaveLength(1);
+      expect([...motor.input.keys].filter((k) => !antes.has(k)), 'the shoulder does nothing').toHaveLength(1);
       toque(botao('L-one'), 'pointerup');
     } finally {
       pad().hidden = true;
@@ -168,12 +167,12 @@ describe('createGame mounts the virtual pad from the preset', () => {
 
   it('🔴 [Right] pressing a pad button holds the KEY of that action, and releasing lets it go', () => {
     const confirmar = botoes().find((b) => funcao(b) === 'Confirm');
-    const antes = new Set(keys);
+    const antes = new Set(motor.input.keys);
     toque(confirmar, 'pointerdown');
-    const novas = [...keys].filter((k) => !antes.has(k));
+    const novas = [...motor.input.keys].filter((k) => !antes.has(k));
     expect(novas, 'the button did not inject the key the child mapped to «Confirm»').toHaveLength(1);
     toque(confirmar, 'pointerup');
-    expect(keys.has(novas[0]), 'the key stayed held after the finger left').toBe(false);
+    expect(motor.input.keys.has(novas[0]), 'the key stayed held after the finger left').toBe(false);
   });
 
   it('🔴 [Right] the START pill is the QUICK PAUSE (ADR-0155) — and the second tap leaves it', () => {
@@ -275,9 +274,9 @@ describe('createGame mounts the virtual pad from the preset', () => {
 
   it('🔴 [Right] in PLAY a pad press still holds the key — the menu bridge only works with a menu open', () => {
     const confirmar = botoes().find((b) => funcao(b) === 'Confirm');
-    const antes = new Set(keys);
+    const antes = new Set(motor.input.keys);
     toque(confirmar, 'pointerdown');
-    expect([...keys].filter((k) => !antes.has(k)), 'in play the pad stopped holding the key').toHaveLength(1);
+    expect([...motor.input.keys].filter((k) => !antes.has(k)), 'in play the pad stopped holding the key').toHaveLength(1);
     toque(confirmar, 'pointerup');
   });
 });
@@ -439,9 +438,9 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
 
   it('🔴 [Right] the rebuilt buttons are WIRED — a mount does not leave dead buttons', () => {
     const pular = botoes().find((b) => funcao(b) === 'Jump');
-    const antes = new Set(keys);
+    const antes = new Set(motor.input.keys);
     toque(pular, 'pointerdown');
-    expect([...keys].filter((k) => !antes.has(k)), 'the button of the new cartridge does nothing').toHaveLength(1);
+    expect([...motor.input.keys].filter((k) => !antes.has(k)), 'the button of the new cartridge does nothing').toHaveLength(1);
     toque(pular, 'pointerup');
   });
 });
@@ -528,9 +527,9 @@ describe('the engine offers the control object to the cartridge', () => {
     segundo.controller.press('left', 'gamepad', 0);
     const codigo = segundo.keyboard.kbFor(0).left?.[0];
     expect(codigo, 'the seat has no key bound to `left`: the case would measure nothing').toBeTruthy();
-    expect(keys.has(codigo), 'the position was delivered and the key was not held').toBe(true);
+    expect(segundo.input.keys.has(codigo), 'the position was delivered and the key was not held').toBe(true);
     segundo.controller.release('left', 'gamepad', 0);
-    expect(keys.has(codigo), 'the key stayed held after the release').toBe(false);
+    expect(segundo.input.keys.has(codigo), 'the key stayed held after the release').toBe(false);
   });
 
   it('[Zero] a release for a press the game never heard is not delivered', () => {
@@ -603,9 +602,9 @@ describe('the engine offers the control object to the cartridge', () => {
     const code = segundo.keyboard.kbFor(0).right?.[0];
     expect(code, 'the seat has no key bound to `right`: the case would measure nothing').toBeTruthy();
     segundo.controller.press('right', 'olhos', 0);
-    expect(sourceOf(code), 'the gaze press did not stamp the key: the case would measure nothing').toBe('olhos');
+    expect(segundo.input.sourceOf(code), 'the gaze press did not stamp the key: the case would measure nothing').toBe('olhos');
     tecla('keydown', code); // a real, unsigned key on the same code
-    expect(sourceOf(code), 'an unsigned key kept, or invented, a producer').toBeUndefined();
+    expect(segundo.input.sourceOf(code), 'an unsigned key kept, or invented, a producer').toBeUndefined();
     segundo.controller.release('right', undefined, 0);
   });
 

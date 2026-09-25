@@ -46,7 +46,7 @@
 // bar, the settings panels, the navigation sonar, and every input transport.
 import i18nObject, { initI18n, loadLocale, createTranslator, type Translate } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
-import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } from '../input/state.js';
+import { createInputState, type LiveInput } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { createCrashNotice } from '../ui/loop-crash.js';
@@ -92,7 +92,7 @@ import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform
 import { isBlind, isLowVision, DEFAULT_VISUAL, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 The mode → `url(#...)` table, which `render/cvd-matrices` installs and the `consumer-quiz` consumes.
 import { VIZ_FILTER } from '../render/viz-modes.js';
-import { createPadWizard } from '../input/pad-wizard.js';
+import { createPadWizard, createPadMaps } from '../input/pad-wizard.js';
 import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
 // 📏 The drawing reporters (`barIntruders`, `belowFloor`, `minimumTarget` and their types) live in `ui/drawing-problems`
 // (ADR-0221, issue #203), and the root does not know them. An import that can be deleted is coupling that no longer
@@ -146,8 +146,8 @@ import { createSimulationList } from '../ui/simulation-list.js';
 import { showOnlyRowsThatApply } from '../ui/audio-rows-that-apply.js';
 export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
-import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
-import { registerPadMapping } from '../input/pad-defaults.js';
+import { createKeyboardConfig, type KBDefaults, type KeyboardConfigApi, type KeyboardMapping } from '../input/keyboard.js';
+import { createPadTable, type PadTableFor } from '../input/pad-defaults.js';
 import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/heavy.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
@@ -565,7 +565,18 @@ export interface Engine {
   readonly settings: SettingsStore;
 
   // D4-B3 (input)
-
+  /**
+   * THIS ROOT'S INPUT STATE (ADR-0232 D4): the held keys and who pressed them, the transport in use per player, the pads'
+   * frames, and `held(player, action)`. A game reads and writes HERE instead of importing `input/state`, which is a factory
+   * now: a second instance would hold keys this root's transports never press.
+   */
+  readonly input: LiveInput;
+  /**
+   * THIS ROOT'S KEYBOARD MAP and its doors (ADR-0232 D4): `kb()` the live map, `set`, `save`, `reset` (back to the GAME's
+   * default, ADR-0115), `factoryWithGame()` and `load()`. For a game with a remapping screen of its own — `game-2048`'s —
+   * instead of importing `input/keyboard`'s module map, which no longer exists.
+   */
+  readonly keyboardConfig: KeyboardConfigApi;
 
   // D4-B4 (audio)
 
@@ -864,6 +875,10 @@ export function createGame(o: CreateGameOptions): Engine {
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   // ⚠️ The port of ADR-0178 carries the key names beside the store, so `core` names no storage place itself.
   const state = createSettingsStore({ ...store, KEYS });
+  // THIS ROOT'S INPUT STATE (ADR-0232 D4): held keys and their sources, the transport in use per player, the pads' frames.
+  // Destructured so the call sites below read as they did; a game reads the same object as `Engine.input`.
+  const input = createInputState();
+  const { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } = input;
   /*
    * 🔴 THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g). `core/i18n` keeps the decisions; the page effects —
    * writing `<html lang>`, dispatching on the window, reading `navigator.language` — come in through these two functions,
@@ -2210,41 +2225,33 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 5. Remappable keyboard — the best cut of the base (finding 11): a key scheme, no world.
   //
-  // ⚠️ THE GAME'S DEFAULT IS REGISTERED BEFORE `initKB(store)`, and the order is the rule: whoever reads the disk must already
-  // know which factory the child's data overlays (ADR-0115). Registering after would leave the first boot with the
-  // ENGINE's factory and the second with the game's — the worst kind of defect, because it vanishes when someone goes
-  // to look.
-  // 📌 And the register accepts `null`, which is what a game with no opinion produces: the engine's factory stays.
   /*
-   * THE TWO REGISTERS IN ONE FUNCTION, because they are a GLOBAL EFFECT and not a value: whoever calls them last wins.
-   *
-   * ⚠️ That makes them different from everything else in this root. Pointing a read at `cartridge` is enough for the
-   * fields read when someone asks; these two were already written elsewhere at boot, so swapping cartridges without
-   * rewriting them leaves the previous map in force — silently, and exactly where a child who remapped keys would
-   * notice first.
-   *
-   * 📌 `null` is the honest value of «this game has no opinion», and it is also what `unmount()` writes.
+   * THE MOUNTED CARTRIDGE'S TWO DEFAULT MAPPINGS (ADR-0115), held by THIS root (ADR-0232 D4): they were module registrations,
+   * and a second root overwrote the first root's. `null` is the honest value of «this game has no opinion», and it is also
+   * what `unmount()` sets. The keyboard config reads the mapping through a closure, so a `mount()` answers with the new
+   * cartridge's; the pad table is REBUILT, because its memo belongs to one mapping — a kept memo would serve the previous
+   * game's table.
    */
-  function registerCartridgeMappings(): void {
-    registerKeyboardMapping(
-      cartridge.declaration.keyboardMapping
-        ? (players, seat) => cartridge.declaration.keyboardMapping!(players, seat)
-        : null,
-    );
-    // ⚠️ AND THE GAMEPAD'S IS REGISTERED HERE, with the keyboard's: a cartridge's mapping must follow `mount()` like the
-    // keyboard's, and a register a game could forget would hand the ENGINE's map, silently, to a game that declared
-    // another. `initGamepad` (mounted below, ADR-0224) reads it.
-    registerPadMapping(
-      cartridge.declaration.padMapping
-        ? (players, seat) => cartridge.declaration.padMapping!(players, seat)
-        : null,
-    );
+  let keyboardMappingNow: KeyboardMapping | null = null;
+  let padTableNow: PadTableFor = createPadTable(null);
+  function followCartridgeMappings(declaration: GameDeclaration | null): void {
+    const keyboardMapping = declaration?.keyboardMapping;
+    keyboardMappingNow = keyboardMapping ? (players, seat) => keyboardMapping(players, seat) : null;
+    const padMapping = declaration?.padMapping;
+    padTableNow = createPadTable(padMapping ? (players, seat) => padMapping(players, seat) : null);
   }
-  registerCartridgeMappings();
-  initKB(store);
+  followCartridgeMappings(cartridge.declaration);
+  // ⚠️ THE GAME'S DEFAULT IS KNOWN BEFORE `load()`, and the order is the rule: whoever reads the disk must already know which
+  // factory the child's data overlays (ADR-0115).
+  const keyboardConfig: KeyboardConfigApi = createKeyboardConfig({
+    store, mapping: (players, seat) => keyboardMappingNow?.(players, seat) ?? null,
+  });
+  keyboardConfig.load();
+  // THE CHILD'S PAD MAPS, one cache for this root, handed to BOTH readers: the motor panel's wizard and the gamepad.
+  const padMaps = createPadMaps(store);
   // (`withoutReach`, `withoutPlayers` and `players` are hoisted above `initPauseIcons` — issue #147.)
   const keyboard = initKeyboardRuntime({
-    getKB: () => kb, getNumPlayers: () => players().length, getPlayers: () => players(),
+    getKB: keyboardConfig.kb, getNumPlayers: () => players().length, getPlayers: () => players(),
   });
   /** The «Mapear teclado» panel, once mounted. Declared here because the menu navigation, just below, asks it whether it
    *  is capturing a key — and it is born only with the motor panel, further on. */
@@ -3236,21 +3243,22 @@ export function createGame(o: CreateGameOptions): Engine {
       t: translator.t, $, srSay, srAlert,
       gameActions: actionsToMap,
       store: {
-        saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); saveKB(store, conf); },
+        saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); keyboardConfig.save(conf); },
         // ⚠️ «RESTORE» FOR THIS MODE, not for the whole keyboard: whoever resets the two-player keyboard does not erase the one-player one.
         resetKB: () => {
-          const factory = factoryWithGame();
+          const factory = keyboardConfig.factoryWithGame();
+          const kb = keyboardConfig.kb();
           if (keyboardMode === 1) kb.solo = factory.solo;
           else if (keyboardMode === 2) kb.p2 = factory.p2;
           else { kb.p4 = factory.p4; kb.p3 = factory.p3; }
-          saveKB(store, kb);
+          keyboardConfig.save(kb);
           return kb;
         },
       },
-      kb,
-      setKB,
-      kbFor: (i) => modeScheme(kb, i),
-      defaultSchemeFor: (i) => modeScheme(factoryWithGame(), i),
+      kb: keyboardConfig.kb(),
+      setKB: keyboardConfig.set,
+      kbFor: (i) => modeScheme(keyboardConfig.kb(), i),
+      defaultSchemeFor: (i) => modeScheme(keyboardConfig.factoryWithGame(), i),
       getNumPlayers: () => keyboardMode,
       applyControls: () => { keyboard.refreshControls(); },
       assignControls: () => { keyboard.assignControls(); },
@@ -3332,7 +3340,7 @@ export function createGame(o: CreateGameOptions): Engine {
     controlPanel.shell.card.insertBefore(controlSentence, controlPanel.shell.list);
     controlPanel.shell.card.insertBefore(controlProgress, controlPanel.shell.list);
     padWizard = createPadWizard({
-      store, t: translator.t,
+      maps: padMaps, t: translator.t,
       getGamepads: () => {
         const nav = win.navigator as Navigator | undefined;
         return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
@@ -3669,7 +3677,7 @@ export function createGame(o: CreateGameOptions): Engine {
     refuseIfHowToPlayMalformed('mount', hooks.howToPlay);
     cartridge = { ...hooks, declaration };
     mountHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
-    registerCartridgeMappings();
+    followCartridgeMappings(declaration);
     redrawGameOptions(); // the rows are the new cartridge's, drawn or cleared before its door is weighed
     pauseIcons.reflectPauseIcons(); // the bar follows the new cartridge: the hourglass exists only where time runs by itself
     currentReach = deriveReach();
@@ -3951,7 +3959,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   // menus it has open.
   const gameHooks = padGameAnswers(cartridge.gamepad, () => !menuWithDpad());
   const gamepad = initGamepad({
-    $, store, t: translator.t,
+    $, padMaps, input, t: translator.t,
+    padTable: (players, seat) => padTableNow(players, seat), // the MOUNTED cartridge's table, rebuilt by `mount()`
     oneButton: () => state.oneButton, // the motor empathy, read each frame from the settings store (ADR-0232)
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // THE GAME'S WORD for a position: the engine knows the position exists, only the cartridge knows what it is called —
@@ -4096,8 +4105,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
 
   function unmountAll(): void {
     closeReadingThread();
-    registerKeyboardMapping(null);
-    registerPadMapping(null);
+    followCartridgeMappings(null);
     removeReachNotice();
     hudMounted?.remove();
     hudMounted = null;
@@ -4140,7 +4148,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     settings: state,
 
     // D4-B3
-
+    input,
+    keyboardConfig,
 
     // D4-B4
 

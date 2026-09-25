@@ -3,7 +3,7 @@
 // ⚠️ THE ACTIONS ARE POSITIONS, NOT VERBS: `up`, `down`, `left`, `right` and `action1`..`action4`. Which verb
 // lives on which position belongs to the GAME (ADR-0074), and ADR-0086 §2 says which it is for the platformer.
 // Schemes per player count (solo/p2/p3/p4).
-// The CURRENT instance (KB) and the remapping live in the composition root — here only config/load/save/reset.
+// The LIVE map is one root's: `createKeyboardConfig({ store, mapping })`, built once by the composition root (ADR-0232 D4).
 import type { Store } from '../platform/storage.js';
 import type { KeyScheme } from '../core/entity.js';
 // ⚠️ THE SCHEMES ARE DECLARED THERE (ADR-0096), and this file derives them instead of repeating them — the union
@@ -98,34 +98,21 @@ import { migrateSaved, type SavedKB } from './vocabulary-migration.js';
  */
 export type KeyboardMapping = (players: number, seat: number) => Partial<KeyScheme> | null;
 
-let gameMapping: KeyboardMapping | null = null;
-
 /**
- * REGISTERS THE GAME'S DEFAULT. Called once by the boot (`boot/create-game`), from the declaration.
- *
- * 🔴 A REGISTRATION AND NOT A PARAMETER, and the reason is a measured defect rather than a preference. There are
- * TWO places that materialise defaults — `loadKB` and `resetKB` — and the second is called by the controls panel,
- * which does not have the game's declaration at hand. A parameter the panel did not pass would make "restore
- * defaults" put the ENGINE's map over the GAME's: the child presses the button expecting to return to what the
- * game gave them, and returns to something else — in a game whose author chose the layout for an accessibility
- * reason, they lose that reason and nothing says so.
- *
- * 📌 It is the same shape this file's `kb` already has, for the same reason: the owner is evident, and the
- * functions that manage it all live here.
- */
-export function registerKeyboardMapping(f: KeyboardMapping | null): void { gameMapping = f; }
-
-/**
- * THE FACTORY WITH THE GAME'S DEFAULT ON TOP — the **only** resolution, used by `loadKB` AND by `resetKB`.
+ * THE FACTORY WITH THE GAME'S DEFAULT ON TOP — the **only** resolution, used by `loadKB` AND by the reset.
  *
  * ⚠️ One function, and that is the whole point: while there were two copies of `JSON.parse(JSON.stringify(...))`,
- * the `resetKB` one did not know the game, and the difference only showed when a child pressed "restore".
+ * the reset's did not know the game, and the difference only showed when a child pressed "restore".
+ * 📌 The mapping is a PARAMETER, `null` for a game with no opinion (ADR-0232 D4): as a module registration a second
+ * root would overwrite the first root's (D2b erratum). What once justified the registration — the controls panel
+ * resetting without the game's declaration at hand — is answered by `createKeyboardConfig`, which receives the
+ * mapping once and hands the panel a reset that already knows it.
  */
-export function factoryWithGame(): KBDefaults {
+export function factoryWithGame(mapping: KeyboardMapping | null): KBDefaults {
   const d: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
-  if (!gameMapping) return d;
+  if (!mapping) return d;
   const overlayGameMapping = (target: KeyScheme, players: number, seat: number): void => {
-    const changes = gameMapping!(players, seat);
+    const changes = mapping(players, seat);
     if (changes) Object.assign(target, changes);
   };
   overlayGameMapping(d.solo, 1, 0);
@@ -136,10 +123,10 @@ export function factoryWithGame(): KBDefaults {
 }
 
 // loads the saved schemes OVER the defaults (migrating the old p34 data → p3+p4)
-export function loadKB(store: KeyboardStore): KBDefaults {
+export function loadKB(store: KeyboardStore, mapping: KeyboardMapping | null): KBDefaults {
   // ⚠️ THE PRECEDENCE IS THIS AND IT IS WRITTEN ONCE: the engine's factory → the GAME's default → the CHILD's
   // remapping. What the child saved always comes last, because it is the only one of the three they chose.
-  const d: KBDefaults = factoryWithGame();
+  const d: KBDefaults = factoryWithGame(mapping);
   // ⚠️ THE SAVED DATA GOES THROUGH THE TRANSLATOR BEFORE IT TOUCHES THE DEFAULTS. Without this line, a scheme
   // saved with the old keys (`run`, `jump`, `swap`, `especial`) would be merged over defaults that already use
   // `action1`..`action4`: the object would carry BOTH families of keys, the transports would read only the new
@@ -155,30 +142,55 @@ export function loadKB(store: KeyboardStore): KBDefaults {
 }
 export function saveKB(store: KeyboardStore, kb: KBDefaults): void { store.setJSON(CKEY, kb); }
 
-/**
- * THE LIVE KEY MAP (#50).
- *
- * It lives HERE, and not in core/state, because the owner is evident: `loadKB`, `saveKB` and `resetKB` live in
- * this file. Separating the value from the three functions that manage it would move the problem instead of
- * solving it.
- *
- * IT IS BORN WITH THE DEFAULTS AND DOES NOT READ DISK ON IMPORT. `initKB(store)` is what reads, called once by the
- * boot. The rule holds for every module in the project, and here breaking it has a concrete cost: a test
- * importing anything from this file would come to depend on the environment's localStorage, and a key map
- * inherited from another case is a failure that shows up far from its cause.
- */
-export let kb: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
+/** What one root's keyboard config is built from (ADR-0232 D4). Both required: see `createKeyboardConfig`. */
+export interface KeyboardConfigOptions {
+  /** Where the child's remapping is kept — the page's store, built by the root. */
+  readonly store: KeyboardStore;
+  /** The GAME's default, `null` for a game with no opinion. Read on every factory resolution, so a root that mounts
+   *  another cartridge can answer with the mounted one's. */
+  readonly mapping: KeyboardMapping | null;
+}
 
-/** Reads the persisted map into `kb`. The boot calls it once; returns the value for whoever wants to chain. */
-export function initKB(store: KeyboardStore): KBDefaults { kb = loadKB(store); return kb; }
+/** ONE ROOT'S LIVE KEY MAP and the doors that manage it — what `Engine.keyboardConfig` is. */
+export interface KeyboardConfigApi {
+  /** THE LIVE KEY MAP (#50). Remapping one key MUTATES this object; `set` is the only way to replace it. */
+  kb(): KBDefaults;
+  /** Replaces the whole map. Only "restore defaults" needs this — reassigning by mistake would leave live references
+   *  pointing at the old map. */
+  set(next: KBDefaults): void;
+  /** Stores `conf` (the live map when omitted) in the store. */
+  save(conf?: KBDefaults): void;
+  /**
+   * "RESTORE DEFAULTS" — erases what the child stored and returns the GAME's default, not the engine's (ADR-0115).
+   * 🔴 Resetting to the engine's factory alone would silently erase the mapping the game chose. It does NOT replace
+   * the live map: the caller decides (`set`), as the controls panel does.
+   */
+  reset(): KBDefaults;
+  /** The engine's factory with this game's default on top — a fresh copy each call. */
+  factoryWithGame(): KBDefaults;
+  /** Reads the stored map into the live one and returns it. */
+  load(): KBDefaults;
+}
 
-/** Replaces the whole map. Only the controls panel's "restore defaults" needs this — remapping one key MUTATES
- *  the object, and reassigning by mistake would leave live references pointing at the old map. */
-export function setKB(next: KBDefaults): void { kb = next; }
 /**
- * "RESTORE DEFAULTS" — and the default it returns to is the GAME's, not the engine's (ADR-0115).
+ * BUILDS ONE ROOT'S KEYBOARD CONFIG (ADR-0232 D4). The mapping is a construction parameter and not a registration: a
+ * registration is module state a second root overwrites (D2b erratum), and the reset this object hands out already knows
+ * the game, which is what the registration existed to guarantee.
  *
- * 🔴 Resetting to the engine's factory alone would silently erase the mapping the game chose. The child expects
- * to return to what the game gave them.
+ * ⚠️ IT DOES NOT READ THE STORE WHEN BUILT: the live map is born from the game's factory and `load()` is what reads, called
+ * once by the root. A test that builds one inherits nothing from any storage.
  */
-export function resetKB(store: KeyboardStore): KBDefaults { store.remove(CKEY); return factoryWithGame(); }
+export function createKeyboardConfig(opts: KeyboardConfigOptions): KeyboardConfigApi {
+  const { store, mapping } = opts;
+  // born as a COPY of the engine's defaults — a reference would let a remap write into `KB_DEFAULTS`, and the reset
+  // would restore what the child just changed
+  let kb: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
+  return {
+    kb: () => kb,
+    set(next) { kb = next; },
+    save(conf = kb) { saveKB(store, conf); },
+    reset() { store.remove(CKEY); return factoryWithGame(mapping); },
+    factoryWithGame: () => factoryWithGame(mapping),
+    load() { kb = loadKB(store, mapping); return kb; },
+  };
+}

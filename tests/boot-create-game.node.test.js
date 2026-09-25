@@ -1236,15 +1236,11 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
   });
 
   /*
-   * THE TWO MAPPINGS AFTER `unmount()`.
+   * THE TWO MAPPINGS FOLLOW THE CARTRIDGE: `mount()` brings the new one's, `unmount()` gives the engine's back.
    *
-   * ⚠️ THIS PAIR ALMOST WAS NOT WRITTEN, and it is worth saying why: ADR-0142's confirmation claimed it was impossible
-   * without widening the public surface, because `registerKeyboardMapping` and `registerPadMapping` are write-only and
-   * the field has no reader. The first half is true and the conclusion was not: the FIELD has no reader, but two exported
-   * functions have a RESULT that changes depending on whether it is registered — `factoryWithGame()` and `padTable()`.
-   *
-   * 🎯 And the behaviour check is the better of the two: the internal field being null measures the implementation; the
-   * keys going back to the engine's after the cartridge is released measures what the child finds.
+   * 📌 Read through the root's own handles (ADR-0232 D4): the keyboard through `keyboardConfig.factoryWithGame()`, the pad
+   * through what a real poll leaves in `input.padCur` — the table is not published, and the behaviour is the better check
+   * anyway: what the child's button does, not which object is in a cache.
    */
   const comTeclas = () => ({
     ...declaracaoValida(),
@@ -1254,35 +1250,69 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
 
   it('🎯 [Right] `unmount` devolve o TECLADO à fábrica da engine — o mapa do cartucho sai com ele', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { factoryWithGame } = await import('../app/js/input/keyboard.js');
     const { doc, win } = domFalso();
 
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
-    expect(factoryWithGame().solo.up, 'o mapa do jogo nem chegou a valer').toEqual(['KeyZ']);
+    expect(motor.keyboardConfig.factoryWithGame().solo.up, 'o mapa do jogo nem chegou a valer').toEqual(['KeyZ']);
 
     motor.unmount();
-    expect(factoryWithGame().solo.up, 'as teclas do cartucho anterior ficaram a valer depois de ele sair')
+    expect(motor.keyboardConfig.factoryWithGame().solo.up, 'as teclas do cartucho anterior ficaram a valer depois de ele sair')
       .toEqual(['KeyW', 'ArrowUp']);
+    // and mounting another cartridge brings ITS default, through the same config the controls panel resets with
+    motor.mount({ ...declaracaoValida(), keyboardMapping: () => ({ up: ['KeyY'] }) }, { accommodations: SEM_ASSUNTO });
+    expect(motor.keyboardConfig.factoryWithGame().solo.up, '`mount` kept the previous game\'s keyboard').toEqual(['KeyY']);
   });
 
-  it('🎯 [Right] e o PAD volta à tabela padrão — inclusive a memória que o registo limpa', async () => {
-    const { createGame } = await import('../app/js/boot/create-game.js');
-    const { padTable } = await import('../app/js/input/pad-defaults.js');
-    // 📌 The constant lives in `default-bindings`, and `pad-defaults` imports it — it does not re-export it.
-    const { GAMEPAD_STANDARD } = await import('../app/js/input/default-bindings.js');
-    const { doc, win } = domFalso();
+  /**
+   * A root whose host has ONE standard pad, and the poll the root starts when the pad connects. The frame is captured
+   * only across the `gamepadconnected` call, so no other animation frame of the boot is mistaken for the pad's.
+   */
+  function rootWithAPad(declaration) {
+    return import('../app/js/boot/create-game.js').then(({ createGame }) => {
+      const { doc, win, ouvintes } = domFalso();
+      let pads = [];
+      win.navigator = { getGamepads: () => pads };
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration, host: { doc, win } });
+      let poll = null;
+      win.requestAnimationFrame = (cb) => { poll ??= cb; return 1; };
+      win.cancelAnimationFrame = () => {};
+      /** Presses `buttons` on the pad and runs one poll; answers what the root recorded for pad 0. */
+      const press = (...buttons) => {
+        pads = [{ id: 'std', index: 0, mapping: 'standard', axes: [0, 0, 0, 0],
+          buttons: Array.from({ length: 24 }, (_, i) => ({ pressed: buttons.includes(i) })) }];
+        if (!poll) for (const o of ouvintes.filter((x) => x.type === 'gamepadconnected')) o.fn();
+        poll();
+        return motor.input.padCur[0];
+      };
+      return { motor, press };
+    });
+  }
 
-    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
-    expect(padTable(1, 0).up, 'o mapa de pad do jogo nem chegou a valer').not.toEqual(GAMEPAD_STANDARD.up);
+  it('🎯 [Right] e o PAD segue o cartucho: `mount` traz a tabela do novo, `unmount` a da engine — sem memória do anterior', async () => {
+    const { GAMEPAD_STANDARD } = await import('../app/js/input/default-bindings.js');
+    const { motor, press } = await rootWithAPad({ ...declaracaoValida(), padMapping: () => ({ action1: 20 }) });
+    expect(press(20).action1, 'o botão que o jogo declarou não responde').toBe(true);
+
+    motor.mount({ ...declaracaoValida(), padMapping: () => ({ action1: 21 }) }, { accommodations: SEM_ASSUNTO });
+    // ⚠️ THE SAME QUESTION, `players:seat` — a table kept in cache would answer with the first game's button
+    expect(press(20).action1, 'o pad ficou com a tabela do cartucho anterior em cache').toBe(false);
+    expect(press(21).action1, 'a tabela do cartucho novo não chegou ao pad').toBe(true);
 
     motor.unmount();
-    // ⚠️ IDENTITY AND NOT EQUALITY: with no mapping registered the function returns the constant ITSELF, which also proves
-    // that the per-`players:seat` memory was cleared — a merged table in cache would be equal in value to nothing and
-    // different in identity from the constant.
-    expect(padTable(1, 0), 'o pad ficou com a tabela do cartucho anterior em cache').toBe(GAMEPAD_STANDARD);
+    expect(press(21).action1, 'o botão do cartucho que saiu continuou a valer').toBe(false);
+    expect(press(GAMEPAD_STANDARD.action1).action1, 'sem cartucho, a fábrica da engine').toBe(true);
+  });
+
+  it('🔴 [Cross-check] duas raízes na mesma página, dois teclados e duas memórias de entrada (ADR-0142, ADR-0232 D4)', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const a = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: domFalso() });
+    const b = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: domFalso() });
+    expect(b.keyboardConfig.factoryWithGame().solo.up, 'a segunda raiz herdou o mapa do jogo da primeira').toEqual(['KeyW', 'ArrowUp']);
+    expect(a.keyboardConfig.factoryWithGame().solo.up, 'e a primeira perdeu o seu para a segunda').toEqual(['KeyZ']);
+    a.input.markKey('KeyA', 'olhos');
+    expect(b.input.keys.has('KeyA'), 'a tecla segurada numa raiz apareceu na outra').toBe(false);
   });
 });
-
 describe('the shape of a line of `problems` (ADR-0169, issue #163)', () => {
   it('🔴 [Right] every line is in English and says what it costs the child', async () => {
     // 📏 Measured on 2026-09-13: of the lines this root pushed, the older were Portuguese («sem sítio para o menu de

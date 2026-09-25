@@ -9,11 +9,17 @@
 // as a button, a map the child recorded in the wizard.
 //
 // 📌 Nothing here reads or writes state. The frame-to-frame memory (`padCur`, `padPrevAct`) belongs to whoever
-// polls; `PAD_DEAD` comes from `input/state` because it is the engine's dead zone and not this module's opinion.
+// polls — one root's `input/state` (ADR-0232 D4).
 import { GAMEPAD_STANDARD } from './default-bindings.js';
 import type { PadTable } from './pad-defaults.js';
 import type { Action } from '../core/actions.js';
-import { PAD_DEAD } from './state.js';
+
+/**
+ * THE STICK'S DEAD ZONE = the first HALF of its travel (ergonomics — the Dev's decision). A constant, and so it lives
+ * here with the reading that uses it, not in `input/state`, which is a factory now (ADR-0232 D4). Internal: nothing
+ * outside this reading asks for it, in this repository or in the games.
+ */
+const PAD_DEAD = 0.5;
 
 // ---------------------------------------------------------------------------------------------
 // Gamepad API surface (minimal, adapter-friendly — mirrors the real Gamepad/GamepadButton shape)

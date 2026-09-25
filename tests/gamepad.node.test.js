@@ -12,7 +12,9 @@ import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t;
 import { PADWIZ_ORDER, initGamepad, padGameAnswers } from '../app/js/input/gamepad.js';
 import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/input/pad-reading.js';
-import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
+import { createInputState } from '../app/js/input/state.js';
+import { createPadMaps } from '../app/js/input/pad-wizard.js';
+import { createPadTable } from '../app/js/input/pad-defaults.js';
 // `oneButton` reaches the module through the ctx, which answers from a settings store: these cases really turn it on and off.
 import { createSettingsStore } from '../app/js/core/state.js';
 import { filePort } from './fixtures/file-storage.js';
@@ -22,9 +24,12 @@ import { readFileSync } from 'node:fs';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { join } from 'node:path';
 const estado = createSettingsStore(filePort);
+// The pads' frames: ONE input state for this file, played as the root's (ADR-0232 D4) and handed to every ctx below.
+const input = createInputState();
+const { padCur, padPrevAct, padPrevStart } = input;
 
-// padCur/padPrevAct/padPrevStart (input/state.ts) are GENUINELY shared state — not part of the ctx, and they persist
-// between initGamepad() calls in the same process (one set, for the whole lifetime). Without a reset between tests, an
+// padCur/padPrevAct/padPrevStart are this file's ONE input state (above), handed to every ctx, so they persist
+// between initGamepad() calls in this file. Without a reset between tests, an
 // `edge` captured in one test "leaks" into the next that reuses the same pad index. A global reset — no test depends on
 // another's state.
 beforeEach(() => {
@@ -63,8 +68,11 @@ function buildCtx(over = {}) {
   const naBarra = over.naBarra || new Set();
   const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], wizardSteps: [], wizardTicks: 0, hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
   return {
-    // each ctx its own store (ADR-0232): a map one case saves cannot be the one another case reads
-    store: createStorage(memoryBackend()),
+    // each ctx its own maps over its own store (ADR-0232): a map one case saves cannot be the one another case reads
+    padMaps: createPadMaps(createStorage(memoryBackend())),
+    // a game with no opinion: the engine's table (the game's own is held in the-game-declares-its-pad)
+    padTable: createPadTable(null),
+    input,
       t: translate, // the root's translator, played by the test (ADR-0232 D3)
     // the test plays the root: it answers from the real settings store, which the one-button cases turn on and off
     oneButton: () => estado.oneButton,

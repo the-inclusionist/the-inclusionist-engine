@@ -2,10 +2,9 @@
 // input/pad-defaults.ts — THE BUTTON MAP THIS GAME WANTS, by arrangement and by seat (ADR-0115).
 //
 // ========================= WHY A MODULE AND NOT A LINE IN `input/gamepad` =========================
-// Whoever REGISTERS it and whoever READS it sit on different sides of the mount, and that is the whole reason: the
-// composition root registers it from the game's declaration; the pad transport reads it every frame. Kept apart, the
-// transport never has to be handed the declaration — a field a caller could forget, and forgetting it would give the
-// ENGINE's map to a game that declared another, in silence.
+// Whoever BUILDS the table and whoever READS it sit on different sides of the mount: the composition root builds it from
+// the game's declaration; the pad transport reads it every frame, through a REQUIRED `GamepadCtx.padTable` — a caller
+// cannot forget it and silently hand the ENGINE's map to a game that declared another.
 //
 // ⚠️ AND THE PRECEDENCE IS THE KEYBOARD'S, with a difference of place worth writing down: on a pad the CHILD's remap is
 // not a layer on top of this table — it is a whole BRANCH of `padActions` (the map the wizard recorded for that `gp.id`).
@@ -20,35 +19,29 @@ export type PadMapping = (players: number, seat: number) => Partial<Record<Actio
 
 export type PadTable = Readonly<Record<Action, Binding<number>>>;
 
-let gameMapping: PadMapping | null = null;
-const memo = new Map<string, PadTable>();
+/** The button table for an arrangement and seat — what `createPadTable` returns and `GamepadCtx.padTable` receives. */
+export type PadTableFor = (players: number, seat: number) => PadTable;
 
 /**
- * REGISTERS THE GAME'S DEFAULT. Called once by the start; `null` clears it (what a game with no opinion produces).
- *
- * ⚠️ IT CLEARS THE MEMO, and without that line the register would be worse than not existing: a second mount — another
- * game on the same page, one test after another — would read the previous game's table, and the reading would be right
- * everywhere except in its value.
- */
-export function registerPadMapping(f: PadMapping | null): void {
-  gameMapping = f;
-  memo.clear();
-}
-
-/**
- * THE BUTTON TABLE FOR THIS ARRANGEMENT AND SEAT — the engine's factory with the game's default on top.
+ * THE BUTTON TABLE OF ONE GAME'S MAPPING, for each arrangement and seat — the engine's factory with the game's default on
+ * top. `null` = a game with no opinion: the factory itself, the same object.
  *
  * 📌 MEMOISED because it is read in the polling loop, once per pad per frame: merging two objects sixty times a second
- * per player is garbage no child sees and the collector pays for. The key is `players:seat`, and the register clears it
- * — the only moment the answer can change.
+ * per player is garbage no child sees and the collector pays for. The key is `players:seat`.
+ * ⚠️ AND THE MEMO IS THIS TABLE'S, one per mapping (ADR-0232 D4): a root that mounts another cartridge builds another
+ * table. As a module registration it was one memo for the page, and a second mount — another game, another root, one
+ * test after another — read the previous game's table unless every writer remembered to clear it.
  */
-export function padTable(players: number, seat: number): PadTable {
-  if (!gameMapping) return GAMEPAD_STANDARD;
-  const key = `${players}:${seat}`;
-  const cached = memo.get(key);
-  if (cached) return cached;
-  const changes = gameMapping(players, seat);
-  const table: PadTable = changes ? Object.freeze({ ...GAMEPAD_STANDARD, ...changes }) : GAMEPAD_STANDARD;
-  memo.set(key, table);
-  return table;
+export function createPadTable(mapping: PadMapping | null): PadTableFor {
+  const memo = new Map<string, PadTable>();
+  return (players, seat) => {
+    if (!mapping) return GAMEPAD_STANDARD;
+    const key = `${players}:${seat}`;
+    const cached = memo.get(key);
+    if (cached) return cached;
+    const changes = mapping(players, seat);
+    const table: PadTable = changes ? Object.freeze({ ...GAMEPAD_STANDARD, ...changes }) : GAMEPAD_STANDARD;
+    memo.set(key, table);
+    return table;
+  };
 }
