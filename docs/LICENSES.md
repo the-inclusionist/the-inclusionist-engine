@@ -86,8 +86,9 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     `pt_core_news_md` 3.8.0 (**CC BY-SA 4.0**) — tools the build machine runs, **none of which is distributed**
     (`scripts/libras-glosses/`). Whether a gloss is a derivative of the model is **not determined**; the project believes it
     is not, which is not a legal opinion. The **sign bundles** the glosses use are LAViD's dictionary (**GPL-3.0**), and a
-    delivery carries only those pinned by sha256 in `scripts/libras-signs.json` — **none yet**, pending the Dev's permission
-    to fetch them — with the GPL-3.0 text beside them when it does.
+    delivery carries only those pinned by sha256 in `scripts/libras-signs.json` — the 632 signs the engine's glosses use
+    (15,086,780 bytes), from `vlibras-dictionary-sources` at a pinned commit — with the GPL-3.0 text and a NOTICE naming the
+    source beside them (`libras/signs/`). See `CREDITS.md`.
 
   ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
   lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.

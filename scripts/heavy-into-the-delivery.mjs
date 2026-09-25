@@ -103,7 +103,9 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   and then the player page with the patched framework (`scripts/vlibras-player.mjs`). No game declares it: deaf mode is the
  *   person's, like speaking is, so the DELIVERY says whether it can sign. Without it the sonar in deaf mode says «signing
  *   unavailable», as it always did. The same step GLOSSES the text a child can be shown (`scripts/libras-glosses.mjs`): the engine's
- *   Portuguese dictionary, always, and the game's own with `--libras-texts <file>`, repeatable (which implies `--libras`). It
+ *   Portuguese dictionary, always, and the game's own with `--libras-texts <file>`, repeatable (which implies `--libras`) — and
+ *   delivers the signs those glosses use that `scripts/libras-signs.json` pins (the engine's: 632, 15.1 MB), from LAViD's
+ *   dictionary at a pinned commit or from the pins' `mirror` folder under `--base`, each checked by sha256. It
  *   needs the glosser's environment, built once by `--libras-setup`; without it the delivery STOPS instead of shipping a player
  *   with nothing to sign but letters.
  * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
@@ -156,7 +158,7 @@ if (executado) {
       const games = await Promise.all(librasTexts.map((file) => readTexts(file)));
       const made = await deliverLibrasGlosses({
         destino, playerFolder: LIBRAS_PLAYER_FOLDER, signsFolder: LIBRAS_SIGNS_FOLDER, glossesFile: LIBRAS_GLOSSES_FILE,
-        dictionaries: [enginePt, ...games], translate: (inputs) => runGlosser(inputs), pins: readSignPins(),
+        dictionaries: [enginePt, ...games], translate: (inputs) => runGlosser(inputs), pins: readSignPins(), base,
       });
       console.log(`glosses   ${made.path} — ${made.texts} texts (the engine's${games.length ? ` and ${games.length} of the game's` : ''}), `
         + `${made.tokens} sign names`);

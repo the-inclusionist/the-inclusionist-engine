@@ -249,9 +249,9 @@ const LIBRAS_PLAYER: readonly HeavyFile[] = Object.freeze([
  */
 export const LIBRAS_PLAYER_FOLDER = 'libras/player/';
 /**
- * Where the player is told to fetch sign bundles (`setBaseUrl`), on the page's own origin. 📌 EMPTY UNTIL PLAN ITEM 5b, which
- * delivers the signs the build-time glosses use: until then every word 404s here and the player fingerspells it with the
- * letters it carries.
+ * Where the player is told to fetch sign bundles (`setBaseUrl`), on the page's own origin. The delivery puts here the signs the
+ * build-time glosses use that `scripts/libras-signs.json` pins; a word with no sign here 404s and the player fingerspells it with
+ * the letters it carries.
  */
 export const LIBRAS_SIGNS_FOLDER = 'libras/signs/';
 

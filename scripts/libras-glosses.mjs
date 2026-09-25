@@ -29,8 +29,10 @@
 // and never downloads a Python.
 //
 // THE SIGNS those glosses use are delivered here too, into `libras/signs/`, but ONLY the ones pinned by sha256 in
-// `libras-signs.json` — none yet: fetching LAViD's sign bundles waits for the Dev. A token with no pinned sign is fingerspelled by
-// the player, so its accents are stripped in the written glosses (the player has no clip for an accented letter).
+// `libras-signs.json` (the Dev authorised the download: «Autorizo»): LAViD's dictionary repository at a pinned commit, fetched
+// from there or from `--base`, and a byte that differs from the pin is REFUSED. The GPL-3.0 and a NOTICE naming the source are
+// written beside them. A token with no pinned sign is fingerspelled by the player, so its accents are stripped in the written
+// glosses (the player has no clip for an accented letter).
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -205,7 +207,10 @@ export function spellable(file, carried) {
   return { ...file, glosses: file.glosses.map(([text, gloss]) => [text, gloss.split(/\s+/u).filter(Boolean).map(spell).join(' ')]) };
 }
 
-/** The sign pins: `{ source, signs: { NAME: { sha256, bytes } } }`. None yet — see the header. */
+/**
+ * The sign pins: `{ commit, source, signs: { NAME: { sha256, bytes } } }` — `source` is the dictionary repository's folder at
+ * `commit`, and a sign's address is `source` + its name, encoded.
+ */
 export function readSignPins(path = fileURLToPath(new URL('./libras-signs.json', import.meta.url))) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
@@ -213,20 +218,30 @@ export function readSignPins(path = fileURLToPath(new URL('./libras-signs.json',
 const GPL_3 = new URL('./licences/GPL-3.0.txt', import.meta.url);
 
 /**
- * Puts into `<destino>/<folder>` the sign of every token that has a pin, checked by sha256 — from `base` (an address or a
- * folder) when one is given, else from the pins' `source`. Returns `{ carried: [{ name, sha256 }], unpinned: [names] }`.
+ * Where the signs are read from: the pins' `source` upstream, or — with a delivery's `--base` (an address or a folder) — the
+ * folder `pins.mirror` names under it, laid out as `platform/heavy-mirror` lays out the other heavy files (the short commit in
+ * the folder's name). Pins with no `mirror` are read from the base itself.
+ */
+export function signsSourceOf(pins, base = '') {
+  if (!base) return pins.source;
+  return pins.mirror ? `${base.replace(/[/\\]+$/, '')}/${pins.mirror}` : base;
+}
+
+/**
+ * Puts into `<destino>/<folder>` the sign of every token that has a pin, checked by sha256 — from `base` (see `signsSourceOf`)
+ * when one is given, else from the pins' `source`. Returns `{ carried: [{ name, sha256 }], unpinned: [names] }`.
  * THROWS on a sign whose bytes are not the pinned ones: nothing unchecked reaches a delivery.
  */
 export async function deliverLibrasSigns({ destino, folder, tokens, pins, base = '', fetch: fetchFile = fetch,
   read = (p) => readFileSync(p), sha256 = sha256OfNode }) {
   const carried = [];
   const unpinned = [];
+  const from = signsSourceOf(pins, base);
   for (const name of tokens) {
     const pin = pins.signs?.[name];
     if (!pin) { unpinned.push(name); continue; }
     const target = join(destino, folder, name);
     if (existsSync(target) && sha256(readFileSync(target)) === pin.sha256) { carried.push({ name, sha256: pin.sha256 }); continue; }
-    const from = base || pins.source;
     let bytes;
     if (/^https?:\/\//i.test(from)) {
       const address = `${from.replace(/\/?$/, '/')}${encodeURIComponent(name)}`;
@@ -247,8 +262,9 @@ export async function deliverLibrasSigns({ destino, folder, tokens, pins, base =
   if (carried.length) {
     writeFileSync(join(destino, folder, 'LICENSE'), readFileSync(GPL_3));
     writeFileSync(join(destino, folder, 'NOTICE'), 'The sign bundles in this folder are LAViD-UFPB\'s VLibras dictionary '
-      + `(vlibras-dictionary-sources, GPL-3.0), obtained unchanged from ${pins.source}; their sources are the .blend files of `
-      + 'https://gitlab.lavid.ufpb.br/vlibras-public/vlibras-dictionary/vlibras-dictionary-sources\n');
+      + `(vlibras-dictionary-sources, GPL-3.0), unchanged: each file is the one at ${pins.source}<NAME>, checked by sha256; their `
+      + 'sources are the .blend files of the same repository, '
+      + `https://gitlab.lavid.ufpb.br/vlibras-public/vlibras-dictionary/vlibras-dictionary-sources${pins.commit ? ` (commit ${pins.commit})` : ''}\n`);
   }
   return { carried, unpinned };
 }

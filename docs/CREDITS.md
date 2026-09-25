@@ -216,6 +216,22 @@ model that declares no licence, and is never asked for. Published on test.pypi.o
   package; what a delivery carries is its OUTPUT, `libras/player/glosses.json`.
 - **Copyright line** as its sources state it: «Copyright (c) Laboratório de Aplicações de Vídeo Digital - LAViD».
 
+## VLibras sign bundles — LAViD-UFPB `vlibras-dictionary-sources` — GPL-3.0
+
+The signs the avatar plays (ADR-0234, route A): Unity 2018.3.1 WebGL AssetBundles from the repository's
+`FILES/BUNDLES/2018.3.1/WEBGL/BR/` at commit `f8ddb378affd0d6da42f04c9fc888dafe1cc1299`
+(`gitlab.lavid.ufpb.br/vlibras-public/vlibras-dictionary/vlibras-dictionary-sources`, the same bytes the dictionary host
+`dicionario2.vlibras.gov.br` serves). Only the signs the engine's own glosses use: **632 files, 15,086,780 bytes**, each pinned
+by sha256 and byte count in `scripts/libras-signs.json`. Fetched by the build only with `inclusionist-heavy --libras`, a byte
+that differs from the pin refused, and served to the child from the delivery's own origin (`libras/signs/`). Downloaded with
+the Dev's permission («Autorizo»); none is committed to this repository.
+
+- **Licence:** the repository declares **GPL-3.0**. A delivery writes the GPL-3.0 text (`LICENSE`) and a `NOTICE` naming the
+  pinned source beside the signs.
+- **Corresponding source:** the `.blend` files of the same repository, at the same commit.
+- **Changed by this project:** nothing — the files are carried byte for byte.
+- **Copyright line: UNVERIFIED** — the bundles carry none, and the repository's own `LICENSE` and README were not read.
+
 ## spaCy and its Portuguese model `pt_core_news_md` 3.8.0 — MIT and CC BY-SA 4.0 — BUILD TIME ONLY
 
 The Portuguese pipeline the translator's rules read (part of speech, morphology, dependencies, entities): spaCy 3.8 (Explosion,

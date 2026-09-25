@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import {
   textsToGloss, glossTexts, glossTokens, spellable, placeholderWord, runGlosser, setUpGlosser, deliverLibrasGlosses,
-  deliverLibrasSigns, glosserEnvironment, glosserPython, readSignPins, PINNED, GLOSSER_PROJECT,
+  deliverLibrasSigns, signsSourceOf, glosserEnvironment, glosserPython, readSignPins, PINNED, GLOSSER_PROJECT,
 } from '../scripts/libras-glosses.mjs';
 import { argumentosDaEntrega } from '../scripts/heavy-into-the-delivery.mjs';
 
@@ -179,14 +179,24 @@ describe('the pins: rule-based only, and reproducible', () => {
     expect(glosser).not.toMatch(/neural\s*=\s*True/);
   });
 
-  it('📌 [Boundary] no sign is pinned yet: fetching LAViD\'s bundles waits for the Dev', () => {
-    expect(readSignPins().signs).toEqual({});
+  it('🔴 [Right] the signs are pinned at a COMMIT of LAViD\'s dictionary, WebGL 2018.3.1, each by sha256 and byte count', () => {
+    const pins = readSignPins();
+    const at = /^https:\/\/gitlab\.lavid\.ufpb\.br\/vlibras-public\/vlibras-dictionary\/vlibras-dictionary-sources\/-\/raw\/([0-9a-f]{40})\/FILES\/BUNDLES\/2018\.3\.1\/WEBGL\/BR\/$/
+      .exec(pins.source);
+    expect(at, `the source is not the dictionary at a pinned commit: ${pins.source}`).not.toBeNull();
+    expect(at[1], 'the source and the commit it names disagree').toBe(pins.commit);
+    const signs = Object.entries(pins.signs);
+    expect(signs.length, 'the Dev authorised the signs the engine\'s glosses use; none is pinned').toBeGreaterThan(0);
+    for (const [name, pin] of signs) {
+      expect(pin.sha256, name).toMatch(/^[0-9a-f]{64}$/);
+      expect(Number.isInteger(pin.bytes) && pin.bytes > 0, name).toBe(true);
+    }
   });
 });
 
 describe('the signs, pinned by sha256', () => {
   const CASA = Buffer.from('UnityFS casa');
-  const pins = { source: 'https://dicionario.example/BR/', signs: { CASA: { sha256: sha(CASA), bytes: CASA.length } } };
+  const pins = { commit: 'c0ffee', source: 'https://dicionario.example/BR/', signs: { CASA: { sha256: sha(CASA), bytes: CASA.length } } };
 
   it('🔴 [Right] from a local base: a pinned sign is written and carried, one with no pin is listed, and the licence travels', async () => {
     const destino = tmp();
@@ -197,6 +207,8 @@ describe('the signs, pinned by sha256', () => {
       expect(out).toEqual({ carried: [{ name: 'CASA', sha256: sha(CASA) }], unpinned: ['XPTO'] });
       expect(readFileSync(join(destino, 'libras/signs/CASA'))).toEqual(CASA);
       expect(readFileSync(join(destino, 'libras/signs/LICENSE'), 'utf8')).toMatch(/GNU GENERAL PUBLIC LICENSE\s+Version 3/);
+      expect(readFileSync(join(destino, 'libras/signs/NOTICE'), 'utf8'), 'the NOTICE does not say where the signs came from')
+        .toMatch(/LAViD-UFPB.*GPL-3\.0.*https:\/\/dicionario\.example\/BR\/<NAME>.*commit c0ffee/s);
       expect(existsSync(join(destino, 'libras/signs/XPTO')), 'a sign with no pin was fetched').toBe(false);
     } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
   });
@@ -209,6 +221,27 @@ describe('the signs, pinned by sha256', () => {
       await expect(deliverLibrasSigns({ destino, folder: 'libras/signs/', tokens: ['CASA'], pins, base })).rejects.toThrow(/REFUSED the sign CASA/);
       expect(existsSync(join(destino, 'libras/signs/CASA'))).toBe(false);
     } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] with the delivery\'s `--base`, the signs are read from the pins\' `mirror` folder under it, never upstream', async () => {
+    const destino = tmp();
+    const base = tmp();
+    try {
+      mkdirSync(join(base, 'dict-c0ffee', 'BR'), { recursive: true });
+      writeFileSync(join(base, 'dict-c0ffee', 'BR', 'CASA'), CASA);
+      const upstream = vi.fn();
+      const out = await deliverLibrasSigns({ destino, folder: 's/', tokens: ['CASA'], pins: { ...pins, mirror: 'dict-c0ffee/BR/' },
+        base: `${base}/`, fetch: upstream });
+      expect(out.carried).toEqual([{ name: 'CASA', sha256: sha(CASA) }]);
+      expect(upstream).not.toHaveBeenCalled();
+      expect(signsSourceOf({ ...pins, mirror: 'dict-c0ffee/BR/' }, 'https://mirror.example/')).toBe('https://mirror.example/dict-c0ffee/BR/');
+      expect(signsSourceOf(pins, '')).toBe(pins.source);
+    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
+  });
+
+  it('📌 [Boundary] the real pins\' mirror folder carries the short commit, as the other mirrored heavy files do', () => {
+    const real = readSignPins();
+    expect(real.mirror).toBe(`vlibras-dictionary-sources-${real.commit.slice(0, 7)}/FILES/BUNDLES/2018.3.1/WEBGL/BR/`);
   });
 
   it('📌 [Boundary] with no base, from the pins\' source, the name encoded; nothing pinned, nothing fetched and no licence', async () => {
@@ -253,3 +286,6 @@ describe('the delivery\'s arguments', () => {
 //   M11 `gloss.py` asks for `neural=True`                 🔴 never the neural mode
 //   M12 `--libras-texts` not skipping its value (heavy-into-the-delivery.mjs)  🔴 `--libras-texts <file>` … never taken for the folder
 //   M13 a missing `uv` not said by name                   🔴 setup: no `uv` is said by name
+//   M14 `libras-signs.json` source on a branch (`/-/raw/main/`)  🔴 the signs are pinned at a COMMIT of LAViD's dictionary
+//   M15 the NOTICE without the pinned source              🔴 from a local base: … the licence travels
+//   M16 `--base` read as the signs' folder, mirror ignored   🔴 with the delivery's `--base`, … the pins' `mirror` folder

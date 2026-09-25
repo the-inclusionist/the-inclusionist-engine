@@ -76,7 +76,10 @@ export function patchFramework(compressed, { expectedSha256, sha256 = sha256OfNo
   return patched;
 }
 
-/** The revision of the sign set a delivery carries: the sha256 of its sorted `NAME sha256` lines (empty: no sign yet, 5b). */
+/**
+ * The revision of the sign set a delivery carries: the sha256 of its sorted `NAME sha256` lines. A delivery whose set differs from
+ * the one a device last started with makes the player page delete Unity's sign cache once (`vlibras-player/player.js`).
+ */
 export function signSetRevision(signs, sha256 = sha256OfNode) {
   return sha256(signs.map((s) => `${s.name} ${s.sha256}`).sort().join('\n'));
 }
@@ -85,7 +88,7 @@ export function signSetRevision(signs, sha256 = sha256OfNode) {
  * Writes the player into the delivery `destino`, whose `heavy/` already holds the four published files: the patched framework
  * beside them, and the page, glue, shim, parser and Unity configuration in `playerFolder`. Returns the paths written, relative to
  * `destino`. THROWS on a missing catalogue entry, a refused patch, or a patched file whose sha256 is not the measured one.
- * `signs` is the sign set the delivery carries — none until plan item 5b.
+ * `signs` is the sign set the delivery carries (`deliverLibrasSigns`).
  */
 export function deliverLibrasPlayer({ destino, catalogue, deliveryPath, playerFolder, signs = [], read = (p) => readFileSync(p),
   sha256 = sha256OfNode, patchedSha256 = PATCHED_FRAMEWORK_SHA256, pageSource = HERE }) {
