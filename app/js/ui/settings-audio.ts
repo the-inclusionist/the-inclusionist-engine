@@ -27,10 +27,6 @@ import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
  */
 import { createVoiceSettings, type TtsPanel, type VoiceSettingsStore } from './voice-settings.js';
 
-// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
-// already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
 export interface AudioStore {
   get(key: string, fallback?: string | null): string | null;

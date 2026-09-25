@@ -83,6 +83,8 @@ export function importadoresNoRepositorio(raiz) {
  * Exported VALUES nothing in this repository imports, as `{ module: [names] }`.
  * 📌 Types and interfaces are left out: most of them name a parameter or a return of an exported function, and a
  * cartridge that wants to write that type down needs the name even when no one imports it today.
+ * ⚠️ A RE-EXPORTED type (`export type { T } from …`) is NOT left out (issue #204): the name still lives where it is
+ * declared, so the reason above does not reach the second path.
  */
 export function semImportadorNoRepositorio(raiz) {
   const usados = importadoresNoRepositorio(raiz);

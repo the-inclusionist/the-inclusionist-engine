@@ -21,8 +21,8 @@ import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from '.
  * 📌 THE PURE HALF LIVES IN `ui/motion-choices` (ADR-0221), and the SUITE pointed at the seam:
  * `tests/settings-motion.node.test.js` exercises exactly these names, and the node project mounts no document.
  *
- * ⚠️ NO ALIAS: a re-export would keep alive a path nothing in here uses and make the surface snapshot lie, because it
- * does not see re-exports (issue #204).
+ * ⚠️ NO ALIAS: a re-export would keep alive a published path nothing in here uses — surface with no consumer
+ * (issue #204).
  */
 import {
   RM_LABEL, CRT_LBL, CRT_ROUND_LEVELS, clampSelectedPlayer, allMotionFrozen, motionMasterLabel,
@@ -40,9 +40,8 @@ import type {
  * ⚠️ THE VOCABULARY LIVES IN `ui/motion-scene`, which owns the VALUES (the other way round is an import cycle), AND
  * THE NAMES STAY HERE too.
  *
- * ⚠️ As ALIASES and not re-exports (`export type { X } from …`): the public-surface snapshot leaves re-exports out on
- * purpose, so re-exporting would make the five names DISAPPEAR from this module's snapshot — and the gate would read a
- * change of home as a removal, a break that does not exist. The alias says the same and stays visible.
+ * 📌 As ALIASES, written before the public-surface snapshot saw re-exports (issue #204): an alias and a re-export are now
+ * read alike, so either keeps the five names in this module's snapshot.
  */
 export type MotionSceneKey = ChaveDeCenaLeaf;
 export type MotionCharProp = PropDoPersonagemLeaf;

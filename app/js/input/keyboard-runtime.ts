@@ -12,11 +12,6 @@ import type { KeyScheme } from '../core/entity.js';
 import { ACTIONS, type Action } from '../core/actions.js';
 import type { KBDefaults } from '../input/keyboard.js';
 
-/** action -> list of physical key codes (KeyboardEvent.code), e.g. {action2:['KeyJ','Space']}. It lives in `core/entity`,
- *  whose `ctrl: KeyScheme | null` makes it the owner — the same line was once written in six modules. Re-exported for
- *  whoever already imported it from here. */
-export type { KeyScheme } from '../core/entity.js';
-
 /** `input/keyboard`'s `KBDefaults` ({solo,p2,p3,p4}), which owns it. The local name survives because consumers use it. */
 export type KeyboardConfig = KBDefaults;
 

@@ -13,13 +13,14 @@ import { voicesForLocale, type NeuralVoice } from './voice-plan.js';
 import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
 import {
   KOKORO_VOICES, tokenize, sentenceStyle, eFala, wavDe,
-  type LoadKokoro, type KokoroModule, type KokoroSession,
+  type LoadKokoro, type KokoroSession,
 } from './kokoro.js';
 
 import type { SpeechPort } from './speech.js';
 
-// They were declared here until ADR-0216 and are answered from the leaf now; re-exported so the name a consumer imports is the same.
-export type { LoadKokoro, KokoroModule, KokoroSession };
+// Declared here until ADR-0216 and answered from the leaf now; `LoadKokoro` is re-exported because the engine imports it
+// from here (issue #204).
+export type { LoadKokoro };
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 

@@ -15,16 +15,6 @@ import type { PanelShellCtx } from './panel-shell.js';
 import type { KBDefaults } from '../input/keyboard.js';
 import type { KeydownEventLike } from '../input/keydown.js';
 
-/** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
-// already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
-/** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. */
-// `KeyScheme` lives in `core/entity`: the entity declares `ctrl: KeyScheme | null`, so it is the owner. Re-exported for
-// whoever already imported it from here.
-export type { KeyScheme } from '../core/entity.js';
-
 /** Opaque keyboard config (input/keyboard.ts's KBDefaults shape: {solo,p2,p3,p4}) — never indexed directly here;
  *  all per-player reads go through the injected `kbFor`, so this module stays decoupled from its exact shape. */
 /** `input/keyboard`'s `KBDefaults`, which is the owner. This module still does NOT INDEX the value — every per-player
@@ -137,8 +127,8 @@ export const ACT_LABEL: Record<string, string> = {
 /*
  * 🎯 WHAT A KEY IS AND WHOSE IT ALREADY IS lives in `./control-choices.js` — `keyName`, `keyUsedByOther` and
  * `actionAlreadyBound`. This file keeps the work its name always described: drawing the screen, wiring the clicks and
- * driving the capture. No alias left behind: a re-export keeps alive a path nothing here uses and makes the surface
- * snapshot LIE, because it does not see re-exports (#204).
+ * driving the capture. No alias left behind: a re-export keeps alive a published path nothing here uses — surface with
+ * no consumer (#204).
  */
 
 // ---------------------------------------------------------------------------------------------

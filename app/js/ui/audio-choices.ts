@@ -37,8 +37,8 @@ export function volPercent(v: number): number {
  * `ui/settings-audio.buildCatRow`, where the row is also RECONCILED instead of reborn. A markup builder with no consumer is
  * published debt — it is deleted, not moved.
  *
- * 📌 And no alias is left: a re-export would keep alive a path nothing imports and make the surface snapshot lie, because
- * it does not see re-exports (issue #204).
+ * 📌 And no alias is left: a re-export would keep alive a published path nothing imports — surface with no consumer
+ * (issue #204).
  */
 
 /** #navsound-master's value: the loudest of the nav categories, as a 0..100 slider value. */

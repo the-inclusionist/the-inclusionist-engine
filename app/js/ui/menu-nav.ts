@@ -49,13 +49,8 @@
 
 /* ===================== minimal interfaces ===================== */
 
-/** ui/dom.ts `$` — injected; the module never reaches `document`. */
-// `DomQuery` is defined once, in `core/dom-query` (copies of it had diverged). Re-exported for whoever imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
-/** The intent, not the key. Defined once in input/edges; only re-exported here. */
+/** The intent, not the key. Defined once in input/edges. */
 import type { NavKeys } from '../input/edges.js';
-export type { NavKeys } from '../input/edges.js';
 
 /** What this module reads from a `KeyboardEvent`. */
 export interface NavKeyEvent {

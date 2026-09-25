@@ -12,11 +12,6 @@ import type { Translate } from '../core/i18n.js';
 import { KEYS } from '../platform/storage-keys.js'; // the names only — reading and writing go through ctx.store (ADR-0232)
 import type { DomQuery } from '../core/dom-query.js';
 
-/** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
-// Re-exported for whoever already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** Minimal platform/storage.ts shape this module needs. */
 export interface TouchStore {
   get(key: string, fallback?: string | null): string | null;

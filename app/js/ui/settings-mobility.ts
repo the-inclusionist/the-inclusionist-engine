@@ -27,11 +27,6 @@ import { clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnno
 import type { PanelShellCtx } from './panel-shell.js';
 import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
 
-/** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
-// already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** Minimal platform/storage.ts shape this module needs. */
 export interface MobilityStore {
   setBool(key: string, on: boolean): void;
@@ -165,8 +160,8 @@ export function toggleMoveKey(i: number): string {
  * flags. A minimal slice lets both pass without either carrying the other's.
  *
  * 📌 THE DEFINITION LIVES IN `input/latch-sync` (issue #127), beside the rule that uses it, and the NAME stays published
- * here. ⚠️ **An alias and not `export ... from`**: the names snapshot leaves re-exports out and would read the change of
- * home as a removal (the lesson of ADR-0106 step 1a).
+ * here, as an alias (ADR-0106 step 1a). Since issue #204 the names snapshot reads a re-export too, so either form keeps
+ * the name in this module's snapshot.
  */
 export type LatchPlayer = JogadorDaAlternanciaDaAresta;
 

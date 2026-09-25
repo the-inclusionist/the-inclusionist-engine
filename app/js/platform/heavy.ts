@@ -19,7 +19,6 @@
 import { CACHE_HEAVY, HEAVY_FILES, readingLanguageOf, commandsLanguageOf, type HeavyFile } from './heavy-catalogue.js';
 
 export { CACHE_HEAVY, HEAVY_FILES };
-export type { HeavyFile };
 
 /** What happened to each entry, so the caller can tell a person. */
 export interface HeavyReport {

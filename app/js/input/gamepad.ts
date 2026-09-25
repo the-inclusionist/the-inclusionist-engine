@@ -27,16 +27,12 @@ import type { LiveInput } from './state.js';
 // 🔴 WHAT A PAD IS DOING lives in `input/pad-reading`: it is the PURE half — buttons and axes in, positions out. Here
 // is the wiring, which can only be read with a ctx in hand: the conductor that polls the pads every frame and decides
 // where the reading goes.
-// ⚠️ NO ALIAS: a re-export would keep alive a path the surface snapshot does not see, and the migration note is what
-// says where each name went.
+// ⚠️ NO ALIAS: a re-export would keep alive a published path nothing in the engine imports (issue #204), and the
+// migration note is what says where each name went.
 import {
   type PadLike, type GetGamepads, type PadMap, type PadActions, type ActionKey,
   padActions, oneButtonAtOnce,
 } from './pad-reading.js';
-
-// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
-// Re-exported for whoever already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
 
 // ---------------------------------------------------------------------------------------------
 // Wizard data (the ORDER of the steps; the WORDS and the demonstration come from the game)
@@ -79,7 +75,6 @@ export interface WizState {
 import type { NavKeys } from './edges.js';
 import type { ModalIntent } from './keydown.js';
 import type { DomQuery } from '../core/dom-query.js';
-export type { NavKeys } from './edges.js'; // re-exported under the name consumers already use
 
 /** The minimal player shape this module reads/writes — DERIVED from core/entity, not retyped. There is no `quiz`
  *  here (ADR-0033): the question is `ctx.hasModal(i)` and the answer is an INTENT, so this module never reads the

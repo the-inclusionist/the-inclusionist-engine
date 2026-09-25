@@ -145,7 +145,6 @@ import { whereTheChildIs, type Place } from '../ui/where-the-child-is.js';
 import { createSimulationOverTheWorld } from '../ui/simulation-over-the-world.js';
 import { createSimulationList } from '../ui/simulation-list.js';
 import { showOnlyRowsThatApply } from '../ui/audio-rows-that-apply.js';
-export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { createKeyboardConfig, type KBDefaults, type KeyboardConfigApi, type KeyboardMapping } from '../input/keyboard.js';
 import { createPadTable, type PadTableFor } from '../input/pad-defaults.js';
@@ -466,13 +465,6 @@ export interface CreateGameOptions {
   readonly setPlayerTheme?: (i: number, theme: Theme) => void;
   readonly setPlayerCorrection?: (i: number, correction: Correction) => void;
 }
-
-/*
- * ⚠️ THE TYPE MOVED HOUSE AND THE NAME STAYED. `FlashMeasurement` is declared in `platform/flash-sampler`, beside what
- * produces it, and RE-EXPORTED here because it is public surface of this root: a game that imports it from
- * `boot/create-game` still can. Moving the name without this would be a break nobody declared.
- */
-export type { FlashMeasurement };
 
 export interface Engine {
   readonly declaration: GameDeclaration;

@@ -81,11 +81,6 @@ import { EDGE_BY_ACTION, edgeAllowed, type EdgeFlag } from './edges.js';
 
 /* ===================== minimal interfaces ===================== */
 
-/** ui/dom.ts `$` — injected; the module never reaches `document`. */
-// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
-// Re-exported for whoever already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** What this module reads and does with a `keydown` `KeyboardEvent`. */
 export interface KeydownEventLike {
   code: string;
@@ -105,13 +100,8 @@ export interface KeydownEventLike {
 /** `keyup` only needs the code. */
 export interface KeyupEventLike { code: string }
 
-/** action -> list of physical codes. */
-// `KeyScheme` lives in `core/entity`: the entity declares `ctrl: KeyScheme | null`, so it is the owner. The same line was
-// written in SIX modules. Re-exported for whoever already imported it from here.
-export type { KeyScheme } from '../core/entity.js';
-
 /** The six input edges keydown raises on the player (consumed and cleared by the game's physics). */
-// `EdgeFlag` comes from input/edges.ts (re-exported below) — it used to be declared here and in touch-bindings.
+// `EdgeFlag` comes from input/edges.ts — it used to be declared here and in touch-bindings.
 
 /**
  * What this module reads (and writes) of a player — and ONLY that. DERIVED from core/entity.
@@ -135,10 +125,9 @@ export interface ControlsSnapshot {
   gameKeys: string[];
 }
 
-/** The title menu's navigation intent — `NavKeys` from input/edges, re-exported under the name this module's callers
- *  already use (it was a fourth structural copy under another name). */
+/** The title menu's navigation intent — `NavKeys` from input/edges, under the local name this module reads by (it was a
+ *  fourth structural copy under another name). */
 import type { NavKeys as TitleNav } from './edges.js';
-export type { NavKeys as TitleNav } from './edges.js';
 
 /** EVERYTHING the decision needs to know about the world, in one object, built BEFORE any effect. */
 export interface KeydownSnapshot {
@@ -230,10 +219,9 @@ export const EASY_SHORTCUTS: ReadonlySet<string> = new Set(['ControlLeft', 'Cont
 export const SCREEN_DIGITS = /^Digit[1234]$/;
 /** Pause: Escape or the MAIN Enter. `NumpadEnter` does NOT pause. */
 export const PAUSE_KEYS: ReadonlySet<string> = new Set(['Escape', 'Enter']);
-// The table and the Easy rule live in input/edges.ts, shared with gamepad and touch-bindings. Re-exported under the old
-// name because whoever imports from here (tests and readers) expects to find it here.
-export { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-export type { EdgeFlag } from './edges.js';
+// The table lives in input/edges.ts, shared with gamepad and touch-bindings. Re-exported under the old name because the
+// engine's tests import it from here.
+export { EDGE_BY_ACTION } from './edges.js';
 
 /* --- pure predicates (exported: the test imports the piece instead of repeating the expression) --- */
 

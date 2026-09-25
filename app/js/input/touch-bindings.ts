@@ -66,14 +66,6 @@ import type { KeyScheme } from '../core/entity.js';
 // scheme only accepts the fourteen positions. A string that is not a position returns `null` — the touch does nothing,
 // which is what this function's header promises.
 import { isAction, type Action } from '../core/actions.js';
-// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
-// Re-exported for whoever already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
-/** action -> list of physical codes. */
-// `KeyScheme` lives in `core/entity`: the entity declares `ctrl: KeyScheme | null`, so it is the owner. The same line was
-// written in SIX modules. Re-exported for whoever already imported it from here.
-export type { KeyScheme } from '../core/entity.js';
 
 /** The six input edges touch raises on the player (consumed and cleared by the game's physics). */
 export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge';
@@ -106,9 +98,6 @@ export interface TouchBindSnapshot {
   /** `input/state.ts`'s `keys`: the keys held NOW (every transport's, mixed). */
   heldKeys: ReadonlySet<string>;
 }
-
-/** Re-exported: the definition lives in `input/pointer-space`, with the arithmetic that uses it (issue #105). */
-export type { RectLike } from './pointer-space.js';
 
 /** The d-pad's four physical directions, on or off. */
 export interface DirSet { left: boolean; right: boolean; up: boolean; down: boolean }

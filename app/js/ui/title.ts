@@ -8,10 +8,6 @@
 // screen, not to this module.
 
 import type { DomQuery } from '../core/dom-query.js';
-/** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
-// Re-exported for whoever already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
 
 export type TitleMenuId = 'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen';
 

@@ -70,3 +70,6 @@ describe('exports without a consumer (issue #164, ADR-0170 §3)', () => {
 //   E5 a debt name gains an importer, list untouched        🔴 [Zero] shrinks
 //   E6 `cartridgeConsumers` back in the ledger              🔴 [Zero] no memory of the games   (22/09)
 //   E7 `--catalogue` back in the script                     🔴 [Zero] no memory of the games   (22/09)
+//   E8 `export { edgeAllowed } from` back in input/keydown  🔴 [Right] no consumer             (#204: re-exports weighed)
+//   E9 `export type { ScreenGrid } from` back in ui/hud     🔴 [Right] no consumer             (#204: a re-exported type is
+//      debt too — the name still lives at its origin, so the reason types are left out does not reach it)

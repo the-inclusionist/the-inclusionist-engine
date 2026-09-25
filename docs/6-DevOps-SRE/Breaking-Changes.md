@@ -3711,6 +3711,40 @@ note changes. `game-platformer` (`app/js/main.ts:166`: `vlibrasSay`, `vlibrasOpe
 `app/index.html:69`) still import the module-level names note CY already removed — all three pin engine 9.x — so each meets
 this note together with CY's. `game-2048`, `game-chess`, `game-pinball` and `game-whackwhack` never signed.
 
+## DH · Thirty-three re-exports nothing in the engine imports stop being published (issue #204)
+
+**Who is affected:** a game that imports one of the names below through the module that RE-EXPORTED it rather than the one
+that declares it. Every name still exists — only the second path is gone. 31 of the 33 are types (a type error at build);
+two are values, `edgeAllowed` and `HC_ROLE_KEYS` (an import error at build, or at load with no type check).
+
+📌 **Why:** a published name that nothing inside the engine imports is debt, declared or deleted, and whoever consumes adapts
+(the Dev, 22/09). The public-surface portrait used to leave re-exports out, so these paths were never weighed and deleting
+one passed the surface gate green. The portrait now reads `export { … } from`, `export type { … } from` and `export { a, b };`
+(the name after `as`), so the fifteen re-exports the engine does import are portrait entries, protected like any other.
+
+| old path | name(s) | where the name still lives |
+|---|---|---|
+| `.` (`boot/create-game.js`) | `GamepadGameHooks` | `input/gamepad.js` |
+| `.` (`boot/create-game.js`) | `FlashMeasurement` | `platform/flash-sampler.js` |
+| `input/gamepad.js`, `input/keydown.js`, `input/touch-bindings.js`, `input/touch.js`, `ui/hud.js`, `ui/menu-nav.js`, `ui/settings-audio.js`, `ui/settings-controls.js`, `ui/settings-mobility.js`, `ui/settings-typo.js`, `ui/shell.js`, `ui/title.js` | `DomQuery` | `core/dom-query.js` |
+| `input/keyboard.js`, `input/keyboard-runtime.js`, `input/keydown.js`, `input/touch-bindings.js`, `ui/settings-controls.js` | `KeyScheme` | `core/entity.js` |
+| `input/gamepad.js`, `ui/menu-nav.js` | `NavKeys` | `input/edges.js` |
+| `input/keydown.js` | `TitleNav` | `input/edges.js` as `NavKeys` — the same type under its own name |
+| `input/keydown.js` | `edgeAllowed`, `EdgeFlag` | `input/edges.js` |
+| `input/touch-bindings.js` | `RectLike` | `input/pointer-space.js` |
+| `platform/heavy.js` | `HeavyFile` | `platform/heavy-catalogue.js` |
+| `platform/tts.js` | `KokoroModule`, `KokoroSession` | `platform/kokoro.js` |
+| `render/high-contrast.js` | `PaintableRole`, `HcRoleKey`, `HC_ROLE_KEYS` | `render/hc-role-data.js` |
+| `ui/hud.js` | `ScreenGrid` | `core/screens.js` |
+| `ui/shell.js` | `SceneFacts` | `core/scenes.js` |
+
+**Migration:** change the import's path to the right-hand column; for `TitleNav`, `import type { NavKeys as TitleNav } from
+'…/input/edges.js'` keeps your local name. What STAYS re-exported, because the engine imports it through that path:
+`boot/create-game.VirtualCommand`, `input/keydown.EDGE_BY_ACTION` and `.hasTitleIntent`, `input/touch-bindings.TOUCH_EDGE_BY_ACTION`,
+`platform/heavy.CACHE_HEAVY` and `.HEAVY_FILES`, `platform/tts.LoadKokoro`, `render/high-contrast.HC_ROLE_DEF`, `ui/hud.screenGrid`,
+`ui/menu-nav.hasIntent` and `.stepInRing`, `ui/settings-typo.resolveFontKey` and `.persistFontKey`, `ui/visual-choices.RoleKey`
+and `.lqLabel`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

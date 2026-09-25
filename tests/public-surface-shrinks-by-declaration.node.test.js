@@ -94,6 +94,20 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
     expect(itens.has('select'), 'a vírgula de dentro do selector CSS virou um nome público que não existe').toBe(false);
   });
 
+  /*
+   * 🔴 A RE-EXPORT IS PUBLISHED, AND THE PORTRAIT USED TO BE BLIND TO IT (issue #204): deleting `export { x } from …`
+   * passed GREEN here, because the name was never in that module's portrait — and nothing weighed whether it had a consumer.
+   * The four forms the tree uses, each publishing the name a consumer WRITES (after `as`), never the origin's.
+   */
+  it('🔴 [Right] a re-export publishes the name after `as`, in every form the tree uses', () => {
+    const keydown = new Set(arvore['input/keydown.ts'] ?? []);
+    expect(keydown.has('EDGE_BY_ACTION'), '`export { X } from` is not read').toBe(true);
+    expect(keydown.has('hasTitleIntent'), '`export { a as b } from` lost the published name').toBe(true);
+    expect(keydown.has('hasNavIntent'), 'the ORIGIN\'s name was published — no module here exports it').toBe(false);
+    expect(new Set(arvore['boot/create-game.ts'] ?? []).has('VirtualCommand'), '`export type { T } from` is not read').toBe(true);
+    expect(new Set(arvore['platform/heavy.ts'] ?? []).has('CACHE_HEAVY'), 'the list form `export { a, b };` is not read').toBe(true);
+  });
+
   it('⚠️ [Interface] o retrato guarda os oito que já saíram — a medição não se perde', () => {
     // The eight constants of `core/constants.ts` left BEFORE this gate existed, and the snapshot was taken afterwards.
     // This case asserts they stay out: if someone brings them back without thinking, the gate above would say nothing
@@ -227,6 +241,17 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
 //     written out in full instead of derived.
 //   · emptying `public-surface.json` to `{}` → `[Interface] o retrato e a árvore` fails. Without it the two `[Zero]`
 //     cases would stay green for having nothing to compare.
+//
+// ========================= MUTATIONS OF THE RE-EXPORT READING (issue #204) =========================
+// Applied by script, one occurrence each, all RED:
+//   R1 the portrait stops reading re-exports            → the re-export case AND `[Zero] NENHUM nome` fail
+//   R2 the name BEFORE `as` is published                → the same two (`hasTitleIntent` disappears)
+//   R3 `export type { T } from` no longer read          → the same two (`VirtualCommand` disappears)
+//   R4 the list form `export { a, b };` no longer read  → the same two (`CACHE_HEAVY` disappears)
+//   R8 BOTH sides of `as` published                     → only the re-export case: the origin's `hasNavIntent` appears in
+//                                                         `input/keydown`, a name no module there exports
+//   R5 `export { stepInRing } from` deleted from `ui/menu-nav` → `[Zero] NENHUM nome` fails. Before #204 this deletion
+//      passed green: it is the blind spot the issue named.
 //
 // ========================= MUTATIONS OF THE SHAPE HALF =========================
 // Six, applied by script to the file and with occurrence counts (=1 in all six). ⚠️ The first two are against the REAL

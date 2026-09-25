@@ -10,11 +10,6 @@ import type { Translate } from '../core/i18n.js';
 import { FONT_BY_KEY, DEFAULT_FONT_KEY, faceAvailable, faceScale } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
-/** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
-// already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
 export interface TypoStore {
   get(key: string, fallback?: string | null): string | null;
@@ -81,8 +76,7 @@ import type { PanelShellCtx } from './panel-shell.js';
 /*
  * 🎯 WHAT A TYPOGRAPHY CHOICE IS lives in `./typo-choices.js`, and this file keeps the work its name always described:
  * finding the nodes it reaches and never created, wiring them, and reflecting the choice. No alias left behind — a
- * re-export would keep alive a path nothing here uses and make the surface snapshot LIE, because it does not see
- * re-exports (#204).
+ * re-export would keep alive a published path nothing here uses, surface with no consumer (#204).
  */
 import { typoGroups, typoRowSpec, fontCssTarget, type TypoRow } from './typo-choices.js';
 

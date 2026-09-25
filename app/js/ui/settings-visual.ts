@@ -19,8 +19,8 @@ import { DEFAULTS } from '../core/setting-defaults.js';
  * `tests/settings-visual.node.test.js` imports exactly those names, and the node project mounts no document — so whoever
  * wrote those cases had to know where this panel stops being a panel.
  *
- * ⚠️ NO ALIAS: a re-export would keep alive a path nothing in here uses and make the surface snapshot lie, because it
- * does not see re-exports (issue #204).
+ * ⚠️ NO ALIAS: a re-export would keep alive a published path nothing in here uses — surface with no consumer
+ * (issue #204).
  */
 import {
   ROLE_KEYS, ROLE_LABELS, LQ_STEPS, lqLabel, lqPosition, clampSelectedPlayer, rgbToHex, onOffLabel, resolveVisualMode,

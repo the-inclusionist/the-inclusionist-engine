@@ -19,9 +19,6 @@ const CKEY = 'inclusionist.kbcontrols.v3';
  */
 export type KeyboardStore = Pick<Store, 'getJSON' | 'setJSON' | 'remove'>;
 
-// `KeyScheme` lives in `core/entity`: the entity declares `ctrl: KeyScheme | null`, so it is the owner.
-// Re-exported for whoever already imported it from here.
-export type { KeyScheme } from '../core/entity.js';
 /**
  * THE SET OF keyboard SCHEMES — solo plus those for 2, 3 and 4 players.
  *

@@ -19,10 +19,9 @@ import { KEYS } from '../platform/storage-keys.js';
 
 /* ===================== role → colour (color-blocking) ===================== */
 // The roles and their default colours live in render/hc-role-data (a leaf, no dependencies), because the visual
-// accessibility panel needs the SAME list to offer a colour picker per role. Re-exported here so this module's importers
-// need not know there was a split.
-export type { PaintableRole, HcRoleKey } from './hc-role-data.js';
-export { HC_ROLE_KEYS, HC_ROLE_DEF } from './hc-role-data.js';
+// accessibility panel needs the SAME list to offer a colour picker per role. `HC_ROLE_DEF` is re-exported here because the
+// engine imports it from here; the rest is read from the leaf (issue #204).
+export { HC_ROLE_DEF } from './hc-role-data.js';
 /** A role palette: one RGB triple per role. */
 export type RolePalette = Record<HcRoleKey, [number, number, number]>;
 /** The defaults with the stored colours laid over them, each clamped to 0–255; a malformed entry keeps its default. */

@@ -23,11 +23,6 @@ import type { Objective } from '../core/contract.js';
 import type { Translate } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 
-/** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
-// already imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** Only the player fields the HUD reads. Structural on purpose: the real `players[]` is `unknown[]` in core/state. */
 /** What the HUD reads from the PLAYER: the active power and whether they quit. Progress comes from the `Objective`,
  *  not from here. */
@@ -42,7 +37,6 @@ export type HudPlayer = PlayerView<'activePower' | 'quit'>;
 // The grid lives in core/screens (a leaf, no dependencies), because the layout and the CRT need the SAME arithmetic and
 // have no business importing from a HUD module. Re-exported here under its usual name.
 export { screenGrid } from '../core/screens.js';
-export type { ScreenGrid } from '../core/screens.js';
 
 /** Screen `i`'s rectangle in CSS percentages, ready for `style.left/top/width/height`. */
 export interface ScreenRect { L: string; T: string; W: string; H: string; }

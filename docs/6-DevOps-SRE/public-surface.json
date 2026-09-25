@@ -5,6 +5,7 @@
     "Declinios",
     "Engine",
     "EngineHost",
+    "VirtualCommand",
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [
@@ -415,6 +416,7 @@
   "input/keydown.ts": [
     "ControlsSnapshot",
     "EASY_SHORTCUTS",
+    "EDGE_BY_ACTION",
     "EdgeRaise",
     "KeydownApi",
     "KeydownCtx",
@@ -428,6 +430,7 @@
     "SCREEN_DIGITS",
     "decideKeydown",
     "edgesFor",
+    "hasTitleIntent",
     "initKeydown",
     "isEasyShortcut",
     "isGameKeyCode",
@@ -542,6 +545,7 @@
     "EventTargetLike",
     "PointerLike",
     "START_TAP_MS",
+    "TOUCH_EDGE_BY_ACTION",
     "TouchBindPlayer",
     "TouchBindSnapshot",
     "TouchBindingsApi",
@@ -705,6 +709,8 @@
     "mirrorPathOf"
   ],
   "platform/heavy.ts": [
+    "CACHE_HEAVY",
+    "HEAVY_FILES",
     "HeavyOptions",
     "HeavyReport",
     "bytesLeftToDownload",
@@ -850,6 +856,7 @@
     "memoryBackend"
   ],
   "platform/tts.ts": [
+    "LoadKokoro",
     "Tts",
     "TtsCtx",
     "createTts"
@@ -938,6 +945,7 @@
     "DIRECT_CFG",
     "DirectCfg",
     "DirectTexSource",
+    "HC_ROLE_DEF",
     "HighContrast",
     "HighContrastCtx",
     "HighContrastStore",
@@ -1241,6 +1249,7 @@
     "hudRowView",
     "initHud",
     "screenCount",
+    "screenGrid",
     "screenRect",
     "vphudHtml",
     "waitBadgeHtml"
@@ -1305,7 +1314,9 @@
     "MenuNavCtx",
     "NavKeyEvent",
     "controlParts",
-    "initMenuNav"
+    "hasIntent",
+    "initMenuNav",
+    "stepInRing"
   ],
   "ui/mobility-choices.ts": [
     "anyMobilityActive",
@@ -1503,7 +1514,9 @@
     "SettingsTypoCtx",
     "TypoStore",
     "initSettingsTypo",
-    "mountTypoInside"
+    "mountTypoInside",
+    "persistFontKey",
+    "resolveFontKey"
   ],
   "ui/settings-visual.ts": [
     "SettingsVisual",
@@ -1598,12 +1611,14 @@
     "RGB",
     "ROLE_KEYS",
     "ROLE_LABELS",
+    "RoleKey",
     "VISUAL_MODES",
     "VISUAL_MODE_LIST",
     "clamp01",
     "clampSelectedPlayer",
     "contrastLabel",
     "lqFromPercent",
+    "lqLabel",
     "lqPercent",
     "lqPosition",
     "onOffLabel",

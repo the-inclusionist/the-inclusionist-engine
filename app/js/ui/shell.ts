@@ -41,10 +41,6 @@ import { PM_VISIBLE_ITEMS } from './pause-icons.js';
 
 /* ===================== minimal interfaces ===================== */
 
-/** ui/dom.ts `$` — injected so a node test can pass a fake DOM. */
-// `DomQuery` is defined once, in `core/dom-query` (copies of it had diverged). Re-exported for whoever imported it from here.
-export type { DomQuery } from '../core/dom-query.js';
-
 /** What `pauseActs.addplayer` reads of a player. `players` is `unknown[]` to the shell. */
 /** The shell only needs to know WHO the player is and whether they are waiting for the next round. */
 type ShellPlayer = PlayerView<'i' | 'waiting'>;
@@ -79,8 +75,6 @@ export type PhaseFocus = 'game-region' | 'pause-menu' | 'title-button';
  * What the scene on top asks of the document — a projection of the scene facts, with no field depending on history (the
  * one that would, `#touch-controls`, lives in `touchControlsPlan`, apart on purpose).
  */
-export type { SceneFacts } from '../core/scenes.js'; // re-exported: the shell's consumers already asked for it here
-
 export interface PhaseView {
   /** `#title-overlay`.hidden — the splash only shows on the title. */
   titleOverlayHidden: boolean;

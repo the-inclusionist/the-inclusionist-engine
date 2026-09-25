@@ -30,7 +30,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2190,
+      "codeLines": 2188,
       "decisionNodes": 282,
       "maxDepth": 4,
       "fanOut": 90,
@@ -491,7 +491,7 @@
       "fanIn": 1
     },
     "input/gamepad.ts": {
-      "codeLines": 307,
+      "codeLines": 305,
       "decisionNodes": 58,
       "maxDepth": 2,
       "fanOut": 3,
@@ -541,7 +541,7 @@
       "fanIn": 1
     },
     "input/keyboard-runtime.ts": {
-      "codeLines": 91,
+      "codeLines": 90,
       "decisionNodes": 11,
       "maxDepth": 3,
       "fanOut": 1,
@@ -551,7 +551,7 @@
       "fanIn": 1
     },
     "input/keyboard.ts": {
-      "codeLines": 73,
+      "codeLines": 72,
       "decisionNodes": 10,
       "maxDepth": 4,
       "fanOut": 2,
@@ -561,7 +561,7 @@
       "fanIn": 1
     },
     "input/keydown.ts": {
-      "codeLines": 282,
+      "codeLines": 278,
       "decisionNodes": 50,
       "maxDepth": 2,
       "fanOut": 2,
@@ -701,7 +701,7 @@
       "fanIn": 2
     },
     "input/touch-bindings.ts": {
-      "codeLines": 256,
+      "codeLines": 253,
       "decisionNodes": 37,
       "maxDepth": 3,
       "fanOut": 3,
@@ -711,7 +711,7 @@
       "fanIn": 1
     },
     "input/touch.ts": {
-      "codeLines": 418,
+      "codeLines": 417,
       "decisionNodes": 56,
       "maxDepth": 2,
       "fanOut": 3,
@@ -871,7 +871,7 @@
       "fanIn": 0
     },
     "platform/heavy.ts": {
-      "codeLines": 96,
+      "codeLines": 95,
       "decisionNodes": 21,
       "maxDepth": 2,
       "fanOut": 1,
@@ -1151,7 +1151,7 @@
       "fanIn": 4
     },
     "render/high-contrast.ts": {
-      "codeLines": 193,
+      "codeLines": 192,
       "decisionNodes": 36,
       "maxDepth": 3,
       "fanOut": 5,
@@ -1451,7 +1451,7 @@
       "fanIn": 1
     },
     "ui/hud.ts": {
-      "codeLines": 136,
+      "codeLines": 134,
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 1,
@@ -1531,7 +1531,7 @@
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
-      "codeLines": 256,
+      "codeLines": 254,
       "decisionNodes": 52,
       "maxDepth": 2,
       "fanOut": 7,
@@ -1661,7 +1661,7 @@
       "fanIn": 0
     },
     "ui/settings-audio.ts": {
-      "codeLines": 401,
+      "codeLines": 400,
       "decisionNodes": 66,
       "maxDepth": 4,
       "fanOut": 7,
@@ -1671,7 +1671,7 @@
       "fanIn": 1
     },
     "ui/settings-controls.ts": {
-      "codeLines": 178,
+      "codeLines": 176,
       "decisionNodes": 18,
       "maxDepth": 2,
       "fanOut": 4,
@@ -1691,7 +1691,7 @@
       "fanIn": 1
     },
     "ui/settings-mobility.ts": {
-      "codeLines": 236,
+      "codeLines": 235,
       "decisionNodes": 29,
       "maxDepth": 3,
       "fanOut": 8,
@@ -1721,7 +1721,7 @@
       "fanIn": 1
     },
     "ui/settings-typo.ts": {
-      "codeLines": 136,
+      "codeLines": 135,
       "decisionNodes": 20,
       "maxDepth": 3,
       "fanOut": 4,
@@ -1741,7 +1741,7 @@
       "fanIn": 1
     },
     "ui/shell.ts": {
-      "codeLines": 272,
+      "codeLines": 270,
       "decisionNodes": 43,
       "maxDepth": 3,
       "fanOut": 2,
@@ -1791,7 +1791,7 @@
       "fanIn": 0
     },
     "ui/title.ts": {
-      "codeLines": 49,
+      "codeLines": 48,
       "decisionNodes": 7,
       "maxDepth": 2,
       "fanOut": 0,

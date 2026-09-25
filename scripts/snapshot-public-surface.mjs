@@ -16,9 +16,29 @@ import { formaDe, RETRATO_FORMA } from './shape-surface.mjs';
 
 export const RETRATO = 'docs/6-DevOps-SRE/public-surface.json';
 
-/** A NAMED `export`. Re-exports (`export { x } from …`) and `export default` are left out on purpose:
- *  the first is an indirection of the same name, and this project does not use the second. */
+/** A NAMED `export` declaration. `export default` is left out: this project does not use it. */
 const RE = /^export\s+(?:declare\s+)?(?:async\s+)?(?:(function|const|let|var|class|interface|type|enum)\s+)([A-Za-z_$][\w$]*)/gm;
+
+/*
+ * 🔴 A RE-EXPORT IS PUBLISHED SURFACE TOO (issue #204). This portrait used to leave `export { x } from …` out as «an
+ * indirection of the same name» — true of the ORIGIN, false of the path: a consumer that imports `x` from the re-exporting
+ * module breaks when the line goes, and the gate passed that deletion green because the name was never in the portrait.
+ * So the braces are read in all three forms — `export { a, b as c } from '…'`, `export type { T } from '…'` and the list
+ * `export { a, b };` — and each item publishes the name AFTER `as`, which is the one a consumer writes.
+ * 📌 `export * from` publishes nothing nameable without resolving the other module, and this tree has none.
+ */
+const REEXPORT = /^export\s+(?:type\s+)?\{([^}]*)\}/gm;
+
+function reexportedNames(txt) {
+  const names = [];
+  for (const m of txt.matchAll(REEXPORT)) {
+    for (const item of m[1].split(',')) {
+      const published = item.trim().replace(/^type\s+/, '').split(/\s+as\s+/).pop();
+      if (/^[A-Za-z_$][\w$]*$/.test(published ?? '')) names.push(published);
+    }
+  }
+  return names;
+}
 
 /*
  * 🔴 AND THE FOLLOWING DECLARATORS OF THE SAME LINE: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publishes
@@ -79,6 +99,7 @@ export function superficieDe(raizAppJs) {
     const txt = readFileSync(join(raizAppJs, rel), 'utf8');
     const nomes = [...txt.matchAll(RE)].map((m) => m[2]);
     for (const linha of txt.split(/\r?\n/)) nomes.push(...declaradoresDaLinha(linha));
+    nomes.push(...reexportedNames(txt));
     if (nomes.length) fora[rel] = [...new Set(nomes)].sort();
   }
   return fora;
