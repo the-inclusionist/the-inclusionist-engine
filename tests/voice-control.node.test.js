@@ -21,6 +21,7 @@ import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { voiceGrammar } from '../app/js/input/voice-map.js';
 import pt from '../app/js/i18n/pt.js';
+import { loadVoskRuntime, createBundleLoader } from '../app/js/platform/vosk-runtime.js';
 
 /** A fake recogniser bundle: the control never touches it, it only hands it to the listener. */
 const MODEL = { KaldiRecognizer: function () { /* never built here */ } };
@@ -381,6 +382,23 @@ describe('ui/voice-control — what cannot start is SAID, and the icon goes back
   });
 
   /*
+   * 🎯 THE SAME FAILURE THROUGH THE REAL LOADER, checked on 2026-09-25 when the 📷 was found swallowing it: a server that sends
+   * `.mjs` as `text/plain`, or a runtime address that answers 404, makes the ROOT's `import()` reject. The case above proves the
+   * control catches a loader that throws; this one proves the loader the root builds — `createBundleLoader` over `import`, then
+   * `loadVoskRuntime` — does throw it up instead of swallowing it or hanging, so the 👄 already had the path the 📷 lacked.
+   */
+  it('🔴 [Error] the runtime import REJECTS (text/plain, 404) through the real loader: said, reported, back to off', async () => {
+    const failing = createBundleLoader(async (u) => { throw new TypeError(`Failed to fetch dynamically imported module: ${u}`); });
+    const b = bench({ loadBundle: failing, loadRuntime: (deps) => loadVoskRuntime(deps) });
+    await expect(b.control.apply(true)).resolves.toBeUndefined();
+    expect(b.log.alerted).toEqual([pt['sr.voice.failed']]);
+    expect(b.log.off).toBe(1);
+    expect(b.log.listens, 'a microphone was opened after the recogniser failed').toBe(0);
+    expect(b.log.reported).toHaveLength(1);
+    expect(b.log.reported[0]).toMatch(/^voice control: the recogniser did not open \(Failed to fetch dynamically imported module: .+vosk/);
+  });
+
+  /*
    * 🔴 A START THAT FAILS AFTER THE 👄 WAS TURNED OFF (or the root was disposed, which turns it off) says nothing and writes
    * nothing: nobody is waiting for it any more, and turning the icon "off" again would store off over a choice the child — or
    * another root on the page — may have made since. Found when `dispose()` started switching voice off (ADR-0220).
@@ -620,3 +638,8 @@ describe('the language changed', () => {
 //   C5 names compared without their accents                                 🔴 only the words …; every word known
 //   C6 the lent fetch not handed to the runtime                             🔴 the runtime is handed the fetch
 //   C8 an unknown vocabulary taken as an empty one                          🔴 names already showing; a vocabulary that cannot be read; replaced
+// The runtime import that rejects (2026-09-25, when the 📷 was found swallowing it — this file was already green):
+//   R1 the control rethrows the loader's rejection instead of catching it     🔴 THROWS on the way up; REJECTS through the real loader;
+//                                                                              fails AFTER it was turned off; never reaches the caller
+//   R2 `loadVoskRuntime` HANGS on a rejected import instead of rejecting      🔴 REJECTS through the real loader — and only it: the case
+//                                                                              before it injects a loader that throws by itself
