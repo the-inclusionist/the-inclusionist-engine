@@ -186,7 +186,7 @@ do GitHub, privada até o ato (**ADR-0066**).
   `tests/dependencies-point-downward.node.test.js`, com a dívida de imports VAZIA desde que a #167 fechou (um import contra a direção reprova).
 - **Roadmap por dependência** (fases como issues **Fase 0–6** no GitHub; a estratégia/
   ordem em `docs/ROADMAP.md`):
-  0 publicar ✅ · 1 nível-glifo + editor de mapa · **2 espinha da engine = a modularização atual** · 3 arte
+  0 publicar ⚠️ (o pacote npm está publicado; a página não — nenhum projeto Cloudflare ligado, ver o ROADMAP) · 1 nível-glifo + editor de mapa · **2 espinha da engine = a modularização atual** · 3 arte
   procedural semântica · 4 editor de arte + importadores · 5 i18n en/es · 6 features (**Alfabetização 6–9**, webcam/
   voz, refinos, auditoria WCAG/GAG). Alfabetização é **Fase 6** — vem depois da base limpa + arte + i18n.
 
