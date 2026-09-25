@@ -10,13 +10,16 @@
 //      hosted dictionary, which the policy blocks, and is spelled instead of signed;
 //   3. `PlayerManager.playNow(<gloss>)`, and the request resolves when `counter_gloss` says the last token was played
 //      ([done, total] with done = total > 0 — the player also sends [0, 0] as it starts).
+// Beside the counter, the player reports its own state: `on_playing_state_change` is `onPlayingStateChange(isPlaying, isPaused,
+// isPlayingIntervalAnimation, isLoading, isRepeatable)`, each flag the STRING "True" or "False".
 // `hide()` stops the player and takes the frame off the screen; `dispose()` removes it.
 //
 // 📌 ONLY WHILE IT SIGNS (the Dev: «ele só deve aparecer quando for "invocado" via sonar e desaparecer quando não estiver em uso»;
-// interface log, «The Libras interpreter: bottom right, and only while it signs»). The frame appears when a request is played and
-// LEAVES THE SCREEN `leaveAfterMs` after the last token was played — hidden, NOT unloaded: the player stays loaded behind, so the
-// next press shows it at once instead of after its first load, and a press during the pause cancels the leaving. The place
-// stays the bottom right, where the Dev saw it and kept it.
+// interface log, «The interpreter leaves 5 s after the player itself says it stopped»). The frame appears when a request is played
+// and LEAVES THE SCREEN `leaveAfterMs` after THE PLAYER says it stopped signing — its `isPlaying` turning false after a play,
+// which is the avatar going back to its rest pose — hidden, NOT unloaded: the player stays loaded behind, so the next press shows
+// it at once instead of after its first load. A press during those seconds cancels the leaving, and so does the player saying
+// it plays again. The place stays the bottom right, where the Dev saw it and kept it.
 //
 // 📌 ONLY WHERE THE DELIVERY SHIPPED THE PLAYER: before opening anything, the interpreter asks for the player's Unity
 // configuration, which only the delivery step writes. No configuration — a delivery built without `--libras`, or the engine's own
@@ -49,7 +52,7 @@ export interface VlibrasPlayerPorts {
   readonly playerFolder?: string;
   /** How long the player may take to load before the request is answered «unavailable». */
   readonly loadTimeoutMs?: number;
-  /** How long the frame stays after the last token was played before it leaves the screen. `LEAVE_AFTER_MS` unless a test says. */
+  /** How long the frame stays after the player says it stopped signing before it leaves. `LEAVE_AFTER_MS` unless a test says. */
   readonly leaveAfterMs?: number;
 }
 
@@ -58,13 +61,12 @@ const PLAYER = 'PlayerManager';
 /** 📏 Measured on localhost: 3.6–3.9 s to `on_load_player`. A school machine gets many times that before it is given up on. */
 const LOAD_TIMEOUT_MS = 60_000;
 /**
- * The pause between the last token played and the frame leaving. 📏 Measured with the real player (the quiz's question, 11
- * tokens, frames read back from its canvas): the last sign's movement stops about half a second BEFORE `counter_gloss` reaches
- * its total, and after it the avatar only sways at rest. So the counter does not cut the sign; the pause is the time to take in
- * the last handshape and see the avatar come to rest before it goes — a second, short enough that it does not stay over the
- * game's answers once it has nothing to say.
+ * The time the avatar stays at rest on the screen before it leaves — the Dev's five seconds (interface log, «The interpreter
+ * leaves 5 s after the player itself says it stopped»). 📏 Measured with the real player: `isPlaying` turns false once, at the
+ * end of the text, and not between its signs; but EVERY `playNow` — a replacing one too — reports false and then true in the
+ * same instant, so a false only counts if no true follows it within these seconds.
  */
-const LEAVE_AFTER_MS = 1000;
+const LEAVE_AFTER_MS = 5000;
 
 /** The player's configuration marks a delivery that shipped it: JSON naming its data and code, never a fallback page. */
 async function playerShipped(fetchFile: VlibrasPlayerPorts['fetch'], url: string): Promise<boolean> {
@@ -79,15 +81,28 @@ async function playerShipped(fetchFile: VlibrasPlayerPorts['fetch'], url: string
   }
 }
 
-/** What one of the player's messages means to the interpreter: it loaded, it cannot run, a text was played through, or nothing. */
-type PlayerNews = { readonly kind: 'loaded' | 'played' } | { readonly kind: 'failed'; readonly why: string } | null;
+/**
+ * What one of the player's messages means to the interpreter: it loaded, it cannot run, a text was played through, it says it
+ * is signing or that it stopped, or nothing.
+ */
+type PlayerNews =
+  | { readonly kind: 'loaded' | 'played' | 'signing' | 'stopped' } | { readonly kind: 'failed'; readonly why: string } | null;
 
 function newsOf(data: unknown): PlayerNews {
   const m = data as { type?: unknown; event?: unknown; data?: unknown } | null;
   if (m?.type !== 'unity_event') return null;
   if (m.event === 'on_load_player') return { kind: 'loaded' };
   if (m.event === 'on_error') return { kind: 'failed', why: String(m.data) };
+  if (m.event === 'on_playing_state_change') return playingFlag(m.data);
   return m.event === 'counter_gloss' && lastTokenPlayed(m.data) ? { kind: 'played' } : null;
+}
+
+/** `on_playing_state_change` carries the player's flags, `isPlaying` first, each as the string "True" or "False". */
+function playingFlag(flags: unknown): PlayerNews {
+  const isPlaying = Array.isArray(flags) ? (flags as unknown[])[0] : undefined;
+  if (isPlaying === 'True' || isPlaying === true) return { kind: 'signing' };
+  if (isPlaying === 'False' || isPlaying === false) return { kind: 'stopped' };
+  return null;
 }
 
 /** `counter_gloss` is `[done, total]`; the text is through when `done` reaches a `total` above zero — `[0, 0]` is the start. */
@@ -132,8 +147,10 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
   /** Moves on every `hide()` and at `dispose()`: a request that waited across one is not played. */
   let generation = 0;
   let disposed = false;
-  /** The pause after the last token, at whose end the frame leaves the screen; `null` when none is running. */
+  /** The seconds after the player said it stopped, at whose end the frame leaves the screen; `null` when none is running. */
   let leaving: number | null = null;
+  /** What the player last said of itself: signing (`isPlaying` true) or not. Only its turn from true to false starts the leaving. */
+  let playerSigns = false;
 
   const send = (method: string, params?: string): void => {
     if (where) frame?.contentWindow?.postMessage({ type: 'unity', object: PLAYER, method, params }, where.origin);
@@ -143,8 +160,8 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
     if (leaving !== null) win.clearTimeout(leaving);
     leaving = null;
   };
-  /** The text was signed through: after the pause, the frame leaves — hidden, the player kept loaded behind it. */
-  const leaveWhenPaused = (): void => {
+  /** The player said it stopped signing: after `leaveAfterMs` at rest, the frame leaves — hidden, the player kept loaded behind it. */
+  const leaveWhenAtRest = (): void => {
     stayOnScreen();
     leaving = win.setTimeout(() => {
       leaving = null;
@@ -155,9 +172,15 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
   const heard = (e: MessageEvent): void => {
     if (!frame || !where || e.source !== frame.contentWindow || e.origin !== where.origin) return;
     const news = newsOf(e.data);
-    if (news?.kind === 'loaded') loadHeard?.({ signed: true });
-    else if (news?.kind === 'failed') loadHeard?.({ signed: false, reason: `the Libras player cannot run here: ${news.why}` });
-    else if (news?.kind === 'played') { answerPlaying({ signed: true }); leaveWhenPaused(); }
+    switch (news?.kind) {
+      case 'loaded': loadHeard?.({ signed: true }); break;
+      case 'failed': loadHeard?.({ signed: false, reason: `the Libras player cannot run here: ${news.why}` }); break;
+      // the counter answers the request; it is the player's own flag, not the counter, that sends the frame away
+      case 'played': answerPlaying({ signed: true }); break;
+      case 'signing': playerSigns = true; stayOnScreen(); break;
+      case 'stopped': if (playerSigns) { playerSigns = false; leaveWhenAtRest(); } break;
+      default: break;
+    }
   };
 
   const removeFrame = (): void => {
@@ -166,6 +189,7 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
     frame = null;
     loading = null;
     loadHeard = null;
+    playerSigns = false;
   };
 
   /** Opens the player once, and answers when it has loaded and been told where the signs are — or why it could not. */
@@ -206,7 +230,7 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
     sign: async (text) => {
       // nothing to sign is not a failure, and nothing goes to `problems`
       if (!provisionalGloss(text)) return { signed: true };
-      // a press during the pause keeps the interpreter where it is: it is about to sign again
+      // a press in the seconds at rest keeps the interpreter where it is: it is about to sign again
       stayOnScreen();
       const asked = generation;
       const at = addresses();
@@ -231,6 +255,9 @@ export function createVlibrasInterpreter(ports: VlibrasPlayerPorts): Interpreter
     },
     hide: () => {
       generation += 1;
+      // the frame goes now; the «stopped» the player answers `stopAll` with is not a rest to wait out
+      playerSigns = false;
+      stayOnScreen();
       if (!frame) return;
       send('stopAll');
       frame.hidden = true;

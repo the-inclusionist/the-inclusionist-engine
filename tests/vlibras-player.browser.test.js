@@ -2,8 +2,9 @@
 // THE INTERPRETER OVER THE VLIBRAS PLAYER (ADR-0234, route A; `ui/vlibras-player`), against a FAKE player page that speaks the
 // same `postMessage` protocol as the one the delivery writes (`tests/fixtures/delivery/libras/player/`). No Unity here: what is
 // held is the order route A measured — the player loads, THEN it is told where the signs are, THEN it is asked to play — the
-// answer arriving only when the last token was played, a frame that LEAVES the screen a pause after it — hidden, the player kept
-// loaded for the next call — and one that leaves at once when deaf mode or the root does.
+// answer arriving only when the last token was played, a frame that LEAVES the screen some seconds after the player ITSELF says
+// it stopped signing (`on_playing_state_change`, `isPlaying` false) — hidden, the player kept loaded for the next call — and one
+// that leaves at once when deaf mode or the root does.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -188,36 +189,79 @@ describe('ui/vlibras-player — hide and dispose', () => {
   });
 });
 
-describe('ui/vlibras-player — on the screen only while it signs (the Dev; interface log, «bottom right, and only while it signs»)', () => {
-  const PAUSE = 400;
+describe('ui/vlibras-player — on the screen only while it signs (the Dev; interface log, «The interpreter leaves 5 s after the player itself says it stopped»)', () => {
+  const REST = 400;
   const frames = () => document.querySelectorAll(`iframe[title="${TITLE}"]`).length;
   const wait = (ms) => new Promise((r) => { setTimeout(r, ms); });
+  /** The player's own report, as the real one sends it: `isPlaying` first, every flag the string "True" or "False". */
+  const says = (playing) => {
+    const flag = playing ? 'True' : 'False';
+    frame().contentWindow.emit('on_playing_state_change', [flag, 'False', 'False', flag, 'True']);
+  };
+  /** What the real player sends the moment it is asked to play — a replacing `playNow` too: the counter's start, false, true. */
+  const startsPlaying = () => {
+    frame().contentWindow.emit('counter_gloss', [0, 0]);
+    says(false);
+    says(true);
+  };
 
-  /** Signs `text` through: waits for its `playNow`, then the player says the last of `n` tokens was played. */
+  /** Signs `text` through: waits for its `playNow`, the player starts, and says the last of `n` tokens was played. */
   async function signThrough(vl, text, n, plays) {
     const answer = vl.sign(text);
     await until(() => { expect(methods().filter((m) => m === 'playNow')).toHaveLength(plays); });
+    startsPlaying();
     frame().contentWindow.emit('counter_gloss', [n, n]);
     expect(await answer).toEqual({ signed: true });
   }
 
-  it('🔴 [Right] it LEAVES the screen a pause after the last token — not at it — and the player is NOT unloaded', async () => {
-    const vl = interpreter({ leaveAfterMs: PAUSE });
+  it('🔴 [Right] it LEAVES the screen after the rest that follows the PLAYER saying it stopped — not at the last token — and is NOT unloaded', async () => {
+    const vl = interpreter({ leaveAfterMs: REST });
     await signThrough(vl, 'casa escola', 2, 1);
     const shown = frame();
-    expect(shown.hidden, 'the last sign was cut: the frame left at the last token, with no pause').toBe(false);
-    await wait(PAUSE / 2);
-    expect(frame().hidden, 'the frame left before the pause was over').toBe(false);
-    await until(() => { expect(frame()?.hidden, 'the interpreter stayed on the screen with nothing to sign').toBe(true); });
+    await wait(REST * 2);
+    expect(shown.hidden, 'the frame left on the gloss counter, before the player said it stopped').toBe(false);
+    says(false);
+    await wait(REST / 2);
+    expect(frame().hidden, 'the frame left before its rest was over').toBe(false);
+    await until(() => { expect(frame()?.hidden, 'the interpreter stayed on the screen after the player said it stopped').toBe(true); });
     expect(frame(), 'the player was unloaded when it left the screen').toBe(shown);
     expect(frames()).toBe(1);
   });
 
+  it('🔴 [Right] the rest is FIVE seconds, started by the player\'s `isPlaying` false and by nothing before it', async () => {
+    const armed = [];
+    const win = {
+      addEventListener: window.addEventListener.bind(window),
+      removeEventListener: window.removeEventListener.bind(window),
+      setTimeout: (fn, ms) => { armed.push(ms); return window.setTimeout(fn, ms); },
+      clearTimeout: (id) => { window.clearTimeout(id); },
+    };
+    const vl = interpreter({ win }); // no `leaveAfterMs`: the interpreter's own
+    await signThrough(vl, 'casa', 1, 1);
+    const load = armed.length; // the load's timer, and nothing else
+    await wait(50);
+    expect(armed.slice(load), 'a leaving was started before the player said it stopped').toEqual([]);
+    says(false);
+    await until(() => { expect(armed.slice(load), 'the rest before the interpreter leaves is not five seconds').toEqual([5000]); });
+  });
+
+  it('🔴 [Right] a false that flickers back to true does not send it away: the player said it plays again', async () => {
+    const vl = interpreter({ leaveAfterMs: REST });
+    await signThrough(vl, 'casa escola', 2, 1);
+    says(false);
+    says(true);
+    await wait(REST * 2);
+    expect(frame().hidden, 'a false the player took back at once sent the interpreter off the screen').toBe(false);
+    says(false);
+    await until(() => { expect(frame().hidden, 'the settled false did not send it away').toBe(true); });
+  });
+
   it('🔴 [Right] the next call shows the SAME player at once: no new frame, no new load, only the new text played', async () => {
-    const vl = interpreter({ leaveAfterMs: PAUSE });
+    const vl = interpreter({ leaveAfterMs: REST });
     await signThrough(vl, 'casa', 1, 1);
     const shown = frame();
     const page = shown.contentWindow;
+    says(false);
     await until(() => { expect(frame().hidden).toBe(true); });
     void vl.sign('escola');
     await until(() => { expect(methods()).toEqual(['setBaseUrl', 'playNow', 'playNow']); });
@@ -227,36 +271,43 @@ describe('ui/vlibras-player — on the screen only while it signs (the Dev; inte
     expect(frame().hidden, 'the second call did not bring the interpreter back').toBe(false);
   });
 
-  it('🔴 [Right] a call DURING the pause cancels the leaving: the interpreter stays while it signs the new text', async () => {
-    const vl = interpreter({ leaveAfterMs: PAUSE });
+  it('🔴 [Right] a call DURING the rest cancels the leaving, before the player answers it', async () => {
+    const vl = interpreter({ leaveAfterMs: REST });
     await signThrough(vl, 'casa', 1, 1);
+    says(false);
+    await wait(REST / 4); // the player's word is a message: the rest has begun once it is heard
     void vl.sign('escola');
     await until(() => { expect(methods()).toEqual(['setBaseUrl', 'playNow', 'playNow']); });
-    await wait(PAUSE * 2);
-    expect(frame().hidden, 'the first text\'s pause took the interpreter off while it signed the second').toBe(false);
+    await wait(REST * 2);
+    expect(frame().hidden, 'the first text\'s rest took the interpreter off while it signed the second').toBe(false);
+    startsPlaying();
     frame().contentWindow.emit('counter_gloss', [1, 1]);
+    says(false);
     await until(() => { expect(frame().hidden, 'the second text\'s end did not take it off').toBe(true); });
   });
 
-  it('📌 [Boundary] a call while it SIGNS replaces the text and it stays on the screen, past the pause', async () => {
-    const vl = interpreter({ leaveAfterMs: PAUSE });
+  it('📌 [Boundary] a call while it SIGNS replaces the text — the player\'s false-then-true — and it stays on the screen', async () => {
+    const vl = interpreter({ leaveAfterMs: REST });
     const first = vl.sign('casa');
     await until(() => { expect(methods()).toContain('playNow'); });
+    startsPlaying();
     void vl.sign('escola');
     expect(await first).toEqual({ signed: true });
     await until(() => { expect(methods()).toEqual(['setBaseUrl', 'playNow', 'playNow']); });
-    await wait(PAUSE * 2);
+    startsPlaying();
+    await wait(REST * 2);
     expect(frame().hidden, 'the interpreter left while the replacing text was still being signed').toBe(false);
   });
 
-  it('📌 [Boundary] turning deaf mode off still takes it off at once, pause or not', async () => {
+  it('📌 [Boundary] turning deaf mode off still takes it off at once, rest or not', async () => {
     const vl = interpreter({ leaveAfterMs: 60_000 });
     await signThrough(vl, 'casa', 1, 1);
+    says(false);
     vl.hide();
-    expect(frame().hidden, 'deaf mode is off and the interpreter waits for its pause').toBe(true);
+    expect(frame().hidden, 'deaf mode is off and the interpreter waits for its rest').toBe(true);
   });
 
-  it('🎯 [Zero] `dispose()` in the pause leaves no timer of the root running on the host window', async () => {
+  it('🎯 [Zero] `dispose()` in the rest leaves no timer of the root running on the host window', async () => {
     const pending = new Set();
     const win = {
       addEventListener: window.addEventListener.bind(window),
@@ -266,10 +317,11 @@ describe('ui/vlibras-player — on the screen only while it signs (the Dev; inte
     };
     const vl = interpreter({ win, leaveAfterMs: 60_000 });
     await signThrough(vl, 'casa', 1, 1);
-    expect(pending.size, 'no pause was started after the last token').toBe(1);
+    says(false);
+    await until(() => { expect(pending.size, 'no rest was started after the player said it stopped').toBe(1); });
     vl.dispose();
     expect(frame()).toBeNull();
-    expect(pending.size, 'the pause outlived the root').toBe(0);
+    expect(pending.size, 'the rest outlived the root').toBe(0);
   });
 });
 
@@ -286,10 +338,13 @@ describe('ui/vlibras-player — on the screen only while it signs (the Dev; inte
 //   I10 `dispose()` not removing the frame                              🔴 `dispose()` removes the frame
 //   I11 the load timer never armed                                      🔴 a player that never loads is given up on
 //   I12 the glosses never read (`glossOf` replaced by today's rule)      🔴 the player is handed the GLOSS the delivery wrote
-//   L1 the frame never leaves after the pause                           🔴 it LEAVES the screen · the next call shows the SAME player
-//                                                                       · a call DURING the pause
-//   L2 it leaves at the last token, with no pause (`0` for the pause)   🔴 it LEAVES the screen a pause after the last token — not at it
-//   L3 leaving UNLOADS the player (`removeFrame()` instead of hiding)     🔴 it LEAVES the screen · the next call shows the SAME player
-//                                                                       · a call DURING the pause
-//   L4 a call in the pause does not cancel the leaving                  🔴 a call DURING the pause cancels the leaving
-//   L5 `dispose()` leaves the pause's timer running                     🎯 `dispose()` in the pause leaves no timer
+//   L1 the frame never leaves                                           🔴 it LEAVES the screen · a false that flickers · the next call
+//                                                                       · a call DURING the rest
+//   L2 it leaves on the counter again (the last token starts the rest,  🔴 it LEAVES … not at the last token · the rest is FIVE seconds
+//      the player's false starts nothing)                               · a false that flickers
+//   L3 it leaves at 1 s (`LEAVE_AFTER_MS` = 1000)                        🔴 the rest is FIVE seconds
+//   L4 leaving UNLOADS the player (`removeFrame()` instead of hiding)    🔴 it LEAVES the screen · a false that flickers · the next call
+//                                                                       · a call DURING the rest
+//   L5 the player's true does not cancel the leaving                    🔴 a false that flickers back to true · a call while it SIGNS
+//   L6 a call in the rest does not cancel the leaving                   🔴 a call DURING the rest cancels the leaving
+//   L7 `dispose()` leaves the rest's timer running                      🎯 `dispose()` in the rest leaves no timer

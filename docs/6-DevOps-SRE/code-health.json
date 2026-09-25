@@ -1901,12 +1901,12 @@
       "fanIn": 1
     },
     "ui/vlibras-player.ts": {
-      "codeLines": 165,
-      "decisionNodes": 25,
-      "maxDepth": 3,
+      "codeLines": 182,
+      "decisionNodes": 28,
+      "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 9,
+      "worstFunction": 11,
       "statefulEdges": 0,
       "fanIn": 1
     },
