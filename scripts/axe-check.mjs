@@ -43,8 +43,8 @@ try {
     process.exit(1);
   }
 
-  // VLibras (gov.br, third-party, interim — pillar #2/#5) is excluded by DECISION: we do not control its
-  // markup and the plan is our own zdog interpreter. Getting the exclusion right is subtler than it looks.
+  // VLibras (gov.br, third-party, which a game page may load) is excluded by DECISION: we do not control its markup.
+  // Which Libras player deaf mode uses is the Dev's open choice (ADR-0234). Getting the exclusion right is subtler than it looks.
   //
   // The lesson of this exclusion is WHICH SIDE OF THE BOUNDARY the selector lives on: an exclusion must name the THIRD
   // PARTY's namespace, because that is what the third party promises to keep — not our markup, which it may stop using
