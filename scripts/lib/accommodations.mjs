@@ -207,22 +207,22 @@ export function medir(categorias) {
   /* ===================== the seven guards ===================== */
   const nomes = categorias.map((c) => c.nome);
   const problemas = [];
-  for (const n of nomes) if (!(n in DECL)) problemas.push(`categoria SEM declaração: ${n}`);
-  for (const n of Object.keys(DECL)) if (!nomes.includes(n)) problemas.push(`declaração SEM categoria: ${n}`);
+  for (const n of nomes) if (!(n in DECL)) problemas.push(`category with NO declaration: ${n}`);
+  for (const n of Object.keys(DECL)) if (!nomes.includes(n)) problemas.push(`declaration with NO category: ${n}`);
   for (const [n, d] of Object.entries(DECL)) {
     for (const [eixo, validos] of Object.entries(EIXOS_DA_DECLARACAO)) {
       const v = d[eixo];
-      if (!Array.isArray(v) || !v.length) problemas.push(`${n}: eixo «${eixo}» vazio`);
-      else for (const x of v) if (!validos.valores.has(x)) problemas.push(`${n}: «${x}» não é um valor de «${eixo}»`);
+      if (!Array.isArray(v) || !v.length) problemas.push(`${n}: axis «${eixo}» is empty`);
+      else for (const x of v) if (!validos.valores.has(x)) problemas.push(`${n}: «${x}» is not a value of «${eixo}»`);
     }
   }
   for (const [k, a] of Object.entries(ACOM)) {
     if (a.semMedida) continue; // decided without measuring the catalogue — see the entries
-    if (!a.chave) { problemas.push(`${k}: SEM chave`); continue; }
+    if (!a.chave) { problemas.push(`${k}: NO key`); continue; }
     if (a.chave === U) continue;
-    if (Object.keys(a.chave).sort().join() !== 'eixo,valores') { problemas.push(`${k}: a chave tem de ser { eixo, valores } — UM eixo`); continue; }
-    if (!(a.chave.eixo in VALIDOS)) { problemas.push(`${k}: eixo «${a.chave.eixo}» não existe`); continue; }
-    for (const v of a.chave.valores) if (!VALIDOS[a.chave.eixo].has(v)) problemas.push(`${k}: «${v}» não é um valor de «${a.chave.eixo}» — casaria zero, calado`);
+    if (Object.keys(a.chave).sort().join() !== 'eixo,valores') { problemas.push(`${k}: the key must be { eixo, valores } — ONE axis`); continue; }
+    if (!(a.chave.eixo in VALIDOS)) { problemas.push(`${k}: axis «${a.chave.eixo}» does not exist`); continue; }
+    for (const v of a.chave.valores) if (!VALIDOS[a.chave.eixo].has(v)) problemas.push(`${k}: «${v}» is not a value of «${a.chave.eixo}» — it would match zero, silently`);
   }
   if (problemas.length) return { problemas };
 
@@ -235,7 +235,7 @@ export function medir(categorias) {
     return { k, ...meta, nGen: gens.length, nJogos: gens.reduce((a, n) => a + jogosDe[n], 0), gens };
   }).sort((a, b) => b.nJogos - a.nJogos || b.nGen - a.nGen);
 
-  for (const l of linhas) if (!l.nGen) problemas.push(`${l.k}: a chave não alcança categoria nenhuma — acomodação sem assunto em lado nenhum`);
+  for (const l of linhas) if (!l.nGen) problemas.push(`${l.k}: the key reaches no category — an accommodation with a subject nowhere`);
   if (problemas.length) return { problemas };
 
   return { linhas, TOTAL, problemas: [] };

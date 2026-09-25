@@ -8,7 +8,7 @@
 // the test's failure message asks for the `BREAKING CHANGE:` footer in the commit, the information a release's breaking
 // changes need.
 //
-// Uso: `node scripts/snapshot-public-surface.mjs` (reescreve o retrato)
+// Usage: `node scripts/snapshot-public-surface.mjs` (rewrites the portrait)
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -92,7 +92,7 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'snapshot-public-surface.mj
   const s = superficieDe(join(raiz, 'app', 'js'));
   writeFileSync(join(raiz, RETRATO), JSON.stringify(s, null, 2) + '\n');
   const n = Object.values(s).reduce((t, v) => t + v.length, 0);
-  console.log(`retrato escrito: ${Object.keys(s).length} módulos, ${n} nomes`);
+  console.log(`portrait written: ${Object.keys(s).length} modules, ${n} names`);
 
   // ⚠️ BOTH PORTRAITS COME OUT OF THE SAME COMMAND, on purpose: declaring is ONE act. Two separate commands would give
   // half a declaration — the names updated and the shape stale —, and the shape gate would go on failing over a removal
@@ -100,5 +100,5 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'snapshot-public-surface.mj
   const f = formaDe(join(raiz, 'app', 'js'));
   writeFileSync(join(raiz, RETRATO_FORMA), JSON.stringify(f, null, 2) + '\n');
   const tipos = Object.values(f).reduce((t, v) => t + Object.keys(v).length, 0);
-  console.log(`forma escrita:   ${Object.keys(f).length} módulos, ${tipos} tipos`);
+  console.log(`shape written:    ${Object.keys(f).length} modules, ${tipos} types`);
 }

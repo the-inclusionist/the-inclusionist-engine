@@ -31,21 +31,21 @@ if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p);
 
 const nomeDaChave = (c) => (c === U ? 'universal' : `${c.eixo} ∈ ${c.valores.join('|')}`);
 const pct = (n) => `${String(Math.round((n / TOTAL) * 100)).padStart(3)}%`;
-console.log(`${categorias.length} categorias · ${TOTAL} jogos — cada acomodação com UMA chave\n`);
-console.log('acomodação              tem?  categorias  jogos     %   chave');
+console.log(`${categorias.length} categories · ${TOTAL} games — each accommodation with ONE key\n`);
+console.log('accommodation           has?  categories  games     %   key');
 console.log('─'.repeat(100));
 for (const l of linhas) {
-  console.log(`${l.k.padEnd(22)} ${l.tem ? ' sim' : ' NÃO'}     ${String(l.nGen).padStart(2)}/35    ${String(l.nJogos).padStart(3)}  ${pct(l.nJogos)}   ${nomeDaChave(l.chave)}`);
+  console.log(`${l.k.padEnd(22)} ${l.tem ? ' yes' : '  NO'}     ${String(l.nGen).padStart(2)}/35    ${String(l.nJogos).padStart(3)}  ${pct(l.nJogos)}   ${nomeDaChave(l.chave)}`);
 }
-console.log('\n=== os eixos da DECLARAÇÃO, e de onde viriam ===');
+console.log('\n=== the DECLARATION\'s axes, and where they would come from ===');
 for (const [eixo, e] of Object.entries({ ...EIXOS_DA_DECLARACAO, ...EIXOS_DERIVADOS })) {
   const usam = linhas.filter((l) => l.chave !== U && l.chave.eixo === eixo).map((l) => l.k);
-  console.log(`  ${eixo.padEnd(9)} ${(e.fonte ?? '⚠️ o contrato ainda não pergunta').padEnd(46)} ${usam.join(', ') || '—'}`);
+  console.log(`  ${eixo.padEnd(9)} ${(e.fonte ?? '⚠️ the contract does not ask yet').padEnd(46)} ${usam.join(', ') || '—'}`);
 }
-console.log('\n=== as que a engine NÃO tem, por alcance ===');
+console.log('\n=== the ones the engine does NOT have, by reach ===');
 for (const l of linhas.filter((x) => !x.tem)) {
   console.log(`\n  ${l.k} — ${l.o}   [${nomeDaChave(l.chave)}]`);
-  console.log(`     ${l.nGen} categorias · ${l.nJogos} jogos (${pct(l.nJogos).trim()})`);
+  console.log(`     ${l.nGen} categories · ${l.nJogos} games (${pct(l.nJogos).trim()})`);
   if (l.chave !== U) console.log(`     ${l.gens.join(' · ')}`);
 }
 

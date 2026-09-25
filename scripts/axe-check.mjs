@@ -28,18 +28,18 @@ try {
   // element — and the message left talks about the element. Asking about the address first makes the gate say what
   // really happened.
   if (resposta && !resposta.ok()) {
-    console.error(`✗ axe: ${URL} respondeu ${resposta.status()}.`);
-    console.error('  O alvo tem de ser uma PÁGINA que o build emite. `dist/` já não tem `index.html` — ele saiu');
-    console.error('  com o cartucho (#111). Aponte o AXE_URL para a página da engine, ou construa antes.');
+    console.error(`✗ axe: ${URL} answered ${resposta.status()}.`);
+    console.error('  The target has to be a PAGE the build emits. `dist/` no longer has an `index.html` — it left');
+    console.error('  with the cartridge (#111). Point AXE_URL at the engine\'s page, or build first.');
     process.exit(1);
   }
   // let the a11y shell settle (fonts/DOM); the canvas render itself isn't axe-scannable — its a11y is the DOM shell.
   try {
     await page.waitForSelector('#sr-status', { timeout: 10_000 });
   } catch {
-    console.error(`✗ axe: ${URL} carregou, mas não tem \`#sr-status\`.`);
-    console.error('  Esse é o anúncio para leitor de tela, e a casca de acessibilidade inteira pendura-se nele:');
-    console.error('  sem ele não há o que auditar, e um axe verde sobre uma página sem casca não prova nada.');
+    console.error(`✗ axe: ${URL} loaded, but has no \`#sr-status\`.`);
+    console.error('  That is the screen-reader announcement, and the whole accessibility shell hangs on it:');
+    console.error('  without it there is nothing to audit, and a green axe over a page with no shell proves nothing.');
     process.exit(1);
   }
 

@@ -167,7 +167,7 @@ const copia = iGag >= 0 ? args.splice(iGag, 2)[1] : null;
 const html = copia ? readFileSync(copia, 'utf8') : await (await fetch(GAG_URL, { headers: { 'User-Agent': 'the-inclusionist-engine/estudo (educational accessibility research)' } })).text();
 const inicio = html.indexOf('<h2>Motor</h2>');
 const fim = html.indexOf('</article>', inicio);
-if (inicio < 0 || fim < 0) { console.error('a estrutura da GAG mudou: não achei <h2>Motor</h2> … </article>'); process.exit(2); }
+if (inicio < 0 || fim < 0) { console.error('the GAG\'s structure changed: <h2>Motor</h2> … </article> not found'); process.exit(2); }
 const lidas = [];
 let eixo = null, nivel = null;
 for (const m of html.slice(inicio, fim).matchAll(/<h2[^>]*>([^<]+)<\/h2>|<h3[^>]*>([^<]+)<\/h3>|<li class="icon"><svg[^>]*>[\s\S]*?<\/svg><a href="https:\/\/gameaccessibilityguidelines\.com\/([^"/]+)\/">([^<]+)<\/a>/g)) {
@@ -183,20 +183,20 @@ const impressao = createHash('sha256').update(lidas.map((l) => `${l.eixo}|${l.ni
 
 /* ===================== the six guards ===================== */
 const problemas = [];
-if (FIXADA.sha256 && impressao !== FIXADA.sha256) problemas.push(`a GAG mudou desde ${FIXADA.lida}: ${impressao.slice(0, 12)} ≠ ${FIXADA.sha256.slice(0, 12)} — reclassificar antes de confiar`);
+if (FIXADA.sha256 && impressao !== FIXADA.sha256) problemas.push(`the GAG changed since ${FIXADA.lida}: ${impressao.slice(0, 12)} ≠ ${FIXADA.sha256.slice(0, 12)} — reclassify before trusting it`);
 const slugs = new Set(lidas.map((l) => l.slug));
-for (const s of slugs) if (!(s in D)) problemas.push(`directriz SEM classificação: ${s}`);
-for (const s of Object.keys(D)) if (!slugs.has(s)) problemas.push(`classificação de um slug que a página NÃO tem: ${s}`);
+for (const s of slugs) if (!(s in D)) problemas.push(`guideline with NO classification: ${s}`);
+for (const s of Object.keys(D)) if (!slugs.has(s)) problemas.push(`classification of a slug the page does NOT have: ${s}`);
 for (const [s, v] of Object.entries(D)) {
   if (Array.isArray(v)) {
-    if (!v.length) problemas.push(`${s}: lista vazia — ou acomodações, ou { razao, nota }`);
-    for (const a of v) if (!(a in ACOM)) problemas.push(`${s}: acomodação «${a}» não existe no catálogo`);
+    if (!v.length) problemas.push(`${s}: empty list — either accommodations, or { razao, nota }`);
+    for (const a of v) if (!(a in ACOM)) problemas.push(`${s}: accommodation «${a}» is not in the catalogue`);
   } else {
-    if (!(v.razao in RAZOES)) problemas.push(`${s}: razão «${v.razao}» desconhecida`);
-    if (!v.nota) problemas.push(`${s}: não vira acomodação e NÃO diz porquê`);
+    if (!(v.razao in RAZOES)) problemas.push(`${s}: unknown reason «${v.razao}»`);
+    if (!v.nota) problemas.push(`${s}: does not become an accommodation and does NOT say why`);
   }
 }
-const categorias = lerCatalogo(args[0] ?? CATALOGO_PADRAO, 'node scripts/accommodations-gag.mjs [--gag copia.html] <catalogo.html>');
+const categorias = lerCatalogo(args[0] ?? CATALOGO_PADRAO, 'node scripts/accommodations-gag.mjs [--gag copy.html] <catalogue.html>');
 const medida = medir(categorias);
 problemas.push(...medida.problemas);
 if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p); process.exit(1); }

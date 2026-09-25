@@ -129,7 +129,7 @@ const [mode, ...rest] = process.argv.slice(2);
 if (mode === '--list') {
   const phase7 = namesThatArePhase7();
   for (const f of rest) {
-    if (isExcluded(f)) { console.log(`\n${f}: FORA DA MEDIÇÃO do idioma — este ficheiro não é oferecido.`); continue; }
+    if (isExcluded(f)) { console.log(`\n${f}: OUTSIDE the language measurement — this file is not offered.`); continue; }
     const names = safeNamesOf(f, phase7);
     console.log(`\n${f} (${names.length}): ${names.join('  ')}`);
   }
@@ -147,14 +147,14 @@ if (mode === '--list') {
     (function scan(n) { if (ts.isIdentifier(n)) present.add(n.text); n.forEachChild(scan); })(src);
     for (const [from, to] of Object.entries(map)) if (present.has(to) && from !== to) clashes.push(`${file}: ${from}->${to}`);
   }
-  if (clashes.length) { console.error(`COLISÕES (nada foi escrito):\n  ${clashes.join('\n  ')}`); process.exit(3); }
+  if (clashes.length) { console.error(`CLASHES (nothing was written):\n  ${clashes.join('\n  ')}`); process.exit(3); }
   let total = 0;
   for (const [file, map] of Object.entries(jobs)) {
     const r = apply(file, map);
     console.log(`${file}: ${r.renamed}`);
     total += r.renamed;
   }
-  console.log(`ocorrências renomeadas: ${total}`);
+  console.log(`occurrences renamed: ${total}`);
 } else if (mode === '--count') {
   // How much of the debt is still renameable WITHOUT a breaking release: the rest is phase 7 (ADR-0219).
   const phase7 = namesThatArePhase7();
@@ -165,10 +165,10 @@ if (mode === '--list') {
     if (n) { safe += n; byFile.push([relative(APP, f).split('\\').join('/'), n]); }
   }
   byFile.sort((a, b) => b[1] - a[1]);
-  console.log(`nomes DISTINTOS ainda renomeáveis sem quebrar: ${safe} em ${byFile.length} ficheiros`);
+  console.log(`DISTINCT names still renameable without breaking: ${safe} in ${byFile.length} files`);
   for (const [f, n] of byFile.slice(0, 20)) console.log(`   ${String(n).padStart(3)}  ${f}`);
-  if (byFile.length > 20) console.log(`   … e mais ${byFile.length - 20} ficheiros`);
+  if (byFile.length > 20) console.log(`   … and ${byFile.length - 20} more files`);
 } else {
-  console.error('uso: --list <ficheiro...>  |  --apply <mapa.json>  |  --count');
+  console.error('usage: --list <file...>  |  --apply <map.json>  |  --count');
   process.exit(2);
 }

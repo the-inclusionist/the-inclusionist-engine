@@ -420,16 +420,16 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'code-health.mjs') {
         + '(ADR-0232 point 4), written BY NAME so that a module entering or leaving it is a line a reviewer reads.',
       takenOn, ceiling, exempt: EXEMPT, stateful: statefulSet(modules), modules,
     }, null, 2)}\n`);
-    console.log(`baseline escrita: ${nomes.length} módulos`);
+    console.log(`baseline written: ${nomes.length} modules`);
   }
-  console.log(`📏 ${nomes.length} módulos · ${soma('codeLines')} linhas de código · ${soma('decisionNodes')} nós de decisão`);
+  console.log(`📏 ${nomes.length} modules · ${soma('codeLines')} code lines · ${soma('decisionNodes')} decision nodes`);
   const outsideRoot = nomes.filter((n) => !isExempt(n, 'statefulEdges'));
   console.log(`   stateful ${statefulSet(modules).length}: ${statefulSet(modules).join(', ')}`);
   console.log(`   value edges into stateful modules outside the root: ${outsideRoot.reduce((a, n) => a + modules[n].statefulEdges, 0)}`);
-  console.log(`   tecto (gravado em ${takenOn}): ${MEASURES.map((m) => `${m} ${ceiling[m]}`).join(' · ')}`);
+  console.log(`   ceiling (recorded on ${takenOn}): ${MEASURES.map((m) => `${m} ${ceiling[m]}`).join(' · ')}`);
   const today = ceilingFrom(modules);
   const drift = MEASURES.filter((m) => today[m] !== ceiling[m]).map((m) => `${m} ${ceiling[m]} → ${today[m]}`);
-  if (drift.length) console.log(`   p90 de hoje difere (só muda com --remeasure-ceiling, e o commit diz porquê): ${drift.join(' · ')}`);
+  if (drift.length) console.log(`   today's p90 differs (it only changes with --remeasure-ceiling, and the commit says why): ${drift.join(' · ')}`);
   for (const m of MEASURES) {
     const pior = [...nomes].sort((a, b) => modules[b][m] - modules[a][m]).slice(0, 3);
     console.log(`   ${m.padEnd(14)} ${pior.map((p) => `${p} ${modules[p][m]}`).join(' · ')}`);

@@ -22,7 +22,7 @@ import { readFileSync } from 'node:fs'; // package.json declares type:module
 const alvo = process.argv[2] || 'app/js/main.js';
 let src;
 try { src = readFileSync(alvo, 'utf8'); }
-catch (e) { console.error('não consegui ler ' + alvo + ' — ' + e.message); process.exit(2); }
+catch (e) { console.error('could not read ' + alvo + ' — ' + e.message); process.exit(2); }
 
 /**
  * Erases line and block comments, keeping what is inside a string or template.
@@ -64,8 +64,8 @@ for (const m of src.matchAll(/^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+'([^']+
     if (nome.includes(' as ')) nome = nome.split(' as ').pop().trim();
     if (!nome) continue;
     const re = new RegExp('(?<![\\w$])' + escapa(nome) + '(?![\\w$])');
-    if (!re.test(corpo)) { console.log('IMPORT MORTO: ' + nome + '  <- ' + m[2]); mortos++; }
+    if (!re.test(corpo)) { console.log('DEAD IMPORT: ' + nome + '  <- ' + m[2]); mortos++; }
   }
 }
-console.log(mortos === 0 ? 'nenhum import morto' : mortos + ' imports mortos');
+console.log(mortos === 0 ? 'no dead import' : mortos + ' dead imports');
 process.exit(mortos === 0 ? 0 : 1);

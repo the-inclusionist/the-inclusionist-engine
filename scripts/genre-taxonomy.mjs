@@ -63,20 +63,20 @@ for (const [n, m] of Object.entries(MAPA)) {
 const naoGenero = Object.entries(MAPA).filter(([, m]) => m.naoE);
 const semGeneroNenhum = Object.entries(MAPA).filter(([, m]) => !m.generos.length);
 
-console.log(`taxonomia: Wikipédia rev ${REVISAO.id} (${REVISAO.data})`);
-console.log(`catálogo: ${categorias.length} categorias · ${TOTAL} jogos — ${categorias.length} de ${categorias.length} mapeadas\n`);
+console.log(`taxonomy: Wikipedia rev ${REVISAO.id} (${REVISAO.data})`);
+console.log(`catalogue: ${categorias.length} categories · ${TOTAL} games — ${categorias.length} of ${categorias.length} mapped\n`);
 // ⚠️ THE COLUMN IS NOT A PARTITION: a category with two genres counts in both (RPG / Aventura falls in 5 and in 3).
 // Said here so nobody adds up the column and concludes the catalogue has more games than it has.
-console.log('=== onde as categorias caem, por género de TOPO da página (com sobreposição) ===');
+console.log('=== where the categories fall, by the page\'s TOP-level genre (overlapping) ===');
 for (const t of Object.keys(porTopo).sort((a, b) => Number(a) - Number(b))) {
   const e = porTopo[t];
-  console.log(`  ${t.padStart(2)} ${String(SECOES[t] ?? '').padEnd(28)} ${String(e.categorias.length).padStart(2)} categorias · ${String(e.jogos).padStart(3)} jogos`);
+  console.log(`  ${t.padStart(2)} ${String(SECOES[t] ?? '').padEnd(28)} ${String(e.categorias.length).padStart(2)} categories · ${String(e.jogos).padStart(3)} games`);
 }
-console.log(`\n=== ${naoGenero.length} categorias cujo NOME não é um género ===`);
+console.log(`\n=== ${naoGenero.length} categories whose NAME is not a genre ===`);
 for (const [n, m] of naoGenero) console.log(`  ${n.padEnd(26)} ${m.naoE.padEnd(18)} ${m.nota ?? ''}`);
-console.log(`\n=== ${semGeneroNenhum.length} sem género nenhum a atribuir (${semGeneroNenhum.reduce((a, [n]) => a + jogosDe[n], 0)} jogos) ===`);
-for (const [n, m] of semGeneroNenhum) console.log(`  ${n.padEnd(26)} ${jogosDe[n]} jogos · ${m.naoE}`);
-console.log('\n=== os eixos que NÃO são género — alcance em jogos (com sobreposição) ===');
+console.log(`\n=== ${semGeneroNenhum.length} with no genre at all to assign (${semGeneroNenhum.reduce((a, [n]) => a + jogosDe[n], 0)} games) ===`);
+for (const [n, m] of semGeneroNenhum) console.log(`  ${n.padEnd(26)} ${jogosDe[n]} games · ${m.naoE}`);
+console.log('\n=== the axes that are NOT genre — reach in games (overlapping) ===');
 for (const eixo of Object.keys(EIXOS_DA_TAXONOMIA)) {
   const partes = [...EIXOS_DA_TAXONOMIA[eixo]].map((v) => {
     const j = Object.entries(MAPA).filter(([, m]) => m[eixo].includes(v)).reduce((a, [n]) => a + jogosDe[n], 0);

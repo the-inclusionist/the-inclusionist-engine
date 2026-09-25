@@ -78,9 +78,9 @@ function main() {
   // would be exactly the lie this file exists not to tell. ⚠️ And a 404 without authentication is not absence: it is
   // lack of access, which has already cost this project a plan redone on top of an emptiness.
   if (dados.error) {
-    console.log('censo de issues: DORMENTE — não consegui ler o tracker.');
-    console.log(`  motivo: ${dados.error.split('\n')[0]}`);
-    console.log('  ⚠️ isto NÃO é «zero problemas»: é zero medições. Corra com `gh auth status` a passar.');
+    console.log('issue census: DORMANT — could not read the tracker.');
+    console.log(`  reason: ${dados.error.split('\n')[0]}`);
+    console.log('  ⚠️ this is NOT «zero problems»: it is zero measurements. Run it with `gh auth status` passing.');
     process.exit(0);
   }
 
@@ -94,8 +94,8 @@ function main() {
   const tamanhos = dados.map((i) => corpo(i).length).sort((a, b) => a - b);
   const mediana = tamanhos.length ? tamanhos[Math.floor(tamanhos.length / 2)] : 0;
 
-  console.log(`censo de issues · ${REPO}`);
-  console.log(`  ABERTAS: ${dados.length}   mediana do corpo: ${mediana} chars   orçamento: ${ORCAMENTO_CHARS}`);
+  console.log(`issue census · ${REPO}`);
+  console.log(`  OPEN: ${dados.length}   median body: ${mediana} chars   budget: ${ORCAMENTO_CHARS}`);
   // 🎯 THE ACTIONABLE NUMBER IS THE INTERSECTION. Counting boxes alone accused small issues of a few hundred characters, each
   // with a clear `done when` in one paragraph — a small issue does not need a checklist, it needs to be small. ⚠️ Adding
   // noise to the signal is how a check stops being read: the two raw numbers stay in view because they measure real
@@ -104,29 +104,29 @@ function main() {
   // many importers.
   const grandesSemCaixa = grandes.filter((i) => caixas(i) === 0);
 
-  console.log(`  📏 MECÂNICO — acima do orçamento: ${grandes.length}/${dados.length}` +
-    `   ·   sem uma única caixa: ${semCaixa.length}/${dados.length}`);
-  console.log(`  🎯 ACCIONÁVEL — grande E sem lista (um livro sem checklist): ${grandesSemCaixa.length}`);
+  console.log(`  📏 MECHANICAL — over the budget: ${grandes.length}/${dados.length}` +
+    `   ·   without a single box: ${semCaixa.length}/${dados.length}`);
+  console.log(`  🎯 ACTIONABLE — big AND without a list (a book with no checklist): ${grandesSemCaixa.length}`);
   for (const i of [...grandesSemCaixa].sort((a, b) => corpo(b).length - corpo(a).length)) {
     console.log(`     #${String(i.number).padStart(3)} ${String(corpo(i).length).padStart(5)} chars · ${i.title.slice(0, 56)}`);
   }
 
   if (grandes.length) {
-    console.log('\n  as maiores (o corpo tem de ser mais curto do que o commit que a fecha):');
+    console.log('\n  the biggest (the body has to be shorter than the commit that closes it):');
     for (const i of [...grandes].sort((a, b) => corpo(b).length - corpo(a).length).slice(0, 8)) {
-      console.log(`    #${String(i.number).padStart(3)} ${String(corpo(i).length).padStart(5)} chars · ${caixas(i)} caixas · ${i.title.slice(0, 58)}`);
+      console.log(`    #${String(i.number).padStart(3)} ${String(corpo(i).length).padStart(5)} chars · ${caixas(i)} boxes · ${i.title.slice(0, 58)}`);
     }
   }
 
-  console.log(`\n  🔎 HEURÍSTICA (pista pelo TÍTULO, não medição): ${suspeitas.length} podem não ser problemas de código`);
+  console.log(`\n  🔎 HEURISTIC (a clue from the TITLE, not a measurement): ${suspeitas.length} may not be code problems`);
   for (const [i, p] of suspeitas) console.log(`    #${String(i.number).padStart(3)} ${p} — ${i.title.slice(0, 52)}`);
 
   // 🎯 THE HALF THAT SEPARATES AN INVENTORY FROM A MONUMENT: saying how many were NOT classified. Without this line, a
   // whole tracker of cases the heuristic does not reach would leave here looking approved.
   const naoClassificadas = dados.length - suspeitas.length;
-  console.log(`\n  ⚠️ ${naoClassificadas} issues NÃO foram classificadas por nenhuma pista — a heurística lê TÍTULOS,`);
-  console.log('     e uma decisão com título de tarefa passa-lhe ao lado. O número acima é um piso, não um total.');
-  console.log('\n  (relatório: este comando nunca reprova — ver o cabeçalho e o ADR-0126)');
+  console.log(`\n  ⚠️ ${naoClassificadas} issues were NOT classified by any clue — the heuristic reads TITLES,`);
+  console.log('     and a decision with a task\'s title slips past it. The number above is a floor, not a total.');
+  console.log('\n  (report: this command never fails — see the header and ADR-0126)');
   return;
 }
 

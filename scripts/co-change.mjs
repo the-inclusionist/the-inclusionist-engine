@@ -126,29 +126,29 @@ const JANELA = [];
 const relatar = (nome, g) => {
   const antes = g.landed ? commitsWithModules([...JANELA, `${g.landed}~1`]) : [];
   const depois = g.landed ? commitsWithModules([...JANELA, `${g.landed}..HEAD`]) : commitsWithModules([...JANELA]);
-  const linha = (rotulo, r) => `   ${rotulo.padEnd(7)} ${String(r.juntos).padStart(3)} de ${String(r.tocam).padStart(3)} commits `
-    + `(${(r.fracao * 100).toFixed(0)}%)${r.tocam < 10 ? '  ⚠️ poucos commits para concluir' : ''}`;
+  const linha = (rotulo, r) => `   ${rotulo.padEnd(7)} ${String(r.juntos).padStart(3)} of ${String(r.tocam).padStart(3)} commits `
+    + `(${(r.fracao * 100).toFixed(0)}%)${r.tocam < 10 ? '  ⚠️ too few commits to conclude' : ''}`;
   console.log(`\n${nome} — ${g.what}`);
   if (g.splitFrom) {
     // 📏 The share of commits the split file itself is in: a file that was cut should be dragged into fewer of them.
     const parte = (cs) => {
-      if (!cs.length) return 'sem commits';
+      if (!cs.length) return 'no commits';
       const n = cs.filter((c) => c.modules.includes(g.splitFrom)).length;
       // ⚠️ The same warning as the line below, and it matters more here: a percentage over a dozen commits is noise, and a
       // percentage over the whole history dilutes what changed this week. Neither answers alone.
-      return `${n} de ${cs.length} commits (${(n / cs.length * 100).toFixed(0)}%)${cs.length < 30 ? ' ⚠️ janela curta' : ''}`;
+      return `${n} of ${cs.length} commits (${(n / cs.length * 100).toFixed(0)}%)${cs.length < 30 ? ' ⚠️ short window' : ''}`;
     };
-    if (g.landed) console.log(`   ${g.splitFrom}: ANTES ${parte(antes)} · DEPOIS ${parte(depois)}`);
+    if (g.landed) console.log(`   ${g.splitFrom}: BEFORE ${parte(antes)} · AFTER ${parte(depois)}`);
     else console.log(`   ${g.splitFrom}: ${parte(depois)}`);
   }
   if (g.landed) {
-    console.log(linha('ANTES', togetherness(antes, g.files)));
-    console.log(linha('DEPOIS', togetherness(depois, g.files)));
-    console.log(`   (a abstração aterrou em ${g.landed})`);
+    console.log(linha('BEFORE', togetherness(antes, g.files)));
+    console.log(linha('AFTER', togetherness(depois, g.files)));
+    console.log(`   (the abstraction landed in ${g.landed})`);
   } else {
     const r = togetherness(depois, g.files);
-    console.log(linha('SEMPRE', r));
-    console.log('   (sem abstração ainda: este número é a linha de base de quem a construir)');
+    console.log(linha('ALWAYS', r));
+    console.log('   (no abstraction yet: this number is the baseline for whoever builds it)');
     for (const [par, n] of [...r.pares].sort((a, b) => b[1] - a[1]).slice(0, 3)) console.log(`      ${String(n).padStart(3)}  ${par}`);
   }
 };
@@ -158,7 +158,7 @@ if (process.argv[1] && process.argv[1].endsWith('co-change.mjs')) {
   const ficheiros = arg('--files');
   if (ficheiros) {
     const since = arg('--since');
-    relatar('à mão', { what: 'os ficheiros pedidos', landed: since, files: ficheiros.split(',').map((f) => f.trim()) });
+    relatar('by hand', { what: 'the files asked for', landed: since, files: ficheiros.split(',').map((f) => f.trim()) });
   } else {
     const so = arg('--group');
     const ultimos = arg('--last');
