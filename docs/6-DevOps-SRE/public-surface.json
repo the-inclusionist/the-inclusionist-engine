@@ -1611,10 +1611,14 @@
     "rgbToHex"
   ],
   "ui/vlibras.ts": [
-    "Libras",
-    "LibrasPorts",
-    "LibrasStore",
-    "createLibras"
+    "DeafMode",
+    "DeafModePorts",
+    "DeafModeStore",
+    "Interpreter",
+    "NO_INTERPRETER",
+    "SignResult",
+    "createDeafMode",
+    "signingUnavailableLine"
   ],
   "ui/voice-control.ts": [
     "VOICE_PULSE_MS",

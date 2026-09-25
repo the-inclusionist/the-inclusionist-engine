@@ -52,6 +52,7 @@
       "controller",
       "crt",
       "cvdFilters",
+      "deafMode",
       "declaration",
       "declines",
       "dispose",
@@ -59,7 +60,6 @@
       "input",
       "keyboard",
       "keyboardConfig",
-      "libras",
       "localeReady",
       "lq",
       "measureFlashes",
@@ -3126,20 +3126,31 @@
     "type RGB": "readonly [number, number, number]"
   },
   "ui/vlibras.ts": {
-    "interface LibrasPorts": [
-      "doc",
-      "now",
-      "store",
-      "win"
+    "interface Interpreter": [
+      "dispose",
+      "hide",
+      "sign"
     ],
-    "interface Libras": [
-      "isOpen",
+    "interface DeafModePorts": [
+      "caption",
+      "captionsSetting",
+      "interpreter",
+      "report",
+      "speak",
+      "store",
+      "t",
+      "tell"
+    ],
+    "interface DeafMode": [
+      "captionsOn",
+      "dispose",
+      "isOn",
       "onChange",
-      "say",
-      "tick",
+      "sonar",
       "toggle"
     ],
-    "type LibrasStore": "Pick<Store, 'getBool' | 'setBool'>"
+    "type SignResult": "{ readonly signed: true } | { readonly signed: false",
+    "type DeafModeStore": "Pick<Store, 'getBool' | 'setBool'>"
   },
   "ui/voice-control.ts": {
     "interface VoiceControlDeps": [

@@ -30,7 +30,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2181,
+      "codeLines": 2190,
       "decisionNodes": 282,
       "maxDepth": 4,
       "fanOut": 90,
@@ -1841,12 +1841,12 @@
       "fanIn": 1
     },
     "ui/vlibras.ts": {
-      "codeLines": 50,
-      "decisionNodes": 11,
-      "maxDepth": 3,
+      "codeLines": 83,
+      "decisionNodes": 8,
+      "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 8,
+      "worstFunction": 6,
       "statefulEdges": 0,
       "fanIn": 1
     },
