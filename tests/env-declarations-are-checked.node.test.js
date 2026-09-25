@@ -14,7 +14,7 @@ const ENV = fileURLToPath(new URL('../app/js/env.d.ts', import.meta.url));
 
 describe('app/js/env.d.ts is checked despite skipLibCheck', () => {
   it('✅ [Right] compiled alone with skipLibCheck off, it has zero diagnostics', () => {
-    const program = ts.createProgram([ENV], {
+    const options = {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ESNext,
       moduleResolution: ts.ModuleResolutionKind.Bundler,
@@ -23,7 +23,15 @@ describe('app/js/env.d.ts is checked despite skipLibCheck', () => {
       strict: true,
       noEmit: true,
       skipLibCheck: false,
-    });
+    };
+    // ⚠️ THE LIBRARIES ARE PARSED ONLY FOR WHAT A TYPE ERROR NEEDS (`ParseForTypeErrors`), the mode TypeScript made for a
+    // caller that asks for diagnostics and nothing else. Most of the parse is `lib.dom.d.ts`, 1.8 MB whose every member
+    // carries a JSDoc block with its MDN reference, and none of that decides a type error in `env.d.ts`. Under the load of
+    // several suites at once this case went past the 5 s ceiling while passing alone; the fix is the work shrinking, never
+    // the clock growing. 📏 2026-09-25, one cold program in plain Node: ~395 ms → ~330 ms, with the same zero diagnostics.
+    const host = ts.createCompilerHost(options);
+    host.jsDocParsingMode = ts.JSDocParsingMode.ParseForTypeErrors;
+    const program = ts.createProgram({ rootNames: [ENV], options, host });
     const file = program.getSourceFile(ENV);
     expect(file, 'env.d.ts must be part of the program').toBeDefined();
     const messages = [...program.getSyntacticDiagnostics(file), ...program.getSemanticDiagnostics(file)]
