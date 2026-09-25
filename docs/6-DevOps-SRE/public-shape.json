@@ -4,6 +4,7 @@
       "a11yBarHost?",
       "cvdHost?",
       "doc",
+      "interpreter?",
       "pauseHost?",
       "storage?",
       "touchHost?",
@@ -88,6 +89,7 @@
   "consumer-quiz/main-quiz.ts": {
     "interface QuizHost": [
       "doc",
+      "interpreter?",
       "win"
     ]
   },
@@ -1191,6 +1193,7 @@
     "interface VirtualControllerDeps": [
       "deliver",
       "holdKey",
+      "menuAnswers?",
       "menuKey",
       "menuOpen",
       "releaseKey",
@@ -1323,6 +1326,7 @@
       "narrate",
       "newContext",
       "roleAt?",
+      "screenText?",
       "srSay",
       "t",
       "targetsOf",
@@ -2733,6 +2737,12 @@
       "hide",
       "remove",
       "showing"
+    ]
+  },
+  "ui/screen-text.ts": {
+    "interface ScreenTextCtx": [
+      "doc",
+      "world"
     ]
   },
   "ui/session-clock.ts": {

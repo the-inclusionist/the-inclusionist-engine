@@ -1463,6 +1463,12 @@
     "mountScanOverlay",
     "scanItemText"
   ],
+  "ui/screen-text.ts": [
+    "ScreenTextCtx",
+    "menuSonarPress",
+    "screenText",
+    "unreadableWorldProblems"
+  ],
   "ui/session-clock.ts": [
     "SessionClockCtx",
     "SessionClockMounted",

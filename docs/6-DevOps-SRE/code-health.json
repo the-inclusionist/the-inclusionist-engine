@@ -30,10 +30,10 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2211,
+      "codeLines": 2219,
       "decisionNodes": 283,
       "maxDepth": 4,
-      "fanOut": 92,
+      "fanOut": 93,
       "globalReach": 0,
       "worstFunction": 72,
       "statefulEdges": 1,
@@ -43,7 +43,7 @@
       ]
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 245,
+      "codeLines": 246,
       "decisionNodes": 35,
       "maxDepth": 2,
       "fanOut": 5,
@@ -751,12 +751,12 @@
       "fanIn": 1
     },
     "input/virtual-controller.ts": {
-      "codeLines": 42,
+      "codeLines": 46,
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 5,
+      "worstFunction": 6,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -821,8 +821,8 @@
       "fanIn": 3
     },
     "platform/audio-sonar.ts": {
-      "codeLines": 210,
-      "decisionNodes": 38,
+      "codeLines": 213,
+      "decisionNodes": 40,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
@@ -1667,6 +1667,16 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
+    "ui/screen-text.ts": {
+      "codeLines": 98,
+      "decisionNodes": 24,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 7,
       "statefulEdges": 0,
       "fanIn": 1
     },
