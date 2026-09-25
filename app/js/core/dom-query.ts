@@ -11,10 +11,9 @@
 //
 // ========================= WHY IN `core/` =========================
 // Because it is the layer everyone may import without inverting anything — `input/`, `render/` and `ui/` (ADR-0173).
-// And it costs no dependency: `Element` is a `lib.dom` global, and the two queries below touch no DOM at import, so
-// `core/` stays testable without a browser.
-// 📌 The two global queries (`$`, `$$`) live here and not in `ui/dom` so that `core/a11y-sr` and `render/crt` can use them
-// without importing upward (issue #167); `ui/dom` still exports them under the same names.
+// And it costs no dependency: `Element` is a `lib.dom` global, and a type is erased at build.
+// 📌 It holds only the TYPE. The two global queries that lived here (`$`, `$$` over `globalThis.document`) left in
+// ADR-0232 D4: every module now queries the document it is GIVEN, and the root builds its `$` over the host's.
 
 /**
  * `document.querySelector`, in the shape modules receive it by INJECTION — never importing `document`.
@@ -24,20 +23,3 @@
  * it is why the CONSTRAINT stays `Element`.
  */
 export type DomQuery = <T extends Element = HTMLElement>(sel: string) => T | null;
-
-/**
- * ⚠️ RESOLVED THROUGH `globalThis` AND NOT THE BARE GLOBAL, and the difference is between returning `null` and THROWING.
- *
- * `document.querySelector(...)` with no `document` is a `ReferenceError` — not `undefined` — and these two functions
- * promise `T | null`. A query that throws where it promises `null` is a defect by its own signature, and it travelled
- * far: `core/a11y-sr.srAlert` calls this `$`, and `createGame` calls `srAlert` when it shows the reach warning — so
- * booting the engine against an INJECTED document (an iframe, an editor beside the game, a test) blew up the whole boot
- * on an announcement. It survived because while every root was a page in a browser, the global WAS the right document.
- *
- * ⚠️ AND THEY STILL LOOK AT THE GLOBAL, on purpose: whoever needs to query ANOTHER document injects their own (the
- * composition root has a `$` bound to the host's document). What this changes is not WHERE they look — it is what
- * happens when there is nowhere to look.
- */
-const docGlobal = (): Document | undefined => (globalThis as { document?: Document }).document;
-export const $ = <T extends Element = HTMLElement>(s: string): T | null => docGlobal()?.querySelector<T>(s) ?? null;
-export const $$ = <T extends Element = HTMLElement>(s: string): T[] => [...(docGlobal()?.querySelectorAll<T>(s) ?? [])];

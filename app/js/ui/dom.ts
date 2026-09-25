@@ -1,22 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/dom.ts — DOM selection shortcuts, used across the whole UI (menus/HUD/pause/quiz/options). PURE on import:
-// it only defines functions (it does not touch the DOM → importable in node). $ = querySelector; $$ =
-// querySelectorAll as an Array. Generic: $<HTMLInputElement>('#x') already types the result.
+// ui/dom.ts — the two halves of a toggle button: its state (`toggleBtn`) and its text (`toggleLabel`/`toggleAria`).
+// PURE on import: it only defines functions, so it is importable in node.
 //
-// IT IS NOT A LEAF, on purpose: it imports `core/i18n` so that `toggleLabel` (the text of a toggle button) lives
-// beside `toggleBtn` (the class and `aria-pressed`). The property that matters — importable in node, no I/O on
-// import — still holds; what it gave up is having zero dependencies, and what it gained is written on
-// `toggleLabel`.
+// 📌 The global selectors `$`/`$$` that lived here left in ADR-0232 D4: every module queries the document it is
+// GIVEN (the root builds its `$` over the host's), and a query over the page-wide `document` is the reach D4 removed.
 import type { Translate } from '../core/i18n.js';
-import { $ as consultar, $$ as consultarTodos } from '../core/dom-query.js';
-
-// THE DEFAULT IS `HTMLElement`, NOT `Element`: `.hidden`, `.focus()` and `.value` do not exist on `Element`, and
-// they are exactly what an application does with what it selects. `Element` is lib.dom's default because
-// `querySelector` also serves SVG and MathML — no selector in this project picks one of those. Whoever needs a
-// narrower type passes the parameter: `$<HTMLSelectElement>('#pad-design')`.
-// The two global queries moved to `core/dom-query` (issue #167); the names stay here for whoever imports them from ui.
-export const $ = consultar;
-export const $$ = consultarTodos;
 
 /**
  * Reflects an on/off state onto a toggle button: the visual class AND `aria-pressed`.

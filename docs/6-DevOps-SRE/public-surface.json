@@ -122,8 +122,6 @@
     "speakableProblems"
   ],
   "core/dom-query.ts": [
-    "$",
-    "$$",
     "DomQuery"
   ],
   "core/entity.ts": [
@@ -1135,8 +1133,6 @@
     "summariseProbe"
   ],
   "ui/dom.ts": [
-    "$",
-    "$$",
     "toggleAria",
     "toggleBtn",
     "toggleLabel"

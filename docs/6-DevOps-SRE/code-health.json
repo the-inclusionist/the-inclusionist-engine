@@ -26,7 +26,6 @@
     ]
   },
   "stateful": [
-    "core/dom-query.ts",
     "core/i18n.ts"
   ],
   "modules": {
@@ -164,17 +163,14 @@
       "fanIn": 3
     },
     "core/dom-query.ts": {
-      "codeLines": 4,
+      "codeLines": 1,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
-      "globalReach": 1,
-      "worstFunction": 2,
+      "globalReach": 0,
+      "worstFunction": 0,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "globalThis"
-      ]
+      "fanIn": 0
     },
     "core/entity.ts": {
       "codeLines": 83,
@@ -1345,17 +1341,14 @@
       "fanIn": 0
     },
     "ui/dom.ts": {
-      "codeLines": 15,
+      "codeLines": 12,
       "decisionNodes": 3,
       "maxDepth": 1,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "statefulEdges": 1,
-      "fanIn": 9,
-      "statefulImports": [
-        "core/dom-query.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 9
     },
     "ui/drawing-problems.ts": {
       "codeLines": 61,

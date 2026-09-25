@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // RENDER/DOM tests (browser project — Chromium/Playwright; PIXI global via vitest.setup.browser.js).
 // Patterns: ZOMBIES + Right-BICEP (labels in the name). See docs/3-Sprint-Design/plan-unit-tests-at-extraction.md. Modules: render/canvas,
-// render/sprite-fx, platform/storage, ui/dom. STRUCTURAL tests (dimensions/types) — they do not depend on asset PNGs.
+// render/sprite-fx, platform/storage. STRUCTURAL tests (dimensions/types) — they do not depend on asset PNGs.
 // The art of a game (coins, trees, power-ups) belongs to the game and is tested in its own repository.
 import { describe, it, expect } from 'vitest';
 import * as CV from '../app/js/render/canvas.js';
@@ -10,14 +10,7 @@ import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 // the storage API over a backend of this file's own (ADR-0232): no key written here reaches another file
 const ST = createStorage(memoryBackend());
-import * as DOM from '../app/js/ui/dom.js';
-
-describe('ui/dom — atalhos de seleção', () => {
-  it('[Right] $ delega ao querySelector; $$ devolve Array', () => {
-    expect(DOM.$('body')).toBe(document.body);
-    expect(Array.isArray(DOM.$$('div'))).toBe(true);
-  });
-});
+// (`ui/dom`'s page-wide `$`/`$$` left in ADR-0232 D4, and their case with them.)
 
 describe('render/canvas — primitivas', () => {
   it('[Right] makeCanvas dimensiona o offscreen', () => {
