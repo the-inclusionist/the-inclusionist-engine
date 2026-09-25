@@ -204,16 +204,10 @@
     "screenGrid"
   ],
   "core/session-clock.ts": [
-    "ClockLook",
-    "SessionEnding",
     "SessionReading",
     "clockDigits",
-    "clockLook",
     "clockWords",
-    "readSession",
-    "sessionEndingProblems",
-    "toSessionEnding",
-    "toSessionMinutes"
+    "readSession"
   ],
   "core/setting-defaults.ts": [
     "DEFAULTS",

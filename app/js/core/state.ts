@@ -15,7 +15,6 @@ import { isSpeechRate } from './speech-rate.js';
 // needs only them imports `core/setting-defaults` or `core/camera-cycle`, never this store.
 import { DEFAULTS } from './setting-defaults.js';
 import { toCameraControl, type CameraControl } from './camera-cycle.js';
-import { toSessionMinutes, toSessionEnding, type SessionEnding } from './session-clock.js';
 
 /** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
 export interface StatePort {
@@ -75,10 +74,6 @@ export interface GameEvent {
   noGripStrength: boolean;
   /** Playing through the webcam (ADR-0215): off, hands, face or eyes — one mode at a time, each with its lines. */
   cameraControl: CameraControl;
-  /** The session's length in whole minutes, the Time Timer's whole disc (ADR-0236): 60 unless an adult set another. */
-  sessionMinutes: number;
-  /** What the session clock does when the length runs out (ADR-0236 erratum): red, red pulsing gently, or screen lock. */
-  sessionEnding: SessionEnding;
 
   /* --- GAME: a game AUGMENTS this interface with its own events by declaration merging. The engine cannot name a game's
      payload — it is a type of the game (ADR-0033/0039) — and does not need to: whoever owns the event declares it. --- */
@@ -134,8 +129,6 @@ export interface SettingsStore {
   readonly gameSpeed: number;
   readonly captionPpm: number;
   readonly speechPpm: number;
-  readonly sessionMinutes: number;
-  readonly sessionEnding: SessionEnding;
   /** Sets the visual mode WITHOUT storing it: a default taken from the media query must follow the OS at every boot. */
   initVizMode(mode: string): void;
   setVizModeValue(mode: string): void;
@@ -158,8 +151,6 @@ export interface SettingsStore {
   setGameSpeedValue(v: number): void;
   setCaptionPpmValue(ppm: number): void;
   setSpeechPpmValue(ppm: number): void;
-  setSessionMinutesValue(minutes: number): void;
-  setSessionEndingValue(ending: SessionEnding): void;
   /** Subscribes to `evt`. Returns the function that cancels — keeping the return is cheaper than remembering `off`. */
   on<K extends keyof GameEvent>(evt: K, fn: Listener<K>): () => void;
   off<K extends keyof GameEvent>(evt: K, fn: Listener<K>): void;
@@ -319,13 +310,6 @@ export function createSettingsStore(port: StatePort): SettingsStore {
   //     the ratio (`core/speech-rate`). One of 254…504 by 50; anything else reads as 254, the normal speed (ADR-0196). ---
   let speechPpm = isSpeechRate(port.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 
-  // --- sessionMinutes / sessionEnding: the SESSION CLOCK's two options (ADR-0236 and its erratum; issue #94) — how long a
-  //     session is, and what the clock does when it runs out. The adult's values, not the child's (ADR-0050 §2): they are
-  //     stored here because the engine enforces the time locally, and until an adult sets them the defaults apply. No menu
-  //     writes them yet; where they live and whether the child can reach them is the Dev's open question. ---
-  let sessionMinutes = toSessionMinutes(port.getNum('incl_session_minutes', DEFAULTS.sessionMinutes), DEFAULTS.sessionMinutes);
-  let sessionEnding = toSessionEnding(port.get('incl_session_ending', DEFAULTS.sessionEnding), DEFAULTS.sessionEnding);
-
   return {
     get vizMode() { return vizMode; },
     get blindMode() { return blindMode; },
@@ -347,8 +331,6 @@ export function createSettingsStore(port: StatePort): SettingsStore {
     get gameSpeed() { return gameSpeed; },
     get captionPpm() { return captionPpm; },
     get speechPpm() { return speechPpm; },
-    get sessionMinutes() { return sessionMinutes; },
-    get sessionEnding() { return sessionEnding; },
 
     initVizMode(mode) { vizMode = mode; },
     setVizModeValue(mode) { port.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); },
@@ -442,16 +424,6 @@ export function createSettingsStore(port: StatePort): SettingsStore {
       const isValidRate = isSpeechRate(ppm);
       if (speechPpm === isValidRate) return;
       port.set('incl_speech_ppm', isValidRate); speechPpm = isValidRate; emit('speechPpm', isValidRate);
-    },
-    setSessionMinutesValue(minutes) {
-      const valid = toSessionMinutes(minutes, DEFAULTS.sessionMinutes);
-      if (sessionMinutes === valid) return;
-      port.set('incl_session_minutes', valid); sessionMinutes = valid; emit('sessionMinutes', valid);
-    },
-    setSessionEndingValue(ending) {
-      const valid = toSessionEnding(ending, DEFAULTS.sessionEnding);
-      if (sessionEnding === valid) return;
-      port.set('incl_session_ending', valid); sessionEnding = valid; emit('sessionEnding', valid);
     },
 
     on, off, emit,

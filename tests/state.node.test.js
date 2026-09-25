@@ -163,13 +163,11 @@ describe('core/state — cada setter avisa o seu evento, com o valor guardado', 
     // 'no-such-mode' reads as off: what is told must be the SANITISED value the store kept, not what the caller passed
     setCameraControlValue: ['eyes', 'no-such-mode'], setGameSpeedValue: [0.5, 1], setCaptionPpmValue: [175, 125],
     setSpeechPpmValue: [404, 254],
-    // 0 minutes reads as the default hour: what is told must be the sanitised value, as for the camera above
-    setSessionMinutesValue: [30, 0], setSessionEndingValue: ['pulse', 'red'],
   };
   const setters = () => Object.keys(state).filter((k) => /^set\w+Value$/.test(k));
 
   it('a descoberta é MECÂNICA, e cada setter descoberto tem par de valores', () => {
-    expect(setters().length).toBe(22);
+    expect(setters().length).toBe(20);
     expect(setters().filter((s) => !(s in VALORES)), 'setter novo sem par de valores').toEqual([]);
   });
 

@@ -136,7 +136,6 @@ import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import { mountSessionClock, type SessionClockMounted } from '../ui/session-clock.js';
 import { mountHudRow, reserveBottomBand } from '../ui/hud-row.js';
-import { sessionEndingProblems } from '../core/session-clock.js';
 import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/game-options.js';
 import { createStorage, keysOutsideScopes, type StorageLike } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
@@ -2556,15 +2555,13 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * THE SESSION CLOCK (ADR-0236, ADR-0239, ADR-0050 §3; issue #94): a label over the time left in digits and a Time Timer pie,
    * in the centre of the HUD row, for every cartridge — it measures the SESSION, which is this root's life, so a `mount()` does
-   * not restart it and only `dispose()` takes it away. The length and the ending are the store's (60 minutes and red until an
-   * adult sets them); a stored «lock» is reported, not built (`core/session-clock.clockLook`).
+   * not restart it and only `dispose()` takes it away. It always shows, measures one hour and turns red at the end: nothing on
+   * the child's side sets it, and nothing about it is stored (ADR-0240).
    */
   const sessionClock: SessionClockMounted | null = mountSessionClock({
     doc, slot: hudRow?.clock ?? null, t: translator.t,
     // as the host has them: a host with no clock mounts none, answered in the module (ADR-0232)
     performance: win.performance, setInterval: win.setInterval, clearInterval: win.clearInterval,
-    minutes: () => state.sessionMinutes, ending: () => state.sessionEnding,
-    systemReducedMotion: () => defaultReducedMotion(win.matchMedia), sceneMotion,
     announce: srSay, drawn: reserveRowBand,
   });
   whenDisposed(() => { sessionClock?.remove(); });
@@ -4239,7 +4236,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope(), ...sessionEndingProblems(state.sessionEnding)]; },
+    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
     onFailure: announceFailure,
     get reach() { return currentReach; },
   };

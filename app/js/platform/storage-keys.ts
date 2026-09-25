@@ -59,8 +59,6 @@ export const KEYS = {
   // whoever uses quiet mode set it again every session, and unexpected noise costs them most. ADR-0028: every panel persists.
   tea: 'incl_tea',
   menuIndex: 'incl_menuindex', // the "6 of 10" at the end of an item's announcement (ADR-0044, item 3)
-  // the session clock's two options, the adult's (ADR-0236, ADR-0050 §2): the length in minutes and the ending
-  sessionMinutes: 'incl_session_minutes', sessionEnding: 'incl_session_ending',
   // typography / controls / touch
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',
   padBtnMm: 'incl_padbtnmm', padGapMm: 'incl_padgapmm', padStickMm: 'incl_padstickmm',

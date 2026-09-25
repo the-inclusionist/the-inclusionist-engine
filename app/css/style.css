@@ -682,13 +682,8 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   background:conic-gradient(#f6f5f0 0 calc((1 - var(--left,1)) * 1turn),#009E73 0)}
 /* The spent share is the face from twelve o'clock CLOCKWISE, and the green is what is left up to twelve: the edge moves
    clockwise as time passes, like a Time Timer (the Dev, 2026-09-25: it was emptying anticlockwise). */
-.session-clock[data-look="red"] .session-clock-pie,.session-clock[data-look="pulse"] .session-clock-pie{background:#D55E00}
-/* The gentle pulse: one slow breath every 2.4 s — 0.4 a second, far below the three flashes a second of WCAG 2.3.1 — and
-   never under reduced motion: the root writes `pulse` only when neither the engine's switches nor the system ask for less
-   motion, and the media query below is the second lock. */
-.session-clock[data-look="pulse"] .session-clock-pie{animation:session-clock-pulse 2.4s ease-in-out infinite}
-@keyframes session-clock-pulse{50%{opacity:.55}}
-@media (prefers-reduced-motion: reduce){ .session-clock-pie{animation:none} }
+/* The end is red and still — no pulse, no lock (ADR-0240). */
+.session-clock[data-look="red"] .session-clock-pie{background:#D55E00}
 .rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;pointer-events:none}
 /* WITH THE HUD ROW (ADR-0239 point 6): the caption and the legend stand ABOVE the row; while the explanation shows, the column
    comes down to where the row stands, and the explanation covers it. */

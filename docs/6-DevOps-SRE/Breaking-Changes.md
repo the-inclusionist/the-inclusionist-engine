@@ -3775,28 +3775,23 @@ New, additive: `ui/menu-intent.MENU_CONFIRM` (the menu's «yes» position, `acti
 📏 **Not measured in the games:** this change was made without reading the sibling repositories. Before the bump, `git grep`
 them for `createVoiceControl`, `createVoiceCommands`, `VoiceCommands` and `MenuNavApi` doubles.
 
-## DJ · The session clock's two options join the settings store (ADR-0236 and its erratum, issue #94)
+## DJ · The session clock is one hour, with no setting — nothing to migrate (ADR-0236, ADR-0240, issue #94)
 
-**Who is affected:** only code that IMPLEMENTS `SettingsStore` or declares a full `GameEvent` map itself — a hand-made double
-of `engine.settings`, for instance. Code that reads `engine.settings` or subscribes to its bus changes nothing.
+**Who is affected:** nobody who consumes a published version. Against `10.0.0`, `SettingsStore`, `GameEvent`, `DEFAULTS` and
+`KEYS` are unchanged, and nothing is stored under a new key.
 
-📌 **Why:** the session clock is a Time Timer whose length and ending are stored settings (60 minutes and «red» until an
-adult sets them, `incl_session_minutes` and `incl_session_ending`), written and announced like every other setting, so the
-store's interface and its event map gain them as REQUIRED members.
+⚠️ **Why this note exists:** commit `bf489607` made the clock's length and ending stored settings and wrote a `BREAKING
+CHANGE:` footer pointing here; the generated CHANGELOG carries that footer. Before any of it was published, ADR-0240 took it
+back — the clock has no settings on the child's side — and the commit that removed them carries a footer that says so. Both
+footers describe the same unpublished round trip, and this is what ships:
 
-| new, required | what it is |
+| new, additive | what it is |
 |---|---|
-| `SettingsStore.sessionMinutes` · `setSessionMinutesValue(minutes)` | the session's length in whole minutes; anything under one or not a number reads as 60 |
-| `SettingsStore.sessionEnding` · `setSessionEndingValue(ending)` | `'red' \| 'pulse' \| 'lock'`; anything else reads as `'red'`. `'lock'` is stored and NOT built — the clock turns red and `problems` says why (ADR-0050 §4 names no way for an adult to lift it) |
-| `GameEvent.sessionMinutes: number` · `GameEvent.sessionEnding: SessionEnding` | the two events their setters tell |
-| `core/session-clock` (new module) | the vocabulary and the arithmetic: `SessionEnding`, `toSessionMinutes`, `toSessionEnding`, `readSession`, `clockLook`, `clockWords`, `clockFormat`, `clockDigits`, `sessionEndingProblems` |
+| `core/session-clock` (new module) | the arithmetic of a one-hour session: `readSession(elapsedMs)` → `SessionReading` (`left`, `leftMs`, `minutesLeft`, `over`), `clockDigits(leftMs)` (hours only while there are hours), `clockWords(reading)` (the dictionary key and minutes of the accessible name) |
 
-**Migration:** a double of `SettingsStore` adds the four members (a getter each and a setter each); a full `GameEvent` map
-adds the two entries. `DEFAULTS` gains `sessionMinutes: 60` and `sessionEnding: 'red'`.
-
-📏 **Measured in the seven games, read-only, as information:** none implements `SettingsStore` or declares `GameEvent`; each
-only receives an `Engine` (`game-2048`, `game-chess`, `game-pinball`, `game-platformer`, `game-soccer`, `game-whackwhack`).
-`pixi-15-puzzle` names neither.
+The clock always shows, always measures one hour from the mount and turns red at the end — no pulse, no lock, nothing in
+`problems`. `incl_session_minutes` and `incl_session_ending` are never read or written. Where the clock sits and the
+`ui/session-clock` module are note DK's.
 
 ## DK · The HUD is one row at the bottom, around the session clock (ADR-0239 and its erratum, ADR-0238, issue #94)
 

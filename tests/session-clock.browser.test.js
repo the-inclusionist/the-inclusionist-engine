@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE SESSION CLOCK: A LABEL OVER THE TIME LEFT IN DIGITS, AND A TIME TIMER PIE, IN THE CENTRE OF THE HUD ROW (ADR-0236 and its
-// erratum; ADR-0239; ADR-0050 §3; issue #94).
+// THE SESSION CLOCK: A LABEL OVER THE TIME LEFT IN DIGITS, AND A TIME TIMER PIE, IN THE CENTRE OF THE HUD ROW (ADR-0236;
+// ADR-0239; ADR-0240 — one hour, red at the end, always on, and no setting on the child's side; ADR-0050 §3; issue #94).
 //
 // Two halves. The MODULE (`ui/session-clock`) with the time in the case's hand — a clock that must be watched for an hour is
 // measured by lending it the hour. And the ROOT on a 640×360 stage with the real stylesheet, because where the clock sits and
@@ -23,8 +23,11 @@ beforeAll(() => {
   document.head.appendChild(style);
 });
 
-/** The module with a hand-held hour: `avancar(ms)` moves the time and fires the one-second interval. */
-function relogio(opcoes = {}) {
+/**
+ * The module with a hand-held hour: `avancar(ms)` moves the time and fires the one-second interval. `extra` is spread into the
+ * context — how a case hands the module ports it must NOT read.
+ */
+function relogio(extra = {}) {
   const slot = document.createElement('div');
   document.body.appendChild(slot);
   let agora = 1000;
@@ -32,20 +35,18 @@ function relogio(opcoes = {}) {
   const ditos = [];
   const parados = [];
   let desenhos = 0;
-  const o = { minutes: 60, ending: 'red', systemReduced: false, sceneMotion: { parallax: false, decor: false, items: false, particles: false }, ...opcoes };
   const montado = mountSessionClock({
     doc: document, slot, t: (key, p) => (key === 'clock.label' ? 'TIME' : `${key}|${p?.minutes}`),
     performance: { now: () => agora },
     setInterval: (fn, ms) => { tique = { fn, ms }; return 7; },
     clearInterval: (h) => { parados.push(h); },
-    minutes: () => o.minutes, ending: () => o.ending,
-    systemReducedMotion: () => o.systemReduced, sceneMotion: o.sceneMotion,
     announce: (s) => { ditos.push(s); },
     drawn: () => { desenhos += 1; },
+    ...extra,
   });
   const el = slot.querySelector('.session-clock');
   return {
-    slot, el, montado, o, ditos, parados,
+    slot, el, montado, ditos, parados,
     pie: () => el.querySelector('.session-clock-pie'),
     digitos: () => el.querySelector('.session-clock-digits').textContent,
     get tique() { return tique; },
@@ -100,17 +101,17 @@ describe('the clock the module draws', () => {
     expect(r.digitos()).toBe('1:00:00');
     r.avancar(1000);
     expect(r.digitos(), 'the «0:» of no hours is still drawn').toBe('59:59');
-    r.o.minutes = 30; // an adult shortens it mid-session: the length is read live
-    r.avancar(1000);
-    expect(r.digitos()).toBe('29:58');
+    r.avancar(15 * MIN - 1000);
+    expect(r.digitos()).toBe('45:00');
   });
 
-  it('🔴 [Right] a session under an hour reads MM:SS, and gains the hour when lengthened past one', () => {
-    r = relogio({ minutes: 45 });
-    expect(r.digitos()).toBe('45:00');
-    r.o.minutes = 90;
-    r.avancar(1000);
-    expect(r.digitos()).toBe('1:29:59');
+  it('🔴 [Zero] the hour is FIXED: a length or an ending lent to the module is not read (ADR-0240)', () => {
+    // the ports the clock had while its length and ending were settings; a caller that still passes them changes nothing
+    r = relogio({ minutes: () => 30, ending: () => 'pulse', systemReducedMotion: () => false, sceneMotion: {} });
+    expect(r.digitos(), 'a length lent by the caller became the session').toBe('1:00:00');
+    expect(r.el.getAttribute('aria-label')).toBe('clock.left|60');
+    r.avancar(60 * MIN);
+    expect(r.el.dataset.look, 'an ending lent by the caller changed the end').toBe('red');
   });
 
   it('🔴 [Right] a listener gets words, rewritten by the WHOLE minute, and no live region speaks them on a tick', () => {
@@ -130,63 +131,20 @@ describe('the clock the module draws', () => {
     expect(r.ditos, 'something was said before the end').toEqual([]);
   });
 
-  it('🔴 [Right] at the end the whole pie turns RED, it is said ONCE, and the screen is not locked', () => {
-    r = relogio({ minutes: 1 });
-    r.avancar(59_000);
+  it('🔴 [Right] at the end of the hour the whole pie turns RED and stays still, it is said ONCE, and nothing covers the screen', () => {
+    r = relogio();
+    r.avancar(59 * MIN);
     expect(r.el.getAttribute('aria-label')).toBe('clock.left.one|1');
-    r.avancar(1000);
+    r.avancar(MIN);
     expect(r.el.dataset.look).toBe('red');
     expect(getComputedStyle(r.pie()).backgroundColor, 'the end is not the Okabe-Ito vermillion').toBe('rgb(213, 94, 0)');
     expect(getComputedStyle(r.pie()).backgroundImage, 'the end still draws the pie').toBe('none');
+    expect(getComputedStyle(r.pie()).animationName, 'the red end moves (ADR-0240: red, no pulse)').toBe('none');
     expect(r.digitos()).toBe('00:00');
     expect(r.el.getAttribute('aria-label')).toBe('clock.over|0');
     r.avancar(1000); r.avancar(1000);
     expect(r.ditos, 'the end is said once, not on every tick').toEqual(['clock.over|0']);
     expect(getComputedStyle(r.el).pointerEvents, 'the clock catches the child\'s touches').toBe('none');
-  });
-
-  it('🔴 [Right] a longer length set mid-session gives the pie back, within a tick', () => {
-    r = relogio({ minutes: 10 });
-    r.avancar(10 * MIN);
-    expect(r.el.dataset.look).toBe('red');
-    r.o.minutes = 20;
-    r.avancar(1000);
-    expect(r.el.dataset.look).toBe('running');
-    expect(parseFloat(r.pie().style.getPropertyValue('--left'))).toBeGreaterThan(0.45);
-  });
-
-  it('🔴 [Right] «pulse» breathes slowly — far below three flashes a second (WCAG 2.3.1)', () => {
-    r = relogio({ minutes: 1, ending: 'pulse' });
-    r.avancar(MIN);
-    expect(r.el.dataset.look).toBe('pulse');
-    const cs = getComputedStyle(r.pie());
-    expect(cs.animationName).toBe('session-clock-pulse');
-    const periodo = parseFloat(cs.animationDuration) * (cs.animationDuration.endsWith('ms') ? 0.001 : 1);
-    expect(1 / periodo, 'pulses a second').toBeLessThanOrEqual(1);
-    expect(cs.backgroundColor, 'a pulsing clock is still red').toBe('rgb(213, 94, 0)');
-  });
-
-  it('🔴 [Right] under the system\'s reduced motion the pulse stops, and the clock stays plain red', () => {
-    r = relogio({ minutes: 1, ending: 'pulse', systemReduced: true });
-    r.avancar(MIN);
-    expect(r.el.dataset.look).toBe('red');
-    expect(getComputedStyle(r.pie()).animationName).toBe('none');
-  });
-
-  it('🔴 [Right] under the ENGINE\'s reduced motion too — any of its switches on — and it follows a change within a tick', () => {
-    r = relogio({ minutes: 1, ending: 'pulse' });
-    r.avancar(MIN);
-    expect(r.el.dataset.look).toBe('pulse');
-    r.o.sceneMotion.particles = true;
-    r.avancar(1000);
-    expect(r.el.dataset.look, 'the engine\'s reduced motion did not stop the pulse').toBe('red');
-    expect(getComputedStyle(r.pie()).animationName).toBe('none');
-  });
-
-  it('🔴 [Right] «lock» is stored, not built: the clock turns red and nothing covers the screen', () => {
-    r = relogio({ minutes: 1, ending: 'lock' });
-    r.avancar(MIN);
-    expect(r.el.dataset.look).toBe('red');
     expect(r.slot.children.length, 'something besides the clock was mounted').toBe(1);
   });
 
@@ -202,10 +160,7 @@ describe('the clock the module draws', () => {
 
   it('🎯 [Zero] a host with no clock or no tick mounts nothing — there is no session to measure', () => {
     const slot = document.createElement('div');
-    const base = {
-      doc: document, slot, t: (k) => k, clearInterval: undefined, drawn: () => {},
-      minutes: () => 60, ending: () => 'red', systemReducedMotion: () => false, sceneMotion: {}, announce: () => {},
-    };
+    const base = { doc: document, slot, t: (k) => k, clearInterval: undefined, drawn: () => {}, announce: () => {} };
     expect(mountSessionClock({ ...base, performance: undefined, setInterval: () => 1 })).toBeNull();
     expect(mountSessionClock({ ...base, performance: { now: () => 0 }, setInterval: undefined })).toBeNull();
     expect(mountSessionClock({ ...base, slot: null, performance: { now: () => 0 }, setInterval: () => 1 })).toBeNull();
@@ -296,19 +251,52 @@ describe('the clock the engine mounts, in the HUD row (issue #94)', () => {
     expect(sala, 'the row\'s room does not hold the clock').toBeGreaterThanOrEqual(relogioBox.height);
   });
 
-  it('🔴 [Right] an hour when nothing is stored, named in the interface language — and a stored length is read', async () => {
+  it('🔴 [Right] an hour, named in the interface language', async () => {
     motor = abrir();
     await esperar(50);
     expect(document.querySelector('.session-clock').getAttribute('aria-label'))
       .toMatch(/^(Tempo de jogo: faltam 60 minutos|Play time: 60 minutes left|Tiempo de juego: quedan 60 minutos)$/);
     expect(document.querySelector('.session-clock-label').textContent).toMatch(/^(TEMPO|TIME|TIEMPO)$/);
     expect(document.querySelector('.session-clock-digits').textContent).toBe('1:00:00');
-    motor.dispose();
+  });
+
+  it('🔴 [Zero] whatever is stored under the keys the clock once had, it shows 1:00:00, ends red and still, and says nothing in `problems` (ADR-0240)', async () => {
+    const real = performance.now.bind(performance);
+    let salto = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => real() + salto);
     localStorage.setItem('incl_session_minutes', '45');
+    localStorage.setItem('incl_session_ending', 'pulse');
     motor = abrir();
     await esperar(50);
-    expect(document.querySelector('.session-clock').getAttribute('aria-label')).toMatch(/\b45\b/);
-    expect(document.querySelector('.session-clock-digits').textContent).toBe('45:00');
+    expect(document.querySelector('.session-clock-digits').textContent, 'a stored length became the session').toBe('1:00:00');
+    expect(document.querySelector('.session-clock').getAttribute('aria-label')).toMatch(/\b60\b/);
+    expect('sessionMinutes' in motor.settings || 'sessionEnding' in motor.settings, 'the settings store keeps the clock').toBe(false);
+    salto = 61 * MIN;
+    await esperar(1150); // the one-second tick
+    const el = document.querySelector('.session-clock');
+    expect(el.dataset.look, 'a stored ending changed the end').toBe('red');
+    expect(getComputedStyle(el.querySelector('.session-clock-pie')).animationName, 'a stored «pulse» moves the end').toBe('none');
+    motor.dispose();
+    localStorage.setItem('incl_session_ending', 'lock');
+    motor = abrir();
+    expect(motor.problems.filter((l) => /session|lock/i.test(l)), 'a stored «lock» is still read').toEqual([]);
+  });
+
+  it('🔴 [Zero] a whole session, to its end and past it, writes no `incl_session_*` key', async () => {
+    const real = performance.now.bind(performance);
+    let salto = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => real() + salto);
+    motor = abrir();
+    salto = 61 * MIN;
+    await esperar(1150);
+    expect(document.querySelector('.session-clock').dataset.look).toBe('red');
+    motor.dispose();
+    motor = null;
+    // by `key(i)`, not `Object.keys`: the test page's storage lists its methods as own keys and none of what it keeps
+    const guardadas = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i))
+      .filter((k) => k?.startsWith('incl_session'));
+    expect(localStorage.length, 'the case needs a storage that lists what it keeps').toBeGreaterThan(0);
+    expect(guardadas, 'the clock stored something on the child\'s device').toEqual([]);
   });
 
   it('🔴 [Right] the SESSION, not the cartridge: a `mount()` keeps the same clock; `dispose()` takes the row away', async () => {
@@ -331,18 +319,16 @@ describe('the clock the engine mounts, in the HUD row (issue #94)', () => {
     const el = document.querySelector('.session-clock');
     expect(el.dataset.look).toBe('red');
     expect(document.getElementById('sr-status').textContent).toMatch(/acabou|over|se acabó/);
-    expect(motor.problems.filter((l) => /session ending/.test(l)), 'red is the default, and nothing is owed').toEqual([]);
-  });
-
-  it('🔴 [Right] a stored «lock» is reported in `problems`, and the screen is not locked', async () => {
-    localStorage.setItem('incl_session_ending', 'lock');
-    motor = abrir();
-    expect(motor.settings.sessionEnding).toBe('lock');
-    expect(motor.problems.filter((l) => /session ending is set to 'lock'/.test(l))).toHaveLength(1);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-// Each applied to the code, seen RED here, and undone (the results are in the commit that brought this file).
+// Each applied to the code, seen RED here, and undone (the results are in the commits that brought and changed this file).
 // The digits at 1.5× the floor instead of 1.125×: 🔴 the TEMPO block is wider than two and a half pies (ADR-0239 errata).
 // The pie drawn green-first (anticlockwise emptying, the defect the Dev saw): 🔴 the CLOCKWISE case.
+// ADR-0240, every new or changed [Zero] case:
+//   B0 the parent commit's app/ (stored length and ending, pulse, lock line), each case alone:
+//      🔴 «the hour is FIXED» (30:00 from the lent length) and «whatever is stored» (45:00 from the stored length)
+//   B1 `animation:session-clock-pulse` back on the red pie                  🔴 «at the end … stays still» and «whatever is stored»
+//   B2 the settings store writing `incl_session_minutes` when built          🔴 «a whole session … writes no key»
+//   B3 a `problems` line for a stored «lock» back in the root                🔴 «whatever is stored»

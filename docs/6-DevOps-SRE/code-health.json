@@ -30,10 +30,10 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2204,
+      "codeLines": 2201,
       "decisionNodes": 282,
       "maxDepth": 4,
-      "fanOut": 93,
+      "fanOut": 92,
       "globalReach": 0,
       "worstFunction": 72,
       "statefulEdges": 1,
@@ -311,17 +311,17 @@
       "fanIn": 5
     },
     "core/session-clock.ts": {
-      "codeLines": 43,
-      "decisionNodes": 8,
+      "codeLines": 23,
+      "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 4,
+      "worstFunction": 3,
       "statefulEdges": 0,
-      "fanIn": 3
+      "fanIn": 1
     },
     "core/setting-defaults.ts": {
-      "codeLines": 35,
+      "codeLines": 32,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -341,10 +341,10 @@
       "fanIn": 3
     },
     "core/state.ts": {
-      "codeLines": 265,
-      "decisionNodes": 28,
+      "codeLines": 244,
+      "decisionNodes": 26,
       "maxDepth": 3,
-      "fanOut": 6,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
@@ -1041,7 +1041,7 @@
       "fanIn": 0
     },
     "platform/storage-keys.ts": {
-      "codeLines": 33,
+      "codeLines": 32,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1671,8 +1671,8 @@
       "fanIn": 1
     },
     "ui/session-clock.ts": {
-      "codeLines": 71,
-      "decisionNodes": 5,
+      "codeLines": 64,
+      "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
