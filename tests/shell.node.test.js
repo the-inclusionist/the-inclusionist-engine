@@ -5,7 +5,8 @@
 //
 // The shell (real focus, the legend's innerHTML, Print mode's listeners) is in shell.browser.test.js.
 import { describe, it, expect } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import {
   phaseView, touchControlsPlan, chip, legendRow1, legendRow2, legendHtml,
   padActionGlyphs, touchActionGlyphs, pickLegendPad,

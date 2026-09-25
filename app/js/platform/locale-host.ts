@@ -14,13 +14,17 @@
 // ⚠️ It touches `document` and `window` ON PURPOSE and that is why it is `platform/`: this is the layer whose job is the
 // browser. What it must never do is decide anything about language — it receives the locale and the tag already chosen.
 
-/** The two hooks `core/i18n`'s port takes. A host that has no page passes neither, and the engine runs without one. */
+/** The three hooks `core/i18n`'s port takes. A host that has no page passes none, and the engine runs without one. */
 export interface LocaleHostHooks {
   readonly applied: (locale: string, tag: string) => void;
   readonly preferred: () => string | null;
+  readonly follow: (react: (locale: string) => void) => void;
 }
 
-/** What a browser can offer `core/i18n`: the page effects of a change, and the language the person's browser is set to. */
+/**
+ * What a browser can offer a translator: the page effects of a change, the language the person's browser is set to, and
+ * the page's signal that ANOTHER root changed the language (ADR-0232 D3: the language is the page's, and every root follows).
+ */
 export function localeHostHooks(doc: Document, win: Window, applyDom: (root: ParentNode) => void): LocaleHostHooks {
   return {
     applied: (locale, tag) => {
@@ -33,10 +37,17 @@ export function localeHostHooks(doc: Document, win: Window, applyDom: (root: Par
     // ⚠️ `navigator` through the window, not the global: a host that hands the engine another window — a second document, an
     // iframe — means that window's language, and reading the global would silently answer for the wrong one.
     preferred: () => win.navigator?.language ?? null,
+    // 📌 On the window the root was GIVEN — its listener scope, so a disposed root stops following (ADR-0220).
+    follow: (react) => {
+      win.addEventListener('i18n:change', (e) => {
+        const locale = (e as CustomEvent<{ locale?: unknown }>).detail?.locale;
+        if (typeof locale === 'string') react(locale);
+      });
+    },
   };
 }
 
-/** Hangs the i18n object on the window for tests and the preview, which is what `core/i18n` used to do to itself. */
+/** Hangs a root's translator on the window for tests and the preview, which is what `core/i18n` used to do to itself. */
 export function exposeI18n(win: Window, i18n: unknown): void {
   (win as Window & { __i18n?: unknown }).__i18n = i18n;
 }

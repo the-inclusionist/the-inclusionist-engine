@@ -53,27 +53,31 @@ const declaracaoValida = () => ({
 describe('the virtual pad speaks the boot language', () => {
   it('🔴 [Zero] with `en` stored, the pad shows the game\'s words in English — drawn again once the language arrives', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     document.body.appendChild(raiz);
 
-    // ⚠️ Engine keys stand in for a game's words — what is measured is the LANGUAGE, not the meaning (an engine test may
-    // not lean on the quiz's vocabulary, ADR-0027). The quiz's shape: words read through GETTERS, so they follow the language — and the pad was drawn before it came.
-    const { t } = await import('../app/js/core/i18n.js');
+    // The game's words are KEYS of its own dictionary (ADR-0232 D3), resolved when the pad is drawn — and the pad is drawn
+    // before the boot language arrives. What is measured is the LANGUAGE, not the meaning.
+    const words = (visual, empathy, close, back) => ({ 'g.visual': visual, 'g.empathy': empathy, 'g.close': close, 'g.back': back });
     const motor = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true,
       declaration: declaracaoValida(),
       host: { doc: document, win: window },
       downloadHeavy: false,
       preset: {
-        up: { get label() { return t('menu.visual'); } }, down: { get label() { return t('menu.empathy'); } },
-        action2: { get label() { return t('menu.close'); } }, action3: { get label() { return t('menu.back'); } },
+        up: { labelKey: 'g.visual' }, down: { labelKey: 'g.empathy' },
+        action2: { labelKey: 'g.close' }, action3: { labelKey: 'g.back' },
+      },
+      dictionaries: {
+        pt: words('Acessibilidade visual', 'Modo empatia', 'Fechar', 'Voltar'),
+        en: words('Visual accessibility', 'Empathy mode', 'Close', 'Back'),
+        es: words('Accesibilidad visual', 'Modo empatía', 'Cerrar', 'Volver'),
       },
     });
 
-    await localeReady();
-    expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
+    await motor.localeReady();
+    expect(motor.locale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
 
     const nomes = ['up', 'down']
       .map((d) => document.querySelector(`#touch-cross .dpad-${d}`)?.getAttribute('aria-label') ?? '');

@@ -15,9 +15,12 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
 import { navigableItems } from '../app/js/ui/menu-items.ts';
-import { setLocale, t } from '../app/js/core/i18n.ts';
 
 let regiao;
+/** The quiz's engine: the page's language is switched and read through ITS translator (`core/i18n` holds no state, ADR-0232 D3). */
+let motor;
+const setLocale = (code) => motor.setLocale(code);
+const t = (key, params) => motor.t(key, params);
 const esperar = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const painelAberto = () => [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden);
 const textoDo = (el) => [...el.querySelectorAll('h2, strong, button, .opt-explain')].map((n) => n.textContent.trim()).join(' | ');
@@ -29,7 +32,7 @@ beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.querySelector('.stage-wrap').style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  motor = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await esperar();
   regiao = document.getElementById('game-region');
   regiao.focus();

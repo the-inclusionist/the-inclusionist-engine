@@ -19,6 +19,9 @@
     "questionHtml",
     "questionNarration"
   ],
+  "consumer-quiz/quiz-words.ts": [
+    "QUIZ_DICTIONARIES"
+  ],
   "core/a11y-sr.ts": [
     "Announcer",
     "AnnouncerPorts",
@@ -37,6 +40,7 @@
     "ACCOMMODATIONS",
     "Accommodation",
     "AccommodationAnswers",
+    "AccommodationKeys",
     "AccommodationPreset",
     "AccommodationWord",
     "CONTRACT_KEYED",
@@ -54,9 +58,11 @@
   "core/actions.ts": [
     "ACTIONS",
     "Action",
+    "ActionKeys",
     "ActionLabeller",
     "ActionPreset",
     "ActionWord",
+    "ActionWords",
     "DIRECTIONS",
     "SYSTEM",
     "VERBS",
@@ -67,7 +73,8 @@
     "presetProblems",
     "selectClaimProblem",
     "shortLabellerFrom",
-    "startClaimProblem"
+    "startClaimProblem",
+    "wordsOf"
   ],
   "core/calm-mode.ts": [
     "CALM_AUDIO_CATS",
@@ -158,15 +165,9 @@
     "LocalePort",
     "Translate",
     "Translator",
+    "availableLocales",
     "bcp47",
-    "createTranslator",
-    "getLocale",
-    "initI18n",
-    "loadLocale",
-    "localeReady",
-    "registerDict",
-    "setLocale",
-    "t"
+    "createTranslator"
   ],
   "core/loop.ts": [
     "LoopOptions",
@@ -1160,6 +1161,9 @@
     "initDebugPanel",
     "summariseProbe"
   ],
+  "ui/declared-words.ts": [
+    "missingDeclaredKeys"
+  ],
   "ui/dom.ts": [
     "toggleAria",
     "toggleBtn",
@@ -1242,11 +1246,13 @@
     "HowToPlaySlide",
     "HowToPlaySurface",
     "NO_KEY",
+    "PlaySlide",
     "SlideCtx",
     "animateFigure",
     "helpRows",
     "howToPlayProblems",
     "mountSlides",
+    "playSlidesOf",
     "showSlide"
   ],
   "ui/hud-bands.ts": [

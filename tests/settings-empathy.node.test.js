@@ -4,7 +4,8 @@
 // the visual menu, #60), the resulting EMPATHY_VIZ_MODES cut, and the value→label mapping of the buttons. render()/open()/
 // close() (they touch the DOM) are in settings-empathy.browser.test.js. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
 import { VIZ_MODES, simulatesDisability } from '../app/js/render/viz-modes.js';
 

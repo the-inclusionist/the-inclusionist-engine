@@ -19,7 +19,8 @@ import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { announceItem } from '../app/js/ui/item-announcement.js';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 
 describe('anúncio de item de menu · rótulo, estado e o índice no fim', () => {
   it('[Right] rótulo + estado + índice, nessa ordem', () => {

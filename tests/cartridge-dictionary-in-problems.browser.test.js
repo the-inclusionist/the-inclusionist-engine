@@ -16,15 +16,15 @@ const declaracao = () => ({
 describe('a cartridge dictionary under createGame', () => {
   it('🔴 [Right] a key missing in es is a line of `problems` — and completing es takes it away', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { registerDict } = await import('../app/js/core/i18n.js');
     document.body.innerHTML = '<p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
-    registerDict('pt', { 'jogo.fixture.vitoria': 'Vitória' });
-    registerDict('en', { 'jogo.fixture.vitoria': 'Victory' });
-    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    // the game's dictionaries go through its root (ADR-0232 D3): `core/i18n` has no page-wide dictionary any more
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
+      dictionaries: { pt: { 'jogo.fixture.vitoria': 'Vitória' }, en: { 'jogo.fixture.vitoria': 'Victory' } } });
     const linhas = () => motor.problems.filter((p) => p.includes('jogo.fixture.vitoria'));
     expect(linhas(), 'the missing es was not said').toHaveLength(1);
     expect(linhas()[0]).toMatch(/lacks es/);
-    registerDict('es', { 'jogo.fixture.vitoria': 'Victoria' }); // after boot: `problems` is read when it is read
+    // after boot: a cartridge `mount()` swaps in brings es, ADDED to the root's dictionary — `problems` is read when it is read
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, dictionaries: { es: { 'jogo.fixture.vitoria': 'Victoria' } } });
     expect(linhas(), 'the line outlived the fix').toEqual([]);
   });
 });

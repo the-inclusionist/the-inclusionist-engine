@@ -12,6 +12,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 import { stampSource } from '../app/js/input/synthetic-source.js';
 
 let motor;
@@ -61,7 +62,7 @@ beforeAll(async () => {
     declaration: declaracao(),
     host: { doc: document, win: window },
     downloadHeavy: false,
-    preset: DUAS_ACOES,
+    ...keyed({ preset: DUAS_ACOES }),
     setPhase: (p) => fases.push(p),
   });
 });
@@ -81,13 +82,13 @@ describe('createGame mounts the virtual pad from the preset', () => {
   });
 
   it('🔴 [Boundary] two actions and no direction: two buttons and NO directional (ADR-0162)', () => {
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: SO_DUAS, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: SO_DUAS }), setPhase: (p) => fases.push(p) });
     try {
       expect(botoes().map(funcao).sort()).toEqual(['Jump', 'Run']);
       expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional the game never named').toBeNull();
       expect(document.getElementById('touch-start'), 'SELECT and START stay: they are the doors of the pause').not.toBeNull();
     } finally {
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     }
   });
 
@@ -99,7 +100,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     const OMBROS = { leftTrigger: { label: 'L-two' }, leftShoulder: { label: 'L-one' }, rightTrigger: { label: 'R-two' }, rightShoulder: { label: 'R-one' } };
     const regiao = document.getElementById('game-region');
     regiao.style.cssText = 'position:relative;width:640px;height:360px';
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: OMBROS, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: OMBROS }), setPhase: (p) => fases.push(p) });
     pad().hidden = false;
     try {
       const botao = (palavra) => [...document.querySelectorAll('#touch-controls .touch-ombro')].find((b) => funcao(b) === palavra);
@@ -119,7 +120,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
       pad().hidden = true;
       style.remove();
       regiao.style.cssText = '';
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     }
     // and the game that names no shoulder gets none
     expect(document.querySelectorAll('#touch-controls .touch-ombro'), 'a shoulder nobody named').toHaveLength(0);
@@ -131,7 +132,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     style.textContent = css;
     document.head.appendChild(style);
     const QUATRO = { action1: { label: 'One' }, action2: { label: 'Two' }, action3: { label: 'Three' }, action4: { label: 'Four' } };
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: QUATRO, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: QUATRO }), setPhase: (p) => fases.push(p) });
     pad().hidden = false;
     try {
       const caixa = (palavra) => botoes().find((b) => funcao(b) === palavra).getBoundingClientRect();
@@ -144,7 +145,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     } finally {
       pad().hidden = true;
       style.remove();
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     }
   });
 
@@ -243,12 +244,12 @@ describe('createGame mounts the virtual pad from the preset', () => {
   });
 
   it('🔴 [Zero] a cartridge that does NOT ask for the pad gets none — and no pad line in `problems` (ADR-0166)', () => {
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     try {
       expect(pad(), 'a pad for a cartridge that never asked for one').toBeNull();
       expect(motor.problems.filter((l) => /pad|preset/.test(l)), 'a pad gap reported for a game without a pad').toEqual([]);
     } finally {
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     }
     expect(pad(), 'asking again did not bring the pad back').not.toBeNull();
   });
@@ -396,7 +397,7 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
   it('🔴 [Zero] a cartridge with NO on-screen pad is not offered its size — the keyboard rows stay (ADR-0166, ADR-0106 §5)', () => {
     // Found in the dist after ADR-0166: the quiz asks for no pad, and the motor panel still offered «Controller size» — a
     // row with nothing to act on. It is hidden («not offered», ADR-0113 clause 3), not locked: there is no pad to unlock.
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     try {
       const passos = abrirMotora();
       expect(passos.closest('.ctrl-row').hidden, 'the pad size is offered to a game with no pad').toBe(true);
@@ -404,7 +405,7 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
       expect(visiveis.length, 'the keyboard rows went with the pad row').toBeGreaterThan(0);
     } finally {
       fechar();
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: DUAS_ACOES }), setPhase: (p) => fases.push(p) });
     }
     // the pair: with the pad asked for, the row is offered again
     expect(abrirMotora().closest('.ctrl-row').hidden, 'the pad size row stayed hidden with a pad').toBe(false);
@@ -424,7 +425,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
     try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* with no storage there is no way to ask for the cross */ }
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: PLATAFORMA });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: PLATAFORMA }) });
     const cruz = document.getElementById('touch-cross');
     expect(cruz, 'four declared directions and no cross').not.toBeNull();
     // ⚠️ `touch-bindings` lights `.dpad-up` & co. on the cross and the stylesheet draws `.dpad-arm`: an arm
@@ -499,7 +500,7 @@ describe('the engine offers the control object to the cartridge', () => {
     recebidos = [];
     segundo = createGame({
       accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-      downloadHeavy: false, preset: PLATAFORMA, setPhase: () => {},
+      downloadHeavy: false, ...keyed({ preset: PLATAFORMA }), setPhase: () => {},
       onCommand: (c) => recebidos.push(c),
     });
   });

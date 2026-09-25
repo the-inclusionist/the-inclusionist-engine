@@ -5,6 +5,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let motor, antes;
 const declaracao = () => ({
@@ -28,7 +29,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], preset: PRESET });
+  motor = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], ...keyed({ preset: PRESET }) });
 });
 afterAll(() => { if (antes === null) localStorage.removeItem('incl_touchmap'); else localStorage.setItem('incl_touchmap', antes); });
 
@@ -68,7 +69,7 @@ describe('«Mapear toque»', () => {
   it('🎯 [Zero] a game with no on-screen pad has nothing to map: the row is not offered', () => {
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
     motor.pause.hide(0);
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], preset: PRESET });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], ...keyed({ preset: PRESET }) });
     abrirMotora();
     expect(document.querySelector('#motora #opt-toque')?.closest('.ctrl-row')?.hidden, 'a touch map for a game without a pad').toBe(true);
   });

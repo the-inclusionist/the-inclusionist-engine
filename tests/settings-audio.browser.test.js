@@ -13,7 +13,8 @@ import { createSettingsStore } from '../app/js/core/state.js';
 import { filePort } from './fixtures/file-storage.js';
 import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
 // The sentence is asked of the dictionary and not copied: a copy here would end up measuring itself.
-import { t as tr } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t: tr } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { createTranslator } from '../app/js/core/i18n.js';
 /** This file's settings store, built over its own storage (ADR-0232 D4): the test plays the root that builds it. */
 const settingsStore = createSettingsStore(filePort);

@@ -152,7 +152,11 @@ describe('the preset — a game names only what has a subject in it', () => {
 describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () => {
   /** A game where nothing game-keyed has a subject, and every «no» is written. */
   const NENHUMA = Object.fromEntries(GAME_KEYED.map((k) => [k, false]));
-  const PLATFORM = { ...NENHUMA, wheelchairMode: { label: 'Wheelchair mode' }, caneSpacing: { label: 'Cane taps' } };
+  // the answer declares KEYS of the game's dictionary (ADR-0232 D3, erratum of 2026-09-25)
+  const PLATFORM = { ...NENHUMA, wheelchairMode: { labelKey: 'game.wheelchair' }, caneSpacing: { labelKey: 'game.cane', hintKey: 'game.cane.hint' } };
+  /** The game's dictionary, as the root's translator would resolve it — `null` for a key it lacks. */
+  const WORDS = { 'game.wheelchair': 'Wheelchair mode', 'game.cane': 'Cane taps' };
+  const word = (key) => WORDS[key] ?? null;
 
   it('🎯 [Right] an answer that covers all sixteen is conformant — «no» everywhere included', () => {
     expect(accommodationAnswersProblems(NENHUMA)).toEqual([]);
@@ -173,10 +177,15 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
     expect(p[0]).toMatch(/easyMode is not answered/);
   });
 
-  it('🔴 [Error] «true», a blank label and a string are refused — a subject needs a WORD', () => {
-    expect(accommodationAnswersProblems({ ...NENHUMA, hints: true })[0]).toMatch(/hints must be false or a word/);
-    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { label: ' ' } })[0]).toMatch(/hints must be false or a word/);
-    expect(accommodationAnswersProblems({ ...NENHUMA, hints: 'Hints' })[0]).toMatch(/hints must be false or a word/);
+  it('🔴 [Error] «true», a blank key and a string are refused — a subject needs the KEY of a word', () => {
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: true })[0]).toMatch(/hints must be false or \{ labelKey \}/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { labelKey: ' ' } })[0]).toMatch(/hints must be false or \{ labelKey \}/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: 'Hints' })[0]).toMatch(/hints must be false or \{ labelKey \}/);
+  });
+
+  it('🔴 [Error] the OLD shape — a word under `label` — is refused, and says keys: since ADR-0232 D3 a game declares keys', () => {
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { label: 'Hints' } })[0]).toMatch(/hints must be false or \{ labelKey \}.*dictionary/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { labelKey: 'game.hints', hintKey: 5 } })[0]).toMatch(/hints must be false/);
   });
 
   it('🔴 [Error] an answer that is a list or a number is refused in ONE line — never read key by key', () => {
@@ -187,9 +196,9 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
     expect(accommodationAnswersProblems('Hints')).toEqual(umaLinha);
   });
 
-  it('⚠️ [Error] a null word, or a label that is not text, is REPORTED — never thrown', () => {
-    expect(accommodationAnswersProblems({ ...NENHUMA, hints: null })[0]).toMatch(/hints must be false or a word/);
-    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { label: 5 } })[0]).toMatch(/hints must be false or a word/);
+  it('⚠️ [Error] a null answer, or a key that is not text, is REPORTED — never thrown', () => {
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: null })[0]).toMatch(/hints must be false or \{ labelKey \}/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { labelKey: 5 } })[0]).toMatch(/hints must be false or \{ labelKey \}/);
   });
 
   it('🔴 [Error] answering a general or contract-keyed one is refused, and says why — asking twice lets answers disagree', () => {
@@ -197,9 +206,21 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
     expect(accommodationAnswersProblems({ ...NENHUMA, wheelchair: false })[0]).toMatch(/«wheelchair» is not in the catalogue/);
   });
 
-  it('🎯 [Right] subjectWord gives the game\'s word, and null for «no» — never the id, never true', () => {
-    expect(subjectWord(PLATFORM, 'wheelchairMode')).toEqual({ label: 'Wheelchair mode' });
-    expect(subjectWord(PLATFORM, 'pieceSets')).toBeNull();
+  it('🎯 [Right] subjectWord gives the game\'s word, resolved NOW, and null for «no» — never the id, never the key, never true', () => {
+    expect(subjectWord(PLATFORM, 'wheelchairMode', word)).toEqual({ label: 'Wheelchair mode' });
+    expect(subjectWord(PLATFORM, 'pieceSets', word)).toBeNull();
+    // a hint key the dictionary lacks is no hint — never the key in the footer
+    expect(subjectWord(PLATFORM, 'caneSpacing', word)).toEqual({ label: 'Cane taps' });
+  });
+
+  it('🔴 [Right] a name key the dictionary lacks is NO subject shown — null, and never the key on screen (ADR-0232 D3)', () => {
+    expect(subjectWord(PLATFORM, 'wheelchairMode', () => null)).toBeNull();
+    // and the word follows the dictionary it is read through: the same answer, another language
+    expect(subjectWord(PLATFORM, 'wheelchairMode', (k) => (k === 'game.wheelchair' ? 'Modo cadeira' : null)))
+      .toEqual({ label: 'Modo cadeira' });
+  });
+
+  it('[Right] the game-keyed family is what the cartridge answers', () => {
     expect(isGameKeyed('caneSpacing')).toBe(true);
     expect(isGameKeyed('typography')).toBe(false);
   });

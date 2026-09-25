@@ -6,7 +6,8 @@ import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t;
 import { createAudioEarcons } from '../app/js/platform/audio-earcons.js';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 
 function fakeAC() {
   const rec = { osc: 0, types: [] };

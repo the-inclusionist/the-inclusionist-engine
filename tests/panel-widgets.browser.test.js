@@ -262,18 +262,20 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     //
     // 📌 What fixes it is mounting the inside again at each opening — which is why `mountAudioInside` relabels what exists
     // instead of rebuilding it: rebuilding would leave the controls with no listeners.
-    const { setLocale } = await import('../app/js/core/i18n.js');
+    // a translator of this case's own, as a root builds it: the language lives in it (`core/i18n` holds none, ADR-0232 D3)
+    const { pageTranslator } = await import('./fixtures/page-locale.js');
+    const tr = pageTranslator();
     const c = casca();
-    mountAudioInside(translate, ctx, c.card, c.list);
+    mountAudioInside(tr.t, ctx, c.card, c.list);
     const antes = document.querySelector('#opt-tts').closest('.ctrl-row').querySelector('strong').textContent;
 
-    await setLocale('en');
-    mountAudioInside(translate, ctx, c.card, c.list);
+    await tr.setLocale('en');
+    mountAudioInside(tr.t, ctx, c.card, c.list);
     const linha = document.querySelector('#opt-tts').closest('.ctrl-row');
     expect(linha.querySelector('strong').textContent, 'a linha ficou no idioma de recuo').not.toBe(antes);
     // «(TTS)» left the label on 2026-09-12 (ADR-0158): an explanation in parentheses goes to the footer
     expect(linha.querySelector('strong').textContent).toBe('Voice narration');
-    await setLocale('pt');
+    await tr.setLocale('pt');
   });
 
   it('🔴 [Zero] `#opt-sound` NÃO é criado — ele mora na barra rápida, fora do painel', () => {

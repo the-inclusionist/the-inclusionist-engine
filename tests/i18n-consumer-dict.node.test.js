@@ -4,8 +4,8 @@
 // ========================= WHY A GAME NEEDS ITS OWN DOOR =========================
 // Inside this repository a consumer's keys could fit in `app/js/i18n/pt.ts`, at the cost of a fat dictionary. From
 // OUTSIDE that is a wall: the engine's locales are loaded by the engine module itself, and a game installed as
-// `@the-inclusionist/engine` has no way to put a file there, while `DICTS` is private to the module. Without
-// `registerDict` the game would have NO path to its own keys — and pillar 3 says every string is born localisable, with
+// `@the-inclusionist/engine` has no way to put a file there. Without its root translator's `registerDict` (fed by
+// `CreateGameOptions.dictionaries`) the game would have NO path to its own keys — and pillar 3 says every string is born localisable, with
 // no exception for consumers.
 //
 // The gate was born RED with the mutation confirmed: without `registerDict`, the consumer's key comes back as the key
@@ -24,26 +24,17 @@
 // Step 3 is what keeps a game that only wrote pt readable when the child switches to English: they read Portuguese,
 // just as they do when a key is missing in the engine. Degrading beats going silent.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
 
-/** A fake DOM exactly the size of what `setLocale` touches: nothing beyond it becomes a dependency. */
-function dublarDocumento() {
-  vi.stubGlobal('document', { documentElement: { lang: '' }, querySelectorAll: () => [] });
-  vi.stubGlobal('window', { dispatchEvent: () => true });
-}
-
-/** A CLEAN instance of the module. `setLocale` keeps state, and a test that inherits another's state lies. */
+/**
+ * A CLEAN translator — the door a game's dictionary goes through since `core/i18n` holds no state (ADR-0232 D3): it is the
+ * root's, built here as the root builds it, with a port that keeps nothing (ADR-0178). A test that inherits another's state lies.
+ */
 async function carregarI18n() {
-  vi.resetModules();
-  dublarDocumento();
-  const m = await import('../app/js/core/i18n.js');
-  // a fresh module has no port: the composition root would have loaded one (ADR-0178), and so does this double
-  m.loadLocale({ get: () => null, set: () => undefined, KEYS: { lang: 'incl_lang' } });
-  return m;
+  return createTranslator({ get: () => null, set: () => undefined, KEYS: { lang: 'incl_lang' } });
 }
 
 describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do repositório)', () => {
-  beforeEach(() => { vi.unstubAllGlobals(); });
-
   it('[Zero] chave que ninguém registrou continua voltando como ela mesma', async () => {
     const i18n = await carregarI18n();
     expect(i18n.t('jogo.2048.naoRegistrada')).toBe('jogo.2048.naoRegistrada');
@@ -79,7 +70,7 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
   it('[Boundary] registrar um idioma AINDA NÃO CARREGADO funciona: vale quando se troca para ele', async () => {
     const i18n = await carregarI18n();
     i18n.registerDict('en', { 'jogo.2048.titulo': '2048 · Power of Two' });
-    expect(i18n.getLocale()).toBe('pt');
+    expect(i18n.locale()).toBe('pt');
     await i18n.setLocale('en');
     expect(i18n.t('jogo.2048.titulo')).toBe('2048 · Power of Two');
   });
@@ -104,8 +95,8 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
     const primeiro = await carregarI18n();
     primeiro.registerDict('pt', { 'menu.restoreDefaults': 'Voltar ao começo' });
     expect(primeiro.t('menu.restoreDefaults')).toBe('Voltar ao começo');
-    // The pt dictionary is an IMPORTED object. If `registerDict` mutated it, the override would survive a new module
-    // instance — and a second game on the same page would inherit the first one's strings.
+    // The pt dictionary is an IMPORTED object. If `registerDict` mutated it, the override would survive into a second
+    // translator — and a second game on the same page would inherit the first one's strings.
     const segundo = await carregarI18n();
     expect(segundo.t('menu.restoreDefaults')).not.toBe('Voltar ao começo');
   });
@@ -123,10 +114,10 @@ describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)
   // ⚠️ WHY THIS GATE EXISTS: it closes a hole that only appeared when the engine became a PACKAGE.
   //
   // `tests/i18n-without-markup.node.test.js` sweeps THIS tree's dictionaries and proves no entry has a tag. It does not
-  // reach `EXTRA` — the strings a GAME registers at run time, from another repository (ADR-0083). A test of this tree
+  // reach a game's dictionary — the strings a GAME registers at run time, from another repository (ADR-0083). A test of this tree
   // does not see them, and has no way to.
   //
-  // ⚠️ AND THEY WIN OVER THE ENGINE'S DICTIONARY: the resolver looks at `EXTRA` FIRST. A game can override ANY key —
+  // ⚠️ AND THEY WIN OVER THE ENGINE'S DICTIONARY: the resolver looks at the game's FIRST. A game can override ANY key —
   // including the ones the engine pastes into markup — so «i18n» would stop meaning «texto que alguem desta arvore
   // reviu» with nothing recording the change.
   //

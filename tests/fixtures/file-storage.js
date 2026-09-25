@@ -6,7 +6,7 @@
 // engine reaches `localStorage` by import — the root builds the store from what its HOST lends, `host.storage` or the host
 // window's `localStorage` — so a file can simply lend its own. This module is evaluated once per test file (each file has
 // its own module graph, and in the browser its own window), so `fileBackend` is that file's and nobody else's:
-//   · the setups load `core/i18n` from it, and a file that needs a settings store builds its own over it;
+//   · a file that needs a settings store or a translator that keeps the language builds its own over it;
 //   · the browser setup makes it the file's WINDOW storage, so every root a case boots with `win: window` — and the quiz
 //     page, which is its own root — is lent this file's storage by its host, and a case that reads `localStorage` to see
 //     what the engine kept reads the same place.
@@ -33,5 +33,5 @@ function fileLocalStorage() {
 export const fileBackend = fileLocalStorage();
 /** The store over it. */
 export const fileStore = createStorage(fileBackend);
-/** The port `core/state.createSettingsStore` and `core/i18n.loadLocale` receive (ADR-0178): the store and the key names. */
+/** The port `core/state.createSettingsStore` and `core/i18n.createTranslator` receive (ADR-0178): the store and the key names. */
 export const filePort = { ...fileStore, KEYS };

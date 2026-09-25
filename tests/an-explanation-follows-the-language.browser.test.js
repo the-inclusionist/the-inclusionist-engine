@@ -19,7 +19,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
-import { setLocale } from '../app/js/core/i18n.ts';
+/** The page's language is switched through the root's translator (`core/i18n` holds no state, ADR-0232 D3). */
+const setLocale = (code) => motor.setLocale(code);
 
 let motor;
 let idiomaGuardado;

@@ -59,12 +59,12 @@ describe('the stored settings, read when the root builds the store (ADR-0178, AD
     expect(porta.map.get('incl_wheelchair')).toBe('1');
     expect(porta.map.get('incl_lettercase')).toBe('mixed');
   });
-  it('🔴 [Right] setLocale before the language port is refused, and nothing has moved', async () => {
-    vi.resetModules();
-    const i18n = await import('../app/js/core/i18n.js');
-    const antes = i18n.getLocale();
-    await expect(i18n.setLocale('en')).rejects.toThrow(/loadLocale/);
-    expect(i18n.getLocale(), 'the language changed before the refusal').toBe(antes);
+  it('🔴 [Right] setLocale on a translator with no port is refused, and nothing has moved', async () => {
+    const { createTranslator } = await import('../app/js/core/i18n.js');
+    const tr = createTranslator();
+    const antes = tr.locale();
+    await expect(tr.setLocale('en')).rejects.toThrow(/without a port/);
+    expect(tr.locale(), 'the language changed before the refusal').toBe(antes);
   });
 
   it('🎯 [Zero] core imports no storage — the two debts of #167 are paid', () => {

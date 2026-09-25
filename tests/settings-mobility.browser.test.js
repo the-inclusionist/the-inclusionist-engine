@@ -4,7 +4,8 @@
 // logic (clamp/predicate/announcement/tabs HTML) is covered in settings-mobility.node.test.js.
 // Model: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // the announcements come from the dictionary (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // the announcements come from the dictionary (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { initSettingsMobility } from '../app/js/ui/settings-mobility.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)

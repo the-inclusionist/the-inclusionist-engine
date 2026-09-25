@@ -61,6 +61,7 @@
       "input",
       "keyboard",
       "keyboardConfig",
+      "locale",
       "localeReady",
       "lq",
       "mapSlot",
@@ -78,6 +79,7 @@
       "reading",
       "say",
       "scenes",
+      "setLocale",
       "settings",
       "sonar",
       "t",
@@ -124,10 +126,15 @@
       "label",
       "short?"
     ],
+    "interface AccommodationKeys": [
+      "hintKey?",
+      "labelKey",
+      "shortKey?"
+    ],
     "type Accommodation": "(typeof ACCOMMODATIONS)[number]",
     "type AccommodationPreset": "Partial<Readonly<Record<Accommodation, AccommodationWord>>>",
     "type GameKeyedAccommodation": "(typeof GAME_KEYED)[number]",
-    "type AccommodationAnswers": "Readonly<Record<GameKeyedAccommodation, AccommodationWord | false>>"
+    "type AccommodationAnswers": "Readonly<Record<GameKeyedAccommodation, AccommodationKeys | false>>"
   },
   "core/actions.ts": {
     "interface ActionWord": [
@@ -135,8 +142,14 @@
       "label",
       "short?"
     ],
+    "interface ActionKeys": [
+      "hintKey?",
+      "labelKey",
+      "shortKey?"
+    ],
     "type Action": "(typeof ACTIONS)[number]",
-    "type ActionPreset": "Partial<Readonly<Record<Action, ActionWord>>>",
+    "type ActionPreset": "Partial<Readonly<Record<Action, ActionKeys>>>",
+    "type ActionWords": "Partial<Readonly<Record<Action, ActionWord>>>",
     "type ActionLabeller": "(a: Action) => string"
   },
   "core/camera-cycle.ts": {
@@ -314,6 +327,7 @@
     "interface LocalePort": [
       "KEYS",
       "applied?",
+      "follow?",
       "get",
       "preferred?",
       "set"
@@ -321,13 +335,16 @@
     "interface Translator": [
       "applyDom",
       "bcp47",
+      "declares",
       "dictionaryGaps",
+      "init",
       "locale",
       "onChange",
       "ready",
       "registerDict",
       "setLocale",
-      "t"
+      "t",
+      "word"
     ],
     "type Translate": "(key: string, params?: Record<string, string | number>) => string"
   },
@@ -1476,6 +1493,7 @@
   "platform/locale-host.ts": {
     "interface LocaleHostHooks": [
       "applied",
+      "follow",
       "preferred"
     ]
   },
@@ -2274,12 +2292,13 @@
   },
   "ui/game-options.ts": {
     "interface GameOptionValue": [
-      "label",
+      "labelKey",
       "value"
     ],
     "interface GameOptionsDrawCtx": [
       "say",
-      "t"
+      "t",
+      "word"
     ],
     "type GameOption": "| (GameOptionBase & { readonly kind: 'steps' | 'list'"
   },
@@ -2333,6 +2352,10 @@
       "width"
     ],
     "interface HowToPlaySlide": [
+      "figure?",
+      "textKey"
+    ],
+    "interface PlaySlide": [
       "figure?",
       "text"
     ],

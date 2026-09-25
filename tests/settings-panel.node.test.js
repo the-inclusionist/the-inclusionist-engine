@@ -7,7 +7,8 @@
 // stuck on an invisible dialog does not hijack the key), the rising z stacking and the READING ORDER fillExplain
 // produces (label on the row, description in an aria-live footer).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import {

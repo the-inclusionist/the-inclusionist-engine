@@ -12,7 +12,8 @@ const translate = createTranslator().t;
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
 import { createSettingsStore } from '../app/js/core/state.js';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES holds KEYS (item 14)
 
 // ONE backend for this file, over a Map the cases read (ADR-0232): the viz setters write through the store their ctx

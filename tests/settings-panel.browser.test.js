@@ -8,7 +8,8 @@
 // accessibility requirement end to end — opening focuses a control INSIDE the dialog, closing gives the focus back to
 // the button that opened it, and Escape closes ONE dialog only.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
 import { initSettingsMotion } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';

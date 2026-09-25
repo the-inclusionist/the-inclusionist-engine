@@ -6,6 +6,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO, comAssunto } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 import { DEFAULTS } from '../app/js/core/setting-defaults.js';
 
 let motor, state;
@@ -63,7 +64,7 @@ describe('owner colours and contrast outlines', () => {
   });
 
   it('🔴 [Right] answered with a word, owner colours is a row in the game\'s word, and it writes the stored setting', () => {
-    motor.mount(declaracao(), { accommodations: COM_OS_DOIS, players: [{ ctrl: 0 }] });
+    motor.mount(declaracao(), { ...keyed({ accommodations: COM_OS_DOIS }), players: [{ ctrl: 0 }] });
     abrirVisual();
     expect(oferecida('opt-dono'), 'no owner colours row').toBe(true);
     expect(linha('opt-dono').querySelector('strong')?.textContent).toBe('Peças na cor de quem joga');

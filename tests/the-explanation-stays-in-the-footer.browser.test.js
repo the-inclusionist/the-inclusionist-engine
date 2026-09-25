@@ -18,7 +18,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
-import { setLocale } from '../app/js/core/i18n.ts';
+/** The quiz's engine: the page's language is switched through ITS translator (`core/i18n` holds no state, ADR-0232 D3). */
+let quizEngine;
+const setLocale = (code) => quizEngine.setLocale(code);
 
 let regiao, cartao;
 const esperar = (ms = 60) => new Promise((r) => setTimeout(r, ms));
@@ -58,7 +60,7 @@ beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.querySelector('.stage-wrap').style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  quizEngine = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await esperar(120);
   regiao = document.getElementById('game-region');
   regiao.focus();

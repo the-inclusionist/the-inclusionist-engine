@@ -7,7 +7,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
 import { DEFAULT_VISUAL, migrateVisual } from '../app/js/render/viz-axes.js';
-import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/visual-choices.js';
 import pt from '../app/js/i18n/pt.js';

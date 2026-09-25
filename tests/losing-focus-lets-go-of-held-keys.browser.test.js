@@ -14,6 +14,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let engine;
 let root;
@@ -44,7 +45,7 @@ beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
   engine = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaration(), host: { doc: document, win: window },
-    downloadHeavy: false, players: [{ ctrl: 0 }], preset: PRESET,
+    downloadHeavy: false, players: [{ ctrl: 0 }], ...keyed({ preset: PRESET }),
     onCommand: (c) => commands.push(c),
   });
 });

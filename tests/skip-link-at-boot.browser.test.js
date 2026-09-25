@@ -19,9 +19,8 @@ const declaracao = () => ({
 describe('the skip link', () => {
   it('🔴 [Right] a page with none gets one FIRST in the body, aiming at the game region, with the dictionary\'s words', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { t } = await import('../app/js/core/i18n.js');
     document.body.innerHTML = '<nav><a href="#x">a link before the game</a></nav><p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
-    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    const { t } = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
     const links = document.querySelectorAll('.skip-link');
     expect(links, 'no skip link, or more than one').toHaveLength(1);
     expect(document.body.firstElementChild, 'the skip link is not the first thing a keyboard reaches').toBe(links[0]);

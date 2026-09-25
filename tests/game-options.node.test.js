@@ -8,12 +8,13 @@ import { gameOptionsProblems } from '../app/js/ui/game-options.js';
 import { rootThatActs } from '../app/js/ui/pause-icons.js';
 
 const nada = () => {};
+// every word is a KEY of the game's dictionary (ADR-0232 D3, erratum of 2026-09-25)
 const dificuldade = () => ({
-  id: 'difficulty', kind: 'steps', label: 'Dificuldade', hint: 'Quanto o jogo ajuda.',
-  values: [{ value: 'easy', label: 'fácil' }, { value: 'medium', label: 'médio' }, { value: 'hard', label: 'difícil' }],
+  id: 'difficulty', kind: 'steps', labelKey: 'game.difficulty', hintKey: 'game.difficulty.hint',
+  values: [{ value: 'easy', labelKey: 'game.easy' }, { value: 'medium', labelKey: 'game.medium' }, { value: 'hard', labelKey: 'game.hard' }],
   read: () => 'easy', write: nada,
 });
-const dicas = () => ({ id: 'hints', kind: 'switch', label: 'Dicas', read: () => true, write: nada });
+const dicas = () => ({ id: 'hints', kind: 'switch', labelKey: 'game.hints', read: () => true, write: nada });
 
 describe('a game options declaration', () => {
   it('🎯 [Zero] absent is well formed: the cartridge has no options of its own', () => {
@@ -30,12 +31,12 @@ describe('a game options declaration', () => {
       ['no id', [{ ...dicas(), id: '' }], /gameOptions\[0\]\.id/],
       ['repeated id', [dicas(), dicas()], /gameOptions\[1\]\.id .*repeat/],
       ['unknown kind', [{ ...dicas(), kind: 'slider' }], /gameOptions\[0\]\.kind/],
-      ['empty label', [{ ...dicas(), label: ' ' }], /gameOptions\[0\]\.label/],
+      ['empty label key', [{ ...dicas(), labelKey: ' ' }], /gameOptions\[0\]\.labelKey/],
       ['no reader', [{ ...dicas(), read: 1 }], /gameOptions\[0\]\.read/],
       ['no writer', [{ ...dicas(), write: undefined }], /gameOptions\[0\]\.write/],
-      ['steps with one value', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }] }], /gameOptions\[0\]\.values .*two/],
-      ['a value with no label', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, { value: 'b', label: '' }] }], /gameOptions\[0\]\.values\[1\]/],
-      ['a repeated value', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, { value: 'a', label: 'b' }] }], /gameOptions\[0\]\.values\[1\].*repeat/],
+      ['steps with one value', [{ ...dificuldade(), values: [{ value: 'a', labelKey: 'a' }] }], /gameOptions\[0\]\.values .*two/],
+      ['a value with no label', [{ ...dificuldade(), values: [{ value: 'a', labelKey: 'a' }, { value: 'b', labelKey: '' }] }], /gameOptions\[0\]\.values\[1\]/],
+      ['a repeated value', [{ ...dificuldade(), values: [{ value: 'a', labelKey: 'a' }, { value: 'a', labelKey: 'b' }] }], /gameOptions\[0\]\.values\[1\].*repeat/],
     ];
     for (const [nome, decl, esperado] of casos) {
       expect(gameOptionsProblems(decl).join(' | '), nome).toMatch(esperado);
@@ -53,12 +54,14 @@ describe('a game options declaration', () => {
       ['a row that is text', ['difficulty'], /gameOptions\[0\] must be a row$/],
       ['a row that is null', [null], /gameOptions\[0\] must be a row$/],
       ['an id that is a number', [{ ...dicas(), id: 7 }], /gameOptions\[0\]\.id/],
-      ['a hint that is not text', [{ ...dicas(), hint: 3 }], /gameOptions\[0\]\.hint/],
+      ['a hint key that is not text', [{ ...dicas(), hintKey: 3 }], /gameOptions\[0\]\.hintKey/],
+      // 🔴 the OLD shape — a word under `label` — is refused and says it wants a KEY (ADR-0232 D3)
+      ['the old shape, a word', [{ id: 'x', kind: 'switch', label: 'Dicas', read: () => true, write: nada }], /gameOptions\[0\]\.labelKey must name the row by a key of the game's dictionary/],
       ['a list with no values', [{ ...dicas(), kind: 'list' }], /gameOptions\[0\]\.values .*two/],
       ['values that are text', [{ ...dificuldade(), values: 'abc' }], /gameOptions\[0\]\.values .*two/],
-      ['a position that is null', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, null] }], /gameOptions\[0\]\.values\[1\]/],
-      ['a position whose value is a number', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, { value: 2, label: 'b' }] }], /gameOptions\[0\]\.values\[1\]/],
-      ['a position whose label is a number', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, { value: 'b', label: 5 }] }], /gameOptions\[0\]\.values\[1\]/],
+      ['a position that is null', [{ ...dificuldade(), values: [{ value: 'a', labelKey: 'a' }, null] }], /gameOptions\[0\]\.values\[1\]/],
+      ['a position whose value is a number', [{ ...dificuldade(), values: [{ value: 'a', labelKey: 'a' }, { value: 2, labelKey: 'b' }] }], /gameOptions\[0\]\.values\[1\]/],
+      ['a position whose label is a number', [{ ...dificuldade(), values: [{ value: 'a', labelKey: 'a' }, { value: 'b', labelKey: 5 }] }], /gameOptions\[0\]\.values\[1\]/],
     ];
     for (const [nome, decl, esperado] of casos) {
       let problems;
@@ -68,7 +71,7 @@ describe('a game options declaration', () => {
   });
 
   it('🔴 [Right] steps hold at most five positions; more is a list (ADR-0130 erratum)', () => {
-    const seis = Array.from({ length: 6 }, (_, i) => ({ value: String(i), label: String(i) }));
+    const seis = Array.from({ length: 6 }, (_, i) => ({ value: String(i), labelKey: String(i) }));
     expect(gameOptionsProblems([{ ...dificuldade(), values: seis }]).join(' '), 'six steps accepted').toMatch(/five.*list/);
     expect(gameOptionsProblems([{ ...dificuldade(), kind: 'list', values: seis }])).toEqual([]);
   });

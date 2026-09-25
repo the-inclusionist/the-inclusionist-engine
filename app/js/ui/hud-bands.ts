@@ -17,8 +17,7 @@
 // The HUD is STATE: consulted, never announced — no live region here (ADR-0059; `core/contract` §7).
 //
 // No I/O on import: `hudNumbersProblems` runs in node.
-import type { Speakable } from '../core/contract.js';
-import type { Translate } from '../core/i18n.js';
+import type { Translator } from '../core/i18n.js';
 
 export type HudBand = 'identity' | 'mission' | 'power' | 'learning';
 const HUD_BANDS: readonly HudBand[] = ['identity', 'mission', 'power', 'learning'];
@@ -35,20 +34,28 @@ export interface HudBar {
   readonly cor: 'nenhuma' | 'laranja' | 'roxa';
 }
 
+/*
+ * 🔴 THE NAME IS A KEY (ADR-0232 D3, erratum of 2026-09-25): what is counted is a word of the game's dictionary, resolved by the
+ * root's translator at every refresh — so it follows a language change like everything else on screen (ADR-0225). A name the
+ * game's dictionaries lack hides its line, never showing the key, and `problems` names it (`ui/declared-words`).
+ */
 export type HudNumber =
   | {
     readonly band: 'identity' | 'mission' | 'power';
-    /** What is counted, in the interface language («points», «balls»). */
-    readonly name: Speakable;
+    /** The key of what is counted («points», «balls») in the game's dictionary. */
+    readonly nameKey: string;
     /** A count, or how many of how many, for seat `seat`. Read on every animation frame while mounted: keep it cheap. */
     readonly value: (seat: number) => number | { readonly have: number; readonly need: number };
   }
   | {
     readonly band: 'learning';
-    /** The skill, in the interface language. */
-    readonly name: Speakable;
+    /** The key of the skill's name in the game's dictionary. */
+    readonly nameKey: string;
     readonly value: (seat: number) => HudBar;
   };
+
+/** What the HUD asks of the root's translator: the engine's frames, and the game's declared words. */
+type HudTranslator = Pick<Translator, 't' | 'word'>;
 
 /** Why a `hud` declaration is malformed; empty when it is well formed. Absent is well formed: no HUD is mounted. */
 export function hudNumbersProblems(numbers: unknown): string[] {
@@ -57,7 +64,7 @@ export function hudNumbersProblems(numbers: unknown): string[] {
   const out: string[] = [];
   numbers.forEach((n: Partial<HudNumber> | null, i) => {
     if (!n || !HUD_BANDS.includes(n.band as HudBand)) out.push(`hud[${i}].band must be one of ${HUD_BANDS.join(', ')}`);
-    if (!n || typeof n.name?.text !== 'string' || !n.name.text.trim()) out.push(`hud[${i}].name.text must say what is counted`);
+    if (!n || typeof n.nameKey !== 'string' || !n.nameKey.trim()) out.push(`hud[${i}].nameKey must name what is counted by a key of the game's dictionary`);
     if (!n || typeof n.value !== 'function') out.push(`hud[${i}].value must be a function of the seat`);
   });
   const bars = numbers.filter((n) => n?.band === 'learning').length;
@@ -100,16 +107,17 @@ type TopNumber = HudNumber & { band: 'identity' | 'mission' | 'power' };
 
 /**
  * What the child reads, and — for the points — what a listener hears instead (`label`): the frame in the dictionary, the name
- * through a parameter (pillar 3). A count of objectives keeps its «3 of 10» wherever it is declared.
+ * — resolved from the game's key at this refresh (ADR-0232 D3) — through a parameter (pillar 3). A count of objectives keeps
+ * its «3 of 10» wherever it is declared.
  */
-function lineFace(t: Translate, n: TopNumber, seat: number): { readonly text: string; readonly label: string | null } {
+function lineFace(t: Translator['t'], name: string, n: TopNumber, seat: number): { readonly text: string; readonly label: string | null } {
   const v = n.value(seat);
-  if (typeof v !== 'number') return { text: t('hud.contador', { have: String(v.have), need: String(v.need), nome: n.name.text }), label: null };
-  if (n.band !== 'identity') return { text: t('hud.numero', { nome: n.name.text, valor: String(v) }), label: null };
+  if (typeof v !== 'number') return { text: t('hud.contador', { have: String(v.have), need: String(v.need), nome: name }), label: null };
+  if (n.band !== 'identity') return { text: t('hud.numero', { nome: name, valor: String(v) }), label: null };
   const { digits, shown } = fiveDigits(v);
-  return { text: digits, label: t('hud.points', { count: String(shown), name: n.name.text }) };
+  return { text: digits, label: t('hud.points', { count: String(shown), name }) };
 }
-function barLabel(t: Translate, name: string, bar: HudBar): string {
+function barLabel(t: Translator['t'], name: string, bar: HudBar): string {
   const count = (c: string): string => String(bar.segmentos.filter((s) => s === c).length);
   const base = t('hud.barra', { nome: name, azuis: count('azul'), verdes: count('verde'), vermelhos: count('vermelho') });
   return bar.cor === 'roxa' ? `${base}. ${t('hud.barra.sobe')}` : bar.cor === 'laranja' ? `${base}. ${t('hud.barra.desce')}` : base;
@@ -121,8 +129,9 @@ function barLabel(t: Translate, name: string, bar: HudBar): string {
  * band BEFORE the screen footer when one exists, so the explanation band, drawn later on the same layer, covers it.
  */
 export function mountHudBands(
-  t: Translate, doc: Document, region: HTMLElement, numbers: readonly HudNumber[], seat = 0, row?: HudRowSlots,
+  tr: HudTranslator, doc: Document, region: HTMLElement, numbers: readonly HudNumber[], seat = 0, row?: HudRowSlots,
 ): HudBandsMounted {
+  const { t } = tr;
   const band = (cls: string, count: number): HTMLElement => {
     const el = doc.createElement('div');
     el.className = `hud-faixa ${cls}`;
@@ -161,15 +170,21 @@ export function mountHudBands(
   function refresh(): boolean {
     let changed = false;
     for (const [n, p] of lines) {
-      const face = lineFace(t, n, seat);
+      // a name the game's dictionaries lack hides its line — never its key on screen (`problems` names it)
+      const name = tr.word(n.nameKey);
+      if (p.hidden !== !name) { p.hidden = !name; changed = true; }
+      const face = name ? lineFace(t, name, n, seat) : { text: '', label: null };
       if (p.textContent !== face.text) { p.textContent = face.text; changed = true; }
       // the points are an image of a number for a listener: the name says «12 points», never «zero zero zero one two»
       if (face.label !== null && p.getAttribute('aria-label') !== face.label) { p.setAttribute('role', 'img'); p.setAttribute('aria-label', face.label); }
     }
     for (const [n, div] of bardivs) {
+      const name = tr.word(n.nameKey);
+      div.hidden = !name;
+      if (!name) continue;
       const bar = n.value(seat);
       const shown = bar.segmentos.slice(-SEGMENTS);
-      const label = barLabel(t, n.name.text, { segmentos: shown, cor: bar.cor }); // in the key: a language change rewrites it
+      const label = barLabel(t, name, { segmentos: shown, cor: bar.cor }); // in the key: a language change rewrites it
       const key = `${bar.cor}:${shown.join(',')}:${label}`;
       if (div.dataset.estado === key) continue;
       div.dataset.estado = key;

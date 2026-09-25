@@ -22,6 +22,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let createGame;
 
@@ -174,7 +175,7 @@ describe('createGame num documento de verdade', () => {
   // happened INSIDE `iconAct`, so the label read is the new one either way. That was equivalence, not coverage. `tea` has
   // no state subscription in the root, so it walks the path the icons without one take.
   it('🔴 [Zero] o clique ANUNCIA, e anuncia o estado NOVO — não o que a criança deixou', async () => {
-    abrir();
+    const motor = abrir();
     // 🔴 WAITING FOR THE LANGUAGE IS WHAT WAS MISSING, and CI showed it — green here, red there: `expected 'Modo TEA: calmo'
     // to be 'Autism mode: calm'`. This case compares TWO readings made at different instants — the announcement, composed
     // on the click, and the label, read after. `initI18n` applies pt synchronously and asks for en/es in ASYNCHRONOUS
@@ -188,8 +189,7 @@ describe('createGame num documento de verdade', () => {
     // lands hears the fallback language while the label has already changed. It is the same boundary as the bilingual bar
     // (`424ee36`), on the ANNOUNCEMENT's side instead of the label's — and there the answer was to repaint when the
     // language arrives (today the `i18n:change` listener). Here the announcement is composed once and not repainted.
-    const { localeReady } = await import('../app/js/core/i18n.js');
-    await localeReady();
+    await motor.localeReady();
     const alvo = document.querySelector('#title-icons [data-pi="tea"]');
     const rotuloAntes = alvo.getAttribute('aria-label');
     alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -883,7 +883,7 @@ describe('createGame num documento de verdade', () => {
     const motor = abrir({
       declaration: { ...declaracaoValida(), needsPointer: () => true },
       availability: semNada,
-      preset: { up: { label: 'Cima' }, down: { label: 'Baixo' }, action1: { label: 'Agir' } },
+      ...keyed({ preset: { up: { label: 'Cima' }, down: { label: 'Baixo' }, action1: { label: 'Agir' } } }),
     });
     expect(document.querySelector('#reach-notice'), 'o aviso nem chegou a aparecer — o caso não mede nada')
       .not.toBeNull();
@@ -934,12 +934,12 @@ describe('createGame num documento de verdade', () => {
        * being IN THE TREE, a real click opening it and the list being filled are the three things only a document knows
        * — this file's header rule.
        */
-      const motor = abrir({
+      const motor = abrir(keyed({
         preset: {
           action2: { label: 'Confirmar', hint: 'Escolhe a alternativa em que está o cursor.' },
           left: { label: 'Alternativa anterior' },
         },
-      });
+      }));
       motor.pause.show(0);
 
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
@@ -977,10 +977,10 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Right] «how to play» is the cartridge\'s: its slides open the help, before the button slides (ADR-0195)', () => {
-      const motor = abrir({
+      const motor = abrir(keyed({
         preset: { action2: { label: 'Confirmar' } },
         howToPlay: [{ text: () => 'Leia a pergunta.' }, { text: () => 'Escolha a resposta certa.', figure: () => {} }],
-      });
+      }));
       motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').click();
       const slides = document.querySelector('#help .slides');
@@ -996,7 +996,7 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('⚠️ [Boundary] a cartridge with «how to play» and no preset still has a help — its slides alone', () => {
-      const motor = abrir({ howToPlay: [{ text: () => 'Toque na figura certa.' }] });
+      const motor = abrir(keyed({ howToPlay: [{ text: () => 'Toque na figura certa.' }] }));
       motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
       expect(item.getAttribute('aria-disabled'), 'the help is locked though the game tells how to play').not.toBe('true');
@@ -1006,8 +1006,10 @@ describe('createGame num documento de verdade', () => {
       expect(slides.querySelectorAll('.slide-ponto').length).toBe(1);
     });
 
-    it('🔴 [Zero] a «how to play» slide without text refuses the boot, naming it (ADR-0169)', () => {
-      expect(() => abrir({ howToPlay: [{ figure: () => {} }] })).toThrow(/howToPlay\[0\]\.text/);
+    it('🔴 [Zero] a «how to play» slide without a text key refuses the boot, naming it (ADR-0169)', () => {
+      expect(() => abrir({ howToPlay: [{ figure: () => {} }] })).toThrow(/howToPlay\[0\]\.textKey/);
+      // 🔴 and the OLD shape — a function returning the words — is refused too: since ADR-0232 D3 the slide declares a KEY
+      expect(() => abrir({ howToPlay: [{ text: () => 'Leia a pergunta.' }] })).toThrow(/howToPlay\[0\]\.textKey .*key of the game's dictionary/);
     });
 
     it('🔴 [Zero] SEM `preset` o item de ajuda fica TRAVADO — presente, e sem painel por trás (ADR-0161)', () => {
@@ -1231,7 +1233,7 @@ describe('createGame num documento de verdade', () => {
     it('🔴 [Right] the keyboard map speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', () => {
       // `ui/settings-controls` no longer imports `t`; each key's button and its name for a screen reader come from its ctx.
       // A preset that names two actions, so there is something to map.
-      const motor = abrir({ preset: { action1: { label: 'Confirm' }, action2: { label: 'Back' } } });
+      const motor = abrir(keyed({ preset: { action1: { label: 'Confirm' }, action2: { label: 'Back' } } }));
       motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
       document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]').click();
@@ -1902,8 +1904,8 @@ describe('createGame num documento de verdade', () => {
    * the 👄 is never mounted there).
    */
   it('🔴 [Zero] switched to a language whose command model did not come, `problems` says which and how to put it in the delivery', async () => {
-    const { setLocale, t } = await import('../app/js/core/i18n.js');
     const motor = abrir();
+    const { setLocale, t } = motor; // the root's language door (`core/i18n` holds no state, ADR-0232 D3)
     const estado = motor.settings; // the root's store: what its voice control hears (ADR-0232 D4)
     try {
       await setLocale('en');

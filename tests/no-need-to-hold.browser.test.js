@@ -19,6 +19,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 import pt from '../app/js/i18n/pt.js';
 
 let motor;
@@ -44,7 +45,7 @@ beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-    downloadHeavy: false, onScreenPad: true, players: assentos, preset: PRESET,
+    downloadHeavy: false, onScreenPad: true, players: assentos, ...keyed({ preset: PRESET }),
   });
 });
 afterAll(async () => {
@@ -221,7 +222,7 @@ describe('the sticky-keys row a child can read', () => {
     });
     const segundo = createGame({
       accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: outro, win: semCamera },
-      downloadHeavy: false, onScreenPad: true, players: [{ ctrl: 0 }], preset: PRESET,
+      downloadHeavy: false, onScreenPad: true, players: [{ ctrl: 0 }], ...keyed({ preset: PRESET }),
     });
     try {
       const passos = outro.querySelector('#motora #opt-camera');

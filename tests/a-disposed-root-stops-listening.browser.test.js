@@ -162,7 +162,8 @@ describe('a disposed root stops hearing the state bus — and an unmounted one d
 
   beforeEach(async () => {
     if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
-    i18n ??= await import('../app/js/core/i18n.js');
+    // the PAGE's language, switched by a translator that is not the ended root's — every root follows the page (ADR-0232 D3)
+    i18n ??= (await import('./fixtures/page-locale.js')).pageTranslator();
     for (const k of KEYS_TURNED_ON) localStorage.removeItem(k);
     host = montarHospedeiro();
   });

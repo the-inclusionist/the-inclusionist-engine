@@ -8,7 +8,6 @@ import { describe, it, expect } from 'vitest';
 import { iconsThatAct, computeIconLabel } from '../app/js/ui/pause-icons.js';
 import { quickBarMarkup } from '../app/js/ui/pause-markup.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
-import { getLocale } from '../app/js/core/i18n.js';
 import { LOCALE_CYCLE, nextLocale, FLAG_SVG, flagOf, LANGUAGE_NAME } from '../app/js/ui/locale-flags.js';
 import { bcp47 } from '../app/js/core/i18n.js';
 import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
@@ -37,7 +36,7 @@ describe('the language button', () => {
   it('the bar itself draws the flag of the current locale, and no flag emoji', () => {
     const b = quickBarMarkup(translator);
     const botao = b.slice(b.indexOf('data-pi="idioma"'));
-    expect(botao.slice(0, botao.indexOf('</button>'))).toContain(flagOf(getLocale()));
+    expect(botao.slice(0, botao.indexOf('</button>'))).toContain(flagOf(translator.locale()));
     expect(b).not.toContain('🇧🇷');
   });
   it('its name says the language in itself, with its place', () => {

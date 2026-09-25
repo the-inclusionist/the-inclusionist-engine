@@ -11,6 +11,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO, comAssunto } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let motor;
 const declaracao = () => ({
@@ -58,7 +59,7 @@ describe('the rows follow the cartridge\'s answer', () => {
   });
 
   it('🎯 [Right] a cartridge mounted AFTER, that says «yes», gets both — read per cartridge, not frozen at boot', () => {
-    motor.mount(declaracao(), { accommodations: COM_PERSONAGEM_E_BENGALA });
+    motor.mount(declaracao(), { ...keyed({ accommodations: COM_PERSONAGEM_E_BENGALA }) });
     abrirSensibilidade();
     expect(document.querySelectorAll('#motion-list [data-rmc]').length, 'the character section did not come back').toBe(3);
     fecharTudo();
@@ -70,7 +71,7 @@ describe('the rows follow the cartridge\'s answer', () => {
   });
 
   it('🔴 [Right] and what applies carries the GAME\'s word, never the engine\'s (ADR-0153 confirmation)', () => {
-    motor.mount(declaracao(), { accommodations: COM_PERSONAGEM_E_BENGALA });
+    motor.mount(declaracao(), { ...keyed({ accommodations: COM_PERSONAGEM_E_BENGALA }) });
     abrirSensibilidade();
     const titulo = [...document.querySelectorAll('#motion-list h3.panel-sub')].find((h) => h.nextElementSibling?.querySelector?.('[data-rmc]') || h.parentElement.querySelector('[data-rmc]'));
     expect(document.querySelector('#motion-list').textContent, 'the character section is not named with the game\'s word').toContain('Character motion');
@@ -90,9 +91,9 @@ describe('the rows follow the cartridge\'s answer', () => {
     //
     // ⚠️ Read from `data-explain` and not from the row, because that is where the explanation ends up: `fillExplain` hides
     // the `.opt-hint` and the footer reads this attribute when the child points at the row.
-    motor.mount(declaracao(), { accommodations: comAssunto({
+    motor.mount(declaracao(), { ...keyed({ accommodations: comAssunto({
       caneSpacing: { label: 'Cane taps', hint: 'Every tap is one step of the stick.' },
-    }) });
+    }) }) });
     motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
@@ -105,7 +106,7 @@ describe('the rows follow the cartridge\'s answer', () => {
 
   it('🎯 [Zero] a game that gives a word but NO hint keeps the engine\'s explanation, never an empty footer', () => {
     // The pair of the case above: an absent hint is a legitimate answer, and it must not erase what the engine says.
-    motor.mount(declaracao(), { accommodations: COM_PERSONAGEM_E_BENGALA });
+    motor.mount(declaracao(), { ...keyed({ accommodations: COM_PERSONAGEM_E_BENGALA }) });
     motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();

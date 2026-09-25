@@ -6,7 +6,8 @@
 import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
-import { t } from '../app/js/core/i18n.js'; // the font catalogue holds KEYS (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // the font catalogue holds KEYS (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { resolveFontKey, persistFontKey } from '../app/js/ui/settings-typo.js';
 // 📌 The PURE half lives in `ui/typo-choices` (note BJ); the cases here were all about what a CHOICE is, none about a node.
 import {

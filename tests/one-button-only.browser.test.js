@@ -12,6 +12,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 import pt from '../app/js/i18n/pt.js';
 import { SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
 // ⚠️ THE ENGINE'S STYLESHEET IS LOADED, and without it this file would measure something else: the scan notice is positioned BY
@@ -62,7 +63,7 @@ beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-    downloadHeavy: false, players: assentos, preset: PRESET,
+    downloadHeavy: false, players: assentos, ...keyed({ preset: PRESET }),
     onCommand: (c) => comandos.push(c),
   });
   estado = motor.settings;

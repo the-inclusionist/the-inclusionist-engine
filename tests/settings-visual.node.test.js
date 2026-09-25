@@ -5,7 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
-import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 // 📌 The PURE half lives in `ui/visual-choices` (ADR-0221 step 7c, 2026-09-23), and it was THIS file that pointed at the

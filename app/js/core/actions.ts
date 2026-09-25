@@ -72,7 +72,10 @@ export const SYSTEM = ['start', 'select'] as const satisfies readonly Action[];
 // a hundred places — the transports could not read a pad, only a pad for THIS game. A second game that does not jump
 // would rewrite the transports or inherit a vocabulary that is not its own.
 
-/** What the child reads and hears for a position: the name, and the sentence that explains it when they ask. */
+/**
+ * What the child reads and hears for a position: the name, and the sentence that explains it when they ask — RESOLVED, in
+ * the page's language. The engine builds these from the game's KEYS (`wordsOf`) each time it draws; a game declares keys.
+ */
 export interface ActionWord {
   /** "Jump", "Confirm", "Place piece". NEVER `action2` — an abstract name reaching a person is a defect. */
   readonly label: string;
@@ -93,16 +96,59 @@ export interface ActionWord {
 }
 
 /**
- * The vocabulary of ONE game: for each position it uses, its word.
+ * What a game DECLARES for a position: the KEYS of its words in its own dictionary (`CreateGameOptions.dictionaries`).
+ *
+ * 🔴 KEYS AND NOT WORDS (ADR-0232 D3, erratum of 2026-09-25). A word handed over at boot is in the boot language forever:
+ * 📏 measured, a preset built with `t` in Portuguese still read «Acima» after `setLocale('en')`. A key is resolved by the
+ * root's translator each time the engine draws or speaks it, so changing the language changes every word at once
+ * (ADR-0225), and the game never needs to know how (ADR-0216).
+ */
+export interface ActionKeys {
+  /** The key of the name: «Jump», «Confirm». A key the game's dictionaries lack leaves the position unnamed, and `problems` says so. */
+  readonly labelKey: string;
+  /** The key of the SHORT name, for a legend under a glyph. Falls back to the name when absent. */
+  readonly shortKey?: string;
+  /** The key of the sentence that says what this button does, for the help and the remap screen. */
+  readonly hintKey?: string;
+}
+
+/**
+ * The vocabulary of ONE game: for each position it uses, the keys of its words.
  *
  * ⚠️ PARTIAL ON PURPOSE. A game declares ONLY the positions it uses. Requiring all fourteen would make a quiz invent a
  * name for a trigger it does not have, and an invented name ends up on a remap screen in front of a child.
  */
-export type ActionPreset = Partial<Readonly<Record<Action, ActionWord>>>;
+export type ActionPreset = Partial<Readonly<Record<Action, ActionKeys>>>;
+
+/** A preset RESOLVED into words, in the page's language — what the engine's surfaces read (`wordsOf`). */
+export type ActionWords = Partial<Readonly<Record<Action, ActionWord>>>;
 
 /** The positions this preset names, in the canonical order of `ACTIONS`. */
-export function presetActions(p: ActionPreset): Action[] {
+export function presetActions(p: ActionPreset | ActionWords): Action[] {
   return ACTIONS.filter((a) => p[a] !== undefined);
+}
+
+/** Resolves one declared key through `word`; a key that is not text resolves to nothing. */
+const resolved = (word: (key: string) => string | null, key: unknown): string | null =>
+  (typeof key === 'string' && key.trim() ? word(key) : null);
+
+/**
+ * THE GAME'S KEYS, RESOLVED NOW — called at every drawing, never kept (ADR-0232 D3 erratum).
+ *
+ * A position whose NAME resolves to nothing is left out, so every surface treats it as unnamed — the rule `labellerFrom`
+ * already applies: an absence is one step fewer, never a mute step, and never the key itself on screen.
+ */
+export function wordsOf(p: ActionPreset, word: (key: string) => string | null): ActionWords {
+  const words: Partial<Record<Action, ActionWord>> = {};
+  for (const a of presetActions(p)) {
+    const keys = p[a]!;
+    const label = resolved(word, keys.labelKey);
+    if (!label) continue;
+    const short = resolved(word, keys.shortKey);
+    const hint = resolved(word, keys.hintKey);
+    words[a] = { label, ...(short ? { short } : {}), ...(hint ? { hint } : {}) };
+  }
+  return words;
 }
 
 /**
@@ -123,7 +169,7 @@ export type ActionLabeller = (a: Action) => string;
  * It returns `null`, and the caller decides: the pad wizard DOES NOT ASK for an action the game does not name — if the
  * game does not use it, there is nothing to map. An absence becomes one step fewer, never a mute step.
  */
-export function labellerFrom(p: ActionPreset): (a: Action) => string | null {
+export function labellerFrom(p: ActionWords): (a: Action) => string | null {
   return (a) => {
     const w = p[a];
     return w && w.label.trim() ? w.label : null;
@@ -136,7 +182,7 @@ export function labellerFrom(p: ActionPreset): (a: Action) => string | null {
  * ⚠️ IT FALLS BACK TO `label`, and the fallback is the decision: a tight legend is worse than a neat one and better than
  * an empty one. Empty would also vanish for a screen reader user, which is the cost not accepted here.
  */
-export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null {
+export function shortLabellerFrom(p: ActionWords): (a: Action) => string | null {
   return (a) => {
     const w = p[a];
     if (!w) return null;
@@ -148,9 +194,9 @@ export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null
 /**
  * Is a preset well formed? Returns the problems — EMPTY means conformant.
  *
- * ⚠️ WHAT IT CATCHES IS THE EMPTY LABEL, the same silent defect as `speakableProblems` in `core/contract`: a blank
- * `label` breaks nothing, warns nobody, and leaves the remap screen with a mute row — for a screen reader user, a button
- * that exists and has no name.
+ * ⚠️ WHAT IT CATCHES IS THE EMPTY KEY, the same silent defect as `speakableProblems` in `core/contract`: a blank
+ * `labelKey` breaks nothing, warns nobody, and leaves the remap screen with a mute row — for a screen reader user, a button
+ * that exists and has no name. Whether the key is IN the game's dictionaries is the root's question (`ui/declared-words`).
  */
 export function presetProblems(p: ActionPreset | null | undefined): string[] {
   if (!p) return ['preset: missing'];
@@ -162,8 +208,8 @@ export function presetProblems(p: ActionPreset | null | undefined): string[] {
   }
   for (const a of named) {
     const w = p[a];
-    if (!w || !w.label || !w.label.trim()) {
-      problemas.push(`preset: ${a} has an empty label - the remap screen would show a nameless button`);
+    if (!w || typeof w.labelKey !== 'string' || !w.labelKey.trim()) {
+      problemas.push(`preset: ${a} has an empty labelKey - the remap screen would show a nameless button`);
     }
   }
   return problemas;

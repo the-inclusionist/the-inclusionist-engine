@@ -22,11 +22,10 @@
 //
 // And one finding that only appeared when this function tried to boot against an injected document:
 //
-//  · FINDING 15 — `initI18n()` called `applyDom(document)`, the GLOBAL, underneath whoever called it. In a browser
-//    it makes no difference, which is how it survived; in a pure-logic test it is the difference between booting and
-//    not, and with two documents (an engine in an iframe, an editor beside the game) it would be the difference
-//    between translating the right document and the other one. Hence `initI18n(root)`, with the global as default,
-//    exactly as `applyDom` already did.
+//  · FINDING 15 — the language's boot called `applyDom(document)`, the GLOBAL, underneath whoever called it. In a
+//    browser it makes no difference, which is how it survived; in a pure-logic test it is the difference between booting
+//    and not, and with two documents (an engine in an iframe, an editor beside the game) it would be the difference
+//    between translating the right document and the other one. Hence `translator.init(root)`: the document comes in.
 //
 // ========================= DECLINING IS NOT LYING =========================
 // The quiz declined the sonar and the pad instead of inventing tiles and a fake collision box, and that distinction
@@ -44,7 +43,7 @@
 // game with a title screen. What it covers is what is the SAME in every game: language, screen reader, mixer, voice,
 // the dialog stack, the colour filters, the remappable keyboard, menu navigation, the pause card and the accessibility
 // bar, the settings panels, the navigation sonar, and every input transport.
-import i18nObject, { initI18n, loadLocale, createTranslator, type Translate } from '../core/i18n.js';
+import { createTranslator, availableLocales, type Translate } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
 import { createInputState, type LiveInput } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
@@ -58,7 +57,7 @@ import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } 
 import { genreProblems, genreWarning } from '../core/genres.js';
 import { cartridgeProblems } from '../core/cartridge-problems.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
-import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
+import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, wordsOf, ACTIONS, type Action, type ActionPreset, type ActionWords } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { createAnnouncer } from '../core/a11y-sr.js';
 import { createEyeControl, videoFeed } from '../ui/eye-control.js';
@@ -72,7 +71,8 @@ import { initPauseIcons, wireBarCaption, showPauseOptions } from '../ui/pause-ic
 // root asks `ui/pause-icons` for is the WIRING — the icons this game can actually act on, and the reflection of their state.
 import { iconsMarkup } from '../ui/pause-markup.js';
 import { accessibleLabel } from '../core/accessible-label.js';
-import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
+import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, playSlidesOf, type HowToPlaySlide } from '../ui/help-panel.js';
+import { missingDeclaredKeys } from '../ui/declared-words.js';
 import { initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 import { keyName } from '../ui/control-choices.js';
 import { reserveTopBand } from '../ui/top-band.js';
@@ -319,8 +319,12 @@ export interface CreateGameOptions {
   /** Blind mode on? Absent = the engine's own stored value (`core/state.blindMode`). Applies to every player. */
   readonly isBlindMode?: () => boolean;
   /**
-   * THIS GAME'S WORDS (`core/actions`). Without them the engine does not know HOW MANY actions to ask of a transport,
-   * and ADR-0079 §3's guarantee cannot be measured (issue #112).
+   * THIS GAME'S POSITIONS AND THE KEYS OF THEIR WORDS (`core/actions`). Without them the engine does not know HOW MANY
+   * actions to ask of a transport, and ADR-0079 §3's guarantee cannot be measured (issue #112).
+   *
+   * 🔴 KEYS of `dictionaries`, never words (ADR-0232 D3, erratum of 2026-09-25): the root's translator resolves them each
+   * time the engine draws or speaks them, so a language change reaches the help, the remap screen, the pad and the scan.
+   * A key the dictionaries lack leaves its position unnamed and is a line of `problems`.
    *
    * Optional because a game may not declare a preset yet; without it the reach notice simply does not appear, and the
    * help and the scan have no words to show.
@@ -343,15 +347,16 @@ export interface CreateGameOptions {
    */
   readonly hud?: readonly HudNumber[];
   /**
-   * THE OPTIONS OF THIS GAME, as rows the engine draws (ADR-0182; issue #178): a label and hint in the game's words, a kind
-   * (steps, list or switch), how to read the value and how to write it. «Opções do jogo» opens them in a panel of the
+   * THE OPTIONS OF THIS GAME, as rows the engine draws (ADR-0182; issue #178): the keys of a label and hint in the game's
+   * dictionary (resolved at every drawing, ADR-0232 D3), a kind (steps, list or switch), how to read the value and how to write it. «Opções do jogo» opens them in a panel of the
    * engine's own; absent or empty, the door stays on the card locked with its reason (ADR-0161). A cartridge draws its own
    * options only where rows cannot express what it needs. A malformed list is refused at boot and at `mount`.
    */
   readonly gameOptions?: readonly GameOption[];
   /**
    * HOW TO PLAY THIS GAME, as slides the help shows before the buttons (ADR-0195; issue #188): «O "Como jogar" é justamente algo a
-   * ser feito pelo cartucho.» Each slide's text is read at every showing, in the page's language; its figure, when given, is drawn
+   * ser feito pelo cartucho.» Each slide's text is a KEY of `dictionaries`, resolved at every showing in the page's language
+   * (ADR-0232 D3); its figure, when given, is drawn
    * by the cartridge on a surface the engine gives, with the time for an animation (still under reduced motion). Absent = the help
    * shows the buttons alone. A malformed list is refused at boot and at `mount`.
    */
@@ -359,9 +364,12 @@ export interface CreateGameOptions {
   /**
    * THIS GAME'S DICTIONARIES, one per language (`pt`, `en`, `es`), registered into THIS ROOT's translator before anything is
    * translated (ADR-0232 D3 erratum): a key resolves for this game and for no other root on the page. A string with markup is
-   * refused and named in the console, as `registerDict` does; a key given in one language and not another is a line of
-   * `problems`. Decision (mechanical, ADR-0232 D3): an option and not a method on the handle, because every game measured
-   * registers BEFORE `createGame` — and a method would come after the markup was translated.
+   * refused and named in the console; a key given in one language and not another is a line of `problems`.
+   *
+   * 🔴 THE ONE PLACE A GAME'S WORDS LIVE (ADR-0232 D3, erratum of 2026-09-25): every word the game DECLARES — `preset`,
+   * `accommodations`, `gameOptions`, `howToPlay`, `hud` — is a key of these, and a declared key they lack is a line of
+   * `problems` and is never shown. A cartridge `mount()` swaps in may bring its own; they are added to these.
+   * Decision (mechanical, ADR-0232 D3): an option and not a method on the handle, because the markup is translated at boot.
    */
   readonly dictionaries?: Readonly<Record<string, Readonly<Record<string, string>>>>;
   /**
@@ -384,8 +392,8 @@ export interface CreateGameOptions {
   /**
    * THE ACCOMMODATIONS THAT HAVE A SUBJECT IN THIS GAME — the cartridge's answer, REQUIRED (ADR-0153).
    *
-   * 🔴 For each of the sixteen only the game can answer (`GAME_KEYED` in `core/accommodations`): the game's WORD, if
-   * it has a subject here, or `false`. In the Dev's words: «Gênero não precisa responder todas as acomodações, mas
+   * 🔴 For each of the sixteen only the game can answer (`GAME_KEYED` in `core/accommodations`): the KEYS of the game's
+   * word in `dictionaries` (ADR-0232 D3), if it has a subject here, or `false`. In the Dev's words: «Gênero não precisa responder todas as acomodações, mas
    * sim o cartucho, obrigatoriamente.»
    *
    * ⚠️ REQUIRED, by the `holdsAtOnce` rubric: there is no safe default — yes mounts the wheelchair in chess, no
@@ -540,6 +548,13 @@ export interface Engine {
    * waits on it, or the screen is born in the fallback language.
    */
   readonly localeReady: () => Promise<void>;
+  /**
+   * THE PAGE'S LANGUAGE (`pt`, `en`, `es`) as this root speaks it, and the door to switch it — the one the 🌐 on the bar uses.
+   * Since `core/i18n` holds no state (ADR-0232 D3, erratum of 2026-09-25) a game asks here instead of `getLocale`/`setLocale`
+   * by import; a switch is kept, told to the page, and followed by every root on it.
+   */
+  readonly locale: () => string;
+  readonly setLocale: (code: string) => Promise<void>;
   /**
    * THIS ROOT'S SCREEN-READER ANNOUNCEMENTS (ADR-0232 D4): «polite» (`#sr-status`, does not interrupt) — the announcer every
    * engine module receives. A game announces HERE instead of importing `core/a11y-sr`, which is a factory now: a second
@@ -824,7 +839,8 @@ const A11Y_BAR_SELECTOR = '#title-icons';
 type GameHalf = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'withIndex' | 'onBar' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setPlayerTheme' | 'setPlayerCorrection' | 'accommodations' | 'genre' | 'onScreenPad' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'>;
+  | 'setPlayerTheme' | 'setPlayerCorrection' | 'accommodations' | 'genre' | 'onScreenPad' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'
+  | 'dictionaries'>;
 
 /**
  * Switches the engine on for a declared game.
@@ -874,20 +890,31 @@ export function createGame(o: CreateGameOptions): Engine {
   const whenDisposed = (release: () => void): void => { endOfLife.push(release); };
   const stateOn: SettingsStore['on'] = (evt, fn) => { const off = state.on(evt, fn); whenDisposed(off); return off; };
   /*
-   * THE ROOT'S TRANSLATOR (ADR-0232 D3): the page's language, and this root's `t`, markup pass and door to a language change.
-   * `localeOn` is that door — like `stateOn`, whatever subscribes through it is released by `dispose()` (ADR-0220).
-   */
-  const translator = createTranslator();
-  for (const [code, entries] of Object.entries(o.dictionaries ?? {})) translator.registerDict(code, entries);
-  // 📌 The root's own words go through ITS translator, which reads this game's dictionary (ADR-0232 D3).
-  const { t, bcp47 } = translator;
-  const localeOn = (react: (locale: string) => void): (() => void) => { const off = translator.onChange(react); whenDisposed(off); return off; };
-  /*
    * 🔴 THE PAGE'S ONE STORE IS BUILT HERE, from what the HOST lends (ADR-0232 point 2, issue #207): the backend the host
    * passed, or its window's `localStorage`. Every module below that persists receives THIS store; none reaches the global.
    * Reading `win.localStorage` can itself THROW (file://, some private modes), which is a host with no storage: `null`.
    */
   const store = createStorage(hostStorage(o.host));
+  /*
+   * THE ROOT'S TRANSLATOR (ADR-0232 D3): the page's language as this root speaks it, the game's dictionary, and this root's
+   * `t`, markup pass and door to a language change. `core/i18n` holds none of it (erratum of 2026-09-25).
+   * 🔴 ITS PORT IS THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g): the page effects — writing `<html lang>`,
+   * dispatching on the window, reading `navigator.language`, hearing another root switch — come in through `localeHostHooks`,
+   * which is THIS root's host speaking: the document and the scoped window it received, never the globals.
+   * `localeOn` is its door — like `stateOn`, whatever subscribes through it is released by `dispose()` (ADR-0220).
+   */
+  const translator = createTranslator({
+    ...store, KEYS, ...localeHostHooks(doc as Document, win, (root) => { translator.applyDom(root); }),
+  });
+  for (const [code, entries] of Object.entries(o.dictionaries ?? {})) translator.registerDict(code, entries);
+  // 📌 The root's own words go through ITS translator, which reads this game's dictionary (ADR-0232 D3).
+  const { t, bcp47, word } = translator;
+  const localeOn = (react: (locale: string) => void): (() => void) => { const off = translator.onChange(react); whenDisposed(off); return off; };
+  /**
+   * THE GAME'S POSITIONS IN WORDS, resolved NOW from its keys (ADR-0232 D3, erratum of 2026-09-25). A function and never a
+   * value: every surface that shows a position asks at its drawing, so a language change reaches all of them at once.
+   */
+  const actionWords = (): ActionWords => (cartridge.preset ? wordsOf(cartridge.preset, word) : {});
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   // ⚠️ The port of ADR-0178 carries the key names beside the store, so `core` names no storage place itself.
   const state = createSettingsStore({ ...store, KEYS });
@@ -895,15 +922,8 @@ export function createGame(o: CreateGameOptions): Engine {
   // Destructured so the call sites below read as they did; a game reads the same object as `Engine.input`.
   const input = createInputState();
   const { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } = input;
-  /*
-   * 🔴 THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g). `core/i18n` keeps the decisions; the page effects —
-   * writing `<html lang>`, dispatching on the window, reading `navigator.language` — come in through these two functions,
-   * which are THIS root's host speaking: the document and window it received, never the globals. `core` is what the
-   * engine IS without a browser.
-   */
-  loadLocale({ ...store, KEYS, ...localeHostHooks(doc as Document, win, translator.applyDom) });
-  // 📌 And the debugging exposure: whoever HAS a window is this root.
-  exposeI18n(win, i18nObject);
+  // 📌 And the debugging exposure: whoever HAS a window is this root, and what it exposes is its translator.
+  exposeI18n(win, translator);
   /*
    * ⚠️ A READER AND NOT A SNAPSHOT. `declines` belongs to the GAME's half (ADR-0139: the cartridge declares what it does
    * NOT have), so a `const` taken at boot would return, after a `mount()`, the previous cartridge's declines — and a
@@ -999,8 +1019,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 1. LANGUAGE BEFORE EVERYTHING. The interface cannot be built before the language is known. The document goes in:
   //    see finding 15.
-  initI18n(doc);
-  translator.applyDom(doc); // the host's markup, with THIS game's dictionary too — the module's pass reads only the page's
+  translator.init(doc); // the host's markup, with THIS game's dictionary too, and the stored or preferred language asked for
 
   // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: `createAudio` loads the mixer, and the voice reads it.
   //    🔴 THE BROWSER'S SOUND AND SPEECH ARE LENT HERE, from the host's window (ADR-0232 D4): the audio context — made at the
@@ -1586,7 +1605,7 @@ export function createGame(o: CreateGameOptions): Engine {
     /*
      * ⚠️ AND AGAIN WHEN THE BOOT LANGUAGE ARRIVES — without it the bar stays in the FALLBACK language.
      *
-     * `initI18n` applies pt synchronously (so the page is never blank) and, if the preferred language is another, ASKS
+     * `translator.init` applies pt synchronously (so the page is never blank) and, if the preferred language is another, ASKS
      * for the switch — which is asynchronous, because en/es are on-demand chunks. This markup is born in that interval.
      *
      * 📌 IT IS THE `i18n:change` LISTENER near the pad that repaints it (study item C6, ADR-0031): the boot's preferred
@@ -1735,7 +1754,11 @@ export function createGame(o: CreateGameOptions): Engine {
           const list = $<HTMLElement>('#help-list');
           if (!list) return;
           while (list.firstChild) list.removeChild(list.firstChild);
-          const slideContents = [...(cartridge.howToPlay ?? []), ...helpRows(cartridge.preset, (a) => keyboard.kbFor(0)[a], (code) => keyName(t, code))];
+          // the game's words resolved NOW, in the page's language (ADR-0232 D3): a language change re-renders an open panel
+          const slideContents = [
+            ...playSlidesOf(cartridge.howToPlay ?? [], word),
+            ...helpRows(actionWords(), (a) => keyboard.kbFor(0)[a], (code) => keyName(t, code)),
+          ];
           const ctxDoSlide = { create: (tag: string) => doc.createElement(tag), t, title: t('menu.help') };
           const slides = mountSlides(ctxDoSlide);
           list.appendChild(slides);
@@ -1790,7 +1813,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     gamePanel.shell.reset.hidden = true;
     redrawGameOptions = () => {
-      drawGameOptions({ ...panelCtx, say: srSay, t: translator.t }, gamePanel.shell.list, cartridge.gameOptions ?? []);
+      drawGameOptions({ ...panelCtx, say: srSay, t: translator.t, word }, gamePanel.shell.list, cartridge.gameOptions ?? []);
       if (!gamePanel.shell.overlay.hidden) overlays.fillExplain(gamePanel.shell.card);
     };
     openGameOptions = gamePanel.open;
@@ -1845,9 +1868,9 @@ export function createGame(o: CreateGameOptions): Engine {
       fillExplain: overlays.fillExplain,
       toggleBtn,
       // The «Personagem» section exists only if the GAME said it has one (ADR-0153). Read at every render: it changes on `mount()`.
-      hasCharacter: () => subjectWord(cartridge.accommodations, 'reducedCharacterMotion') !== null,
-      // and its title is the game's word for it (ADR-0153 confirmation)
-      characterLabel: () => subjectWord(cartridge.accommodations, 'reducedCharacterMotion')?.label ?? null,
+      hasCharacter: () => subjectWord(cartridge.accommodations, 'reducedCharacterMotion', word) !== null,
+      // and its title is the game's word for it (ADR-0153 confirmation), resolved at every render (ADR-0232 D3)
+      characterLabel: () => subjectWord(cartridge.accommodations, 'reducedCharacterMotion', word)?.label ?? null,
     });
     engineActions.anim = animPanel.open;
 
@@ -1940,8 +1963,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * Owner colours carries the game's word; the outlines are two positions of one subject, named by the engine.
      */
     const ownerSpec = () => {
-      const word = subjectWord(cartridge.accommodations, 'ownerColors');
-      return { id: 'opt-dono', label: word?.label ?? '', hint: word?.hint };
+      const owner = subjectWord(cartridge.accommodations, 'ownerColors', word);
+      return { id: 'opt-dono', label: owner?.label ?? '', hint: owner?.hint };
     };
     const { row: ownerRow, control: ownerButton } = controlRow(panelCtx, ownerSpec());
     const reflectOwner = (): void => {
@@ -1978,7 +2001,7 @@ export function createGame(o: CreateGameOptions): Engine {
       });
       // the hint is written BEFORE the panel's render, which runs `fillExplain`: written after, it stays inside the row
       const writeHint = (): void => {
-        explanation.textContent = subjectWord(cartridge.accommodations, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plane}.dica`);
+        explanation.textContent = subjectWord(cartridge.accommodations, 'contrastOutlines', word)?.hint ?? t(`visual.contorno.${plane}.dica`);
       };
       writeHint();
       const reflect = (): void => { updateSteps(stepper, spec()); };
@@ -1987,9 +2010,9 @@ export function createGame(o: CreateGameOptions): Engine {
     const fgOutline = outline('fg');
     const bgOutline = outline('bg');
     const offerOwnerAndOutlines = (): void => {
-      ownerRow.hidden = subjectWord(cartridge.accommodations, 'ownerColors') === null;
+      ownerRow.hidden = subjectWord(cartridge.accommodations, 'ownerColors', word) === null;
       if (!ownerRow.hidden) { labelRow(ownerRow, ownerSpec()); reflectOwner(); }
-      const withoutOutlines = subjectWord(cartridge.accommodations, 'contrastOutlines') === null;
+      const withoutOutlines = subjectWord(cartridge.accommodations, 'contrastOutlines', word) === null;
       for (const c of [fgOutline, bgOutline]) { c.row.hidden = withoutOutlines; if (!withoutOutlines) c.refletir(); }
     };
     // after the list, owner colours first, then the two outlines (the captions row, built above, follows them)
@@ -2191,7 +2214,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // is not wiring. ⚠️ Read at every opening: the topology is a function, and a game changes its demands between phases (ADR-0084).
     const hideRowsWithoutSubject = (): void => showOnlyRowsThatApply({
       find: $,
-      caneWord: () => subjectWord(cartridge.accommodations, 'caneSpacing'),
+      caneWord: () => subjectWord(cartridge.accommodations, 'caneSpacing', word),
       hasNavigationSound: () => contractSubjects({
         declaration: cartridge.declaration,
         actions: cartridge.preset ? presetActions(cartridge.preset) : [],
@@ -2612,7 +2635,7 @@ export function createGame(o: CreateGameOptions): Engine {
     hudMounted = null;
     const regionEl = $<HTMLElement>('#game-region');
     const numbers = cartridge.hud ?? [];
-    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(translator.t, doc, regionEl, numbers, 0, hudRow ?? undefined);
+    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(translator, doc, regionEl, numbers, 0, hudRow ?? undefined);
     reserveBarBand();
     if (hudMounted && !hudFrame && typeof win.requestAnimationFrame === 'function') {
       hudFrame = true;
@@ -3041,8 +3064,7 @@ export function createGame(o: CreateGameOptions): Engine {
     eventTarget.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origin));
   };
   const labelledActions = (): readonly { action: string; label: string }[] => {
-    const preset = cartridge.preset;
-    if (!preset) return [];
+    const preset = actionWords();
     const labelOf = labellerFrom(preset);
     return presetActions(preset).flatMap((a) => {
       const label = labelOf(a);
@@ -3093,7 +3115,7 @@ export function createGame(o: CreateGameOptions): Engine {
       return;
     }
     const padMap = touchPad.getTouchMap();
-    const short = cartridge.preset ? shortLabellerFrom(cartridge.preset) : (): null => null;
+    const short = shortLabellerFrom(actionWords());
     const pad = mountTouchControls(
       { find: (sel) => $<HTMLElement>(sel), create: (tag) => doc.createElement(tag), t: translator.t },
       {
@@ -3307,10 +3329,10 @@ export function createGame(o: CreateGameOptions): Engine {
     const modeLabel = (m: KeyboardMode): string => t(m === 1 ? 'motora.teclado.1' : m === 2 ? 'motora.teclado.2' : 'motora.teclado.34');
     const SIDES = ['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger'] as const;
     const actionsToMap = () => {
-      if (!cartridge.preset) return [];
-      const word = labellerFrom(cartridge.preset);
-      return presetActions(cartridge.preset).flatMap((presetAction) => {
-        const actionWord = word(presetAction);
+      const words = actionWords();
+      const nameOf = labellerFrom(words);
+      return presetActions(words).flatMap((presetAction) => {
+        const actionWord = nameOf(presetAction);
         return actionWord ? [{ action: presetAction, label: actionWord }] : [];
       });
     };
@@ -3764,7 +3786,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // 📌 The Libras player only while deaf mode is on (ADR-0234): 19.3 MiB a child who never asks for signing does not pay.
       only: heavyAtBoot({
         kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null,
-        commands: [bcp47(), ...i18nObject.availableLocales()], libras: deafMode.isOn(),
+        commands: [bcp47(), ...availableLocales()], libras: deafMode.isOn(),
       }),
       onProgress: o.onHeavyProgress,
       cacheStorage: heavyCaches, fetch: win.fetch, digest: sha256With(win.crypto?.subtle), base: doc.baseURI,
@@ -3806,6 +3828,8 @@ export function createGame(o: CreateGameOptions): Engine {
     refuseIfOptionsMalformed('mount', hooks.gameOptions);
     refuseIfHowToPlayMalformed('mount', hooks.howToPlay);
     cartridge = { ...hooks, declaration };
+    // its words, before anything draws them: ADDED to the root's dictionary, so the keys a shell registered at boot stay
+    for (const [code, entries] of Object.entries(hooks.dictionaries ?? {})) translator.registerDict(code, entries);
     mountHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
     followCartridgeMappings(declaration);
     redrawGameOptions(); // the rows are the new cartridge's, drawn or cleared before its door is weighed
@@ -3989,7 +4013,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   let scanner: SwitchScan | null = null;
   let scanFrame = 0;
   const scanWord = (item: ScanItem): string =>
-    scanItemText(item, (a) => (cartridge.preset ? labellerFrom(cartridge.preset)(a) : null), t('scan.nothing'));
+    scanItemText(item, labellerFrom(actionWords()), t('scan.nothing'));
   // A word of a different length is a different amount of room to keep free, so the band is measured again — and only then.
   const scanShow = (item: ScanItem): void => { if (scanChip?.showing(scanWord(item))) reserveBarBand(); };
   const scanTick = (): void => {
@@ -4004,8 +4028,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   };
   const startScan = (): void => {
     if (scanner) return;
-    const names = cartridge.preset ? labellerFrom(cartridge.preset) : null;
-    const offered = (cartridge.preset ? presetActions(cartridge.preset) : []).filter((a) => !!names?.(a));
+    const words = actionWords();
+    const names = labellerFrom(words);
+    const offered = presetActions(words).filter((a) => !!names(a));
     scanner = createSwitchScan(offered);
     scanTick();
   };
@@ -4098,7 +4123,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // THE GAME'S WORD for a position: the engine knows the position exists, only the cartridge knows what it is called —
     // and it already declared that in the `preset` to exist.
-    actionLabel: (action) => (cartridge.preset ? labellerFrom(cartridge.preset)(action as Action) : null),
+    actionLabel: (action) => labellerFrom(actionWords())(action as Action),
     srSay, srAlert,
     frontOverlay: overlays.frontOverlay,
     // ⚠️ «PAUSE MENU» HERE IS EVERY MENU WITH A DIRECTIONAL, not only the card: the transport's `steerPause` already
@@ -4268,6 +4293,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     menuIndexOn: () => state.menuIndexOn,
     t: translator.t,
     localeReady: translator.ready,
+    locale: translator.locale,
+    setLocale: translator.setLocale,
     say: srSay,
     alert: srAlert,
     mirrorAnnouncements: announcer.mirrorTo,
@@ -4294,7 +4321,11 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope(), ...unreadableWorldProblems(screen)]; },
+    get problems() {
+      return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(),
+        ...missingDeclaredKeys(cartridge, translator.declares), ...measuredProblems, ...storageOutsideScope(),
+        ...unreadableWorldProblems(screen)];
+    },
     onFailure: announceFailure,
     get reach() { return currentReach; },
   };

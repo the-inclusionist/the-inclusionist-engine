@@ -8,7 +8,8 @@ import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel is its alias (item 14)
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { latchKey } from '../app/js/input/latch-scope.js'; // the announcements come from the dictionary (item 14)
 import { easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch } from '../app/js/ui/settings-mobility.js';
 import {

@@ -11,9 +11,14 @@
 // applied to another's spelling. For whoever depends on narration to play, it is the same as having no narration at all.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
-import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
-import { setLocale, getLocale, bcp47 } from '../app/js/core/i18n.js';
+import { bcp47 } from '../app/js/core/i18n.js';
+import { pageTranslator } from './fixtures/page-locale.js';
+
+/** This file's page translator, as a root builds one (`core/i18n` holds no state, ADR-0232 D3): it switches and tells the page. */
+const translator = pageTranslator();
+const { setLocale } = translator;
+const getLocale = () => translator.locale();
 
 let spoke;
 const ORIGINAL = { utter: globalThis.SpeechSynthesisUtterance, synth: window.speechSynthesis };
@@ -35,13 +40,13 @@ beforeEach(() => {
 afterEach(async () => {
   globalThis.SpeechSynthesisUtterance = ORIGINAL.utter;
   Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: ORIGINAL.synth });
-  await setLocale('pt'); // the language is MODULE state: without this, the next file inherits the last locale
+  await setLocale('pt'); // this file's translator is shared by its cases: each starts in pt
 });
 
 function tts() {
   return createTts({
     store: createStorage(memoryBackend()),
-    translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
+    translator, // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {},
     ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6,

@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ACTIONS, DIRECTIONS, VERBS, SYSTEM, isAction, actionSetProblems,
-  presetActions, presetProblems, labellerFrom, shortLabellerFrom,
+  presetActions, presetProblems, labellerFrom, shortLabellerFrom, wordsOf,
 } from '../app/js/core/actions.js';
 
 describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () => {
@@ -89,15 +89,15 @@ describe('o conjunto de ações de um jogo', () => {
 });
 
 describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)', () => {
-  // The platformer's preset, as ADR-0086 corrected it.
+  // The platformer's preset, as ADR-0086 corrected it — KEYS of its dictionary since ADR-0232 D3 (erratum of 2026-09-25).
   const PLATAFORMA = {
-    up: { label: 'Cima' }, down: { label: 'Baixo' },
-    left: { label: 'Esquerda' }, right: { label: 'Direita' },
-    action1: { label: 'Correr', hint: 'Segure para correr e para grudar na parede.' },
-    action2: { label: 'Pular' },
-    action3: { label: 'Especial' },
-    action4: { label: 'Trocar poder' },
-    start: { label: 'Pausar' },
+    up: { labelKey: 'act.up' }, down: { labelKey: 'act.down' },
+    left: { labelKey: 'act.left' }, right: { labelKey: 'act.right' },
+    action1: { labelKey: 'act.run', hintKey: 'act.run.hint' },
+    action2: { labelKey: 'act.jump' },
+    action3: { labelKey: 'act.special' },
+    action4: { labelKey: 'act.swap' },
+    start: { labelKey: 'act.pause' },
   };
 
   it('um jogo nomeia SÓ as posições que usa', () => {
@@ -110,19 +110,23 @@ describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)'
   it('as posições saem na ordem canônica, não na ordem em que foram escritas', () => {
     // The remapping screen reads this order; if it followed the object's order, two games with the same actions would show
     // different lists and the child would lose her bearings when changing game.
-    const foraDeOrdem = { action3: { label: 'C' }, up: { label: 'A' }, action1: { label: 'B' } };
+    const foraDeOrdem = { action3: { labelKey: 'C' }, up: { labelKey: 'A' }, action1: { labelKey: 'B' } };
     expect(presetActions(foraDeOrdem)).toEqual(['up', 'action1', 'action3']);
   });
 
   it('um quiz nomeia três posições e está conforme', () => {
-    expect(presetProblems({ up: { label: 'Anterior' }, down: { label: 'Seguinte' }, action1: { label: 'Confirmar' } })).toEqual([]);
+    expect(presetProblems({ up: { labelKey: 'game.prev' }, down: { labelKey: 'game.next' }, action1: { labelKey: 'game.ok' } })).toEqual([]);
   });
 
-  it('⚠️ rótulo vazio é REPROVADO — é o botão sem nome no leitor de tela', () => {
-    const p = presetProblems({ ...PLATAFORMA, action2: { label: '   ' } });
+  it('⚠️ chave vazia é REPROVADA — é o botão sem nome no leitor de tela', () => {
+    const p = presetProblems({ ...PLATAFORMA, action2: { labelKey: '   ' } });
     expect(p).toHaveLength(1);
     expect(p[0]).toMatch(/action2/);
-    expect(p[0]).toMatch(/empty label/);
+    expect(p[0]).toMatch(/empty labelKey/);
+  });
+
+  it('🔴 a FORMA ANTIGA — uma palavra em `label` — é reprovada: desde o ADR-0232 D3 o jogo declara a CHAVE', () => {
+    expect(presetProblems({ ...PLATAFORMA, action2: { label: 'Pular' } })[0]).toMatch(/action2 has an empty labelKey/);
   });
 
   it('preset que não nomeia nada é reprovado', () => {
@@ -134,7 +138,7 @@ describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)'
   });
 
   it('⚠️ uma chave que não é ação é reprovada e NOMEADA — é o `jump` a tentar voltar', () => {
-    const p = presetProblems({ ...PLATAFORMA, jump: { label: 'Pular' } });
+    const p = presetProblems({ ...PLATAFORMA, jump: { labelKey: 'act.jump' } });
     expect(p).toHaveLength(1);
     expect(p[0]).toMatch(/jump/);
     expect(p[0]).toMatch(/is not an action/);
@@ -182,5 +186,29 @@ describe('shortLabellerFrom: a palavra CURTA da legenda', () => {
 
   it('posição não nomeada continua `null` — não vira ficha na legenda', () => {
     expect(shortLabellerFrom({ action1: { label: 'Correr' } })('action4')).toBeNull();
+  });
+});
+
+describe('wordsOf: the game\'s KEYS resolved at the moment of drawing (ADR-0232 D3, erratum of 2026-09-25)', () => {
+  const PRESET = { up: { labelKey: 'g.up' }, action1: { labelKey: 'g.run', shortKey: 'g.run.short', hintKey: 'g.run.hint' }, action2: { labelKey: 'g.missing' } };
+  const PT = { 'g.up': 'Acima', 'g.run': 'Correr', 'g.run.short': 'corre', 'g.run.hint': 'Segure para correr.' };
+  const EN = { 'g.up': 'Up', 'g.run': 'Run' };
+
+  it('🔴 [Right] each word comes from the dictionary it is resolved through — the same preset, two languages', () => {
+    expect(wordsOf(PRESET, (k) => PT[k] ?? null).up).toEqual({ label: 'Acima' });
+    expect(wordsOf(PRESET, (k) => EN[k] ?? null).up, 'the word was frozen in the first language').toEqual({ label: 'Up' });
+    expect(wordsOf(PRESET, (k) => PT[k] ?? null).action1).toEqual({ label: 'Correr', short: 'corre', hint: 'Segure para correr.' });
+  });
+
+  it('🔴 [Right] a name key the dictionary lacks leaves the position UNNAMED — never the key as its name', () => {
+    const words = wordsOf(PRESET, (k) => PT[k] ?? null);
+    expect(words.action2, 'the key reached the child as a word').toBeUndefined();
+    expect(labellerFrom(words)('action2')).toBeNull();
+  });
+
+  it('[Right] an optional key the dictionary lacks is simply absent — the short falls back to the name', () => {
+    const words = wordsOf(PRESET, (k) => EN[k] ?? null);
+    expect(words.action1).toEqual({ label: 'Run' });
+    expect(shortLabellerFrom(words)('action1')).toBe('Run');
   });
 });

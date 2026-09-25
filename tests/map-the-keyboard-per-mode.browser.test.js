@@ -7,6 +7,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let motor;
 const CKEY = 'inclusionist.kbcontrols.v3';
@@ -43,7 +44,7 @@ beforeAll(async () => {
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
-  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, preset: DUAS_ACOES });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...keyed({ preset: DUAS_ACOES }) });
 });
 beforeEach(() => { fecharTudo(); });
 
@@ -54,7 +55,7 @@ describe('the three rows in the motor panel', () => {
   });
 
   it('🔴 [Zero] a preset that names a shoulder or trigger does NOT get the 3–4 row — and keeps 1 and 2', () => {
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: COM_OMBRO });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ preset: COM_OMBRO }) });
     try {
       abrirMotora();
       expect(linha(4).hidden, 'four keyboard schemes offered to a game that uses a shoulder position').toBe(true);
@@ -62,7 +63,7 @@ describe('the three rows in the motor panel', () => {
       expect(linha(2).hidden).toBe(false);
     } finally {
       fecharTudo();
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: DUAS_ACOES });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ preset: DUAS_ACOES }) });
     }
   });
 
@@ -73,7 +74,7 @@ describe('the three rows in the motor panel', () => {
       for (const m of [1, 2, 4]) expect(linha(m).hidden, `mode ${m} offered with no action to map`).toBe(true);
     } finally {
       fecharTudo();
-      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: DUAS_ACOES });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ preset: DUAS_ACOES }) });
     }
   });
 });

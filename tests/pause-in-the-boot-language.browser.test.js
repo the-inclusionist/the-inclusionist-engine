@@ -67,7 +67,6 @@ function palco() {
 describe('o cartão de pausa fala o idioma do arranque', () => {
   it('🔴 [Zero] o NOME ACESSÍVEL e o sufixo do assento saem do idioma de recuo', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = palco();
 
     const motor = createGame({ accommodations: SEM_ASSUNTO,
@@ -85,8 +84,8 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
     expect(aoMontar, 'o cartão nasceu já em inglês: este ambiente não tem o intervalo onde o defeito vive')
       .toMatch(/Menu de pausa/);
 
-    await localeReady();
-    expect(getLocale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
+    await motor.localeReady();
+    expect(motor.locale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
 
     // ⚠️ OPENING is what repaints: `pause.show` calls `reflectPauseIcons()`, and that is where the name is redone. The
     // language counts at the instant the child opens the pause, which is the right instant.

@@ -19,6 +19,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { comAssunto } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let motor;
 const MAX_CYCLE = 5;
@@ -98,9 +99,11 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    accommodations: comAssunto({ caneSpacing: { label: 'Bengala' } }), declaration: declaracao(),
+    declaration: declaracao(),
     host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }],
-    onScreenPad: true, preset: PRESET, gameOptions: GAME_OPTIONS,
+    onScreenPad: true,
+    // the game's words are KEYS of its dictionary (ADR-0232 D3): `keyed` writes the words above under keys
+    ...keyed({ accommodations: comAssunto({ caneSpacing: { label: 'Bengala' } }), preset: PRESET, gameOptions: GAME_OPTIONS }),
   });
   panels = everyPanel();
   // the panels are closed again: read what each one drew while it was open

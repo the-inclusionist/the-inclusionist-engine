@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, NO_KEY } from '../app/js/ui/help-panel.js';
+import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, playSlidesOf, NO_KEY } from '../app/js/ui/help-panel.js';
 
 const PRESET = {
   action2: { label: 'Pular', hint: 'Sai do chão e volta.' },
@@ -93,9 +93,10 @@ describe('the help slide show', () => {
 
 describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
   const figurasDesenhadas = [];
+  // the slides as SHOWN: their texts already resolved from the game's keys (`playSlidesOf`, below)
   const COMO_JOGAR = [
-    { text: () => 'Leia a pergunta.', figure: (s) => figurasDesenhadas.push([s.width > 0, s.height > 0, typeof s.ctx.fillRect, s.time]) },
-    { text: () => 'Escolha a resposta!' },
+    { text: 'Leia a pergunta.', figure: (s) => figurasDesenhadas.push([s.width > 0, s.height > 0, typeof s.ctx.fillRect, s.time]) },
+    { text: 'Escolha a resposta!' },
   ];
   const todos = [...COMO_JOGAR, ...linhas];
 
@@ -168,13 +169,33 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
     el.remove();
   });
 
-  it('🔴 [Zero] howToPlayProblems: absent is well formed; a slide without text, or a figure that is not a function, is not', () => {
+  it('🔴 [Zero] howToPlayProblems: absent is well formed; a slide without a text KEY, or a figure that is not a function, is not', () => {
     expect(howToPlayProblems(undefined)).toEqual([]);
-    expect(howToPlayProblems(COMO_JOGAR)).toEqual([]);
-    expect(howToPlayProblems([{ figure: () => {} }]).join(' ')).toMatch(/howToPlay\[0\]\.text/);
-    expect(howToPlayProblems([{ text: 'Leia' }]).join(' '), 'a string instead of a function would freeze the language').toMatch(/text/);
-    expect(howToPlayProblems([{ text: () => 'x', figure: 'desenho.png' }]).join(' ')).toMatch(/figure/);
+    expect(howToPlayProblems([{ textKey: 'g.read', figure: () => {} }, { textKey: 'g.choose' }])).toEqual([]);
+    expect(howToPlayProblems([{ figure: () => {} }]).join(' ')).toMatch(/howToPlay\[0\]\.textKey/);
+    expect(howToPlayProblems([{ textKey: '  ' }]).join(' '), 'a blank key names no text').toMatch(/textKey/);
+    // 🔴 the old shape, a function returning words: frozen in the language it was written in (ADR-0232 D3)
+    expect(howToPlayProblems([{ text: () => 'Leia' }]).join(' ')).toMatch(/howToPlay\[0\]\.textKey .*key of the game's dictionary/);
+    expect(howToPlayProblems([{ textKey: 'g.x', figure: 'desenho.png' }]).join(' ')).toMatch(/figure/);
     expect(howToPlayProblems('slides')).toEqual(['howToPlay must be a list of slides']);
+  });
+});
+
+describe('the cartridge\'s slides resolved at each showing (ADR-0232 D3, erratum of 2026-09-25)', () => {
+  const DECLARED = [{ textKey: 'g.read', figure: () => {} }, { textKey: 'g.missing' }, { textKey: 'g.choose' }];
+
+  it('🔴 [Right] each text comes from the dictionary it is resolved through — the same slides, two languages', () => {
+    const pt = { 'g.read': 'Leia a pergunta.', 'g.choose': 'Escolha.' };
+    const en = { 'g.read': 'Read the question.', 'g.choose': 'Choose.' };
+    expect(playSlidesOf(DECLARED, (k) => pt[k] ?? null).map((s) => s.text)).toEqual(['Leia a pergunta.', 'Escolha.']);
+    expect(playSlidesOf(DECLARED, (k) => en[k] ?? null).map((s) => s.text), 'the text was frozen').toEqual(['Read the question.', 'Choose.']);
+    expect(typeof playSlidesOf(DECLARED, (k) => pt[k] ?? null)[0].figure, 'the figure did not travel with its slide').toBe('function');
+  });
+
+  it('🔴 [Right] a slide whose key the dictionary lacks is LEFT OUT — never shown as its key', () => {
+    const slides = playSlidesOf(DECLARED, (k) => (k === 'g.missing' ? null : 'x'));
+    expect(slides).toHaveLength(2);
+    expect(slides.map((s) => s.text), 'a key reached the slide show').not.toContain('g.missing');
   });
 });
 

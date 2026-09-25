@@ -7,7 +7,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
-import { setLocale } from '../app/js/core/i18n.ts';
 
 const ss = window.speechSynthesis;
 const originais = { getVoices: ss.getVoices, speak: ss.speak, cancel: ss.cancel };
@@ -35,7 +34,7 @@ function montar({ vozesDoNavegador, comPorta = true }) {
 }
 
 beforeEach(async () => {
-  await setLocale('pt');
+  // every case builds a fresh translator, born in pt: `core/i18n` holds no language to reset (ADR-0232 D3)
   faladas = []; portaChamada = 0;
   ss.speak = (u) => { faladas.push(u); };
   ss.cancel = () => {};

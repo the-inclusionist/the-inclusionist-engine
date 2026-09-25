@@ -15,6 +15,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 const PLATAFORMA = {
   up: { label: 'Up' }, down: { label: 'Down' }, left: { label: 'Left' }, right: { label: 'Right' },
@@ -63,7 +64,7 @@ beforeAll(async () => {
   jogadores = [{ ctrl: ESQUEMA }];
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-    downloadHeavy: false, preset: PLATAFORMA, setPhase: () => {}, players: jogadores,
+    downloadHeavy: false, ...keyed({ preset: PLATAFORMA }), setPhase: () => {}, players: jogadores,
     onCommand: (c) => recebidos.push(c),
     // 📌 AND NOTHING ABOUT CONTROLLERS: that is what this file measures.
   });

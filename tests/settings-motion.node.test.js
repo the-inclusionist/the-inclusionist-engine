@@ -6,7 +6,8 @@
 import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
-import { t } from '../app/js/core/i18n.js'; // RM_LABEL holds KEYS (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // RM_LABEL holds KEYS (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 // 🔴 A NAMED import of something a module does not export resolves to `undefined` under the transformer, and while no
 // case uses the name, nothing fails — measured on 2026-09-23, when this list still imported six names the module no
 // longer exported, with the suite GREEN. The same shape as a ledger key that stops matching any file: what is not read

@@ -15,15 +15,9 @@ globalThis.PIXI = PIXI;
 // any case runs; nothing imported above reads storage at import (ADR-0232), so nothing has read the origin's first.
 // 📌 This also retires the per-file cleanup of `incl_font_k`/`incl_lettercase` that stood here: a file's storage starts
 // empty, and each file has its own window, so no stored face or `--fonte-escala` survives into the next file.
-import { fileBackend, filePort } from './tests/fixtures/file-storage.js';
+import { fileBackend } from './tests/fixtures/file-storage.js';
 Object.defineProperty(window, 'localStorage', { value: fileBackend, configurable: true, writable: false });
 
-// The stored language is loaded as a composition root loads it (ADR-0178), from that same storage. The settings store is a
-// factory (ADR-0232 D4): `createGame` builds its own from the storage its host lends, and a case reads it as `engine.settings`.
-import { loadLocale, createTranslator } from './app/js/core/i18n.js';
-import { localeHostHooks } from './app/js/platform/locale-host.js';
-// 🔴 AND THE HOST TOO (ADR-0221 step 7g): since `core/i18n` stopped reaching `document`/`window`, the three things a PAGE
-// does when the language changes — `<html lang>`, re-translating the markup and telling the window — come in through
-// the port. This setup plays the composition root, and without this line a case that checks `<html lang>` measures a
-// page nobody told. That is exactly what happened: `tts.browser` went red at the moment of the cut, and it was right.
-loadLocale({ ...filePort, ...localeHostHooks(document, window, createTranslator().applyDom) });
+// 📌 NO LANGUAGE IS LOADED HERE ANY MORE: `core/i18n` holds no state (ADR-0232 D3, erratum of 2026-09-25). A root builds its
+// translator from the storage its host lends, and a case switches the language through its engine (`engine.setLocale`); a case
+// with no engine builds one over this file's storage and page (`pageTranslator()`, `tests/fixtures/page-locale.js`).

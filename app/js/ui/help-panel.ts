@@ -22,7 +22,7 @@
 // 📌 AND THIS IS THE MIGRATION `ui/settings-controls.ACT_LABEL` HAS BEEN WAITING FOR. That table holds ONE
 // game's words — `act.run`, `act.jump` — inside the engine, and its own header says it can only leave once
 // the help screen asks the GAME instead. This module is a help screen that asks the game.
-import { ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
+import { ACTIONS, type Action, type ActionWords } from '../core/actions.js';
 
 /** One line of the help table. `key` is `null` when this child's keyboard does not reach the position. */
 export interface HelpRow {
@@ -43,13 +43,13 @@ export interface HelpRow {
  * on-screen legend. A help screen ordered by whatever order the game happened to write its object in would
  * teach a different order from every other surface.
  *
- * @param preset  what this game declares — positions, words, hints.
+ * @param preset  this game's positions and their words, RESOLVED now in the page's language (`core/actions.wordsOf`).
  * @param keysOf  the codes bound to a position FOR THIS SEAT. `kbFor(seat)[action]`, so a child who remapped
  *                sees her own key. `null`/empty means the keyboard does not reach it.
  * @param keyName code → readable label (`ui/settings-controls.keyName`), injected so this half stays pure.
  */
 export function helpRows(
-  preset: ActionPreset | null | undefined,
+  preset: ActionWords | null | undefined,
   keysOf: (a: Action) => readonly string[] | null | undefined,
   keyName: (code: string) => string,
 ): HelpRow[] {
@@ -97,12 +97,30 @@ export interface HowToPlaySurface {
 
 /**
  * One «how to play» slide, declared by the cartridge (ADR-0195; issue #188): «O "Como jogar" é justamente algo a ser feito pelo
- * cartucho.» The text is resolved at every showing, so it follows the language; the figure is drawn by the game on the engine's
- * surface — art stays data the game draws, never an embedded picture — and may animate by the time it is given.
+ * cartucho.» Its text is a KEY of the game's dictionary, resolved by the root's translator at every showing, so it follows the
+ * language (ADR-0232 D3, erratum of 2026-09-25); the figure is drawn by the game on the engine's surface — art stays data the
+ * game draws, never an embedded picture — and may animate by the time it is given.
  */
 export interface HowToPlaySlide {
-  readonly text: () => string;
+  readonly textKey: string;
   readonly figure?: (surface: HowToPlaySurface) => void;
+}
+
+/** A «how to play» slide as it is SHOWN: its text resolved now (`playSlidesOf`), and its figure. */
+export interface PlaySlide {
+  readonly text: string;
+  readonly figure?: (surface: HowToPlaySurface) => void;
+}
+
+/**
+ * The cartridge's slides, their texts resolved NOW through `word` (`Translator.word`). A slide whose text the game's
+ * dictionaries lack is left out — never shown as its key — and `problems` names it (`ui/declared-words`).
+ */
+export function playSlidesOf(slides: readonly HowToPlaySlide[], word: (key: string) => string | null): PlaySlide[] {
+  return slides.flatMap((s) => {
+    const text = word(s.textKey);
+    return text ? [{ text, ...(s.figure ? { figure: s.figure } : {}) }] : [];
+  });
 }
 
 /** Why a `howToPlay` declaration is malformed; empty when well formed. Absent is well formed: the help shows the buttons alone. */
@@ -113,13 +131,13 @@ export function howToPlayProblems(slides: unknown): string[] {
   slides.forEach((s: Record<string, unknown> | null, i) => {
     const at = `howToPlay[${i}]`;
     if (!s || typeof s !== 'object') { out.push(`${at} must be a slide`); return; }
-    if (typeof s.text !== 'function') out.push(`${at}.text must be a function returning the slide's text, in the page's language`);
+    if (typeof s.textKey !== 'string' || !s.textKey.trim()) out.push(`${at}.textKey must name the slide's text by a key of the game's dictionary`);
     if (s.figure !== undefined && typeof s.figure !== 'function') out.push(`${at}.figure must be a function drawing on the surface it is given`);
   });
   return out;
 }
 
-const isFromGame = (s: HelpRow | HowToPlaySlide): s is HowToPlaySlide => typeof (s as HowToPlaySlide).text === 'function';
+const isFromGame = (s: HelpRow | PlaySlide): s is PlaySlide => typeof (s as PlaySlide).text === 'string';
 
 /** What the engine's frame loop gives an animated figure; injected, so the loop is the page's. */
 export interface FigureClock {
@@ -133,7 +151,7 @@ export interface FigureClock {
  * Draws the shown slide's figure, and keeps drawing it while the slide show is in the document and the same slide is shown.
  * Returns a stop. A figure that throws is a cartridge defect: it stops drawing and the text stays.
  */
-export function animateFigure(el: HTMLElement, slide: HowToPlaySlide, clock: FigureClock): () => void {
+export function animateFigure(el: HTMLElement, slide: Pick<PlaySlide, 'figure'>, clock: FigureClock): () => void {
   const screen = el.querySelector<HTMLCanvasElement>('.slide-figura');
   const ctx = screen?.getContext('2d');
   if (!screen || !ctx || !slide.figure) return () => {};
@@ -198,7 +216,7 @@ export function mountSlides(ctx: SlideCtx): HTMLElement {
  */
 export function showSlide(
   el: HTMLElement,
-  rows: readonly (HelpRow | HowToPlaySlide)[],
+  rows: readonly (HelpRow | PlaySlide)[],
   i: number,
   ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly title: string },
 ): { readonly index: number; readonly spoken: string } {
@@ -258,13 +276,13 @@ const joinParts = (parts: readonly (string | undefined)[]): string =>
  * A cartridge's «how to play» slide (ADR-0195): its text and, if it has one, its figure — no key cap, no word, and no action,
  * whatever the slide before it was.
  */
-function showPlaySlide(p: SlideParts, r: HowToPlaySlide): string {
+function showPlaySlide(p: SlideParts, r: PlaySlide): string {
   p.slide.setAttribute('data-kind', 'play');
   p.slide.removeAttribute('data-act');
   p.figure.hidden = !r.figure;
   p.keyCap.hidden = true;
   p.word.hidden = true;
-  const phrase = r.text();
+  const phrase = r.text;
   p.text.textContent = phrase;
   p.text.hidden = false;
   return joinParts([phrase]);

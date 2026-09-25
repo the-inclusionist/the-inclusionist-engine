@@ -10,6 +10,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let createGame;
 let page;
@@ -34,7 +35,7 @@ const NOWHERE = /the virtual pad has nowhere to mount/;
 
 const open = (extra = {}, host = {}) => {
   const root = createGame({
-    accommodations: SEM_ASSUNTO, declaration: declaration(), downloadHeavy: false, preset: PRESET,
+    accommodations: SEM_ASSUNTO, declaration: declaration(), downloadHeavy: false, ...keyed({ preset: PRESET }),
     host: { doc: document, win: window, ...host }, ...extra,
   });
   roots.push(root);

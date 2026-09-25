@@ -131,6 +131,7 @@ import { captionDuration } from '../core/caption-duration.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { announceItem } from '../ui/item-announcement.js';
 import { createGame, type Engine, type EngineHost, type VirtualCommand } from '../boot/create-game.js';
+import { QUIZ_DICTIONARIES } from './quiz-words.js';
 import type { GameDeclaration } from '../core/contract.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
@@ -290,12 +291,11 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
    */
   let listening = false;
   /**
-   * THE QUIZ'S WORDS, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
+   * THE QUIZ'S OWN SENTENCES, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
    *
-   * 📌 LATE-BOUND, because the words this quiz hands `createGame` — the «how to play» texts, the positions' names, the
-   * accommodations' labels — are asked for WHILE the engine is being built, before its handle exists: the boot checks that
-   * none is blank. Until then this answers the key itself, which is not blank and is never shown; every word a child
-   * reads is read later, through a getter, in the engine's language.
+   * 📌 LATE-BOUND because the handle exists only after `createGame` returns; nothing reads it before (the first draw waits on
+   * `localeReady`). The words the quiz DECLARES to `createGame` are not read through here: they are KEYS of its own
+   * dictionary (`quiz-words`), and the engine resolves them each time it draws them (ADR-0232 D3, erratum of 2026-09-25).
    */
   const translate: Translate = (key, params) => (motor ? motor.t(key, params) : key);
   /**
@@ -432,12 +432,10 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
     /*
-     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162): cima e baixo escolhem, a acção 2 confirma e a 3 volta — on the keyboard and a
-     * gamepad, and in the help screen. ⚠️ Since ADR-0166 they draw no on-screen pad: this quiz does not ask for one
-     * (`controleNaTela` absent), because its options are touched directly and its menu button opens the menus.
-     * 📌 GETTERS e não cadeias: o `preset` é lido a cada desenho, e uma palavra resolvida aqui ficaria no idioma de
-     * recuo — este boot corre antes de o idioma preferido chegar.
+     * THE WORDS THIS QUIZ DECLARES live in its own dictionary, one per language (ADR-0232 D3): every `…Key` below is a key of
+     * these, and a key they lack would be a line of `problems`, never a key on screen.
      */
+    dictionaries: QUIZ_DICTIONARIES,
     /*
      * HOW TO PLAY THIS QUIZ (ADR-0195): the cartridge tells it, the engine's help shows it before the buttons. The figures are drawn
      * here from shapes — a question bar and four options — and the second one moves the marked option down, which is the game.
@@ -445,21 +443,27 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
     onCommand: handleCommand,
     howToPlay: [
       {
-        text: () => translate('quiz.comoJogar.ler'),
+        textKey: 'quiz.comoJogar.ler',
         figure: ({ ctx, width, height }) => drawQuizFigure(ctx, width, height, -1),
       },
       {
-        text: () => translate('quiz.comoJogar.escolher'),
+        textKey: 'quiz.comoJogar.escolher',
         figure: ({ ctx, width, height, time }) => drawQuizFigure(ctx, width, height, Math.floor(time / 0.9) % 4),
       },
     ],
+    /*
+     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162): cima e baixo escolhem, a acção 2 confirma e a 3 volta — on the keyboard and a
+     * gamepad, and in the help screen. ⚠️ Since ADR-0166 they draw no on-screen pad: this quiz does not ask for one
+     * (`controleNaTela` absent), because its options are touched directly and its menu button opens the menus.
+     * 📌 KEYS, not words: the engine resolves them at every drawing, so a language change reaches them (ADR-0232 D3).
+     */
     preset: {
-      up: { get label() { return translate('quiz.pos.up'); } },
-      down: { get label() { return translate('quiz.pos.down'); } },
-      action2: { get label() { return translate('quiz.pos.confirm'); } },
-      action1: { get label() { return translate('quiz.pos.falar'); } },
-      action3: { get label() { return translate('quiz.pos.back'); } },
-      rightShoulder: { get label() { return translate('quiz.pos.sonar'); } },
+      up: { labelKey: 'quiz.pos.up' },
+      down: { labelKey: 'quiz.pos.down' },
+      action2: { labelKey: 'quiz.pos.confirm' },
+      action1: { labelKey: 'quiz.pos.falar' },
+      action3: { labelKey: 'quiz.pos.back' },
+      rightShoulder: { labelKey: 'quiz.pos.sonar' },
     },
     /*
      * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO (ADR-0153) — a resposta é obrigatória, e o arranque recusa sem ela.
@@ -468,16 +472,15 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
      * MATÉRIA — logo dicas, ritmo do texto, dificuldade das palavras e realce de palavras têm assunto aqui. Não há
      * personagem, câmara, peças, bengala, detecção, sustos nem janela de acerto: as outras doze são «não», escritas.
      *
-     * 📌 GETTERS, like the preset's: read before the engine exists they are keys (see `translate`), and read after it they are
-     * words in its language. No row shows them yet.
+     * 📌 KEYS, like the preset's: the engine resolves them when a row shows them. No row shows these yet.
      */
     accommodations: {
       cameraSway: false, easyMode: false, wheelchairMode: false, detectionLeniency: false, intensity: false,
-      hints: { get label() { return translate('quiz.acom.hints'); } },
+      hints: { labelKey: 'quiz.acom.hints' },
       reducedCharacterMotion: false, caneSpacing: false,
-      textPace: { get label() { return translate('quiz.acom.textPace'); } },
-      lexicalDifficulty: { get label() { return translate('quiz.acom.lexicalDifficulty'); } },
-      wordHighlight: { get label() { return translate('quiz.acom.wordHighlight'); } },
+      textPace: { labelKey: 'quiz.acom.textPace' },
+      lexicalDifficulty: { labelKey: 'quiz.acom.lexicalDifficulty' },
+      wordHighlight: { labelKey: 'quiz.acom.wordHighlight' },
       pieceSets: false, distinguishableSuits: false, timingWindow: false, aimAssist: false, repeatedInput: false,
       ownerColors: false, contrastOutlines: false,
     },

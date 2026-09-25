@@ -100,9 +100,10 @@ describe('a saúde do código só melhora', () => {
      */
     expect(isExempt('boot/create-game.ts', 'fanOut'), 'a raiz perdeu a isenção do fan-out, que é o trabalho dela').toBe(true);
     // ADR-0232 point 4: constructing the state everything else receives is the root's job, so it is exempt from
-    // `statefulEdges` too — and it is still MEASURED, so the wiring it does is visible.
+    // `statefulEdges` too — and it is still MEASURED, so the wiring it does is visible. 📌 Since D3's last step (erratum of
+    // 2026-09-25) no module is stateful, so the root's measure is ZERO and must still be a measure: a number, not absent.
     expect(isExempt('boot/create-game.ts', 'statefulEdges'), 'the root lost its statefulEdges exemption').toBe(true);
-    expect(arvore['boot/create-game.ts'].statefulEdges, 'the root stopped being measured on stateful edges').toBeGreaterThan(0);
+    expect(typeof arvore['boot/create-game.ts'].statefulEdges, 'the root stopped being measured on stateful edges').toBe('number');
     for (const m of ['codeLines', 'decisionNodes', 'maxDepth']) {
       expect(isExempt('boot/create-game.ts', m), `a raiz ficou isenta de ${m}, que é a dívida dela e não o trabalho`).toBe(false);
     }
@@ -184,6 +185,18 @@ describe('a saúde do código só melhora', () => {
       expect(m.statefulImports ?? [], `${mod}: statefulEdges and the listed imports disagree`).toHaveLength(m.statefulEdges);
       for (const t of m.statefulImports ?? []) expect(written, `${mod} imports ${t}, which is not written as stateful`).toContain(t);
     }
+  });
+
+  /*
+   * 🔴 ADR-0232'S END STATE, MEASURED: NO MODULE OUTSIDE THE ROOT HOLDS STATE OR REACHES A GLOBAL (D3's last step, erratum
+   * of 2026-09-25: `core/i18n`'s module-level `t`/`registerDict` left, and with them the last stateful module). A module that
+   * starts holding state again reddens here even if someone wrote it into the baseline, because the end state is the
+   * decision and not the file.
+   */
+  it('🔴 [Right] no module outside the root is stateful — ADR-0232\'s end state (D3 and D4)', () => {
+    const outside = statefulSet(arvore).filter((m) => m !== 'boot/create-game.ts');
+    expect(outside, 'a module outside the composition root holds state again').toEqual([]);
+    expect(base.stateful ?? [], 'the baseline writes a stateful module again').toEqual([]);
   });
 
   /*

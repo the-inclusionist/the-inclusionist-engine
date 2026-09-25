@@ -262,28 +262,20 @@ describe('ui/hud · waitBadgeHtml', () => {
      * and the key's sentence is the SAME a literal in the module would carry — so «contém Jogador 1» does not separate
      * «lê o dicionário» from «tem um literal em português». It is the trap of a gate covered only by golden values.
      *
-     * 🎯 What separates the two is REPLACING the entry: a literal does not change, a key does. `registerDict` writes to
-     * `EXTRA`, which the resolver consults BEFORE the engine's dictionary (that is how a game overrides any key,
-     * ADR-0083).
-     *
-     * ⚠️ AND IT RESTORES AT THE END, because `EXTRA` is module state and there is no unregistering: without the restore,
-     * the override would leak into every case of this file that ran after — the same class of order contamination
-     * already caught in the pause card's language check.
+     * 🎯 What separates the two is REPLACING the entry: a literal does not change, a key does. A translator's
+     * `registerDict` writes the game's dictionary, which the resolver consults BEFORE the engine's (that is how a game
+     * overrides any key, ADR-0083) — and it is a translator of this case's own, so nothing leaks to the others.
      */
-    const { registerDict } = await import('../app/js/core/i18n.js');
+    const { createTranslator: ownTranslator } = await import('../app/js/core/i18n.js');
     const pt = (await import('../app/js/i18n/pt.js')).default;
-    const original = pt['hud.waitBadge'];
-    expect(original, 'a chave saiu do dicionário pt; o caso mediria o nada').toBeTruthy();
+    expect(pt['hud.waitBadge'], 'a chave saiu do dicionário pt; o caso mediria o nada').toBeTruthy();
 
-    try {
-      registerDict('pt', { 'hud.waitBadge': 'ENTRADA TROCADA {n}' });
-      const html = waitBadgeHtml(translate, 2);
-      expect(html, 'o selo ignorou o dicionário — o texto está colado no módulo').toContain('ENTRADA TROCADA 3');
-      expect(html, 'o literal antigo continua lá').not.toContain('aperte um botão do SEU teclado');
-    } finally {
-      registerDict('pt', { 'hud.waitBadge': original });
-    }
-    expect(waitBadgeHtml(translate, 0), 'a reposição falhou e a sobreposição vaza para os outros casos').toContain('Jogador 1:');
+    const overridden = ownTranslator();
+    overridden.registerDict('pt', { 'hud.waitBadge': 'ENTRADA TROCADA {n}' });
+    const html = waitBadgeHtml(overridden.t, 2);
+    expect(html, 'o selo ignorou o dicionário — o texto está colado no módulo').toContain('ENTRADA TROCADA 3');
+    expect(html, 'o literal antigo continua lá').not.toContain('aperte um botão do SEU teclado');
+    expect(waitBadgeHtml(translate, 0), 'the override leaked into another translator').toContain('Jogador 1:');
   });
 });
 

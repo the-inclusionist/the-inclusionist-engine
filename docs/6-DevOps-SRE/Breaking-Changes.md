@@ -3870,6 +3870,53 @@ PIXI application), so where the canvas sits inside the declared world the sonar 
 note on the bump. `game-platformer` builds its own `createAudioSonar` (`app/js/main.ts:747`) without `screenText`, so its
 sonar keeps the navigation sentence, unchanged; no game builds `createVirtualController`.
 
+## DN · ADR-0232 D3, the last step: a game declares the KEYS of its words, and `core/i18n` holds no state (issue #207)
+
+**Who is affected:** every game that calls `createGame` with a `preset`, `accommodations` that name a subject, `gameOptions`,
+`howToPlay` or `hud` — each word it declares becomes a KEY of its own dictionary — and every game that imports
+`core/i18n`'s module-level functions (`t`, `registerDict`, `setLocale`, `getLocale`, `initI18n`, `localeReady`,
+`loadLocale`, the default `i18n` object).
+
+📌 **Why:** 📏 measured, a preset built with `t` in Portuguese still read «Acima» after `setLocale('en')`: a word handed
+over at boot stays in the boot language. The erratum of 2026-09-25 to ADR-0232 settled it by two decisions the Dev had
+already made — the game asks and never needs to know how the engine does it (ADR-0216), and changing the language changes
+everything at once (ADR-0225). A KEY meets both by construction: the root's translator resolves it each time the engine
+draws or speaks it. Getters were rejected (one forgotten wrap freezes a word silently); a translator the game builds was
+rejected (two translators in one page may disagree on the language). With the words keyed, nothing needs the page-wide
+dictionary, and `core/i18n`'s module-level state leaves: the language, the dictionaries loaded, the listeners and the port
+now live in the translator a root builds, and no stateful module remains outside the composition root.
+
+| old | new | migration |
+|---|---|---|
+| `core/actions.js` `ActionPreset` = `{ [position]: { label, short?, hint? } }` (words) | `{ [position]: ActionKeys }`, `ActionKeys` = `{ labelKey, shortKey?, hintKey? }` — keys of `CreateGameOptions.dictionaries`. `ActionWord` stays as the RESOLVED word, and the new `ActionWords` is a preset in words; `labellerFrom` and `shortLabellerFrom` take `ActionWords`; new `wordsOf(preset, word)` resolves a preset now | `preset: { action2: { labelKey: 'game.jump', hintKey: 'game.jump.hint' } }`, and the words into `dictionaries` |
+| `core/accommodations.js` `AccommodationAnswers` = `{ [accommodation]: AccommodationWord \| false }` | `{ [accommodation]: AccommodationKeys \| false }`, `AccommodationKeys` = `{ labelKey, shortKey?, hintKey? }`; `subjectWord(answers, k)` → `subjectWord(answers, k, word)`, which resolves through `word` and returns `null` for a key the dictionary lacks. A word under `label` is refused at boot and at `mount` | `hints: { labelKey: 'game.hints' }` |
+| `ui/game-options.js` `GameOption.label`, `.hint`, `GameOptionValue.label` | `labelKey`, `hintKey`, `GameOptionValue.labelKey`; `GameOptionsDrawCtx` gains a REQUIRED `word` (`Translator.word`). A row whose name or any position's name the dictionary lacks is not drawn. A word under `label` is refused at boot and at `mount` | rename the three fields and write keys |
+| `ui/help-panel.js` `HowToPlaySlide.text: () => string` | `textKey: string`; `showSlide`/`animateFigure` take the new `PlaySlide` (`{ text, figure? }`, the slide as shown) and `helpRows` takes `ActionWords`; new `playSlidesOf(slides, word)`. A slide whose text the dictionary lacks is left out. A `text` function is refused at boot and at `mount` | `howToPlay: [{ textKey: 'game.howTo.read', figure }]` |
+| `ui/hud-bands.js` `HudNumber.name: Speakable` | `nameKey: string`; `mountHudBands(t, …)` → `mountHudBands(translator, …)` (`{ t, word }`). A name the dictionary lacks hides its line. A `name` is refused at boot and at `mount` | `hud: [{ band: 'identity', nameKey: 'game.points', value }]` |
+| `core/i18n.js` `t`, `registerDict`, `setLocale`, `getLocale`, `initI18n`, `localeReady`, `loadLocale`, the default `i18n` object | removed: `core/i18n` holds no state. `createTranslator(port?)` builds a translator that holds the language (`locale()`, `setLocale`, `init(root)`, `ready()`, `onChange`) and the game's dictionary (`registerDict`, `dictionaryGaps`, new `word(key)` and `declares(key)`); `bcp47(code)` stays, with the code REQUIRED (a translator's `bcp47()` defaults to its language); the default object's `availableLocales()` becomes a named export. `LocaleDict`, the `LocalePort` hooks and `Translate` stay | a game's words: `CreateGameOptions.dictionaries`; its own sentences: `engine.t`; the language: `engine.locale()` and `engine.setLocale(code)` (new); the boot language: `engine.localeReady()` |
+| `core/i18n.js` `LocalePort` · `platform/locale-host.js` `LocaleHostHooks` | `LocalePort` gains an optional `follow` and `LocaleHostHooks` a required `follow`: the page's `i18n:change` heard on the root's scoped window, so every root on the page follows a switch another root made (ADR-0232 D3 point 3) | nothing, if you spread `localeHostHooks(…)` into the port |
+| `window.__i18n` | the root's `Translator`, not the module's object | read `locale()` instead of `getLocale()` |
+
+⚠️ **What is never shown, and where it goes instead:** a declared key the game's dictionaries lack in EVERY language is a
+line of `problems` — the field by name, what the child loses, and the fix («add it to CreateGameOptions.dictionaries, in
+pt, en and es») — and what needed it is left out, never drawn as the key. A key given in one language and not another is
+still the `dictionaryGaps` line, and falls back to the game's pt. A word handed over in the old shape reaches `problems` as
+«is not a key». The declaration's `Speakable`s (`nameAt`, `objectiveOf`) do not change: they are returned by functions the
+engine calls at every reading, and a name can be content that is no dictionary word (pillar 3).
+
+📌 **Additive in the same change:** `Engine.locale` and `Engine.setLocale`; `CartridgeHooks.dictionaries` — a cartridge
+`mount()` swaps in may bring its words, ADDED to the root's dictionary; `ui/declared-words.missingDeclaredKeys` (the rule
+behind the `problems` line); the demo quiz's declared words moved from the engine's dictionaries to its own
+`consumer-quiz/quiz-words.ts` (twelve `quiz.pos.*`, `quiz.comoJogar.*`, `quiz.acom.*` keys left `app/js/i18n/*.ts`).
+
+📏 **Measured in the six games, read-only, as information:** `game-2048`, `game-platformer`, `game-soccer` and `game-pinball`
+(`app/js/standalone.ts`) register their dictionaries with the module-level `registerDict`, and `game-2048`,
+`game-platformer`, `game-soccer` and `game-chess` import the module-level `t`; `game-pinball` also imports `getLocale` and
+`initI18n`; `game-2048`, `game-chess` and
+`game-whackwhack` build their preset by calling a translator at boot (`criarPreset(t)`, `actionPreset(…)`), which is the
+measured defect. Each moves its dictionaries to `CreateGameOptions.dictionaries` and hands the keys its preset already
+names instead of their words.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

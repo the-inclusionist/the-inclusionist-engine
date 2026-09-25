@@ -19,6 +19,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import css from '../app/css/style.css?raw';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 const esperar = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 const cruza = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
@@ -51,8 +52,9 @@ const BARRAS = () => [
     segmentos: ['vermelho', 'verde', 'azul', 'azul', 'vermelho', 'azul', 'azul', 'azul', 'azul', 'azul', 'verde'], cor: 'roxa' }) },
   { band: 'learning', name: nome('Leitura'), value: () => ({ segmentos: ['azul', 'vermelho', 'verde'], cor: 'nenhuma' }) },
 ];
+// the numbers' names are KEYS of the game's dictionary since ADR-0232 D3: `keyed` writes the words above under keys
 const abrir = (extra = {}) => createGame({
-  accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...extra,
+  accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...keyed(extra),
 });
 const caixa = (sel) => document.querySelector(sel).getBoundingClientRect();
 const variavel = (nomeVar) => parseFloat(getComputedStyle(document.getElementById('game-region')).getPropertyValue(nomeVar));
@@ -215,7 +217,7 @@ describe('the HUD the engine mounts (issue #162), in one row at the bottom (ADR-
     expect(document.querySelectorAll('.hud-faixa').length).toBe(0);
     expect(document.querySelectorAll('.hud-row .session-clock').length).toBe(1);
     const semHud = variavel('--hud-row-h');
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [...HUD(), { band: 'power', name: nome('Escudo'), value: () => 2 }, { band: 'power', name: nome('Ímã'), value: () => 1 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ hud: [...HUD(), { band: 'power', name: nome('Escudo'), value: () => 2 }, { band: 'power', name: nome('Ímã'), value: () => 1 }] }) });
     await esperar(80);
     expect(variavel('--hud-row-h'), 'mounting a cartridge with a tall score cell did not grow the row\'s room').toBeGreaterThan(semHud);
   });
@@ -230,7 +232,7 @@ describe('the HUD the engine mounts (issue #162), in one row at the bottom (ADR-
 
   it('🔴 [Right] mount replaces the numbers and unmount takes them away', async () => {
     motor = abrir({ hud: HUD() });
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome('bolas'), value: () => 2 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, ...keyed({ hud: [{ band: 'mission', name: nome('bolas'), value: () => 2 }] }) });
     await esperar(80);
     expect(document.querySelectorAll('.hud-numero').length).toBe(1);
     expect(document.querySelector('.hud-esquerda').textContent).toBe('bolas: 2');
@@ -382,8 +384,38 @@ describe('the HUD the engine mounts (issue #162), in one row at the bottom (ADR-
     expect(() => abrir({ hud: [{ band: 'clock', name: nome('tempo'), value: () => 1 }] })).toThrow(/hud\[0\]\.band/);
     expect(() => abrir({ hud: [{ band: 'round', name: nome('moedas'), value: () => 1 }] }), 'the first cut\'s band name, never published').toThrow(/hud\[0\]\.band/);
     motor = abrir();
-    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome(''), value: () => 1 }] }))
-      .toThrow(/hud\[0\]\.name/);
+    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [{ band: 'mission', nameKey: ' ', value: () => 1 }] }))
+      .toThrow(/hud\[0\]\.nameKey/);
+    // 🔴 the OLD shape — a Speakable in the boot language — is refused and says KEY (ADR-0232 D3)
+    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome('bolas'), value: () => 1 }] }))
+      .toThrow(/hud\[0\]\.nameKey must name .*key of the game's dictionary/);
+  });
+
+  it('🔴 [Right] the name follows the language: it is resolved at each refresh, and a key no dictionary has hides its line', async () => {
+    motor = createGame({
+      accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
+      hud: [
+        { band: 'mission', nameKey: 'g.balls', value: () => 2 },
+        { band: 'mission', nameKey: 'g.nowhere', value: () => 1 },
+        { band: 'identity', nameKey: 'g.points', value: () => pontos },
+      ],
+      dictionaries: {
+        pt: { 'g.points': 'Pontos', 'g.balls': 'bolas' }, en: { 'g.points': 'Points', 'g.balls': 'balls' }, es: { 'g.points': 'Puntos', 'g.balls': 'bolas' },
+      },
+    });
+    await esperar(80);
+    const linhas = () => [...document.querySelectorAll('.hud-esquerda .hud-numero')];
+    const pontosP = () => document.querySelector('.hud-points .hud-numero');
+    expect(linhas()[0].textContent).toBe('bolas: 2');
+    expect(pontosP().getAttribute('aria-label')).toBe('12 Pontos');
+    expect(linhas()[1].hidden, 'a name no dictionary has was shown').toBe(true);
+    expect(document.querySelector('.hud-esquerda').textContent, 'a key reached the HUD').not.toContain('g.nowhere');
+    await motor.setLocale('en');
+    await esperar(80);
+    expect(linhas()[0].textContent, 'the name stayed in the boot language').toBe('balls: 2');
+    expect(pontosP().getAttribute('aria-label'), 'the score\'s name stayed in the boot language').toBe('12 Points');
+    expect(motor.problems.join(' | ')).toMatch(/hud\[1\]\.nameKey «g\.nowhere» is in none of this game's dictionaries/);
+    await motor.setLocale('pt');
   });
 });
 

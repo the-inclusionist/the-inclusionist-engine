@@ -7,6 +7,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let motor;
 const declaracao = () => ({
@@ -55,7 +56,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: opcoes() });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], ...keyed({ gameOptions: opcoes() }) });
 });
 
 describe('the game options panel', () => {
@@ -133,7 +134,7 @@ describe('the game options panel', () => {
   });
 
   it('🔴 [Right] a mounted cartridge with other options gets ITS rows', () => {
-    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'board', kind: 'switch', label: 'Tabuleiro grande', read: () => false, write: () => {} }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], ...keyed({ gameOptions: [{ id: 'board', kind: 'switch', label: 'Tabuleiro grande', read: () => false, write: () => {} }] }) });
     abrirOpcoesDoJogo();
     const rotulos = [...document.querySelectorAll('#game-options-list .ctrl-row strong')].map((s) => s.textContent);
     expect(rotulos).toEqual(['Tabuleiro grande']);
@@ -142,7 +143,7 @@ describe('the game options panel', () => {
 
   it('🔴 [Right] malformed options refuse the boot and the mount, naming the part', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'x', kind: 'switch', label: 'X', read: () => true }] }))
+    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'x', kind: 'switch', labelKey: 'g.x', read: () => true }] }))
       .toThrow(/gameOptions\[0\]\.write/);
     expect(() => createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: 'difficulty' }))
       .toThrow(/gameOptions must be a list/);

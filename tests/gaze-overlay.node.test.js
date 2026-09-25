@@ -6,7 +6,8 @@
 import { describe, it, expect } from 'vitest';
 import { whatRegionShows, gazeFontPx, FACE_BUTTON, SHOULDER, LUCIDE_ARROWS, GAZE_REGIONS } from '../app/js/ui/gaze-overlay.js';
 import { GAZE_GROUPS, CANCEL } from '../app/js/input/gaze-cycle.js';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 
 const ZONES = ['up', 'right', 'down', 'left'];
 const view = (o) => ({ zone: null, armed: false, preparing: false, preview: null, restReady: true, ...o });

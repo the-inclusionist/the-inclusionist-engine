@@ -96,7 +96,10 @@ export const GAME_KEYED = [
 
 /* ===================== THE PRESET: WHERE A GAME'S WORDS LIVE ===================== */
 
-/** What the child reads and hears for an accommodation: the name, and the sentence that explains it. */
+/**
+ * What the child reads and hears for an accommodation: the name, and the sentence that explains it — RESOLVED, in the page's
+ * language. A cartridge's ANSWER declares keys (`AccommodationKeys`), and `subjectWord` resolves them at every drawing.
+ */
 export interface AccommodationWord {
   /** «Wheelchair mode», «Board pieces». NEVER `wheelchairMode` — an id that reaches a person is a defect. */
   readonly label: string;
@@ -180,8 +183,22 @@ function isWord(v: unknown): boolean {
 export type GameKeyedAccommodation = (typeof GAME_KEYED)[number];
 
 /**
- * THE CARTRIDGE'S ANSWER, for every GAME_KEYED accommodation: its WORD when the accommodation has a subject in this
- * game, or `false` when it has none.
+ * What a cartridge DECLARES for an accommodation it has a subject for: the KEYS of its words in its own dictionary
+ * (`CreateGameOptions.dictionaries`). Keys and not words, so the row follows a language change (ADR-0232 D3, erratum of
+ * 2026-09-25; the rule and its measured defect are written on `core/actions.ActionKeys`).
+ */
+export interface AccommodationKeys {
+  /** The key of the name: «Wheelchair mode», «Board pieces». */
+  readonly labelKey: string;
+  /** The key of the SHORT form. Falls back to the name when absent. */
+  readonly shortKey?: string;
+  /** The key of the sentence the menu row explains itself with, in the footer (`CLAUDE.md` §4). */
+  readonly hintKey?: string;
+}
+
+/**
+ * THE CARTRIDGE'S ANSWER, for every GAME_KEYED accommodation: the KEYS of its word when the accommodation has a subject in
+ * this game, or `false` when it has none.
  *
  * 🔴 COMPLETE, NOT PARTIAL — and that is the difference from `AccommodationPreset`, and the decision. The Dev:
  * «Gênero não precisa responder todas as acomodações, mas sim o cartucho, obrigatoriamente.» A partial map lets
@@ -192,7 +209,7 @@ export type GameKeyedAccommodation = (typeof GAME_KEYED)[number];
  * always and CONTRACT_KEYED ones are derived from the contract, so neither is asked here — asking twice would let
  * the two answers disagree.
  */
-export type AccommodationAnswers = Readonly<Record<GameKeyedAccommodation, AccommodationWord | false>>;
+export type AccommodationAnswers = Readonly<Record<GameKeyedAccommodation, AccommodationKeys | false>>;
 
 /** Is it one of the accommodations the cartridge must answer? */
 export function isGameKeyed(x: unknown): x is GameKeyedAccommodation {
@@ -208,7 +225,7 @@ export function isGameKeyed(x: unknown): x is GameKeyedAccommodation {
  */
 export function accommodationAnswersProblems(a: unknown): string[] {
   if (a === null || a === undefined) {
-    return ['accommodations: missing - the cartridge must answer every game-keyed accommodation (ADR-0153): its word, or false'];
+    return ['accommodations: missing - the cartridge must answer every game-keyed accommodation (ADR-0153): the keys of its word, or false'];
   }
   if (!isKeyed(a)) return [NOT_KEYED];
   const unanswered = GAME_KEYED.map((k) => answerProblem(a, k)).filter((p): p is string => p !== null);
@@ -218,20 +235,39 @@ export function accommodationAnswersProblems(a: unknown): string[] {
   return [...unanswered, ...strangers];
 }
 
-/** What is wrong with the cartridge's answer to ONE accommodation, or `null`: it must be written, and be `false` or a word. */
+/** What is wrong with the cartridge's answer to ONE accommodation, or `null`: it must be written, and be `false` or keys. */
 function answerProblem(answers: Record<string, unknown>, k: GameKeyedAccommodation): string | null {
-  if (!(k in answers)) return `accommodations: ${k} is not answered - write its word if it has a subject in this game, or false`;
+  if (!(k in answers)) return `accommodations: ${k} is not answered - write the keys of its word if it has a subject in this game, or false`;
   const v = answers[k];
-  return v === false || isWord(v) ? null : `accommodations: ${k} must be false or a word with a non-empty label`;
+  return v === false || isDeclared(v) ? null : `accommodations: ${k} must be false or { labelKey } naming a key of the game's dictionary`;
+}
+
+/** DECLARED KEYS: an object whose `labelKey` is text and not blank, and whose optional keys are text when present. */
+function isDeclared(v: unknown): boolean {
+  if (!v || typeof v !== 'object') return false;
+  const { labelKey, shortKey, hintKey } = v as Record<string, unknown>;
+  const optionalKey = (k: unknown): boolean => k === undefined || typeof k === 'string';
+  return typeof labelKey === 'string' && labelKey.trim() !== '' && optionalKey(shortKey) && optionalKey(hintKey);
 }
 
 /**
- * Does this accommodation have a subject in this game? The question a panel asks before mounting a row.
+ * Does this accommodation have a subject in this game — and what is it called NOW? The question a panel asks before
+ * mounting a row, at every drawing.
  *
- * 📌 It returns the WORD, or `null` — never the id, never `true`: a row that mounts must have a name to show, and
- * «has a subject» without a word is the `action2` defect one level up.
+ * 📌 It returns the WORD, resolved through `word` (the root's translator, ADR-0232 D3), or `null` — never the id, never the
+ * key, never `true`: a row that mounts must have a name to show, and «has a subject» without a word is the `action2` defect
+ * one level up. A key the game's dictionaries lack is `null` here and a line of `problems` (`ui/declared-words`).
  */
-export function subjectWord(answers: AccommodationAnswers, k: GameKeyedAccommodation): AccommodationWord | null {
+export function subjectWord(
+  answers: AccommodationAnswers,
+  k: GameKeyedAccommodation,
+  word: (key: string) => string | null,
+): AccommodationWord | null {
   const v = answers[k];
-  return v && v.label.trim() ? v : null;
+  if (!v) return null;
+  const label = word(v.labelKey);
+  if (!label || !label.trim()) return null;
+  const short = v.shortKey ? word(v.shortKey) : null;
+  const hint = v.hintKey ? word(v.hintKey) : null;
+  return { label, ...(short ? { short } : {}), ...(hint ? { hint } : {}) };
 }

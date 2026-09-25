@@ -10,7 +10,6 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
-import { setLocale } from '../app/js/core/i18n.ts';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 const tom = (n = 24000) => Float32Array.from({ length: n }, (_, i) => Math.sin(i / 8) * 0.4);
@@ -79,7 +78,7 @@ afterAll(async () => {
   window.speechSynthesis.getVoices = getVoicesOriginal;
   HTMLMediaElement.prototype.play = playOriginal;
   if (vozGuardada === null) localStorage.removeItem('incl_tts_voz'); else localStorage.setItem('incl_tts_voz', vozGuardada);
-  await setLocale('pt');
+  localStorage.removeItem('incl_lang');
 });
 
 describe('the voice list with the Kokoro port', () => {
@@ -134,11 +133,11 @@ describe('what the start fetches (ADR-0198 §5)', () => {
       const { createGame } = await import('../app/js/boot/create-game.js');
       const { heavyAtBoot, HEAVY_FILES } = await import('../app/js/platform/heavy.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
-      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
       // ⚠️ The command models are asked for WITHOUT the game declaring anything (issue #184), one per language of the page
       // (ADR-0225 erratum), so the expected list is that question with the three languages NAMED — a number written here by hand
       // would have to be rewritten every time the catalogue grows.
-      const esperados = heavyAtBoot({ kokoro: false, commands: [bcp47(), 'pt', 'en', 'es'] }).filter((id) => HEAVY_FILES.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
+      const esperados = heavyAtBoot({ kokoro: false, commands: [bcp47(motor.locale()), 'pt', 'en', 'es'] }).filter((id) => HEAVY_FILES.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
       for (let i = 0; i < 400 && pedidos.filter((u) => u.includes('/heavy/')).length < esperados; i++) await new Promise((r) => setTimeout(r, 25));
       const daEntrega = pedidos.filter((u) => u.includes('/heavy/'));
       expect(daEntrega.length, 'the start did not ask for the catalogue').toBe(esperados);
@@ -163,7 +162,7 @@ describe('what the start fetches (ADR-0198 §5)', () => {
       const { createGame } = await import('../app/js/boot/create-game.js');
       const { HEAVY_FILES, deliveryPath } = await import('../app/js/platform/heavy.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
-      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
       const modelo = (lingua) => deliveryPath(HEAVY_FILES.find((p) => p.id === `commands:model:${lingua}`).url);
       const pediu = (lingua) => pedidos.some((u) => u.endsWith(modelo(lingua)));
       for (let i = 0; i < 400 && !['pt', 'en', 'es'].every(pediu); i++) await new Promise((r) => setTimeout(r, 25));
@@ -171,7 +170,7 @@ describe('what the start fetches (ADR-0198 §5)', () => {
         expect(pediu(lingua), `the start did not ask for the ${lingua} command model: a switch to ${lingua} would find none kept`).toBe(true);
       }
       const ordem = pedidos.filter((u) => /\/vosk-models\//.test(u));
-      const doArranque = bcp47().split('-')[0];
+      const doArranque = bcp47(motor.locale()).split('-')[0];
       expect(ordem[0]?.endsWith(modelo(doArranque)), `the child's own model (${doArranque}) waited behind another language's: ${ordem[0]}`).toBe(true);
       expect(ordem, 'a command model was asked for twice').toHaveLength(3);
     } finally {
@@ -202,7 +201,7 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
   });
 
   it('🔴 [Right] in English: a heart on Heart and Bella only, and they come first', async () => {
-    await setLocale('en');
+    await motor.setLocale('en');
     document.querySelector('#audio .overlay__back')?.click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]')?.click();
     const r = rotulos();
@@ -233,7 +232,8 @@ describe('the root\'s Kokoro loader reads the delivery with the HOST\'s fetch an
         return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(t) : v;
       },
     });
-    await setLocale('pt'); // the block above leaves the page in English, where `pf_dora` is not a voice of the language
+    // the block above KEPT English in this file's storage, where `pf_dora` is not a voice of the language: this root boots in pt
+    localStorage.setItem('incl_lang', 'pt');
     document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     const { createGame } = await import('../app/js/boot/create-game.js');

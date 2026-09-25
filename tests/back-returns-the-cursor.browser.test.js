@@ -13,6 +13,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
 
 let motor;
 const declaracao = () => ({
@@ -51,7 +52,8 @@ beforeAll(async () => {
   document.body.appendChild(raiz);
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
-    preset: { action1: { label: 'Confirm' }, action2: { label: 'Back' } },
+    // the game's words are KEYS of its dictionary (ADR-0232 D3): `keyed` writes these under keys
+    ...keyed({ preset: { action1: { label: 'Confirm' }, action2: { label: 'Back' } } }),
   });
 });
 beforeEach(() => { closeAll(); });

@@ -5,7 +5,8 @@
 //
 // `numPlayers`/`players` come from the file's local round double; the rest of the ctx is fake (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { initShell } from '../app/js/ui/shell.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)

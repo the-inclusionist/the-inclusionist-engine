@@ -12,7 +12,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createVoiceSettings } from '../app/js/ui/voice-settings.js';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 import { createSettingsStore } from '../app/js/core/state.js';
 import { filePort } from './fixtures/file-storage.js';
 import { createTranslator } from '../app/js/core/i18n.js';

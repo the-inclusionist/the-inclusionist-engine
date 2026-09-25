@@ -30,7 +30,8 @@ import { describe, it, expect } from 'vitest';
 import { PM_VISIBLE_ITEMS, rootThatActs } from '../app/js/ui/pause-icons.js';
 import { screenPauseMarkup } from '../app/js/ui/pause-markup.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
-import { t } from '../app/js/core/i18n.js';
+import { createTranslator as translatorOfThisFile } from '../app/js/core/i18n.js';
+const { t } = translatorOfThisFile(); // pt: `core/i18n` holds no state (ADR-0232 D3)
 
 const SEM_DIN = () => null;
 const markup = () => screenPauseMarkup({

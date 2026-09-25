@@ -12,9 +12,9 @@
 // because the reflection skipped the `soon` ones on a premise — same string — that stopped being true when the ENGINE
 // started mounting the bar (ADR-0106 step 2).
 //
-// 📌 THIS FILE STANDS ALONE AND IS NOT A CASE IN `boot-create-game.browser`, and the reason is MODULE state: `core/i18n`
-// keeps `locale`/`dict` at the top of the file, and changing the language would leak into every other case of the file
-// that did it. Here the module registry is born clean.
+// 📌 THIS FILE STANDS ALONE AND IS NOT A CASE IN `boot-create-game.browser`: the `en` chunk must be COLD for the gap to
+// exist, and a file where an earlier case loaded it would pass with the fix undone. (`core/i18n` holds no state since
+// ADR-0232 D3's last step; the module registry is what keeps the chunk cold.)
 //
 // ⚠️ AND IT EXERCISES THE BOOT, not a change at run time: the smaller claim, which has only one answer — the interface is
 // not built before the language is ready.
@@ -67,10 +67,9 @@ function palco() {
 describe('a barra da primeira tela fala o idioma do arranque', () => {
   it('🔴 [Zero] com `en` guardado, NENHUM dos oito rótulos fica no idioma de recuo', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = palco();
 
-    createGame({ accommodations: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
       downloadHeavy: false,
@@ -82,8 +81,8 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
 
     // ⚠️ THE `await` IS THE HALF THAT WAS MISSING IN THE CODE, which is why it is here and not in a `beforeEach`: the
     // defect lives exactly in the interval between mounting and the dictionary arriving.
-    await localeReady();
-    expect(getLocale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
+    await motor.localeReady();
+    expect(motor.locale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
 
     const botoes = [...raiz.querySelectorAll('#title-icons .pi-btn')];
     expect(botoes.length, 'a barra não montou').toBeGreaterThan(0);

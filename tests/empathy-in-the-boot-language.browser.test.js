@@ -19,7 +19,6 @@ afterAll(() => { if (anterior === null) localStorage.removeItem('incl_lang'); el
 describe('the empathy panel speaks the boot language', () => {
   it('🔴 [Zero] with `en` stored, the hearing-loss row opens in English', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
@@ -34,8 +33,8 @@ describe('the empathy panel speaks the boot language', () => {
       host: { doc: document, win: window },
       downloadHeavy: false,
     });
-    await localeReady();
-    expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
+    await motor.localeReady();
+    expect(motor.locale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
     motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
     const linha = document.getElementById('opt-hearing').closest('.ctrl-row');

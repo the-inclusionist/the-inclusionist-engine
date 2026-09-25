@@ -66,9 +66,9 @@ describe('o veredito: a fronteira passa ou não passa', () => {
   });
 
   it('[Interface] o idioma é ligado com o documento do HOSPEDEIRO, não com o global', () => {
-    // Finding 15, and why it is a case and not a note: `initI18n()` reached the global `document` underneath whoever
+    // Finding 15, and why it is a case and not a note: the language's boot reached the global `document` underneath whoever
     // called it. In a browser it makes no difference, which is why it survived so long.
-    expect(CODIGO).toMatch(/initI18n\(doc\)/);
+    expect(CODIGO).toMatch(/translator\.init\(doc\)/);
     // 🔴 THIS CASE WAS ONCE DEAD AND NOBODY KNEW. The regex had an invisible CONTROL character in the middle —
     // `/docu<VT>ment/` — injected by an edit through PowerShell, where the backtick is an escape and `` `v `` is a vertical
     // tab. It could never match `document`, so the case always passed, for the worst reason possible: it looked like it
@@ -347,7 +347,9 @@ describe('createGame em execução', () => {
       uses: { neuralVoice: true },
       // ⚠️ The `preset` is here for the same reason: the help is mounted by the engine (ADR-0147 §4) and, without the
       // game's words, it accuses — rightly. Without this line the case would stop measuring what it says it measures.
-      preset: { action2: { label: 'Confirmar' } },
+      // (its word is a KEY of the game's dictionary, in the three languages: ADR-0232 D3)
+      preset: { action2: { labelKey: 'game.confirm' } },
+      dictionaries: { pt: { 'game.confirm': 'Confirmar' }, en: { 'game.confirm': 'Confirm' }, es: { 'game.confirm': 'Confirmar' } },
     });
     // The filter host was not supplied in this case, and it is the ONLY gap that must remain.
     expect(motor.problems).toHaveLength(1);
@@ -943,11 +945,11 @@ describe('createGame em execução', () => {
     try {
       const { createGame } = await import('../app/js/boot/create-game.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
-      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { reading: true } });
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { reading: true } });
       const leitura = pedidos[0].filter((id) => id.startsWith('reading:'));
       expect(leitura.length, 'o jogo declarou que escuta e nenhum modelo de leitura desce').toBeGreaterThan(0);
       const linguas = new Set(leitura.map((id) => id.split(':')[1]));
-      expect([...linguas], 'desceu mais de uma língua, ou a língua errada').toEqual([bcp47().split('-')[0].toLowerCase()]);
+      expect([...linguas], 'desceu mais de uma língua, ou a língua errada').toEqual([bcp47(motor.locale()).split('-')[0].toLowerCase()]);
     } finally {
       vi.doUnmock('../app/js/platform/heavy.js');
       vi.resetModules();
