@@ -411,7 +411,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 654,
+      "codeLines": 657,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -421,7 +421,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 654,
+      "codeLines": 657,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -431,7 +431,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 654,
+      "codeLines": 657,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1321,14 +1321,14 @@
       "fanIn": 1
     },
     "ui/camera-control.ts": {
-      "codeLines": 7,
-      "decisionNodes": 4,
+      "codeLines": 36,
+      "decisionNodes": 8,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 4
     },
     "ui/changed-mark.ts": {
       "codeLines": 35,
@@ -1381,20 +1381,20 @@
       "fanIn": 1
     },
     "ui/eye-control.ts": {
-      "codeLines": 149,
+      "codeLines": 148,
       "decisionNodes": 21,
       "maxDepth": 2,
-      "fanOut": 6,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/face-control.ts": {
-      "codeLines": 133,
+      "codeLines": 132,
       "decisionNodes": 25,
       "maxDepth": 3,
-      "fanOut": 4,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
@@ -1441,10 +1441,10 @@
       "fanIn": 3
     },
     "ui/hand-control.ts": {
-      "codeLines": 110,
+      "codeLines": 109,
       "decisionNodes": 19,
       "maxDepth": 2,
-      "fanOut": 4,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,

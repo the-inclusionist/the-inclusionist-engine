@@ -1137,7 +1137,11 @@
     "showOnlyRowsThatApply"
   ],
   "ui/camera-control.ts": [
-    "followCameraMode"
+    "CameraStartDeps",
+    "CameraStartFailure",
+    "CameraWords",
+    "followCameraMode",
+    "startCameraReader"
   ],
   "ui/changed-mark.ts": [
     "CHANGED_CLASS",

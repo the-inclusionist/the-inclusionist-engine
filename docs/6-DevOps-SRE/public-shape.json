@@ -2159,6 +2159,17 @@
       "hasNavigationSound"
     ]
   },
+  "ui/camera-control.ts": {
+    "interface CameraWords": [
+      "loses",
+      "spoken",
+      "subject"
+    ],
+    "interface CameraStartDeps": [
+      "close"
+    ],
+    "type CameraStartFailure": "'files' | 'runtime' | 'camera'"
+  },
   "ui/debug-panel.ts": {
     "interface CharacterSample": [
       "base",
