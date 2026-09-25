@@ -31,7 +31,7 @@ const en: Record<string, string> = {
   'help.noKey': 'no key',
   'help.slide.tecla': 'Key {k}',
   'sr.libras.loading': 'The sign-language interpreter is still loading — try again in a moment.',
-  'sr.libras.on': 'Hello! The sign-language interpreter is on.',
+  'sr.deaf.noSigning': 'No sign-language interpreter right now: the captions and the text stay on screen.',
   'sr.eyes.needsInternet': 'Eye control has not reached this device yet: it downloads the first time the game opens with internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Look here',
@@ -173,7 +173,7 @@ const en: Record<string, string> = {
   'icon.velocidade.valor': '{pct}%',
   'icon.blind.dica': 'Play by sound: audio navigation tells what the screen shows.',
   'icon.tts.dica': 'The game reads out loud what is written on the screen.',
-  'icon.libras.dica': 'A sign language interpreter shows in signs what the game says.',
+  'icon.libras.dica': 'Sounds get captions, and the sonar calls a sign-language interpreter to sign what is on screen.',
   'icon.tea.dica': 'Makes the game calmer or silent, for those overloaded by stimuli.',
   'icon.altmove.dica': 'How your presses are read: the standard way; or one tap to turn on and another to turn off, with no holding; or with one button only, where the game shows one thing at a time and you press on the one you want.',
   'sr.icon.inputMode': 'How you press: {v}.',

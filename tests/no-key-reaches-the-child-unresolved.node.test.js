@@ -117,6 +117,8 @@ describe('every key a module asks for is declared', () => {
 // ============================== MUTATIONS CHECKED ==============================
 //   K1 the root's key back to `motor.cooldown.dica` (the shipped typo)  🔴 resolves to nothing · Cross-check
 //   K2 `sr.libras.on` removed from pt.ts (the shipped hole)             🔴 resolves to nothing
+//      📌 re-pointed 2026-09-25: the greeting left with ADR-0234; its successor `sr.deaf.noSigning` removed from pt.ts
+//      🔴 resolves to nothing (and `i18n-dicts` goes red too)
 //   K3 GATE: `forEachChild` dropped, so the walk stops descending   🔴 Cross-check — 0 call sites found, and that is
 //                                                                          exactly the empty pass the case exists to refuse
 //   K4 GATE: any first argument taken as a key, built ones included     🔴 resolves to nothing

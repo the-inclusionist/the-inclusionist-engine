@@ -3677,6 +3677,40 @@ engine's pause card a `caa` item stays locked with the same reason even when the
 case stays reachable through the quick bar's communication cycle (ADR-0151). New, additive: `aacMenuLocked()` in
 `ui/aac-sets`.
 
+## DE · ADR-0234: there is no Libras mode, there is a deaf mode
+
+**Who is affected:** a game that reads `engine.libras`, builds `createLibras` from `@the-inclusionist/engine/ui/vlibras.js`
+itself, or signed its announcements with `engine.mirrorAnnouncements(engine.libras.say)`.
+
+📌 **Why:** the Dev, 2026-09-25: «não existe modo libras, mas modo pessoa surda: sons ganham legenda e o sonar chama o
+intérprete». The 🦻 is one setting that turns on two things: every interface sound is captioned, and the sonar hands the
+text it would read aloud to an INTERPRETER, which signs it in front of the screen; with the mode off the sonar speaks, as
+before. Written Portuguese is never removed. The interpreter answers the sonar when the child asks — it no longer signs
+announcements, so the one-utterance queue and the `tick` latch are gone. Which player signs (self-hosting the VLibras player,
+a free player, or the hosted widget) is the Dev's open choice; until then the root's interpreter answers «signing
+unavailable», which goes to `problems` and to the child, and the captions and text keep working.
+
+| was | is |
+|---|---|
+| `engine.libras.isOpen()` | `engine.deafMode.isOn()` |
+| `engine.libras.toggle()` | `engine.deafMode.toggle()` |
+| `engine.libras.say(text)` · `engine.mirrorAnnouncements(engine.libras.say)` | removed: the interpreter answers the sonar (`engine.sonar.sonar(player)`), not a queue of messages. `mirrorAnnouncements` stays, with no Libras sink to connect |
+| `engine.libras.tick()` | removed: a choice restored from storage is on at boot, with nothing to latch |
+| earcons gated on `engine.settings.captionsOn` | pass `engine.deafMode.captionsOn` as `createAudioEarcons`'s `getCaptionsOn` — captions on OR deaf mode on — and `engine.captionSound` as its `showCaption`, which writes under the same rule |
+| `createLibras({ doc, win, store, now })` → `Libras` (`isOpen`, `toggle(t)`, `say`, `tick`, `onChange`) | `createDeafMode({ store, captionsSetting, t, interpreter, speak, caption, tell, report })` → `DeafMode` (`isOn`, `toggle()`, `captionsOn`, `sonar(text)`, `onChange`, `dispose`). `interpreter` is the new port `Interpreter` — `sign(text): Promise<SignResult>`, `hide()`, `dispose()` — and `NO_INTERPRETER` is the one the root injects today |
+| types `Libras`, `LibrasPorts`, `LibrasStore` | `DeafMode`, `DeafModePorts`, `DeafModeStore`; new `Interpreter`, `SignResult`, `signingUnavailableLine` |
+
+⚠️ **Unchanged, on purpose:** the stored key `incl_libras` — a child who left the mode on finds deaf mode on — and the bar's
+`PauseIconsCtx.isLibrasOn`/`toggleLibras` names, which the root fills from deaf mode.
+
+📏 **Measured in the seven games, read-only, as information:** no game uses `createLibras` or `engine.libras` — the names this
+note changes. `game-platformer` (`app/js/main.ts:166`: `vlibrasSay`, `vlibrasOpen`, `toggleLibras`, `vlTick`, `librasOpen`,
+`setOnLibrasChange`; the widget loaded by its own `app/index.html:443`), `game-soccer` (`app/js/boot/main.ts:47`:
+`toggleLibras`, `vlibrasOpen`, `vlibrasSay`, `vlTick`; `tests/libras.browser.test.ts:21`; the widget in `app/index.html:186`) and
+`pixi-15-puzzle` (`app/js/boot/standalone.ts:28`: `vlibrasSay`, `vlTick`, with `setVlibrasSay` at `:151`; the widget in
+`app/index.html:69`) still import the module-level names note CY already removed — all three pin engine 9.x — so each meets
+this note together with CY's. `game-2048`, `game-chess`, `game-pinball` and `game-whackwhack` never signed.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

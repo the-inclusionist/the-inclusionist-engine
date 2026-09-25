@@ -199,7 +199,7 @@ does not repeat it, it says what kind of thing lives where.
 | `platform/` | Adapters over the browser — storage, audio, speech, the heavy delivery, the vision and speech runtimes, the window a root listens on — each a factory or function that RECEIVES the browser object it wraps (`createStorage(backend)`, `createAudio({ newContext, store })`), never one that reaches it. `platform/storage-keys` is the one home of the stored keys' names. |
 | `input/` | What a press MEANS: the keyboard, gamepad and touch transports, the maps from camera and voice signals to actions, latching, the root's input state (`createInputState`), the keyboard and pad maps (`createKeyboardConfig`, `createPadTable`, `createPadMaps`), and the virtual controller every transport presses. |
 | `render/` | What the screen looks like: the canvas, the per-player viewports, sprite effects, the visual-simulation axes, and the colour-vision, high-contrast, L→Q and CRT filters (`createHighContrast`, `createLqFilter`, `createCrt`). The scenery and the Z-order left with the tile world (ADR-0228). |
-| `ui/` | What the child operates: the pause card, the quick bar, the settings panels, menu navigation, the HUD, the camera and voice controls, layout (`createLayout`) and typography, and Libras (`createLibras`). |
+| `ui/` | What the child operates: the pause card, the quick bar, the settings panels, menu navigation, the HUD, the camera and voice controls, layout (`createLayout`) and typography, and deaf mode (`createDeafMode`: captions for every sound, the sonar calling an injected interpreter — ADR-0234). |
 | `boot/` | `create-game` — the composition root. The only module that CONSTRUCTS state: it builds its services from the host the game lends, wires them and hands the game an engine (§3.5). One module, on purpose. |
 | `educational/` | The curriculum in code: the adaptive engine, the learning bands. Outside the stack — it imports nothing and nothing but a game imports it (ADR-0032). |
 | `consumer-quiz/` | The demo cartridge. Not the engine: it is what exercises the contract from outside. |
@@ -307,12 +307,12 @@ parameter, first, and stays a function.
 
 - **What the root builds.** `createGame` receives the browser from the host the game lends — `host.doc`, `host.win`, and
   optionally `host.storage` (else the host window's `localStorage`) — and builds this root's one of each: `createTranslator`,
-  `createStorage`, `createSettingsStore`, `createInputState`, `createAnnouncer`, `createLibras`, `createAudio`, `createCrt`,
+  `createStorage`, `createSettingsStore`, `createInputState`, `createAnnouncer`, `createDeafMode`, `createAudio`, `createCrt`,
   `createLqFilter`, `createKeyboardConfig`, `createPadTable`, `createPadMaps`, `createVirtualController`. The root itself
   reaches no global either. Two factories are for a GAME to build: `createLayout` (a game that scales its own stage) and
   `createHighContrast` (a game with a world).
 - **What a game receives.** Additive handles on `Engine`: `settings`, `t`, `localeReady`, `menuIndexOn`, `gameSpeed`, `say`,
-  `alert`, `mirrorAnnouncements`, `libras`, `input`, `keyboardConfig`, `audio`, `crt`, `lq`. A game registers its words
+  `alert`, `mirrorAnnouncements`, `deafMode`, `input`, `keyboardConfig`, `audio`, `crt`, `lq`. A game registers its words
   through `CreateGameOptions.dictionaries` and passes `engine.gameSpeed` as `startLoop`'s required `speed`. It asks the
   engine instead of calling a factory itself: a second instance would be deaf to this root's settings and language.
 - **The one exception.** `core/i18n.ts` is still stateful — its module-level `t` and `registerDict` wait on the Dev's choice of

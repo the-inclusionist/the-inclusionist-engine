@@ -76,8 +76,11 @@ said so. A document that describes the code has to be able to notice when it sto
   blind swim, which read a tile world, live in the `game-platformer` since note CC)
 - ✅ As a **player**, I want **narration of what is on screen**, so that reading is not the price of playing.
   `app/js/platform/tts.ts`, `app/js/platform/interruptible-speech.ts` · `tests/tts.node.test.js`
-- ✅ As a **deaf player who signs**, I want a **sign-language interpreter**, so that spoken content reaches me.
-  `app/js/ui/vlibras.ts` · `tests/vlibras.browser.test.js`
+- ✅ As a **deaf player**, I want **every sound captioned** in deaf mode, so that nothing the game says by sound is lost.
+  `app/js/ui/vlibras.ts` · `tests/vlibras.node.test.js`
+- 🟡 As a **deaf player who signs**, I want the **sonar to call a sign-language interpreter**, so that what is on screen
+  reaches me in Libras. The sonar hands its text to an interpreter port; which Libras player fills it is the Dev's open
+  choice (ADR-0234), and until then the child is told signing is unavailable. `app/js/ui/vlibras.ts`
 - ✅ As a **player who cannot use hands**, I want to **play with my eyes**, so that a webcam replaces the pad.
   `app/js/ui/eye-control.ts` · `tests/eye-control.browser.test.js`
 - ✅ As a **player**, I want **my own screen** when several of us play, so that nobody has to share half a view.

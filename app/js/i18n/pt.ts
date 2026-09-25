@@ -29,9 +29,9 @@ const pt: Record<string, string> = {
   // de cima é para quem ESCUTA, esta diz QUAL botão, porque quem a lê tem outras pessoas à volta.
   'hud.waitBadge': 'Jogador {n}: aperte um botão do SEU teclado ou de um controle livre para entrar',
   'sr.libras.loading': 'Intérprete de Libras ainda carregando — tente de novo em instantes.',
-  // ⚠️ Esta frase não é lida: é SINALIZADA. Ela vai para o widget do VLibras no instante em que o modo liga, e é a primeira
-  // coisa que o intérprete diz a quem acabou de o chamar — curta de propósito, e uma saudação, não um estado de sistema.
-  'sr.libras.on': 'Olá! O intérprete de Libras está ligado.',
+  // told to a deaf child when the sonar asks for signing and no interpreter can sign: what she keeps matters as much as what
+  // she lost (ADR-0234)
+  'sr.deaf.noSigning': 'Sem intérprete de Libras agora: as legendas e o texto continuam na tela.',
   'sr.eyes.needsInternet': 'O controle pelo olhar ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Olhe aqui',
@@ -268,7 +268,7 @@ const pt: Record<string, string> = {
   'icon.velocidade.valor': '{pct}%',
   'icon.blind.dica': 'Joga-se pelo som: a navegação sonora diz o que a tela mostra.',
   'icon.tts.dica': 'O jogo lê em voz alta o que está escrito na tela.',
-  'icon.libras.dica': 'Um intérprete de Libras mostra em sinais o que o jogo diz.',
+  'icon.libras.dica': 'Os sons ganham legenda, e o sonar chama um intérprete de Libras para o que está na tela.',
   'icon.tea.dica': 'Deixa o jogo mais calmo ou em silêncio, para quem se sobrecarrega com estímulos.',
   'icon.altmove.dica': 'Como os seus toques são lidos: do jeito padrão; ou com um toque que liga e outro que desliga, sem segurar; ou com um botão só, em que o jogo mostra cada coisa por vez e você aperta na que quer.',
   'sr.icon.inputMode': 'Jeito de apertar: {v}.',

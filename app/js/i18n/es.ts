@@ -32,7 +32,7 @@ const es: Record<string, string> = {
   'help.noKey': 'sin tecla',
   'help.slide.tecla': 'Tecla {k}',
   'sr.libras.loading': 'El intérprete de lengua de señas todavía está cargando — inténtalo de nuevo en un momento.',
-  'sr.libras.on': '¡Hola! El intérprete de lengua de señas está activado.',
+  'sr.deaf.noSigning': 'Sin intérprete de lengua de señas ahora: los subtítulos y el texto siguen en la pantalla.',
   'sr.eyes.needsInternet': 'El control con la mirada todavía no llegó a este aparato: se descarga la primera vez que el juego se abre con internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Mira aquí',
@@ -174,7 +174,7 @@ const es: Record<string, string> = {
   'icon.velocidade.valor': '{pct} %',
   'icon.blind.dica': 'Se juega por el sonido: la navegación sonora dice lo que muestra la pantalla.',
   'icon.tts.dica': 'El juego lee en voz alta lo que está escrito en la pantalla.',
-  'icon.libras.dica': 'Un intérprete de lengua de señas muestra en señas lo que dice el juego.',
+  'icon.libras.dica': 'Los sonidos tienen subtítulos, y el sonar llama a un intérprete de lengua de señas para lo que está en la pantalla.',
   'icon.tea.dica': 'Deja el juego más tranquilo o en silencio, para quien se sobrecarga con estímulos.',
   'icon.altmove.dica': 'Cómo se leen tus pulsaciones: del modo estándar; o con un toque que activa y otro que desactiva, sin mantener; o con un botón solo, donde el juego muestra una cosa por vez y tú pulsas en la que quieres.',
   'sr.icon.inputMode': 'Cómo pulsar: {v}.',

@@ -80,7 +80,7 @@ import { reserveTopBand } from '../ui/top-band.js';
 import { createSettingsStore, type SettingsStore, type LetterCase } from '../core/state.js';
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
-import { createLibras } from '../ui/vlibras.js';
+import { createDeafMode, NO_INTERPRETER } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts, type LoadKokoro } from '../platform/tts.js';
@@ -538,21 +538,21 @@ export interface Engine {
   /** The «assertive» announcement (`#sr-alert`): interrupts and speaks now — errors, a checkmate, a crash. See `say`. */
   readonly alert: (text: string) => void;
   /**
-   * SIGNS THIS ROOT'S ANNOUNCEMENTS TOO: every `say`/`alert` — the engine's and the game's — also goes to `sink`, until the
-   * returned release. Pass `engine.libras.say`. The root connects nothing by itself (decision DD1, pending the Dev): a game
-   * that signed its announcements before connects it here, and a game that did not keeps not signing.
+   * Every `say`/`alert` — the engine's and the game's — also goes to `sink`, until the returned release. The root connects
+   * nothing. ⚠️ Deaf mode does NOT sign announcements: the interpreter signs what the sonar finds, when the child asks
+   * (ADR-0234) — no queue of messages.
    */
   readonly mirrorAnnouncements: (sink: (text: string) => void) => () => void;
   /**
-   * THIS ROOT'S DEAF MODE (ADR-0232 D4): the one the bar's 🦻 toggles. `isOpen` is the child's choice; `say` signs a text
-   * while it is open (a queue of one); `tick` opens the interpreter for a choice restored from storage, and a game that
-   * signs calls it from its loop; `toggle` flips the mode from a game's own control, confirming in this root's language.
+   * THIS ROOT'S DEAF MODE (ADR-0234): the one the bar's 🦻 toggles. With it on, every sound is captioned and the sonar has
+   * the interpreter sign what it found; `isOn` is the child's choice, `toggle` flips it from a game's own control.
+   * `captionsOn` is whether a sound gets its caption now — the captions setting OR deaf mode: pass it as
+   * `createAudioEarcons`'s `getCaptionsOn`, beside `captionSound` as its `showCaption`.
    */
-  readonly libras: {
-    readonly isOpen: () => boolean;
-    readonly say: (text: string) => void;
-    readonly tick: () => void;
+  readonly deafMode: {
+    readonly isOn: () => boolean;
     readonly toggle: () => void;
+    readonly captionsOn: () => boolean;
   };
 
   /**
@@ -900,17 +900,29 @@ export function createGame(o: CreateGameOptions): Engine {
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
   const $$ = <T extends Element = Element>(sel: string): T[] => [...doc.querySelectorAll<T>(sel)];
   /*
-   * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4): the screen reader's two regions written in the HOST's document on the
-   * host's frames, and the Libras interpreter over its store. A window with no frames (a test double) is the announcer's to answer.
-   * 📌 DD1: the root does NOT mirror its announcements into Libras — a game connects that sink (`Engine.mirrorAnnouncements`),
-   * as before; mirroring everything would be `announcer.mirrorTo(libras.say)` here.
+   * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4, ADR-0234): the screen reader's two regions written in the HOST's
+   * document on the host's frames, and deaf mode over its store. A window with no frames (a test double) is the announcer's to answer.
+   * 📌 Deaf mode hands the interpreter what the SONAR finds, never the announcements, and the sonar text is spoken with the
+   * mode off. The interpreter is `NO_INTERPRETER` until the Dev chooses a Libras player (ADR-0234): the sonar's text is
+   * captioned, and «signing unavailable» goes to `problems` and to the child. The ports it calls later (`tts`, the caption,
+   * `measuredProblems`) are read when it calls.
    */
   const announcer = createAnnouncer({
     doc,
     raf: win.requestAnimationFrame, // as the host has it: the announcer answers a window with none (bound by the listener scope)
   });
   const { say: srSay, alert: srAlert } = announcer;
-  const libras = createLibras({ doc, win, store, now: () => Date.now() });
+  const deafMode = createDeafMode({
+    store,
+    captionsSetting: () => state.captionsOn,
+    t: translator.t,
+    interpreter: NO_INTERPRETER,
+    speak: (text) => { tts.narrate(text); },
+    caption: (text) => { writeSoundCaption(text); },
+    tell: srSay,
+    report: (line) => { measuredProblems.push(line); },
+  });
+  whenDisposed(deafMode.dispose);
   for (const sel of REQUIRED_MARKUP) {
     if (!$(sel)) hostProblems.push(`the page lacks ${sel}: the engine announces and draws into it, and without it a child who listens hears nothing — add it to the page`);
   }
@@ -1403,8 +1415,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // ✅ The monolith's dead guard works again — see the note on `audio`, above.
     reflectTtsPanel: () => { audio?.reflectTts(); },
     reflectTtsPanelEnabled: true,
-    isLibrasOn: libras.isOpen,
-    toggleLibras: () => libras.toggle(translator.t),
+    isLibrasOn: deafMode.isOn,
+    toggleLibras: deafMode.toggle,
     /*
      * ⚠️ WHAT THE GAME HANDS OVER: the three fields are optional on both sides. Absent, the pause card holds only what the
      * engine acts on, and the two visual icons follow their own rules. See the notes in `CreateGameOptions`.
@@ -2234,7 +2246,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // the route go round a wall; `catNode`/`audioOut`/`getVolume` put a PERMANENT graph on the same volume slider as
     // all the rest of the audio.
     roleAt: (at) => cartridge.declaration.roleAt(at),
-    tonePan, srSay, narrate: (text) => tts.narrate(text),
+    // what the sonar found is read aloud — or, in deaf mode, captioned and signed by the interpreter (ADR-0234)
+    tonePan, srSay, narrate: deafMode.sonar,
     catNode, audioOut, getVolume: () => mixer.volume,
     // ⚠️ THE ANSWER, NOT THE TABLE (#104): `platform/audio-sonar` does not know what a visual mode is, so it is answered
     // here — the root is the only layer that knows both axes AND may import from `render/`.
@@ -2796,11 +2809,12 @@ export function createGame(o: CreateGameOptions): Engine {
    * «the sound caption above, the explanation below it»); `aria-hidden`, because whoever listens heard the sound itself.
    * 📌 Its time on screen is a child's reading time for its words, never under the 2600 ms the games had measured in play
    * (`core/caption-duration`, plan phase 5c); a new caption restarts it.
+   * 📌 Written while captions are on OR deaf mode is: in deaf mode every sound gets its caption (ADR-0234).
    */
   let soundCaption: HTMLElement | null = null;
   let clearSoundCaption: ReturnType<typeof setTimeout> | null = null;
   function writeSoundCaption(text: string): void {
-    if (!state.captionsOn || !text) return;
+    if (!deafMode.captionsOn() || !text) return;
     if (!soundCaption) {
       const home = screenFooter($<HTMLElement>('#game-region'));
       if (!home) return;
@@ -4172,7 +4186,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     say: srSay,
     alert: srAlert,
     mirrorAnnouncements: announcer.mirrorTo,
-    libras: { isOpen: libras.isOpen, say: libras.say, tick: libras.tick, toggle: () => { libras.toggle(translator.t); } },
+    deafMode: { isOn: deafMode.isOn, toggle: deafMode.toggle, captionsOn: deafMode.captionsOn },
 
     settings: state,
 

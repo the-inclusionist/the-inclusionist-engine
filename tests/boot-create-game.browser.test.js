@@ -81,6 +81,8 @@ describe('createGame num documento de verdade', () => {
     // ⚠️ BLIND MODE PERSISTS in this file's storage, and every root reads it when it builds its store (ADR-0232 D4). Without
     // this reset, a case that turns it on leaves the next one starting on, and the next one measures the opposite of what it says.
     localStorage.removeItem('incl_modocego');
+    // and DEAF MODE too (ADR-0234): a case that leaves it on would start the next one's sonar in deaf mode
+    localStorage.removeItem('incl_libras');
     raiz = montarHospedeiro();
   });
 
@@ -1510,51 +1512,97 @@ describe('createGame num documento de verdade', () => {
     expect(depois.getAttribute('aria-label')).toBe('Comando de voz: desligado');
   });
 
-  it('🔴 [Right] the 🦻 turns deaf mode on in the root\'s language — the root hands `toggleLibras` its `t` (ADR-0232 D3)', async () => {
-    // `ui/vlibras` no longer imports `t`: the confirmation it sends the interpreter is made by the `t` it is called with. The
-    // interpreter reads a hidden node it clicks, so the click is where the text is read back; the clock is moved past its
-    // one-utterance queue.
-    const { vi } = await import('vitest');
+  /*
+   * DEAF MODE IS THE ROOT'S (ADR-0234): sounds get captions, and the sonar hands its text to the interpreter. The root's
+   * interpreter is `NO_INTERPRETER` until the Dev chooses a Libras player, so what a root shows here is that path: the
+   * sonar's text written, «signing unavailable» in `problems` and to the child. Handing the EXACT text to a player that signs
+   * is measured with a double of the port, in `tests/vlibras.node.test.js`.
+   */
+  const soundCaption = () => document.querySelector('.legenda-de-som');
+  /** The interpreter's answer arrives on a promise: one macrotask lets it land. */
+  const settle = () => new Promise((r) => { setTimeout(r, 0); });
+
+  it('🔴 [Right] the 🦻 is deaf mode: it turns `engine.deafMode` on and off', () => {
     const motor = abrir();
-    const heard = [];
-    const real = HTMLElement.prototype.click;
-    const click = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(function () {
-      if (this.getAttribute('aria-hidden') === 'true') heard.push(this.textContent); else real.call(this);
-    });
-    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 86_400_000);
     const icon = () => document.querySelector('#title-icons [data-pi="libras"]');
+    expect(icon(), 'the 🦻 is not on this root\'s bar').not.toBeNull();
+    expect(motor.deafMode.isOn()).toBe(false);
+    icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(motor.deafMode.isOn(), 'the 🦻 did not turn deaf mode on').toBe(true);
+    expect(icon().getAttribute('aria-pressed'), 'the 🦻 says off over a deaf mode that is on').toBe('true');
+    icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(motor.deafMode.isOn(), 'the 🦻 did not turn deaf mode off').toBe(false);
+    expect(icon().getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('🔴 [Right] deaf mode on: every sound is captioned, even with the captions setting off', () => {
+    const motor = abrir();
     try {
-      expect(icon(), 'the 🦻 is not on this root\'s bar').not.toBeNull();
-      if (motor.libras.isOpen()) icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      heard.length = 0;
-      icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(motor.libras.isOpen(), 'the 🦻 did not turn deaf mode on — this case would measure nothing').toBe(true);
-      expect(heard.length, 'deaf mode came on and the interpreter was sent nothing').toBeGreaterThan(0);
-      expect(heard.join(' | '), 'the interpreter was sent a raw key').not.toMatch(/\bsr\.libras\./);
+      motor.settings.setCaptionsOnValue(false);
+      motor.captionSound('porta rangendo');
+      expect(soundCaption()?.textContent ?? '', 'captions off and deaf mode off: a caption was written').toBe('');
+      expect(motor.deafMode.captionsOn()).toBe(false);
+      motor.deafMode.toggle();
+      expect(motor.deafMode.captionsOn(), 'a game asking whether to caption its earcons was told no in deaf mode').toBe(true);
+      motor.captionSound('porta rangendo');
+      expect(soundCaption()?.textContent, 'deaf mode is on and the sound was not captioned').toBe('porta rangendo');
     } finally {
-      if (motor.libras.isOpen()) icon()?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      click.mockRestore();
-      now.mockRestore();
+      if (motor.deafMode.isOn()) motor.deafMode.toggle();
+      motor.settings.setCaptionsOnValue(true);
     }
   });
 
-  /*
-   * THE ANNOUNCER AND DEAF MODE ARE THE ROOT'S (ADR-0232 D4-B1): `engine.say`/`alert` write this root's regions, and Libras
-   * signs a root's announcements ONLY when the game connects the mirror — decision DD1, pending the Dev: the root must not
-   * start signing for the games that never wired it. The interpreter reads a hidden node it clicks, so the click is where a
-   * signed text is read back; each `Date.now()` is 10 s after the last, so the one-utterance queue never holds one back.
-   */
-  const interpreter = async () => {
+  it('🔴 [Right] deaf mode on: the sonar writes its text and speaks nothing — and with no player, `problems` and the child are told', async () => {
     const { vi } = await import('vitest');
-    const heard = [];
-    const real = HTMLElement.prototype.click;
-    const click = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(function () {
-      if (this.getAttribute('aria-hidden') === 'true') heard.push(this.textContent); else real.call(this);
-    });
-    let clock = Date.now();
-    const now = vi.spyOn(Date, 'now').mockImplementation(() => (clock += 10_000));
-    return { heard, restore: () => { click.mockRestore(); now.mockRestore(); } };
-  };
+    const pt = (await import('../app/js/i18n/pt.js')).default;
+    const motor = abrir();
+    const narrate = vi.spyOn(motor.tts, 'narrate');
+    try {
+      motor.deafMode.toggle();
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      const written = soundCaption()?.textContent ?? '';
+      expect(written, 'the sonar\'s text was not written in deaf mode').not.toBe('');
+      expect(written, 'the caption holds a raw key').not.toMatch(/\bsr\.nav\./);
+      await new Promise((r) => requestAnimationFrame(r));
+      expect(document.querySelector('#sr-status').textContent, 'the caption is not what the sonar found').toBe(written);
+      expect(narrate, 'deaf mode spoke the sonar').not.toHaveBeenCalled();
+      await settle();
+      expect(motor.problems.join('\n')).toMatch(/deaf mode's sign-language interpreter could not sign: a Libras player is not installed yet/);
+      expect(soundCaption()?.textContent, 'she is deaf, and was not told in writing that no one will sign')
+        .toBe(`${written} ${pt['sr.deaf.noSigning']}`);
+      await new Promise((r) => requestAnimationFrame(r));
+      expect(document.querySelector('#sr-status').textContent).toBe(pt['sr.deaf.noSigning']);
+    } finally {
+      narrate.mockRestore();
+      if (motor.deafMode.isOn()) motor.deafMode.toggle();
+    }
+  });
+
+  it('🔴 [Right] `dispose()` releases deaf mode: an interpreter\'s answer arriving after it is dropped', async () => {
+    const motor = abrir();
+    motor.deafMode.toggle();
+    motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+    motor.deafMode.toggle(); // the choice stored off for the next case — and on again, so the answer would be heard
+    motor.deafMode.toggle();
+    motor.dispose();
+    await settle();
+    expect(motor.problems.join('\n'), 'a disposed root still took its interpreter\'s answer').not.toMatch(/could not sign/);
+    motor.deafMode.toggle();
+  });
+
+  it('🔴 [Right] deaf mode off: the sonar speaks, as it always did', async () => {
+    const { vi } = await import('vitest');
+    const motor = abrir();
+    const narrate = vi.spyOn(motor.tts, 'narrate').mockImplementation(() => {});
+    try {
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      expect(narrate).toHaveBeenCalledTimes(1);
+      await settle();
+      expect(motor.problems.join('\n'), 'deaf mode is off and the interpreter was asked').not.toMatch(/could not sign/);
+    } finally {
+      narrate.mockRestore();
+    }
+  });
 
   it('🔴 [Right] `engine.say` and `engine.alert` write THIS root\'s regions, on the next frame', async () => {
     const motor = abrir();
@@ -1569,42 +1617,25 @@ describe('createGame num documento de verdade', () => {
     expect(alerta.textContent).toBe('uma frase urgente');
   });
 
-  it('🔴 [Right] DD1: the root signs NOTHING by itself; a game that connects the mirror gets its announcements signed', async () => {
+  it('🎯 [Right] the announcements are NOT handed to the interpreter: it answers the sonar, not a queue of messages', async () => {
     const motor = abrir();
-    const { heard, restore } = await interpreter();
     try {
-      motor.libras.toggle();
-      expect(motor.libras.isOpen(), 'deaf mode did not turn on — this case would measure nothing').toBe(true);
-      heard.length = 0;
-      motor.say('sem espelho');
-      motor.alert('também sem');
-      expect(heard, 'the root started signing its announcements for a game that never wired it').toEqual([]);
-      const release = motor.mirrorAnnouncements(motor.libras.say);
-      motor.say('com espelho');
-      expect(heard, 'the connected mirror signed nothing').toEqual(['com espelho']);
-      release();
-      motor.say('solto');
-      expect(heard, 'a released mirror went on signing').toEqual(['com espelho']);
+      motor.deafMode.toggle();
+      motor.say('uma frase educada');
+      motor.alert('uma frase urgente');
+      await settle();
+      expect(motor.problems.join('\n'), 'an announcement was sent to the interpreter').not.toMatch(/could not sign/);
     } finally {
-      if (motor.libras.isOpen()) motor.libras.toggle();
-      restore();
+      if (motor.deafMode.isOn()) motor.deafMode.toggle();
     }
   });
 
-  it('🎯 [Right] a choice restored from storage signs after the game\'s first `engine.libras.tick()` — the behaviour kept', async () => {
+  it('🎯 [Right] a choice restored from storage is on at boot', () => {
     localStorage.setItem('incl_libras', '1');
-    const { heard, restore } = await interpreter();
     try {
-      const motor = abrir();
-      expect(motor.libras.isOpen(), 'the child who left deaf mode on found it off').toBe(true);
-      motor.libras.say('antes do tick');
-      expect(heard).toEqual([]);
-      motor.libras.tick();
-      motor.libras.say('depois do tick');
-      expect(heard).toEqual(['depois do tick']);
+      expect(abrir().deafMode.isOn(), 'the child who left deaf mode on found it off').toBe(true);
     } finally {
       localStorage.removeItem('incl_libras');
-      restore();
     }
   });
 
@@ -1818,3 +1849,14 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 // ---- ADR-0232 one set of scene reduced-motion flags, built by the root ----
 //   R1 the shared flags withheld from the motion panel    🔴 the «ONE set of reduced-motion flags» case
 //   R2 the shared flags withheld from the quick bar       🔴 the same case: each writer back on its own copy
+
+// ---- ADR-0234 deaf mode, wired by the root (2026-09-25, each run on `boot/create-game.ts` and restored — all 14 red) ----
+//   D1 the captions setting read as always off                🔴 the caption files (rate, switch, footer)
+//   D2 an interpreter that signs instead of `NO_INTERPRETER`  🔴 «the sonar writes its text … no player»
+//   D3 `speak` dropped                                        🔴 «deaf mode off: the sonar speaks»
+//   D4 `caption` · D5 `tell` · D6 `report` dropped · D9 the sonar narrating in deaf mode  🔴 «the sonar writes its text»
+//   D7 deaf mode not released by `dispose()`                  🔴 «`dispose()` releases deaf mode»
+//   D8 the bar reading another state, or toggling nothing     🔴 «the 🦻 is deaf mode» — ⚠️ the first SURVIVED until the case
+//      read the icon's `aria-pressed`: the engine's state flipped and the icon said off, and nothing asked the icon
+//   D10 the caption host gated on the setting alone           🔴 «every sound is captioned»
+//   D11 `engine.deafMode.isOn`, `toggle`, `captionsOn` each cut from deaf mode  🔴 the 🦻, the restored choice, the captions

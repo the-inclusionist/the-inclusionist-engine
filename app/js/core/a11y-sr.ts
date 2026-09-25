@@ -9,11 +9,9 @@
 // Now each root builds its own over the document and the frames its host lends. The factory stays PUBLISHED for a game
 // that must announce with no root at all — its boot failed before `createGame` returned (game-chess's rootless alert).
 //
-// THE LIBRAS MIRROR IS AN EXPLICIT SINK OF EACH ANNOUNCER, and nothing connects it by default. Today a game that wants
-// its announcements signed connects it (`Engine.mirrorAnnouncements(engine.libras.say)`); the games that do not, do not
-// sign — the behaviour before this factory, kept on purpose until the Dev decides (D4 decision DD1). Having the root
-// mirror everything is the one line `announcer.mirrorTo(libras.say)` in the root. The sink arrives by injection so this
-// core module never imports ui/ (ADR-0173).
+// THE MIRROR IS AN EXPLICIT SINK OF EACH ANNOUNCER, and nothing connects it by default. It was the Libras interpreter's
+// door; ADR-0234 closed that question (DD1): deaf mode signs what the sonar finds, when the child asks, and never the
+// announcements — so no queue of messages. The sink arrives by injection so this core module never imports ui/ (ADR-0173).
 
 /** What an announcer writes through: the document holding the two regions, and the host's next frame. */
 export interface AnnouncerPorts {
@@ -35,7 +33,7 @@ export interface Announcer {
   /** "Assertive" announcement (alert): interrupts and speaks now (errors, important warnings). */
   readonly alert: (text: string) => void;
   /**
-   * Sends every announcement of THIS announcer also to `sink` (the Libras interpreter's `say`), until the returned release
+   * Sends every announcement of THIS announcer also to `sink`, until the returned release
    * is called. One sink at a time: a second call replaces the first, and releasing a replaced sink changes nothing.
    */
   readonly mirrorTo: (sink: (text: string) => void) => () => void;

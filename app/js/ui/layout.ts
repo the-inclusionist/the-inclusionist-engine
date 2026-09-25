@@ -4,8 +4,8 @@
 // the target floor, the reporters' rules) is exported as functions; `createLayout` is the shell that measures a
 // document it is HANDED and calls `afterScale` (the root's CRT re-anchoring its scanlines) — ADR-0232 D4, issue #207.
 //
-// IT RESERVES NO SPACE FOR THE INTERPRETER: the Dev decided the interpreter appears IN FRONT of the screen while audio
-// plays, and disappears (see ui/vlibras), so the layout does not shift the game for it.
+// IT RESERVES NO SPACE FOR THE INTERPRETER: in deaf mode the interpreter appears IN FRONT of the screen when the sonar
+// calls it (ADR-0234, see ui/vlibras), so the layout does not shift the game for it.
 import { screenBaseSize } from '../core/screens.js';
 
 /**
