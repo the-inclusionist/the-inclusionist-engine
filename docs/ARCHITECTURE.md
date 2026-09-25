@@ -26,7 +26,7 @@ the-inclusionist-engine/      # published as the npm package @the-inclusionist/e
 ├── dist/                     # app build output (git-ignored); NO deploy is connected to it today
 ├── dist-pkg/                 # package build output of tsc -p tsconfig.pkg.json (git-ignored)
 ├── docs/                     # documentation — see §2
-├── tests/                    # Vitest: *.node.test.js (logic) + *.browser.test.js (render/DOM)
+├── tests/                    # Vitest: *.node.test.{js,ts} (logic) + *.browser.test.js (render/DOM) + fixtures/ (§3.5)
 ├── .github/workflows/        # ci.yml — the engine's gates · game-ci.yml — the workflow the GAMES call
 ├── vite.config.ts  tsconfig.json  tsconfig.pkg.json  package.json  .release-it.json  .node-version
 ├── README.md  LICENSE  CHANGELOG.md
@@ -110,7 +110,7 @@ docs/
 │   │                          #   reader (ADR-0170); hand-kept, held by `public-page-surface`
 │   ├── exports-without-consumer.json # published values nothing IN THIS REPOSITORY imports — all of it debt,
 │   │                          #   and it only shrinks. `node scripts/exports-without-consumer.mjs`
-│   ├── public-shape.json · code-health.json · language-debt.json · comment-language-debt.json   # other committed
+│   ├── public-shape.json · code-health.json · language-debt.json · comment-language-debt.json · docs-language-debt.json   # other committed
 │   │                          #   measurements the gates compare against, each rewritten by its script in scripts/
 │   ├── models.md              #   the voice, recognition and vision models: role, source, use, how to rebuild them
 │   ├── CI-QA.md               #   axe-core a11y (now, verifies NFR) · k6 load (backend, verifies SLO)
@@ -180,7 +180,11 @@ docs/
 181 modules in `app/js` it listed **81**; it still named `webcam`, deleted six days earlier, and a `game/` folder that no longer
 exists; and `boot/`, `i18n/` and `consumer-quiz/` had no row at all. An inventory kept by hand loses to `git ls-files app/js/ui`,
 which is always right — so the inventory is gone, and what replaced it is the part a listing cannot give: **which files you touch
-to change a thing.**
+to change a thing.** (📏 183 modules on 2026-09-25, plus `env.d.ts`.) `tests/the-map-is-true.node.test.js` holds what the map
+does claim: every path it names exists, and every folder of `app/js` has a row in §3.1.
+
+📌 **Before adding or changing a module, read §3.5**: since ADR-0232 (2026-09-24/25) state and the browser are not imported,
+they are received from the root.
 
 ### 3.1 The layers, and what each may import
 
@@ -191,12 +195,12 @@ does not repeat it, it says what kind of thing lives where.
 | layer | what lives there |
 |---|---|
 | `i18n/` | The three dictionaries: every sentence a child reads or hears, in pt-BR, English and Spanish. Data, no logic. |
-| `core/` | What the engine IS, with no browser: the contract, the accommodation catalogue, the scene stack, the stored state, the ring, geometry and constants. Imports nothing above it. |
-| `platform/` | The browser, wrapped: storage, audio, speech, the heavy delivery, the vision and speech runtimes, the window a root listens on. |
-| `input/` | What a press MEANS: the transports (keyboard, gamepad, touch, camera, voice), the maps a game declares, latching, the virtual controller that carries a command to the cartridge. |
-| `render/` | What the world looks like: the canvas, the scenery, the sprites, the colour-blindness and high-contrast filters, the Z-order. |
-| `ui/` | What the child operates: the pause card, the quick bar, the settings panels, menu navigation, the HUD, layout and typography. |
-| `boot/` | `create-game` — the composition root. It builds everything above, wires it and hands the game an engine. One module, on purpose. |
+| `core/` | What the engine IS, with no browser: the contract, the accommodation catalogue, the scene stack, the ring, the constants, the setting defaults and vocabularies (`core/setting-defaults`, `core/camera-cycle`, `core/game-speed`), and the factories of the settings store (`createSettingsStore`), the translator (`createTranslator`) and the announcer (`createAnnouncer`). Imports nothing above it. |
+| `platform/` | Adapters over the browser — storage, audio, speech, the heavy delivery, the vision and speech runtimes, the window a root listens on — each a factory or function that RECEIVES the browser object it wraps (`createStorage(backend)`, `createAudio({ newContext, store })`), never one that reaches it. `platform/storage-keys` is the one home of the stored keys' names. |
+| `input/` | What a press MEANS: the keyboard, gamepad and touch transports, the maps from camera and voice signals to actions, latching, the root's input state (`createInputState`), the keyboard and pad maps (`createKeyboardConfig`, `createPadTable`, `createPadMaps`), and the virtual controller every transport presses. |
+| `render/` | What the screen looks like: the canvas, the per-player viewports, sprite effects, the visual-simulation axes, and the colour-vision, high-contrast, L→Q and CRT filters (`createHighContrast`, `createLqFilter`, `createCrt`). The scenery and the Z-order left with the tile world (ADR-0228). |
+| `ui/` | What the child operates: the pause card, the quick bar, the settings panels, menu navigation, the HUD, the camera and voice controls, layout (`createLayout`) and typography, and Libras (`createLibras`). |
+| `boot/` | `create-game` — the composition root. The only module that CONSTRUCTS state: it builds its services from the host the game lends, wires them and hands the game an engine (§3.5). One module, on purpose. |
 | `educational/` | The curriculum in code: the adaptive engine, the learning bands. Outside the stack — it imports nothing and nothing but a game imports it (ADR-0032). |
 | `consumer-quiz/` | The demo cartridge. Not the engine: it is what exercises the contract from outside. |
 
@@ -206,28 +210,29 @@ does not repeat it, it says what kind of thing lives where.
 
 - **What the child READS touches the three dictionaries.** `i18n/pt`, `en` and `es` move as one — 100% and 99% of each other's
   commits — and travel in ~37% of all commits. A key added to one and missing from another is caught by `problems`
-  (`lacunasDosDicionarios`), not by review.
-- **What the engine MOUNTS touches the root.** `boot/create-game.ts` is the most-edited file in the tree (155 commits). If you
-  are adding something the child can see or operate, expect to pass through it.
+  (the translator's `dictionaryGaps()`), not by review.
+- **What the engine MOUNTS touches the root.** `boot/create-game.ts` is the most-edited module in the tree (📏 252 commits on
+  2026-09-25). If you are adding something the child can see or operate, or a service a game needs, expect to pass through it.
 
 ### 3.3 Where do I go to change…
 
 📏 **Measured, not designed.** Each row is the set of files that are edited in the SAME commit as the first one, over the whole
 history, ignoring sweeps (commits touching more than 25 files, which say nothing about what belongs together). The percentage is
 how often the second file came along. The two rules of §3.2 are left out of every row — otherwise every answer would be «the
-dictionaries and the root».
+dictionaries and the root». ⚠️ The percentages were measured on 2026-09-22 and not re-read after ADR-0232's phases D2–D4,
+whose commits touched many of these files at once; the FILES in each row were checked against the tree on 2026-09-25.
 
 | to change… | go to | and usually also |
 |---|---|---|
 | **the pause card, the quick bar and menu navigation** | `ui/pause-icons.ts` | `ui/menu-nav.ts` 35% · `app/css/style.css` 21% · `ui/pause-buttons.ts` for the card's own buttons |
-| **a setting the child keeps** | `core/state.ts` | `platform/storage.ts` 31% — and the lifetime rule of ADR-0038, gated in `tests/lifetime-gate.node.test.ts` |
-| **what a key, a button, a finger does** | `input/keydown.ts` | `input/gamepad.ts` 53% · `input/touch-bindings.ts` 47% · `input/touch.ts` 40% · `ui/shell.ts` 27% — ⚠️ see the debt in §3.4 |
-| **a row in a settings panel** | `ui/settings-audio.ts`, `-motion`, `-mobility`, `-visual`, `-typo`, `-empathy`, `-aac`, `-controls` | `ui/mount-panel.ts` and `ui/panel-widgets.ts` build the row — ⚠️ see the debt in §3.4 |
+| **a setting the child keeps** | `core/state.ts` (`createSettingsStore`, the store the root builds and a game reads as `engine.settings`) | `core/setting-defaults.ts` for its default · `platform/storage-keys.ts` for its key's name · `platform/storage.ts` 31% — and the lifetime rule of ADR-0038, gated in `tests/lifetime-gate.node.test.ts` |
+| **what a key, a button, a finger does** | `input/keydown.ts` | `input/gamepad.ts` 53% · `input/touch-bindings.ts` 47% · `input/touch.ts` 40% · `ui/shell.ts` 27% · `input/virtual-controller.ts`, the one door they all press (§3.4) |
+| **a row in a settings panel** | `ui/settings-audio.ts`, `-motion`, `-mobility`, `-visual`, `-typo`, `-empathy`, `-aac`, `-controls` | `ui/mount-panel.ts` and `ui/panel-widgets.ts` build the row (§3.4) |
 | **which face the text is drawn in** | `ui/fonts.ts` | `app/public/vendor/fonts.css` 47% · `ui/settings-typo.ts` 46% · the catalogue `research/catalogo_tipografico.json` (the Dev's) |
 | **how the engine speaks** | `platform/tts.ts` | `ui/settings-audio.ts` 35% · `platform/kokoro-runtime.ts` for the neural voice |
 | **what gets downloaded, and from where** | `platform/heavy-catalogue.ts` | `platform/heavy.ts` 60% · `platform/heavy-mirror.ts` 30% · `scripts/heavy-into-the-delivery.mjs` fills a delivery, `scripts/licences/` puts each file's licence beside it |
 | **playing through the camera or by voice** | `ui/eye-control.ts`, `ui/face-control.ts`, `ui/hand-control.ts`, `ui/voice-control.ts` | `input/virtual-controller.ts` 50% · `input/face-map.ts`, `input/hand-map.ts`, `input/voice-map.ts` · `platform/vision.ts` |
-| **the size of the screen and of a target** | `ui/layout.ts` | `app/css/style.css` 23% — ADR-0001 (whole multiples of 320×180) and ADR-0163 (≥640×360, text ≥16 px) |
+| **the size of the screen and of a target** | `ui/layout.ts` (the root uses its pure `stageScale`/`applyScale`; a game that scales its own stage builds `createLayout`) | `app/css/style.css` 23% — ADR-0001 (whole multiples of 320×180) and ADR-0163 (≥640×360, text ≥16 px) |
 | **what the contract asks a cartridge** | `core/contract.ts` | `consumer-quiz/main-quiz.ts` 50% — the demo is what exercises the contract, and a field with no reader is a field nobody keeps |
 
 📌 **`render/viz-setters.ts` is not in the table, and that is information**: it has no neighbour above 25%. It is changed alone.
@@ -237,16 +242,18 @@ nothing changes with is a module nobody else's work touches — but the EXAMPLE 
 here: this file is a MAP, and a map that names something this tree no longer has sends its reader looking for nothing. Where a
 departed pointer IS named on purpose is the dead-pointer book in `tests/records-pointing-at-dead-gates.node.test.js`.
 
-### 3.4 Two lines that are long because something is missing
+### 3.4 Two lines that were long because something was missing — both paid
 
 A row above with many files is a HYPOTHESIS: either the subject genuinely has several faces, or the same decision is written
-down more than once. Two of them are the second kind, and naming them here is cheaper than pretending the spread is the design.
+down more than once. Two of them were the second kind; both abstractions have landed, and what is left is measuring whether
+the spread falls.
 
-- 🔴 **There are two doors to the cartridge.** `input/virtual-controller` exists to be the only one (ADR-0111, erratum), and
-  📏 measured on 2026-09-22 it is imported by `boot/create-game` and by the four newest transports —
-  `ui/eye-control`, `ui/face-control`, `ui/hand-control`, `ui/voice-control`. The keyboard, the gamepad and the touch pad still
-  arrive as synthesised KEYS (`markKey`/`releaseKey`), which is why `keydown`, `gamepad` and `touch-bindings` still change
-  together 40–53% of the time. Whether to unify is a decision, not a cleanup.
+- ✅ **ONE DOOR TO THE CARTRIDGE, since 2026-09-22** (ADR-0223, engine `04b61db6`). `input/virtual-controller` is the only
+  place a command is delivered (ADR-0111, erratum): the root builds it (`createVirtualController`), and every transport PRESSES
+  it — the keyboard's window listener, the touch pad, the gamepad, the switch scan, and the four camera and voice controls
+  (`ui/eye-control`, `ui/face-control`, `ui/hand-control`, `ui/voice-control`, which import only its TYPE and receive the
+  instance). In play the controller holds the child's key (`holdKey`) and delivers the command; in a menu it becomes that
+  menu's key. The menu rule, the held-key memory and the source stamp are written once for all transports.
 - ✅ **THE PANEL LINE IS PAID, on 2026-09-22.** `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is written
   once, and now **every panel that builds rows builds them through the kit**. The work took the shape the measurement gave
   it rather than the shape the plain count suggested: of the five that were outside, only `-controls`, `-typo` and `-aac`
@@ -258,29 +265,62 @@ down more than once. Two of them are the second kind, and naming them here is ch
   `sectionHeader` (four modules were hand-writing `.panel-sub`), and two `ControlShape`s, `'radio'` for the font menu (a
   choice is not a toggle, ADR-0012 erratum) and `'button'` for the remapping panel (a control that DOES something instead
   of holding a value).
-  📏 What it cost and bought, per module: `settings-audio` 837 → **339** lines across the cuts of ADR-0221 step 7c;
-  `settings-typo` 137 → 183 with the adoption and then **134** once `ui/typo-choices` took its pure half;
-  `settings-controls` 184 → 195 and then **173** once `ui/control-choices` took its. Both times the ratchet was what pointed
-  at the cut — the module landed one line under the ceiling, and the answer was to split rather than to ask for an exception.
+  📏 Where the three stand today (code lines in `docs/6-DevOps-SRE/code-health.json`, 2026-09-25): `settings-audio` **401**
+  (837 before the cuts of ADR-0221 step 7c; the ports ADR-0232 D4 added put it back above its post-cut 339), `settings-typo`
+  **136** once `ui/typo-choices` took its pure half, `settings-controls` **178** once `ui/control-choices` took its. Both
+  splits were pointed at by the ratchet — the module had landed one line under the ceiling, and the answer was to split rather
+  than to ask for an exception.
   📌 **And «does anything mount it» stopped being a criterion**, by the Dev's correction of the same day: «E nem é pra medir
   se alguém monta ou não! Se eu vou fazer um cartucho que monta será após isso estar funcionando!»
 
-⚠️ **The experiment that will settle the remaining line is running, and its criterion was fixed before the answer existed:**
+⚠️ **The experiment that settles both lines is running, and its criterion was fixed before the answer existed:**
 when an abstraction is adopted, the files it unifies must stop changing together (`node scripts/co-change.mjs --group …`).
-📏 Measured on 2026-09-22, right after the panel work landed: the `panels` group is together in **6 of the 34 commits that
-touch it (18%)**, and that number is the BASELINE of the adoption, not its verdict — the commits that converted them
-necessarily touch them. Whoever reads this in a month reads the answer. The `transports` group is 25% before the virtual
-controller and 50% after, over **four commits**, which is not a result and the script says so. The one group with enough
-data confirmed the opposite case: the three dictionaries were 100% together before and after, which is what an IRREDUCIBLE
-spread looks like.
+📏 Read on 2026-09-25: the `transports` group is together in **22 of 61 commits (36%) before** the single door and **6 of 29
+(21%) after** it — falling, over a window still short and pessimistic by construction (the unification commits touch them all).
+The `panels` group has no line drawn yet (`landed: null` in the script): **30 of the 135 commits that touch it (22%)** is the
+BASELINE of the adoption, not its verdict. The control group confirms the opposite case: each pair of the three dictionaries
+changes together in 171–172 commits, as often as a dictionary changes at all, which is what an IRREDUCIBLE spread looks like.
 
-Engine constants (TILE_TYPES, TUNE, dimensions) live only in `app/js/core/constants.ts` — never duplicated in docs.
+The engine's constants — the logical resolution and the pixel grid (`LOGICAL_W`, `LOGICAL_H`, `TILE`) — live only in
+`app/js/core/constants.ts`, never duplicated in docs. What a game tunes (physics, goals) and its tile table are the GAME's: they
+left with the platformer (issue #63, ADR-0228).
 The **canonical render Z-order** (named layers, world + overlay scopes; PIXI `zIndex` + DOM `z-index`) and the
 **post-process filter chain** (`POST_FX_ORDER`, a11y-correction-last) lived in the layer-order module, which **left in the F12
 move** (ADR-0228): a z-order is the order of ONE game's layers. ⚠️ The rule of ADR-0020 — the accessibility correction is applied
 LAST — is the ENGINE's and outlives the table it was written in; it is now stated only inside the platformer, and where the
 engine will state it again is the boundary after this one.
 
-> ⚠️ **Contested by ADR-0027**: a measured flash limiter (WCAG 2.3.1) must run AFTER `A11Y_CORRECTION`,
-> because the correction *increases* inter-frame luminance delta and nothing measures downstream of it. Today 2.3.1
-> is met by content discipline, which does not scale to 35 games. ADR-0020 needs an amendment.
+> ⚠️ **Contested by ADR-0027**: a measured flash limiter (WCAG 2.3.1) must run AFTER the accessibility correction,
+> because the correction *increases* inter-frame luminance delta. The engine can now MEASURE it on demand —
+> `engine.measureFlashes(ms)` samples the world's canvas (`platform/flash-sampler.ts` over the pure
+> `core/flash-threshold.ts`, issue #203) — but only when an adult asks, never every frame, and nothing LIMITS a flash.
+> ADR-0020 still needs an amendment.
+
+### 3.5 State and the browser arrive by injection (ADR-0232)
+
+📌 **The rule** (ADR-0232 point 1, phases D2–D4 landed on 2026-09-24/25): outside `boot/create-game`, a module imports BY VALUE
+only what holds no state and reaches no global — pure functions, constants, tables, vocabularies such as
+`core/setting-defaults`, `core/camera-cycle` and `platform/storage-keys`. **Types are imported freely**: they are the contracts
+its parameters are declared by. Anything with state or an effect — the translator, the storage, the settings store, input,
+audio, speech, the canvas — arrives as a PORT on the module's ctx or deps. A stateless helper that translates takes `t` as a
+parameter, first, and stays a function.
+
+- **What the root builds.** `createGame` receives the browser from the host the game lends — `host.doc`, `host.win`, and
+  optionally `host.storage` (else the host window's `localStorage`) — and builds this root's one of each: `createTranslator`,
+  `createStorage`, `createSettingsStore`, `createInputState`, `createAnnouncer`, `createLibras`, `createAudio`, `createCrt`,
+  `createLqFilter`, `createKeyboardConfig`, `createPadTable`, `createPadMaps`, `createVirtualController`. The root itself
+  reaches no global either. Two factories are for a GAME to build: `createLayout` (a game that scales its own stage) and
+  `createHighContrast` (a game with a world).
+- **What a game receives.** Additive handles on `Engine`: `settings`, `t`, `localeReady`, `menuIndexOn`, `gameSpeed`, `say`,
+  `alert`, `mirrorAnnouncements`, `libras`, `input`, `keyboardConfig`, `audio`, `crt`, `lq`. A game registers its words
+  through `CreateGameOptions.dictionaries` and passes `engine.gameSpeed` as `startLoop`'s required `speed`. It asks the
+  engine instead of calling a factory itself: a second instance would be deaf to this root's settings and language.
+- **The one exception.** `core/i18n.ts` is still stateful — its module-level `t` and `registerDict` wait on the Dev's choice of
+  how a game translates the words it declares before `createGame` exists (ADR-0232 erratum of 2026-09-25).
+- **Where the measure lives.** `scripts/code-health.mjs`, its baseline `docs/6-DevOps-SRE/code-health.json` and the gate
+  `tests/code-health.node.test.js` (ADR-0221 + ADR-0232). `globalReach` has ceiling 0, the root included. `statefulEdges`
+  counts value imports into a module of the baseline's `stateful` list, written BY NAME; ceiling 0, the root exempt, since
+  constructing state is its job. `fanOut` counts value edges only — `import`, `export … from`, a lazy `import()`,
+  `require()` and a worker's `new URL(…)` — so a type-only import costs nothing.
+- **Tests build what they need.** Each browser test file lends its own storage (`tests/fixtures/file-storage.js`), so no file
+  inherits another's keys: F9 is closed, 20 sequential full runs green.
