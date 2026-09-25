@@ -13,13 +13,15 @@ const translate = createTranslator().t;
 import { PADWIZ_ORDER, initGamepad, padGameAnswers } from '../app/js/input/gamepad.js';
 import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/input/pad-reading.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
-// `oneButton` reaches the module through the ctx, which answers from `core/state`: these cases really turn it on and off.
-import * as estado from '../app/js/core/state.js';
+// `oneButton` reaches the module through the ctx, which answers from a settings store: these cases really turn it on and off.
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 // Only the last block uses these: it measures the module's SOURCE, because the hole it closes is one of writing and not of
 // execution — a raw sentence runs with no error at all.
 import { readFileSync } from 'node:fs';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { join } from 'node:path';
+const estado = createSettingsStore(filePort);
 
 // padCur/padPrevAct/padPrevStart (input/state.ts) are GENUINELY shared state — not part of the ctx, and they persist
 // between initGamepad() calls in the same process (one set, for the whole lifetime). Without a reset between tests, an

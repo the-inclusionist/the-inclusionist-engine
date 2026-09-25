@@ -23,7 +23,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let createGame;
-let repor;
 
 /** The minimal document a game offers: the world's region and the host of the first screen's bar. */
 function montarHospedeiro() {
@@ -78,10 +77,9 @@ describe('createGame num documento de verdade', () => {
     // `await import` and not static, for the same reason as the node file: the boot graph is big, and a broken module
     // must not bring down the whole collection before the first case runs.
     if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
-    // ⚠️ BLIND MODE IS MODULE STATE AND PERSISTS — in `core/state` and in storage. Without this reset, a case that turns it
-    // on leaves the next one starting on, and the next one measures the opposite of what it says.
-    if (!repor) ({ setBlindModeValue: repor } = await import('../app/js/core/state.js'));
-    repor(false);
+    // ⚠️ BLIND MODE PERSISTS in this file's storage, and every root reads it when it builds its store (ADR-0232 D4). Without
+    // this reset, a case that turns it on leaves the next one starting on, and the next one measures the opposite of what it says.
+    localStorage.removeItem('incl_modocego');
     raiz = montarHospedeiro();
   });
 
@@ -1212,8 +1210,8 @@ describe('createGame num documento de verdade', () => {
 
     it('🔴 [Right] the handle answers the spoken index from the settings store, LIVE (ADR-0044 item 3; ADR-0232 D2c)', async () => {
       // A game that announces its own items — the demo quiz does — asks the engine instead of reading `core/state` by import.
-      const state = await import('../app/js/core/state.js');
       const motor = abrir();
+      const state = motor.settings; // the root's store, which its hearing panel writes (ADR-0232 D4)
       const before = state.menuIndexOn;
       try {
         state.setMenuIndexOnValue(false);
@@ -1444,8 +1442,7 @@ describe('createGame num documento de verdade', () => {
    * opens one more root no longer shifts another case's cursor.
    */
   it('🔴 [Zero] ligado o 👄 onde nada consegue começar, o botão VOLTA a dizer desligado', async () => {
-    const estado = await import('../app/js/core/state.js');
-    abrir();
+    const estado = abrir().settings; // the root's store: what its bar hears (ADR-0232 D4)
     expect(document.querySelector('#title-icons [data-pi="voice"]'), 'o 👄 não está na barra desta raiz').not.toBeNull();
     estado.setVoiceControlValue(true);
     expect(document.querySelector('#title-icons [data-pi="voice"]').getAttribute('aria-pressed'),
@@ -1491,8 +1488,7 @@ describe('createGame num documento de verdade', () => {
     // The face control no longer imports `t`: what it says comes from the `t` the root puts in its deps. There are no heavy
     // files here, so it fails, says why and turns the 📷 back off — and a root that handed it anything else would read the
     // key `sr.face.…` to the child.
-    const estado = await import('../app/js/core/state.js');
-    abrir();
+    const estado = abrir().settings; // the root's store: what its camera control hears (ADR-0232 D4)
     const alerta = document.querySelector('#sr-alert');
     alerta.textContent = '';
     try {
@@ -1514,9 +1510,9 @@ describe('createGame num documento de verdade', () => {
    * the 👄 is never mounted there).
    */
   it('🔴 [Zero] switched to a language whose command model did not come, `problems` says which and how to put it in the delivery', async () => {
-    const estado = await import('../app/js/core/state.js');
     const { setLocale, t } = await import('../app/js/core/i18n.js');
     const motor = abrir();
+    const estado = motor.settings; // the root's store: what its voice control hears (ADR-0232 D4)
     try {
       await setLocale('en');
       estado.setVoiceControlValue(true);

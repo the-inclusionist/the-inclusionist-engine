@@ -8,7 +8,9 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createInputCooldown, COOLDOWN_MS } from '../app/js/input/input-cooldown.js';
-import * as state from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+/** This file's settings store: each case BUILDS its own over a port it chose (ADR-0232 D4). */
+let state;
 
 const MS = COOLDOWN_MS;
 
@@ -93,21 +95,21 @@ function storedPort(saved = {}) {
 // turned the wait on found it off on the next visit (found 2026-09-24 by the ADR-0232 measurement).
 describe('the stored choice survives a reload', () => {
   it('🔴 [Right] a wait stored on an earlier visit is the wait after loading', () => {
-    state.loadState(storedPort({ incl_input_cooldown: 500 }));
+    state = createSettingsStore(storedPort({ incl_input_cooldown: 500 }));
     expect(state.inputCooldown, 'the stored wait was not loaded').toBe(500);
   });
 
   it('🎯 [Boundary] a stored value that is not a wait loads as off, never as a negative or fractional wait', () => {
-    state.loadState(storedPort({ incl_input_cooldown: 'x' }));
+    state = createSettingsStore(storedPort({ incl_input_cooldown: 'x' }));
     expect(state.inputCooldown).toBe(0);
-    state.loadState(storedPort({ incl_input_cooldown: -3 }));
+    state = createSettingsStore(storedPort({ incl_input_cooldown: -3 }));
     expect(state.inputCooldown).toBe(0);
-    state.loadState(storedPort({ incl_input_cooldown: 499.6 }));
+    state = createSettingsStore(storedPort({ incl_input_cooldown: 499.6 }));
     expect(state.inputCooldown).toBe(500);
   });
 
   it('🎯 [Zero] nothing stored is off', () => {
-    state.loadState(storedPort());
+    state = createSettingsStore(storedPort());
     expect(state.inputCooldown).toBe(0);
   });
 });

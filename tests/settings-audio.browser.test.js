@@ -9,12 +9,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsAudio } from '../app/js/ui/settings-audio.js';
 import { NAV_CATS, GEN_CATS } from '../app/js/ui/audio-choices.js';
 import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
-import { menuIndexOn, setMenuIndexOnValue, speechPpm, setSpeechPpmValue } from '../app/js/core/state.js';
-import * as settingsStore from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
 // The sentence is asked of the dictionary and not copied: a copy here would end up measuring itself.
 import { t as tr } from '../app/js/core/i18n.js';
 import { createTranslator } from '../app/js/core/i18n.js';
+/** This file's settings store, built over its own storage (ADR-0232 D4): the test plays the root that builds it. */
+const settingsStore = createSettingsStore(filePort);
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const AUDIO_HTML = `
@@ -408,20 +410,20 @@ describe('ui/settings-audio — TTS', () => {
   it('[Interface] o botão do ÍNDICE alterna o ajuste, reflete no botão e anuncia (ADR-0044, item 3)', () => {
     // The "6 de 10" index is born ON — whoever needs it to find their way has no means of discovering it exists if it
     // comes off. This case proves the path to turn it OFF, which is what XAG 106 requires to exist.
-    const inicial = menuIndexOn;
+    const inicial = settingsStore.menuIndexOn;
     try {
       const { ctx, said } = fullCtx();
       initSettingsAudio(ctx);
       const btn = document.querySelector('#opt-menuindex');
       btn.click();
-      expect(menuIndexOn).toBe(!inicial);
+      expect(settingsStore.menuIndexOn).toBe(!inicial);
       expect(btn.getAttribute('aria-pressed')).toBe(String(!inicial));
       expect(said.at(-1)).toBe(inicial ? 'Posição na lista desligada.' : 'Posição na lista ligada.');
       btn.click(); // inverse: back to what it was, and the announcement follows
-      expect(menuIndexOn).toBe(inicial);
+      expect(settingsStore.menuIndexOn).toBe(inicial);
       expect(said.at(-1)).toBe(inicial ? 'Posição na lista ligada.' : 'Posição na lista desligada.');
     } finally {
-      setMenuIndexOnValue(inicial); // `core/state` is a module: the value outlives the case and would leak into the others
+      settingsStore.setMenuIndexOnValue(inicial); // the store is this file's: the value outlives the case and would leak into the others
     }
   });
 
@@ -588,7 +590,7 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
     // It is the exact twin of the dead `reflectTtsPanel` guard recorded in `ui/pause-icons` (`reflectTtsPanelEnabled`),
     // and the way out is the one `core/state` already wrote beside `setBlindModeValue`: whoever reacts subscribes to
     // the event.
-    const estado = await import('../app/js/core/state.js');
+    const estado = settingsStore; // the store the panel's ctx hands in: its bus is what the panel subscribes to
     let cego = estado.blindMode;
     const { ctx } = fullCtx({});
     ctx.getBlindMode = () => cego;
@@ -724,7 +726,7 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
     const { ctx, audioCat, said } = comVozes([]);
     initSettingsAudio(ctx).renderAudio();
     const narracao = audioCat.tts.on;
-    const indice = menuIndexOn;
+    const indice = settingsStore.menuIndexOn;
     document.querySelector('#opt-tts').click();
     document.querySelector('#opt-menuindex').click();
     const vol = document.querySelector('#tts-vol');
@@ -732,10 +734,10 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
     vol.value = '5';
     vol.dispatchEvent(new Event('input', { bubbles: true }));
     expect(audioCat.tts.on, 'narration toggled').toBe(narracao);
-    expect(menuIndexOn, 'the spoken index toggled').toBe(indice);
+    expect(settingsStore.menuIndexOn, 'the spoken index toggled').toBe(indice);
     expect(audioCat.tts.vol, 'the narration volume moved').toBe(volAntes);
     expect(said.at(-1) ?? '', 'refused in silence').toMatch(/voz/i);
-    setMenuIndexOnValue(indice);
+    settingsStore.setMenuIndexOnValue(indice);
   });
 });
 
@@ -773,14 +775,14 @@ describe('ui/settings-audio — o que a voz reflecte', () => {
   });
 
   it('🔴 [Right] a lista de ritmo da fala nasce com os passos do ADR-0196 e com o valor guardado escolhido', () => {
-    const antes = speechPpm;
-    setSpeechPpmValue(SPEECH_RATES[2]);
+    const antes = settingsStore.speechPpm;
+    settingsStore.setSpeechPpmValue(SPEECH_RATES[2]);
     const { ctx } = fullCtx();
     initSettingsAudio(ctx).renderAudio();
     const sel = document.querySelector('#tts-ppm');
     expect([...sel.options].map((o) => Number(o.value)), 'a lista de ritmo não é a do registo').toEqual([...SPEECH_RATES]);
     expect(Number(sel.value), 'a lista abriu num ritmo que a criança não escolheu').toBe(SPEECH_RATES[2]);
-    setSpeechPpmValue(antes);
+    settingsStore.setSpeechPpmValue(antes);
   });
 });
 

@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/state.ts — the child's settings for the PAGE (the SINGLE source), read as live bindings and written by setters,
-// plus a minimal typed bus (Map<event, Set<fn>>) for the readers "from afar" that react to a setting.
+// core/state.ts — the child's settings for a ROOT (the SINGLE source it reads), built by `createSettingsStore` over the port the
+// root lends, read through live getters and written by setters, plus a minimal typed bus (Map<event, Set<fn>>) for the
+// readers "from afar" that react to a setting.
 
-// ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `loadState` receives — the
+// ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `createSettingsStore` receives — the
 // shape `platform/storage` already has — so `core` does not reach up to `platform` (ADR-0173).
+// 🔴 A FACTORY, NOT A MODULE OF BINDINGS (ADR-0232 D4, issue #207): the settings and the bus live in the closure a root builds,
+// so two roots on one page — and two test files — share nothing (ADR-0142). A game reads the root's store as `engine.settings`.
 
 import { isGameSpeed } from './game-speed.js';
 import { isCaptionRate } from './caption-duration.js';
@@ -25,18 +28,6 @@ export interface StatePort {
     readonly ownercolors: string; readonly outfg: string; readonly outbg: string;
   };
 }
-
-/** An empty storage: every read gives its fallback. What the bindings hold until the root loads the child's settings. */
-const NULL_PORT: StatePort = {
-  get: (_k, fallback) => fallback,
-  set: () => false,
-  getBool: (_k, fallback = false) => fallback,
-  setBool: () => undefined,
-  getNum: (_k, fallback = 0) => fallback,
-  KEYS: { letterCase: '', captions: '', menuIndex: '', cbsafe: '', ownercolors: '', outfg: '', outbg: '' },
-};
-
-let port: StatePort | null = null;
 
 /**
  * ========================= THE BUS, TYPED =========================
@@ -89,64 +80,6 @@ export interface GameEvent {
 }
 
 type Listener<K extends keyof GameEvent> = (val: GameEvent[K]) => void;
-const _subs = new Map<keyof GameEvent, Set<(val: never) => void>>();
-
-/** Subscribes to `evt`. Returns the function that cancels — keeping the return is cheaper than remembering `off`. */
-export function on<K extends keyof GameEvent>(evt: K, fn: Listener<K>): () => void {
-  if (!_subs.has(evt)) _subs.set(evt, new Set());
-  _subs.get(evt)!.add(fn as (val: never) => void);
-  return () => off(evt, fn);
-}
-
-export function off<K extends keyof GameEvent>(evt: K, fn: Listener<K>): void {
-  const s = _subs.get(evt);
-  if (s) s.delete(fn as (val: never) => void);
-}
-
-/**
- * Tells the subscribers of `evt`. EXPORTED because a game emits on the same channels: a second map of subscribers would
- * be a second bus, and whoever subscribed in the wrong one would simply never be told — no error, no red test.
- *
- * The `try` around each subscriber is NOT laziness: a listener that throws must not stop the others from receiving. A
- * broken panel brings down the panel, not the game.
- */
-export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void {
-  const s = _subs.get(evt);
-  if (s) for (const fn of s) { try { (fn as unknown as Listener<K>)(val); } catch (e) { /* noop */ } }
-}
-
-// ========================= WHAT DOES NOT LIVE HERE (ADR-0038, cut by LIFETIME) =========================
-// This module holds what lives for the PAGE — the child's accessibility, language and device settings — and nothing
-// else; `tests/lifetime-gate.node.test.ts` asserts it on every run.
-//   · The PHASE became a stack (`core/scenes`). `phase === 'paused'` ERASED the fact that a game is underneath; the stack
-//     keeps it, and engine modules receive BOOLEANS, never the phase names (ADR-0030).
-//   · The ROUND (players, who paused, what ended) does not persist, and a `export let` is a SHARED live binding: two games
-//     on one page would see the same list, and the second would start with the first one's players still in it.
-//   · A GAME's own state (its scenery, activity, level, coins) persists under the game's key and travels with the
-//     cartridge (ADR-0033, ADR-0036).
-
-// --- vizMode: the active visual/colour mode (stored in incl_viz). `initVizMode` does NOT store it: a default taken from
-//     the media query must follow the OS at every boot, and storing it would freeze the tracking of prefers-contrast. The
-//     child's own changes go through `setVizModeValue`. ---
-export let vizMode = 'normal';
-export function initVizMode(mode: string): void { vizMode = mode; }
-export function setVizModeValue(mode: string): void { const p = portFor('setVizModeValue'); p.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); }
-
-// --- blindMode: BLIND MODE. Only the audio aids — cane, sonar, edge guard, narration — with no black screen; the
-//     Empathy blindness simulation is another thing and turns this on as well.
-//
-//     State that six modules consult does not belong to the composition root; while it did, `createGame()` could not
-//     exist without capturing it, which is the boundary test ADR-0027 wanted to run.
-//
-//     THE SETTER DOES THREE THINGS AND ONLY THREE: stores, persists, tells. Redrawing the level, reflecting a panel,
-//     announcing to the screen reader are REACTIONS, and whoever reacts subscribes to the event. A setter that knows how
-//     to redraw the screen is a setter no test can call. ---
-export let blindMode: boolean = NULL_PORT.getBool('incl_modocego', DEFAULTS.blindMode);
-export function setBlindModeValue(on: boolean): void {
-  if (blindMode === on) return; // without this guard the announcement would repeat on every redundant click
-  const p = portFor('setBlindModeValue'); p.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
-}
-
 
 /**
  * A gate tile: a gate is a LIST of these, not one object with a position. A STRUCTURAL minimum — `core/` does not
@@ -154,237 +87,345 @@ export function setBlindModeValue(on: boolean): void {
  */
 export interface GateTile { readonly tx: number; readonly ty: number }
 
-// --- letterCase: letters show in UPPER CASE or in their natural case. A pedagogical choice, not an aesthetic one:
-//     Brazilian literacy usually starts in upper case, and a child past that stage needs the lower case.
-//
-// --- captionsOn: captions for sounds (deaf accessibility).
-//
-//     BOTH PERSIST (ADR-0028). The Dev's answer was wider than the question: EVERY settings panel persists, and every
-//     panel ends with a control that restores its own defaults. The reason is accessibility, not convenience — a deaf
-//     child who turns captions on and finds them off tomorrow pays that price every day, and whoever needs the panel
-//     most has the least margin to lose it.
-//
-//     The values are 'mixed' | 'upper', a choice inside the AAC panel. A stored 'lower' reads as 'mixed': the Dev asked
-//     for two options, upper and lower case together or upper case only, and the first is text in its NATURAL case, not
-//     text forced to lower — forcing lower case on a proper noun teaches wrong.
-//
-//     THE DERIVATION MATTERS: there is no `aacMode` yet, on purpose. While only the two letter cases can be chosen, a
-//     second variable for the same question would be a duplicate state (#54). When a pictogram set can be chosen,
-//     `aacMode` is born and `letterCase` derives from it. ---
+/**
+ * letterCase: letters show in UPPER CASE or in their natural case. A stored 'lower' reads as 'mixed': the Dev asked for two
+ * options, upper and lower case together or upper case only (see the store's `letterCase`).
+ */
 export type LetterCase = 'mixed' | 'upper';
-export let letterCase: LetterCase = NULL_PORT.get(NULL_PORT.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
-export function setLetterCaseValue(c: LetterCase): void {
-  if (letterCase === c) return;
-  const p = portFor('setLetterCaseValue'); p.set(p.KEYS.letterCase, c); letterCase = c; emit('letterCase', c);
-}
-
-export let captionsOn = NULL_PORT.getBool(NULL_PORT.KEYS.captions, DEFAULTS.captionsOn);
-export function setCaptionsOnValue(on: boolean): void {
-  const v = !!on;
-  if (captionsOn === v) return;
-  const p = portFor('setCaptionsOnValue'); p.setBool(p.KEYS.captions, v); captionsOn = v; emit('captionsOn', v);
-}
-
-// --- menuIndexOn: the "6 of 10" at the end of each menu item's announcement (ADR-0044, item 3).
-//
-//     BORN ON, for the reason blind mode is born with speech and sonar: whoever needs the index to find their way has
-//     no way to know it exists if it arrives off. Whoever does NOT need it finds the setting by reading the menu,
-//     which is exactly what that person can do.
-//
-//     STORED in `incl_menuindex` (the CHILD's scope, ADR-0027): the preference follows them from game to game.
-export let menuIndexOn = NULL_PORT.getBool(NULL_PORT.KEYS.menuIndex, DEFAULTS.menuIndexOn);
-export function setMenuIndexOnValue(on: boolean): void {
-  const v = !!on;
-  if (menuIndexOn === v) return;
-  const p = portFor('setMenuIndexOnValue'); p.setBool(p.KEYS.menuIndex, v); menuIndexOn = v; emit('menuIndexOn', v);
-}
-
-// --- cbSafe: the COLOUR-BLIND SAFE PALETTE (Okabe-Ito). Not a filter over the image — the choice of the source colours,
-//     applied IN PLACE so everyone who already references the palette sees the change. ---
-export let cbSafe: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.cbsafe, DEFAULTS.cbSafe);
-export function setCbSafeValue(on: boolean): void {
-  const v = !!on;
-  if (cbSafe === v) return;
-  const p = portFor('setCbSafeValue'); p.setBool(p.KEYS.cbsafe, v); cbSafe = v; emit('cbSafe', v);
-}
-
-// --- ownerColors: in multiplayer, each item shows in the colour of WHO can take it. Off, everyone sees the original
-//     colour — preferable for whoever cannot tell the owners' colours apart. ---
-export let ownerColors: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.ownercolors, DEFAULTS.ownerColors);
-export function setOwnerColorsValue(on: boolean): void {
-  const v = !!on;
-  if (ownerColors === v) return;
-  const p = portFor('setOwnerColorsValue'); p.setBool(p.KEYS.ownercolors, v); ownerColors = v; emit('ownerColors', v);
-}
 
 /** Outline thickness: 0 none · 1 thin · 2 thick. Out of range saturates, it is not rejected. */
 export type OutlineLevel = 0 | 1 | 2;
 const toOutlineLevel = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0)) as OutlineLevel;
 
-// --- hcOutlineFg / hcOutlineBg: the high-contrast OUTLINES, two because they serve different criteria. `fg` outlines
-//     the foreground — character and items — for WCAG 2.4.7 (focus visible). `bg` outlines the outer edge of what can
-//     and cannot be walked, for WCAG 1.4.11 (component contrast ≥ 3:1). Merging them would erase one of the guarantees.
-//
-//     Saturating to 0..2 happens twice: at boot (against corrupted storage) and on write (against a caller). ---
-export let hcOutlineFg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT.KEYS.outfg, DEFAULTS.hcOutlineFg));
-export function setOutlineFgValue(v: number): void {
-  const n = toOutlineLevel(v);
-  if (hcOutlineFg === n) return;
-  const p = portFor('setOutlineFgValue'); p.set(p.KEYS.outfg, n); hcOutlineFg = n; emit('hcOutlineFg', n);
-}
-export let hcOutlineBg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT.KEYS.outbg, DEFAULTS.hcOutlineBg));
-export function setOutlineBgValue(v: number): void {
-  const n = toOutlineLevel(v);
-  if (hcOutlineBg === n) return;
-  const p = portFor('setOutlineBgValue'); p.set(p.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
-}
-
-// --- caneBlockDiv: the CANE's tap spacing, in blocks walked. 1 = one tap per block; 2 = one tap every half block. Not a
-//     sound preference: it is the resolution at which a blind child measures how far they walked. ---
-export let caneBlockDiv: number = NULL_PORT.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
-export function setCaneBlockDivValue(div: number): void {
-  const d = (+div) || 1; // the `|| 1`: a corrupted stored value would become NaN and the cane
-  if (caneBlockDiv === d) return; //  would stop tapping, which is the most silent failure there is
-  const p = portFor('setCaneBlockDivValue'); p.set('incl_cane_div', d); caneBlockDiv = d; emit('caneBlockDiv', d);
-}
-
-// --- wheelchair: WHEELCHAIR MODE, a game's answer to a child who plays seated: steps and ladders become ramps and lifts
-//     in a game that has them. The engine stores and announces it; what it changes is the game's to decide. ---
-export let wheelchair: boolean = NULL_PORT.getBool('incl_wheelchair', DEFAULTS.wheelchair);
-export function setWheelchairValue(on: boolean): void {
-  if (wheelchair === on) return;
-  const p = portFor('setWheelchairValue'); p.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
-}
-
-// --- oneButton: «um botão por vez», an EMPATHY SIMULATION (ADR-0181): while one game key is held, a second is never
-//     accepted. It was described as an accommodation; the Dev: it simulates a motor difficulty. ---
-export let oneButton: boolean = NULL_PORT.getBool('incl_onebtn', DEFAULTS.oneButton);
-export function setOneButtonValue(on: boolean): void {
-  if (oneButton === on) return;
-  const p = portFor('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
-}
-
-// --- noGripStrength: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
-//     game key reads as one tap. Stored like the other simulations, off by default. ---
-export let noGripStrength: boolean = NULL_PORT.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
-export function setNoGripStrengthValue(on: boolean): void {
-  const v = !!on;
-  if (noGripStrength === v) return;
-  const p = portFor('setNoGripStrengthValue'); p.setBool('incl_sem_forca', v); noGripStrength = v; emit('noGripStrength', v);
-}
-
-// --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
-//     the number, so «how long» and «whether» are one value and cannot disagree. Off by default: a child with no tremor would
-//     lose half a second between every two presses, which in a game of reaction is the game. ---
 /** A wait in whole milliseconds; anything that is not a positive number is off. The writer and the loader share it. */
 const toCooldown = (ms: number): number => (Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0);
-export let inputCooldown: number = NULL_PORT.getNum('incl_input_cooldown', DEFAULTS.inputCooldown);
-export function setInputCooldownValue(ms: number): void {
-  const v = toCooldown(ms);
-  if (inputCooldown === v) return;
-  const p = portFor('setInputCooldownValue'); p.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
-}
-
-// --- switchScan: PLAYING WITH ONE BUTTON, the third position of the quick bar's ☝️ (ADR-0218, issue #201). The scan offers the
-//     game's declared positions one at a time and any press takes the one showing (`input/switch-scan`).
-//     📌 ONE KEY FOR THE WHOLE ENGINE, and not one per seat like the latch beside it: this describes the CHILD'S BODY and not
-//     the game — the switch she has in the platformer she also has in the quiz — while the latch answers «does THIS transport
-//     need me to hold», which is why that one is kept per seat and per transport (ADR-0113).
-//     ⚠️ NOT `oneButton` ABOVE, and the two names are a debt worth seeing: that one is the empathy SIMULATION «um botão por
-//     vez» (ADR-0181), which makes play harder on purpose, and this is the ACCOMMODATION of the same catalogue id. The Dev
-//     named the confusion on 2026-09-21; renaming the simulation crosses into a cartridge (`p.oneButton` in game-soccer) and
-//     waits for its own commit. ---
-export let switchScan: boolean = NULL_PORT.getBool('incl_switch_scan', DEFAULTS.switchScan);
-export function setSwitchScanValue(on: boolean): void {
-  const v = !!on;
-  if (switchScan === v) return;
-  const p = portFor('setSwitchScanValue'); p.setBool('incl_switch_scan', v); switchScan = v; emit('switchScan', v);
-}
-
-// --- voiceControl: PLAYING BY SPEAKING, the quick bar's 👄 (ADR-0189, ADR-0193; issue #184). The child says a word of the
-//     game and the position it names is pressed. ONE key for the whole engine, like the camera's: it describes the CHILD, and
-//     a voice she has in one game she has in the next. Off by default, because it opens a MICROPHONE and nothing may do that
-//     by itself; a stored value that is not a yes reads as off. ---
-export let voiceControl: boolean = NULL_PORT.getBool('incl_voice_control', DEFAULTS.voiceControl);
-export function setVoiceControlValue(on: boolean): void {
-  const v = !!on;
-  if (voiceControl === v) return;
-  const p = portFor('setVoiceControlValue'); p.setBool('incl_voice_control', v); voiceControl = v; emit('voiceControl', v);
-}
-
-// --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215). ONE key, so one camera mode at a time holds by
-//     construction (ADR-0197); every playing position draws its lines. Kept on the device; the positions, their order and the
-//     sanitiser live in `core/camera-cycle`. ---
-export let cameraControl: CameraControl = toCameraControl(NULL_PORT.get('incl_camera_control', DEFAULTS.cameraControl));
-export function setCameraControlValue(v: CameraControl): void {
-  const valid = toCameraControl(v);
-  if (cameraControl === valid) return;
-  const p = portFor('setCameraControlValue'); p.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
-}
-
-// --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); a game hands it to `core/loop.startLoop` as its
-//     `speed` port (ADR-0232), which multiplies the frame time by it. Stored and carried between games; a stored value
-//     outside the steps reads as 100%. ---
-export let gameSpeed: number = isGameSpeed(NULL_PORT.getNum('incl_game_speed', DEFAULTS.gameSpeed));
-export function setGameSpeedValue(v: number): void {
-  const isValidSpeed = isGameSpeed(v);
-  if (gameSpeed === isValidSpeed) return;
-  const p = portFor('setGameSpeedValue'); p.set('incl_game_speed', isValidSpeed); gameSpeed = isValidSpeed; emit('gameSpeed', isValidSpeed);
-}
-
-// --- captionPpm: the child's caption reading rate, words a minute (ADR-0183 §4): how long a sound caption stays. One of
-//     125, 145, 175; anything else reads as 125. ---
-export let captionPpm: number = isCaptionRate(NULL_PORT.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
-export function setCaptionPpmValue(ppm: number): void {
-  const isValidRate = isCaptionRate(ppm);
-  if (captionPpm === isValidRate) return;
-  const p = portFor('setCaptionPpmValue'); p.set('incl_caption_ppm', isValidRate); captionPpm = isValidRate; emit('captionPpm', isValidRate);
-}
-
-// --- speechPpm: the child's speech rate, words a minute (ADR-0183 §1; issue #179): each engine measures its voice and plays at
-//     the ratio (`core/speech-rate`). One of 254…504 by 50; anything else reads as 254, the normal speed (ADR-0196). ---
-export let speechPpm: number = isSpeechRate(NULL_PORT.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
-export function setSpeechPpmValue(ppm: number): void {
-  const isValidRate = isSpeechRate(ppm);
-  if (speechPpm === isValidRate) return;
-  const p = portFor('setSpeechPpmValue'); p.set('incl_speech_ppm', isValidRate); speechPpm = isValidRate; emit('speechPpm', isValidRate);
-}
-
-/* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
-
 
 /**
- * The port for a write — or an error. ⚠️ A write before the load would put a default over what the child saved, and nobody
- * would see it; the error names the setter, so the root that calls it too early is found the first time it runs.
+ * A root's settings store: every read is a LIVE getter (it answers the value of now, not of when it was taken), every write
+ * a setter that does three things and only three — stores, persists, tells.
+ *
+ * ⚠️ DESTRUCTURING A READ FREEZES IT: `const { blindMode } = store` copies the value of that moment. Read `store.blindMode`.
+ * The setters and the bus hold no `this`, so they can be taken apart (`const { on, emit } = store`).
  */
-function portFor(setter: string): StatePort {
-  if (!port) throw new Error(`core/state: ${setter} wrote a setting before loadState — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
-  return port;
+export interface SettingsStore {
+  /** The active visual/colour mode (stored in incl_viz by its setter; `initVizMode` does not store). */
+  readonly vizMode: string;
+  readonly blindMode: boolean;
+  readonly letterCase: LetterCase;
+  readonly captionsOn: boolean;
+  readonly menuIndexOn: boolean;
+  readonly cbSafe: boolean;
+  readonly ownerColors: boolean;
+  readonly hcOutlineFg: OutlineLevel;
+  readonly hcOutlineBg: OutlineLevel;
+  readonly caneBlockDiv: number;
+  readonly wheelchair: boolean;
+  readonly oneButton: boolean;
+  readonly noGripStrength: boolean;
+  readonly inputCooldown: number;
+  readonly switchScan: boolean;
+  readonly voiceControl: boolean;
+  readonly cameraControl: CameraControl;
+  readonly gameSpeed: number;
+  readonly captionPpm: number;
+  readonly speechPpm: number;
+  /** Sets the visual mode WITHOUT storing it: a default taken from the media query must follow the OS at every boot. */
+  initVizMode(mode: string): void;
+  setVizModeValue(mode: string): void;
+  setBlindModeValue(on: boolean): void;
+  setLetterCaseValue(c: LetterCase): void;
+  setCaptionsOnValue(on: boolean): void;
+  setMenuIndexOnValue(on: boolean): void;
+  setCbSafeValue(on: boolean): void;
+  setOwnerColorsValue(on: boolean): void;
+  setOutlineFgValue(v: number): void;
+  setOutlineBgValue(v: number): void;
+  setCaneBlockDivValue(div: number): void;
+  setWheelchairValue(on: boolean): void;
+  setOneButtonValue(on: boolean): void;
+  setNoGripStrengthValue(on: boolean): void;
+  setInputCooldownValue(ms: number): void;
+  setSwitchScanValue(on: boolean): void;
+  setVoiceControlValue(on: boolean): void;
+  setCameraControlValue(v: CameraControl): void;
+  setGameSpeedValue(v: number): void;
+  setCaptionPpmValue(ppm: number): void;
+  setSpeechPpmValue(ppm: number): void;
+  /** Subscribes to `evt`. Returns the function that cancels — keeping the return is cheaper than remembering `off`. */
+  on<K extends keyof GameEvent>(evt: K, fn: Listener<K>): () => void;
+  off<K extends keyof GameEvent>(evt: K, fn: Listener<K>): void;
+  /**
+   * Tells the subscribers of `evt`. PUBLIC because a game emits on the same channels: a second map of subscribers would be a
+   * second bus, and whoever subscribed in the wrong one would simply never be told — no error, no red test.
+   */
+  emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void;
 }
 
+// ========================= WHAT DOES NOT LIVE HERE (ADR-0038, cut by LIFETIME) =========================
+// This store holds what lives for the PAGE — the child's accessibility, language and device settings — and nothing
+// else; `tests/lifetime-gate.node.test.ts` asserts it on every run.
+//   · The PHASE became a stack (`core/scenes`). `phase === 'paused'` ERASED the fact that a game is underneath; the stack
+//     keeps it, and engine modules receive BOOLEANS, never the phase names (ADR-0030).
+//   · The ROUND (players, who paused, what ended) does not persist, and lives in the game's run state, not here.
+//   · A GAME's own state (its scenery, activity, level, coins) persists under the game's key and travels with the
+//     cartridge (ADR-0033, ADR-0036).
+
 /**
- * Loads the child's stored settings into the bindings, and keeps the port for the setters. The composition root calls it
- * first (`createGame` does); calling it again reads again.
+ * Builds a settings store over `port`, READING THE CHILD'S STORED SETTINGS FIRST (ADR-0178): the composition root builds it
+ * before anything reads or writes a setting, so no write can put a default over what the child saved. The port is
+ * REQUIRED — an optional one falling back to a shared store would be the singleton again (ADR-0232, erratum D2b).
  */
-export function loadState(p: StatePort): void {
-  port = p;
-  blindMode = p.getBool('incl_modocego', DEFAULTS.blindMode);
-  letterCase = p.get(p.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
-  captionsOn = p.getBool(p.KEYS.captions, DEFAULTS.captionsOn);
-  menuIndexOn = p.getBool(p.KEYS.menuIndex, DEFAULTS.menuIndexOn);
-  cbSafe = p.getBool(p.KEYS.cbsafe, DEFAULTS.cbSafe);
-  ownerColors = p.getBool(p.KEYS.ownercolors, DEFAULTS.ownerColors);
-  hcOutlineFg = toOutlineLevel(p.getNum(p.KEYS.outfg, DEFAULTS.hcOutlineFg));
-  hcOutlineBg = toOutlineLevel(p.getNum(p.KEYS.outbg, DEFAULTS.hcOutlineBg));
-  caneBlockDiv = p.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
-  wheelchair = p.getBool('incl_wheelchair', DEFAULTS.wheelchair);
-  oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
-  gameSpeed = isGameSpeed(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
-  noGripStrength = p.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
-  inputCooldown = toCooldown(p.getNum('incl_input_cooldown', DEFAULTS.inputCooldown));
-  switchScan = p.getBool('incl_switch_scan', DEFAULTS.switchScan);
-  voiceControl = p.getBool('incl_voice_control', DEFAULTS.voiceControl);
-  cameraControl = toCameraControl(p.get('incl_camera_control', DEFAULTS.cameraControl));
-  captionPpm = isCaptionRate(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
-  speechPpm = isSpeechRate(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
+export function createSettingsStore(port: StatePort): SettingsStore {
+  const subs = new Map<keyof GameEvent, Set<(val: never) => void>>();
+
+  function on<K extends keyof GameEvent>(evt: K, fn: Listener<K>): () => void {
+    if (!subs.has(evt)) subs.set(evt, new Set());
+    subs.get(evt)!.add(fn as (val: never) => void);
+    return () => off(evt, fn);
+  }
+  function off<K extends keyof GameEvent>(evt: K, fn: Listener<K>): void {
+    const s = subs.get(evt);
+    if (s) s.delete(fn as (val: never) => void);
+  }
+  /*
+   * The `try` around each subscriber is NOT laziness: a listener that throws must not stop the others from receiving. A
+   * broken panel brings down the panel, not the game.
+   */
+  function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void {
+    const s = subs.get(evt);
+    if (s) for (const fn of s) { try { (fn as unknown as Listener<K>)(val); } catch (e) { /* noop */ } }
+  }
+
+  // --- vizMode: the active visual/colour mode (stored in incl_viz). `initVizMode` does NOT store it: a default taken from
+  //     the media query must follow the OS at every boot, and storing it would freeze the tracking of prefers-contrast. The
+  //     child's own changes go through `setVizModeValue`. ---
+  let vizMode = 'normal';
+
+  // --- blindMode: BLIND MODE. Only the audio aids — cane, sonar, edge guard, narration — with no black screen; the
+  //     Empathy blindness simulation is another thing and turns this on as well.
+  //
+  //     THE SETTER DOES THREE THINGS AND ONLY THREE: stores, persists, tells. Redrawing the level, reflecting a panel,
+  //     announcing to the screen reader are REACTIONS, and whoever reacts subscribes to the event. A setter that knows how
+  //     to redraw the screen is a setter no test can call. ---
+  let blindMode = port.getBool('incl_modocego', DEFAULTS.blindMode);
+
+  // --- letterCase: letters show in UPPER CASE or in their natural case. A pedagogical choice, not an aesthetic one:
+  //     Brazilian literacy usually starts in upper case, and a child past that stage needs the lower case.
+  //
+  // --- captionsOn: captions for sounds (deaf accessibility).
+  //
+  //     BOTH PERSIST (ADR-0028). The Dev's answer was wider than the question: EVERY settings panel persists, and every
+  //     panel ends with a control that restores its own defaults. The reason is accessibility, not convenience — a deaf
+  //     child who turns captions on and finds them off tomorrow pays that price every day, and whoever needs the panel
+  //     most has the least margin to lose it.
+  //
+  //     The values are 'mixed' | 'upper', a choice inside the AAC panel. A stored 'lower' reads as 'mixed': the Dev asked
+  //     for two options, upper and lower case together or upper case only, and the first is text in its NATURAL case, not
+  //     text forced to lower — forcing lower case on a proper noun teaches wrong.
+  //
+  //     THE DERIVATION MATTERS: there is no `aacMode` yet, on purpose. While only the two letter cases can be chosen, a
+  //     second variable for the same question would be a duplicate state (#54). When a pictogram set can be chosen,
+  //     `aacMode` is born and `letterCase` derives from it. ---
+  let letterCase: LetterCase = port.get(port.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
+  let captionsOn = port.getBool(port.KEYS.captions, DEFAULTS.captionsOn);
+
+  // --- menuIndexOn: the "6 of 10" at the end of each menu item's announcement (ADR-0044, item 3).
+  //
+  //     BORN ON, for the reason blind mode is born with speech and sonar: whoever needs the index to find their way has
+  //     no way to know it exists if it arrives off. Whoever does NOT need it finds the setting by reading the menu,
+  //     which is exactly what that person can do.
+  //
+  //     STORED in `incl_menuindex` (the CHILD's scope, ADR-0027): the preference follows them from game to game. ---
+  let menuIndexOn = port.getBool(port.KEYS.menuIndex, DEFAULTS.menuIndexOn);
+
+  // --- cbSafe: the COLOUR-BLIND SAFE PALETTE (Okabe-Ito). Not a filter over the image — the choice of the source colours,
+  //     applied IN PLACE so everyone who already references the palette sees the change. ---
+  let cbSafe = port.getBool(port.KEYS.cbsafe, DEFAULTS.cbSafe);
+
+  // --- ownerColors: in multiplayer, each item shows in the colour of WHO can take it. Off, everyone sees the original
+  //     colour — preferable for whoever cannot tell the owners' colours apart. ---
+  let ownerColors = port.getBool(port.KEYS.ownercolors, DEFAULTS.ownerColors);
+
+  // --- hcOutlineFg / hcOutlineBg: the high-contrast OUTLINES, two because they serve different criteria. `fg` outlines
+  //     the foreground — character and items — for WCAG 2.4.7 (focus visible). `bg` outlines the outer edge of what can
+  //     and cannot be walked, for WCAG 1.4.11 (component contrast ≥ 3:1). Merging them would erase one of the guarantees.
+  //
+  //     Saturating to 0..2 happens twice: at load (against corrupted storage) and on write (against a caller). ---
+  let hcOutlineFg = toOutlineLevel(port.getNum(port.KEYS.outfg, DEFAULTS.hcOutlineFg));
+  let hcOutlineBg = toOutlineLevel(port.getNum(port.KEYS.outbg, DEFAULTS.hcOutlineBg));
+
+  // --- caneBlockDiv: the CANE's tap spacing, in blocks walked. 1 = one tap per block; 2 = one tap every half block. Not a
+  //     sound preference: it is the resolution at which a blind child measures how far they walked. ---
+  let caneBlockDiv = port.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
+
+  // --- wheelchair: WHEELCHAIR MODE, a game's answer to a child who plays seated: steps and ladders become ramps and lifts
+  //     in a game that has them. The engine stores and announces it; what it changes is the game's to decide. ---
+  let wheelchair = port.getBool('incl_wheelchair', DEFAULTS.wheelchair);
+
+  // --- oneButton: «um botão por vez», an EMPATHY SIMULATION (ADR-0181): while one game key is held, a second is never
+  //     accepted. It was described as an accommodation; the Dev: it simulates a motor difficulty. ---
+  let oneButton = port.getBool('incl_onebtn', DEFAULTS.oneButton);
+
+  // --- noGripStrength: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
+  //     game key reads as one tap. Stored like the other simulations, off by default. ---
+  let noGripStrength = port.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
+
+  // --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
+  //     the number, so «how long» and «whether» are one value and cannot disagree. Off by default: a child with no tremor would
+  //     lose half a second between every two presses, which in a game of reaction is the game. ---
+  let inputCooldown = toCooldown(port.getNum('incl_input_cooldown', DEFAULTS.inputCooldown));
+
+  // --- switchScan: PLAYING WITH ONE BUTTON, the third position of the quick bar's ☝️ (ADR-0218, issue #201). The scan offers the
+  //     game's declared positions one at a time and any press takes the one showing (`input/switch-scan`).
+  //     📌 ONE KEY FOR THE WHOLE ENGINE, and not one per seat like the latch beside it: this describes the CHILD'S BODY and not
+  //     the game — the switch she has in the platformer she also has in the quiz — while the latch answers «does THIS transport
+  //     need me to hold», which is why that one is kept per seat and per transport (ADR-0113).
+  //     ⚠️ NOT `oneButton` ABOVE, and the two names are a debt worth seeing: that one is the empathy SIMULATION «um botão por
+  //     vez» (ADR-0181), which makes play harder on purpose, and this is the ACCOMMODATION of the same catalogue id. The Dev
+  //     named the confusion on 2026-09-21; renaming the simulation crosses into a cartridge (`p.oneButton` in game-soccer) and
+  //     waits for its own commit. ---
+  let switchScan = port.getBool('incl_switch_scan', DEFAULTS.switchScan);
+
+  // --- voiceControl: PLAYING BY SPEAKING, the quick bar's 👄 (ADR-0189, ADR-0193; issue #184). The child says a word of the
+  //     game and the position it names is pressed. ONE key for the whole engine, like the camera's: it describes the CHILD, and
+  //     a voice she has in one game she has in the next. Off by default, because it opens a MICROPHONE and nothing may do that
+  //     by itself; a stored value that is not a yes reads as off. ---
+  let voiceControl = port.getBool('incl_voice_control', DEFAULTS.voiceControl);
+
+  // --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215). ONE key, so one camera mode at a time holds by
+  //     construction (ADR-0197); every playing position draws its lines. Kept on the device; the positions, their order and the
+  //     sanitiser live in `core/camera-cycle`. ---
+  let cameraControl = toCameraControl(port.get('incl_camera_control', DEFAULTS.cameraControl));
+
+  // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); a game hands it to `core/loop.startLoop` as its
+  //     `speed` port (ADR-0232), which multiplies the frame time by it. Stored and carried between games; a stored value
+  //     outside the steps reads as 100%. ---
+  let gameSpeed = isGameSpeed(port.getNum('incl_game_speed', DEFAULTS.gameSpeed));
+
+  // --- captionPpm: the child's caption reading rate, words a minute (ADR-0183 §4): how long a sound caption stays. One of
+  //     125, 145, 175; anything else reads as 125. ---
+  let captionPpm = isCaptionRate(port.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
+
+  // --- speechPpm: the child's speech rate, words a minute (ADR-0183 §1; issue #179): each engine measures its voice and plays at
+  //     the ratio (`core/speech-rate`). One of 254…504 by 50; anything else reads as 254, the normal speed (ADR-0196). ---
+  let speechPpm = isSpeechRate(port.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
+
+  return {
+    get vizMode() { return vizMode; },
+    get blindMode() { return blindMode; },
+    get letterCase() { return letterCase; },
+    get captionsOn() { return captionsOn; },
+    get menuIndexOn() { return menuIndexOn; },
+    get cbSafe() { return cbSafe; },
+    get ownerColors() { return ownerColors; },
+    get hcOutlineFg() { return hcOutlineFg; },
+    get hcOutlineBg() { return hcOutlineBg; },
+    get caneBlockDiv() { return caneBlockDiv; },
+    get wheelchair() { return wheelchair; },
+    get oneButton() { return oneButton; },
+    get noGripStrength() { return noGripStrength; },
+    get inputCooldown() { return inputCooldown; },
+    get switchScan() { return switchScan; },
+    get voiceControl() { return voiceControl; },
+    get cameraControl() { return cameraControl; },
+    get gameSpeed() { return gameSpeed; },
+    get captionPpm() { return captionPpm; },
+    get speechPpm() { return speechPpm; },
+
+    initVizMode(mode) { vizMode = mode; },
+    setVizModeValue(mode) { port.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); },
+    setBlindModeValue(on) {
+      if (blindMode === on) return; // without this guard the announcement would repeat on every redundant click
+      port.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
+    },
+    setLetterCaseValue(c) {
+      if (letterCase === c) return;
+      port.set(port.KEYS.letterCase, c); letterCase = c; emit('letterCase', c);
+    },
+    setCaptionsOnValue(on) {
+      const v = !!on;
+      if (captionsOn === v) return;
+      port.setBool(port.KEYS.captions, v); captionsOn = v; emit('captionsOn', v);
+    },
+    setMenuIndexOnValue(on) {
+      const v = !!on;
+      if (menuIndexOn === v) return;
+      port.setBool(port.KEYS.menuIndex, v); menuIndexOn = v; emit('menuIndexOn', v);
+    },
+    setCbSafeValue(on) {
+      const v = !!on;
+      if (cbSafe === v) return;
+      port.setBool(port.KEYS.cbsafe, v); cbSafe = v; emit('cbSafe', v);
+    },
+    setOwnerColorsValue(on) {
+      const v = !!on;
+      if (ownerColors === v) return;
+      port.setBool(port.KEYS.ownercolors, v); ownerColors = v; emit('ownerColors', v);
+    },
+    setOutlineFgValue(v) {
+      const n = toOutlineLevel(v);
+      if (hcOutlineFg === n) return;
+      port.set(port.KEYS.outfg, n); hcOutlineFg = n; emit('hcOutlineFg', n);
+    },
+    setOutlineBgValue(v) {
+      const n = toOutlineLevel(v);
+      if (hcOutlineBg === n) return;
+      port.set(port.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
+    },
+    setCaneBlockDivValue(div) {
+      const d = (+div) || 1; // the `|| 1`: a corrupted stored value would become NaN and the cane
+      if (caneBlockDiv === d) return; //  would stop tapping, which is the most silent failure there is
+      port.set('incl_cane_div', d); caneBlockDiv = d; emit('caneBlockDiv', d);
+    },
+    setWheelchairValue(on) {
+      if (wheelchair === on) return;
+      port.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
+    },
+    setOneButtonValue(on) {
+      if (oneButton === on) return;
+      port.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
+    },
+    setNoGripStrengthValue(on) {
+      const v = !!on;
+      if (noGripStrength === v) return;
+      port.setBool('incl_sem_forca', v); noGripStrength = v; emit('noGripStrength', v);
+    },
+    setInputCooldownValue(ms) {
+      const v = toCooldown(ms);
+      if (inputCooldown === v) return;
+      port.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
+    },
+    setSwitchScanValue(on) {
+      const v = !!on;
+      if (switchScan === v) return;
+      port.setBool('incl_switch_scan', v); switchScan = v; emit('switchScan', v);
+    },
+    setVoiceControlValue(on) {
+      const v = !!on;
+      if (voiceControl === v) return;
+      port.setBool('incl_voice_control', v); voiceControl = v; emit('voiceControl', v);
+    },
+    setCameraControlValue(v) {
+      const valid = toCameraControl(v);
+      if (cameraControl === valid) return;
+      port.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
+    },
+    setGameSpeedValue(v) {
+      const isValidSpeed = isGameSpeed(v);
+      if (gameSpeed === isValidSpeed) return;
+      port.set('incl_game_speed', isValidSpeed); gameSpeed = isValidSpeed; emit('gameSpeed', isValidSpeed);
+    },
+    setCaptionPpmValue(ppm) {
+      const isValidRate = isCaptionRate(ppm);
+      if (captionPpm === isValidRate) return;
+      port.set('incl_caption_ppm', isValidRate); captionPpm = isValidRate; emit('captionPpm', isValidRate);
+    },
+    setSpeechPpmValue(ppm) {
+      const isValidRate = isSpeechRate(ppm);
+      if (speechPpm === isValidRate) return;
+      port.set('incl_speech_ppm', isValidRate); speechPpm = isValidRate; emit('speechPpm', isValidRate);
+    },
+
+    on, off, emit,
+  };
 }

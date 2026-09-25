@@ -13,13 +13,14 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import pt from '../app/js/i18n/pt.js';
-import * as estado from '../app/js/core/state.js';
 import { SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
 // ⚠️ THE ENGINE'S STYLESHEET IS LOADED, and without it this file would measure something else: the scan notice is positioned BY
 // CSS, so without the sheet it is born at the top of the region and the reserved-room case would have nothing to see.
 import css from '../app/css/style.css?raw';
 
 let motor;
+/** The ROOT's settings store: the one its bar and its scan hear (ADR-0232 D4). */
+let estado;
 let raiz;
 const comandos = [];
 const assentos = [{ ctrl: 0 }];
@@ -64,6 +65,7 @@ beforeAll(async () => {
     downloadHeavy: false, players: assentos, preset: PRESET,
     onCommand: (c) => comandos.push(c),
   });
+  estado = motor.settings;
 });
 afterAll(() => {
   estado.setSwitchScanValue(false);

@@ -116,7 +116,7 @@ describe('a cartridge that declares nothing still has a controller', () => {
   it('🔴 [Right] the root answers the ONE-BUTTON question from the settings store (ADR-0232; issue #120)', async () => {
     // The gamepad receives `oneButton` through its ctx now; the root reads the store it built. With the mode on, two
     // positions pressed in the same frame reach the game as ONE — a root that answered a constant `false` delivers both.
-    const state = await import('../app/js/core/state.js');
+    const state = motor.settings; // the store THIS root built, and the one its gamepad asks (ADR-0232 D4)
     botoes = []; await quadro();
     recebidos.length = 0;
     state.setOneButtonValue(true);

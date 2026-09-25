@@ -30,12 +30,13 @@ import { iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup } from '../a
 import { nextCalmMode, calmAudioPlan, calmMotionPlan, CALM_AUDIO_CATS } from '../app/js/core/calm-mode.js';
 import { CVD_SEQ, CVD_NAMES, nextContrast, nextCvd, CONTRAST_LEVELS } from '../app/js/core/visual-cycles.js';
 
-// ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.
-import * as estado from '../app/js/core/state.js';
+// ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here in this file's own store (ADR-0232 D4).
+import { createSettingsStore } from '../app/js/core/state.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
 import { filePort } from './fixtures/file-storage.js';
 import { createTranslator } from '../app/js/core/i18n.js';
+const estado = createSettingsStore(filePort);
 const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
 const translate = translator.t;
 /*
@@ -690,34 +691,28 @@ describe('initPauseIcons — ações dos ícones', () => {
     // is `core/state`'s `setBlindModeValue`, which does the three things that record says a setter does — write,
     // persist, notify — and NOTHING more: redoing the level's extras is a reaction, and whoever reacts signs for it.
     const guardado = {};
-    // `core/state` persists through the port it was loaded with (ADR-0178): a store of this case's own (ADR-0232)
-    const estadoReal = await import('../app/js/core/state.js');
-    estadoReal.loadState({ ...createStorage({
+    // The real settings store persists through the port it is built with (ADR-0178): a store of this case's own (ADR-0232 D4)
+    const estadoReal = createSettingsStore({ ...createStorage({
       getItem: (k) => (k in guardado ? guardado[k] : null),
       setItem: (k, v) => { guardado[k] = String(v); },
       removeItem: (k) => { delete guardado[k]; },
     }), KEYS });
-    try {
-      const antes = estadoReal.blindMode;
-      const { ctx, said } = buildCtx();
-      delete ctx.setBlindMode;                 // the game that forgot
-      ctx.getBlindMode = () => estadoReal.blindMode;
+    const antes = estadoReal.blindMode;
+    const { ctx, said } = buildCtx();
+    ctx.settings = estadoReal;               // the root's store, played by the case
+    delete ctx.setBlindMode;                 // the game that forgot
+    ctx.getBlindMode = () => estadoReal.blindMode;
 
-      initPauseIcons(ctx).iconAct('blind', 0);
+    initPauseIcons(ctx).iconAct('blind', 0);
 
-      expect(estadoReal.blindMode, 'o ícone não mexeu no estado real').toBe(!antes);
-      // ⚠️ `'1'`/`'0'` and not `'true'`/`'false'`: it is the encoding `store.setBool` writes, and it is what the
-      // storage of a child who has already played contains. Pinned by the literal on purpose — asserting it by
-      // reading back through `store.getBool` would measure the round trip through the same table, and the two would move together.
-      expect(guardado['incl_modocego'], 'ligou mas não persistiu — no arranque seguinte volta a estar desligado')
-        .toBe(antes ? '0' : '1');
-      // ⚠️ And the announcement is neither lost nor doubled: the icon says it, not the setter.
-      expect(said).toEqual([antes ? 'Modo cego desligado.' : 'Modo cego ligado.']);
-
-      estadoReal.setBlindModeValue(antes);      // hands the module state back to whoever comes next
-    } finally {
-      estadoReal.loadState(filePort);          // back to this file's storage, as the setup left it
-    }
+    expect(estadoReal.blindMode, 'o ícone não mexeu no estado real').toBe(!antes);
+    // ⚠️ `'1'`/`'0'` and not `'true'`/`'false'`: it is the encoding `store.setBool` writes, and it is what the
+    // storage of a child who has already played contains. Pinned by the literal on purpose — asserting it by
+    // reading back through `store.getBool` would measure the round trip through the same table, and the two would move together.
+    expect(guardado['incl_modocego'], 'ligou mas não persistiu — no arranque seguinte volta a estar desligado')
+      .toBe(antes ? '0' : '1');
+    // ⚠️ And the announcement is neither lost nor doubled: the icon says it, not the setter.
+    expect(said).toEqual([antes ? 'Modo cego desligado.' : 'Modo cego ligado.']);
   });
 
 

@@ -26,9 +26,9 @@ beforeAll(async () => {
   localStorage.removeItem('incl_captions');
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
-  state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  state = motor.settings; // the ROOT's settings store: the one its panel writes (ADR-0232 D4)
 });
 afterAll(() => {
   state.setCaptionsOnValue(true);

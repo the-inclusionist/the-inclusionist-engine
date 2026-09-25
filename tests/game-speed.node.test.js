@@ -8,8 +8,10 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GAME_SPEEDS, nextGameSpeed, isGameSpeed } from '../app/js/core/game-speed.js';
-import * as state from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
 import { startLoop } from '../app/js/core/loop.js';
+/** This file's settings store: each case BUILDS its own over a port it chose (ADR-0232 D4). */
+let state;
 
 function portaFalsa(guardado = {}) {
   const dados = { ...guardado };
@@ -45,11 +47,11 @@ describe('the game speed steps', () => {
 });
 
 describe('the stored choice', () => {
-  beforeEach(() => { state.loadState(portaFalsa()); });
+  beforeEach(() => { state = createSettingsStore(portaFalsa()); });
 
   it('🔴 [Right] it is loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_game_speed: 0.6 });
-    state.loadState(p);
+    state = createSettingsStore(p);
     expect(state.gameSpeed).toBe(0.6);
     state.setGameSpeedValue(0.5);
     expect(state.gameSpeed).toBe(0.5);
@@ -65,7 +67,7 @@ describe('the loop applies it', () => {
   it('🔴 [Right] the frame time `startLoop` hands out is the raw time times the speed its REQUIRED port answers (ADR-0232)', () => {
     // The port, not the settings store: the store says 100% here, the port 50% then 80% — a loop that read the store
     // by import would hand out 1 and 1.
-    state.loadState(portaFalsa({}));
+    state = createSettingsStore(portaFalsa({}));
     let speed = 0.5;
     let chamar;
     const ticker = { deltaTime: 1, add: (fn) => { chamar = fn; } };

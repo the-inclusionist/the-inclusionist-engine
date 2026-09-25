@@ -8,11 +8,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initPauseIcons, showPauseOptions } from '../app/js/ui/pause-icons.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
-import * as settingsStore from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 import { flagOf } from '../app/js/ui/locale-flags.js';
+/** This file's settings store, built over its own storage (ADR-0232 D4): the test plays the root that builds it. */
+const settingsStore = createSettingsStore(filePort);
 const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
 const translate = translator.t;
 /*

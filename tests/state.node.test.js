@@ -10,30 +10,25 @@
 // by any test. The separation between writing and reacting is what makes this file possible, so it is what the cases
 // protect.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { blindMode, setBlindModeValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue,
-  on, off } from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
-import { filePort } from './fixtures/file-storage.js';
 
-// `blindMode` is a LIVE binding: re-importing is not needed, but reading the old value from a local copy would be the
-// classic mistake — so the cases always read from the module.
-import * as state from '../app/js/core/state.js';
-
-// Each case loads the settings from a store of its own (ADR-0178's port, ADR-0232): what is checked is that the setter
-// ORDERS persistence through the port it was loaded with — the real storage module on the way, over a backend nobody
+// Each case BUILDS a settings store over a store of its own (ADR-0178's port, ADR-0232 D4): what is checked is that the
+// setter ORDERS persistence through the port it was built with — the real storage module on the way, over a backend nobody
 // else writes. Without a backend every write would be refused and every read return the default, silently.
+// `state.blindMode` is a LIVE getter; reading the old value from a local copy would be the classic mistake — so the cases
+// always read from the store.
 let desinscrever = [];
 let store;
+let state, setBlindModeValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue, on, off;
 beforeEach(() => {
   store = createStorage(memoryBackend());
-  state.loadState({ ...store, KEYS });
-  setBlindModeValue(false); desinscrever = [];
+  state = createSettingsStore({ ...store, KEYS });
+  ({ setBlindModeValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue, on, off } = state);
+  desinscrever = [];
 });
-afterEach(() => {
-  desinscrever.forEach((f) => f()); setBlindModeValue(false); setLetterCaseValue('upper'); setCaptionsOnValue(true);
-  state.loadState(filePort); // back to this file's storage, as the setup left it
-});
+afterEach(() => { desinscrever.forEach((f) => f()); });
 
 function escuta(evt) {
   const vistos = [];
@@ -125,14 +120,27 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
     expect(store.getBool('incl_captions', false)).toBe(true);
   });
 
-  it('[Boundary] o import nomeado é uma FOTOGRAFIA; o binding do módulo é que é vivo', () => {
-    // A distinction that has already bitten this project: `import { blindMode }` gives a live binding in ESM, but copying
-    // it into a local variable (`const m = blindMode`) freezes the value. The case documents both sides.
+  it('[Boundary] desestruturar a leitura é uma FOTOGRAFIA; o getter do store é que é vivo', () => {
+    // A distinction that has already bitten this project, and the factory makes it sharper (ADR-0232 D4): the store's
+    // `blindMode` is a getter, so `const { blindMode } = state` copies the value of that moment. The case documents both sides.
     const copia = state.blindMode;
+    const { blindMode } = state;
     setBlindModeValue(true);
-    expect(copia).toBe(false);        // the local copy does not follow
-    expect(state.blindMode).toBe(true); // the module's binding does
-    expect(blindMode).toBe(true);       // and so does the named import: ESM re-reads the cell
+    expect(copia).toBe(false);          // the local copy does not follow
+    expect(blindMode).toBe(false);      // nor does a destructured read
+    expect(state.blindMode).toBe(true); // the store's getter does
+  });
+
+  it('🔴 [Independence] dois stores não compartilham nada — nem o valor, nem o barramento (ADR-0142, ADR-0232 D4)', () => {
+    // Two roots on one page, or two test files: each builds its own store, and a write or an event in one never reaches
+    // the other. This is what the factory exists for; a module-level binding would fail both halves.
+    const outro = createSettingsStore({ ...createStorage(memoryBackend()), KEYS });
+    const ouvidosNoOutro = [];
+    outro.on('blindMode', (v) => ouvidosNoOutro.push(v));
+    setBlindModeValue(true);
+    expect(state.blindMode).toBe(true);
+    expect(outro.blindMode, 'a write in one store changed the other').toBe(false);
+    expect(ouvidosNoOutro, 'an event in one store reached the other').toEqual([]);
   });
 });
 

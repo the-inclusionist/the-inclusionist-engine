@@ -13,8 +13,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createVoiceSettings } from '../app/js/ui/voice-settings.js';
 import { t } from '../app/js/core/i18n.js';
-import * as state from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 import { createTranslator } from '../app/js/core/i18n.js';
+/** This file's settings store, built over its own storage (ADR-0232 D4): the test plays the root that builds it. */
+const state = createSettingsStore(filePort);
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 const $ = (sel) => document.querySelector(sel);

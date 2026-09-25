@@ -27,7 +27,8 @@ const declaracao = () => ({
   objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 3 }),
   targetsOf: () => [{ x: 0, y: 0 }],
 });
-const abrir = () => createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+// Each case opens its own root, and `state` is THAT root's settings store (ADR-0232 D4): the one its bar writes.
+const abrir = () => { const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false }); state = motor.settings; return motor; };
 const icone = () => document.querySelector('#title-icons [data-pi="tipografia"]');
 /**
  * Presses the communication button as a child does, from the default position (c), until the case turns to capitals:
@@ -45,7 +46,6 @@ beforeAll(async () => {
   style.textContent = css;
   document.head.appendChild(style);
   ({ createGame } = await import('../app/js/boot/create-game.js'));
-  state = await import('../app/js/core/state.js');
 });
 
 // the letter case and the face are persisted and shared with every other browser test file: kept and put back
@@ -68,8 +68,8 @@ afterEach(() => {
 });
 
 describe('the communication button\'s letter case reaches the page', () => {
-  // the case as a new child meets it: the state's default (`upper`), nothing stored, the cycle at position (c)
-  beforeEach(() => { state.setLetterCaseValue('upper'); localStorage.removeItem('incl_lettercase'); delete document.documentElement.dataset.letras; });
+  // the case as a new child meets it: nothing stored, so the root's store is born with the default (`upper`), the cycle at (c)
+  beforeEach(() => { localStorage.removeItem('incl_lettercase'); delete document.documentElement.dataset.letras; });
 
   it('🔴 [Right] the capital-letter position shows every letter in capitals — the game\'s text and the engine\'s buttons', async () => {
     abrir();

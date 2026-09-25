@@ -75,8 +75,8 @@ import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, typ
 import { initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 import { keyName } from '../ui/control-choices.js';
 import { reserveTopBand } from '../ui/top-band.js';
-// The WHOLE module: the event bus's `on`, so the mounted bar keeps telling the truth.
-import * as state from '../core/state.js';
+// The settings store's FACTORY: this root builds the one store it, its modules and its game read (ADR-0232 D4).
+import { createSettingsStore, type SettingsStore, type LetterCase } from '../core/state.js';
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
 import { vlibrasOpen, toggleLibras, initLibras } from '../ui/vlibras.js';
@@ -532,7 +532,12 @@ export interface Engine {
 
 
   // D4-B2 (settings store)
-
+  /**
+   * THIS ROOT'S SETTINGS STORE (ADR-0232 D4): the child's settings, read through live getters (`settings.blindMode`) and written
+   * by the setters, plus the bus a game subscribes and emits on. A game reads HERE instead of importing `core/state`, which is
+   * a factory now: a second store would read the same storage but hear none of this root's changes.
+   */
+  readonly settings: SettingsStore;
 
   // D4-B3 (input)
 
@@ -804,7 +809,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const endOfLife: (() => void)[] = [];
   const whenDisposed = (release: () => void): void => { endOfLife.push(release); };
-  const stateOn: typeof state.on = (evt, fn) => { const off = state.on(evt, fn); whenDisposed(off); return off; };
+  const stateOn: SettingsStore['on'] = (evt, fn) => { const off = state.on(evt, fn); whenDisposed(off); return off; };
   /*
    * THE ROOT'S TRANSLATOR (ADR-0232 D3): the page's language, and this root's `t`, markup pass and door to a language change.
    * `localeOn` is that door — like `stateOn`, whatever subscribes through it is released by `dispose()` (ADR-0220).
@@ -822,7 +827,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const store = createStorage(hostStorage(o.host));
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   // ⚠️ The port of ADR-0178 carries the key names beside the store, so `core` names no storage place itself.
-  state.loadState({ ...store, KEYS });
+  const state = createSettingsStore({ ...store, KEYS });
   /*
    * 🔴 THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g). `core/i18n` keeps the decisions; the page effects —
    * writing `<html lang>`, dispatching on the window, reading `navigator.language` — come in through these two functions,
@@ -1034,7 +1039,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * starts describing everything aloud and never stops, with no error anywhere.
    *
    * 📌 ONE CONSTANT AND NOT THE EXPRESSION REPEATED IN TWO PLACES, because repetition IS the defect: two answers to the
-   * same question drift. `import * as state` is a LIVE binding, so this reads the value of now and not of boot.
+   * same question drift. The store's `blindMode` is a LIVE getter, so this reads the value of now and not of boot.
    */
   const readBlindMode = cartridge.isBlindMode ?? (() => state.blindMode);
 
@@ -2476,7 +2481,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * default is `upper` (ADR-0028) while the cycle's default is position (c), natural case (ADR-0149), and writing the default
    * would put every new child's game in capitals.
    */
-  const writeBox = (c: state.LetterCase): void => {
+  const writeBox = (c: LetterCase): void => {
     if (doc.documentElement?.dataset) doc.documentElement.dataset.letras = c;
   };
   if (store.get(KEYS.letterCase, null) !== null) writeBox(state.letterCase);
@@ -4053,7 +4058,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
 
 
     // D4-B2
-
+    settings: state,
 
     // D4-B3
 

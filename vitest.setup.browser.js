@@ -18,12 +18,10 @@ globalThis.PIXI = PIXI;
 import { fileBackend, filePort } from './tests/fixtures/file-storage.js';
 Object.defineProperty(window, 'localStorage', { value: fileBackend, configurable: true, writable: false });
 
-// The stored settings are loaded as a composition root loads them (ADR-0178), from that same storage; `createGame` loads them
-// again from the storage its host lends, and `estado-carregado-pela-raiz` checks the order without this setup.
-import { loadState } from './app/js/core/state.js';
+// The stored language is loaded as a composition root loads it (ADR-0178), from that same storage. The settings store is a
+// factory (ADR-0232 D4): `createGame` builds its own from the storage its host lends, and a case reads it as `engine.settings`.
 import { loadLocale, createTranslator } from './app/js/core/i18n.js';
 import { localeHostHooks } from './app/js/platform/locale-host.js';
-loadState(filePort);
 // 🔴 AND THE HOST TOO (ADR-0221 step 7g): since `core/i18n` stopped reaching `document`/`window`, the three things a PAGE
 // does when the language changes — `<html lang>`, re-translating the markup and telling the window — come in through
 // the port. This setup plays the composition root, and without this line a case that checks `<html lang>` measures a

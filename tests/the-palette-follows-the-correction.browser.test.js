@@ -5,7 +5,7 @@
 // automaticamente quando muda para visão padrão (tricromática). Aqui se permite ativá-la sem usar o filtro.»
 //
 // 📌 A browser file with ONE root, for the reason of the other boot files: `createGame` hangs listeners on
-// `window` and on `core/state`, and nothing removes them.
+// `window` and on its settings store, and nothing removes them.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -17,14 +17,13 @@ const escritas = [];
 const paleta = () => document.documentElement.dataset.paleta;
 
 beforeAll(async () => {
-  state = await import('../app/js/core/state.js');
-  state.setCbSafeValue(false);
   const { createGame } = await import('../app/js/boot/create-game.js');
   const raiz = document.createElement('div');
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
-  createGame({ accommodations: SEM_ASSUNTO,
+  // `state` is the ROOT's settings store (ADR-0232 D4): this file's storage starts empty, so it is born with the palette off.
+  ({ settings: state } = createGame({ accommodations: SEM_ASSUNTO,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['a'] }), holdsAtOnce: () => 1, holdsKeys: () => false,
       tick: 'player', world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
@@ -39,7 +38,7 @@ beforeAll(async () => {
       escritas.push(correcao);
       jogadores[i].visual = { ...(jogadores[i].visual ?? {}), correcao };
     },
-  });
+  }));
 });
 
 const icone = () => document.querySelector('#title-icons [data-pi="cvd"]');

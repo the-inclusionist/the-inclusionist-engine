@@ -21,11 +21,10 @@
 // port, ADR-0232): what is measured is that the setter ASKS to persist, with the real persistence module in the path.
 //
 // As MUTAÇÕES CONFERIDAS estão no fim do arquivo.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as state from '../app/js/core/state.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createSettingsStore, type SettingsStore } from '../app/js/core/state.js';
 import { createStorage } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
-import { filePort } from './fixtures/file-storage.js';
 
 /**
  * The `core/state` setters that do NOT persist, each with its reason. The list is short on purpose: it is the cut's
@@ -41,11 +40,11 @@ const SEM_PERSISTIR: Record<string, string> = {
 /**
  * TWO values per setter, and the pair is not excess — it fixes a vacuity the mutation caught.
  *
- * Almost every setter here starts with `if (valorAtual === novo) return;`. `core/state` is a module, loaded ONCE per
- * test process: the second case calling `setWheelchairValue(true)` finds the value already `true`, leaves by the guard
- * and writes NOTHING. The case would pass for having nothing to fail.
+ * Almost every setter here starts with `if (valorAtual === novo) return;`. A setter called with the value the store already
+ * holds — its default, in a fresh store — leaves by the guard and writes NOTHING: `setMenuIndexOnValue(true)` on a store born
+ * with the index on would pass for having nothing to fail.
  *
- * Called with both values, at least one call crosses the guard, whatever state the module is in — and the order of the
+ * Called with both values, at least one call crosses the guard, whatever state the store is in — and the order of the
  * cases stops mattering.
  */
 const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
@@ -59,21 +58,20 @@ const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
 };
 
 let escritas: string[] = [];
+// Each case builds its OWN store over a recording backend (ADR-0232 D4): nothing it writes reaches another case or file.
+let state: SettingsStore;
 
 beforeEach(() => {
   const mapa = new Map<string, string>();
   escritas = [];
-  state.loadState({ ...createStorage({
+  state = createSettingsStore({ ...createStorage({
     getItem: (k: string) => (mapa.has(k) ? mapa.get(k)! : null),
     setItem: (k: string, v: string) => { escritas.push(k); mapa.set(k, String(v)); },
     removeItem: (k: string) => { mapa.delete(k); },
   }), KEYS });
 });
-afterEach(() => {
-  state.loadState(filePort); // back to this file's storage, as the setup left it
-});
 
-/** Every setter `core/state` exports, DISCOVERED — not a hand-written list. */
+/** Every setter the store carries, DISCOVERED — not a hand-written list. */
 function settersDoModulo(): string[] {
   const m = state as unknown as Record<string, unknown>;
   return Object.keys(state).filter((k) => /^(set|init)/.test(k) && typeof m[k] === 'function');

@@ -7,11 +7,11 @@
 //
 // 📌 WHY `platform/` AND NOT `core/` (ADR-0173): the table names places in the browser's persistent storage, and every module
 // that reads it is at `platform` or above — the storage itself, the input, the renderer, the panels, and the games. `core/`
-// reaches storage only through the port `core/state.loadState` receives (ADR-0178), which carries the keys it needs; putting
+// reaches storage only through the port `core/state.createSettingsStore` receives (ADR-0178), which carries the keys it needs; putting
 // the table in `core/` would invite the core to name storage places again, the dependency ADR-0178 took out.
 //
 // 📌 THIS IS THE ONLY HOME OF `KEYS` (ADR-0232 D2b): `platform/storage` is a factory now and publishes no key table. The
-// port `core/state.loadState` receives carries the table beside the store — the root passes `{ ...store, KEYS }`.
+// port `core/state.createSettingsStore` receives carries the table beside the store — the root passes `{ ...store, KEYS }`.
 
 /**
  * The full name of a key in the GAME's scope.

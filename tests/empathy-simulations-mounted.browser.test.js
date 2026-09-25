@@ -37,9 +37,9 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.addEventListener('keydown', (e) => jogo.push(`down:${e.code}`));
   document.addEventListener('keyup', (e) => jogo.push(`up:${e.code}`));
-  state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  state = motor.settings; // the ROOT's settings store: the one its panel writes (ADR-0232 D4)
 });
 afterAll(() => {
   for (const k of CHAVES) { if (antes[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, antes[k]); }

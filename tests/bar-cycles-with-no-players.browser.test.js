@@ -14,13 +14,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
-let state;
 const paleta = () => document.documentElement.dataset.paleta;
 const icone = () => document.querySelector('#title-icons [data-pi="cvd"]');
 
 beforeAll(async () => {
-  state = await import('../app/js/core/state.js');
-  state.setCbSafeValue(false);
+  // No reset of the safe palette: this file's storage starts empty (`tests/fixtures/file-storage.js`), so the root is born
+  // with the default, and the root builds its own settings store from it (ADR-0232 D4).
   const { createGame } = await import('../app/js/boot/create-game.js');
   const raiz = document.createElement('div');
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'

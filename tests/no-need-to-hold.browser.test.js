@@ -90,7 +90,7 @@ describe('the sticky-keys row a child can read', () => {
    * refuses is measured in `input-cooldown.node`; here it is that she can find it and that it is kept.
    */
   it('🔴 [Right] «Esperar entre toques» is offered, off, and the choice survives to the next day', async () => {
-    const state = await import('../app/js/core/state.js'); // a module of bindings, not a default export
+    const state = motor.settings; // the ROOT's settings store: the one its panel and bar write (ADR-0232 D4)
     await abrirMotora();
     const botao = document.querySelector('#motora #opt-cooldown');
     expect(botao, 'the cool-down the catalogue promised since the catalogue was written').not.toBeNull();
@@ -111,7 +111,7 @@ describe('the sticky-keys row a child can read', () => {
    * them — the first reaches the game and the second does not.
    */
   it('🔴 [Right] with it on, the second press of a bouncing hand never reaches the game', async () => {
-    const state = await import('../app/js/core/state.js');
+    const state = motor.settings; // the ROOT's settings store: the one its panel and bar write (ADR-0232 D4)
     const regiao = document.getElementById('game-region');
     const ouvidas = [];
     const escuta = (e) => ouvidas.push(e.code);
@@ -140,7 +140,7 @@ describe('the sticky-keys row a child can read', () => {
    * would switch nothing; the transport landed (issue #184) and the row is measured just below.
    */
   it('🔴 [Right] the camera is offered in the panel, as the SAME setting the 📷 cycles', async () => {
-    const state = await import('../app/js/core/state.js');
+    const state = motor.settings; // the ROOT's settings store: the one its panel and bar write (ADR-0232 D4)
     await abrirMotora();
     const passos = document.querySelector('#motora #opt-camera');
     expect(passos, 'the camera row the Dev listed in #182').not.toBeNull();
@@ -165,7 +165,7 @@ describe('the sticky-keys row a child can read', () => {
    * change made from OUTSIDE it, which is exactly what `ui/voice-control` does when nothing can start.
    */
   it('🔴 [Right] the microphone is offered in the panel, as the SAME setting the 👄 switches', async () => {
-    const state = await import('../app/js/core/state.js');
+    const state = motor.settings; // the ROOT's settings store: the one its panel and bar write (ADR-0232 D4)
     await abrirMotora();
     try {
       const botao = document.querySelector('#motora #opt-voice');

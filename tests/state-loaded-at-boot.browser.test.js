@@ -8,10 +8,8 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { memoryBackend } from '../app/js/platform/storage.js';
-import { filePort } from './fixtures/file-storage.js';
 
 let createGame;
-let state;
 let raiz;
 
 const declaracao = () => ({
@@ -29,13 +27,11 @@ const declaracao = () => ({
 
 beforeAll(async () => {
   ({ createGame } = await import('../app/js/boot/create-game.js'));
-  state = await import('../app/js/core/state.js');
 });
 
 afterEach(() => {
   raiz?.remove();
   document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
-  state.loadState(filePort); // back to this file's storage, as the setup left it
 });
 
 describe('the stored settings reach a game through createGame', () => {
@@ -45,12 +41,12 @@ describe('the stored settings reach a game through createGame', () => {
     raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><section id="game-region"></section><div id="title-icons"></div>';
     document.body.appendChild(raiz);
-    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window, storage }, downloadHeavy: false });
+    const { settings: state } = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window, storage }, downloadHeavy: false });
     expect(state.captionsOn, 'the child turned captions off and the game reads them on').toBe(false);
     expect(state.blindMode, 'the child turned blind mode on and the game reads it off').toBe(true);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-//   R4 createGame without `state.loadState(store)`   🔴 captions off / blind mode on
+//   R4 createGame builds its store over an empty port   🔴 captions off / blind mode on
 //   R5 the root ignoring `host.storage` (`hostStorage` reads the window's)   🔴 the same case: the host's settings never arrive

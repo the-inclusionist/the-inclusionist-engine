@@ -15,7 +15,8 @@ import {
 } from '../app/js/core/accommodations.js';
 import { ACOM, U, DECL, EIXOS_DA_DECLARACAO } from '../scripts/lib/accommodations.mjs';
 import { MAPA } from '../scripts/lib/taxonomy.mjs';
-import { setGameSpeedValue, setSwitchScanValue, setInputCooldownValue } from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 import { readFileSync } from 'node:fs';
 
 describe('the catalogue and its three families', () => {
@@ -82,6 +83,7 @@ describe('the study catalogue agrees with the code and the tables it reads', () 
     // `tem: false` changes nothing in the engine, but the study ranks what is MISSING by reach and GAG level; a `false` the
     // engine already has puts a finished accommodation on the to-do list. Each writer is the one the panel or the quick
     // bar calls: game speed (ADR-0180), one-button scan (ADR-0218), wait between inputs (ADR-0217).
+    const { setGameSpeedValue, setSwitchScanValue, setInputCooldownValue } = createSettingsStore(filePort);
     const BUILT = [
       ['velocidadeDoJogo', setGameSpeedValue],
       ['umBotaoSo', setSwitchScanValue],

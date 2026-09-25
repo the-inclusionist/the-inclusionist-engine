@@ -3356,8 +3356,44 @@ _Reserved: the rows land with the batch._
 
 ## CZ · ADR-0232 D4-B2: the settings store becomes a factory (issue #207)
 
-_Reserved: the rows land with the batch._
+**Who is affected:** a game that imports anything BY VALUE from `@the-inclusionist/engine/core/state.js` — a setting's
+live binding (`blindMode`, `vizMode`, `oneButton`, …), a setter (`setXValue`), `initVizMode`, the bus (`on`, `off`,
+`emit`) or `loadState`. The types stay: `GameEvent` (and a game's `declare module` augmentation of it), `LetterCase`,
+`OutlineLevel`, `GateTile` and `StatePort`.
 
+📌 **Why:** the module held the page's settings in twenty module-level bindings and one subscriber map, so two roots on one
+page — and two test files — shared them (ADR-0142, ADR-0232 D3). The store is now built by the root, over the storage its
+host lends, and a game reads the ROOT's store. A second store built over the same storage would read the child's saved
+choices but hear none of the root's changes, so a game must not build its own.
+
+| was | is |
+|---|---|
+| `import { blindMode, vizMode, … } from '…/core/state.js'` (live bindings) | `engine.settings.blindMode`, `engine.settings.vizMode`, … — live getters on the store `createGame` returns |
+| `import { setBlindModeValue, … } from '…/core/state.js'` | `engine.settings.setBlindModeValue(…)`, … — same names, same three effects (store, persist, tell) |
+| `initVizMode(mode)` | `engine.settings.initVizMode(mode)` |
+| `on` / `off` / `emit` | `engine.settings.on` / `.off` / `.emit` — the root's bus; a game's own events (declaration merging on `GameEvent`) travel on it as before |
+| `loadState(port)` | `createSettingsStore(port)` — the root calls it; a game does not (`Engine.settings` is additive) |
+| the error «wrote a setting before loadState» | gone: a store cannot exist without its port, so there is no «before the load» to write in |
+
+⚠️ **Reading a setting by destructuring freezes it:** `const { blindMode } = engine.settings` copies the value of that
+moment, as copying a live binding into a local did. Read `engine.settings.blindMode` where the value of now is wanted.
+The setters and the bus hold no `this` and can be destructured.
+
+📏 **Measured in the seven games, read-only, as information** (`git grep "engine/core/state.js'"`):
+- `game-platformer` — `app/js/main.ts:45` imports 24 names (`emit`, `vizMode`, `initVizMode`, `modoCego`,
+  `setModoCegoValue`, `caneBlockDiv` and the other settings with their setters, `menuIndexOn`, and `defaultReducedMotion`,
+  which already moved to `core/setting-defaults`); `game/coin-spawning.ts:12` and `game/level-geometry.ts:17` import
+  `vizMode`; `game/state.ts:29` imports `emit` and augments `GameEvent` (the augmentation keeps working);
+  `ui/activities-menu.ts:69` imports `menuIndexOn`; `tests/state-bus.node.test.ts:19` imports `on`/`emit`/`off`.
+  `core/run-state.ts:32` imports only the type `GateTile`, which stays.
+- `game-pinball` — `app/js/main.ts:110` imports the namespace and reads `modoCego` and `setModoCegoValue`.
+- `game-soccer` — `app/js/boot/main.ts:46` imports the namespace (reads `captionsOn`) and `:53` imports `oneButton`;
+  `tests/boot.browser.test.ts:19` imports `setOneButtonValue` and `tests/captions.browser.test.ts:22` imports
+  `setCaptionsOnValue` and `captionsOn`.
+- `game-2048`, `game-chess`, `game-whackwhack` and `pixi-15-puzzle` import nothing from `core/state`.
+
+(The `modoCego` names are the 9.0.0 names these games are pinned at; the store carries today's, `blindMode` and
+`setBlindModeValue`.)
 ## DA · ADR-0232 D4-B3: the input state, keyboard config, pad tables and pad maps become factories (issue #207)
 
 _Reserved: the rows land with the batch._

@@ -11,12 +11,12 @@ import { createTranslator } from '../app/js/core/i18n.js';
 const translate = createTranslator().t;
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
-import { loadState, setVizModeValue } from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
 import { t } from '../app/js/core/i18n.js';
 import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES holds KEYS (item 14)
 
 // ONE backend for this file, over a Map the cases read (ADR-0232): the viz setters write through the store their ctx
-// receives, and `core/state` (the global mode) through the port it is loaded with — both are this Map. Without a backend
+// receives, and this file's settings store (the global mode) through the port it is built with — both are this Map. Without a backend
 // every write would be refused in silence, and the persistence cases could not fail.
 const mem = new Map();
 const shared = createStorage({
@@ -25,7 +25,7 @@ const shared = createStorage({
   removeItem: (k) => { mem.delete(k); },
 });
 const memGet = (k) => (mem.has(k) ? mem.get(k) : null);
-loadState({ ...shared, KEYS });
+const { setVizModeValue } = createSettingsStore({ ...shared, KEYS });
 
 const { VIZ_MODES, VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const { initHighContrast } = await import('../app/js/render/high-contrast.js');

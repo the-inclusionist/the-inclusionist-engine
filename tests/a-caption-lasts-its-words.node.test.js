@@ -10,7 +10,9 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { captionDuration, CAPTION_MIN_MS, CAPTION_RATES, isCaptionRate } from '../app/js/core/caption-duration.js';
-import * as state from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+/** This file's settings store: each case BUILDS its own over a port it chose (ADR-0232 D4). */
+let state;
 
 const OITO = 'Uma porta de madeira velha rangendo bem devagar';
 
@@ -63,7 +65,7 @@ function portaFalsa(guardado = {}) {
 }
 
 describe('the stored caption rate', () => {
-  beforeEach(() => { state.loadState(portaFalsa()); });
+  beforeEach(() => { state = createSettingsStore(portaFalsa()); });
 
   it('🎯 [Zero] nothing stored is 125, the slowest of the three', () => {
     expect(state.captionPpm).toBe(125);
@@ -71,7 +73,7 @@ describe('the stored caption rate', () => {
 
   it('🔴 [Right] it is loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_caption_ppm: 175 });
-    state.loadState(p);
+    state = createSettingsStore(p);
     expect(state.captionPpm).toBe(175);
     state.setCaptionPpmValue(145);
     expect(state.captionPpm).toBe(145);
@@ -79,7 +81,7 @@ describe('the stored caption rate', () => {
   });
 
   it('🎯 [Boundary] a stored typo lands on 125', () => {
-    state.loadState(portaFalsa({ incl_caption_ppm: 160 }));
+    state = createSettingsStore(portaFalsa({ incl_caption_ppm: 160 }));
     expect(state.captionPpm).toBe(125);
   });
 });

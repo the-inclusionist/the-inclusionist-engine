@@ -7,10 +7,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
-import * as state from '../app/js/core/state.js';
+import { createSettingsStore } from '../app/js/core/state.js';
 import { nextCameraControl } from '../app/js/core/camera-cycle.js';
 import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import { createTranslator } from '../app/js/core/i18n.js';
+/** This file's settings store: each case BUILDS its own over a port it chose (ADR-0232 D4). */
+let state;
 const translator = createTranslator(); // the root's translator, played by the test (ADR-0232 D3)
 const translate = translator.t;
 
@@ -51,13 +53,13 @@ describe('the 📷 icon', () => {
 });
 
 describe('the stored position', () => {
-  beforeEach(() => { state.loadState(portaFalsa()); });
+  beforeEach(() => { state = createSettingsStore(portaFalsa()); });
   it('cycles off → hands → face → eyes → off, in the Dev\'s order', () => {
     expect(['off', 'hands', 'face', 'eyes'].map(nextCameraControl)).toEqual(['hands', 'face', 'eyes', 'off']);
   });
   it('is one key, loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_camera_control: 'face' });
-    state.loadState(p);
+    state = createSettingsStore(p);
     expect(state.cameraControl).toBe('face');
     state.setCameraControlValue('eyes');
     expect(state.cameraControl).toBe('eyes');
@@ -65,9 +67,9 @@ describe('the stored position', () => {
   });
   it('nothing stored, anything that is not a mode, or the old per-mode keys, is off — the camera never switches itself on', () => {
     expect(state.cameraControl).toBe('off');
-    state.loadState(portaFalsa({ incl_camera_control: 'outlines' }));
+    state = createSettingsStore(portaFalsa({ incl_camera_control: 'outlines' }));
     expect(state.cameraControl).toBe('off');
-    state.loadState(portaFalsa({ incl_eye_control: 'hatched', incl_face_control: 'lines' }));
+    state = createSettingsStore(portaFalsa({ incl_eye_control: 'hatched', incl_face_control: 'lines' }));
     expect(state.cameraControl).toBe('off');
   });
 });

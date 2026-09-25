@@ -23,6 +23,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import rootSource from '../app/js/boot/create-game.ts?raw';
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 
 let createGame;
 
@@ -150,26 +152,24 @@ describe('a disposed root stops hearing the state bus — and an unmounted one d
       host: { doc: document, win: window }, downloadHeavy: false,
     });
     alive.push(root);
+    state = root.settings; // the ROOT's store: a write here is the child's, heard only through this root's door (ADR-0232 D4)
     return root;
   };
+  /** The keys these cases turn on, cleared in this file's storage so each root is born with them off. */
+  const KEYS_TURNED_ON = ['incl_voice_control', 'incl_cbsafe', 'incl_switch_scan'];
   const icon = (name) => document.querySelector(`#title-icons [data-pi="${name}"]`);
   const wait = (ms) => new Promise((r) => { setTimeout(r, ms); });
 
   beforeEach(async () => {
     if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
-    state ??= await import('../app/js/core/state.js');
     i18n ??= await import('../app/js/core/i18n.js');
-    state.setVoiceControlValue(false);
-    state.setCbSafeValue(false);
-    state.setSwitchScanValue(false);
+    for (const k of KEYS_TURNED_ON) localStorage.removeItem(k);
     host = montarHospedeiro();
   });
 
   afterEach(() => {
     for (const r of alive.splice(0)) r.dispose?.();
-    state.setVoiceControlValue(false);
-    state.setCbSafeValue(false);
-    state.setSwitchScanValue(false);
+    for (const k of KEYS_TURNED_ON) localStorage.removeItem(k);
     host.remove();
     document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
   });
@@ -232,7 +232,7 @@ describe('a disposed root stops hearing the state bus — and an unmounted one d
   });
 
   it('🔴 [Right] and what a subscription had STARTED ends too: a scan running at `dispose()` stops and takes its chip away', async () => {
-    state.setSwitchScanValue(true);
+    createSettingsStore(filePort).setSwitchScanValue(true); // the child chose the scan before this root was born
     const root = open();
     const chip = host.querySelector('.scan-now');
     expect(chip?.hidden, 'the scan did not start with the root — this case would measure nothing').toBe(false);

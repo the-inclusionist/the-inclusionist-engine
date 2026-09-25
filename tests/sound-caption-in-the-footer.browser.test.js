@@ -12,6 +12,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import css from '../app/css/style.css?raw';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import { createSettingsStore } from '../app/js/core/state.js';
+import { filePort } from './fixtures/file-storage.js';
 
 const esperar = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 let motor;
@@ -26,7 +28,7 @@ const declaracao = () => ({
 const legenda = () => document.querySelector('#game-region .rodape-da-tela .legenda-de-som');
 
 beforeAll(async () => {
-  const state = await import('../app/js/core/state.js');
+  const state = createSettingsStore(filePort); // what the child chose before the root: this file's storage (ADR-0232 D4)
   // ⚠️ the RAW key, absence included: the setting persists in the `localStorage` the browser files share, and a stored
   // `true` turned the deaf-mode icon on in `estado-nao-so-por-cor` (measured)
   legendasAntes = localStorage.getItem('incl_captions');
@@ -111,7 +113,7 @@ describe('the sound caption', () => {
   });
 
   it('🎯 [Zero] with captions turned off, nothing is written', async () => {
-    const state = await import('../app/js/core/state.js');
+    const state = motor.settings; // the ROOT's store: the one its caption reads (ADR-0232 D4)
     state.setCaptionsOnValue(false);
     motor.captionSound('Vento');
     await esperar();
