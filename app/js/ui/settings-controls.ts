@@ -162,7 +162,7 @@ export function drawKeys(button: HTMLElement, codes: readonly string[]): void {
   if (!codes.length) { button.textContent = t('ctrl.change'); return; }
   for (const code of codes) {
     const key = button.ownerDocument.createElement('kbd');
-    key.textContent = keyName(code);
+    key.textContent = keyName(t, code);
     button.appendChild(key);
   }
 }
@@ -239,7 +239,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     for (const row of list.querySelectorAll<HTMLElement>('.ctrl-row')) {
       const act = row.querySelector<HTMLElement>('button[data-act]')?.dataset.act;
       if (!act || !isAction(act)) continue;
-      markChanged(row, !sameKeys(now[act], factory[act]));
+      markChanged(t, row, !sameKeys(now[act], factory[act]));
     }
   }
 

@@ -134,14 +134,14 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     const b = ctx.$<HTMLButtonElement>('#opt-tts');
     const cat = ctx.getAudioCat();
     const on = !!(cat && cat.tts && cat.tts.on);
-    if (b) { ctx.toggleBtn(b, on); b.textContent = toggleLabel(on); }
+    if (b) { ctx.toggleBtn(b, on); b.textContent = toggleLabel(t, on); }
     const e = ctx.$<HTMLSelectElement>('#tts-engine');
     if (e) e.value = ctx.tts.getEngineSel();
   }
 
   function reflectMenuIndex(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-menuindex');
-    if (b) { ctx.toggleBtn(b, ctx.settings.menuIndexOn); b.textContent = toggleLabel(ctx.settings.menuIndexOn); }
+    if (b) { ctx.toggleBtn(b, ctx.settings.menuIndexOn); b.textContent = toggleLabel(t, ctx.settings.menuIndexOn); }
   }
 
   function populateTtsEngines(): void {

@@ -213,7 +213,7 @@ export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   if (transport) writeLatch((key, isOn) => ctx.store.setBool(key, isOn), BASE_DA_MARCHA, i, transport, on);
   // 📌 THE ANNOUNCEMENT IS UNCONDITIONAL, unlike `applyLatch`, which returns "changed". The child pressed the icon:
   // staying silent because the value already was that would leave the button with no answer for whoever listens.
-  ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
+  ctx.srSay(playerPrefix(t, i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
 
 /**
@@ -236,7 +236,7 @@ export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   if (!p) return;
   p.toggleRun = on;
   ctx.store.setBool(toggleRunKey(i), on);
-  ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleRunOn' : 'sr.motor.toggleRunOff'));
+  ctx.srSay(playerPrefix(t, i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleRunOn' : 'sr.motor.toggleRunOff'));
 }
 
 /**
@@ -359,10 +359,10 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     // So what marks is the STORED CHOICE. A saved value means someone touched that control; the automatic switch-on
     // saves nothing, so it does not mark.
     const anyRunToggleChosen = ctx.players.some((p, i) => ctx.store.get(toggleRunKey(i)) != null && !!p.toggleRun !== DEFAULTS.toggleRun);
-    markChanged(easyModeButton?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
-    markChanged(altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null, alt);
-    markChanged(toggleRunBtn?.closest<HTMLElement>('.ctrl-row') ?? null, anyRunToggleChosen);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt, anyRunToggleChosen]);
+    markChanged(t, easyModeButton?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
+    markChanged(t, altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null, alt);
+    markChanged(t, toggleRunBtn?.closest<HTMLElement>('.ctrl-row') ?? null, anyRunToggleChosen);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt, anyRunToggleChosen]);
   }
 
   function drawEasy(): void {
@@ -371,7 +371,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     if (easyModeButton) {
       easyModeButton.classList.toggle('is-on', on);
       easyModeButton.setAttribute('aria-pressed', String(on));
-      easyModeButton.textContent = onOffLabel(on);
+      easyModeButton.textContent = onOffLabel(t, on);
     }
     reflectMovementBtn();
   }
@@ -382,7 +382,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     if (toggleRunBtn) {
       toggleRunBtn.classList.toggle('is-on', on);
       toggleRunBtn.setAttribute('aria-pressed', String(on));
-      toggleRunBtn.textContent = onOffLabel(on);
+      toggleRunBtn.textContent = onOffLabel(t, on);
     }
     reflectMovementBtn();
   }
@@ -393,7 +393,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     if (altMoveBtn) {
       altMoveBtn.classList.toggle('is-on', on);
       altMoveBtn.setAttribute('aria-pressed', String(on));
-      altMoveBtn.textContent = onOffLabel(on);
+      altMoveBtn.textContent = onOffLabel(t, on);
       /*
        * ⚠️ CLAUSE 3 OF ADR-0113 ON SCREEN: where the latch is required, the control does NOT disappear — it is
        * `aria-disabled` and the reason goes into the hint, which the shell (`ui/settings-panel.fillExplain`) moves to the
@@ -419,7 +419,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     ctx.store.setBool(easyKey(i), on);
     drawEasy();
     rebuildCoins();
-    ctx.srSay(easyAnnouncement(i, ctx.getNumPlayers(), on));
+    ctx.srSay(easyAnnouncement(t, i, ctx.getNumPlayers(), on));
   }
 
   function renderMovPlayers(): void {

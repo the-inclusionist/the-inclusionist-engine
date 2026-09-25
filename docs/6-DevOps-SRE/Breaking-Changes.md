@@ -3233,13 +3233,16 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 | `input/gamepad.js` `GamepadCtx` · `input/keydown.js` `KeydownCtx` · `input/pad-wizard.js` `PadWizardCtx` · `input/touch.js` `TouchCtx`, `TouchMarkupCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` (`createGame`'s engine answers for its own mounts) |
 | `platform/audio-earcons.js` `AudioEarconsCtx` · `platform/audio-sonar.js` `SonarCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
 | `render/viz-setters.js` `VizSettersCtx` · `vizGroupHtml(modes, cur)` | `VizSettersCtx` gains a REQUIRED `t: Translate`; `vizGroupHtml(t, modes, cur)` | pass your root's `t` |
+| the ui helpers that translate: `dom.toggleLabel`, `toggleAria` · `changed-mark.markChanged`, `markMenuChanged` · `item-announcement.announceItem` · `control-choices.keyName` · `audio-choices.caneDivMessage`, `sinkOptionLabel` · `caa-sets.caaLabel` · `mobility-choices.playerPrefix`, `easyAnnouncement` · `motion-choices.motionMasterLabel`, `sceneMotionAnnouncement`, `crtToggleAnnouncement`, `crtLevelLabel`, `crtRoundAnnouncement`, `stopResumeAllAnnouncement` · `typo-choices.fontRow`, `typoGroups` · `visual-choices.onOffLabel` · `menu-nav.controlParts` | each takes `t: Translate` as its FIRST parameter and stays a function | pass your root's `t` first: `toggleLabel(t, on)` |
+| `ui/menu-nav.js` `MenuNavCtx` · `ui/where-the-child-is.js` `WhereTheChildIsCtx` · `ui/game-options.js` `GameOptionsDrawCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
 | `platform/tts.js` `TtsCtx` | gains a REQUIRED `translator: Pick<Translator, 't' \| 'bcp47'>` — narration speaks the page's language, read at every utterance | pass your root's translator |
 
 📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).
 `game-platformer` calls `initKeydown`, `initGamepad` and `initTouch` (`app/js/main.ts`); `game-soccer` calls `initGamepad`
 (`app/js/boot/main.ts`); no game calls `createPadWizard` or `mountTouchControls`. `game-platformer` calls
 `createAudioEarcons`, `createTts` and `createAudioSonar` (`app/js/main.ts`); `game-soccer` calls `createAudioEarcons`
-(`app/js/audio/sound.ts`).
+(`app/js/audio/sound.ts`). Of the ui helpers, only `game-platformer` calls any (`playerPrefix` ×3, `toggleLabel` ×2 and
+`initMenuNav`, in `app/js/main.ts`).
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

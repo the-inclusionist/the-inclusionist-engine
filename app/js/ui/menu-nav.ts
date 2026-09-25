@@ -77,7 +77,7 @@ import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js';
 import { navigableItems } from './menu-items.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { menuKeyIntent, selectStep, selectWrap, rangeStep, stepInPause } from './menu-intent.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
@@ -91,6 +91,8 @@ export { stepInRing } from '../core/ring.js';
 // ---------------------------------------------------------------------------------------------------------
 
 export interface MenuNavCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** ui/dom.ts `$` — only to find `#padwiz`. */
   $: DomQuery;
   /** `document.activeElement` — injected so a node test can simulate focus without a DOM. */
@@ -186,10 +188,10 @@ export interface MenuNavApi {
  * The label is the row's `<strong>` when the control lives in one (it is what is SEEN, and a switch's text is its state,
  * not its name); outside a row, or on a slider with a name of its own («Volume de Música»), it is the accessible name.
  */
-export function controlParts(el: HTMLElement): { label: string; state: string } {
+export function controlParts(t: Translate, el: HTMLElement): { label: string; state: string } {
   const row = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
   const [, role, read] = CONTROL_KINDS.find(([recognises]) => recognises(el))!;
-  const { label, value } = read(el, row, accessibleLabel(el));
+  const { label, value } = read(el, row, accessibleLabel(el), t);
   return { label: `${label}, ${t(role)}`, state: value };
 }
 
@@ -201,7 +203,7 @@ function sliderPercent(r: HTMLInputElement): string {
 }
 
 /** What a control says: its label and its value. `row` is the `<strong>` of the row it lives in, `name` its accessible name. */
-type ControlReading = (el: HTMLElement, row: string, name: string) => { label: string; value: string };
+type ControlReading = (el: HTMLElement, row: string, name: string, t: Translate) => { label: string; value: string };
 
 /**
  * HOW EACH KIND OF CONTROL IS RECOGNISED AND READ, and the ORDER is the rule: the first row that recognises the element reads
@@ -216,9 +218,9 @@ const CONTROL_KINDS: readonly (readonly [(el: HTMLElement) => boolean, string, C
   [(el) => el.tagName === 'INPUT', 'sr.papel.cursor',
     (el, row) => ({ label: el.getAttribute('aria-label') || row, value: sliderPercent(el as HTMLInputElement) })],
   [(el) => el.hasAttribute('aria-pressed'), 'sr.papel.interruptor',
-    (el, row, name) => ({ label: row || name, value: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') })],
+    (el, row, name, t) => ({ label: row || name, value: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') })],
   [(el) => el.getAttribute('role') === 'radio', 'sr.papel.opcao',
-    (el, row, name) => ({ label: row || name, value: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' })],
+    (el, row, name, t) => ({ label: row || name, value: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' })],
   [() => true, 'sr.papel.botao', (_el, _row, name) => ({ label: name, value: '' })],
 ];
 
@@ -226,6 +228,7 @@ const CONTROL_KINDS: readonly (readonly [(el: HTMLElement) => boolean, string, C
 const CARD_SELECTOR = '.overlay__card, .pause-card';
 
 export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
+  const { t } = ctx;
   /* ===================== settings dialogs ===================== */
 
   // An ALIAS, not a copy: the body lives in ui/settings-panel.ts (see the header).
@@ -271,8 +274,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   function sayItem(items: readonly HTMLElement[], n: number): void {
     const el = items[n];
     if (!el) return;
-    const { label: partLabel, state: partState } = controlParts(el);
-    ctx.srSay(announceItem({ label: partLabel, state: partState, position: n + 1, total: items.length }, ctx.withIndex()));
+    const { label: partLabel, state: partState } = controlParts(t, el);
+    ctx.srSay(announceItem(t, { label: partLabel, state: partState, position: n + 1, total: items.length }, ctx.withIndex()));
   }
 
   function focusAndSay(items: readonly HTMLElement[], n: number): void {
@@ -370,7 +373,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // game and another by the screen reader, and whoever hears both could not tell which is true.
     // 🔴 A LOCKED ITEM SAYS WHY when it is reached (ADR-0161): right after its name, and written in the footer.
     const reason = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
-    const announcement = announceItem({ label: accessibleLabel(items[n]), position: n + 1, total: items.length }, ctx.withIndex());
+    const announcement = announceItem(t, { label: accessibleLabel(items[n]), position: n + 1, total: items.length }, ctx.withIndex());
     ctx.srSay(reason ? `${announcement}. ${reason}` : announcement);
     ctx.explainItem?.(reason || null);
   }

@@ -4,6 +4,8 @@
 // real render/DOM (querySelector/addEventListener/focus, and the rows built as nodes) is covered in
 // tests/settings-motion.browser.test.js. See docs/5-Refactoring/plan-modularization-map.md (ui/settings-motion).
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { t } from '../app/js/core/i18n.js'; // RM_LABEL holds KEYS (item 14)
 // 🔴 A NAMED import of something a module does not export resolves to `undefined` under the transformer, and while no
 // case uses the name, nothing fails — measured on 2026-09-23, when this list still imported six names the module no
@@ -76,7 +78,7 @@ describe('allMotionFrozen', () => {
     expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined),
       'sem personagem, a metade do personagem não pode pesar na resposta').toBe(true);
     // and the label that comes out of it is the one offering the WAY BACK — the half the child needs to see
-    expect(motionMasterLabel(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)))
+    expect(motionMasterLabel(translate, allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)))
       .toBe('Retomar todas as animações');
   });
 
@@ -89,30 +91,30 @@ describe('allMotionFrozen', () => {
 
 describe('motionMasterLabel', () => {
   it('[Right] allFrozen=true → "Retomar"; allFrozen=false → "Parar"', () => {
-    expect(motionMasterLabel(true)).toBe('Retomar todas as animações');
-    expect(motionMasterLabel(false)).toBe('Parar todas as animações');
+    expect(motionMasterLabel(translate, true)).toBe('Retomar todas as animações');
+    expect(motionMasterLabel(translate, false)).toBe('Parar todas as animações');
   });
 });
 
 describe('anúncios (srSay)', () => {
   it('sceneMotionAnnouncement: congelado vs animado', () => {
-    expect(sceneMotionAnnouncement('Parallax do fundo', true)).toBe('Parallax do fundo congelado.');
-    expect(sceneMotionAnnouncement('Parallax do fundo', false)).toBe('Parallax do fundo animado.');
+    expect(sceneMotionAnnouncement(translate, 'Parallax do fundo', true)).toBe('Parallax do fundo congelado.');
+    expect(sceneMotionAnnouncement(translate, 'Parallax do fundo', false)).toBe('Parallax do fundo animado.');
   });
   it('crtToggleAnnouncement: ligada vs desligada', () => {
-    expect(crtToggleAnnouncement('Scanlines', true)).toBe('Scanlines ligada.');
-    expect(crtToggleAnnouncement('Scanlines', false)).toBe('Scanlines desligada.');
+    expect(crtToggleAnnouncement(translate, 'Scanlines', true)).toBe('Scanlines ligada.');
+    expect(crtToggleAnnouncement(translate, 'Scanlines', false)).toBe('Scanlines desligada.');
   });
   it('crtLevelLabel: 0/1/2 → desligado/pequeno/grande', () => {
-    expect(crtLevelLabel(0)).toBe('desligado');
-    expect(crtLevelLabel(1)).toBe('pequeno');
-    expect(crtLevelLabel(2)).toBe('grande');
+    expect(crtLevelLabel(translate, 0)).toBe('desligado');
+    expect(crtLevelLabel(translate, 1)).toBe('pequeno');
+    expect(crtLevelLabel(translate, 2)).toBe('grande');
   });
   it('crtRoundAnnouncement compõe rótulo + nível', () => {
-    expect(crtRoundAnnouncement('Cantos arredondados', 2)).toBe('Cantos arredondados: grande.');
+    expect(crtRoundAnnouncement(translate, 'Cantos arredondados', 2)).toBe('Cantos arredondados: grande.');
   });
   it('stopResumeAllAnnouncement: nowFrozen=true (acabou de congelar) vs false (acabou de retomar)', () => {
-    expect(stopResumeAllAnnouncement(true)).toBe('Todas as animações paradas.');
-    expect(stopResumeAllAnnouncement(false)).toBe('Todas as animações retomadas.');
+    expect(stopResumeAllAnnouncement(translate, true)).toBe('Todas as animações paradas.');
+    expect(stopResumeAllAnnouncement(translate, false)).toBe('Todas as animações retomadas.');
   });
 });

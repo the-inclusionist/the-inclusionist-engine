@@ -4,6 +4,8 @@
 // the panel's rows (selection/disabled/note). render() itself (it touches the DOM) is in settings-typo.browser.test.js.
 // See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { t } from '../app/js/core/i18n.js'; // the font catalogue holds KEYS (item 14)
 import { resolveFontKey, persistFontKey } from '../app/js/ui/settings-typo.js';
 // 📌 The PURE half lives in `ui/typo-choices` (note BJ); the cases here were all about what a CHOICE is, none about a node.
@@ -169,7 +171,7 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
 
 describe('typoGroups — view-model das linhas', () => {
   it('[Right] marca como selected apenas a linha da chave ativa', () => {
-    const groups = typoGroups('lexend');
+    const groups = typoGroups(translate, 'lexend');
     const flat = groups.flatMap((g) => g.rows);
     const selected = flat.filter((r) => r.selected);
     expect(selected).toHaveLength(1);
@@ -183,18 +185,21 @@ describe('typoGroups — view-model das linhas', () => {
     // So the case measures the FUNCTION with a fake face, instead of depending on the catalogue still having a
     // disabled one. A test that depends on the roster's composition fails whenever the roster changes.
     const falsa = { k: 'x', fam: 'Fonte de Mentira', fb: 'sans', d: 'font.desc.pinyon', off: 'font.off.pending' };
-    const linha = fontRow(falsa, 'atkinson');
+    const linha = fontRow(translate, falsa, 'atkinson');
     expect(linha.disabled).toBe(true);
     expect(linha.note, 'a nota de uma face desligada tem de dizer o MOTIVO').not.toBe('');
     expect(linha.note).toContain('—'); // descrição — motivo, as duas metades
+    // both halves are TRANSLATED with the `t` the row is handed (ADR-0232 D3), not keys
+    expect(linha.note).toBe(`${translate('font.desc.pinyon')} — ${translate('font.off.pending')}`);
+    expect(linha.note, 'the row carries a raw key').not.toMatch(/font\.(desc|off)\./);
   });
   it('[Right] fonte sem descrição e sem .off tem note vazia', () => {
-    const row = typoGroups('atkinson').flatMap((g) => g.rows).find((r) => r.key === 'inter');
+    const row = typoGroups(translate, 'atkinson').flatMap((g) => g.rows).find((r) => r.key === 'inter');
     expect(row.disabled).toBe(false);
     expect(row.note).toBe('');
   });
   it('[Right] preserva os 3 grupos do catálogo, TRADUZIDOS (a chave nunca chega à tela)', () => {
-    const groups = typoGroups('atkinson');
+    const groups = typoGroups(translate, 'atkinson');
     // Against `t()` and not against the Portuguese: the catalogue holds KEYS (item 14), and pinning the three words here
     // would bring back into the test the text that left the code. What this case guards is that the three groups still
     // exist, in order, ALREADY RESOLVED.
@@ -221,10 +226,10 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
   // 📌 The markup half of this block lives in `settings-typo.browser.test.js`, where there is a document (the list is
   // built as NODES with the kit); the CATALOGUE half — who is on the list and who is not — stays here, where it has
   // always belonged.
-  const chaves = (fontKey) => typoGroups(fontKey).flatMap((g) => g.rows.map((r) => r.key));
+  const chaves = (fontKey) => typoGroups(translate, fontKey).flatMap((g) => g.rows.map((r) => r.key));
 
   it('[Interface] a linha é uma ESCOLHA, e diz isso na forma antes de virar nó nenhum', () => {
-    const spec = typoRowSpec(fontRow(FONT_BY_KEY.andika, 'atkinson'));
+    const spec = typoRowSpec(fontRow(translate, FONT_BY_KEY.andika, 'atkinson'));
     expect(spec.shape, 'aria-pressed é vocabulário de interruptor; isto é um rádio').toBe('radio');
     expect(spec.id).toBe(typoControlId('andika'));
     expect(spec.label).toBe('Andika');
@@ -233,13 +238,13 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
   it('[Interface] a nota entra na DICA e também no nome acessível', () => {
     // The hint goes to the footer through `fillExplain`; the accessible name stays on the button. Whoever cannot see the
     // row hears whom that face serves without hunting for the footer — the two halves say the same thing on two channels.
-    const spec = typoRowSpec(fontRow(FONT_BY_KEY.ronde, 'atkinson'));
+    const spec = typoRowSpec(fontRow(translate, FONT_BY_KEY.ronde, 'atkinson'));
     expect(spec.hint, 'a ronde traz a mensagem do que instalar').toBeTruthy();
     expect(spec.ariaLabel).toContain(spec.hint);
   });
 
   it('[Right] o id sai da CHAVE do catálogo, que é única por construção', () => {
-    const ids = typoGroups('atkinson').flatMap((g) => g.rows.map((r) => typoRowSpec(r).id));
+    const ids = typoGroups(translate, 'atkinson').flatMap((g) => g.rows.map((r) => typoRowSpec(r).id));
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -258,13 +263,13 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
   });
 
   it('[Right] uma face da lista é a escolhida, e SÓ uma', () => {
-    const escolhidas = typoGroups('andika').flatMap((g) => g.rows.filter((r) => r.selected));
+    const escolhidas = typoGroups(translate, 'andika').flatMap((g) => g.rows.filter((r) => r.selected));
     expect(escolhidas.map((r) => r.key)).toEqual(['andika']);
   });
 
   it('[Error] chave desconhecida não derruba a lista — ela sai inteira, sem nenhuma escolhida', () => {
-    expect(() => typoGroups('nao-existe')).not.toThrow();
+    expect(() => typoGroups(translate, 'nao-existe')).not.toThrow();
     expect(chaves('nao-existe').length).toBe(chaves('atkinson').length);
-    expect(typoGroups('nao-existe').flatMap((g) => g.rows.filter((r) => r.selected))).toHaveLength(0);
+    expect(typoGroups(translate, 'nao-existe').flatMap((g) => g.rows.filter((r) => r.selected))).toHaveLength(0);
   });
 });

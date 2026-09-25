@@ -291,7 +291,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
       if (!b) continue;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-pressed', String(on));
-      b.textContent = onOffLabel(on);
+      b.textContent = onOffLabel(t, on);
     }
     for (const k of ROLE_KEYS) {
       const inp = ctx.$<HTMLInputElement>('#opt-role-' + k);
@@ -372,15 +372,15 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const rolesChanged = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
     const rowOf = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(rowOfCheckedAxis('tema'), themeChanged);
-    markChanged(rowOfCheckedAxis('correcao'), correctionChanged);
-    markChanged(rowOf('#opt-lq'), lqOff);
-    markChanged(rowOf('#opt-ownercolors'), owner);
-    markChanged(rowOf('#opt-cbsafe'), cb);
-    markChanged(rowOf('#opt-outline-fg'), fg);
-    markChanged(rowOf('#opt-outline-bg'), bg);
-    markChanged(rowOf('#opt-role-reset'), rolesChanged);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [themeChanged, correctionChanged, lqOff, owner, cb, fg, bg, rolesChanged]);
+    markChanged(t, rowOfCheckedAxis('tema'), themeChanged);
+    markChanged(t, rowOfCheckedAxis('correcao'), correctionChanged);
+    markChanged(t, rowOf('#opt-lq'), lqOff);
+    markChanged(t, rowOf('#opt-ownercolors'), owner);
+    markChanged(t, rowOf('#opt-cbsafe'), cb);
+    markChanged(t, rowOf('#opt-outline-fg'), fg);
+    markChanged(t, rowOf('#opt-outline-bg'), bg);
+    markChanged(t, rowOf('#opt-role-reset'), rolesChanged);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="visual"]'), [themeChanged, correctionChanged, lqOff, owner, cb, fg, bg, rolesChanged]);
   }
 
   // ---- reset THIS menu's defaults (ADR-0028) ----

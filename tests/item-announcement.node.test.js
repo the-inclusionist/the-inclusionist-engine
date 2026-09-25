@@ -16,52 +16,54 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { announceItem } from '../app/js/ui/item-announcement.js';
 import { t } from '../app/js/core/i18n.js';
 
 describe('anúncio de item de menu · rótulo, estado e o índice no fim', () => {
   it('[Right] rótulo + estado + índice, nessa ordem', () => {
-    expect(announceItem({ label: 'Alto contraste', state: 'ativado', position: 6, total: 10 }, true))
+    expect(announceItem(translate, { label: 'Alto contraste', state: 'ativado', position: 6, total: 10 }, true))
       .toBe('Alto contraste, ativado, 6 de 10');
   });
 
   it('[Right] desligar o índice tira SÓ o índice', () => {
     // What turning it off must not do is take the state with it: whoever turns off the count still needs to know
     // whether the item is on.
-    expect(announceItem({ label: 'Alto contraste', state: 'ativado', position: 6, total: 10 }, false))
+    expect(announceItem(translate, { label: 'Alto contraste', state: 'ativado', position: 6, total: 10 }, false))
       .toBe('Alto contraste, ativado');
   });
 
   it('[Zero] item sem estado não ganha vírgula sobrando', () => {
-    expect(announceItem({ label: 'Continuar', position: 1, total: 7 }, true)).toBe('Continuar, 1 de 7');
-    expect(announceItem({ label: 'Continuar', state: '', position: 1, total: 7 }, true)).toBe('Continuar, 1 de 7');
+    expect(announceItem(translate, { label: 'Continuar', position: 1, total: 7 }, true)).toBe('Continuar, 1 de 7');
+    expect(announceItem(translate, { label: 'Continuar', state: '', position: 1, total: 7 }, true)).toBe('Continuar, 1 de 7');
   });
 
   it('[Boundary] as pontas do anel contam certo — 1 de 7 e 7 de 7', () => {
     // Item 1's ring puts `quit` ONE key away from `resume`, and the index is what tells that story: whoever presses up
     // on the first item needs to hear "7 de 7" to understand they wrapped around, not that they moved on.
-    expect(announceItem({ label: 'Continuar', position: 1, total: 7 }, true)).toContain('1 de 7');
-    expect(announceItem({ label: 'Sair', position: 7, total: 7 }, true)).toContain('7 de 7');
+    expect(announceItem(translate, { label: 'Continuar', position: 1, total: 7 }, true)).toContain('1 de 7');
+    expect(announceItem(translate, { label: 'Sair', position: 7, total: 7 }, true)).toContain('7 de 7');
   });
 
   it('[Error] posição impossível NÃO é anunciada — número errado é pior que número nenhum', () => {
     // It really happens: an item filtered out by visibility leaves the list and the index of what remains goes out of
     // range. Announcing "0 de 7" or "9 de 7" teaches a false geography of the menu, and the child trusts it.
-    expect(announceItem({ label: 'Continuar', position: 0, total: 7 }, true)).toBe('Continuar');
-    expect(announceItem({ label: 'Continuar', position: 9, total: 7 }, true)).toBe('Continuar');
-    expect(announceItem({ label: 'Continuar', position: 1, total: 0 }, true)).toBe('Continuar');
+    expect(announceItem(translate, { label: 'Continuar', position: 0, total: 7 }, true)).toBe('Continuar');
+    expect(announceItem(translate, { label: 'Continuar', position: 9, total: 7 }, true)).toBe('Continuar');
+    expect(announceItem(translate, { label: 'Continuar', position: 1, total: 0 }, true)).toBe('Continuar');
   });
 
   it('[Interface] rótulo colado do DOM vira frase legível', () => {
     // `button.textContent` carries the markup's line breaks and indentation, and a sub-label in a `<span>` sticks to the
     // label with no space at all ("Descobrindo palavrasBABA"). Whoever builds the request separates the parts; here the
     // normalisation keeps the markup's whitespace from leaking.
-    expect(announceItem({ label: '\n  Descobrindo palavras  \n', state: ' BABA ', position: 3, total: 6 }, true))
+    expect(announceItem(translate, { label: '\n  Descobrindo palavras  \n', state: ' BABA ', position: 3, total: 6 }, true))
       .toBe('Descobrindo palavras, BABA, 3 de 6');
   });
 
   it('[Zero] item sem rótulo nenhum não vira frase começada por vírgula', () => {
-    expect(announceItem({ label: '', position: 2, total: 5 }, true)).toBe('2 de 5');
+    expect(announceItem(translate, { label: '', position: 2, total: 5 }, true)).toBe('2 de 5');
   });
 
   it('[Interface] o molde do índice vem do DICIONÁRIO, não daqui', () => {
@@ -69,7 +71,7 @@ describe('anúncio de item de menu · rótulo, estado e o índice no fim', () =>
     // while English would narrate "6 de 10". Parity across the three languages belongs to `i18n-dicts.node.test.js`;
     // what THIS case guarantees is that the module goes through the key.
     expect(t('sr.menu.index', { n: 6, m: 10 })).toBe('6 de 10');
-    expect(announceItem({ label: 'x', position: 6, total: 10 }, true).endsWith(t('sr.menu.index', { n: 6, m: 10 }))).toBe(true);
+    expect(announceItem(translate, { label: 'x', position: 6, total: 10 }, true).endsWith(t('sr.menu.index', { n: 6, m: 10 }))).toBe(true);
   });
 });
 

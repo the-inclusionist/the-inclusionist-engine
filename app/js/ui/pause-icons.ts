@@ -158,7 +158,7 @@ function iconCaption(barEl: ParentNode, el: HTMLElement, menuIndexOn: boolean): 
   const icons = [...barEl.querySelectorAll<HTMLElement>('.pi-btn')];
   // «A declared label wins» is `core/accessible-label`'s rule, shared with the pause list and every menu: one answer to
   // «what is this control called».
-  return announceItem(
+  return announceItem(t, 
     { label: accessibleLabel(el), position: icons.indexOf(el) + 1, total: icons.length },
     menuIndexOn,
   );
@@ -1109,7 +1109,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const first = showPauseOptions(sp, sub);
     if (!first) return;
     const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
-    ctx.srSay(announceItem(
+    ctx.srSay(announceItem(t, 
       { label: first.textContent || '', position: 1, total: items.length }, ctx.settings.menuIndexOn,
     ));
   }

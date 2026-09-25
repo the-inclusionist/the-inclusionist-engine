@@ -5,6 +5,8 @@
 // nothing else. The day a set changes tier for being pretty, popular or easy to integrate, the catalogue will have
 // stopped being true, and this is where that has to hurt.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { CAA_SETS, CAA_BY_KEY, caaAvailable, caaReason, caaLabel } from '../app/js/ui/caa-sets.js';
 import { upperCaseOn, lettersRowSpec, caaRowSpec, caaControlId, CAA_SECTIONS } from '../app/js/ui/settings-caa.js';
 
@@ -68,8 +70,8 @@ describe('caaMotivo — duas respostas, porque são duas situações', () => {
   });
 
   it('[Interface] o rótulo carrega o motivo junto do nome — a linha se explica sozinha', () => {
-    expect(caaLabel(CAA_BY_KEY.pcs)).toContain('PCS');
-    expect(caaLabel(CAA_BY_KEY.pcs)).toContain('negocia');
+    expect(caaLabel(translate, CAA_BY_KEY.pcs)).toContain('PCS');
+    expect(caaLabel(translate, CAA_BY_KEY.pcs)).toContain('negocia');
   });
 });
 

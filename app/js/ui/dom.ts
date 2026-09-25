@@ -7,7 +7,7 @@
 // beside `toggleBtn` (the class and `aria-pressed`). The property that matters — importable in node, no I/O on
 // import — still holds; what it gave up is having zero dependencies, and what it gained is written on
 // `toggleLabel`.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { $ as consultar, $$ as consultarTodos } from '../core/dom-query.js';
 
 // THE DEFAULT IS `HTMLElement`, NOT `Element`: `.hidden`, `.focus()` and `.value` do not exist on `Element`, and
@@ -36,13 +36,13 @@ export function toggleBtn(b: Element | null, on: boolean): void {
  * drift apart. A text copied into each panel is a text that translating the game has to find everywhere, and the
  * one copy it misses leaves a button in the wrong language — with no error and no red test.
  */
-export function toggleLabel(on: boolean): string {
+export function toggleLabel(t: Translate, on: boolean): string {
   return t(on ? 'ui.toggle.on' : 'ui.toggle.off');
 }
 
 /** The `aria-label` of the same toggle: '{alvo}: on' (`{alvo}` is the dictionary's interpolation key). Separate from
  *  the visible label because a screen reader needs the NAME of the target with it, and the screen does not (the
  *  name is already on the row beside the button). */
-export function toggleAria(target: string, on: boolean): string {
+export function toggleAria(t: Translate, target: string, on: boolean): string {
   return t(on ? 'ui.toggle.ariaOn' : 'ui.toggle.ariaOff', { alvo: target });
 }

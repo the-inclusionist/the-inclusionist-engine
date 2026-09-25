@@ -1546,7 +1546,7 @@ export function createGame(o: CreateGameOptions): Engine {
           const list = $<HTMLElement>('#help-list');
           if (!list) return;
           while (list.firstChild) list.removeChild(list.firstChild);
-          const slideContents = [...(cartridge.howToPlay ?? []), ...helpRows(cartridge.preset, (a) => keyboard.kbFor(0)[a], keyName)];
+          const slideContents = [...(cartridge.howToPlay ?? []), ...helpRows(cartridge.preset, (a) => keyboard.kbFor(0)[a], (code) => keyName(t, code))];
           const ctxDoSlide = { create: (tag: string) => doc.createElement(tag), t, title: t('menu.help') };
           const slides = mountSlides(ctxDoSlide);
           list.appendChild(slides);
@@ -1601,7 +1601,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     gamePanel.shell.reset.hidden = true;
     redrawGameOptions = () => {
-      drawGameOptions({ ...panelCtx, say: srSay }, gamePanel.shell.list, cartridge.gameOptions ?? []);
+      drawGameOptions({ ...panelCtx, say: srSay, t: translator.t }, gamePanel.shell.list, cartridge.gameOptions ?? []);
       if (!gamePanel.shell.overlay.hidden) overlays.fillExplain(gamePanel.shell.card);
     };
     openGameOptions = gamePanel.open;
@@ -1702,8 +1702,8 @@ export function createGame(o: CreateGameOptions): Engine {
     visualPanel.shell.card.insertBefore(captionsRow, visualPanel.shell.list.nextSibling);
     const reflectCaptions = (): void => {
       toggleBtn(captionsButton, state.captionsOn);
-      captionsButton.textContent = toggleLabel(state.captionsOn);
-      markChanged(captionsRow, state.captionsOn !== DEFAULTS.captionsOn);
+      captionsButton.textContent = toggleLabel(t, state.captionsOn);
+      markChanged(t, captionsRow, state.captionsOn !== DEFAULTS.captionsOn);
     };
     /* THE CAPTION RATE (ADR-0183 §4; issue #179): 125, 145 or 175 words a minute, by steps, right after the captions switch. */
     const rateSpec = () => ({
@@ -1731,13 +1731,13 @@ export function createGame(o: CreateGameOptions): Engine {
       if (fresh === currentSlide) return;
       state.setCaptionPpmValue(CAPTION_RATES[fresh]!);
       updateSteps(rateSteps, rateSpec());
-      markChanged(speechRateRow, state.captionPpm !== DEFAULTS.captionPpm);
+      markChanged(t, speechRateRow, state.captionPpm !== DEFAULTS.captionPpm);
       srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
     });
     const reflectCaptionRate = (): void => {
       updateSteps(rateSteps, rateSpec());
       rateHint.textContent = t('visual.legenda.ritmo.dica');
-      markChanged(speechRateRow, state.captionPpm !== DEFAULTS.captionPpm);
+      markChanged(t, speechRateRow, state.captionPpm !== DEFAULTS.captionPpm);
     };
     captionsButton.addEventListener('click', () => {
       state.setCaptionsOnValue(!state.captionsOn);
@@ -1757,13 +1757,13 @@ export function createGame(o: CreateGameOptions): Engine {
     const { row: ownerRow, controle: ownerButton } = controlRow(panelCtx, ownerSpec());
     const reflectOwner = (): void => {
       toggleBtn(ownerButton, state.ownerColors);
-      ownerButton.textContent = toggleLabel(state.ownerColors);
-      markChanged(ownerRow, state.ownerColors !== DEFAULTS.ownerColors);
+      ownerButton.textContent = toggleLabel(t, state.ownerColors);
+      markChanged(t, ownerRow, state.ownerColors !== DEFAULTS.ownerColors);
     };
     ownerButton.addEventListener('click', () => {
       state.setOwnerColorsValue(!state.ownerColors);
       reflectOwner();
-      srSay(`${ownerSpec().label}: ${toggleLabel(state.ownerColors)}`);
+      srSay(`${ownerSpec().label}: ${toggleLabel(t, state.ownerColors)}`);
     });
     const OUTLINE_LEVELS = ['visual.contorno.0', 'visual.contorno.1', 'visual.contorno.2'] as const;
     const outline = (plane: 'fg' | 'bg') => {
@@ -1877,9 +1877,9 @@ export function createGame(o: CreateGameOptions): Engine {
         const b = $<HTMLElement>(id);
         if (!b) continue;
         toggleBtn(b, on);
-        b.textContent = toggleLabel(on);
+        b.textContent = toggleLabel(t, on);
       }
-      markChanged(noStrengthRow, state.noGripStrength !== DEFAULTS.noGripStrength);
+      markChanged(t, noStrengthRow, state.noGripStrength !== DEFAULTS.noGripStrength);
     };
     const simulate = (i: number, key: string): boolean => {
       const simulation = (key === 'normal' ? null : key) as VisualState['simulacao'];
@@ -2166,7 +2166,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 6. Menu navigation.
   const nav = initMenuNav({
-    $, getActiveElement: () => doc.activeElement,
+    $, t: translator.t, getActiveElement: () => doc.activeElement,
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
     getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
     // ⚠️ NOT `cartridge.setPhase ?? (() => {})`: «no» at the card's root calls `setPhase('playing')` (`ui/menu-nav`) and
@@ -2596,6 +2596,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * reason — not wiring — and ADR-0221's erratum measures a root's debt in branches.
    */
   const whereIsTheChild = (): Place => whereTheChildIs({
+    t: translator.t,
     topVisibleOverlay: overlays.topVisibleOverlay,
     pauseCard: () => $<HTMLElement>('.screen-pause:not([hidden])'),
     focused: () => doc.activeElement,
@@ -3347,8 +3348,8 @@ export function createGame(o: CreateGameOptions): Engine {
       labelRow(cooldownRow, cooldownRowSpec());
       const on = state.inputCooldown > 0;
       toggleBtn(cooldownButton, on);
-      cooldownButton.textContent = toggleLabel(on);
-      markChanged(cooldownRow, on !== (DEFAULTS.inputCooldown > 0));
+      cooldownButton.textContent = toggleLabel(t, on);
+      markChanged(t, cooldownRow, on !== (DEFAULTS.inputCooldown > 0));
       cooldownRow.hidden = !cartridge.declaration.holdsKeys();
     };
     cooldownButton.addEventListener('click', () => {
@@ -3424,8 +3425,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const reflectVoice = (): void => {
       labelRow(voiceRow, voiceRowSpec());
       toggleBtn(voiceButton, state.voiceControl);
-      voiceButton.textContent = toggleLabel(state.voiceControl);
-      markChanged(voiceRow, state.voiceControl !== DEFAULTS.voiceControl);
+      voiceButton.textContent = toggleLabel(t, state.voiceControl);
+      markChanged(t, voiceRow, state.voiceControl !== DEFAULTS.voiceControl);
       voiceRow.hidden = !canCaptureMedia;
     };
     voiceButton.addEventListener('click', () => {

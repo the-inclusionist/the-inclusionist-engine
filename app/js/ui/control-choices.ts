@@ -7,7 +7,7 @@
 // 📌 The same cut `ui/audio-choices` and `ui/typo-choices` received, marked by the same thing:
 // `tests/settings-controls.node.test.js` exercises these functions in a project WITHOUT a document, and the browser
 // test drives the rest. The seam was drawn in the test folder before it existed in the code (ADR-0221).
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { ACTIONS, type Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 
@@ -35,7 +35,7 @@ const GLYPH: Readonly<Record<string, string>> = {
  * foreseen (`Digit1`, `Numpad5`). What is not recognised still passes through untouched on purpose: `Comma` is ugly
  * and honest, and inventing a name for it would be guessing.
  */
-export function keyName(code: string): string {
+export function keyName(t: Translate, code: string): string {
   const c = String(code);
   if (GLYPH[c]) return GLYPH[c];
   if (c === 'Space') return t('key.space');

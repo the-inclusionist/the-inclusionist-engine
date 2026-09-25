@@ -27,7 +27,7 @@
 // And idempotence is STRUCTURAL, not case by case: every call first returns the control to its original state —
 // removing any trace of ours, on both paths — and only then applies. A mark that only knew how to add would end up on
 // everything, and a mark on everything is no mark.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 export const CHANGED_CLASS = 'is-changed';
 /** Keeps the ORIGINAL `aria-label` when it is the panel's, to give it back without guessing from text. */
@@ -66,7 +66,7 @@ function clearMark(node: HTMLElement): void {
  * Marks (or unmarks) ONE control. Idempotent by construction: clears and only then applies. The panels call this from
  * inside the same `reflect*` that already redraws the control, so it runs many times in a row.
  */
-export function markChanged(el: HTMLElement | null, changed: boolean): void {
+export function markChanged(t: Translate, el: HTMLElement | null, changed: boolean): void {
   if (!el) return;
   el.classList.toggle(CHANGED_CLASS, changed);
   const node = namedNode(el);
@@ -91,6 +91,6 @@ export function markChanged(el: HTMLElement | null, changed: boolean): void {
  * `changes` is a list of booleans and not of elements because the panel is the one that knows how to compare with the
  * default; this module must have no opinion on what the default is — there is one source, ADR-0028's DEFAULTS.
  */
-export function markMenuChanged(opener: HTMLElement | null, changes: readonly boolean[]): void {
-  markChanged(opener, changes.some(Boolean));
+export function markMenuChanged(t: Translate, opener: HTMLElement | null, changes: readonly boolean[]): void {
+  markChanged(t, opener, changes.some(Boolean));
 }

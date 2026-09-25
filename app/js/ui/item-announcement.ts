@@ -16,7 +16,7 @@
 // toggle's state) and gets a sentence back. That is what keeps the rule the SAME on every screen, without each
 // one reinventing the punctuation.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 export interface ItemDeMenu {
   /** What the item is. Markup whitespace is normalised here. */
@@ -39,7 +39,7 @@ const tidy = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ').t
  * by visibility leaves the list and can leave the index of the ones that remain out of range. "0 of 7" teaches a
  * false geography of the menu, and the child trusts it — a wrong number is worse than no number.
  */
-export function announceItem(item: ItemDeMenu, withIndex: boolean): string {
+export function announceItem(t: Translate, item: ItemDeMenu, withIndex: boolean): string {
   const indexApplies = withIndex && item.total >= 1 && item.position >= 1 && item.position <= item.total;
   const parts = [
     tidy(item.label),

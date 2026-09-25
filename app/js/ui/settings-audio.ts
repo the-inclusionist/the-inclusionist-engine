@@ -306,7 +306,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (b) {
       b.classList.toggle('is-on', ctx.getSoundOn());
       b.setAttribute('aria-pressed', String(ctx.getSoundOn()));
-      b.textContent = toggleLabel(ctx.getSoundOn()); // the dictionary's words, no glyph in the name (ADR-0159 rule 12)
+      b.textContent = toggleLabel(t, ctx.getSoundOn()); // the dictionary's words, no glyph in the name (ADR-0159 rule 12)
     }
     const v = ctx.$<HTMLInputElement>('#audio-master-vol');
     if (v) v.value = String(volPercent(ctx.getVolume()));
@@ -494,7 +494,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       const sel = make('select'); sel.className = 'vol'; sel.id = 'sink-p' + i;
       const o0 = make('option'); o0.value = ''; o0.textContent = t('audio.sinkShared'); sel.appendChild(o0);
       devices.forEach((d, k) => {
-        const o = make('option'); o.value = d.deviceId; o.textContent = sinkOptionLabel(d, k); sel.appendChild(o);
+        const o = make('option'); o.value = d.deviceId; o.textContent = sinkOptionLabel(t, d, k); sel.appendChild(o);
       });
       sel.value = sinkSelectValue(p);
       sel.addEventListener('change', () => {
@@ -524,7 +524,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
 
   function drawBlindMode(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-modocego');
-    if (b) { ctx.toggleBtn(b, ctx.getBlindMode()); b.textContent = toggleLabel(ctx.getBlindMode()); }
+    if (b) { ctx.toggleBtn(b, ctx.getBlindMode()); b.textContent = toggleLabel(t, ctx.getBlindMode()); }
   }
 
   function renderAudio(): void {
@@ -556,7 +556,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const didChange: boolean[] = [];
     const mark = (sel: string, changed: boolean): void => {
       didChange.push(changed);
-      markChanged(ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
+      markChanged(t, ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
     mark('#opt-modocego', ctx.getBlindMode() !== DEFAULTS.blindMode);
     mark('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
@@ -569,11 +569,11 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       const changedHere = !!a && (a.on !== d.on || a.vol !== d.vol);
       if ((GEN_CATS as readonly string[]).includes(c.k)) {
         fromSound.push(changedHere);
-        markChanged(ctx.$<HTMLElement>(`[data-acat="${c.k}"]`)?.closest<HTMLElement>('.ctrl-row') ?? null, changedHere);
+        markChanged(t, ctx.$<HTMLElement>(`[data-acat="${c.k}"]`)?.closest<HTMLElement>('.ctrl-row') ?? null, changedHere);
       } else mark(`[data-acat="${c.k}"]`, changedHere);
     }
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="audio"]'), didChange);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="som"]'), fromSound);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="audio"]'), didChange);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="som"]'), fromSound);
   }
 
   // ----- static widgets (always present in #audio; wired ONCE, never recreated by renderAudio) -----
@@ -625,7 +625,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     caneDivSel.addEventListener('change', () => {
       const div = parseCaneDiv(caneDivSel.value);
       ctx.setCaneBlockDiv(div);
-      ctx.srSay(caneDivMessage(div));
+      ctx.srSay(caneDivMessage(t, div));
     });
   }
 

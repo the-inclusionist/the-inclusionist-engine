@@ -200,7 +200,7 @@ export function questionNarration(p: Question, indexOn: boolean): string {
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
 function spokenOption(p: Question, i: number, indexOn: boolean): string {
-  return announceItem({ label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, indexOn);
+  return announceItem(t, { label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, indexOn);
 }
 
 /**

@@ -14,7 +14,7 @@
 // interface. What is genuinely free of language — the category lists and the volume arithmetic — stays here beside the rest
 // rather than being split again for the sake of a layer.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 /** `lbl` is an i18n key (a key missing from the dictionaries is shown as written). */
 export interface AudioCatDef { k: string; lbl: string; }
@@ -53,7 +53,7 @@ export function parseCaneDiv(raw: string): number {
 
 /** srSay text for a cane-hit spacing choice. The two halves are ONE sentence per case, not a shared prefix
  *  plus a tail: a language that renders this as "One tap per block (cane)" needs to move the word "cane". */
-export function caneDivMessage(div: number): string {
+export function caneDivMessage(t: Translate, div: number): string {
   return t(div === 2 ? 'sr.audio.caneHalfBlock' : 'sr.audio.canePerBlock');
 }
 
@@ -107,7 +107,7 @@ export interface SinkDeviceLike { deviceId: string; label?: string; }
 
 /** A device's option label, falling back to a 1-based "Output N" when the browser withholds the real label
  *  (no getUserMedia permission granted yet). */
-export function sinkOptionLabel(d: SinkDeviceLike, index: number): string {
+export function sinkOptionLabel(t: Translate, d: SinkDeviceLike, index: number): string {
   return d.label || t('audio.sinkFallback', { n: index + 1 });
 }
 

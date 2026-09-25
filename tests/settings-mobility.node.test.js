@@ -5,6 +5,8 @@
 // render()/reflect() themselves (they touch the DOM) are in settings-mobility.browser.test.js.
 // See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel is its alias (item 14)
 import { t } from '../app/js/core/i18n.js';
 import { latchKey } from '../app/js/input/latch-scope.js'; // the announcements come from the dictionary (item 14)
@@ -85,18 +87,18 @@ describe('easyAnnouncement', () => {
   // test the text item 14 took out of the code — and the case still catches a SWAPPED key, because `t('…easyOn')` and
   // `t('…easyOff')` are different.
   it('[Right] 1 jogador: sem prefixo "Jogador N"', () => {
-    expect(easyAnnouncement(0, 1, true)).toBe(t('sr.motor.easyOn'));
+    expect(easyAnnouncement(translate, 0, 1, true)).toBe(t('sr.motor.easyOn'));
   });
   it('[Right] multiplayer: prefixa "Jogador N: "', () => {
-    expect(easyAnnouncement(1, 2, true)).toBe(t('sr.player.prefix', { n: 2 }) + t('sr.motor.easyOn'));
+    expect(easyAnnouncement(translate, 1, 2, true)).toBe(t('sr.player.prefix', { n: 2 }) + t('sr.motor.easyOn'));
   });
   it('[Zero] a chave NUNCA vaza para o anúncio', () => {
     // The silent way key-based i18n fails: a forgotten `t()` makes the screen reader READ the key.
-    for (const on of [true, false]) expect(easyAnnouncement(0, 1, on)).not.toMatch(/sr\./);
+    for (const on of [true, false]) expect(easyAnnouncement(translate, 0, 1, on)).not.toMatch(/sr\./);
   });
   it('[Boundary] desligado: mensagem curta', () => {
-    expect(easyAnnouncement(0, 1, false)).toBe(t('sr.motor.easyOff'));
-    expect(easyAnnouncement(2, 3, false)).toBe(t('sr.player.prefix', { n: 3 }) + t('sr.motor.easyOff'));
+    expect(easyAnnouncement(translate, 0, 1, false)).toBe(t('sr.motor.easyOff'));
+    expect(easyAnnouncement(translate, 2, 3, false)).toBe(t('sr.player.prefix', { n: 3 }) + t('sr.motor.easyOff'));
   });
 });
 

@@ -7,7 +7,7 @@
 // these names with no document — the seam was already drawn by the suite. The stored KEYS stay there, beside the writers that
 // use them. What stays is the panel: finding its controls, wiring them, writing the toggles, reflecting the choice.
 import { toggleLabel } from './dom.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 /** Clamps the selected player back to 0 once it falls outside 0..numPlayers-1 (e.g. player count dropped). */
 export function clampSelPlayer(sel: number, numPlayers: number): number {
@@ -40,11 +40,11 @@ export function playerTabsHTML(numPlayers: number, selected: number): string {
  * The player prefix that opens an announcement when there is more than one screen. A single screen gets no prefix —
  * naming the player to whoever is alone is noise, and noise on a screen reader costs listening time.
  */
-export function playerPrefix(i: number, numPlayers: number): string {
+export function playerPrefix(t: Translate, i: number, numPlayers: number): string {
   return numPlayers > 1 ? t('sr.player.prefix', { n: i + 1 }) : '';
 }
 
 /** srSay text for an Easy Mode change. The whole sentence comes from the dictionary — see `sr.motor.easyOn`. */
-export function easyAnnouncement(i: number, numPlayers: number, on: boolean): string {
-  return playerPrefix(i, numPlayers) + t(on ? 'sr.motor.easyOn' : 'sr.motor.easyOff');
+export function easyAnnouncement(t: Translate, i: number, numPlayers: number, on: boolean): string {
+  return playerPrefix(t, i, numPlayers) + t(on ? 'sr.motor.easyOn' : 'sr.motor.easyOff');
 }

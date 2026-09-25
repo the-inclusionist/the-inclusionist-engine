@@ -1109,6 +1109,20 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Right] opening a panel says where the child is in the root\'s language — no raw key (ADR-0232 D3)', async () => {
+      // `ui/where-the-child-is` names the panel and the item under the cursor through the `t` its ctx receives; the root
+      // hands it its translator's. Either one dropping it would read a key such as `sr.papel.interruptor` to a blind child.
+      const motor = abrir();
+      motor.pause.show(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
+      const status = document.querySelector('#sr-status');
+      let said = '';
+      for (let i = 0; i < 40; i++) { said = status.textContent; if (/\d de \d/.test(said)) break; await new Promise((r) => { setTimeout(r, 10); }); }
+      expect(said, 'the panel opened and nothing said where the child is').toMatch(/\d de \d/);
+      expect(said, 'where-the-child-is spoke a raw key').not.toMatch(/\b(sr|state)\.[a-z]/);
+      document.getElementById('animation-close')?.click();
+    });
+
     it('🔴 [Right] the sonar speaks the root\'s language — the root hands it its translator\'s `t` (ADR-0232 D3)', async () => {
       // The sonar no longer imports `t`; what it says comes from the `t` its ctx receives. A root that handed it anything
       // else would read a raw key to a blind child.

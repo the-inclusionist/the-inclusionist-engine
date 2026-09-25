@@ -5,6 +5,8 @@
 // render()/handleCaptureKeydown() (they touch the DOM) are in settings-controls.browser.test.js.
 // See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { ACT_LABEL } from '../app/js/ui/settings-controls.js';
 // 📌 The PURE half lives in `ui/control-choices` (note BL); the cases here were all about what a KEY is, none about a node.
 import { keyName, keyUsedByOther } from '../app/js/ui/control-choices.js';
@@ -12,17 +14,17 @@ import pt from '../app/js/i18n/pt.js';
 
 describe('keyName', () => {
   it('[Right] KeyX -> X (remove o prefixo "Key")', () => {
-    expect(keyName('KeyA')).toBe('A');
-    expect(keyName('KeyZ')).toBe('Z');
+    expect(keyName(translate, 'KeyA')).toBe('A');
+    expect(keyName(translate, 'KeyZ')).toBe('Z');
   });
   it('🔴 [Right] cada seta é A SUA seta, e mais nada', () => {
     // 🔴 The Dev saw `↔Up` in a screenshot on 22/09: «Por que está escrevendo "↔Up", "↔Down" etc ao invés de
     // simplesmente "↑", "↓", "←" e "→"? Não escolha poluir a UI.» The defect came from the SHAPE: a chain of
     // substitutions in which `Arrow` became a TWO-WAY arrow and the rest of the name was left stuck to it.
-    expect(keyName('ArrowUp')).toBe('↑');
-    expect(keyName('ArrowDown')).toBe('↓');
-    expect(keyName('ArrowLeft')).toBe('←');
-    expect(keyName('ArrowRight')).toBe('→');
+    expect(keyName(translate, 'ArrowUp')).toBe('↑');
+    expect(keyName(translate, 'ArrowDown')).toBe('↓');
+    expect(keyName(translate, 'ArrowLeft')).toBe('←');
+    expect(keyName(translate, 'ArrowRight')).toBe('→');
     // ⚠️ And the four are DISTINCT: a table with the same arrow in two directions would pass the cases above written one
     // by one, and the child would see two different keys with the same label.
     const setas = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].map(keyName);
@@ -34,30 +36,30 @@ describe('keyName', () => {
     // The same pollution, one keyboard over: `Digit1` and `Numpad5` came out intact. 📌 And `Num 5` is not `5` because
     // they are different PHYSICAL keys — the two-player scheme uses both, and two equal labels on the same list would
     // send the child to press the wrong one.
-    expect(keyName('Digit1')).toBe('1');
-    expect(keyName('Numpad5')).toBe('Num 5');
-    expect(keyName('Numpad5')).not.toBe(keyName('Digit5'));
+    expect(keyName(translate, 'Digit1')).toBe('1');
+    expect(keyName(translate, 'Numpad5')).toBe('Num 5');
+    expect(keyName(translate, 'Numpad5')).not.toBe(keyName(translate, 'Digit5'));
   });
   it('[Right] Space -> a palavra traduzida (pt-BR base: Espaço) — a única do mapa que tem tradução', () => {
-    expect(keyName('Space')).toBe(pt['key.space']);
-    expect(keyName('Space')).toBe('Espaço');
+    expect(keyName(translate, 'Space')).toBe(pt['key.space']);
+    expect(keyName(translate, 'Space')).toBe('Espaço');
   });
   it('[Right] ShiftLeft/ShiftRight -> Shift', () => {
-    expect(keyName('ShiftLeft')).toBe('Shift');
-    expect(keyName('ShiftRight')).toBe('Shift');
+    expect(keyName(translate, 'ShiftLeft')).toBe('Shift');
+    expect(keyName(translate, 'ShiftRight')).toBe('Shift');
   });
   it('[Boundary] código sem nenhum prefixo conhecido passa intacto — e isso é honestidade, não descuido', () => {
     // `Comma` is ugly and it is true. Inventing a name for it would be guessing, and a guess on the remapping screen
     // sends the child to press the wrong key.
-    expect(keyName('Comma')).toBe('Comma');
-    expect(keyName('Semicolon')).toBe('Semicolon');
+    expect(keyName(translate, 'Comma')).toBe('Comma');
+    expect(keyName(translate, 'Semicolon')).toBe('Semicolon');
   });
   it('[Zero] string vazia não lança e retorna vazio', () => {
-    expect(keyName('')).toBe('');
+    expect(keyName(translate, '')).toBe('');
   });
   it('[Error] entrada não-string é coagida para string (defensivo, como o original String(code))', () => {
-    expect(keyName(undefined)).toBe('undefined');
-    expect(keyName(null)).toBe('null');
+    expect(keyName(translate, undefined)).toBe('undefined');
+    expect(keyName(translate, null)).toBe('null');
   });
 });
 

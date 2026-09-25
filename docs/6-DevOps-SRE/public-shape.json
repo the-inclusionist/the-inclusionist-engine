@@ -2040,7 +2040,8 @@
       "value"
     ],
     "interface GameOptionsDrawCtx": [
-      "say"
+      "say",
+      "t"
     ],
     "type GameOption": "| (GameOptionBase & { readonly kind: 'steps' | 'list'"
   },
@@ -2211,6 +2212,7 @@
       "setPauseActor",
       "setPhase",
       "srSay",
+      "t",
       "topVisibleOverlay",
       "whichPlayer",
       "win",
@@ -2959,6 +2961,7 @@
     "interface WhereTheChildIsCtx": [
       "focused",
       "pauseCard",
+      "t",
       "topVisibleOverlay",
       "withIndex"
     ],

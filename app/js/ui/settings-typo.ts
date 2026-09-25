@@ -116,7 +116,7 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
     list.appendChild(radios);
   }
   radios.setAttribute('aria-label', t('font.grupo.rotulo'));
-  for (const group of typoGroups(fontKey, isInstalled)) {
+  for (const group of typoGroups(t, fontKey, isInstalled)) {
     const head = radios.querySelector(`[data-typo-group="${group.g}"]`)
       ? null
       : sectionHeader(ctx, group.g, '', group.rows.length);
@@ -252,10 +252,10 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   function refreshMarks(): void {
     const changed = fontKey !== DEFAULT_FONT_KEY;
     const list = ctx.$<HTMLElement>('#typo-list');
-    list?.querySelectorAll<HTMLElement>('.' + CHANGED_CLASS).forEach((el) => markChanged(el, false));
+    list?.querySelectorAll<HTMLElement>('.' + CHANGED_CLASS).forEach((el) => markChanged(t, el, false));
     const sel = list?.querySelector<HTMLElement>(`button[data-font="${fontKey}"]`);
-    markChanged(sel?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="tipo"]'), [changed]);
+    markChanged(t, sel?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="tipo"]'), [changed]);
   }
 
   // ---- reset THIS menu's defaults (ADR-0028) ----

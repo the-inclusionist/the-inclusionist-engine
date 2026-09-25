@@ -3,6 +3,8 @@
 // accessibility panel (contrast level, labels, L→Q enhancement, clamp of the selected player, role colour) do not depend
 // on the DOM; the panel's rows are measured in the browser project. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
@@ -147,8 +149,8 @@ describe('ui/settings-visual — rgbToHex', () => {
 
 describe('ui/settings-visual — onOffLabel', () => {
   it('[Right] rótulo ligado/desligado', () => {
-    expect(onOffLabel(true)).toBe('Ligado');
-    expect(onOffLabel(false)).toBe('Desligado');
+    expect(onOffLabel(translate, true)).toBe('Ligado');
+    expect(onOffLabel(translate, false)).toBe('Desligado');
   });
 });
 

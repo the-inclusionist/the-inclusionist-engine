@@ -174,7 +174,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
     b.classList.toggle('is-on', on);
     b.setAttribute('aria-pressed', String(on));
     // The switch's text is the STATE; its name is in the `<strong>` beside it and in the `aria-label`.
-    b.textContent = toggleLabel(on);
+    b.textContent = toggleLabel(t, on);
   }
 
   function render(): void {
@@ -189,8 +189,8 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   /** The left-the-default mark (ADR-0029), on the chosen row and on the menu's button. */
   function refreshMarks(): void {
     const changed = ctx.getLetterCase() !== DEFAULTS.letterCase;
-    markChanged(ctx.$<HTMLElement>('#caa-letras'), changed);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="caa"]'), [changed]);
+    markChanged(t, ctx.$<HTMLElement>('#caa-letras'), changed);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="caa"]'), [changed]);
   }
 
   function open(): void {

@@ -314,7 +314,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     if (!m) return;
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const allFrozen = allMotionFrozen(rmKeys, rm, rmChar(), player);
-    m.textContent = motionMasterLabel(allFrozen);
+    m.textContent = motionMasterLabel(t, allFrozen);
     ctx.toggleBtn(m, allFrozen);
   }
 
@@ -323,7 +323,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     create: (tag) => list.ownerDocument.createElement(tag),
   });
 
-  const roundSpec = () => ({ label: t(CRT_LBL.round), values: [0, 1, 2].map(crtLevelLabel), current: CRT.round });
+  const roundSpec = () => ({ label: t(CRT_LBL.round), values: [0, 1, 2].map((level) => crtLevelLabel(t, level)), current: CRT.round });
 
   /** Each switch's STATE — what the kit does not write, because the panel knows the value. */
   function reflectSwitches(el: HTMLElement): void {
@@ -332,8 +332,8 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       const b = el.querySelector<HTMLElement>(sel);
       if (!b) return;
       ctx.toggleBtn(b, on);
-      b.textContent = toggleLabel(on);
-      b.setAttribute('aria-label', toggleAria(name, on));
+      b.textContent = toggleLabel(t, on);
+      b.setAttribute('aria-label', toggleAria(t, name, on));
     };
     // ⚠️ "Animated" is the OPPOSITE of `rm`/`player[prop]`, which store "reduced motion". The faithful name is in
     // `allMotionFrozen`, and the inversion lives here, in one place.
@@ -358,7 +358,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
         applyCrt();
         reflectSwitches(el);
         refreshMarks();
-        ctx.srSay(crtToggleAnnouncement(t(CRT_LBL[crt]), !!CRT[crt]));
+        ctx.srSay(crtToggleAnnouncement(t, t(CRT_LBL[crt]), !!CRT[crt]));
         return;
       }
       const prop = b.dataset.rmc as MotionCharProp | undefined;
@@ -375,7 +375,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       saveRM();
       render();
       updateMotionMaster();
-      ctx.srSay(sceneMotionAnnouncement(t(RM_LABEL[k]), rm[k]));
+      ctx.srSay(sceneMotionAnnouncement(t, t(RM_LABEL[k]), rm[k]));
     });
     el.addEventListener('passo', (ev) => {
       const stepper = (ev.target as HTMLElement | null)?.closest<HTMLElement>('[data-crt="round"]');
@@ -387,7 +387,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       applyCrt();
       updateSteps(stepper, roundSpec());
       refreshMarks();
-      ctx.srSay(crtRoundAnnouncement(t(CRT_LBL.round), CRT.round));
+      ctx.srSay(crtRoundAnnouncement(t, t(CRT_LBL.round), CRT.round));
     });
   }
 
@@ -443,14 +443,14 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const changedFlags: boolean[] = [];
     const markRow = (sel: string, changed: boolean): void => {
       changedFlags.push(changed);
-      markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
+      markChanged(t, el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
     for (const c of rmChar()) markRow(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== reducedByDefault);
     for (const k of rmKeys) markRow(`[data-rm="${k}"]`, !!rm[k] !== reducedByDefault);
     markRow('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
     markRow('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
     markRow('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="anim"]'), changedFlags);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="anim"]'), changedFlags);
   }
 
   // ---- reset THIS menu's defaults (ADR-0028) ----
@@ -510,7 +510,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       ctx.store.setBool('incl_' + c.prop + '_p' + selectedPlayer, next);
     }
     render();
-    ctx.srSay(stopResumeAllAnnouncement(next));
+    ctx.srSay(stopResumeAllAnnouncement(t, next));
   });
 
   reflectMotionBtn(); // initial state (e.g. prefers-reduced-motion switches it on by default)

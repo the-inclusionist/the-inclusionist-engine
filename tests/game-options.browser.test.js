@@ -92,6 +92,9 @@ describe('the game options panel', () => {
     interruptor.click();
     expect(jogo.dicas).toBe(true);
     expect(interruptor.getAttribute('aria-pressed')).toBe('true');
+    // the switch says its state in the root's language: the panel draws it with the `t` the root hands down (ADR-0232 D3)
+    expect(interruptor.textContent, 'the switch shows a raw key').not.toMatch(/ui\.toggle/);
+    expect(interruptor.textContent.trim().length, 'the switch says nothing').toBeGreaterThan(0);
     const lista = document.querySelector('#game-option-pace');
     lista.value = 'fast';
     lista.dispatchEvent(new Event('change', { bubbles: true }));

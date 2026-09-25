@@ -10,7 +10,7 @@
 // hear»; what stays in `ui/settings-motion` is the work its name never mentioned — mounting the rows, reconciling
 // them with the cartridge, wiring them and reflecting the choice.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { MotionSceneKey, MotionCharDef, MotionPlayer, MotionSceneFlags } from './motion-scene.js';
 
 /**
@@ -52,31 +52,31 @@ export function allMotionFrozen(rmKeys: readonly MotionSceneKey[], rm: MotionSce
 }
 
 /** allFrozen=true (everything already frozen) → offers "Resume"; otherwise → offers "Stop". */
-export function motionMasterLabel(allFrozen: boolean): string {
+export function motionMasterLabel(t: Translate, allFrozen: boolean): string {
   return t(allFrozen ? 'a11y.resumeAll' : 'a11y.stopAll'); // no glyph in the name (ADR-0159 rule 12), in the page's language
 }
 
 /** `label` arrives ALREADY TRANSLATED, and the state is a frame with `{alvo}` rather than a concatenated suffix — which
  *  lets a language put the state BEFORE the target, something a concatenation does not allow. */
-export function sceneMotionAnnouncement(label: string, frozen: boolean): string {
+export function sceneMotionAnnouncement(t: Translate, label: string, frozen: boolean): string {
   return t(frozen ? 'sr.rm.frozen' : 'sr.rm.animated', { alvo: label });
 }
 
-export function crtToggleAnnouncement(label: string, on: boolean): string {
+export function crtToggleAnnouncement(t: Translate, label: string, on: boolean): string {
   return t(on ? 'sr.crt.on' : 'sr.crt.off', { efeito: label });
 }
 
-export function crtLevelLabel(level: number): string {
+export function crtLevelLabel(t: Translate, level: number): string {
   const key = CRT_ROUND_LEVELS[level];
   return key ? t(key) : '';
 }
 
-export function crtRoundAnnouncement(label: string, level: number): string {
-  return t('sr.crt.round', { efeito: label, nivel: crtLevelLabel(level) });
+export function crtRoundAnnouncement(t: Translate, label: string, level: number): string {
+  return t('sr.crt.round', { efeito: label, nivel: crtLevelLabel(t, level) });
 }
 
 /** `nowFrozen` = the NEW value of rm[k]/player[prop] applied by the master button (true = everything was just frozen;
  *  false = everything was just resumed). */
-export function stopResumeAllAnnouncement(nowFrozen: boolean): string {
+export function stopResumeAllAnnouncement(t: Translate, nowFrozen: boolean): string {
   return t(nowFrozen ? 'sr.rm.allStopped' : 'sr.rm.allResumed');
 }

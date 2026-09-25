@@ -7,6 +7,7 @@
 // A cartridge draws its own options only where the rows cannot express what it needs (ADR-0182 §3).
 //
 // No I/O on import: `gameOptionsProblems` runs in node.
+import type { Translate } from '../core/i18n.js';
 import { controlRow, mountSteps, updateSteps, nextStep } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import { toggleLabel } from './dom.js';
@@ -102,6 +103,8 @@ function positionProblem(v: Row | null, at: string, seen: Set<string>): string |
 }
 
 export interface GameOptionsDrawCtx extends PanelShellCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** Where a change is said (the polite live region). */
   readonly say: (text: string) => void;
 }
@@ -111,6 +114,7 @@ export interface GameOptionsDrawCtx extends PanelShellCtx {
  * swapped it (ADR-0142). Every value shown is READ from the cartridge, at drawing and after each write.
  */
 export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, options: readonly GameOption[]): void {
+  const { t } = ctx;
   while (list.firstChild) list.removeChild(list.firstChild); // node by node: no markup sink, and a host without `replaceChildren` still clears
   for (const o of options) {
     const id = `game-option-${o.id}`;
@@ -120,13 +124,13 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, opti
         const on = o.read();
         switchButton.classList.toggle('is-on', on);
         switchButton.setAttribute('aria-pressed', String(on));
-        switchButton.textContent = toggleLabel(on);
+        switchButton.textContent = toggleLabel(t, on);
         return on;
       };
       reflect();
       switchButton.addEventListener('click', () => {
         o.write(!o.read());
-        ctx.say(`${o.label}: ${toggleLabel(reflect())}`);
+        ctx.say(`${o.label}: ${toggleLabel(t, reflect())}`);
       });
       list.appendChild(rowNode);
       continue;

@@ -16,6 +16,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import pt from '../app/js/i18n/pt.js';
 
@@ -173,7 +175,7 @@ describe('the sticky-keys row a child can read', () => {
       // ⚠️ THROUGH THE SAME FUNCTION THE ENGINE USES (`toggleLabel`), not the raw dictionary: the switch's label is capitalised,
       // and comparing with the raw key would measure the capitalisation instead of the state.
       const { toggleLabel } = await import('../app/js/ui/dom.js');
-      expect(botao.textContent, 'a linha nasceu a dizer o contrário do valor guardado').toBe(toggleLabel(false));
+      expect(botao.textContent, 'a linha nasceu a dizer o contrário do valor guardado').toBe(toggleLabel(translate, false));
       // ⚠️ THE EXPLANATION DOES NOT LIVE ON THE ROW, it lives in the panel's FOOTER and only shows when the row is reached — the
       // menu rule of `CLAUDE.md` §4. So the case REACHES it: what it holds is that the sentence exists and tells the family the
       // one thing that decides whether the microphone is turned on — that what the child says does not leave the device.
@@ -181,9 +183,9 @@ describe('the sticky-keys row a child can read', () => {
       expect(document.querySelector('#motora .opt-explain')?.textContent,
         'alcançar a linha não disse à família que o microfone fica no aparelho').toContain('fica no aparelho');
       state.setVoiceControlValue(true);
-      expect(botao.textContent, 'o 👄 mudou e o painel continuou a mostrar o valor antigo').toBe(toggleLabel(true));
+      expect(botao.textContent, 'o 👄 mudou e o painel continuou a mostrar o valor antigo').toBe(toggleLabel(translate, true));
       state.setVoiceControlValue(false);
-      expect(botao.textContent).toBe(toggleLabel(false));
+      expect(botao.textContent).toBe(toggleLabel(translate, false));
       // 🔴 AND THE OTHER DIRECTION, where a mutation survived: the click writes THE SAME key the 👄 writes, not a second one of
       // its own. Without this half, the row could turn on the scan and the case above stayed green.
       botao.click();

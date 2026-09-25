@@ -5,6 +5,8 @@
 // and the list of audio outputs (sinkOptionLabel/sinkSelectValue/sinksSupported). The render (DOM) is in the browser test.
 // See docs/5-Refactoring/plan-modularization-map.md (Stage 4, ui/settings-audio).
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import {
   NAV_CATS, GEN_CATS, volPercent, navMasterVolume,
   parseCaneDiv, caneDivMessage, TTS_ENGINE_OPTIONS, voiceEngineOptions, pickVoicesFor, voiceLabel,
@@ -59,9 +61,9 @@ describe('ui/settings-audio — parseCaneDiv / caneDivMessage', () => {
     expect(parseCaneDiv('abacate')).toBe(1);
   });
   it('[Right] a mensagem muda só no valor 2 (meio bloco); qualquer outro fala "por bloco"', () => {
-    expect(caneDivMessage(2)).toBe('Bengala: uma batida a cada meio bloco pisado.');
-    expect(caneDivMessage(1)).toBe('Bengala: uma batida por bloco pisado.');
-    expect(caneDivMessage(3)).toBe('Bengala: uma batida por bloco pisado.');
+    expect(caneDivMessage(translate, 2)).toBe('Bengala: uma batida a cada meio bloco pisado.');
+    expect(caneDivMessage(translate, 1)).toBe('Bengala: uma batida por bloco pisado.');
+    expect(caneDivMessage(translate, 3)).toBe('Bengala: uma batida por bloco pisado.');
   });
 });
 
@@ -131,11 +133,11 @@ describe('ui/settings-audio — sinksSupported', () => {
 
 describe('ui/settings-audio — sinkOptionLabel', () => {
   it('[Right] usa o label do dispositivo quando existe', () => {
-    expect(sinkOptionLabel({ deviceId: 'x', label: 'Fone USB' }, 0)).toBe('Fone USB');
+    expect(sinkOptionLabel(translate, { deviceId: 'x', label: 'Fone USB' }, 0)).toBe('Fone USB');
   });
   it('[Boundary] sem label (sem permissão ainda) cai no "Saída N" 1-based', () => {
-    expect(sinkOptionLabel({ deviceId: 'x', label: '' }, 0)).toBe('Saída 1');
-    expect(sinkOptionLabel({ deviceId: 'y', label: '' }, 2)).toBe('Saída 3');
+    expect(sinkOptionLabel(translate, { deviceId: 'x', label: '' }, 0)).toBe('Saída 1');
+    expect(sinkOptionLabel(translate, { deviceId: 'y', label: '' }, 2)).toBe('Saída 3');
   });
 });
 

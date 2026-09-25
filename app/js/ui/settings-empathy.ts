@@ -97,7 +97,7 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     if (h) {
       h.classList.toggle('is-on', hearingLoss);
       h.setAttribute('aria-pressed', String(hearingLoss));
-      h.textContent = toggleLabel(hearingLoss);  // ui/dom
+      h.textContent = toggleLabel(t, hearingLoss);  // ui/dom
     }
     ctx.reflectMobilityEmpathy();
     refreshMarks();
@@ -121,11 +121,11 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     const wheelchair = ctx.getWheelchair() !== DEFAULTS.wheelchair;
     const rowOf = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(rowOf('#opt-hearing'), deafness);
-    markChanged(rowOf('#opt-onebtn'), um);
-    markChanged(rowOf('#opt-wheelchair'), wheelchair);
-    markChanged(ctx.$<HTMLElement>('#empathy-list'), simulating);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="empatia"]'), [simulating, deafness, um, wheelchair]);
+    markChanged(t, rowOf('#opt-hearing'), deafness);
+    markChanged(t, rowOf('#opt-onebtn'), um);
+    markChanged(t, rowOf('#opt-wheelchair'), wheelchair);
+    markChanged(t, ctx.$<HTMLElement>('#empathy-list'), simulating);
+    markMenuChanged(t, ctx.$<HTMLElement>('[data-act="empatia"]'), [simulating, deafness, um, wheelchair]);
   }
 
   function open(): void {

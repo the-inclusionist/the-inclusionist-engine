@@ -12,7 +12,7 @@
 // `tier` is the LEGAL FACT (may we redistribute? must it be downloaded? is permission missing?). `available` is
 // TODAY's FACT (does it work in this build?). They are two different questions and the menu needs both: the first
 // says who has to act, the second says what the child can choose now.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 export type CaaTier =
   /** CC BY-SA or ours: it may travel inside the game and works with no network at all. */
@@ -83,7 +83,7 @@ export function caaReason(s: CaaSet): string | null {
 }
 
 /** A label ready for the menu row: the name + the reason, when there is one. */
-export function caaLabel(s: CaaSet): string {
+export function caaLabel(t: Translate, s: CaaSet): string {
   const reason = caaReason(s);
   return reason ? `${s.name} — ${t(reason)}` : s.name;
 }

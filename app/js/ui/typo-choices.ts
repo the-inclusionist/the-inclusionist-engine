@@ -9,7 +9,7 @@
 // 📌 The same cut `ui/audio-choices` received from `ui/settings-audio`, for the same reason: `ui/settings-typo` holds the
 // work its name never mentioned — finding the nodes it reaches and never created, wiring them and reflecting the
 // choice — and the table of what a choice IS lives here (ADR-0221).
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { FONT_GROUPS, FONT_BY_KEY, fontRole, faceAvailable, type FontItem } from './fonts.js';
 import type { ControlRowSpec } from './panel-widgets.js';
 
@@ -81,7 +81,7 @@ export interface TypoGroupView {
  * The mechanism is needed (issue #87, item 4): the **Ronde** can only be offered if one of three faces is installed,
  * because two of them are free for personal use only and cannot be bundled.
  */
-export function fontRow(it: FontItem, fontKey: string, installed?: (family: string) => boolean): TypoRow {
+export function fontRow(t: Translate, it: FontItem, fontKey: string, installed?: (family: string) => boolean): TypoRow {
   // ⚠️ THE SAME question `isSelectableFont` asks, through the SAME function. Two answers would give a clickable row the
   // click refuses — or, worse, a grey row that `resolveFontKey` accepts by another path. "Not available" and "cannot be
   // chosen" have to be the same statement.
@@ -94,7 +94,7 @@ export function fontRow(it: FontItem, fontKey: string, installed?: (family: stri
 }
 
 /** Pure view-model for the typography list: which row is selected/disabled and its note, per catalog group. */
-export function typoGroups(fontKey: string, installed?: (family: string) => boolean): TypoGroupView[] {
+export function typoGroups(t: Translate, fontKey: string, installed?: (family: string) => boolean): TypoGroupView[] {
   // ⚠️ ONLY THE GENERAL FACES ENTER THE LIST (ADR-0012 amendment, issue #87). The handwriting faces exist for the child
   // to LEARN to read cursive — that is subject matter, and it lives INSIDE the activities, on buttons of their own.
   // Offering them here would hand the child the subject as an obstacle everywhere they only want to navigate the menu.
@@ -102,7 +102,7 @@ export function typoGroups(fontKey: string, installed?: (family: string) => bool
   // A group left with no general face disappears from the list, instead of appearing as an empty heading.
   return FONT_GROUPS.map((g) => ({
     g: t(g.g),  // `g` holds an i18n KEY (see ui/fonts)
-    rows: g.items.filter((it) => fontRole(it) === 'geral').map((it) => fontRow(it, fontKey, installed)),
+    rows: g.items.filter((it) => fontRole(it) === 'geral').map((it) => fontRow(t, it, fontKey, installed)),
   })).filter((group) => group.rows.length > 0);
 }
 

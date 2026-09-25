@@ -10,6 +10,7 @@
 // `ui/settings-visual` is the work its name never mentioned — finding the controls, wiring them, and reflecting the
 // choice on three surfaces.
 
+import type { Translate } from '../core/i18n.js';
 import { toggleLabel } from './dom.js';
 import { CONTRAST_LEVELS } from '../core/visual-cycles.js';
 import type { HcRoleKey } from '../render/hc-role-data.js';
@@ -124,6 +125,6 @@ export function rgbToHex(rgb: RGB): string {
 }
 
 /** Shared on/off button label used by this panel's toggle buttons. */
-export function onOffLabel(on: boolean): string {
-  return toggleLabel(on);
+export function onOffLabel(t: Translate, on: boolean): string {
+  return toggleLabel(t, on);
 }

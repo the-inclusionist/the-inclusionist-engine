@@ -13,6 +13,8 @@
 // Both have a pending fix. These cases exist so the fix has a net: when someone fixes it, they fail, and the failure IS
 // the warning that the behaviour changed where it had to.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
 import { initSettingsPanel } from '../app/js/ui/settings-panel.js';
 // The SCENE belongs to the TEST: the phase is the `core/scenes` stack and its three names live in the composition root
@@ -107,6 +109,7 @@ function boot(over = {}) {
   function closeHelp() { $('#help').hidden = true; nav.menuFocus(nav.sharedDialogOpen()); }
 
   const ctx = {
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     $,
     getActiveElement: () => document.activeElement,
     topVisibleOverlay: panel.topVisibleOverlay,
@@ -463,10 +466,10 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
       return row.lastElementChild;
     };
     try {
-      expect(controlParts(linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ label: 'Som, interruptor', state: 'ligado' });
-      expect(controlParts(linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ label: 'Som, lista', state: 'Alto' });
-      expect(controlParts(linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ label: 'Volume, controle deslizante', state: '40%' });
-      expect(controlParts(linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ label: 'Tamanho, seletor', state: 'adulto' });
+      expect(controlParts(translate, linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ label: 'Som, interruptor', state: 'ligado' });
+      expect(controlParts(translate, linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ label: 'Som, lista', state: 'Alto' });
+      expect(controlParts(translate, linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ label: 'Volume, controle deslizante', state: '40%' });
+      expect(controlParts(translate, linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ label: 'Tamanho, seletor', state: 'adulto' });
     } finally {
       for (const r of document.querySelectorAll('body > .ctrl-row')) r.remove();
     }
@@ -483,8 +486,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     document.body.appendChild(row);
     try {
       const [chosen, other] = row.querySelectorAll('[role="radio"]');
-      expect(controlParts(chosen)).toEqual({ label: 'Andika, opção', state: 'selecionada' });
-      expect(controlParts(other)).toEqual({ label: 'Andika, opção', state: '' });
+      expect(controlParts(translate, chosen)).toEqual({ label: 'Andika, opção', state: 'selecionada' });
+      expect(controlParts(translate, other)).toEqual({ label: 'Andika, opção', state: '' });
     } finally {
       row.remove();
     }
@@ -502,7 +505,7 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
       make('<input type="range" min="5" max="5" value="5" aria-label="C">'),
     ];
     try {
-      const [a, b, c] = holders.map((h) => controlParts(h.firstElementChild).state);
+      const [a, b, c] = holders.map((h) => controlParts(translate, h.firstElementChild).state);
       expect(a, 'a third was said as 33.333…%').toBe('33%');
       expect(b, 'a slider with no max was read against another scale').toBe('40%');
       expect(c, 'a range of zero width divided by zero').toBe('0%');
