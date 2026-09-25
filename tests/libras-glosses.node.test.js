@@ -2,8 +2,9 @@
 // THE BUILD-TIME GLOSSES (ADR-0234, route A — plan item 5b; `scripts/libras-glosses.mjs`), with a FAKE translator: no Python runs
 // here. What is held: which texts are glossed (the engine's and the game's Portuguese, each once, holes kept), that a hole comes
 // back as a hole even when the translator drops its placeholder, that the written glosses are what the player can sign from THIS
-// delivery, that the pinned signs are checked by sha256, and — the reason the step exists as a step — that a delivery with
-// `--libras` is NEVER written without its glosses: no environment, no model, another translator, each stops it by name.
+// delivery (a token with no sign spelled as the word is WRITTEN on the screen, not as the translator's lemma), that the pinned
+// signs are checked by sha256, and — the reason the step exists as a step — that a delivery with `--libras` is NEVER written
+// without its glosses: no environment, no model, another translator, each stops it by name.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi } from 'vitest';
@@ -13,8 +14,10 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import {
   textsToGloss, glossTexts, glossTokens, spellable, placeholderWord, runGlosser, setUpGlosser, deliverLibrasGlosses,
-  deliverLibrasSigns, signsSourceOf, glosserEnvironment, glosserPython, readSignPins, PINNED, GLOSSER_PROJECT,
+  deliverLibrasSigns, signsSourceOf, glosserEnvironment, glosserPython, readSignPins, PINNED, GLOSSER_PROJECT, writtenWords,
+  spelledWord,
 } from '../scripts/libras-glosses.mjs';
+import { provisionalGloss } from '../app/js/ui/libras-glosses.ts';
 import { argumentosDaEntrega } from '../scripts/heavy-into-the-delivery.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -41,7 +44,7 @@ describe('the holes survive the translator', () => {
     const file = await glossTexts(['Jogador {n} entrou!', 'Botão {sim} para confirmar, botão {nao} para voltar.'], translate);
     expect(translate.mock.calls[0][0], 'the translator was not handed a placeholder word for each hole')
       .toEqual([`Jogador ${placeholderWord(0)} entrou!`, `Botão ${placeholderWord(0)} para confirmar, botão ${placeholderWord(1)} para voltar.`]);
-    expect(file).toEqual({ format: 1, made: MADE, glosses: [
+    expect({ ...file, written: undefined }).toEqual({ format: 1, made: MADE, written: undefined, glosses: [
       ['Jogador {n} entrou!', 'JOGADOR {n} ENTROU [PONTO]'],
       ['Botão {sim} para confirmar, botão {nao} para voltar.', 'BOTÃO {sim} PARA CONFIRMAR, BOTÃO {nao} PARA VOLTAR [PONTO]'],
     ] });
@@ -71,8 +74,88 @@ describe('what the player can sign from this delivery', () => {
   });
 
   it('🔴 [Right] a token with no sign carried loses its accents (it is fingerspelled); a carried one, the marks and the holes keep them', () => {
-    expect(spellable(file, new Set(['PAPELÃO'])).glosses)
+    expect(spellable(file, new Set(['PAPELÃO'])).file.glosses)
       .toEqual([['a', 'VOCE SOLTAR {o} [EXCLAMAÇÃO]'], ['b', 'PAPELÃO CAIXA']]);
+  });
+});
+
+describe('a word with no sign is spelled AS IT IS WRITTEN (ADR-0234 erratum; the Dev: «Soletra-se a palavra escrita»)', () => {
+  /**
+   * A translator double that answers as `gloss.py` does: the gloss it is given for each input, and the input's words, each with
+   * the forms named for it — the real translator returns LEMMAS, and the written word is only recoverable through these.
+   */
+  const translator = (answers) => (inputs) => ({
+    made: MADE,
+    glosses: inputs.map((i) => answers[i]?.gloss ?? ''),
+    words: inputs.map((i) => answers[i]?.words ?? []),
+  });
+  const ENTROU = {
+    'Jogador ZPARAMAZ entrou!': { gloss: 'JOGADOR ZPARAMAZ ENTRAR [EXCLAMAÇÃO]',
+      words: [['Jogador', ['JOGADOR', 'JOGAR']], ['ZPARAMAZ', ['ZPARAMAZ']], ['entrou', ['ENTRAR', 'ENTROU']]] },
+  };
+
+  it('🔴 [Right] «entrou» is spelled ENTROU, not the lemma ENTRAR; a carried sign, the hole and the mark stay', async () => {
+    const file = await glossTexts(['Jogador {n} entrou!'], translator(ENTROU));
+    const { file: playable, spelled } = spellable(file, new Set(['JOGADOR']));
+    expect(playable.glosses, 'the player was handed the lemma to spell').toEqual([['Jogador {n} entrou!', 'JOGADOR {n} ENTROU [EXCLAMAÇÃO]']]);
+    expect(spelled).toEqual({ tokens: 1, asWritten: 1, ambiguous: 0, byStem: 0, asTranslated: 0 });
+  });
+
+  it('🔴 [Right] the whole step writes the written word into `glosses.json`', async () => {
+    const destino = tmp();
+    try {
+      const pins = { source: '', signs: {} };
+      await deliverLibrasGlosses({ destino, playerFolder: 'p/', signsFolder: 's/', glossesFile: 'g.json',
+        dictionaries: [{ k: 'Jogador {n} entrou!' }], translate: translator(ENTROU), pins });
+      expect(JSON.parse(readFileSync(join(destino, 'p/g.json'), 'utf8')).glosses)
+        .toEqual([['Jogador {n} entrou!', 'JOGADOR {n} ENTROU [EXCLAMAÇÃO]']]);
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  it('📌 [Boundary] an accented letter is spelled as its base letter — the run time\'s own rule, word for word', async () => {
+    const file = await glossTexts(['Atenção, você já é campeã'], translator({ 'Atenção, você já é campeã': {
+      gloss: 'ATENÇÃO VOCÊ JÁ SER CAMPEÃO',
+      words: [['Atenção', ['ATENÇÃO']], ['você', ['VOCÊ']], ['já', ['JÁ']], ['é', ['SER', 'É']], ['campeã', ['CAMPEÃ', 'CAMPEÃO']]] } }));
+    expect(spellable(file, new Set(['VOCÊ'])).file.glosses[0][1]).toBe('ATENCAO VOCÊ JA E CAMPEA');
+    for (const word of ['Atenção', 'campeã', 'Ç', 'pôr-do-sol', 'd\'água', 'ÁÉÍÓÚÂÊÔÃÕÜ']) {
+      expect(spelledWord(word), word).toBe(provisionalGloss(word));
+    }
+  });
+
+  it('🔴 [Right] AMBIGUOUS — two words share the lemma: the next one in the sentence\'s order is taken', () => {
+    const words = [['entrou', ['ENTRAR']], ['saiu', ['SAIR']], ['entra', ['ENTRAR']]];
+    expect(writtenWords('SAIR ENTRAR', words)).toEqual([['saiu', 'one'], ['entra', 'order']]);
+    expect(writtenWords('ENTRAR SAIR ENTRAR', words)).toEqual([['entrou', 'order'], ['saiu', 'one'], ['entra', 'order']]);
+  });
+
+  it('🔴 [Right] a token the rules re-ended (MANCHO of «mancha») is spelled from the word it starts like; a number is not', () => {
+    expect(writtenWords('MANCHO', [['mancha', ['MANCHA', 'MANCHAR']]])).toEqual([['mancha', 'stem']]);
+    expect(writtenWords('MANCHO', [['manhã', ['MANHÃ']]]), 'a word two letters away is not the same word').toEqual([[null, 'none']]);
+    expect(writtenWords('640', [['640×360', ['640×360']]]), 'a number was matched by its start').toEqual([[null, 'none']]);
+  });
+
+  it('🎯 [Zero] a token no written word gives is spelled as the translator wrote it, and counted', async () => {
+    const file = await glossTexts(['Três por um'], translator({ 'Três por um': { gloss: 'HORA1', words: [['Três', ['TRÊS']], ['por', ['POR']], ['um', ['UM']]] } }));
+    expect(spellable(file, new Set()).file.glosses[0][1]).toBe('HORA1');
+    expect(spellable(file, new Set()).spelled).toEqual({ tokens: 1, asWritten: 0, ambiguous: 0, byStem: 0, asTranslated: 1 });
+  });
+
+  it('🔴 [Right] a template glossed again in PIECES keeps each token beside its written word', async () => {
+    const answers = {
+      'Você soltou: ZPARAMAZ.': { gloss: 'VOCÊ SOLTAR [PONTO]', words: [] }, // the placeholder dropped: glossed again in pieces
+      'Você soltou: ': { gloss: 'VOCÊ SOLTAR', words: [['Você', ['VOCÊ']], ['soltou', ['SOLTAR', 'SOLTOU']]] },
+    };
+    const file = await glossTexts(['Você soltou: {o}.'], translator(answers));
+    expect(spellable(file, new Set(['VOCÊ'])).file.glosses[0][1]).toBe('VOCÊ SOLTOU {o}');
+  });
+
+  it('🔴 [Right] the glosser\'s answer without the written words is REFUSED — the lemma would be spelled instead', () => {
+    const good = { translator: '1.3.3', spacy: '3.8.16', model: 'pt_core_news_md', modelVersion: '3.8.0', mode: 'rules', glosses: ['X'] };
+    const run = (out) => () => ({ status: 0, stdout: JSON.stringify(out), stderr: '' });
+    const opts = (out) => ({ envDir: 'ENV', run: run(out), exists: () => true });
+    expect(() => runGlosser(['x'], opts(good))).toThrow(/written words of no texts for 1/);
+    expect(() => runGlosser(['x'], opts({ ...good, words: [[['x', 'X']]] }))).toThrow(/written words/);
+    expect(runGlosser(['x'], opts({ ...good, words: [[['x', ['X']]]] })).words).toEqual([[['x', ['X']]]]);
   });
 });
 
@@ -84,9 +167,11 @@ describe('the step `--libras` runs', () => {
         destino, playerFolder: 'libras/player/', signsFolder: 'libras/signs/', glossesFile: 'glosses.json',
         dictionaries: [{ k: 'Olá, Maria.' }, ['Pontos: {n}']], translate: upper,
       });
-      expect(made).toEqual({ path: 'libras/player/glosses.json', texts: 2, tokens: 3, signs: [], unpinned: ['MARIA', 'OLÁ,', 'PONTOS:'] });
+      expect(made).toEqual({ path: 'libras/player/glosses.json', texts: 2, tokens: 3, signs: [], unpinned: ['MARIA', 'OLÁ,', 'PONTOS:'],
+        spelled: { tokens: 3, asWritten: 0, ambiguous: 0, byStem: 0, asTranslated: 3 } });
       const written = JSON.parse(readFileSync(join(destino, 'libras/player/glosses.json'), 'utf8'));
-      expect(written).toEqual({ format: 1, made: MADE, glosses: [['Olá, Maria.', 'OLA, MARIA [PONTO]'], ['Pontos: {n}', 'PONTOS: {n}']] });
+      expect(written, 'the file carries anything but the pairs the run time reads')
+        .toEqual({ format: 1, made: MADE, glosses: [['Olá, Maria.', 'OLA MARIA [PONTO]'], ['Pontos: {n}', 'PONTOS {n}']] });
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
@@ -126,18 +211,19 @@ describe('the glosser fails LOUDLY', () => {
 
   it('🔴 [Right] a translator, model or mode other than the pinned ones is REFUSED, not trusted', () => {
     for (const other of [{ translator: '1.3.4' }, { modelVersion: '3.7.0' }, { model: 'pt_core_news_lg' }, { mode: 'neural' }]) {
-      expect(() => runGlosser(['x'], opts(answer({ ...good, ...other, glosses: ['X'] }))), JSON.stringify(other)).toThrow(/REFUSED/);
+      expect(() => runGlosser(['x'], opts(answer({ ...good, ...other, glosses: ['X'], words: [[]] }))), JSON.stringify(other)).toThrow(/REFUSED/);
     }
   });
 
   it('📌 [Boundary] an answer with a gloss short, or not JSON, is refused', () => {
-    expect(() => runGlosser(['x', 'y'], opts(answer({ ...good, glosses: ['X'] })))).toThrow(/1 glosses for 2 texts/);
+    expect(() => runGlosser(['x', 'y'], opts(answer({ ...good, glosses: ['X'], words: [[]] })))).toThrow(/1 glosses for 2 texts/);
     expect(() => runGlosser(['x'], opts(() => ({ status: 0, stdout: 'Warning: …', stderr: '' })))).toThrow(/not JSON/);
   });
 
   it('🔴 [Right] a good answer: one gloss per text, and what made them — the texts handed over as JSON on stdin', () => {
-    const run = vi.fn(answer({ ...good, glosses: ['OLHE AQUI'] }));
-    expect(runGlosser(['Olhe aqui'], opts(run))).toEqual({ glosses: ['OLHE AQUI'], made: MADE });
+    const WORDS = [[['Olhe', ['OLHAR', 'OLHE']], ['aqui', ['AQUI']]]];
+    const run = vi.fn(answer({ ...good, glosses: ['OLHE AQUI'], words: WORDS }));
+    expect(runGlosser(['Olhe aqui'], opts(run))).toEqual({ glosses: ['OLHE AQUI'], words: WORDS, made: MADE });
     const [python, args, how] = run.mock.calls[0];
     expect(python).toBe(glosserPython('ENV'));
     expect(args).toEqual([join(GLOSSER_PROJECT, 'gloss.py')]);
@@ -288,4 +374,13 @@ describe('the delivery\'s arguments', () => {
 //   M13 a missing `uv` not said by name                   🔴 setup: no `uv` is said by name
 //   M14 `libras-signs.json` source on a branch (`/-/raw/main/`)  🔴 the signs are pinned at a COMMIT of LAViD's dictionary
 //   M15 the NOTICE without the pinned source              🔴 from a local base: … the licence travels
-//   M16 `--base` read as the signs' folder, mirror ignored   🔴 with the delivery's `--base`, … the pins' `mirror` folder
+//   M16 `--base` read as the signs' folder, `mirror` ignored   🔴 with the delivery's `--base`, … the pins' `mirror` folder
+//   M17 `spellable` spells the token (the lemma), not the written word   🔴 «entrou» is spelled ENTROU · the whole step writes the
+//       written word · an accented letter … word for word · a template glossed again in PIECES
+//   M18 an ambiguous token takes the first match, not the next in order  🔴 AMBIGUOUS — two words share the lemma
+//   M19 no match by the word's start                      🔴 a token the rules re-ended (MANCHO of «mancha»)
+//   M20 a number matched by its start                     🔴 … a number is not
+//   M21 the pieces of a re-glossed template keep the first pass's alignment  🔴 a template glossed again in PIECES
+//   M22 the glosser's answer accepted without `words`     🔴 the glosser's answer without the written words is REFUSED
+//   M23 `spelledWord` keeps the accents                   🔴 an accented letter is spelled as its base letter · loses its accents ·
+//       writes `glosses.json`

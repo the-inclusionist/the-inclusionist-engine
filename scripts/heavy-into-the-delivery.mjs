@@ -164,6 +164,10 @@ if (executado) {
         + `${made.tokens} sign names`);
       console.log(`signs     ${made.signs.length} carried; ${made.unpinned.length} with no pinned sign are fingerspelled `
         + '(scripts/libras-signs.json)');
+      const { spelled } = made;
+      console.log(`spelled   ${spelled.tokens} tokens: ${spelled.asWritten} as written on the screen (${spelled.ambiguous} of them `
+        + `chosen by sentence order among several spellings, ${spelled.byStem} by the word's start), ${spelled.asTranslated} `
+        + 'as the translator wrote them (no written word gives them)');
       librasSigns = made.signs;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));

@@ -3,7 +3,7 @@
     "THE SIGNS A DELIVERY BUILT WITH --libras CARRIES (ADR-0234, route A; scripts/libras-glosses.mjs): each one a Unity 2018.3.1 WebGL",
     "AssetBundle of LAViD-UFPB's VLibras dictionary (vlibras-dictionary-sources, GPL-3.0), pinned by sha256 and byte count.",
     "WHICH: the signs the engine's own glosses use that the dictionary holds (the Dev authorised the download: «Autorizo»). A gloss",
-    "token with no sign here is fingerspelled by the player (scripts/libras-glosses.mjs).",
+    "token with no sign here is fingerspelled by the player, as the word is WRITTEN on the screen (scripts/libras-glosses.mjs).",
     "WHERE FROM: `source` is the dictionary repository at a PINNED COMMIT (`commit`), path FILES/BUNDLES/2018.3.1/WEBGL/BR/; a sign",
     "is fetched from `source` + encodeURIComponent(NAME) — the same bytes the dictionary host serves — and with `--base` it is",
     "read from `mirror` under the base (a folder on the build machine or a mirror). Every byte is checked against the sha256",

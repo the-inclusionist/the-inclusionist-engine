@@ -31,8 +31,14 @@
 // THE SIGNS those glosses use are delivered here too, into `libras/signs/`, but ONLY the ones pinned by sha256 in
 // `libras-signs.json` (the Dev authorised the download: «Autorizo»): LAViD's dictionary repository at a pinned commit, fetched
 // from there or from `--base`, and a byte that differs from the pin is REFUSED. The GPL-3.0 and a NOTICE naming the source are
-// written beside them. A token with no pinned sign is fingerspelled by the player, so its accents are stripped in the written
-// glosses (the player has no clip for an accented letter).
+// written beside them.
+//
+// 🔴 A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN (ADR-0234 erratum; the Dev: «Soletra-se a palavra escrita»). The translator
+// returns LEMMAS, and a token the delivery carries no sign for is fingerspelled — so «entrou» would be spelled E-N-T-R-A-R. So
+// `gloss.py` also reports each text's words as written, with the forms the translator can make of each; every gloss token is
+// aligned back to the word that produced it (`writtenWords`), and a token with no sign carried is replaced by THAT word, in
+// capitals, its accents stripped as the player's letters require (`spelledWord`, the run-time fallback's own rule). The child
+// sees spelled what she reads. Measured on the engine's dictionary, and printed by every delivery: see `spellable`.
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -118,7 +124,18 @@ export function runGlosser(inputs, { envDir = glosserEnvironment(), run = spawnS
   if (!Array.isArray(out.glosses) || out.glosses.length !== inputs.length || out.glosses.some((g) => typeof g !== 'string')) {
     throw new Error(`the Libras glosser answered ${out.glosses?.length} glosses for ${inputs.length} texts`);
   }
-  return { glosses: out.glosses, made: `${got} · spaCy ${out.spacy}` };
+  // without the words as written, a token with no sign would be spelled as its lemma — refused, not spelled wrong
+  if (!Array.isArray(out.words) || out.words.length !== inputs.length || !out.words.every(isWordList)) {
+    throw new Error(`the Libras glosser answered the written words of ${out.words?.length ?? 'no'} texts for ${inputs.length}: `
+      + `run ${SETUP_COMMAND} again, or update the package`);
+  }
+  return { glosses: out.glosses, words: out.words, made: `${got} · spaCy ${out.spacy}` };
+}
+
+/** `[[as written, [forms…]], …]`, as `gloss.py` writes the words of one text. */
+function isWordList(words) {
+  return Array.isArray(words) && words.every((w) => Array.isArray(w) && typeof w[0] === 'string' && Array.isArray(w[1])
+    && w[1].every((f) => typeof f === 'string'));
 }
 
 /** A hole of a template, as the engine's dictionaries write it (`core/i18n`). */
@@ -163,15 +180,80 @@ function withHoles(gloss, names) {
   return out;
 }
 
+/** The punctuation marks the translator writes for the player (`[PONTO]`), and a hole — neither is a sign to fetch. */
+const NOT_A_SIGN = /^\[.*\]$|^\{.*\}$/u;
+
+const tokensOf = (gloss) => gloss.split(/\s+/u).filter(Boolean);
+
 /**
- * Glosses `texts` with `translate(inputs) → { glosses, made }` (sync or async): returns the file `ui/libras-glosses` reads,
- * `{ format: 1, made, glosses: [[text, gloss], …] }`. A template whose placeholder the translator dropped is glossed again in
- * pieces — the fixed text between its holes — and the holes put between them.
+ * THE WORD AS WRITTEN behind each token of a gloss (ADR-0234, erratum «A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN»): one
+ * entry per token, `[word, how]`. `words` are the text's words as `gloss.py` reports them, each with the forms the translator's
+ * rules can make of it; a token is matched to the words whose forms include it.
+ *   · `one`   — the words that match all write it the same way: that word.
+ *   · `order` — AMBIGUOUS, more than one written form matches (a lemma two words share): the translator's rule-based mode keeps
+ *               the sentence's order, so the first unused matching word AFTER the last one taken is chosen, else the first
+ *               unused, else the first.
+ *   · `stem`  — no form matches, but an unused word shares all of the token but its last two letters (📏 the translator's
+ *               rules re-end a word the lemmatizer does not: «mancha» → MANCHO, «névoa» → NÉVOAR, «película» → PELÍCULO): the
+ *               word sharing the longest start, the first in the sentence on a tie.
+ *   · `none`  — no word of the text gives this token (the translator made it: a compound, a synonym, a number it read as an
+ *               hour): `word` is `null`, and the token is spelled as the translator wrote it — nothing better is known.
+ * The punctuation marks and the holes are `[null, 'mark']`.
+ */
+export function writtenWords(gloss, words = []) {
+  const used = new Set();
+  let last = -1;
+  const take = (j, how) => { used.add(j); last = j; return [words[j][0], how]; };
+  return tokensOf(gloss).map((token) => {
+    if (NOT_A_SIGN.test(token)) return [null, 'mark'];
+    const key = token.normalize('NFC').toUpperCase();
+    const hits = [];
+    for (const [j, [word, forms]] of words.entries()) {
+      if (word.normalize('NFC').toUpperCase() === key || forms.some((f) => f.normalize('NFC') === key)) hits.push(j);
+    }
+    if (!hits.length) {
+      const stem = stemMatch(key, words, used);
+      return stem === null ? [null, 'none'] : take(stem, 'stem');
+    }
+    const spellings = new Set(hits.map((j) => words[j][0].normalize('NFC').toLocaleLowerCase('pt-BR')));
+    const j = hits.find((h) => h > last && !used.has(h)) ?? hits.find((h) => !used.has(h)) ?? hits[0];
+    return take(j, spellings.size > 1 ? 'order' : 'one');
+  });
+}
+
+/**
+ * The unused word whose start is the longest shared with `key`, at least all of `key` but two letters and three — or `null`.
+ * Only for a token with a letter: a number the translator split out («640» of «640×360») is spelled as it is.
+ */
+function stemMatch(key, words, used) {
+  if (!/\p{L}/u.test(key)) return null;
+  const floor = Math.max(3, [...key].length - 2);
+  let best = null;
+  let bestLength = floor - 1;
+  for (const [j, [word]] of words.entries()) {
+    if (used.has(j)) continue;
+    const a = [...key];
+    const b = [...word.normalize('NFC').toUpperCase()];
+    let n = 0;
+    while (n < a.length && n < b.length && a[n] === b[n]) n += 1;
+    if (n > bestLength) { best = j; bestLength = n; }
+  }
+  return best;
+}
+
+/**
+ * Glosses `texts` with `translate(inputs) → { glosses, words, made }` (sync or async): returns
+ * `{ format: 1, made, glosses: [[text, gloss], …], written: [[[word, how], …], …] }` — `written` holds, per text and per gloss
+ * token, the word as written (`writtenWords`), and `spellable` turns the two into the file `ui/libras-glosses` reads. A
+ * template whose placeholder the translator dropped is glossed again in pieces — the fixed text between its holes — and the
+ * holes put between them. A placeholder word is written as itself, so it aligns to itself, and becoming a hole keeps the tokens
+ * where they were.
  */
 export async function glossTexts(texts, translate) {
   const prepared = texts.map(withPlaceholders);
   const first = await translate(prepared.map((p) => p.input));
   const glosses = prepared.map((p, i) => withHoles(first.glosses[i], p.names));
+  const written = prepared.map((_, i) => writtenWords(first.glosses[i], first.words?.[i]));
 
   const redo = texts.map((text, i) => (glosses[i] === null ? text.split(HOLE) : null));
   const pieces = redo.flatMap((parts) => (parts ? parts.filter((_, i) => i % 2 === 0) : []));
@@ -180,14 +262,17 @@ export async function glossTexts(texts, translate) {
     let next = 0;
     for (const [i, parts] of redo.entries()) {
       if (!parts) continue;
-      glosses[i] = parts.map((part, j) => (j % 2 ? `{${part}}` : second.glosses[next++])).join(' ').replace(/\s+/gu, ' ').trim();
+      const glossed = parts.map((part, j) => {
+        if (j % 2) return { gloss: `{${part}}`, written: [[null, 'mark']] };
+        const n = next++;
+        return { gloss: second.glosses[n], written: writtenWords(second.glosses[n], second.words?.[n]) };
+      });
+      glosses[i] = glossed.map((g) => g.gloss).join(' ').replace(/\s+/gu, ' ').trim();
+      written[i] = glossed.flatMap((g) => g.written);
     }
   }
-  return { format: 1, made: first.made, glosses: texts.map((text, i) => [text, glosses[i]]) };
+  return { format: 1, made: first.made, glosses: texts.map((text, i) => [text, glosses[i]]), written };
 }
-
-/** The punctuation marks the translator writes for the player (`[PONTO]`), and a hole — neither is a sign to fetch. */
-const NOT_A_SIGN = /^\[.*\]$|^\{.*\}$/u;
 
 /** The distinct tokens the glosses ask the player to sign, sorted. */
 export function glossTokens(file) {
@@ -199,12 +284,40 @@ export function glossTokens(file) {
 }
 
 /**
- * The glosses as the player can sign them from THIS delivery: a token with no sign carried is fingerspelled, and its accents
- * are stripped, because the player has no clip for an accented letter.
+ * A word as the player fingerspells it — the run-time fallback's rule (`ui/libras-glosses` `provisionalGloss`), so a word is
+ * spelled the same whether the build or the run time spelled it: capitals, and every mark stripped, because the player has no
+ * clip for an accented letter (📏 `Ã` measured: «Clip Ã não foi encontrado») — an accented letter is spelled as its base letter
+ * (Ã → A, É → E, Ç → C). Anything that is not a letter or a digit separates.
+ */
+export function spelledWord(word) {
+  return word.normalize('NFD').replace(/\p{M}+/gu, '').toUpperCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean).join(' ');
+}
+
+/**
+ * The glosses as the player can sign them from THIS delivery, and how their spelled tokens were found: a carried sign, a
+ * punctuation mark and a hole stay as they are; any other token is FINGERSPELLED, and what is spelled is the word as WRITTEN on
+ * the screen (`written`, from `glossTexts`) — «entrou», not the translator's lemma «ENTRAR» (the Dev: «Soletra-se a palavra
+ * escrita») — or the token itself where no written word gave it. Returns the file `ui/libras-glosses` reads (`[text, gloss]`
+ * pairs, nothing else) and `spelled`: `{ tokens, asWritten, ambiguous, byStem, asTranslated }` over the spelled tokens (`ambiguous`
+ * and `byStem` are among `asWritten`; see `writtenWords`).
  */
 export function spellable(file, carried) {
-  const spell = (token) => (NOT_A_SIGN.test(token) || carried.has(token) ? token : token.normalize('NFD').replace(/\p{M}+/gu, ''));
-  return { ...file, glosses: file.glosses.map(([text, gloss]) => [text, gloss.split(/\s+/u).filter(Boolean).map(spell).join(' ')]) };
+  const spelled = { tokens: 0, asWritten: 0, ambiguous: 0, byStem: 0, asTranslated: 0 };
+  const glosses = file.glosses.map(([text, gloss], i) => {
+    const tokens = tokensOf(gloss);
+    const written = file.written?.[i]?.length === tokens.length ? file.written[i] : [];
+    return [text, tokens.map((token, k) => {
+      if (NOT_A_SIGN.test(token) || carried.has(token)) return token;
+      const [word, how] = written[k] ?? [null, 'none'];
+      spelled.tokens += 1;
+      if (word === null) { spelled.asTranslated += 1; return spelledWord(token); }
+      spelled.asWritten += 1;
+      if (how === 'order') spelled.ambiguous += 1;
+      if (how === 'stem') spelled.byStem += 1;
+      return spelledWord(word);
+    }).filter(Boolean).join(' ')];
+  });
+  return { file: { format: file.format, made: file.made, glosses }, spelled };
 }
 
 /**
@@ -277,7 +390,8 @@ export async function readTexts(path) {
 
 /**
  * THE STEP `--libras` RUNS: glosses the dictionaries, delivers the pinned signs they use, and writes `glosses.json` into the
- * player's folder. Returns what the player needs (`signs`, for its sign-set revision) and what the build prints. THROWS — and
+ * player's folder, every token with no sign carried spelled as written (`spellable`). Returns what the player needs (`signs`,
+ * for its sign-set revision) and what the build prints (`spelled`: how the spelled tokens were found). THROWS — and
  * writes nothing — when the glosses cannot be made.
  */
 export async function deliverLibrasGlosses({ destino, playerFolder, signsFolder, glossesFile, dictionaries, translate,
@@ -291,6 +405,7 @@ export async function deliverLibrasGlosses({ destino, playerFolder, signsFolder,
   });
   const path = `${playerFolder}${glossesFile}`;
   mkdirSync(dirname(join(destino, path)), { recursive: true });
-  writeFileSync(join(destino, path), `${JSON.stringify(spellable(file, new Set(carried.map((s) => s.name))), null, 1)}\n`);
-  return { path, texts: texts.length, tokens: tokens.length, signs: carried, unpinned };
+  const { file: playable, spelled } = spellable(file, new Set(carried.map((s) => s.name)));
+  writeFileSync(join(destino, path), `${JSON.stringify(playable, null, 1)}\n`);
+  return { path, texts: texts.length, tokens: tokens.length, signs: carried, unpinned, spelled };
 }
