@@ -8,7 +8,7 @@ import * as S from '../app/js/input/state.js';
 import * as AUDIO from '../app/js/platform/audio.js';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
-import * as RNG from '../app/js/core/rng.js';
+import { createRng } from '../app/js/core/rng.js';
 
 describe('core/constants', () => {
   it('[Right] o que qualquer jogo 2D em pixel usa', () => {
@@ -67,6 +67,8 @@ describe('platform/audio — mixer (import PURO, init explícito; dívida paga F
 
 
 describe('core/rng — LCG semeado (determinístico)', () => {
+  // a stream of this block's own: the module holds none (ADR-0232 D4)
+  const RNG = createRng();
   it('[Right/reprodutibilidade] mesma semente → mesma sequência', () => {
     RNG.reseed(20260601);
     const a = [RNG.rnd(), RNG.rnd(), RNG.rnd()];

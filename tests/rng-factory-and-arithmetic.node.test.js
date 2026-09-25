@@ -5,7 +5,8 @@
 // cannot be corrected — which is exactly what nearly blocked this correction. What it pins are the two properties the
 // consumers need: INDEPENDENT streams, and multiplication that does not lose bits.
 import { describe, it, expect } from 'vitest';
-import { createRng, DEFAULT_SEED, rnd as rndPartilhado, reseed as reseedPartilhado } from '../app/js/core/rng.js';
+import * as rngModule from '../app/js/core/rng.js';
+import { createRng, DEFAULT_SEED } from '../app/js/core/rng.js';
 
 describe('createRng: cada consumidor tem a sua corrente (ADR-0038 D13, issue #107)', () => {
   it('duas correntes com a MESMA semente dão a mesma sequência', () => {
@@ -100,44 +101,24 @@ describe('a aritmética do LCG não perde bits (issue #107, defeito 2)', () => {
   });
 });
 
-describe('enfeite não move o sorteio do jogo (issue #107, a consequência concreta)', () => {
-  it('desenhar centenas de partículas não desloca a corrente das moedas', async () => {
-    const { decorationRng } = await import('../app/js/core/rng.js');
 
-    reseedPartilhado(4242);
-    const semEnfeite = [rndPartilhado(), rndPartilhado(), rndPartilhado(), rndPartilhado()];
+describe('the module holds no stream (ADR-0232 D4, issue #207)', () => {
+  it('its values are the factory and the default seed, and nothing a second game on the page would share', () => {
+    // 🔴 The shared `rnd`/`randInt`/`shuffle`/`reseed` and `decorationRng` were module state: two games on one page drew
+    // from one stream. A stream is now always a game's own, built with `createRng`.
+    expect(Object.keys(rngModule).sort()).toEqual(['DEFAULT_SEED', 'createRng']);
+  });
 
-    reseedPartilhado(4242);
-    const comEnfeite = [];
+  it('ornament gets its own stream by seed, and drawing it does not move the game draw', () => {
+    // What `decorationRng` gave, built the way a game builds it now (the platformer's seed).
+    const game = createRng(4242);
+    const ornament = createRng(DEFAULT_SEED ^ 0x5eed);
+    const alone = createRng(4242);
+    const withOrnament = [];
     for (let i = 0; i < 4; i++) {
-      // Any frame: dozens of particles between two of the game's draws.
-      for (let p = 0; p < 60; p++) decorationRng.rnd();
-      comEnfeite.push(rndPartilhado());
+      for (let p = 0; p < 60; p++) ornament.rnd();
+      withOrnament.push(game.rnd());
     }
-
-    // ⚠️ The equality IS the decision. With one shared stream the two lists diverge, and they diverge in a way that
-    // depends on how many particles the screen drew — that is, on nothing anyone controls. Going back to one stream
-    // is all it takes to turn this red.
-    expect(comEnfeite).toEqual(semEnfeite);
-  });
-
-  it('a corrente da decoração é outra, e não é a mesma sequência deslocada', async () => {
-    const { decorationRng, DEFAULT_SEED: S } = await import('../app/js/core/rng.js');
-    decorationRng.reseed(S ^ 0x5eed);
-    const enfeite = Array.from({ length: 5 }, () => decorationRng.rnd());
-    const jogo = createRng(S);
-    const doJogo = Array.from({ length: 200 }, () => jogo.rnd());
-    // None of the decoration's first five appears in the game's first two hundred: the streams are not just out of
-    // phase, they are separate.
-    for (const v of enfeite) expect(doJogo).not.toContain(v);
-  });
-});
-
-describe('a corrente partilhada continua a existir, e continua a ser a do jogo próprio', () => {
-  it('os quatro exports antigos ainda funcionam — game/ ainda vive aqui (issue #111)', () => {
-    reseedPartilhado(1234);
-    const doPartilhado = [rndPartilhado(), rndPartilhado(), rndPartilhado()];
-    const daFabrica = createRng(1234);
-    expect(doPartilhado).toEqual([daFabrica.rnd(), daFabrica.rnd(), daFabrica.rnd()]);
+    expect(withOrnament).toEqual([alone.rnd(), alone.rnd(), alone.rnd(), alone.rnd()]);
   });
 });

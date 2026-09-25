@@ -8,6 +8,10 @@
 //    module. With one stream shared by every consumer, "a deterministic shuffle from seed S" is reproducible only on a
 //    page where nothing else draws — and the engine exists precisely so the game is NOT alone on the page. Each
 //    consumer makes its own stream.
+//    📌 And the module holds NO stream of its own (ADR-0232 D4, issue #207): the shared `rnd`/`randInt`/`shuffle`/`reseed`
+//    and the decoration stream were module state a second game on the page shared. A game that wants ornament apart from
+//    its draws builds a second stream with another seed — the platformer's is `createRng(DEFAULT_SEED ^ 0x5eed)` — because
+//    particles drawn from the game's stream would move the game's draw.
 //
 // 2. `Math.imul`, not `*`. `_seed * 1103515245` with `_seed` near 2³¹ reaches ~2.37×10¹⁸, above 2⁵³: the LOW bits —
 //    exactly the ones `& 0x7fffffff` keeps — were rounded away before the mask ran. `Math.imul` multiplies in 32 bits,
@@ -49,20 +53,3 @@ export const createRng = (seed: number = DEFAULT_SEED): Rng => {
   const reseed = (s: number): void => { _seed = s >>> 0; };
   return { rnd, randInt, shuffle, reseed };
 };
-
-// ⚠️ THE SHARED STREAM. It is published surface, so removing it is a breaking change with its own migration, not a
-// cleanup. And the warning still holds, which is the discomfort: it is shared module state, exactly the defect the
-// factory above fixes — a second game on the same page shares this stream with the first. The way out is for a
-// consumer to move to `createRng(itsSeed)`.
-const sharedRng = createRng(DEFAULT_SEED);
-export const reseed = sharedRng.reseed;
-export const rnd = sharedRng.rnd;
-export const randInt = sharedRng.randInt;
-export const shuffle = sharedRng.shuffle;
-
-// ⚠️ THE DECORATION STREAM, apart from the one above because mixing them was the CONCRETE defect. Particles, raindrops
-// and camera shake draw dozens of numbers a frame; from the same stream as the game's draws, "seed with S and the map
-// comes out the same" depended on how many particles the screen had drawn before, which nobody controls or notices.
-// Ornament must NOT move the game's draw. Two subjects, two streams. The seed differs on purpose: with the same one the
-// two streams would run in step and the ornament would correlate with the map — deterministic, but visibly repetitive.
-export const decorationRng = createRng(DEFAULT_SEED ^ 0x5eed);
