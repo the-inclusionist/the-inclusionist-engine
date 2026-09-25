@@ -791,12 +791,15 @@ describe('itemNames / pointAt — the names a child can say, and the cursor put 
     expect(document.activeElement?.id).toBe('a-close');
   });
 
-  it('⚠️ [Boundary] a LOCKED item is left out (saying it is ADR-0194 §5, not built) and cannot be pointed at', () => {
+  // 📌 ADR-0194 §5: a locked item is a stop of the cursor (ADR-0161), so its name is sayable and the cursor goes to it; the
+  // confirm that follows is the item's own press, which says the reason — held end to end in `a-name-said-activates-its-item`.
+  it('🔴 [Boundary] a LOCKED item is offered and can be pointed at — the cursor stops there, as the arrows would', () => {
     const { nav } = boot();
     showPauses();
     $('#sp0 [data-act="ajuda"]').setAttribute('aria-disabled', 'true');
-    expect(nav.itemNames(0)).not.toContain('Ajuda');
-    expect(nav.pointAt('Ajuda', 0)).toBe(false);
+    expect(nav.itemNames(0), 'a locked item cannot be said, so the child never hears why it is locked').toContain('Ajuda');
+    expect(nav.pointAt('Ajuda', 0)).toBe(true);
+    expect($('#sp0 .pm-sel')?.dataset.act, 'the cursor is not on the locked item said').toBe('ajuda');
   });
 
   it('🎯 [Zero] where a key would move no menu, there is no name and no cursor to move', () => {
@@ -826,6 +829,6 @@ describe('itemNames / pointAt — the names a child can say, and the cursor put 
 //   MN1 names offered while the seat is on the quick bar        🔴 «where a key would move no menu»
 //   MN2 names offered while no menu is navigable                 🔴 «where a key would move no menu»
 //   MN3 names offered during a remap                             🔴 «where a key would move no menu»
-//   MN4 locked items offered                                     🔴 «a LOCKED item is left out»
+//   MN4 locked items left out (the filter §5 retired)             🔴 «a LOCKED item is offered and can be pointed at»
 //   MN5 the card answers under a panel (shared with the keys)    🔴 «with a panel on top» (and two DEFECT-2 cases)
 //   (the cursor itself — W4, W4b — is held end to end by `a-name-said-activates-its-item.browser.test.js`)

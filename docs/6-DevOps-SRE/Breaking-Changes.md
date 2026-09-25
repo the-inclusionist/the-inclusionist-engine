@@ -3770,6 +3770,8 @@ navigation puts its cursor on the item, and the voice presses the menu's confirm
 ⚠️ **Behaviour, not shape:** the names now enter the grammar with their accents («configurações», not «configuracoes», which
 the small Vosk model drops); the grammar is refreshed when a card, one of its lists or a panel shows or hides (it was only
 refreshed when the «N of M» setting changed, so no menu's names ever reached the recogniser); `spokenText` keeps digits.
+And (ADR-0194 §5) `MenuNavApi.itemNames` now lists LOCKED items too, and `pointAt` reaches them: a locked item said by name is
+confirmed like any other, and its own press says its reason and does nothing — a voice path of your own gets that for free.
 New, additive: `ui/menu-intent.MENU_CONFIRM` (the menu's «yes» position, `action2`).
 
 📏 **Not measured in the games:** this change was made without reading the sibling repositories. Before the bump, `git grep`

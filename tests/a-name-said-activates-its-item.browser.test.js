@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A NAME SAID IN A MENU ACTIVATES ITS ITEM — THROUGH THE ROOT THE CHILD ACTUALLY USES (ADR-0194 §1–§3; issue #184).
+// A NAME SAID IN A MENU ACTIVATES ITS ITEM — THROUGH THE ROOT THE CHILD ACTUALLY USES (ADR-0194 §1–§3, §5; issue #184).
 //
 // `tests/voice-control.node.test.js` proves the control against doubles of the menu. What only a real root can prove is the
 // WIRING: that the 👄 path hands the open menu's names to the reader, that a menu opening is what refreshes them, and that a name
@@ -10,6 +10,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { accessibleLabel } from '../app/js/core/accessible-label.js';
+import { spokenText } from '../app/js/platform/speech-recognition.js';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 /** What the fake microphone received: the grammars, and the recogniser's two callbacks. `vi.mock` is hoisted, so it reads this. */
@@ -104,6 +105,39 @@ describe('the 👄 in a real root: a name said activates its item', () => {
     say('abaixo');
     expect(selected(), '«abaixo» was heard with the card open and the cursor stayed').not.toBe(before);
   });
+
+  /*
+   * 🔴 ADR-0194 §5 WITH ADR-0161: a LOCKED item said by name is confirmed like any other, and a locked item confirmed says its
+   * reason and does nothing — so the child hears WHY, in the same words the arrows and a finger get. The engine's card with a
+   * game that declares nothing always has locked items (no help slides, the game decides the players, no options of its own).
+   */
+  it('🔴 [Right] saying a LOCKED item\'s name speaks its reason and activates nothing', async () => {
+    motor.pause.show(0);
+    await tick();
+    // «Opções do jogo» and not the first locked item: it is a DOOR, so a locked press that went on to act would open its list —
+    // a locked item with no action at all would «activate nothing» whether or not the lock held.
+    const locked = pauseItem('opcoesdojogo');
+    expect(locked?.getAttribute('aria-disabled'), 'the game\'s options are not locked here — the case would measure nothing')
+      .toBe('true');
+    expect(visible(locked)).toBe(true);
+    const reason = locked.dataset.motivo;
+    expect(reason, 'the locked item carries no reason').toBeTruthy();
+    const name = accessibleLabel(locked);
+    expect(lastGrammar(), 'a locked item\'s name never reached the recogniser — the child cannot ask why').toContain(spokenText(name));
+    const shown = () => [...document.querySelectorAll('#vp-pause-0 .pm-btn')].filter(visible).map((b) => b.dataset.act).join(',');
+    const before = shown();
+    const status = document.querySelector('#sr-status');
+    status.textContent = '';
+    say(name);
+    await until(() => status.textContent === reason);
+    expect(status.textContent, 'the locked item\'s name was said and its reason was not spoken').toBe(reason);
+    expect(document.querySelector('#vp-pause-0 .pm-sel'), 'the cursor is not on the locked item said').toBe(locked);
+    expect(shown(), 'saying a locked item opened something').toBe(before);
+    expect(visible(locked), 'saying a locked item closed the pause card').toBe(true);
+    expect([...document.querySelectorAll('#game-region .overlay')].some((o) => !o.hidden), 'saying a locked item opened a panel')
+      .toBe(false);
+  });
+
   // 📌 §3 («voltar» waits while «voltar ao jogo» may follow) is held with a fixed pair in the node suites
   // (`speech-recognition`, `voice-map`, `voice-control`): the engine's own pause card has no two names where one continues the
   // other, so a case here would pass by having nothing to wait for.
@@ -117,5 +151,10 @@ describe('the 👄 in a real root: a name said activates its item', () => {
 //   W4b `pointAt` moves the pause cursor but not a panel's focus           🔴 panel switch
 //   W5 the cursor is moved and the confirm is never pressed                🔴 pause item; panel switch
 //   W6 the reader is never given the menu's names                          🔴 pause item; panel switch
+//   L1 `ui/menu-nav` leaves locked items out of the names again           🔴 a LOCKED item's name (and menu-nav's MN4)
+//   L2 `pointAt` refuses a locked item                                     🔴 a LOCKED item's name (and menu-nav's MN4)
+//   L3 a locked pause item pressed does not say its reason                 🔴 a LOCKED item's name
+//   L4 a locked pause item pressed goes on to act (its door opens)         🔴 a LOCKED item's name — it survived while the case
+//      said the first locked item, which has no action to take; it now says the game's options, which is a door
 //   (the panel case first said the back item, «Voltar», and survived W2 and W6: «voltar» is also the word for button 3,
 //    which closes a panel by itself — so it said a switch instead)

@@ -172,8 +172,8 @@ export interface MenuNavApi {
   menuNavKey: (e: NavKeyEvent) => void;
   /**
    * THE NAMES A CHILD CAN SAY (ADR-0194 §1): the accessible names of the items a key of player `playerIndex` would move now —
-   * the dialog on top, else that player's open pause card — and none while a key would move no menu. Locked items are left
-   * out: saying one is ADR-0194 §5, not built.
+   * the dialog on top, else that player's open pause card — and none while a key would move no menu. LOCKED items are in it
+   * (ADR-0194 §5): saying one confirms it like any transport, and a locked item confirmed says its reason and does nothing.
    */
   itemNames: (playerIndex: number) => string[];
   /**
@@ -453,15 +453,18 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   /* ===================== an item said by name (ADR-0194) ===================== */
 
   /**
-   * The unlocked stops of the menu a key of `pi` would move NOW, under the same guards `menuNavKey` applies before moving one:
-   * a name is sayable exactly where confirming would reach it, so the confirm that follows `pointAt` lands on the named item.
+   * The stops of the menu a key of `pi` would move NOW, under the same guards `menuNavKey` applies before moving one: a name is
+   * sayable exactly where confirming would reach it, so the confirm that follows `pointAt` lands on the named item.
+   *
+   * 🔴 LOCKED STOPS INCLUDED (ADR-0194 §5, ADR-0161): the cursor stops on a locked item, so its name is sayable too — and what
+   * saying it does is what confirming it does, because it IS a confirm: the item's own press says its reason and acts on nothing
+   * (`ui/pause-icons.pressPauseItem`, a panel's refusal). No second, voice-only «say the reason» exists to drift from that one.
    */
   function sayableItems(pi: number): { readonly menu: HTMLElement; readonly inPause: boolean; readonly items: HTMLElement[] } | null {
     if (ctx.isCapturing() || padWizOpen() || ctx.onBar(pi) || !ctx.isNavigable()) return null;
     const open = menuUnderKeys(pi);
     if (!open) return null;
-    const stops = open.inPause ? [...open.menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)] : menuItems(open.menu);
-    return { ...open, items: stops.filter((el) => el.getAttribute('aria-disabled') !== 'true') };
+    return { ...open, items: open.inPause ? [...open.menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)] : menuItems(open.menu) };
   }
 
   function itemNames(pi: number): string[] {

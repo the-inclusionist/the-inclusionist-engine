@@ -1551,7 +1551,7 @@
       "fanIn": 5
     },
     "ui/menu-nav.ts": {
-      "codeLines": 278,
+      "codeLines": 277,
       "decisionNodes": 59,
       "maxDepth": 2,
       "fanOut": 7,
