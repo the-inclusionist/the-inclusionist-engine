@@ -527,6 +527,25 @@ export interface Engine {
    * waits on it, or the screen is born in the fallback language.
    */
   readonly localeReady: () => Promise<void>;
+  // ADR-0232 D4 anchors: each batch adds its handle members under its own marker, so parallel branches never touch one hunk.
+  // D4-B1 (announcer, libras)
+
+
+  // D4-B2 (settings store)
+
+
+  // D4-B3 (input)
+
+
+  // D4-B4 (audio)
+
+
+  // D4-B5 (heavy files, recognisers)
+
+
+  // D4-B6 (render, layout)
+
+
   /**
    * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
    * `core/flash-threshold`). Only when called — reading pixels every frame costs a school machine (pillar 1), so play never
@@ -4030,6 +4049,24 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     menuIndexOn: () => state.menuIndexOn,
     t: translator.t,
     localeReady: translator.ready,
+    // D4-B1
+
+
+    // D4-B2
+
+
+    // D4-B3
+
+
+    // D4-B4
+
+
+    // D4-B5
+
+
+    // D4-B6
+
+
     measureFlashes: sampleWorldFlashes,
     overlays,
     nav,
