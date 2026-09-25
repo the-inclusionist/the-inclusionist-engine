@@ -12,11 +12,18 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FONT_GROUPS, OFERECIVEIS, fontRole, faceScale, BASE_EM_PX } from '../app/js/ui/fonts.js';
+import { FONT_GROUPS, OFERECIVEIS, fontRole, faceScale, faceFamilies, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
 const CATALOGO = JSON.parse(readFileSync(join(process.cwd(), 'research', 'catalogo_tipografico.json'), 'utf8'));
 const POR_ID = new Map(CATALOGO.fontes.map((f) => [f.id, f]));
 const TODAS = FONT_GROUPS.flatMap((g) => g.items);
+/** The catalogue's `ativo` families: what the engine may package. */
+const ATIVAS = new Set(CATALOGO.fontes.filter((f) => f.status === 'ativo').map((f) => f.familia));
+/**
+ * A face whose stack ENDS in an `ativo` family after its own: the «fallback declarado» the catalogue asks of a
+ * `referencia_externa` face it may not package — the ronde, whose stack ends in Cookie (ADR-0154).
+ */
+const comRecuo = (it) => { const fams = faceFamilies(it); return fams.length > 1 && ATIVAS.has(fams[fams.length - 1]); };
 /**
  * Offered for Portuguese with coverage NOT VERIFIED (`null`). Kept in the menu while the Dev decides: R3 asks `pt_br: true`,
  * and removing a face for dyslexia from the menu is their call, not a gate's (issue #172). Each line says what is missing.
@@ -24,6 +31,7 @@ const TODAS = FONT_GROUPS.flatMap((g) => g.items);
 const COBERTURA_NAO_VERIFICADA = {
   quattro: 'iA Writer Quattro: GitHub source, coverage not measured in the catalogue',
   opendyslexic: 'OpenDyslexic: GitHub source, coverage not measured in the catalogue',
+  ronde: 'Ronde Script: referencia_externa, coverage not measured in the catalogue; its fallback Cookie covers pt_br',
 };
 
 describe('the engine\'s faces and the typographic catalogue (ADR-0176)', () => {
@@ -39,7 +47,7 @@ describe('the engine\'s faces and the typographic catalogue (ADR-0176)', () => {
       const c = POR_ID.get(it.id);
       if (!c) { problemas.push(`${it.k}: id «${it.id}» is not in the catalogue`); continue; }
       if (!it.fam.split(',').map((x) => x.trim()).includes(c.familia)) problemas.push(`${it.k}: «${it.fam}» is not the catalogue's «${c.familia}»`);
-      const permitido = it.off ? ['ativo', 'referencia_externa'] : ['ativo'];
+      const permitido = it.off || comRecuo(it) ? ['ativo', 'referencia_externa'] : ['ativo'];
       if (!permitido.includes(c.status)) problemas.push(`${it.k}: catalogue status «${c.status}»${c.motivo ? ` — ${c.motivo}` : ''}`);
     }
     expect(problemas).toEqual([]);
@@ -80,7 +88,9 @@ describe('the engine\'s faces and the typographic catalogue (ADR-0176)', () => {
   it('🔴 [Right] Playwrite BR is the handwriting group\'s general face (the Dev)', () => {
     const mao = FONT_GROUPS.find((g) => g.g === 'font.group.hand');
     const gerais = mao.items.filter((it) => fontRole(it) === 'geral' && !it.off).map((it) => it.k);
-    expect(gerais).toEqual(['pwbr']);
+    // 📌 The ronde is offered too, BY NAME (ADR-0108 §4) — its `role` is absent on purpose so the menu shows it — and since
+    // ADR-0154 it is no longer disabled. It is an option of the group, not its general face.
+    expect(gerais).toEqual(['pwbr', 'ronde']);
   });
 });
 

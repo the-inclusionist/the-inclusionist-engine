@@ -818,8 +818,9 @@ const pt: Record<string, string> = {
   // ⚠️ AS TRÊS PELO NOME, e não «uma fonte ronde» (ADR-0108 §4): um adulto não consegue agir sobre uma
   // categoria. A frase existe para ser executável — abrir o navegador, procurar UM destes três nomes,
   // instalar. Nomear a categoria seria a mesma linha morta que este catálogo já removeu duas vezes.
-  'font.off.ronde': 'Instale no aparelho uma destas três: Ronde Script, OPTIFrench-Script ou Merveille. '
-    + 'Elas são gratuitas para uso pessoal, e por isso não podem vir dentro do jogo.',
+  'font.notice.ronde': 'Instale no aparelho uma destas três: Ronde Script, OPTIFrench-Script ou Merveille. '
+    + 'Elas são gratuitas para uso pessoal, e por isso não podem vir dentro do jogo. '
+    + 'Sem elas, o jogo mostra a Cookie: uma letra ligada parecida, mas que não é a ronde da escola.',
   'font.desc.greatvibes': 'caligráfica inglesa',
   'font.desc.pinyon': 'caligráfica inglesa',
   'font.desc.ufcook': 'blackletter alemã',

@@ -717,8 +717,9 @@ const en: Record<string, string> = {
   'font.desc.pw.co': 'School cursive taught in Colombia.',
 
   'font.desc.ronde': 'French ronde, the joined handwriting taught at school.',
-  'font.off.ronde': 'Install one of these three on the device: Ronde Script, OPTIFrench-Script or Merveille. '
-    + 'They are free for personal use, which is why they cannot ship inside the game.',
+  'font.notice.ronde': 'Install one of these three on the device: Ronde Script, OPTIFrench-Script or Merveille. '
+    + 'They are free for personal use, which is why they cannot ship inside the game. '
+    + 'Without them, the game shows Cookie: a similar joined hand, but not the ronde taught at school.',
   'font.desc.greatvibes': 'English calligraphy',
   'font.desc.pinyon': 'English calligraphy',
   'font.desc.ufcook': 'German blackletter',

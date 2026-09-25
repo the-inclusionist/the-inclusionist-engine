@@ -18,8 +18,8 @@
 //     it here by hand — this repository's «teto que só desce», the other way round;
 //   · no face OFFERED without a way to get it: bundled, or `off` with an actionable remedy (the fourth gate, below).
 //
-// 📌 The Ronde option is a `geral` entry with `off` and the `font.off.ronde` key in all three languages: a `geral` entry
-// with `off` RENDERS (the typography panel filters by role, not state), while a `caligrafica` one would be invisible.
+// 📌 The Ronde option is a `geral` entry whose stack ends in the packaged Cookie (ADR-0154), with the `font.notice.ronde`
+// key in all three languages: a `geral` entry RENDERS in the typography panel, while a `caligrafica` one would be invisible.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -74,6 +74,8 @@ const ATIVAS_DO_CATALOGO = Object.freeze(new Set(JSON.parse(readFileSync(new URL
 
 /** The three faces of the French ronde. NONE can be bundled — they are free for PERSONAL use only. */
 const A_RONDE = Object.freeze(['Ronde Script', 'OPTIFrench-Script', 'Merveille']);
+/** The ronde's packaged fallback (ADR-0154): OFL, one weight, shipped unmodified as Google Fonts serves it. */
+const RONDE_FALLBACK = 'Cookie';
 
 /* ---------- the pure halves, so fixtures can drive them ---------- */
 
@@ -244,55 +246,59 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
     expect(playwriteForaDoCatalogo([...AS_OITO])).toEqual([]);
   });
 
-  /* ===================== ADR-0108 §4 · THE RONDE OPTION SPEAKS, AND NAMES THE THREE =====================
+  /* ===================== ADR-0154 · THE RONDE FALLS BACK TO COOKIE, AND STILL NAMES THE THREE =====================
    *
-   * ADR-0012 decided the licence — the three faces are free for PERSONAL use only and are never bundled — and decided the
-   * control: it stays DISABLED while none is present. This block holds what the option SAYS. A grey button with no
-   * explanation teaches an adult the feature is broken, when it is one installation away.
+   * ADR-0012 decided the licence — the three faces are free for PERSONAL use only and are never bundled. ADR-0154 ends the
+   * ronde's stack in Cookie, which the engine packages, so the option works on every device, offline, and is never
+   * disabled. 🔴 Cookie is a related joined hand, NOT the ronde a French classroom teaches, and the notice is the only
+   * thing that says so — which is why it still names the three.
    *
    * 🎯 AND THE RULE IS NAMING THE THREE, not the category. «Instale uma fonte ronde» is not actionable — an adult does not
    * act on a category — and it is exactly the form ADR-0108 refuses in writing. This block exists so the sentence cannot
-   * slide there.
-   *
-   * ⚠️ AND IT IS WHAT SEPARATES THIS `.off` ENTRY FROM THOSE THE CATALOGUE REMOVED, which said «ainda não», which nobody can
-   * resolve (the reason is written in `ui/fonts`' header). This one says what to do. Actionability is the difference, and
-   * this gate measures it — without it, the next person removes the row citing the right comment for the wrong reason. */
-  describe('ADR-0108 §4 · a opção desabilitada nomeia as três faces', () => {
+   * slide there. */
+  describe('ADR-0154 · the ronde falls back to Cookie and names the three faces', () => {
     const RONDE = FONT_GROUPS.flatMap((g) => g.items).find((it) => it.k === 'ronde');
 
-    it('[Vácuo] a entrada `ronde` existe no catálogo e está DESLIGADA', () => {
-      expect(RONDE, 'a entrada da ronde saiu do catálogo — o ADR-0108 §4 ficou sem sujeito').toBeTruthy();
-      expect(RONDE.off, 'a ronde ficou selecionável: as três faces não podem ser empacotadas').toBeTruthy();
+    it('[Zero] the `ronde` entry exists in the catalogue, and is NO LONGER disabled', () => {
+      expect(RONDE, 'the ronde entry left the catalogue — ADR-0154 has no subject').toBeTruthy();
+      expect(RONDE.off, 'the ronde is `off` again: with Cookie at the end of its stack it works on every device').toBeUndefined();
       // 📌 `geral` and not `caligrafica`, although it is calligraphic: the menu filters out the calligraphic ones, and a
       // filtered row says nothing to anyone. The «right» role would erase the only thing it does.
       expect(RONDE.role, 'a ronde foi marcada como caligráfica e desapareceu do menu').toBeUndefined();
     });
 
-    it('🎯 [Right] a mensagem nomeia AS TRÊS, nos três idiomas', () => {
+    it('🎯 [Right] the notice names ALL THREE, in the three languages', () => {
+      expect(RONDE.notice, 'the ronde lost its notice: Cookie shows with nothing saying it is not the ronde').toBeTruthy();
       for (const [nome, dic] of [['pt', pt], ['en', en], ['es', es]]) {
-        const msg = dic[RONDE.off];
-        expect(msg, `${nome}: a chave \`${RONDE.off}\` não existe no dicionário`).toBeTruthy();
+        const msg = dic[RONDE.notice];
+        expect(msg, `${nome}: a chave \`${RONDE.notice}\` não existe no dicionário`).toBeTruthy();
         for (const face of A_RONDE) {
           expect(msg, `${nome}: a mensagem não nomeia «${face}»`).toContain(face);
         }
       }
     });
 
-    /* 🎯 ADR-0012'S «ENQUANTO». The record says the control stays disabled «enquanto nenhuma fonte estiver presente» —
-     * which implies STOPPING being disabled when one is. Without this the option would never enable: the adult followed the
-     * instruction, installed the face, and the row stayed grey telling them to install what they had just installed. */
-    it('🎯 [Right] com UMA das três instalada, a face fica disponível', () => {
-      const so = (alvo) => (f) => f === alvo;
-      for (const face of A_RONDE) {
-        expect(faceAvailable(RONDE, so(face)), `${face} instalada e a ronde continua indisponível`).toBe(true);
-      }
+    it('🎯 [Right] the stack is the three, in the Dev\'s order, and ENDS in Cookie', () => {
+      // The first one the device has wins; Cookie answers when it has none. Cookie anywhere but last would draw Cookie
+      // on a device that HAS a real ronde installed. (Read as four families, not one: the CSS stack is `familyStack`'s
+      // job and is measured in the browser, in `the-ronde-falls-back-to-cookie.browser.test.js`.)
+      expect(faceFamilies(RONDE), 'the ronde stack is not «the three, then Cookie»').toEqual([...A_RONDE, RONDE_FALLBACK]);
     });
 
-    it('⚠️ [Zero] sem nenhuma das três, continua indisponível — e SEM detector também', () => {
-      expect(faceAvailable(RONDE, () => false)).toBe(false);
-      // 📌 The default without a detector is «indisponível», and it is safe for a reason that does not hold for every
-      // default in this repository: the row stays disabled WITH the message, and the message is actionable.
-      expect(faceAvailable(RONDE, undefined)).toBe(false);
+    it('🔴 [Right] Cookie IS packaged: declared in `fonts.css`, with its file present', () => {
+      // The half that makes the fallback real: a stack ending in a family nobody declares falls to the generic
+      // `cursive`, and the child who chose the ronde gets whatever the system has.
+      expect(familias, 'Cookie is not declared in fonts.css — the ronde stack falls to the generic').toContain(RONDE_FALLBACK);
+      const src = [...CSS.matchAll(/font-family:'([^']+)'[^}]*?url\('fonts\/([^']+)'\)/g)]
+        .filter((m) => m[1] === RONDE_FALLBACK).map((m) => m[2]);
+      expect(src.length, 'the Cookie @font-face points at no file').toBeGreaterThan(0);
+      for (const f of src) expect(NA_PASTA, `the Cookie file «${f}» is not in the folder`).toContain(f);
+    });
+
+    it('🎯 [Right] available on ANY device — with none of the three, and with no detector', () => {
+      // ADR-0154 §4: the option is no longer disabled. On a school tablet with none of the three, the stack reaches Cookie.
+      expect(faceAvailable(RONDE, () => false)).toBe(true);
+      expect(faceAvailable(RONDE, undefined)).toBe(true);
     });
 
     it('📌 [Boundary] uma face que NÃO é `off` está disponível sem detector nenhum', () => {
@@ -300,13 +306,6 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
       const atkinson = FONT_GROUPS.flatMap((g) => g.items).find((it) => it.k === 'atkinson');
       expect(faceAvailable(atkinson, undefined)).toBe(true);
       expect(faceAvailable(atkinson, () => false)).toBe(true);
-    });
-
-    it('⚠️ [Interface] a PILHA de três é lida como três famílias, não como uma', () => {
-      // The ronde's `fam` is `'Ronde Script, OPTIFrench-Script, Merveille'`. Treating it as a single name would do
-      // `check('16px "Ronde Script, OPTIFrench-Script, Merveille"')` — which always returns false, and the option would
-      // never enable however many fonts the adult installed.
-      expect(faceFamilies(RONDE)).toEqual(A_RONDE);
     });
 
     it('⚠️ [Right] e uma frase que nomeia a CATEGORIA reprovaria — a forma que o ADR-0108 recusa', () => {
@@ -350,5 +349,14 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
 //      hole: the existing «uma NONA Playwrite reprova» case drives the PURE half with a fixture, so it stayed GREEN with
 //      the ninth really in the catalogue. One asserts the function can tell; the other asserts the tree has none. They
 //      are not the same, and only the second catches the offer.
-//  N2. the ronde losing its `off` -> FOUR fail. The face stops being unbundled-with-a-message and says nothing, which is
-//      exactly the removed `learningcurve` back: the menu offers and nobody can get it.
+//  N2. (2026-09-09, before ADR-0154) the ronde losing its `off` -> FOUR failed: with no packaged face in its stack, the
+//      menu would offer what nobody could get. Since ADR-0154 the stack ends in Cookie, and that leg is the one it passes by.
+//
+// ===== MUTATIONS OF THE ADR-0154 BLOCK (2026-09-25, issue #150), each applied by script and restored from a copy =====
+//  C1. `, Cookie` removed from the ronde's `fam` -> here the stack case and the FOURTH GATE fail (the ronde, no longer
+//      `off`, becomes a face nobody can get); beside them `an-offered-font-loads` and the ronde CSS-stack case.
+//  C2. the Cookie `@font-face` renamed to 'Cookie X' in `fonts.css` -> the Cookie-is-packaged case and the fourth gate
+//      fail here, and the orphan and offered-without-face cases in `an-offered-font-loads`.
+//  C3. the ronde's `notice` removed -> the names-the-three case fails (and the ronde-row note in `settings-typo`).
+//  C4. `off:'font.off.pending'` put back on the ronde -> the not-disabled and any-device cases fail.
+//  C5. the Spanish notice naming only two of the three -> the names-the-three case fails.

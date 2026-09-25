@@ -401,7 +401,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 645,
+      "codeLines": 646,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -411,7 +411,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 645,
+      "codeLines": 646,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -421,7 +421,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 645,
+      "codeLines": 646,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1391,7 +1391,7 @@
       "fanIn": 1
     },
     "ui/fonts.ts": {
-      "codeLines": 129,
+      "codeLines": 136,
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 0,
@@ -1812,7 +1812,7 @@
     },
     "ui/typo-choices.ts": {
       "codeLines": 53,
-      "decisionNodes": 12,
+      "decisionNodes": 8,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,

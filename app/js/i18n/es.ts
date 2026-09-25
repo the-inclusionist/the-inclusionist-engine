@@ -714,8 +714,9 @@ const es: Record<string, string> = {
   'font.desc.pw.co': 'Cursiva escolar de Colombia.',
 
   'font.desc.ronde': 'Ronde francesa, la letra ligada que se enseña en la escuela.',
-  'font.off.ronde': 'Instale en el dispositivo una de estas tres: Ronde Script, OPTIFrench-Script o Merveille. '
-    + 'Son gratuitas para uso personal, y por eso no pueden venir dentro del juego.',
+  'font.notice.ronde': 'Instale en el dispositivo una de estas tres: Ronde Script, OPTIFrench-Script o Merveille. '
+    + 'Son gratuitas para uso personal, y por eso no pueden venir dentro del juego. '
+    + 'Sin ellas, el juego muestra Cookie: una letra ligada parecida, pero que no es la ronde de la escuela.',
   'font.desc.greatvibes': 'caligráfica inglesa',
   'font.desc.pinyon': 'caligráfica inglesa',
   'font.desc.ufcook': 'blackletter alemana',

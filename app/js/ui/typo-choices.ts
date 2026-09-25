@@ -10,7 +10,7 @@
 // work its name never mentioned — finding the nodes it reaches and never created, wiring them and reflecting the
 // choice — and the table of what a choice IS lives here (ADR-0221).
 import type { Translate } from '../core/i18n.js';
-import { FONT_GROUPS, FONT_BY_KEY, fontRole, faceAvailable, type FontItem } from './fonts.js';
+import { FONT_GROUPS, FONT_BY_KEY, fontRole, faceAvailable, familyStack, type FontItem } from './fonts.js';
 import type { ControlRowSpec } from './panel-widgets.js';
 
 /**
@@ -58,7 +58,8 @@ export function fontCssTarget(k: string, it: FontItem): FontCssTarget {
   // `joined` is the word the field's own documentation uses — "is this a JOINED face?".
   const joined = it.fb === 'cursive';
   const suffix = it.fb === 'serif' ? ',Georgia,serif' : joined ? ',cursive' : '';
-  return { font: 'custom', customFamily: `'${it.fam}'${suffix}`, cursive: joined };
+  // Each family quoted on its own (`familyStack`): the ronde's stack must reach Cookie, its packaged fallback (ADR-0154).
+  return { font: 'custom', customFamily: `${familyStack(it.fam)}${suffix}`, cursive: joined };
 }
 
 export interface TypoRow {
@@ -66,7 +67,7 @@ export interface TypoRow {
   fam: string;
   selected: boolean;
   disabled: boolean;
-  /** Description (+ "— <off reason>" when disabled), or '' when there is none. */
+  /** Description (+ "— <notice>") (+ "— <off reason>" when disabled), or '' when there is none. */
   note: string;
 }
 export interface TypoGroupView {
@@ -78,18 +79,18 @@ export interface TypoGroupView {
  * ONE row of the list, from a catalogue face. A function of its own so the gate of the `.off` mechanism can exercise it
  * with a FAKE face: a case that depends on the catalogue's composition fails every time the roster changes.
  *
- * The mechanism is needed (issue #87, item 4): the **Ronde** can only be offered if one of three faces is installed,
- * because two of them are free for personal use only and cannot be bundled.
+ * The note is up to three halves: the description, the `notice` that always speaks (the ronde's three faces to install,
+ * ADR-0154), and the `off` reason while the face is disabled.
  */
 export function fontRow(t: Translate, it: FontItem, fontKey: string, installed?: (family: string) => boolean): TypoRow {
   // ⚠️ THE SAME question `isSelectableFont` asks, through the SAME function. Two answers would give a clickable row the
   // click refuses — or, worse, a grey row that `resolveFontKey` accepts by another path. "Not available" and "cannot be
   // chosen" have to be the same statement.
   const disabled = !faceAvailable(it, installed);
-  // `d` and `off` hold KEYS too. The dash joining them is punctuation, not a sentence — the two halves are independent
-  // and each translates on its own.
-  const desc = it.d ? t(it.d) : '', reason = it.off ? t(it.off) : '';
-  const note = desc ? desc + (disabled ? ' — ' + reason : '') : disabled ? reason : '';
+  // `d`, `notice` and `off` hold KEYS too. The dash joining them is punctuation, not a sentence — the halves are
+  // independent and each translates on its own.
+  const note = [it.d, it.notice, disabled ? it.off : undefined]
+    .filter((k): k is string => !!k).map((k) => t(k)).join(' — ');
   return { key: it.k, fam: it.fam, selected: fontKey === it.k, disabled, note };
 }
 

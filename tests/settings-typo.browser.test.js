@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import cssDoJogo from '../app/css/style.css?raw'; // the game's stylesheet, so the spacing case measures the computed value
 import { initSettingsTypo, mountTypoInside } from '../app/js/ui/settings-typo.js';
 import { createTranslator } from '../app/js/core/i18n.js';
+import { FONT_GROUPS, FONT_BY_KEY } from '../app/js/ui/fonts.js';
 const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 // A fake of platform/storage.ts (the same get/set shape), in memory.
@@ -15,6 +16,21 @@ function fakeStore(seed = {}) {
 }
 
 const $ = (sel) => document.querySelector(sel);
+
+/**
+ * A face planted in the catalogue that the device cannot have: `off`, with a key that resolves. The catalogue has none
+ * since the ronde ended its stack in Cookie (ADR-0154), and the lock still has to be measured on a real list.
+ */
+const LOCKED = Object.freeze({ k: 'lockedtest', id: 'locked_test', fam: 'Locked Test Face', fb: 'sans', off: 'font.off.pending' });
+function withLockedFace(fn) {
+  const sans = FONT_GROUPS[0].items;
+  sans.push(LOCKED);
+  FONT_BY_KEY[LOCKED.k] = LOCKED;
+  try { fn(); } finally {
+    sans.splice(sans.indexOf(LOCKED), 1);
+    delete FONT_BY_KEY[LOCKED.k];
+  }
+}
 
 function fullCtx(over = {}) {
   const said = [];
@@ -254,18 +270,35 @@ describe('ui/settings-typo', () => {
     // Two things the probe found green on the same row. A locked button that does not come `disabled` is a button that
     // does nothing while looking alive (ADR-0106 §5); and the note is what tells the educator WHOM that face serves —
     // without it in the `aria-label`, whoever cannot see the row hears only a strange name.
-    // `ronde` is the only OFFERED face that depends on installation (ADR-0012 §«enquanto»): with no detector, or one
-    // that says no, it appears on the list and does not respond.
+    // 📌 No catalogue face is `off` since the ronde ended its stack in Cookie (ADR-0154), so the lock is measured on a
+    // PLANTED face: the mechanism stays for a face that cannot ship with a fallback.
+    withLockedFace(() => {
+      const api = initSettingsTypo(fullCtx());
+      api.render();
+      const cinzenta = $('#typo-list').querySelector(`button[data-font="${LOCKED.k}"]`);
+      expect(cinzenta, 'the locked face must be on the list, grey and not hidden').not.toBeNull();
+      expect(cinzenta.disabled).toBe(true);
+    });
     const api = initSettingsTypo(fullCtx());
     api.render();
-    const cinzenta = $('#typo-list').querySelector('button[data-font="ronde"]');
-    expect(cinzenta, 'a ronde tem de estar na lista, cinzenta e não escondida').not.toBeNull();
-    expect(cinzenta.disabled).toBe(true);
     const comNota = [...$('#typo-list').querySelectorAll('.ctrl-row')]
       .find((l) => l.querySelector('.opt-hint'));
     expect(comNota, 'alguma linha tem nota — senão este caso não mede nada').toBeTruthy();
     const nota = comNota.querySelector('.opt-hint').textContent;
     expect(comNota.querySelector('button').getAttribute('aria-label')).toContain(nota);
+  });
+
+  it('🔴 [Right] the ronde row is ENABLED, and its label draws in the whole stack down to Cookie (ADR-0154)', () => {
+    const api = initSettingsTypo(fullCtx());
+    api.render();
+    const botao = $('#typo-list').querySelector('button[data-font="ronde"]');
+    expect(botao, 'the ronde left the list').not.toBeNull();
+    expect(botao.disabled, 'the ronde is locked again — Cookie answers on every device').toBe(false);
+    const rotulo = botao.closest('.ctrl-row').querySelector(':scope > span');
+    // the browser normalises the quotes; what matters is that each family is its own entry and Cookie is the last
+    const valor = rotulo.style.fontFamily;
+    expect(valor.replace(/["']/g, '')).toBe('Ronde Script, OPTIFrench-Script, Merveille, Cookie');
+    expect(valor, 'the stack is ONE quoted name with commas inside — a family no browser has').not.toMatch(/["'][^"']*,[^"']*["']/);
   });
 
   it('[Many] montar duas vezes REETIQUETA em vez de duplicar — e os nós ficam os MESMOS', () => {
@@ -311,13 +344,16 @@ describe('ui/settings-typo', () => {
 
   it('🔴 [Boundary] uma face que a lista recusa também é recusada por setFont — uma resposta, não três', () => {
     // The module says so: three answers to the same question drift. Deleting the `faceAvailable` from `setFont` passed
-    // green, and the child would end up with a chosen face the device does not have.
-    const ctx = fullCtx();
-    const api = initSettingsTypo(ctx);
-    const antes = api.getFontKey();
-    api.setFont('ronde', true);
-    expect(api.getFontKey(), 'a face indisponível não pode virar a escolha').toBe(antes);
-    expect(ctx.store.map.get('incl_font_k') ?? antes).toBe(antes);
+    // green, and the child would end up with a chosen face the device does not have. (A planted `off` face: no catalogue
+    // face is `off` since ADR-0154.)
+    withLockedFace(() => {
+      const ctx = fullCtx();
+      const api = initSettingsTypo(ctx);
+      const antes = api.getFontKey();
+      api.setFont(LOCKED.k, true);
+      expect(api.getFontKey(), 'a face indisponível não pode virar a escolha').toBe(antes);
+      expect(ctx.store.map.get('incl_font_k') ?? antes).toBe(antes);
+    });
   });
 
   it('[Cross-check] render() sincroniza a família do #typo-preview com a fonte ativa', () => {

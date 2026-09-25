@@ -109,6 +109,12 @@ describe('fontCssTarget', () => {
   it('[Edge-case] fonte manuscrita → custom com fallback ,cursive', () => {
     expect(fontCssTarget('pwbr', FONT_BY_KEY.pwbr)).toEqual({ font: 'custom', customFamily: "'Playwrite BR',cursive", cursive: true });
   });
+  it('🔴 [Right] the ronde\'s STACK quotes each family, so it can reach Cookie (ADR-0154)', () => {
+    // Quoted as ONE string it would be a single family named «Ronde Script, …, Cookie», which no browser has: the child
+    // would get the generic `cursive` and never the packaged fallback. The browser half measures the glyphs.
+    expect(fontCssTarget('ronde', FONT_BY_KEY.ronde).customFamily)
+      .toBe("'Ronde Script','OPTIFrench-Script','Merveille','Cookie',cursive");
+  });
 });
 
 // ===================================================================================================
@@ -178,9 +184,8 @@ describe('typoGroups — view-model das linhas', () => {
     expect(selected[0].key).toBe('lexend');
   });
   it('⚠️ [Boundary] o MECANISMO `.off` continua vivo, mesmo sem nenhuma face a usá-lo hoje', () => {
-    // ⚠️ The `.off` mechanism stays with no face using it today: item 4 of issue #87 needs it for **Ronde**, which can
-    // only be offered if one of three faces is installed (`document.fonts.check()`), because the other two are free for
-    // personal use only and cannot be packaged.
+    // ⚠️ The `.off` mechanism stays with no face using it today: the ronde used it until its stack ended in the packaged
+    // Cookie (ADR-0154), and a face that cannot ship with a fallback would need it again.
     //
     // So the case measures the FUNCTION with a fake face, instead of depending on the catalogue still having a
     // disabled one. A test that depends on the roster's composition fails whenever the roster changes.
@@ -241,6 +246,15 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
     const spec = typoRowSpec(fontRow(translate, FONT_BY_KEY.ronde, 'atkinson'));
     expect(spec.hint, 'a ronde traz a mensagem do que instalar').toBeTruthy();
     expect(spec.ariaLabel).toContain(spec.hint);
+  });
+
+  it('🔴 [Right] the ronde row is ENABLED and its note still names the three faces to install (ADR-0154)', () => {
+    // The notice is not an `off` reason any more: it speaks on an enabled row, because the child who picks the ronde on a
+    // device without the three sees Cookie, and the notice is the only thing that says it is not the ronde.
+    const row = fontRow(translate, FONT_BY_KEY.ronde, 'atkinson');
+    expect(row.disabled, 'the ronde is disabled again — Cookie answers on every device').toBe(false);
+    expect(row.note).toBe(`${translate('font.desc.ronde')} — ${translate('font.notice.ronde')}`);
+    for (const face of ['Ronde Script', 'OPTIFrench-Script', 'Merveille']) expect(row.note).toContain(face);
   });
 
   it('[Right] o id sai da CHAVE do catálogo, que é única por construção', () => {

@@ -139,6 +139,12 @@ export type FontItem = {
   /** The face's `id` in `catalogo_tipografico.json` (ADR-0176): the key that holds it to the catalogue's status, layer, floor and coverage. */
   id: string;
   k: string; fam: string; fb: string; d?: string; off?: string;
+  /**
+   * The i18n KEY of a sentence ALWAYS shown after the description — unlike `off`, which only speaks while the face is
+   * disabled. It is for a stack whose preferred faces the device may lack: the ronde's names the three to install, because
+   * without them the child sees Cookie, a related hand that is not the one taught at school (ADR-0154).
+   */
+  notice?: string;
   /** Absent = `geral`. Only the handwriting faces declare it, because they are the exception. */
   role?: FontRole;
   /**
@@ -233,18 +239,17 @@ export const FONT_GROUPS: FontGroup[] = [
     // the menu — it is for the buttons INSIDE school activities, not for the interface.
     {k:'fondamento', id:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', role:'caligrafica', minPx:20},
     /*
-     * THE FRENCH RONDE — #87 item 4, decided in ADR-0108 §4. It is NEVER bundled: the three faces are free for PERSONAL
-     * use only (ADR-0012), and distributing them would distribute what was not licensed for distribution. What the entry
-     * does is SPEAK.
+     * THE FRENCH RONDE, AND ITS FALLBACK (ADR-0154). The three ronde faces are NEVER bundled: they are free for PERSONAL
+     * use only (ADR-0012), and distributing them would distribute what was not licensed for distribution. So the stack is
+     * the three the device may have, in the Dev's order, and then COOKIE, which the engine packages (OFL): the first one
+     * the device has wins, and Cookie answers when it has none. The option is therefore never disabled.
      *
-     * ⚠️ AND IT IS NOT A "NOT YET" ROW. The difference is ACTIONABILITY, the reason ADR-0108 gives in full: a "not yet"
-     * nobody can resolve; this names WHICH THREE FONTS TO INSTALL, which an adult resolves in an afternoon. 📌 "Install a
-     * ronde font" would be the defect back — an adult does not act on a category —, which is why the message names all
-     * three.
+     * 🔴 COOKIE IS NOT THE RONDE — a joined brush script, not the hand a French classroom teaches. That is why the entry
+     * keeps a `notice` naming the three: it is the remedy for a hand that is close but not hers. 📌 "Install a ronde font"
+     * would not do — an adult does not act on a category —, so the sentence names all three (ADR-0108 §4).
      *
      * ⚠️ `role` ABSENT, so `geral`, deliberately, although the ronde is handwriting by nature: handwriting faces are
-     * filtered out of the menu (`fontRole === 'geral'`), and a filtered row can say nothing to anyone. Marking the
-     * "right" role here would erase the one thing this entry exists to do.
+     * filtered out of the menu (`fontRole === 'geral'`), and a filtered row can say nothing to anyone.
      */
     /*
      * THE PLAYWRITE FACES — #87 item 3, decided in ADR-0108 §2.
@@ -286,8 +291,8 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'pwgbs', id:'playwrite_gb_s', fam:'Playwrite GB S', fb:'cursive', role:'caligrafica', minPx:20},
     {k:'pwcu', id:'playwrite_cu', fam:'Playwrite CU', fb:'cursive', role:'caligrafica', minPx:20},
     {k:'pwpe', id:'playwrite_pe', fam:'Playwrite PE', fb:'cursive', role:'caligrafica', minPx:20},
-    {k:'ronde', id:'ronde_script', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
-      d:'font.desc.ronde', off:'font.off.ronde', minPx:18} ]},
+    {k:'ronde', id:'ronde_script', fam:'Ronde Script, OPTIFrench-Script, Merveille, Cookie', fb:'cursive',
+      d:'font.desc.ronde', notice:'font.notice.ronde', minPx:18} ]},
   // ⚠️ THE GAME'S FACE has its own group because it is neither sans, nor serif, nor handwriting — it is a PIXEL face,
   // and putting it in any of the three would say the wrong thing about it in the list.
   //
@@ -307,23 +312,39 @@ export function faceScale(it: FontItem): number { return Math.max(1, (it.minPx ?
 /** A face's role; absent in the catalogue means `geral`. */
 export function fontRole(it: FontItem): FontRole { return it.role ?? 'geral'; }
 
+/** The family names in a `fam` string, unquoted, in stack order. */
+function familiesIn(fam: string): string[] {
+  return fam.split(',').map((f) => f.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+
 /**
  * THE FAMILIES A FACE ACCEPTS, from a `fam` that may be a STACK.
  *
- * 📌 The Ronde declares three (`'Ronde Script, OPTIFrench-Script, Merveille'`) because any of them will do — three
- * drawings of the same hand, and an adult installs whichever they find. The other faces declare one, and for them this
+ * 📌 The ronde declares four (`'Ronde Script, OPTIFrench-Script, Merveille, Cookie'`): the three drawings of the same
+ * hand an adult may install, then the packaged fallback (ADR-0154). The other faces declare one, and for them this
  * returns a list of one.
  */
 export function faceFamilies(it: FontItem): string[] {
-  return it.fam.split(',').map((f) => f.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  return familiesIn(it.fam);
+}
+
+/**
+ * A `fam` as a CSS `font-family` value — each family quoted on its own: `'Ronde Script','OPTIFrench-Script',…,'Cookie'`.
+ *
+ * 🔴 QUOTING THE WHOLE STRING ONCE NAMES ONE FAMILY THAT DOES NOT EXIST. `'Ronde Script, …, Cookie'` is a single name with
+ * commas in it, so the browser skips it and draws the generic fallback — the stack would never reach Cookie, and the
+ * fallback ADR-0154 decided would exist only in the catalogue. For a one-family `fam` the result is the same `'Inter'`.
+ */
+export function familyStack(fam: string): string {
+  return familiesIn(fam).map((f) => `'${f}'`).join(',');
 }
 
 /**
  * CAN THIS FACE BE USED NOW? — `off` stops being a sentence and becomes a CONDITION.
  *
- * ADR-0012 decided the ronde option stays DISABLED WHILE no font is present, and ADR-0108 §4 added what it says. The word
- * "while" is what this function builds: an `off` face becomes available again the instant the adult installs one of the
- * ones the message names.
+ * An `off` face stays disabled WHILE none of its families is present (ADR-0012's «enquanto»), and becomes available the
+ * instant the adult installs one the message names. No catalogue face uses it today — the ronde, which did, ends its stack
+ * in a packaged face since ADR-0154 — and the mechanism stays for a face that cannot ship with a fallback.
  *
  * ⚠️ THE DETECTOR IS INJECTED, and `document.fonts` is never read here: this module is the catalogue, it runs in node in
  * the gates, and reading a browser global here would be a boot waiting to crash against an injected document.

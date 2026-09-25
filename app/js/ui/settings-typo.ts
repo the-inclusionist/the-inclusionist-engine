@@ -7,7 +7,7 @@
 
 // (No on/off toggle label here: this menu is a CHOICE, not a switch.)
 import type { Translate } from '../core/i18n.js';
-import { FONT_BY_KEY, DEFAULT_FONT_KEY, faceAvailable, faceScale } from './fonts.js';
+import { FONT_BY_KEY, DEFAULT_FONT_KEY, faceAvailable, faceScale, familyStack } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
@@ -41,13 +41,14 @@ export interface SettingsTypoCtx {
   /**
    * IS THIS FAMILY INSTALLED ON THE DEVICE? — in production, `(f) => doc.fonts.check(\`16px "${f}"\`)`.
    *
-   * It turns ADR-0012's «enquanto» into code: the Ronde option stays disabled WHILE none of the three faces is present,
-   * and becomes available again when the adult installs one.
+   * It turns ADR-0012's «enquanto» into code: an `off` face stays disabled WHILE none of its families is present, and
+   * becomes available again when the adult installs one. (The ronde no longer depends on it: its stack ends in the
+   * packaged Cookie, ADR-0154.)
    *
    * ⚠️ INJECTED, and `document.fonts` is NEVER read here, by the rule this file already follows for `$`: a browser
    * global in a module that runs in node is a boot waiting to crash.
-   * 📌 OPTIONAL, and here the default really is safe: with no detector the row stays disabled WITH the message, and the
-   * message tells the adult the three fonts that solve it. The default state is actionable.
+   * 📌 OPTIONAL, and here the default really is safe: with no detector an `off` row stays disabled WITH its message, and
+   * the message says what to install. The default state is actionable.
    */
   fontInstalled?: (family: string) => boolean;
 }
@@ -135,7 +136,8 @@ export function mountTypoInside(t: Translate, ctx: PanelShellCtx, list: HTMLElem
 /** What the kit does not know about a face: the face itself on the label, and the note in the reading face. */
 function dressRow(where: HTMLElement, row: TypoRow): void {
   const label = where.querySelector<HTMLElement>(':scope > span');
-  if (label) label.style.fontFamily = `'${row.fam}'`;
+  // the whole stack, each family quoted: the ronde's label must draw in Cookie on a device without the three (ADR-0154)
+  if (label) label.style.fontFamily = familyStack(row.fam);
   const note = where.querySelector<HTMLElement>('.opt-hint');
   if (note) { note.style.fontFamily = 'var(--font)'; note.style.margin = '0'; }
 }
@@ -145,8 +147,8 @@ function dressRow(where: HTMLElement, row: TypoRow): void {
  *
  * 🔴 THE ● / ○ MARK EXISTS BECAUSE COLOUR IS NOT STATE (see `CHOSEN_MARK`).
  *
- * 📌 THE LOCK is reflected and not built, because it can CHANGE: `ronde` becomes available the instant the adult
- * installs one of the faces the message names (ADR-0012, the word «enquanto»).
+ * 📌 THE LOCK is reflected and not built, because it can CHANGE: an `off` face becomes available the instant the adult
+ * installs one of the faces its message names (ADR-0012, the word «enquanto»).
  */
 function reflectTypo(list: HTMLElement, fontKey: string, isInstalled?: (family: string) => boolean): void {
   // Walks what EXISTS in the list, not the catalogue: reflecting is about the nodes already there, and asking the
@@ -204,7 +206,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     // drawn at its floor, never under it (ADR-0176 §4): a face asking 20 px makes the text 25% larger; the others give it back
     ctx.root.style.setProperty('--fonte-escala', String(faceScale(it)));
     const pv = ctx.$<HTMLElement>('#typo-preview');
-    if (pv) pv.style.fontFamily = `'${it.fam}'`;
+    if (pv) pv.style.fontFamily = familyStack(it.fam);
     if (announce) ctx.srSay(t('sr.typo.font', { fam: it.fam }));
   }
 
@@ -232,7 +234,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     }
     const cur = FONT_BY_KEY[fontKey];
     const pv = ctx.$<HTMLElement>('#typo-preview');
-    if (pv && cur) pv.style.fontFamily = `'${cur.fam}'`;
+    if (pv && cur) pv.style.fontFamily = familyStack(cur.fam);
     refreshMarks();
     // THE LAST THING IN RENDER, and it has to be: the rows were just relabelled with the prose inside them.
     ctx.fillExplain?.(ctx.$<HTMLElement>('#typo .overlay__card'));

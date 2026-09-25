@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FONT_GROUPS } from '../app/js/ui/fonts.js';
+import { FONT_GROUPS, faceFamilies } from '../app/js/ui/fonts.js';
 
 /** The typographic catalogue's active families (ADR-0176): what may be packaged. */
 const ATIVAS = new Set(JSON.parse(readFileSync(join(process.cwd(), 'research', 'catalogo_tipografico.json'), 'utf8'))
@@ -25,8 +25,13 @@ const CSS = ler('app', 'public', 'vendor', 'fonts.css');
 /** The families `fonts.css` declares — what the browser actually knows how to draw. */
 const DECLARADAS = new Set([...CSS.matchAll(/font-family:\s*['"]?([^;'"]+)/g)].map((m) => m[1].trim()));
 
-/** Every catalogue item, marked with whether it is OFFERABLE (not `.off`). */
-const ITENS = FONT_GROUPS.flatMap((g) => g.items.map((it) => ({ fam: it.fam, oferecivel: !it.off })));
+/**
+ * Every catalogue item, marked with whether it is OFFERABLE (not `.off`), with the families of its stack: a stack loads when
+ * ANY of them is declared — the ronde's three are never packaged and it loads through Cookie, the last (ADR-0154).
+ */
+const ITENS = FONT_GROUPS.flatMap((g) => g.items.map((it) => ({ fam: it.fam, fams: faceFamilies(it), oferecivel: !it.off })));
+/** Does any family of this item's stack have an `@font-face`? */
+const carrega = (i) => i.fams.some((f) => DECLARADAS.has(f));
 
 /**
  * 🔴 AND THE SHEET MUST BE ABLE TO CHANGE ITS MIND. This file guards that every face offered in the menu loads; the case below
@@ -104,7 +109,7 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
   });
 
   it('⚠️ [Zero] NENHUMA fonte oferecível fica sem `@font-face`', () => {
-    const fantasmas = ITENS.filter((i) => i.oferecivel && !DECLARADAS.has(i.fam)).map((i) => i.fam);
+    const fantasmas = ITENS.filter((i) => i.oferecivel && !carrega(i)).map((i) => i.fam);
     expect(fantasmas, 'a criança escolhe e o navegador desenha outra coisa, sem erro nenhum').toEqual([]);
   });
 
@@ -112,15 +117,15 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
     // ⚠️ The case measures the RULE with a planted phantom instead of counting instances in the catalogue: a disabled
     // face does not enter the phantom check. A case that needs the catalogue to hold an example of its subject fails when
     // the roster changes, which is the opposite of guarding the roster.
-    const fantasma = { fam: 'Fonte Sem Ficheiro', oferecivel: false };
-    const acusadas = [...ITENS, fantasma].filter((i) => i.oferecivel && !DECLARADAS.has(i.fam)).map((i) => i.fam);
+    const fantasma = { fam: 'Fonte Sem Ficheiro', fams: ['Fonte Sem Ficheiro'], oferecivel: false };
+    const acusadas = [...ITENS, fantasma].filter((i) => i.oferecivel && !carrega(i)).map((i) => i.fam);
     expect(acusadas, 'uma face DESLIGADA foi cobrada por não ter `@font-face`').toEqual([]);
   });
 
   it('[Interface] a folha PODE declarar mais do que o menu oferece', () => {
     // `Atkinson Hyperlegible Mono` is in the sheet and not in the menu, and ADR-0012 says why: it is the canonical face of
     // MATHS — «it is a font and it is not a choice». A face with no menu row is legitimate; a menu row with no face is not.
-    const soNaFolha = [...DECLARADAS].filter((f) => !ITENS.some((i) => i.fam === f));
+    const soNaFolha = [...DECLARADAS].filter((f) => !ITENS.some((i) => i.fams.includes(f)));
     expect(soNaFolha.length).toBeGreaterThanOrEqual(0);
   });
 
