@@ -173,6 +173,24 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
     expect(q[0]).toContain('mudou de forma');
   });
 
+  /*
+   * 🔴 A DECLARATION THAT CHANGES KIND KEEPS ITS NAME AND ITS MEMBERS, so neither the name gate nor the member rules saw
+   * it: `interface A` left the module, which read as «the type left», and the name `A` was still exported. For a consumer
+   * the two kinds are not the same thing — an interface merges with their own declaration of `A`, an alias does not.
+   */
+  it('🔴 [Right] an interface that becomes a type alias fails, with every member unchanged', () => {
+    const q = quebrasDeForma(
+      { 'm.ts': { 'interface A': ['x', 'y?'] } },
+      { 'm.ts': { 'type A': '{ x: number' } },
+    );
+    expect(q).toEqual(['m.ts  interface A  changed kind to «type A»']);
+  });
+
+  it('🔴 [Right] and the reverse — a type alias that becomes an interface — fails too', () => {
+    const q = quebrasDeForma({ 'm.ts': { 'type A': '{ x: number' } }, { 'm.ts': { 'interface A': ['x'] } });
+    expect(q).toEqual(['m.ts  type A  changed kind to «interface A»']);
+  });
+
   it('[Right] um tipo que desaparece INTEIRO não é contado aqui — já é caso do gate dos nomes', () => {
     // The same `continue` the names gate has, and for the same reason: counting it in both would make a six-line list
     // look like twelve, and the second half would say nothing the first had not said.
@@ -225,3 +243,12 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
 //   · removing the ALIAS comparison → the `KeyScheme` case fails. Without it, a union narrowing passes — and it was a
 //     union narrowing that §3 of that doc had to describe by hand.
 //   · removing the OPTIONAL→REQUIRED rule → the case of the same name fails.
+//
+// ========================= MUTATIONS OF THE DECLARATION KIND =========================
+//   · turning `export interface Spot { … }` in `core/contract.ts` into `export type Spot = { … }` (members untouched) →
+//     `[Zero] NENHUM tipo mudou de forma` fails with «interface Spot changed kind to «type Spot»». Before the kind rule
+//     the same edit passed the whole file green: the name gate still saw `Spot`, and the shape gate read «the type left».
+//   · removing the kind rule (the `push` inside `nova === undefined`) → the two kind cases fail, and so does the real-tree
+//     mutation above: it goes back to green.
+//   · keying aliases as `interface …` in the extractor → the real-tree case and the extractor case fail: the kind the
+//     rule reads comes from that key.

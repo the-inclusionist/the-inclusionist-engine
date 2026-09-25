@@ -104,10 +104,24 @@ export function formaDe(raizAppJs) {
 }
 
 /**
+ * The same name under the OTHER declaration kind: `interface X` ↔ `type X`. The key of each entry carries the kind, and
+ * this is what reads it.
+ */
+function otherKindKey(key) {
+  const [kind, name] = key.split(' ');
+  return `${kind === 'interface' ? 'type' : 'interface'} ${name}`;
+}
+
+/**
  * What changed shape and BREAKS whoever consumes it.
  *
  * ⚠️ A type that disappeared entirely does NOT go in here: its name is already the name gate's case, and counting it in
  * both would make a list of six lines look like twelve. It is the same `continue` that gate has, for the same reason.
+ *
+ * 🔴 BUT A TYPE THAT CHANGED KIND DID NOT DISAPPEAR, and the name gate cannot see it: `X` is still exported. An `interface`
+ * merges with a consumer's own declaration of the same name (module augmentation) and a `type` alias does not; an alias of
+ * an object literal is assignable to an index signature and an interface is not. Either direction can break a consumer
+ * with every member unchanged, so the kind is part of the shape.
  */
 export function quebrasDeForma(antes, agora) {
   const fora = [];
@@ -116,7 +130,11 @@ export function quebrasDeForma(antes, agora) {
     if (!hoje) continue; // the whole module left — the name gate's case
     for (const [tipo, forma] of Object.entries(tipos)) {
       const nova = hoje[tipo];
-      if (nova === undefined) continue; // the type left — likewise
+      if (nova === undefined) {
+        const other = otherKindKey(tipo);
+        if (hoje[other] !== undefined) fora.push(`${modulo}  ${tipo}  changed kind to «${other}»`);
+        continue; // otherwise the type left — likewise
+      }
 
       if (typeof forma === 'string' || typeof nova === 'string') {
         if (forma !== nova) fora.push(`${modulo}  ${tipo}  mudou de forma: «${forma}» → «${nova}»`);
