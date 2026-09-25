@@ -4,13 +4,6 @@
     "core/contract.ts": [
       "dimension"
     ],
-    "core/state.ts": [
-      "emit",
-      "initVizMode",
-      "setWheelchairValue",
-      "vizMode",
-      "wheelchair"
-    ],
     "input/transports.ts": [
       "holds"
     ],

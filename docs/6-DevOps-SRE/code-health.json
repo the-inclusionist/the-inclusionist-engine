@@ -33,7 +33,6 @@
     "core/i18n.ts",
     "core/loop.ts",
     "core/rng.ts",
-    "core/state.ts",
     "input/keyboard.ts",
     "input/pad-defaults.ts",
     "input/pad-wizard.ts",
@@ -65,13 +64,13 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2107,
+      "codeLines": 2109,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 88,
       "globalReach": 1,
       "worstFunction": 70,
-      "statefulEdges": 24,
+      "statefulEdges": 23,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
@@ -80,7 +79,6 @@
         "core/a11y-sr.ts",
         "core/i18n.ts",
         "core/loop.ts",
-        "core/state.ts",
         "input/keyboard.ts",
         "input/pad-defaults.ts",
         "input/pad-wizard.ts",
@@ -426,38 +424,14 @@
       "fanIn": 3
     },
     "core/state.ts": {
-      "codeLines": 208,
-      "decisionNodes": 28,
+      "codeLines": 244,
+      "decisionNodes": 26,
       "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "holds": [
-        "let blindMode",
-        "let cameraControl",
-        "let caneBlockDiv",
-        "let captionPpm",
-        "let captionsOn",
-        "let cbSafe",
-        "let gameSpeed",
-        "let hcOutlineBg",
-        "let hcOutlineFg",
-        "let inputCooldown",
-        "let letterCase",
-        "let menuIndexOn",
-        "let noGripStrength",
-        "let oneButton",
-        "let ownerColors",
-        "let port",
-        "let speechPpm",
-        "let switchScan",
-        "let vizMode",
-        "let voiceControl",
-        "let wheelchair",
-        "mutated _subs"
-      ]
+      "fanIn": 1
     },
     "core/visual-cycles.ts": {
       "codeLines": 13,
@@ -1544,6 +1518,16 @@
         "render/lq-filter.ts"
       ]
     },
+    "ui/aac-sets.ts": {
+      "codeLines": 37,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 3,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
     "ui/audio-choices.ts": {
       "codeLines": 45,
       "decisionNodes": 3,
@@ -1561,16 +1545,6 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 0,
-      "fanIn": 1
-    },
-    "ui/aac-sets.ts": {
-      "codeLines": 37,
-      "decisionNodes": 3,
-      "maxDepth": 1,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 3,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -1967,16 +1941,6 @@
       "statefulEdges": 0,
       "fanIn": 1
     },
-    "ui/settings-audio.ts": {
-      "codeLines": 401,
-      "decisionNodes": 66,
-      "maxDepth": 4,
-      "fanOut": 7,
-      "globalReach": 0,
-      "worstFunction": 10,
-      "statefulEdges": 0,
-      "fanIn": 1
-    },
     "ui/settings-aac.ts": {
       "codeLines": 138,
       "decisionNodes": 21,
@@ -1986,6 +1950,16 @@
       "worstFunction": 6,
       "statefulEdges": 0,
       "fanIn": 0
+    },
+    "ui/settings-audio.ts": {
+      "codeLines": 401,
+      "decisionNodes": 66,
+      "maxDepth": 4,
+      "fanOut": 7,
+      "globalReach": 0,
+      "worstFunction": 10,
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/settings-controls.ts": {
       "codeLines": 178,
