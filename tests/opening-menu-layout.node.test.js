@@ -32,7 +32,7 @@ const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8')
  *  `[Zero]` failed first when this file was written, and for the right reason.) */
 const LIMPO = CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-/** The opening menu's five submenus. `#tm-main` is left OUT on purpose: it is the short list, with no scrolling. */
+/** The opening menu's five submenus. `#tm-main` is left OUT of the per-id cases: its scroll comes from `.title-menu` (below). */
 const SUBMENUS = ['#tm-alf', '#tm-mat', '#tm-tab', '#tm-fr', '#tm-cen'];
 
 const BLOCO = /([^{}]+)\{([^}]*)\}/g;
@@ -94,6 +94,13 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
       .filter((s) => !/auto|scroll/.test(prop(s, 'overflow-y') || '') || !prop(s, 'max-height'))
       .map((s) => `${s}: overflow-y=${prop(s, 'overflow-y')} max-height=${prop(s, 'max-height')}`);
     expect(faltam, 'submenu sem rolagem declarada — os itens do fim saem do quadro: ' + faltam.join(' | ')).toEqual([]);
+  });
+
+  it('🔴 [Right] EVERY opening menu scrolls by its CLASS — the main one included, and one a game adds (ADR-0130 rule 5)', () => {
+    // The five submenus got their scroll one id at a time and `#tm-main` never did: with twenty items it left a 360 px stage
+    // by 208 px at the top. The browser half measures it (`no-menu-leaves-the-canvas`); this half names the declaration.
+    expect(/auto|scroll/.test(prop('.title-menu', 'overflow-y') || ''), '.title-menu does not scroll').toBe(true);
+    expect(prop('.title-menu', 'max-height'), '.title-menu has no height to scroll within').toBeTruthy();
   });
 
   it('[Boundary] o item que ganha o foco não fica embaixo do cabeçalho grudado', () => {

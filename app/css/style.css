@@ -107,6 +107,10 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;max-height:none}
 .title-legend{position:absolute;left:0;right:0;bottom:8px}                 /* FOOTER, like the pause legend */
 .title-menu{display:flex;flex-direction:column;gap:.35em;align-items:stretch;padding:2px;width:13em;margin:0 auto} /* a fixed, LEAN width */
+/* NO MENU LEAVES THE CANVAS (ADR-0130 rule 5): every opening menu scrolls when its items outgrow the frame — a RULE of the
+   class, so a menu a game adds inherits it. The main menu had no scroll: with twenty items it ran 208 px above and 288 px
+   below a 360 px stage, and its first and last items could not be reached. */
+.title-menu{max-height:72%;overflow-y:auto;overflow-x:hidden}
 .title-menu[hidden]{display:none}
 /* THE WIDTH FOLLOWS THE WIDEST ITEM (ADR-0130 rule 6, issue #134). A fixed width is a translation defect that only
    shows after translation: a label that fits in Portuguese wraps onto two lines, or is cut, in a longer language — and a
