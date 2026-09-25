@@ -156,27 +156,6 @@ const QUESTIONS: readonly Question[] = [
   { enunciado: 'quiz.p3', alternativas: ['quiz.p3.a', 'quiz.p3.b', 'quiz.p3.c', 'quiz.p3.d'], certa: 2 },
 ];
 
-let atual = 0;
-let foco = 0;
-let correctCount = 0;
-/** The question whose statement and options were last narrated — see `narrationOnDraw`. */
-let narratedQuestion = -1;
-let motor: Engine | null = null;
-/** The quiz announces through ITS engine's announcer (ADR-0232 D4): the same regions, and the Libras mirror if one is connected. */
-const srSay = (text: string): void => { motor?.say(text); };
-const srAlert = (text: string): void => { motor?.alert(text); };
-/**
- * THE QUIZ'S WORDS, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
- *
- * 📌 LATE-BOUND, because the words this quiz hands `createGame` — the «how to play» texts, the positions' names, the
- * accommodations' labels — are asked for WHILE the engine is being built, before its handle exists: the boot checks that
- * none is blank. Until then this answers the key itself, which is not blank and is never shown; every word a child
- * reads is read later, through a getter, in the engine's language.
- */
-const translate: Translate = (key, params) => (motor ? motor.t(key, params) : key);
-
-const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
-
 /** Marcação de uma pergunta. Pura: recebe estado, devolve texto — testável sem DOM. */
 export function questionHtml(t: Translate, p: Question, selecionada: number): string {
   // O enunciado e as alternativas são CHAVES: resolvem-se no instante de desenhar, e é isso que faz a troca de
@@ -276,184 +255,165 @@ export function endText(t: Translate, gotItRight: number, total: number): string
   return t('quiz.fim', { n: gotItRight, m: total });
 }
 
-function render(): void {
-  const app = $<HTMLElement>('#quiz-app');
-  if (!app) return;
-  const p = QUESTIONS[atual];
-  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(translate, correctCount, QUESTIONS.length))}</h2>`; return; }
-  app.innerHTML = questionHtml(translate, p, foco);
-  // a narração é do consumidor: a engine só empresta a voz
-  // the «N de M» follows the child's choice, which the page asks its engine for — it reads no settings store (ADR-0232)
-  const fala = narrationOnDraw(translate, p, atual, foco, narratedQuestion, motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
-  narratedQuestion = fala.narrada;
-  motor?.tts.narrate(fala.texto);
-  app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
-    b.addEventListener('click', () => answer(Number(b.dataset.alt)));
-  });
-  /*
-   * ⚠️ O FOCO SÓ VOLTA PARA A PERGUNTA SE A CRIANÇA JÁ ESTAVA NELA. Este `focus()` existe para o teclado seguir a
-   * opção escolhida; mas um desenho pode acontecer por um motivo que não é dela — e desde 23/09 acontece: trocar o
-   * idioma redesenha a atividade (ADR-0225). 📏 Medido: com um painel de ajustes aberto, o redesenho arrancava o
-   * foco do painel e punha-o numa alternativa por trás do véu.
+/**
+ * THE PAGE THE QUIZ BOOTS IN — its document and window, handed over by the page (`app/quiz.html`, an inline module script).
+ *
+ * 🔴 ADR-0232 D4: the quiz booted itself at import, reading the global `document`, and kept the round (question, cursor,
+ * score, engine) in module-level bindings — so a second quiz on the page, or a second test file, shared one round. The page
+ * is the host: it calls `bootQuiz({ doc: document, win: window })`, and everything the round holds lives in that call.
+ */
+export interface QuizHost {
+  readonly doc: Document;
+  readonly win: Window;
+}
+
+/** Boot. The page calls it; a test calls it over the page it built. Returns the engine it mounted. */
+export function bootQuiz({ doc, win }: QuizHost): Engine {
+  let atual = 0;
+  let foco = 0;
+  let correctCount = 0;
+  /** The question whose statement and options were last narrated — see `narrationOnDraw`. */
+  let narratedQuestion = -1;
+  let motor: Engine | null = null;
+  /**
+   * ANSWERING BY SPEAKING (ADR-0216, issue #200) — the child says an option out loud and this quiz receives the TEXT.
    *
-   * 📌 É a mesma regra que a conversão dos painéis para nós ensinou, deste lado da fronteira: um redesenho não move
-   * o cursor de quem está noutro sítio. `body` e ninguém contam como «não está noutro sítio».
+   * 📌 It is the whole cartridge side of the reading port, and it is meant to be read as such: `uses: { reading: true }` below,
+   * `listen()` here, a rule of its own on the words. No microphone, no model, no language, no path — the engine's business.
+   *
+   * ⚠️ NOTHING IS SPOKEN WHILE THE MICROPHONE IS OPEN. The statement is REPLACED by the line on screen instead of narrated,
+   * because the engine's own voice would be recorded as if the child had said it.
+   * ⚠️ And no reading is asked for with a ceiling of its own: how long a child takes to BEGIN is not something a quiz knows,
+   * and a game that shortened it would cut the children this exists for.
    */
-  const outsideQuiz = document.activeElement
-    && document.activeElement !== document.body
-    && !app.contains(document.activeElement);
-  const alvo = app.querySelector<HTMLElement>(`button[data-alt="${foco}"]`);
-  if (alvo && !outsideQuiz) alvo.focus();
-}
+  let listening = false;
+  /**
+   * THE QUIZ'S WORDS, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
+   *
+   * 📌 LATE-BOUND, because the words this quiz hands `createGame` — the «how to play» texts, the positions' names, the
+   * accommodations' labels — are asked for WHILE the engine is being built, before its handle exists: the boot checks that
+   * none is blank. Until then this answers the key itself, which is not blank and is never shown; every word a child
+   * reads is read later, through a getter, in the engine's language.
+   */
+  const translate: Translate = (key, params) => (motor ? motor.t(key, params) : key);
+  /**
+   * The quiz's announcements go through ITS ENGINE's announcer (ADR-0232 D4) — the same regions, and the same Libras mirror
+   * if the page connects one. Nothing is announced before the engine exists.
+   */
+  const alert = (text: string): void => { motor?.alert(text); };
+  const say = (text: string): void => { motor?.say(text); };
 
-/**
- * ANSWERING BY SPEAKING (ADR-0216, issue #200) — the child says an option out loud and this quiz receives the TEXT.
- *
- * 📌 It is the whole cartridge side of the reading port, and it is meant to be read as such: `uses: { reading: true }` above,
- * `listen()` here, a rule of its own on the words. No microphone, no model, no language, no path — the engine's business.
- *
- * ⚠️ NOTHING IS SPOKEN WHILE THE MICROPHONE IS OPEN. The statement is REPLACED by the line on screen instead of narrated,
- * because the engine's own voice would be recorded as if the child had said it.
- * ⚠️ And no reading is asked for with a ceiling of its own: how long a child takes to BEGIN is not something a quiz knows,
- * and a game that shortened it would cut the children this exists for.
- */
-let listening = false;
+  const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
 
-/** Puts a line where the statement is — the same box, so nothing below it moves — and gives the statement back after it is read. */
-function sayInStatement(texto: string, backToStatement = true): void {
-  const h2 = $<HTMLElement>('#quiz-app .quiz-pergunta');
-  if (h2) h2.textContent = texto;
-  srAlert(texto);
-  const p = QUESTIONS[atual];
-  // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
-  if (backToStatement && p) setTimeout(() => {
-    const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
-    if (alvo && !listening) alvo.textContent = translate(p.enunciado);
-  }, captionDuration(texto, 125));
-}
-
-async function listenForAnswer(): Promise<void> {
-  const p = QUESTIONS[atual];
-  if (!motor || !p || listening) return;
-  const pode = await motor.reading.ready();
-  if (!pode.can) { sayInStatement(translate('quiz.semLeitura')); return; }
-  listening = true;
-  sayInStatement(translate('quiz.ouvindo'), false);
-  try {
-    const heard = await motor.reading.listen();
-    listening = false;
-    // the options' WORDS in the child's language, never their keys: she says «galinha», not «quiz.p1.b»
-    const chosen = heardAlternative(heard.text, p.alternativas.map((a) => translate(a)));
-    if (chosen !== null) { answer(chosen); return; }
-    const texto = heard.text.trim();
-    sayInStatement(texto ? translate('quiz.naoEntendi', { texto }) : translate('quiz.ouviNada'));
-  } catch {
-    // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
-    listening = false;
-    sayInStatement(translate('quiz.semLeitura'));
+  function render(): void {
+    const app = $<HTMLElement>('#quiz-app');
+    if (!app) return;
+    const p = QUESTIONS[atual];
+    if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(translate, correctCount, QUESTIONS.length))}</h2>`; return; }
+    app.innerHTML = questionHtml(translate, p, foco);
+    // a narração é do consumidor: a engine só empresta a voz
+    // the «N de M» follows the child's choice, which the page asks its engine for — it reads no settings store (ADR-0232)
+    const fala = narrationOnDraw(translate, p, atual, foco, narratedQuestion, motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
+    narratedQuestion = fala.narrada;
+    motor?.tts.narrate(fala.texto);
+    app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
+      b.addEventListener('click', () => answer(Number(b.dataset.alt)));
+    });
+    /*
+     * ⚠️ O FOCO SÓ VOLTA PARA A PERGUNTA SE A CRIANÇA JÁ ESTAVA NELA. Este `focus()` existe para o teclado seguir a
+     * opção escolhida; mas um desenho pode acontecer por um motivo que não é dela — e desde 23/09 acontece: trocar o
+     * idioma redesenha a atividade (ADR-0225). 📏 Medido: com um painel de ajustes aberto, o redesenho arrancava o
+     * foco do painel e punha-o numa alternativa por trás do véu.
+     *
+     * 📌 É a mesma regra que a conversão dos painéis para nós ensinou, deste lado da fronteira: um redesenho não move
+     * o cursor de quem está noutro sítio. `body` e ninguém contam como «não está noutro sítio».
+     */
+    const outsideQuiz = doc.activeElement
+      && doc.activeElement !== doc.body
+      && !app.contains(doc.activeElement);
+    const alvo = app.querySelector<HTMLElement>(`button[data-alt="${foco}"]`);
+    if (alvo && !outsideQuiz) alvo.focus();
   }
-}
 
-function answer(i: number): void {
-  const p = QUESTIONS[atual];
-  if (!p) return;
-  const gotItRight = i === p.certa;
-  if (gotItRight) correctCount++;
-  srAlert(answerText(translate, gotItRight, translate(p.alternativas[p.certa] ?? '')));
-  atual++;
-  foco = 0;
-  setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
-}
+  /** Puts a line where the statement is — the same box, so nothing below it moves — and gives the statement back after it is read. */
+  function sayInStatement(texto: string, backToStatement = true): void {
+    const h2 = $<HTMLElement>('#quiz-app .quiz-pergunta');
+    if (h2) h2.textContent = texto;
+    alert(texto);
+    const p = QUESTIONS[atual];
+    // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
+    if (backToStatement && p) win.setTimeout(() => {
+      const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
+      if (alvo && !listening) alvo.textContent = translate(p.enunciado);
+    }, captionDuration(texto, 125));
+  }
 
-/**
- * WHAT THE QUIZ EXECUTES FOR EACH VIRTUAL BUTTON (ADR-0111 and its erratum; issue #197): the engine takes the hardware — the keyboard by
- * the child's scheme, the eyes, any transport — and carries the button's virtual name here; this is the quiz's map, the same one its
- * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
- * could only reach it by disguising itself as a keyboard.
- */
-const ON_BUTTON: Partial<Record<VirtualCommand['action'], (total: number) => void>> = {
-  down: (total) => { foco = nextFocus(foco, 1, total); render(); },
-  up: (total) => { foco = nextFocus(foco, -1, total); render(); },
-  // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
-  action2: () => { motor?.scenes.input('confirm'); },
-  // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
-  // changed her mind should not have to wait out the ceiling with the microphone open.
-  action1: () => { void listenForAnswer(); },
-  action3: () => { if (listening) motor?.reading.stop(); },
-  // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
-  // option under the cursor: pointing at the right option would be cheating.
-  rightShoulder: () => { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); },
-};
+  async function listenForAnswer(): Promise<void> {
+    const p = QUESTIONS[atual];
+    if (!motor || !p || listening) return;
+    const pode = await motor.reading.ready();
+    if (!pode.can) { sayInStatement(translate('quiz.semLeitura')); return; }
+    listening = true;
+    sayInStatement(translate('quiz.ouvindo'), false);
+    try {
+      const heard = await motor.reading.listen();
+      listening = false;
+      // the options' WORDS in the child's language, never their keys: she says «galinha», not «quiz.p1.b»
+      const chosen = heardAlternative(heard.text, p.alternativas.map((a) => translate(a)));
+      if (chosen !== null) { answer(chosen); return; }
+      const texto = heard.text.trim();
+      sayInStatement(texto ? translate('quiz.naoEntendi', { texto }) : translate('quiz.ouviNada'));
+    } catch {
+      // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
+      listening = false;
+      sayInStatement(translate('quiz.semLeitura'));
+    }
+  }
 
-/** A button with no row does nothing in this quiz; only a PRESS counts — a release is not a second press. */
-function handleCommand(cmd: VirtualCommand): void {
-  const p = QUESTIONS[atual];
-  if (!p || !cmd.pressed) return;
-  ON_BUTTON[cmd.action]?.(p.alternativas.length);
-}
+  function answer(i: number): void {
+    const p = QUESTIONS[atual];
+    if (!p) return;
+    const gotItRight = i === p.certa;
+    if (gotItRight) correctCount++;
+    alert(answerText(translate, gotItRight, translate(p.alternativas[p.certa] ?? '')));
+    atual++;
+    foco = 0;
+    win.setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
+  }
 
-/**
- * A DECLARAÇÃO DESTE JOGO — os sete campos do `core/contract` (ADR-0030).
- *
- * Um quiz é o caso extremo de propósito: SEM ESPAÇO NENHUM, só ordem. A topologia é `hotspots`, a distância é
- * diferença de índice, e o turno é do JOGADOR — o tempo não pressiona, que é o que a WCAG 2.2.1 pede e o que
- * separa este gênero da plataforma sem uma linha de condicional na engine.
- *
- * Não é o `genre-quiz` do ADR-0030: um preset é um pacote que outros quizzes reusam, e isto é a declaração de
- * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
- * mostra que os sete campos cabem num jogo que não tem mundo.
- */
-function declareQuiz(questions: readonly Question[]): GameDeclaration {
-  const sequence = questions.map((_, i) => `q${i + 1}`);
-  return {
-    topology: () => ({ kind: 'hotspots', order: sequence }),
-    // ⚠️ O MUNDO DESTE JOGO É DOM, e é exatamente o caso que o campo existe para consertar. A engine
-    // implementava «mundo» como a canvas do PixiJS; aqui não há canvas nenhuma a olhar, e uma
-    // simulação de cegueira apagaria o que ninguém vê deixando as alternativas legíveis — a
-    // simulação ao contrário. Ver o bloco 8 de `core/contract`.
-    world: () => ({ kind: 'element', selector: '#game-region' }),
-    // ⚠️ UM. Um quiz nunca pede dois dedos ao mesmo tempo: escolher uma alternativa é um comando de cada vez,
-    // e navegar entre elas também. É a resposta mais fácil do contrato inteiro, e é justamente por isso que
-    // ela vale escrita — o jogo que declara 1 fica jogável em QUALQUER transporte, incluindo os de olhar, de
-    // sopro e de um acionador só, e é isso que o campo obrigatório torna visível em vez de acidental.
-    holdsAtOnce: () => 1,
-    // 🔴 FALSO, E ESTE JOGO É A PROVA DE QUE OS DOIS CAMPOS SÃO PERGUNTAS DIFERENTES. Ele declara `1` acima e
-    // não segura tecla NENHUMA: escolher uma alternativa é tocar e largar. O `1` está lá porque o contrato
-    // recusa zero — e foi essa colisão que fez o Dev revogar uma cláusula sua do mesmo dia: «Nem todo jogo
-    // precisa de alternância, somente os que precisam de tecla segurando» (ADR-0115).
-    // 📌 A consequência aqui é visível: a criança que abre a acessibilidade deste quiz **não vê** o controle
-    // de alternância. Não desabilitado com um motivo — AUSENTE, porque não há nada que ele pudesse fazer.
-    holdsKeys: () => false,
-    tick: 'player',
-    // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
-    roleAt: (at) => (at.x === atual ? 'goal' : 'free'),
-    // O nome é curto DE PROPÓSITO: quem ouve o sonar quer saber PARA ONDE ir, não o enunciado inteiro. O
-    // enunciado a criança já recebe pela narração, ao entrar na pergunta. Confundir os dois faz o sonar ler
-    // um parágrafo a cada toque — e o sonar existe para ser tocado muitas vezes.
-    nameAt: (at) => (questions[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
-    // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
-    focusOf: () => ({ id: 'p0', at: { x: atual, y: foco }, heading: 'none' }),
-    // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é "acertos de perguntas", e a engine não sabe
-    // (nem precisa saber) o que é uma moeda para montar a mesma frase de progresso.
-    objectiveOf: () => ({
-      name: { text: 'perguntas', gender: 'f', plural: true },
-      have: correctCount, need: questions.length,
-    }),
-    // A segunda metade do campo 5: ONDE está o que ainda conta. Num quiz é uma posição só — a pergunta
-    // corrente —, e é justamente por ser tão pobre que ela mostra a forma certa da pergunta: a engine não
-    // varre nada, ela recebe a lista e compara distâncias na métrica declarada.
-    targetsOf: () => (atual < questions.length ? [{ x: atual, y: 0 }] : []),
+  /**
+   * WHAT THE QUIZ EXECUTES FOR EACH VIRTUAL BUTTON (ADR-0111 and its erratum; issue #197): the engine takes the hardware — the keyboard by
+   * the child's scheme, the eyes, any transport — and carries the button's virtual name here; this is the quiz's map, the same one its
+   * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
+   * could only reach it by disguising itself as a keyboard.
+   */
+  const ON_BUTTON: Partial<Record<VirtualCommand['action'], (total: number) => void>> = {
+    down: (total) => { foco = nextFocus(foco, 1, total); render(); },
+    up: (total) => { foco = nextFocus(foco, -1, total); render(); },
+    // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
+    action2: () => { motor?.scenes.input('confirm'); },
+    // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
+    // changed her mind should not have to wait out the ceiling with the microphone open.
+    action1: () => { void listenForAnswer(); },
+    action3: () => { if (listening) motor?.reading.stop(); },
+    // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
+    // option under the cursor: pointing at the right option would be cheating.
+    rightShoulder: () => { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); },
   };
-}
 
-/** Boot. Exportado para o teste poder montá-lo num DOM de mentira sem depender do carregamento do módulo. */
-function bootQuiz(): void {
+  /** A button with no row does nothing in this quiz; only a PRESS counts — a release is not a second press. */
+  function handleCommand(cmd: VirtualCommand): void {
+    const p = QUESTIONS[atual];
+    if (!p || !cmd.pressed) return;
+    ON_BUTTON[cmd.action]?.(p.alternativas.length);
+  }
+
   // A ENGINE INTEIRA, numa chamada. Antes eram nove inicializações à mão nesta função, em ordem que só o
   // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
   // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
-  motor = createGame({
-    declaration: declareQuiz(QUESTIONS),
-    host: { doc: document, win: window, cvdHost: $<SVGElement>('#q-cvd') },
+  const engine = createGame({
+    declaration: declareQuiz(QUESTIONS, { current: () => atual, focus: () => foco, correct: () => correctCount }),
+    host: { doc, win, cvdHost: $<SVGElement>('#q-cvd') },
     // Um quiz não tem ator de pausa. Declarado, e não deduzido de getters que devolvem null — ver o achado 10 e o
     // cabeçalho do `boot/create-game`. (O assistente de mapear controle não se declina: ADR-0231.)
     // ⚠️ O `semMenuDePausa` SAIU daqui em 2026-09-09 (ADR-0120), e este jogo é o motivo de ele ter existido:
@@ -519,9 +479,10 @@ function bootQuiz(): void {
       ownerColors: false, contrastOutlines: false,
     },
   });
+  motor = engine;
   // O que o hospedeiro não entregou vira lista legível em vez de painel vazio (achado 6). Num jogo de
   // verdade isto iria para a tela; aqui basta o console, porque o instrumento é lido por quem desenvolve.
-  if (motor.problems.length) console.warn('[quiz] what the host lacks:', motor.problems);
+  if (engine.problems.length) console.warn('[quiz] what the host lacks:', engine.problems);
 
   // 🔴 O PAINEL DE TIPOGRAFIA E O SELETOR DE VISÃO DESTE JOGO SAÍRAM (2026-09-12). Desenhavam um botão e uma lista na
   // zona do rodapé, que é da explicação (`CLAUDE.md` §4), e repetiam a barra rápida: a letra muda pelo ciclo de
@@ -540,7 +501,7 @@ function bootQuiz(): void {
   // e é o que o item 22 precisa: que a forma (`nome`/`draw`/`input`) cabe num jogo que NÃO tem fases — sem
   // `title`, sem `paused`, sem nada do enum da plataforma. Um segundo consumidor que precisasse inventar uma
   // fase para usar a pilha seria o achado 10 outra vez.
-  motor.scenes.push({
+  engine.scenes.push({
     name: 'perguntas',
     draw: () => render(),
     input: (intent) => {
@@ -569,9 +530,9 @@ function bootQuiz(): void {
 
   // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
-  void motor.localeReady().then(() => {
-    motor?.scenes.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
-    srSay(translate('sr.quiz.bemVindo'));
+  void engine.localeReady().then(() => {
+    engine.scenes.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
+    say(translate('sr.quiz.bemVindo'));
   });
 
   /*
@@ -587,10 +548,72 @@ function bootQuiz(): void {
    * ⚠️ E quem avisa é a ENGINE, não a janela: este cartucho não sabe — nem deve — que o evento se chama
    * `i18n:change` nem onde ele é disparado (ADR-0216).
    */
-  motor.onLocaleChange(() => { motor?.scenes.draw(); });
+  engine.onLocaleChange(() => { engine.scenes.draw(); });
+  return engine;
 }
 
-if (typeof document !== 'undefined' && document.getElementById('quiz-app')) bootQuiz();
+/** What the declaration reads of the round: the question, the option under the cursor, and how many were right. */
+interface QuizRound {
+  readonly current: () => number;
+  readonly focus: () => number;
+  readonly correct: () => number;
+}
+
+/**
+ * A DECLARAÇÃO DESTE JOGO — os sete campos do `core/contract` (ADR-0030).
+ *
+ * Um quiz é o caso extremo de propósito: SEM ESPAÇO NENHUM, só ordem. A topologia é `hotspots`, a distância é
+ * diferença de índice, e o turno é do JOGADOR — o tempo não pressiona, que é o que a WCAG 2.2.1 pede e o que
+ * separa este gênero da plataforma sem uma linha de condicional na engine.
+ *
+ * Não é o `genre-quiz` do ADR-0030: um preset é um pacote que outros quizzes reusam, e isto é a declaração de
+ * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
+ * mostra que os sete campos cabem num jogo que não tem mundo.
+ *
+ * 📌 The round arrives as three readers (ADR-0232 D4): it lives in `bootQuiz`'s call, not in this module.
+ */
+function declareQuiz(questions: readonly Question[], round: QuizRound): GameDeclaration {
+  const sequence = questions.map((_, i) => `q${i + 1}`);
+  return {
+    topology: () => ({ kind: 'hotspots', order: sequence }),
+    // ⚠️ O MUNDO DESTE JOGO É DOM, e é exatamente o caso que o campo existe para consertar. A engine
+    // implementava «mundo» como a canvas do PixiJS; aqui não há canvas nenhuma a olhar, e uma
+    // simulação de cegueira apagaria o que ninguém vê deixando as alternativas legíveis — a
+    // simulação ao contrário. Ver o bloco 8 de `core/contract`.
+    world: () => ({ kind: 'element', selector: '#game-region' }),
+    // ⚠️ UM. Um quiz nunca pede dois dedos ao mesmo tempo: escolher uma alternativa é um comando de cada vez,
+    // e navegar entre elas também. É a resposta mais fácil do contrato inteiro, e é justamente por isso que
+    // ela vale escrita — o jogo que declara 1 fica jogável em QUALQUER transporte, incluindo os de olhar, de
+    // sopro e de um acionador só, e é isso que o campo obrigatório torna visível em vez de acidental.
+    holdsAtOnce: () => 1,
+    // 🔴 FALSO, E ESTE JOGO É A PROVA DE QUE OS DOIS CAMPOS SÃO PERGUNTAS DIFERENTES. Ele declara `1` acima e
+    // não segura tecla NENHUMA: escolher uma alternativa é tocar e largar. O `1` está lá porque o contrato
+    // recusa zero — e foi essa colisão que fez o Dev revogar uma cláusula sua do mesmo dia: «Nem todo jogo
+    // precisa de alternância, somente os que precisam de tecla segurando» (ADR-0115).
+    // 📌 A consequência aqui é visível: a criança que abre a acessibilidade deste quiz **não vê** o controle
+    // de alternância. Não desabilitado com um motivo — AUSENTE, porque não há nada que ele pudesse fazer.
+    holdsKeys: () => false,
+    tick: 'player',
+    // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
+    roleAt: (at) => (at.x === round.current() ? 'goal' : 'free'),
+    // O nome é curto DE PROPÓSITO: quem ouve o sonar quer saber PARA ONDE ir, não o enunciado inteiro. O
+    // enunciado a criança já recebe pela narração, ao entrar na pergunta. Confundir os dois faz o sonar ler
+    // um parágrafo a cada toque — e o sonar existe para ser tocado muitas vezes.
+    nameAt: (at) => (questions[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
+    // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
+    focusOf: () => ({ id: 'p0', at: { x: round.current(), y: round.focus() }, heading: 'none' }),
+    // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é "acertos de perguntas", e a engine não sabe
+    // (nem precisa saber) o que é uma moeda para montar a mesma frase de progresso.
+    objectiveOf: () => ({
+      name: { text: 'perguntas', gender: 'f', plural: true },
+      have: round.correct(), need: questions.length,
+    }),
+    // A segunda metade do campo 5: ONDE está o que ainda conta. Num quiz é uma posição só — a pergunta
+    // corrente —, e é justamente por ser tão pobre que ela mostra a forma certa da pergunta: a engine não
+    // varre nada, ela recebe a lista e compara distâncias na métrica declarada.
+    targetsOf: () => (round.current() < questions.length ? [{ x: round.current(), y: 0 }] : []),
+  };
+}
 
 /** The quiz drawn small, for its «how to play» slides: the question bar and four options, `marcada` outlined (−1: none). */
 function drawQuizFigure(ctx: CanvasRenderingContext2D, w: number, h: number, marcada: number): void {

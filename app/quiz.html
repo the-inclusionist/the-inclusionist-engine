@@ -89,6 +89,12 @@
     </div>
   </main>
 
-  <script type="module" src="js/consumer-quiz/main-quiz.ts"></script>
+  <!-- THE PAGE IS THE HOST (ADR-0232 D4): it hands the quiz its document and window. The module no longer boots itself at
+       import reading the globals. Vite bundles this inline module into the page's entry chunk, so the built page runs no
+       inline script (the CSP's `script-src 'self'`). -->
+  <script type="module">
+    import { bootQuiz } from './js/consumer-quiz/main-quiz.ts';
+    bootQuiz({ doc: document, win: window });
+  </script>
 </body>
 </html>

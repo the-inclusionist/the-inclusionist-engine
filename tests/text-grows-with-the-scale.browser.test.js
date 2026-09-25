@@ -45,7 +45,7 @@ beforeAll(async () => {
   palco = document.querySelector('.stage-wrap');
   regiao = document.getElementById('game-region');
   palco.style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 });
 

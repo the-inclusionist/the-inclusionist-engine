@@ -27,7 +27,7 @@ beforeAll(async () => {
   const corpo = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.body.innerHTML = corpo;
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 });
 

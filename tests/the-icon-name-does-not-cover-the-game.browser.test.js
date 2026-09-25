@@ -40,7 +40,7 @@ beforeAll(async () => {
     .replace(/<script[\s\S]*?<\/script>/g, '');
   palco = document.querySelector('.stage-wrap');
   palco.style.cssText = 'width:640px;height:360px;display:flex;flex:none';
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await esperar(150);
 });
 

@@ -43,7 +43,7 @@ beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.querySelector('.stage-wrap').style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await ate(() => document.querySelector('#title-icons .pi-btn[data-pi="tts"]') && document.querySelector('.quiz-alt.is-on'));
   regiao = document.getElementById('game-region');
 });

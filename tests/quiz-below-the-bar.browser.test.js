@@ -21,7 +21,7 @@ beforeAll(async () => {
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.body.innerHTML = corpo;
   // importing the module boots it, because the page now has #quiz-app — the same path as the real page
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 });
 

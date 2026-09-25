@@ -61,7 +61,7 @@ beforeAll(async () => {
     new MutationObserver(() => { if (el.textContent) into.push(el.textContent); })
       .observe(el, { childList: true, characterData: true, subtree: true });
   }
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   for (let i = 0; i < 40 && !document.querySelector('.quiz-alts'); i++) await esperar(50);
   await esperar(150);
   regiao = document.getElementById('game-region');

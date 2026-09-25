@@ -22,7 +22,7 @@ beforeAll(async () => {
   window.speechSynthesis.speak = (u) => { falas.push(u.text); };
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
-  await import('../app/js/consumer-quiz/main-quiz.ts');
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
   // ⚠️ No `core/i18n` import: it would make this the test of an engine module, and the boundary gate would count the
   // quiz's own class names as a debt (measured). And `<html lang>` is no signal either — the runner's page is born «en».
   // The wait is for the first DRAW, whenever it comes: drawn in the gap, it comes at once and in Portuguese.
