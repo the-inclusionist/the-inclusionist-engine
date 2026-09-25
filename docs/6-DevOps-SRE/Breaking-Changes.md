@@ -3350,6 +3350,30 @@ imports `initSettingsCaa` from `@the-inclusionist/engine/ui/settings-caa.js` (li
 `openCaa` in its `ShellCtx` (line 2099). `game-2048` names the `caa` pause action in comments only; `game-chess`,
 `game-pinball`, `game-soccer`, `game-whackwhack` and `pixi-15-puzzle` use none of it.
 
+## CY · ADR-0232 D4-B1: the announcer, Libras, the loop's crash notice, the shared RNG and the UI shells (issue #207)
+
+_Reserved: the rows land with the batch._
+
+## CZ · ADR-0232 D4-B2: the settings store becomes a factory (issue #207)
+
+_Reserved: the rows land with the batch._
+
+## DA · ADR-0232 D4-B3: the input state, keyboard config, pad tables and pad maps become factories (issue #207)
+
+_Reserved: the rows land with the batch._
+
+## DB · ADR-0232 D4-B4: audio and speech receive the browser (issue #207)
+
+_Reserved: the rows land with the batch._
+
+## DC · ADR-0232 D4-B5: heavy files and the recognisers receive the browser (issue #207)
+
+_Reserved: the rows land with the batch._
+
+## DD · ADR-0232 D4-B6: render and layout become factories (issue #207)
+
+_Reserved: the rows land with the batch._
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
