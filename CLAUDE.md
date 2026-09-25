@@ -147,7 +147,7 @@ registro declara o endereço, com README que diz que está vazio (**ADR-0067**),
 do GitHub, privada até o ato (**ADR-0066**).
 
 - **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `ADR-0010-non-negotiable-pillars.yaml`, no `the-inclusionist-docs`. 10 pilares:
-  hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
+  hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras pelo modo pessoa surda do ADR-0234 — sons com legenda e o sonar a chamar o intérprete VLibras, sem motor zdog) · i18n ·
   conformidade LGPD/COPPA/China/Nórdicos (**a lei local da região de implantação vence**; a "regra mais rígida
   vence" foi aposentada pelo ADR-0010 por ser autocontraditória — ela faria a norma chinesa valer no Brasil) · pixel 320×180 (Libras 420×180) · telemetria
   1EdTech+xAPI com privacidade infantil rígida · multiplayer em telas separadas (sem split-screen) · **offline: PWA no primeiro dia ONLINE, depois OFFLINE-FIRST** ·
