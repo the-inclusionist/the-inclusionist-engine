@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // input/voice-map — THE WORDS A CHILD SAYS, AND THE POSITION EACH ONE PRESSES (ADR-0204 erratum; issues #184, #190).
 //
-// This is the pure half of playing by voice: a table of words per language, a closed grammar built from it, and the rule that
-// decides WHEN a heard word becomes a press. Nothing here opens a microphone or loads a model — the same division that let the
-// gaze cycle be measured without a camera.
+// This is the pure half of playing by voice: a table of words per language, a closed grammar built from it and the open menu's
+// names, and what a heard phrase MEANS — a position, or an item by name (ADR-0194). WHEN a phrase is heard is the reader's
+// (`platform/speech-recognition`). Nothing here opens a microphone or loads a model — the same division that let the gaze cycle
+// be measured without a camera.
 //
 // 🎯 THE WORDS ARE THE DEV'S, checked by the Dev against what games use (racing R2 accelerate / L2 brake, shooters L2 aim / R2 fire)
 // and then run in the lab's bar protocol in the three languages: pt 23/23, es 24/24, en 24/24 detected, all rated «ok».
@@ -15,14 +16,14 @@
 // table, which is the Dev's decision written down.
 
 import type { Action } from '../core/actions.js';
-import { spokenText } from '../platform/speech-recognition.js';
+import { spokenText, createCommandReader, type HeardCommand } from '../platform/speech-recognition.js';
 
 /**
  * Every word of one language, by position.
  *
  * ⚠️ WRITTEN AS THE RECOGNISER'S VOCABULARY SPELLS THEM — lowercase, with their accents (the Dev's words are «ação» and
  * «Acción»): a grammar word the model does not know is dropped and its position goes mute (measured below). Comparing ignores
- * accents, because a heard sentence and a table entry both pass through `wordsOf` before they meet.
+ * accents: the reader (`platform/speech-recognition`) matches a heard sentence and a table entry by a key without them.
  */
 export type VoiceWords = { readonly [A in Action]?: readonly string[] };
 
@@ -31,7 +32,7 @@ const PT: VoiceWords = {
   start: ['start'], select: ['select'],
   // 🔴 `ação` WITH THE CEDILLA AND THE TILDE, measured in a browser: written `acao`, the pt model answered "Ignoring word
   // missing in vocabulary: 'acao'" and the first position was MUTE — the child said the word and nothing happened. The
-  // spelling here is the recogniser's VOCABULARY's; whoever compares no longer looks at accents (`wordsOf`), so spelling it
+  // spelling here is the recogniser's VOCABULARY's; whoever compares no longer looks at accents (the reader's key), so spelling it
   // right costs nothing on the hearing side. ⚠️ `boreste` is still outside the small model's vocabulary (ADR-0204 erratum)
   // and stays on the table on purpose: it is the Dev's word, and a larger model hears it.
   action1: ['ação'], action2: ['confirma', 'pega', 'ativar', 'pulo'], action3: ['voltar', 'solta', 'cancelar', 'especial'],
@@ -67,15 +68,6 @@ export function voiceWordsFor(language: string): VoiceWords {
 }
 
 /**
- * The words a sentence is made of, compared the way a recogniser writes them: no case, no accents, no punctuation.
- * The same rule the quiz's spoken answer uses — a recogniser that writes «Acima.» is not a child who said something else.
- */
-function wordsOf(sentence: string): string[] {
-  return sentence.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean);
-}
-
-/**
  * THE CLOSED GRAMMAR: every word the recogniser is allowed to return, and nothing else (ADR-0189, ADR-0193).
  *
  * 📌 A grammar is what makes 32 MiB answer in a quarter of a second, and it is also what makes it answer WRONG when a child
@@ -92,55 +84,71 @@ export function voiceGrammar(language: string, extra: readonly string[] = []): r
   return [...all];
 }
 
+/** What a heard phrase asks for: a position of the controller, or the item of the open menu that has this name (ADR-0194). */
+export type VoiceCommand =
+  | { readonly kind: 'position'; readonly action: Action }
+  /** `name` is the item's name exactly as it was handed to `items` — the name on screen, to find the item by. */
+  | { readonly kind: 'item'; readonly name: string };
+
 export interface VoiceCommands {
   /**
-   * What the recogniser has heard SO FAR in this utterance, and the position it presses — or `null` when nothing new was said.
-   * ⚠️ It answers on the PARTIAL and not at the end of the sentence (ADR-0193 erratum, the Dev's choice after running both):
-   * 0.25–0.45 s against 1.3–1.4 s, which is the difference between a command and a delay a child gives up on.
+   * The names the open menu is showing, as shown (ADR-0194 §2): from now on, saying one is a command — until the next call.
+   * An empty list is a menu closed.
    */
-  partial(text: string): Action | null;
-  /** The utterance ended (or the microphone was let go): the next partial starts a new sentence. */
-  reset(): void;
+  items(names: readonly string[]): void;
+  /**
+   * What the recogniser has heard SO FAR in this utterance → the commands it completes that were not answered before.
+   * ⚠️ It answers on the PARTIAL and not at the end of the sentence (ADR-0193 erratum, the Dev's choice after running both):
+   * 0.25–0.45 s against 1.3–1.4 s, which is the difference between a command and a delay a child gives up on — except for a
+   * name another item's name continues, which waits for `final` (ADR-0194 §3).
+   */
+  partial(text: string): readonly VoiceCommand[];
+  /** The utterance ended with this text: what it completes that the partials held back. The next partial starts afresh. */
+  final(text: string): readonly VoiceCommand[];
 }
 
 /**
- * The rule that turns a growing partial into presses.
+ * The Dev's words and the open menu's names, READ BY `platform/speech-recognition.createCommandReader` — the one reader of what
+ * was heard (ADR-0194 §2–§3); this adds only what a word MEANS here, the position it presses.
  *
  * 🎯 A PARTIAL GROWS, AND ONLY WHAT IS NEW FIRES. «acima» then «acima abaixo» is a child who said two words, and the second
- * press must be `down`, not `up` all over again — so the words already answered for are counted, never re-read.
- * 📌 The tail is matched LONGEST FIRST because a position may answer to a phrase: «pick up» is one command in English, and
- * reading only the last word would make it `null` after having fired nothing.
+ * press must be `down`, not `up` all over again — the reader counts what it already answered for in each utterance.
  */
 export function createVoiceCommands(language: string): VoiceCommands {
-  const words = voiceWordsFor(language);
-  const byPhrase = new Map<string, Action>();
-  for (const [action, spoken] of Object.entries(words) as [Action, readonly string[]][]) {
-    for (const phrase of spoken) byPhrase.set(wordsOf(phrase).join(' '), action);
+  const actionOf = new Map<string, Action>();
+  for (const [action, spoken] of Object.entries(voiceWordsFor(language)) as [Action, readonly string[]][]) {
+    for (const phrase of spoken) if (!actionOf.has(spokenText(phrase))) actionOf.set(spokenText(phrase), action);
   }
-  const longest = Math.max(1, ...[...byPhrase.keys()].map((f) => f.split(' ').length));
-  let answered = 0;
-  let previous: string[] = [];
+  const reader = createCommandReader([...actionOf.keys()]);
+  let names: readonly string[] = [];
+  let utterance = 0;
+  let previous: readonly string[] = [];
+
+  const meaning = (heard: readonly HeardCommand[]): VoiceCommand[] => heard.flatMap((h): VoiceCommand[] => {
+    if (h.kind === 'palavra') { const action = actionOf.get(h.word); return action ? [{ kind: 'position', action }] : []; }
+    const name = names.find((n) => spokenText(n) === h.name);
+    return name === undefined ? [] : [{ kind: 'item', name }];
+  });
 
   return {
+    items(n) { names = [...n]; reader.items(names); },
     partial(text) {
-      const heard = wordsOf(text);
+      const heard = spokenText(text).split(' ').filter(Boolean);
       /*
        * 🔴 A NEW UTTERANCE IS ONE THAT DOES NOT CONTINUE THE LAST, and counting words is not enough to see it: a recogniser
-       * starts a new partial without saying so, and «abaixo» after «acima abaixo» is the same LENGTH as what was already
-       * answered. A case caught it — the child said a second command and nothing moved. What a partial of the same utterance
-       * always is, is the previous one plus more.
+       * starts a new partial without saying so — and does whenever the grammar changes, because a new grammar is a new
+       * recogniser — and «abaixo» after «acima abaixo» is shorter than what was already answered. What a partial of the same
+       * utterance always is, is the previous one plus more.
        */
-      const continues = previous.every((p, i) => heard[i] === p);
-      if (!continues) answered = 0;
+      if (!previous.every((p, i) => heard[i] === p)) utterance += 1;
       previous = heard;
-      if (heard.length <= answered) return null;
-      for (let n = Math.min(longest, heard.length - answered); n >= 1; n--) {
-        const action = byPhrase.get(heard.slice(heard.length - n).join(' '));
-        if (action) { answered = heard.length; return action; }
-      }
-      answered = heard.length;
-      return null;
+      return meaning(reader.read(utterance, text, false));
     },
-    reset() { answered = 0; previous = []; },
+    final(text) {
+      const done = meaning(reader.read(utterance, text, true));
+      utterance += 1;
+      previous = [];
+      return done;
+    },
   };
 }

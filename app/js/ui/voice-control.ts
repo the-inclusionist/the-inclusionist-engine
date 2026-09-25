@@ -9,17 +9,25 @@
 // 📌 THE GRAMMAR FOLLOWS THE MENU (ADR-0194): saying the name of an item activates it, so the words the open menu is showing
 // join the closed grammar while it is open and leave with it.
 //
+// 🎯 A NAME HEARD IS A CURSOR AND A CONFIRM, NOT A CLICK (ADR-0194 §2): the root's menu navigation puts the cursor on the
+// named item (`pointAt`), and the confirm position is pressed on the virtual controller like any other spoken word — so the
+// item is activated by the same path, with the same spoken feedback, as a child confirming it with the cursor on it. WHEN a
+// name fires is the reader's (`input/voice-map` over `platform/speech-recognition`): at once, unless another item's name
+// continues it («voltar» / «voltar ao jogo»), which waits for the end of the utterance (§3).
+//
 // ⚠️ A SPOKEN COMMAND IS A TAP, NOT A HOLD. The word arrives, the position is pressed and let go — and the latch (ADR-0211,
 // always on for speech) is what keeps a direction held afterwards. That division is the whole reason the latch is forced there:
 // a child who says «acima» cannot also say «and keep holding it».
 
 import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
-import { voiceGrammar, createVoiceCommands, type VoiceCommands } from '../input/voice-map.js';
+import { voiceGrammar, createVoiceCommands, type VoiceCommands, type VoiceCommand } from '../input/voice-map.js';
 import type { VirtualController } from '../input/virtual-controller.js';
 import { loadVoskRuntime, type VoskDeps, type VoskLoad } from '../platform/vosk-runtime.js';
 import { startVoiceListening, type VoiceListener, type VoiceListenerDeps } from '../platform/voice-listener.js';
+import { spokenText } from '../platform/speech-recognition.js';
 import type { SwitchableControl } from './switchable-control.js';
+import { MENU_CONFIRM } from './menu-intent.js';
 
 /** How long a spoken position stays pressed. The same pulse the scan uses: long enough for a game to see a press and a release. */
 export const VOICE_PULSE_MS = 400;
@@ -31,8 +39,13 @@ export interface VoiceControlDeps {
   /** The child's language (`core/i18n.bcp47`): it chooses the model AND the words. */
   readonly language: () => string;
   readonly controller: VirtualController;
-  /** The names the open menu is showing right now, if any (ADR-0194). */
+  /** The names the open menu is showing right now, if any (ADR-0194) — `ui/menu-nav.itemNames`. */
   readonly menuWords: () => readonly string[];
+  /**
+   * Puts the open menu's cursor on the item with this name, WITHOUT activating it — `ui/menu-nav.pointAt`. REQUIRED: it is
+   * what makes a name heard reach its item. `false` when that item is no longer there; then nothing is confirmed.
+   */
+  readonly pointAt: (name: string) => boolean;
   readonly say: (text: string) => void;
   readonly alert: (text: string) => void;
   readonly report: (line: string) => void;
@@ -76,12 +89,28 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
   let on = false, starting: Promise<void> | null = null;
   let listener: VoiceListener | null = null;
   let commands: VoiceCommands | null = null;
+  let grammarGiven = '';
 
-  const grammarNow = (): readonly string[] => voiceGrammar(d.language(), d.menuWords());
+  /**
+   * The open menu's names, handed to the reader, and the grammar with them. A one-letter name stays out: in a closed grammar
+   * it is where every short noise would land.
+   */
+  const followMenu = (): readonly string[] => {
+    const names = d.menuWords().filter((n) => spokenText(n).length > 1);
+    commands?.items(names);
+    return voiceGrammar(d.language(), names);
+  };
 
   const command = (action: Action): void => {
     d.controller.press(action, 'fala');
     d.after(() => d.controller.release(action, 'fala'), VOICE_PULSE_MS);
+  };
+
+  const obey = (heard: readonly VoiceCommand[] | undefined): void => {
+    for (const c of heard ?? []) {
+      if (c.kind === 'position') command(c.action);
+      else if (d.pointAt(c.name)) command(MENU_CONFIRM);
+    }
   };
 
   const stop = (): void => {
@@ -131,14 +160,16 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
       return;
     }
     commands = createVoiceCommands(d.language());
+    const grammar = followMenu();
+    grammarGiven = grammar.join('\n');
     try {
       listener = await listen({
         model: load.model,
-        grammar: grammarNow(),
+        grammar,
         getUserMedia: d.getUserMedia,
         createContext: d.createContext,
-        onPartial: (text) => { const a = commands?.partial(text); if (a) command(a); },
-        onFinal: () => commands?.reset(),
+        onPartial: (text) => { obey(commands?.partial(text)); },
+        onFinal: (text) => { obey(commands?.final(text)); },
       });
     } catch {
       failed('microphone', 'voice control: the microphone did not open — the child cannot play by speaking; allow the microphone '
@@ -148,6 +179,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     // ⚠️ TURNED OFF WHILE IT WAS STARTING: the microphone opened after the child let go of the icon, and a listener nobody asked
     // for would go on hearing her. The check is here and not only in `apply`, because starting is not instantaneous.
     if (!on) { stop(); return; }
+    // a menu that opened or closed while the microphone was opening changed the names after the grammar above was built
+    api.refreshGrammar();
     d.say(t('sr.voice.ready'));
   };
 
@@ -160,7 +193,14 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
       await starting;
     },
     refreshGrammar() {
-      listener?.setGrammar(grammarNow());
+      if (!listener) return;
+      // 📌 A new grammar is a new recogniser (`platform/voice-listener`), and the root asks on every menu change it sees —
+      // most of which change no name. Only a grammar that differs is handed on.
+      const grammar = followMenu();
+      const given = grammar.join('\n');
+      if (given === grammarGiven) return;
+      grammarGiven = given;
+      listener.setGrammar(grammar);
     },
     async languageChanged() {
       /*

@@ -10,6 +10,9 @@
 import { describe, it, expect } from 'vitest';
 import { voiceWordsFor, voiceGrammar, createVoiceCommands } from '../app/js/input/voice-map.js';
 
+/** The positions among what was heard, in order — the part of a `VoiceCommand` list a direction word produces. */
+const posicoes = (heard) => heard.filter((c) => c.kind === 'position').map((c) => c.action);
+
 describe('the vocabulary is the one the Dev decided', () => {
   it('🔴 [Right] every position of the controller has a word, in each of the three languages', () => {
     // 📌 The whole controller, which is the point of ADR-0204: a child who plays by voice reaches what a child on a pad reaches.
@@ -36,7 +39,7 @@ describe('the vocabulary is the one the Dev decided', () => {
    * missing in vocabulary: 'acao'» in the console and the first position went MUTE — the child said the word and nothing
    * happened, with no error anywhere. The recogniser's vocabulary keeps the word as the language writes it.
    *
-   * ⚠️ AND THE OTHER HALF IS WHAT MAKES THIS SAFE: what COMPARES ignores accents (`wordsOf` strips them on both sides), so
+   * ⚠️ AND THE OTHER HALF IS WHAT MAKES THIS SAFE: what COMPARES ignores accents (the reader's comparison key, on both sides), so
    * writing correctly in the table cannot break recognition by a recogniser that writes without accents.
    */
   it('🔴 [Right] a mesa escreve a palavra como a LÍNGUA a escreve, e o acento não decide o disparo', () => {
@@ -44,9 +47,9 @@ describe('the vocabulary is the one the Dev decided', () => {
     expect(voiceWordsFor('es').action1).toEqual(['acción']);
     expect(voiceGrammar('pt'), 'a gramática pede ao modelo uma palavra que ele não tem').toContain('ação');
     const comAcento = createVoiceCommands('pt');
-    expect(comAcento.partial('ação')).toBe('action1');
+    expect(posicoes(comAcento.partial('ação'))).toEqual(['action1']);
     const semAcento = createVoiceCommands('pt');
-    expect(semAcento.partial('acao'), 'um reconhecedor que escreva sem acento deixou de ser entendido').toBe('action1');
+    expect(posicoes(semAcento.partial('acao')), 'um reconhecedor que escreva sem acento deixou de ser entendido').toEqual(['action1']);
   });
 
   it('📌 [Boundary] a região não é a língua, e uma etiqueta desconhecida cai no português (pilar 3)', () => {
@@ -88,37 +91,67 @@ describe('a gramática fechada é o que o reconhecedor pode devolver', () => {
 describe('quando uma palavra ouvida vira uma pressão', () => {
   it('🔴 [Right] o parcial cresce e SÓ O QUE É NOVO dispara', () => {
     const v = createVoiceCommands('pt');
-    expect(v.partial('acima')).toBe('up');
+    expect(posicoes(v.partial('acima'))).toEqual(['up']);
     // 🔴 The second word is a second command, and not the first again: without this the child who says two things moves once.
-    expect(v.partial('acima abaixo')).toBe('down');
-    expect(v.partial('acima abaixo'), 'o mesmo parcial disparou duas vezes').toBeNull();
+    expect(posicoes(v.partial('acima abaixo'))).toEqual(['down']);
+    expect(v.partial('acima abaixo'), 'o mesmo parcial disparou duas vezes').toEqual([]);
   });
 
   it('🔴 [Right] uma posição que responde a uma FRASE é lida inteira', () => {
     const v = createVoiceCommands('en');
-    expect(v.partial('pick up'), 'ler só a última palavra deixaria «pick up» sem resposta').toBe('action2');
+    expect(posicoes(v.partial('pick up')), 'ler só a última palavra deixaria «pick up» sem resposta').toEqual(['action2']);
   });
 
   it('[Zero] uma palavra que não é comando não dispara nada', () => {
     const v = createVoiceCommands('pt');
-    expect(v.partial('elefante')).toBeNull();
+    expect(v.partial('elefante')).toEqual([]);
     // and it does not stay owing: the next word does fire
-    expect(v.partial('elefante acima')).toBe('up');
+    expect(posicoes(v.partial('elefante acima'))).toEqual(['up']);
   });
 
   it('🔴 [Right] acento e maiúscula são do reconhecedor, não da criança', () => {
-    expect(createVoiceCommands('pt').partial('AÇÃO')).toBe('action1');
-    expect(createVoiceCommands('pt').partial('acao'), 'um reconhecedor que escreve sem acento deixaria a criança sem o botão').toBe('action1');
+    expect(posicoes(createVoiceCommands('pt').partial('AÇÃO'))).toEqual(['action1']);
+    expect(posicoes(createVoiceCommands('pt').partial('acao')), 'um reconhecedor que escreve sem acento deixaria a criança sem o botão').toEqual(['action1']);
   });
 
-  it('🔴 [Right] uma frase nova começa do zero — pelo `reset` e por um parcial que ENCOLHEU', () => {
+  it('🔴 [Right] uma frase nova começa do zero — pelo fim da frase e por um parcial que ENCOLHEU', () => {
     const v = createVoiceCommands('pt');
-    expect(v.partial('acima abaixo')).toBe('down');
-    v.reset();
-    expect(v.partial('acima'), 'depois do fim da frase, a mesma palavra é um comando novo').toBe('up');
-    // ⚠️ And without `reset`: a recogniser that restarts by itself returns a SHORTER partial, and what was already answered no
-    // longer counts.
-    expect(v.partial('abaixo')).toBe('down');
+    expect(posicoes(v.partial('acima abaixo'))).toEqual(['up', 'down']);
+    expect(v.final('acima abaixo'), 'o fim repetiu o que os parciais já disseram').toEqual([]);
+    expect(posicoes(v.partial('acima')), 'depois do fim da frase, a mesma palavra é um comando novo').toEqual(['up']);
+    // ⚠️ And without an end: a recogniser that restarts by itself — a new grammar is a new recogniser — returns a SHORTER
+    // partial, and what was already answered no longer counts.
+    expect(posicoes(v.partial('abaixo'))).toEqual(['down']);
+  });
+});
+
+describe('o nome de um item do menu é um comando (ADR-0194 §2–§3)', () => {
+  const comMenu = () => { const v = createVoiceCommands('pt'); v.items(['Voltar ao jogo', 'Configurações de inclusão', 'Voltar']); return v; };
+
+  it('🔴 [Right] dizer um nome inteiro devolve ESSE item, com o nome como está no ecrã', () => {
+    expect(comMenu().partial('configurações de inclusão'), 'o nome não chegou ao item')
+      .toEqual([{ kind: 'item', name: 'Configurações de inclusão' }]);
+  });
+
+  it('⚠️ [Boundary] «voltar» espera enquanto «voltar ao jogo» pode vir; o fim da frase decide', () => {
+    const v = comMenu();
+    expect(v.partial('voltar'), '«voltar» disparou antes de «voltar ao jogo» poder ser dito').toEqual([]);
+    expect(v.partial('voltar ao jogo')).toEqual([{ kind: 'item', name: 'Voltar ao jogo' }]);
+    const w = comMenu();
+    expect(w.partial('voltar')).toEqual([]);
+    expect(w.final('voltar'), 'a frase acabou em «voltar» e o item nunca disparou').toEqual([{ kind: 'item', name: 'Voltar' }]);
+  });
+
+  it('🔴 [Right] com o menu aberto, as palavras de direção continuam a funcionar', () => {
+    expect(comMenu().partial('abaixo')).toEqual([{ kind: 'position', action: 'down' }]);
+  });
+
+  it('[Zero] um menu fechado leva os nomes com ele — «voltar» volta a ser a palavra do botão 3', () => {
+    const v = comMenu();
+    v.items([]);
+    expect(v.partial('configurações de inclusão'), 'um item de um menu já fechado disparou').toEqual([]);
+    // a new utterance, and with no item to continue it «voltar» is the Dev's word for action3 again — at once
+    expect(v.partial('voltar')).toEqual([{ kind: 'position', action: 'action3' }]);
   });
 });
 
@@ -126,3 +159,6 @@ describe('quando uma palavra ouvida vira uma pressão', () => {
 // 2026-09-25 (ADR-0194 §1):
 //   VM-A a menu name enters the grammar through the accent-stripping `wordsOf` again   🔴 «os nomes do MENU entram»
 //   VM-B `spokenText` drops digits                                                    🔴 «o número de um nome fica»
+// 2026-09-25 (ADR-0194 §2–§3, the firing rule now read by `platform/speech-recognition.createCommandReader`):
+//   W10 a partial that shrank is taken for the same utterance              🔴 «uma frase nova começa do zero»
+//   W11 an item command answers with the spoken form, not the shown name   🔴 «dizer um nome inteiro»; «voltar espera»

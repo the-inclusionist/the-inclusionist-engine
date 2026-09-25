@@ -630,6 +630,7 @@
     "migrateTouchMap"
   ],
   "input/voice-map.ts": [
+    "VoiceCommand",
     "VoiceCommands",
     "VoiceWords",
     "createVoiceCommands",
@@ -1300,6 +1301,7 @@
     "KEY_RIGHT",
     "KEY_UP",
     "KEY_YES",
+    "MENU_CONFIRM",
     "menuKeyIntent",
     "rangeStep",
     "selectStep",

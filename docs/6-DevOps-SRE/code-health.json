@@ -30,8 +30,8 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2188,
-      "decisionNodes": 282,
+      "codeLines": 2183,
+      "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 90,
       "globalReach": 0,
@@ -761,9 +761,9 @@
       "fanIn": 3
     },
     "input/voice-map.ts": {
-      "codeLines": 71,
-      "decisionNodes": 10,
-      "maxDepth": 2,
+      "codeLines": 75,
+      "decisionNodes": 11,
+      "maxDepth": 3,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 5,
@@ -1018,7 +1018,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 2
+      "fanIn": 3
     },
     "platform/speech.ts": {
       "codeLines": 21,
@@ -1511,14 +1511,14 @@
       "fanIn": 1
     },
     "ui/menu-intent.ts": {
-      "codeLines": 34,
+      "codeLines": 36,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/menu-items.ts": {
       "codeLines": 4,
@@ -1531,8 +1531,8 @@
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
-      "codeLines": 254,
-      "decisionNodes": 52,
+      "codeLines": 279,
+      "decisionNodes": 59,
       "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,
@@ -1851,10 +1851,10 @@
       "fanIn": 1
     },
     "ui/voice-control.ts": {
-      "codeLines": 110,
-      "decisionNodes": 11,
-      "maxDepth": 2,
-      "fanOut": 3,
+      "codeLines": 132,
+      "decisionNodes": 15,
+      "maxDepth": 3,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,

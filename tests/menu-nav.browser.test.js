@@ -760,3 +760,72 @@ describe('menuNavKey — o tradutor de teclado', () => {
 // bar moved being its owner's. The other two are EQUIVALENT and declared rather than caught: asking the action of a key NO
 // player owns, on the bar or in a menu, answers null anyway — `whichPlayer` is −1 only when no active player's scheme has the
 // key, Player 1's included.
+
+/* ===================== AN ITEM SAID BY NAME (ADR-0194 §1–§2) ===================== */
+// The voice asks this module two things: which names can be said NOW, and to put the cursor on one. The answer has to be the
+// menu a CONFIRM would reach — the confirm the voice then presses through the virtual controller — so both are asked under the
+// same guards `menuNavKey` applies before moving a menu.
+describe('itemNames / pointAt — the names a child can say, and the cursor put on one', () => {
+  it('🔴 [Right] with the pause card open: its visible items, by name; pointAt SELECTS and does not activate', () => {
+    const { nav, log } = boot();
+    showPauses();
+    expect(nav.itemNames(0)).toEqual(['Continuar', 'ABC', 'Som', 'Ajuda', 'Sair']);
+    let clicked = 0;
+    $('#sp0 [data-act="audio"]').addEventListener('click', () => { clicked += 1; });
+    expect(nav.pointAt('Som', 0)).toBe(true);
+    expect($('#sp0 .pm-sel')?.dataset.act, 'the cursor is not on the item said').toBe('audio');
+    expect(clicked, 'putting the cursor there activated the item — the confirm is the caller\'s').toBe(0);
+    expect(log.said, 'pointing announced the item: the confirm that follows speaks for it').toEqual([]);
+  });
+
+  it('🔴 [Right] with a panel on top: the panel\'s stops, not the card\'s; pointAt FOCUSES', () => {
+    const { nav, openAudio } = boot();
+    showPauses();
+    openAudio();
+    const names = nav.itemNames(0);
+    expect(names).toContain('Fechar');
+    expect(names, 'the card underneath answered for the panel on top').not.toContain('Continuar');
+    expect(names, 'a disabled or hidden control is not a stop').not.toContain('Desabilitado');
+    expect(names).not.toContain('Invisível');
+    expect(nav.pointAt('Fechar', 0)).toBe(true);
+    expect(document.activeElement?.id).toBe('a-close');
+  });
+
+  it('⚠️ [Boundary] a LOCKED item is left out (saying it is ADR-0194 §5, not built) and cannot be pointed at', () => {
+    const { nav } = boot();
+    showPauses();
+    $('#sp0 [data-act="ajuda"]').setAttribute('aria-disabled', 'true');
+    expect(nav.itemNames(0)).not.toContain('Ajuda');
+    expect(nav.pointAt('Ajuda', 0)).toBe(false);
+  });
+
+  it('🎯 [Zero] where a key would move no menu, there is no name and no cursor to move', () => {
+    const onBar = boot({ naBarra: new Set([0]) });
+    showPauses();
+    expect(onBar.nav.itemNames(0), 'on the quick bar, a confirm reaches the bar and not the card').toEqual([]);
+    expect(onBar.nav.pointAt('Som', 0)).toBe(false);
+    const playing = boot();
+    showPauses();
+    setPhaseValue('playing');
+    expect(playing.nav.itemNames(0), 'not navigable now: the confirm would go to the game').toEqual([]);
+    const capturing = boot({ isCapturing: () => true });
+    showPauses();
+    expect(capturing.nav.itemNames(0), 'a remap in progress owns the keys').toEqual([]);
+  });
+
+  it('[Zero] a name that is not there moves nothing', () => {
+    const { nav } = boot();
+    showPauses();
+    nav.pointAt('Som', 0);
+    expect(nav.pointAt('Elefante', 0)).toBe(false);
+    expect($('#sp0 .pm-sel')?.dataset.act, 'an unknown name moved the cursor').toBe('audio');
+  });
+});
+
+// MUTATIONS CHECKED (2026-09-25, ADR-0194) on `itemNames`/`pointAt`, one at a time:
+//   MN1 names offered while the seat is on the quick bar        🔴 «where a key would move no menu»
+//   MN2 names offered while no menu is navigable                 🔴 «where a key would move no menu»
+//   MN3 names offered during a remap                             🔴 «where a key would move no menu»
+//   MN4 locked items offered                                     🔴 «a LOCKED item is left out»
+//   MN5 the card answers under a panel (shared with the keys)    🔴 «with a panel on top» (and two DEFECT-2 cases)
+//   (the cursor itself — W4, W4b — is held end to end by `a-name-said-activates-its-item.browser.test.js`)

@@ -1198,10 +1198,12 @@
   },
   "input/voice-map.ts": {
     "interface VoiceCommands": [
-      "partial",
-      "reset"
+      "final",
+      "items",
+      "partial"
     ],
-    "type VoiceWords": "{ readonly [A in Action]?: readonly string[] }"
+    "type VoiceWords": "{ readonly [A in Action]?: readonly string[] }",
+    "type VoiceCommand": "| { readonly kind: 'position'"
   },
   "platform/audio-ambient.ts": {
     "interface AudioAmbientCtx": [
@@ -2439,12 +2441,14 @@
     "interface MenuNavApi": [
       "attach",
       "dialogBack",
+      "itemNames",
       "menuFocus",
       "menuItems",
       "menuNavKey",
       "navDialog",
       "navPause",
       "pauseSetSel",
+      "pointAt",
       "sharedDialogOpen"
     ]
   },
@@ -3166,6 +3170,7 @@
       "loadBundle",
       "loadRuntime?",
       "menuWords",
+      "pointAt",
       "report",
       "say",
       "t",

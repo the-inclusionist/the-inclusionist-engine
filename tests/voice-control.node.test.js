@@ -31,7 +31,7 @@ const MODEL = { KaldiRecognizer: function () { /* never built here */ } };
  */
 function bench(over = {}) {
   const log = {
-    pressed: [], released: [], said: [], alerted: [], reported: [], grammars: [], stopped: 0, loads: 0, listens: 0, off: 0,
+    pressed: [], released: [], said: [], alerted: [], reported: [], grammars: [], pointed: [], stopped: 0, loads: 0, listens: 0, off: 0,
   };
   let timers = [];
   let onPartial = null, onFinal = null;
@@ -48,6 +48,9 @@ function bench(over = {}) {
       release: (a, source) => log.released.push([a, source]),
     },
     menuWords: () => [],
+    // the root's menu navigation (`ui/menu-nav.pointAt`): records where the cursor was put, and finds the item only by the
+    // exact name the menu showed
+    pointAt: (name) => { log.pointed.push(name); return deps.menuWords().includes(name); },
     say: (s) => log.said.push(s),
     alert: (s) => log.alerted.push(s),
     report: (s) => log.reported.push(s),
@@ -67,7 +70,8 @@ function bench(over = {}) {
     control: createVoiceControl(deps),
     /** The recogniser heard something — the same call the microphone makes. */
     hear: (text) => onPartial?.(text),
-    endOfSentence: () => onFinal?.(),
+    /** The utterance ended, with the recogniser's last word on it (`platform/voice-listener`). */
+    endOfSentence: (text = '') => onFinal?.(text),
     /** Time passes: every pulse that was due fires. */
     tick: () => { const due = timers; timers = []; for (const [fn] of due) fn(); },
     pulses: () => timers.map(([, ms]) => ms),
@@ -156,6 +160,84 @@ describe('ui/voice-control — the grammar follows the open menu (ADR-0194)', ()
   it('⚠️ [Zero] refreshing with nothing listening does not throw — a menu opens before the microphone does', () => {
     const b = bench();
     expect(() => b.control.refreshGrammar()).not.toThrow();
+  });
+
+  it('📌 [Boundary] a menu change that changes no name does not rebuild the recogniser', async () => {
+    const b = bench({ menuWords: () => ['Acessibilidade visual'] });
+    await b.control.apply(true);
+    b.control.refreshGrammar();
+    b.control.refreshGrammar();
+    expect(b.log.grammars, 'the same grammar was handed on again — a new recogniser each time').toEqual([]);
+  });
+});
+
+/* ===================== AN ITEM SAID BY NAME IS ACTIVATED (ADR-0194 §2–§3) ===================== */
+// 🎯 THE PATH, and why it is the one tested: the name puts the menu navigation's cursor on the item (`pointAt`), and the
+// confirm position is pressed on the virtual controller stamped `fala` — the same press a child who says «confirma» makes, so
+// the item is activated by the menu's own «yes», with its own spoken feedback. There is no second, voice-only click.
+describe('ui/voice-control — a name heard activates its item', () => {
+  const MENU = ['Voltar ao jogo', 'Configurações de inclusão', 'Voltar'];
+  const withMenu = async (over = {}) => {
+    let menu = [];
+    const b = bench({ menuWords: () => menu, ...over });
+    await b.control.apply(true);
+    menu = MENU; // a menu opens after the microphone did — the root's observer refreshes
+    b.control.refreshGrammar();
+    return { ...b, closeMenu: () => { menu = []; b.control.refreshGrammar(); } };
+  };
+
+  it('🔴 [Right] a whole name puts the cursor on THAT item and presses the menu\'s confirm, stamped `fala`', async () => {
+    const b = await withMenu();
+    b.hear('configurações de inclusão');
+    expect(b.log.pointed, 'the name never reached the menu navigation').toEqual(['Configurações de inclusão']);
+    expect(b.log.pressed, 'the cursor moved and nothing confirmed it').toEqual([['action2', 'fala']]);
+    b.tick();
+    expect(b.log.released).toEqual([['action2', 'fala']]);
+  });
+
+  it('⚠️ [Boundary] «voltar» waits while «voltar ao jogo» may still be said; the end of the utterance decides', async () => {
+    const b = await withMenu();
+    b.hear('voltar');
+    expect(b.log.pressed, '«voltar» fired before «voltar ao jogo» could be said').toEqual([]);
+    b.hear('voltar ao jogo');
+    expect(b.log.pointed).toEqual(['Voltar ao jogo']);
+    expect(b.log.pressed).toEqual([['action2', 'fala']]);
+    b.endOfSentence('voltar ao jogo');
+    expect(b.log.pressed, 'the end of the utterance fired the name a second time').toHaveLength(1);
+
+    b.hear('voltar');
+    b.endOfSentence('voltar');
+    expect(b.log.pointed, 'an utterance that ended on «voltar» never reached its item').toEqual(['Voltar ao jogo', 'Voltar']);
+    expect(b.log.pressed).toHaveLength(2);
+  });
+
+  it('🔴 [Right] with the menu open, direction words still press their positions', async () => {
+    const b = await withMenu();
+    b.hear('abaixo');
+    expect(b.log.pressed).toEqual([['down', 'fala']]);
+    expect(b.log.pointed, 'a direction word was taken for a name').toEqual([]);
+  });
+
+  it('⚠️ [Zero] a name whose item is gone confirms NOTHING — the cursor did not move, a confirm would hit another item', async () => {
+    const b = await withMenu({ pointAt: (name) => { b.log.pointed.push(name); return false; } });
+    b.hear('configurações de inclusão');
+    expect(b.log.pointed).toEqual(['Configurações de inclusão']);
+    expect(b.log.pressed, 'a confirm was pressed with the cursor wherever it was').toEqual([]);
+  });
+
+  it('[Zero] a name from a menu that closed is not a command any more', async () => {
+    const b = await withMenu();
+    b.closeMenu();
+    b.hear('configurações de inclusão');
+    expect(b.log.pointed).toEqual([]);
+    expect(b.log.pressed).toEqual([]);
+  });
+
+  it('📌 [Boundary] a one-letter name stays out of the grammar — in a closed grammar every short noise lands on it', async () => {
+    const b = bench({ menuWords: () => ['A', 'Acessibilidade visual'] });
+    await b.control.apply(true);
+    expect(b.log.lastListen.grammar).toContain('acessibilidade visual');
+    expect(b.log.lastListen.grammar).not.toContain('a');
   });
 });
 
@@ -417,3 +499,12 @@ describe('the language changed', () => {
     expect(b.log.stopped, 'the start in flight was left listening underneath').toBe(1);
   });
 });
+
+// ============================== MUTATIONS CHECKED (2026-09-25, ADR-0194 §2–§3) ==============================
+//   W5  a name moves the cursor and nothing confirms it                     🔴 a whole name … presses the menu's confirm; «voltar» waits
+//   W7  the end of the utterance is not read (`onFinal` ignores its text)    🔴 the end of a sentence resets; «voltar» waits
+//   W8  an unchanged grammar is handed on again                             🔴 a menu change that changes no name
+//   W9  one-letter names enter the grammar                                  🔴 a one-letter name stays out
+//   W11 an item command answers with the spoken form, not the shown name   🔴 a whole name …; «voltar» waits (and voice-map)
+//   W12 the confirm position is another one (`MENU_CONFIRM = 'action1'`)    🔴 a whole name …; «voltar» waits
+//   W13 position commands dropped                                           🔴 a word heard PRESSES …; a partial that GROWS …

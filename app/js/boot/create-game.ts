@@ -2755,7 +2755,12 @@ export function createGame(o: CreateGameOptions): Engine {
       new Observer((records) => {
         const classes = records.map((r) => (r.target as Element).classList);
         if (classes.some((c) => c?.contains('screen-pause'))) updateCaption();
-        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) announceContext();
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) {
+          announceContext();
+          // 🔴 THE NAMES A CHILD CAN SAY CHANGED (ADR-0194 §1): this is the one signal that a card, one of its lists or a panel
+          // showed or hid — without it no menu's names reach the recogniser, and no name can be said.
+          voiceControl?.refreshGrammar();
+        }
         // ADR-0166: the pad leaves when the card or a panel opens, and comes back when the last of them closes
         if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) reflectPadInMenus();
         // a simulation stops while a menu is open and comes back with the game (issue #182)
@@ -4094,20 +4099,16 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * PLAYING BY SPEAKING (ADR-0189, ADR-0193, ADR-0194; issue #184): the stored 👄 drives `ui/voice-control` — the recogniser
    * from the delivery, the microphone that stays open, and presses stamped `fala` on the virtual controller.
    *
-   * 📌 THE GRAMMAR FOLLOWS THE OPEN MENU: the names the child can see are the names she can say. They are read from the overlay
-   * on top, which is the same one the focus trap and the menu navigation already treat as «the menu that is open».
+   * 📌 THE GRAMMAR FOLLOWS THE OPEN MENU: the names the child can see are the names she can say, and a name heard activates
+   * its item (ADR-0194 §2). Both are asked of the MENU NAVIGATION for seat 0 — the seat the voice presses — so the names are
+   * those of the menu a confirm would reach (the panel on top, else the pause card), and saying one puts that navigation's
+   * cursor on it before the voice confirms through the virtual controller. The grammar is re-read when a card, a list of it or
+   * a panel shows or hides — the region's observer above.
    */
   if (canCaptureMedia) {
-    const menuWords = (): readonly string[] => {
-      const card = overlays.topVisibleOverlay();
-      if (!card) return [];
-      return [...card.querySelectorAll<HTMLElement>('button, [data-passos]')]
-        .filter((el) => !el.hidden && el.getAttribute('aria-disabled') !== 'true')
-        .map((el) => accessibleLabel(el))
-        .filter((s) => s.length > 1);
-    };
     voiceControl = createVoiceControl({
-      t: translator.t, base: doc.baseURI, language: () => bcp47(), controller: virtualController, menuWords,
+      t: translator.t, base: doc.baseURI, language: () => bcp47(), controller: virtualController,
+      menuWords: () => nav.itemNames(0), pointAt: (name) => nav.pointAt(name, 0),
       say: srSay, alert: srAlert,
       report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },
@@ -4117,9 +4118,6 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       getUserMedia, createContext: () => new HostAudioContext!() as never,
     });
     stateOn('voiceControl', (on) => { void voiceControl?.apply(on); });
-    // the words change with the menu that is open, and a menu opens on a key or a touch — so they are re-read on every draw of
-    // the bar, which is what already happens whenever a card or a panel appears (ADR-0106 §5)
-    stateOn('menuIndexOn', () => { voiceControl?.refreshGrammar(); });
     void voiceControl.apply(state.voiceControl);
     // and so does the microphone; pply(false) stops without writing the stored answer, which belongs to the child (ADR-0220)
     whenDisposed(() => { void voiceControl?.apply(false); });

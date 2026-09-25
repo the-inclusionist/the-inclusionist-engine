@@ -3745,6 +3745,36 @@ one passed the surface gate green. The portrait now reads `export { … } from`,
 `ui/menu-nav.hasIntent` and `.stepInRing`, `ui/settings-typo.resolveFontKey` and `.persistFontKey`, `ui/visual-choices.RoleKey`
 and `.lqLabel`.
 
+## DI · ADR-0194 §2–§3: a menu item's name said by voice activates it
+
+**Who is affected:** a game that builds `createVoiceControl` itself, calls `createVoiceCommands` from `input/voice-map`, or
+implements `MenuNavApi` (a double of `initMenuNav`'s result). A game that lets `createGame` mount the 👄 changes no code: the
+root wires all of this, and a name said in the pause card or a panel now activates the item.
+
+📌 **Why:** the vocabulary's reader (`platform/speech-recognition.createCommandReader`) already implemented «a whole name
+activates its item» and «on a partial a name another item's name continues waits for the end of the utterance», but only its
+test imported it; the 👄 path put the open menu's names in the grammar and a heard name activated nothing. The 👄 now reads
+what it hears through that reader, and a name is carried to its item the way every transport reaches a menu: the menu
+navigation puts its cursor on the item, and the voice presses the menu's confirm position on the virtual controller.
+
+| was | is | migration |
+|---|---|---|
+| `VoiceCommands.partial(text): Action \| null` | `partial(text): readonly VoiceCommand[]` — every command the partial completes | map `c.kind === 'position'` to `c.action` |
+| `VoiceCommands.reset()` | `final(text): readonly VoiceCommand[]` — the end of the utterance, with its text: a name the partials held back is decided there, and the next partial starts afresh | call `final(text)` where `reset()` was called; `platform/voice-listener`'s `onFinal` now receives that text |
+| — | `VoiceCommands.items(names)`: the open menu's names, as shown | call it whenever the menu changes; `[]` for a menu closed |
+| — | `type VoiceCommand = { kind: 'position'; action } \| { kind: 'item'; name }` (new) | an `item` carries the name exactly as handed to `items` |
+| `VoiceControlDeps` without a cursor | `pointAt(name): boolean`, REQUIRED | pass `(name) => nav.pointAt(name, 0)` from your `initMenuNav` result |
+| `VoiceControlDeps.menuWords` read the top overlay's buttons | unchanged in shape; the root now answers it with `nav.itemNames(0)` | pass `() => nav.itemNames(0)` |
+| `MenuNavApi` | gains `itemNames(playerIndex)` and `pointAt(name, playerIndex)` | a double of the API adds the two members |
+
+⚠️ **Behaviour, not shape:** the names now enter the grammar with their accents («configurações», not «configuracoes», which
+the small Vosk model drops); the grammar is refreshed when a card, one of its lists or a panel shows or hides (it was only
+refreshed when the «N of M» setting changed, so no menu's names ever reached the recogniser); `spokenText` keeps digits.
+New, additive: `ui/menu-intent.MENU_CONFIRM` (the menu's «yes» position, `action2`).
+
+📏 **Not measured in the games:** this change was made without reading the sibling repositories. Before the bump, `git grep`
+them for `createVoiceControl`, `createVoiceCommands`, `VoiceCommands` and `MenuNavApi` doubles.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

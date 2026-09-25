@@ -7,7 +7,14 @@
 // no document, so the seam was already drawn. What stays there is the navigation that needs a page — finding the focused item,
 // moving the focus, announcing it.
 import type { NavKeys } from '../input/edges.js';
+import type { Action } from '../core/actions.js';
 import { stepInRing } from '../core/ring.js';
+
+/**
+ * The position a menu reads as «yes»: confirming the item under the cursor. Named once because a second reader presses it —
+ * the voice, which puts the cursor on an item said by name and confirms it the way every transport does (ADR-0194 §2).
+ */
+export const MENU_CONFIRM: Action = 'action2';
 
 /* The GENERIC key tables (the ones that hold for any player, even with no remap). They are `Set`s because that is
    what they are — membership, not order — and because a named `Set` keeps the table auditable from outside (the
@@ -27,7 +34,7 @@ export const KEY_RIGHT: ReadonlySet<string> = new Set(['ArrowRight', 'KeyD']);
  */
 export function menuKeyIntent(code: string, act: string | null): NavKeys {
   return {
-    yes: KEY_YES.has(code) || act === 'action2',
+    yes: KEY_YES.has(code) || act === MENU_CONFIRM,
     no: KEY_NO.has(code) || act === 'action3',
     up: KEY_UP.has(code) || act === 'up',
     down: KEY_DOWN.has(code) || act === 'down',

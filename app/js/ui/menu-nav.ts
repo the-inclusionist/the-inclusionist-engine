@@ -170,6 +170,18 @@ export interface MenuNavApi {
   navPause: (menu: HTMLElement, playerIndex: number, k: NavKeys) => void;
   /** The keyboard translator. Exported on its own so a test can fire it without depending on the propagation phase. */
   menuNavKey: (e: NavKeyEvent) => void;
+  /**
+   * THE NAMES A CHILD CAN SAY (ADR-0194 §1): the accessible names of the items a key of player `playerIndex` would move now —
+   * the dialog on top, else that player's open pause card — and none while a key would move no menu. Locked items are left
+   * out: saying one is ADR-0194 §5, not built.
+   */
+  itemNames: (playerIndex: number) => string[];
+  /**
+   * PUTS THE CURSOR on the item with this accessible name, without activating it and without announcing it — the menu the
+   * name belongs to is the one `itemNames` reads. The caller then confirms through the virtual controller like any
+   * transport (ADR-0194 §2). `false` when no such item is there now: nothing moved.
+   */
+  pointAt: (name: string, playerIndex: number) => boolean;
   /** Installs `menuNavKey` on the window, in CAPTURE. */
   attach: () => void;
 }
@@ -375,10 +387,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   /* ===================== keyboard ===================== */
 
+  const padWizOpen = (): boolean => { const pw = ctx.$<HTMLElement>('#padwiz'); return !!pw && !pw.hidden; };
+
   /** The controller-mapping panel sits ON TOP of everything: while it is open, only Escape gets through (and cancels). */
   function padWizKey(e: NavKeyEvent): boolean {
-    const pw = ctx.$<HTMLElement>('#padwiz');
-    if (!pw || pw.hidden) return false;
+    if (!padWizOpen()) return false;
     if (e.code === 'Escape') { ctx.closePadWiz(false); e.preventDefault(); e.stopPropagation(); }
     return true; // open = consumed (even when it is not Escape: no menu underneath navigates while it is open)
   }
@@ -423,11 +436,44 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     //
     // DEFECT 2's safety net stays: with a dialog open the key IS consumed, so one Escape closes the dialog and no later
     // listener sees it.
+    const open = menuUnderKeys(pi);
+    if (!open) return; // No dialog and no card: the key is NOT ours. It goes on to whoever owns it.
+    consume(e);
+    if (open.inPause) navPause(open.menu, pi, k); else navDialog(open.menu, k);
+  }
+
+  /** The menu a key of player `pi` moves: the dialog on top if there is one, else that player's OWN open pause card. */
+  function menuUnderKeys(pi: number): { readonly menu: HTMLElement; readonly inPause: boolean } | null {
     const dlg = sharedDialogOpen();
-    if (dlg) { consume(e); navDialog(dlg, k); return; }    // an accessibility dialog is open: it is the one navigated
-    const menu = ctx.getPauseMenu(pi);                      // otherwise: the player's OWN pause card
-    if (menu && !menu.hidden) { consume(e); navPause(menu, pi, k); }
-    // No dialog and no card: the key is NOT ours. It goes on to whoever owns it.
+    if (dlg) return { menu: dlg, inPause: false };
+    const menu = ctx.getPauseMenu(pi);
+    return menu && !menu.hidden ? { menu, inPause: true } : null;
+  }
+
+  /* ===================== an item said by name (ADR-0194) ===================== */
+
+  /**
+   * The unlocked stops of the menu a key of `pi` would move NOW, under the same guards `menuNavKey` applies before moving one:
+   * a name is sayable exactly where confirming would reach it, so the confirm that follows `pointAt` lands on the named item.
+   */
+  function sayableItems(pi: number): { readonly menu: HTMLElement; readonly inPause: boolean; readonly items: HTMLElement[] } | null {
+    if (ctx.isCapturing() || padWizOpen() || ctx.onBar(pi) || !ctx.isNavigable()) return null;
+    const open = menuUnderKeys(pi);
+    if (!open) return null;
+    const stops = open.inPause ? [...open.menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)] : menuItems(open.menu);
+    return { ...open, items: stops.filter((el) => el.getAttribute('aria-disabled') !== 'true') };
+  }
+
+  function itemNames(pi: number): string[] {
+    return (sayableItems(pi)?.items ?? []).map((el) => accessibleLabel(el)).filter(Boolean);
+  }
+
+  function pointAt(name: string, pi: number): boolean {
+    const open = sayableItems(pi);
+    const el = open?.items.find((it) => accessibleLabel(it) === name);
+    if (!open || !el) return false;
+    if (open.inPause) { pauseSetSel(open.menu, el); ctx.explainItem?.(null); } else el.focus();
+    return true;
   }
 
   /* ===================== holding on an item ===================== */
@@ -500,5 +546,5 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     ctx.win.addEventListener('click', onClick, true);
   }
 
-  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, attach };
+  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, itemNames, pointAt, attach };
 }
