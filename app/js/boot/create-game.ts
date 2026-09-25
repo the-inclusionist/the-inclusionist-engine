@@ -2911,10 +2911,10 @@ export function createGame(o: CreateGameOptions): Engine {
     /*
      * 🔴 TOUCH PRESSES THE VIRTUAL CONTROLLER (ADR-0223), like every other transport: one decision, not a second copy of
      * it inside the pad — a copy that, when it existed, left a cartridge listening to `onCommand` deaf to the finger.
-     * 📌 Arrows and not direct references: `controleVirtual` is born further below (the temporal dead zone).
+     * 📌 Arrows and not direct references: `virtualController` is born further below (the temporal dead zone).
      */
-    press: (action, source) => controleVirtual.press(action, source),
-    release: (action, source) => controleVirtual.release(action, source),
+    press: (action, source) => virtualController.press(action, source),
+    release: (action, source) => virtualController.release(action, source),
     playerEdge,
     heldKeys: keys,
     attractOnInput: () => false,
@@ -3251,10 +3251,10 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     const controlMappingRow = doc.createElement('div');
     controlMappingRow.className = 'ctrl-row';
-    const envelopeDoControle = doc.createElement('span');
+    const controlMappingLabel = doc.createElement('span');
     const controlStrong = doc.createElement('strong');
-    envelopeDoControle.appendChild(controlStrong);
-    controlMappingRow.appendChild(envelopeDoControle);
+    controlMappingLabel.appendChild(controlStrong);
+    controlMappingRow.appendChild(controlMappingLabel);
     const controlButton = doc.createElement('button');
     controlButton.className = 'mode-btn';
     controlButton.setAttribute('type', 'button');
@@ -3759,13 +3759,13 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     if (!action) return;
     // 📌 THROUGH THE VIRTUAL CONTROLLER, like every other transport (ADR-0111): in a menu it becomes that menu's key, in play it
     // holds the child's key and reaches the cartridge. The scan decides WHICH position; it does not decide what a position does.
-    controleVirtual.press(action, source, 0);
-    win.setTimeout(() => controleVirtual.release(action, source, 0), SWITCH_SCAN_DEFAULTS.pulseMs);
+    virtualController.press(action, source, 0);
+    win.setTimeout(() => virtualController.release(action, source, 0), SWITCH_SCAN_DEFAULTS.pulseMs);
   };
   stateOn('switchScan', (on) => { if (on) startScan(); else stopScan(); });
   whenDisposed(stopScan); // the scan's frames are this root's, and an ended root keeps none running (ADR-0220)
   if (state.switchScan) startScan();
-  const controleVirtual = createVirtualController({
+  const virtualController = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuWithDpad,
     // ⚠️ `markKeyFrom` AND NOT RAW `markKey`: a key that arrives WITHOUT a source — which is every real keyboard event —
     // must ERASE whoever held it last instead of inheriting them (ADR-0109). The choice between the two doors lives in
@@ -3797,8 +3797,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       if (seat < 0) return;
       const action = keyboard.actionOf(e.code, seat) as Action | null;
       if (!action) return;
-      if (kind === 'keydown') controleVirtual.press(action, source, seat);
-      else controleVirtual.release(action, source, seat);
+      if (kind === 'keydown') virtualController.press(action, source, seat);
+      else virtualController.release(action, source, seat);
     }, true);
   }
   /*
@@ -3865,8 +3865,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     navPause: nav.navPause,
     setPauseActor,
     playerEdge,
-    press: (action, source, player) => controleVirtual.press(action, source, player),
-    release: (action, source, player) => controleVirtual.release(action, source, player),
+    press: (action, source, player) => virtualController.press(action, source, player),
+    release: (action, source, player) => virtualController.release(action, source, player),
     modalInput: gameHooks.modalInput,
     hasModal: gameHooks.hasModal,
     joinPlayer: gameHooks.joinPlayer,
@@ -3906,7 +3906,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       now: () => win.performance.now(), every: (cb: () => void, ms: number) => win.setInterval(cb, ms), stopEvery: (h: number) => win.clearInterval(h),
     };
     const cameraDeps = {
-      doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: controleVirtual, say: srSay, alert: srAlert,
+      doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: virtualController, say: srSay, alert: srAlert,
       report: (rowNode: string) => { if (!measuredProblems.includes(rowNode)) measuredProblems.push(rowNode); },
       turnOff: () => state.setCameraControlValue('off'),
     };
@@ -3939,7 +3939,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
         .filter((s) => s.length > 1);
     };
     voiceControl = createVoiceControl({
-      base: doc.baseURI, language: () => bcp47(), controller: controleVirtual, menuWords,
+      base: doc.baseURI, language: () => bcp47(), controller: virtualController, menuWords,
       say: srSay, alert: srAlert,
       report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },
@@ -4008,7 +4008,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     overlays,
     nav,
     keyboard,
-    controller: controleVirtual,
+    controller: virtualController,
     sonar,
     applyVisionFilter: setVisionFilter,
     scenes: rootScenes,

@@ -508,7 +508,7 @@ function bootQuiz(): void {
   });
   // O que o hospedeiro não entregou vira lista legível em vez de painel vazio (achado 6). Num jogo de
   // verdade isto iria para a tela; aqui basta o console, porque o instrumento é lido por quem desenvolve.
-  if (motor.problems.length) console.warn('[quiz] lacunas do hospedeiro:', motor.problems);
+  if (motor.problems.length) console.warn('[quiz] what the host lacks:', motor.problems);
 
   // 🔴 O PAINEL DE TIPOGRAFIA E O SELETOR DE VISÃO DESTE JOGO SAÍRAM (2026-09-12). Desenhavam um botão e uma lista na
   // zona do rodapé, que é da explicação (`CLAUDE.md` §4), e repetiam a barra rápida: a letra muda pelo ciclo de
