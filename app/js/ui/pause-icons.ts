@@ -994,18 +994,24 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const face = ctx.cycleTypography();
       if (face) ctx.srSay(t('sr.typo.font', { fam: face }));
     },
-    // PLAYING THROUGH THE WEBCAM (ADR-0215): off → hands → face → eyes → off; stored in one key, so one mode at a time.
+    /*
+     * PLAYING THROUGH THE WEBCAM (ADR-0215) and BY SPEAKING (ADR-0189, issue #184): each writes the child's answer, one stored key.
+     *
+     * 🔴 A POSITION THAT STARTS A CONTROL IS ANNOUNCED BY THE CONTROL, NOT HERE. At this line nothing has started: the control
+     * starts after the write, asynchronously, and answers either way — «Pronto: já pode jogar…» when it is really on, or the
+     * reason assertively when it cannot start (and the answer goes back to off). Saying the position here told the child
+     * «Comando de voz: ligado» over a button that read «desligado», on every press where the microphone or the runtime failed.
+     * Off is true the moment it is written, so off is still said here.
+     */
     camera: () => {
       const v = nextCameraControl(ctx.settings.cameraControl);
       ctx.settings.setCameraControlValue(v);
-      ctx.srSay(t('sr.icon.camera', { v: t(CAMERA_MODE_NAME[v]) }));
+      if (v === 'off') ctx.srSay(t('sr.icon.camera', { v: t('state.off') }));
     },
-    // PLAYING BY SPEAKING (ADR-0189, issue #184): on or off, one stored key. What cannot start puts it back to off and says why,
-    // which is the control's own job (`ui/voice-control`) — this only writes the child's answer.
     voice: () => {
       const v = !ctx.settings.voiceControl;
       ctx.settings.setVoiceControlValue(v);
-      ctx.srSay(t('sr.icon.voice', { v: t(v ? 'state.on' : 'state.off') }));
+      if (!v) ctx.srSay(t('sr.icon.voice', { v: t('state.off') }));
     },
     // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
     // language, once it has loaded.

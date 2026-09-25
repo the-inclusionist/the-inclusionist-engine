@@ -667,7 +667,13 @@ describe('initPauseIcons — ações dos ícones', () => {
     ctx.settings = { ...estado, cameraControl: 'off', setCameraControlValue: (m) => { writes.push(m); } };
     initPauseIcons(ctx).iconAct('camera', 0);
     expect(writes, 'the icon did not write the next camera mode into the store it was handed').toEqual(['hands']);
-    expect(said.at(-1), 'the announcement did not name the mode written').toMatch(/mãos/i);
+    // 🔴 a mode that STARTS is announced by its control, once it has started or with the reason it could not — never here
+    expect(said, 'the bar announced the hands before the camera had answered').toEqual([]);
+    // and the step that turns it off IS said here: off is true the moment it is written
+    ctx.settings = { ...estado, cameraControl: 'eyes', setCameraControlValue: (m) => { writes.push(m); } };
+    initPauseIcons(ctx).iconAct('camera', 0);
+    expect(writes.at(-1)).toBe('off');
+    expect(said, 'the bar stopped saying the 📷 went off').toEqual(['Jogar pela webcam: desligado.']);
   });
 
   it('🔴 [Right] with no voice for the language, the narration icon says why and turns nothing on (ADR-0185)', () => {
@@ -950,19 +956,20 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   /*
-   * 🔴 THE 👄 IS NOT AN EXCEPTION (issue #184): it writes the child's answer and SAYS what stayed. Who refuses it, and
-   * why, is `ui/voice-control`, which turns the icon back off with the reason spoken.
+   * 🔴 THE 👄 IS NOT AN EXCEPTION (issue #184): it writes the child's answer. What it SAYS is only what is already true: off.
+   * «On» is `ui/voice-control`'s to say — ready, or the reason it could not start, which turns the icon back off — because
+   * at the moment of the press nothing has started yet (the bar used to say «ligado» over a microphone that was refused).
    */
-  it('🔴 [Right] o 👄 escreve a chave guardada e ANUNCIA o que ficou — já não há alerta de construção', () => {
+  it('🔴 [Right] o 👄 escreve a chave guardada; diz «desligado», e «ligado» fica para o controle', () => {
     const { ctx, state, said, alerted } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('voice', 0);
     expect(estado.voiceControl, 'o comando de voz não foi ligado').toBe(true);
-    expect(said).toEqual(['Comando de voz: ligado.']);
+    expect(said, 'the bar announced «on» before the control had answered').toEqual([]);
     expect(alerted, 'o ícone continuou a recusar-se em vez de comandar').toEqual([]);
     api.iconAct('voice', 0);
     expect(estado.voiceControl, 'o segundo toque não desligou').toBe(false);
-    expect(said[1]).toBe('Comando de voz: desligado.');
+    expect(said).toEqual(['Comando de voz: desligado.']);
     // and the 👄's act does not slip into its neighbours
     expect(state.blindMode).toBe(false);
     expect(state.vizCalls).toEqual([]);

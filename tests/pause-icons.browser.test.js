@@ -522,19 +522,21 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     expect(b.getAttribute('aria-pressed')).toBe('false');
   });
 
-  // 🔴 THE 👄 COMMANDS (issue #184): the click turns voice command on, and the button must SAY it turned on — who refuses,
-  // and why, is `ui/voice-control`, which turns it back off with the reason spoken.
-  it('🔴 [Right] clicar no 👄 liga o comando de voz, e o botão diz que ligou', () => {
+  // 🔴 THE 👄 COMMANDS (issue #184): the click turns voice command on and the button SHOWS the child's answer; «on» is SAID
+  // by `ui/voice-control` once it has really started, or the reason instead — the bar says only off, which is true at once.
+  it('🔴 [Right] clicar no 👄 liga o comando de voz; o botão mostra, e só o desligar é dito pela barra', () => {
     const { sp, bar, said } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="voice"]');
+    const before = said.length;
     b.click();
     expect(b.getAttribute('aria-pressed')).toBe('true');
     expect(b.classList.contains('pi-on')).toBe(true);
     expect(b.getAttribute('aria-label')).toBe('Comando de voz: ligado');
-    expect(said.at(-1)).toBe('Comando de voz: ligado.');
+    expect(said.slice(before), 'the bar announced «on» before the control had answered').toEqual([]);
     b.click();
     expect(b.getAttribute('aria-pressed')).toBe('false');
     expect(b.getAttribute('aria-label')).toBe('Comando de voz: desligado');
+    expect(said.at(-1)).toBe('Comando de voz: desligado.');
   });
 
   it('MUITAS telas: o clique numa tela reflete TODAS (o estado de daltonismo é por jogador)', () => {

@@ -3628,7 +3628,9 @@ export function createGame(o: CreateGameOptions): Engine {
       if (mode === state.cameraControl) return; // at the end of the line nothing moved, and nothing is announced
       state.setCameraControlValue(mode);
       reflectCamera();
-      srSay(`${t('motora.camera')}: ${t(CAMERA_MODE_WORD[mode])}`);
+      // 🔴 A MODE THAT STARTS IS ANNOUNCED BY ITS CONTROL, which answers once it has really started or says why it could not —
+      // the rule and its reason are at the 📷 in `ui/pause-icons`. Off is true at once, and is said here.
+      if (mode === 'off') srSay(`${t('motora.camera')}: ${t('state.off')}`);
     });
     // the 📷 and this row are one setting: whoever changes it, both show it
     stateOn('cameraControl', () => { reflectCamera(); });
@@ -3656,10 +3658,11 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     voiceButton.addEventListener('click', () => {
       state.setVoiceControlValue(!state.voiceControl);
-      // ⚠️ THE ANNOUNCEMENT READS THE STATE AFTER THE WRITE, and not the value it meant to write: what cannot start puts the
-      // answer back to off inside the same click, and announcing the intention would tell the child the opposite of what is true.
       reflectVoice();
-      srSay(`${t('motora.voz')}: ${t(state.voiceControl ? 'state.on' : 'state.off')}`);
+      // 🔴 ON IS ANNOUNCED BY `ui/voice-control`, which starts AFTER this click, asynchronously, and answers either way: ready,
+      // or the reason it could not start. Reading the state here still read «on», because the failure had not happened yet —
+      // the rule and its reason are at the 👄 in `ui/pause-icons`. Off is true at once, and is said here.
+      if (!state.voiceControl) srSay(`${t('motora.voz')}: ${t('state.off')}`);
     });
     stateOn('voiceControl', () => { reflectVoice(); });
     reflectVoice();

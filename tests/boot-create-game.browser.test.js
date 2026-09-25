@@ -1514,6 +1514,122 @@ describe('createGame num documento de verdade', () => {
   });
 
   /*
+   * 🔴 WHAT THE CHILD HEARS IS WHAT REALLY HAPPENED, and a surface that switches a control on does not know that yet. The 👄
+   * and the 📷 (on the bar and in the motor panel) write the child's answer; the control starts a moment later, and here —
+   * no delivery on this page — it cannot: it says why, assertively, and puts the answer back to off. Found in passing in a
+   * real page: the press ALSO said «Comando de voz: ligado», politely, over a button that read «desligado» — every press.
+   *
+   * ⚠️ THE REGIONS ARE LISTENED TO, NOT READ AT THE END: the announcer clears and writes on the next frame, and the reason
+   * arrives after the press's own line, so the last text of `#sr-status` does not show what was said before it.
+   */
+  describe('switched on where nothing can start, nobody hears «on»', () => {
+    let pt;
+    beforeEach(async () => { pt = (await import('../app/js/i18n/pt.js')).default; });
+    const fill = (key, v) => pt[key].replace('{v}', v);
+    /** Every non-empty text written to the two live regions, from now on. */
+    const listen = () => {
+      const heard = { status: [], alert: [] };
+      const watchers = [['status', '#sr-status'], ['alert', '#sr-alert']].map(([k, sel]) => {
+        const el = document.querySelector(sel);
+        // read from the RECORDS, not the element: two writes in one frame would otherwise show only the second
+        const o = new MutationObserver((records) => {
+          for (const r of records) for (const n of r.addedNodes) if (n.textContent) heard[k].push(n.textContent);
+        });
+        o.observe(el, { childList: true, characterData: true, subtree: true });
+        return o;
+      });
+      return { heard, stop: () => { for (const o of watchers) o.disconnect(); } };
+    };
+    /** Until the control has answered and put the answer back, then two frames for the announcer's last write. */
+    const untilBackOff = async (isOn) => {
+      for (let i = 0; i < 300 && isOn(); i++) await new Promise((r) => { setTimeout(r, 10); });
+      expect(isOn(), 'the control never answered: the case would measure a press, not a failure').toBe(false);
+      for (let i = 0; i < 2; i++) await new Promise((r) => requestAnimationFrame(r));
+    };
+    const reasons = (prefix) => Object.keys(pt).filter((k) => k.startsWith(prefix)).map((k) => pt[k]);
+
+    it('🔴 [Right] the bar\'s 👄: the reason is said, and «Comando de voz: ligado» never is', async () => {
+      const estado = abrir().settings;
+      const icon = () => document.querySelector('#title-icons [data-pi="voice"]');
+      const { heard, stop } = listen();
+      try {
+        icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await untilBackOff(() => estado.voiceControl);
+        expect(heard.status, 'the bar told the child the voice command was on, over a control that never started')
+          .not.toContain(fill('sr.icon.voice', pt['state.on']));
+        expect(heard.alert.some((a) => reasons('sr.voice.').includes(a)), `the child was not told why: ${heard.alert.join(' | ')}`)
+          .toBe(true);
+        expect(icon().getAttribute('aria-label')).toBe(`${pt['icon.voice']}: ${pt['state.off']}`);
+      } finally { stop(); }
+    });
+
+    it('🔴 [Right] the bar\'s 📷: the mode that could not start is never announced as the position', async () => {
+      const estado = abrir().settings;
+      const icon = () => document.querySelector('#title-icons [data-pi="camera"]');
+      expect(icon(), 'the 📷 is not on this root\'s bar').not.toBeNull();
+      const { heard, stop } = listen();
+      try {
+        icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(estado.cameraControl, 'the first press is no longer the hands: the case lost its subject').toBe('hands');
+        await untilBackOff(() => estado.cameraControl !== 'off');
+        expect(heard.status, 'the bar told the child she was playing with her hands, over a camera that never started')
+          .not.toContain(fill('sr.icon.camera', pt['camera.hands']));
+        expect(heard.alert.some((a) => reasons('sr.hands.').includes(a)), `the child was not told why: ${heard.alert.join(' | ')}`)
+          .toBe(true);
+      } finally { stop(); }
+    });
+
+    it('🔴 [Right] the panel\'s microphone row: «Jogar falando: ligado» is never said over a control that did not start', async () => {
+      const estado = abrir().settings;
+      const { heard, stop } = listen();
+      try {
+        document.querySelector('#opt-voice').click();
+        await untilBackOff(() => estado.voiceControl);
+        expect(heard.status).not.toContain(`${pt['motora.voz']}: ${pt['state.on']}`);
+        expect(heard.alert.some((a) => reasons('sr.voice.').includes(a)), `the child was not told why: ${heard.alert.join(' | ')}`)
+          .toBe(true);
+      } finally { stop(); }
+    });
+
+    it('🔴 [Right] the panel\'s camera row: «Jogar com a câmera: gestos das mãos» is never said over a camera that did not start', async () => {
+      const estado = abrir().settings;
+      const { heard, stop } = listen();
+      try {
+        document.querySelector('#opt-camera').dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
+        expect(estado.cameraControl, 'one step from off is no longer the hands: the case lost its subject').toBe('hands');
+        await untilBackOff(() => estado.cameraControl !== 'off');
+        expect(heard.status).not.toContain(`${pt['motora.camera']}: ${pt['camera.hands']}`);
+        expect(heard.alert.some((a) => reasons('sr.hands.').includes(a)), `the child was not told why: ${heard.alert.join(' | ')}`)
+          .toBe(true);
+      } finally { stop(); }
+    });
+
+    it('🎯 [Inverse] switching OFF is true the moment it is pressed, and is still said on both surfaces', async () => {
+      const estado = abrir().settings;
+      const { heard, stop } = listen();
+      try {
+        // on, as the store holds it, with nothing announced; then the child turns it off by each surface
+        estado.setVoiceControlValue(true);
+        document.querySelector('#title-icons [data-pi="voice"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        estado.setVoiceControlValue(true);
+        document.querySelector('#opt-voice').click();
+        estado.setCameraControlValue('eyes');
+        document.querySelector('#title-icons [data-pi="camera"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        estado.setCameraControlValue('hands');
+        document.querySelector('#opt-camera').dispatchEvent(new CustomEvent('passo', { detail: -1, bubbles: true }));
+        expect(estado.cameraControl, 'one step back from the hands is no longer off').toBe('off');
+        // the four writes land on the next frame together; the records keep each one
+        for (let i = 0; i < 2; i++) await new Promise((r) => requestAnimationFrame(r));
+        const said = heard.status;
+        expect(said, 'the bar stopped saying the 👄 went off').toContain(fill('sr.icon.voice', pt['state.off']));
+        expect(said, 'the panel stopped saying the microphone went off').toContain(`${pt['motora.voz']}: ${pt['state.off']}`);
+        expect(said, 'the bar stopped saying the 📷 went off').toContain(fill('sr.icon.camera', pt['state.off']));
+        expect(said, 'the panel stopped saying the camera went off').toContain(`${pt['motora.camera']}: ${pt['state.off']}`);
+      } finally { stop(); }
+    });
+  });
+
+  /*
    * DEAF MODE IS THE ROOT'S (ADR-0234): sounds get captions, and the sonar hands its text to the interpreter. The root's
    * interpreter is the VLibras player the delivery shipped, and this test page ships none, so what a root shows here is the
    * `NO_INTERPRETER` path: the sonar's text written, «signing unavailable» in `problems` and to the child. Handing the EXACT
@@ -1995,3 +2111,9 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 //   V3 the boot's download never asking for the player (node file)    🔴 «the boot asks for the Libras player only when deaf mode is on»
 //   V4 the delivered player taking the place of the host's own        🔴 «ONE seam» (and the screen sonar's deaf-mode case)
 //   V5 the seam never reaching the delivered player (a fixed «no»)     🔴 «where the delivery shipped the player» · «`dispose()` releases»
+// ---- the spoken state follows the control (2026-09-25, each alone on `ui/pause-icons.ts` / `boot/create-game.ts`, restored — all 8 red) ----
+//   A1 the bar's 👄 announcing «ligado» again · A2 the bar's 📷 announcing the mode   🔴 «the bar's 👄 / 📷 …» (and the pause-icons pair)
+//   A3 the panel's voice row announcing the state it reads after the write           🔴 «the panel's microphone row» — the state still reads
+//      on there: the failure arrives after the click, which is what the old comment had assumed away
+//   A4 the panel's camera row announcing the mode                                    🔴 «the panel's camera row»
+//   A5–A8 the «off» line dropped from each of the four surfaces                      🔴 «switching OFF … is still said on both surfaces»
