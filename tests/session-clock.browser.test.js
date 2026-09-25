@@ -70,6 +70,20 @@ describe('the clock the module draws', () => {
     expect(getComputedStyle(r.pie()).backgroundImage, 'the pie is not drawn as a pie').toMatch(/conic-gradient/);
   });
 
+  it('🔴 [Right] the pie empties CLOCKWISE, like a Time Timer: the spent share is the face, from twelve o\'clock round to the edge', () => {
+    // The Dev, 2026-09-25: it was emptying anticlockwise. A conic gradient starts at twelve and runs clockwise, so the
+    // spent share must come FIRST (the face) and the green must end at twelve.
+    r = relogio();
+    r.avancar(15 * MIN); // a quarter spent: the face from 0° to 90°, the green from 90° round to 360°
+    const bg = getComputedStyle(r.pie()).backgroundImage;
+    const stops = [...bg.matchAll(/rgb\((\d+), (\d+), (\d+)\)/g)].map((m) => m.slice(1).join(','));
+    expect(stops[0], `the first colour from twelve o'clock is not the face: ${bg}`).toBe('246,245,240');
+    expect(stops.at(-1), `the last colour before twelve o'clock is not the green: ${bg}`).toBe('0,158,115');
+    // Chromium writes it as «face 0deg, face 90deg, green 0deg»: the face's last stop is where the green starts.
+    const faceEnd = bg.match(/rgb\(246, 245, 240\) (\d+(?:\.\d+)?)deg, rgb\(0, 158, 115\)/);
+    expect(faceEnd && parseFloat(faceEnd[1]), `the face does not end at the spent share (90°): ${bg}`).toBeCloseTo(90, 0);
+  });
+
   it('🔴 [Right] a label over the digits, and the pie to their RIGHT (ADR-0239)', () => {
     r = relogio();
     const rotulo = r.el.querySelector('.session-clock-label').getBoundingClientRect();
@@ -331,3 +345,4 @@ describe('the clock the engine mounts, in the HUD row (issue #94)', () => {
 // ============================== MUTATIONS CHECKED ==============================
 // Each applied to the code, seen RED here, and undone (the results are in the commit that brought this file).
 // The digits at 1.5× the floor instead of 1.125×: 🔴 the TEMPO block is wider than two and a half pies (ADR-0239 errata).
+// The pie drawn green-first (anticlockwise emptying, the defect the Dev saw): 🔴 the CLOCKWISE case.

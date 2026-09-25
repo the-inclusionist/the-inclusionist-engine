@@ -679,7 +679,9 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .session-clock-digits{font-size:calc(var(--ui-fs,16px) * 1.125)}
 .session-clock-pie{flex:none;box-sizing:border-box;width:var(--alvo-min,44px);height:var(--alvo-min,44px);border-radius:50%;
   border:2px solid #08080f;box-shadow:inset 0 0 0 2px #f6f5f0;
-  background:conic-gradient(#009E73 0 calc(var(--left,1) * 1turn),#f6f5f0 0)}
+  background:conic-gradient(#f6f5f0 0 calc((1 - var(--left,1)) * 1turn),#009E73 0)}
+/* The spent share is the face from twelve o'clock CLOCKWISE, and the green is what is left up to twelve: the edge moves
+   clockwise as time passes, like a Time Timer (the Dev, 2026-09-25: it was emptying anticlockwise). */
 .session-clock[data-look="red"] .session-clock-pie,.session-clock[data-look="pulse"] .session-clock-pie{background:#D55E00}
 /* The gentle pulse: one slow breath every 2.4 s — 0.4 a second, far below the three flashes a second of WCAG 2.3.1 — and
    never under reduced motion: the root writes `pulse` only when neither the engine's switches nor the system ask for less
