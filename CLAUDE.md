@@ -183,7 +183,7 @@ do GitHub, privada até o ato (**ADR-0066**).
   (coesão↑, acoplamento↓, DI, DAO, adapters — base arXiv:2409.15152): `docs/5-Refactoring/plan-modularization.md` — um
   PLANO, não um registro. ⚠️ **A regra é o ADR-0173 (2026-09-13):** camadas `i18n → core → platform → input/render → ui →
   boot`, import só para a mesma camada ou abaixo, sem ciclos, `educational` fora da pilha; o gate é
-  `tests/dependencies-point-downward.node.test.js`, com a dívida de nove imports que só encolhe (issue #167).
+  `tests/dependencies-point-downward.node.test.js`, com a dívida de imports VAZIA desde que a #167 fechou (um import contra a direção reprova).
 - **Roadmap por dependência** (fases como issues **Fase 0–6** no GitHub; a estratégia/
   ordem em `docs/ROADMAP.md`):
   0 publicar ✅ · 1 nível-glifo + editor de mapa · **2 espinha da engine = a modularização atual** · 3 arte

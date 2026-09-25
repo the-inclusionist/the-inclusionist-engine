@@ -8,7 +8,7 @@
 // the debt is paid by SUBJECT.
 //
 // ⚠️ IT ONLY RUNS WHEN IT IS CALLED, and that is a decision and not an omission: sampling a canvas every frame would cost a
-// school's machine the very thing the engine exists to protect. `Engine.medirFlashes(ms)` is how an adult asks.
+// school's machine the very thing the engine exists to protect. `Engine.measureFlashes(ms)` is how an adult asks.
 //
 // 📌 THE THREE REFUSALS ARE AS MUCH THE ANSWER AS THE MEASUREMENT, and each names what a developer must do: a world that is not
 // a canvas cannot be read at all; a host without `getImageData` or `requestAnimationFrame` cannot sample; and a canvas that
