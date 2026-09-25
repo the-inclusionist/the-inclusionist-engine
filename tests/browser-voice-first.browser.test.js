@@ -24,9 +24,13 @@ function montar({ vozesDoNavegador, comPorta = true }) {
     translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
+    // the browser's speech, lent the way the root lends it (ADR-0232 D4) — read at each utterance, so the fakes below count
+    speech: { synth: () => window.speechSynthesis, utterance: (t) => new window.SpeechSynthesisUtterance(t) },
+    now: () => performance.now(), createAudio: () => document.createElement('audio'),
+    loadKokoro: () => { portaChamada++; return new Promise(() => {}); },
     // `comPorta` is now the GAME'S ANSWER (ADR-0216 §3): declared, the neural voice is listed and loadable — and the loader is
     // replaced by one that never settles, so a case can measure that the browser's voice spoke without it.
-    ...(comPorta ? { neuralVoice: true, loadKokoro: () => { portaChamada++; return new Promise(() => {}); } } : {}),
+    ...(comPorta ? { neuralVoice: true } : {}),
   });
 }
 

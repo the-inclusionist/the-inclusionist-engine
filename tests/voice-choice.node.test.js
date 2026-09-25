@@ -3,7 +3,7 @@
 // language has, and what `platform/tts` does with the choice. The neural voices are Kokoro's, through the game's port (ADR-0207).
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { voicesForLocale } from '../app/js/platform/voice-plan.js';
 import { KOKORO_VOICES } from '../app/js/platform/kokoro.js';
 import { createTts } from '../app/js/platform/tts.js';
@@ -28,12 +28,9 @@ describe('the voices of a language', () => {
 
 // each case its own backend (ADR-0232): the store `platform/tts` receives is built over it, and a case reads it directly
 let guardado;
-beforeEach(() => {
-  guardado = memoryBackend();
-  globalThis.window = { speechSynthesis: { cancel: () => {}, speak: () => {}, getVoices: () => [] } };
-  globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
-});
-afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
+beforeEach(() => { guardado = memoryBackend(); });
+// the browser's speech, lent the way the root lends it (ADR-0232 D4); it offers no voice of its own here
+const speech = { synth: () => ({ cancel: () => {}, speak: () => {}, getVoices: () => [] }), utterance: (t) => ({ text: t }) };
 
 function montar(comPorta) {
   const registro = {};
@@ -42,6 +39,8 @@ function montar(comPorta) {
     translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }),
+    speech, now: () => 0, createAudio: () => { throw new Error('no neural utterance plays here'); },
+    loadKokoro: () => new Promise(() => {}), // required (ADR-0232 D4); without the declaration it is never asked
   };
   if (comPorta) { // the game declared `uses: { neuralVoice: true }` (ADR-0216 §3); the loader is only this case's stand-in
     ctx.neuralVoice = true;

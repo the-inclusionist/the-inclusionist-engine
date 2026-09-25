@@ -1706,6 +1706,26 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
     await Promise.all([ac.close(), pc.ac.close()]);
   });
 
+  it('🔴 [Right] narration is heard through the HOST\'s speech synthesis and utterance, timed by the HOST\'s clock', () => {
+    const spoken = [];
+    let clock = 0;
+    class HostUtterance { constructor(text) { this.text = text; this.lang = ''; this.voice = null; this.volume = 0; this.rate = 0; } }
+    const synth = { cancel() {}, speak: (u) => { spoken.push(u); }, getVoices: () => [{ name: 'Luciana', lang: 'pt-BR' }] };
+    const performance = { now: () => clock };
+    const motor = abrir({ host: { doc: document, win: hostWith({ speechSynthesis: synth, SpeechSynthesisUtterance: HostUtterance, performance }) } });
+    motor.audio.audioCat.tts.on = true; // narration is born off (`platform/audio-mixer`); this child turned it on
+    motor.audio.setVolume(0.5);
+    motor.tts.narrate('uma frase com seis palavras aqui');
+    expect(spoken.map((u) => [u.constructor, u.text, u.lang]), 'the root spoke through the page\'s speech, not its host\'s')
+      .toEqual([[HostUtterance, 'uma frase com seis palavras aqui', 'pt-BR']]);
+    expect(spoken[0].volume, 'the voice did not follow the root\'s master volume').toBeCloseTo(0.7, 6);
+    // the voice's own pace is measured on the host's clock, and the next utterance plays at the child's rate over it
+    clock = 1000; spoken[0].onstart();
+    clock = 4000; spoken[0].onend();
+    motor.tts.narrate('outra');
+    expect(spoken[1].rate, 'the utterance was not timed by the host\'s clock').not.toBe(1);
+  });
+
   it('🔴 [Right] the sonar\'s guide plays in the root\'s OWN context, at the root\'s master volume', async () => {
     const pl = { i: 0, x: 0, y: 0 };
     const motor = abrir({

@@ -4,7 +4,7 @@
 //
 // 📌 The engine's three languages all have a Kokoro voice, so the page's language is replaced here by one that has none — through
 // the translator the narration receives (ADR-0232 D3), whose `bcp47` answers the page's tag: the same port the root fills.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
@@ -15,15 +15,17 @@ let spoke, store;
 beforeEach(() => {
   spoke = []; lingua.tag = 'fr-FR';
   store = createStorage(memoryBackend()); // each case its own store (ADR-0232): a voice picked in one is not read in the next
-  globalThis.window = { speechSynthesis: { cancel: () => {}, speak: (u) => spoke.push(u), getVoices: () => [] } };
-  globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
 });
-afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
+// the browser's speech, lent the way the root lends it (ADR-0232 D4); it offers no voice of its own here
+const speech = { synth: () => ({ cancel: () => {}, speak: (u) => spoke.push(u), getVoices: () => [] }), utterance: (t) => ({ text: t }) };
 
 const montar = (over = {}) => createTts({
   store, translator: { ...createTranslator(), bcp47: () => lingua.tag },
   srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
-  getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }), ...over,
+  getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }),
+  speech, now: () => 0, createAudio: () => { throw new Error('no neural utterance plays here'); },
+  loadKokoro: () => new Promise(() => {}), // required (ADR-0232 D4); a case that fetches a voice says how
+  ...over,
 });
 
 describe('a language no voice speaks', () => {

@@ -127,7 +127,10 @@ const TOCAM_NA_REDE = {
     + 'command recogniser\'s bundle, which `platform/vosk-runtime` used to hold: the root builds the once-per-address loader '
     + '(`createBundleLoader`) and the runtime receives it. The address is `heavy/` on the page\'s own origin, built by '
     + '`deliveryPath` in the runtime and loaded only after the install checked every file by sha256 (ADR-0177, ADR-0193). '
-    + 'And the host\'s `fetch`, lent to the heavy-files download and to the reading that runs without a worker',
+    + 'And the host\'s `fetch`, lent to the heavy-files download and to the reading that runs without a worker. 📌 AND, since '
+    + 'ADR-0232 D4-B4, `import(\'../platform/kokoro-runtime.js\')`, which `platform/tts` used to hold: loaded at the FIRST neural '
+    + 'utterance (ADR-0216 §5), with the host\'s `fetch` and WebAssembly lent to it — a game that never speaks neurally never '
+    + 'reaches the module that names espeak-ng',
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `heavy/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `deliveryPath`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',
@@ -149,10 +152,9 @@ const TOCAM_NA_REDE = {
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `heavy/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `deliveryPath`, never an upstream host, and only '
     + 'after the checked cache holds every file',
-  'platform/tts.ts': 'LOCAL. Two, and neither leaves the machine: `el.src = som.url`, a `blob:` URL of the WAV the neural voice just '
-    + 'synthesised here, played through a media element so the speech rate keeps the pitch (ADR-0183 §1); and '
-    + '`import(\'./kokoro-runtime.js\')`, a chunk of this same package, cut by Vite and loaded at the FIRST neural utterance '
-    + '(ADR-0216 §5) — a game that never speaks neurally never reaches the module that names espeak-ng',
+  'platform/tts.ts': 'LOCAL. `el.src = som.url`, a `blob:` URL of the WAV the neural voice just synthesised here, played '
+    + 'through a media element so the speech rate keeps the pitch (ADR-0183 §1); it never leaves the machine. The '
+    + '`import()` of the neural runtime moved into the root with ADR-0232 D4',
   'core/i18n.ts': 'LOCAL. `import(\'../i18n/en.js\')` — os dicionários de en/es são chunks do próprio pacote, '
     + 'cortados pelo Vite e servidos pelo service worker. Nada sai da máquina; o `import()` está no crivo '
     + 'porque com um especificador absoluto ele SAI, e é por isso que o discriminador o inclui',

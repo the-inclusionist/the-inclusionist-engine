@@ -3499,15 +3499,17 @@ exists because a game still WRITES the keyboard config: `game-2048` mounts its o
 ## DB · ADR-0232 D4-B4: audio and speech receive the browser (issue #207)
 
 **Who is affected:** a game that imports anything BY VALUE from `@the-inclusionist/engine/platform/audio.js` except
-`noiseBuffer`, that calls `platform/speech`'s `gameSay`, or that builds a `SonarCtx` or `EmpathySettingsCtx` by hand. A game
-that only calls `createGame` changes nothing in what the root mounts: the root makes the audio context from `host.win` and
-hands it down.
+`noiseBuffer`, that calls `platform/speech`'s `gameSay`, or that builds a `SonarCtx`, `TtsCtx`, `KokoroRuntimeDeps` or
+`EmpathySettingsCtx` by hand. A game that only calls `createGame` changes nothing in what the root mounts: the root makes
+the audio context, the speech port, the clock and the Kokoro loader from `host.win` and hands them down.
 
 📌 **Why:** `platform/audio` held one audio context, one master, one mixer and one step counter per page, in module
-`let`s, so two roots on one page shared them (ADR-0142, ADR-0232 D3); and `platform/audio`, `speech` and `audio-sonar` reached `window` or
-`SpeechSynthesisUtterance` (ADR-0232 point 2). The audio becomes a factory the root builds; `gameSay`, a helper that holds nothing, takes what it uses
+`let`s, so two roots on one page shared them (ADR-0142, ADR-0232 D3); and `platform/audio`, `speech`, `audio-sonar`, `tts`
+and `kokoro-runtime` reached `window`, `document`, `performance`, `SpeechSynthesisUtterance`, `fetch` or `WebAssembly`
+(ADR-0232 point 2). The audio becomes a factory the root builds; `gameSay`, a helper that holds nothing, takes what it uses
 as a parameter and stays a function (erratum D3 point 2); every port that fell back to a global is now REQUIRED
-(ADR-0224/0227, erratum D2b).
+(ADR-0224/0227, erratum D2b). The Kokoro loader moved into the root, so `platform/tts` no longer imports
+`platform/kokoro-runtime` — it is still loaded by `import()` at the first neural utterance, never before.
 
 | old | new | migration |
 |---|---|---|
@@ -3515,6 +3517,8 @@ as a parameter and stays a function (erratum D3 point 2); every port that fell b
 | `platform/audio.js` `initAudioMixer(store)` | removed: `createAudio` reads the mixer from its `store` as it is built, so `audioCat` is never `null` and «the mixer before the voice» is the order of construction | pass the store to `createAudio` |
 | `platform/speech.js` `gameSay(text)` | `gameSay(voice, text)` — `voice: GameVoice` = `{ synth(): SpeechSynthesis \| null; utterance(text): SpeechSynthesisUtterance; soundOn(): boolean; volume(): number }`. `SpeechPort` (the first two) and `GameVoice` are new types | `gameSay({ synth: () => window.speechSynthesis ?? null, utterance: (t) => new SpeechSynthesisUtterance(t), soundOn: () => audio.soundOn, volume: () => audio.volume }, text)` — build the voice once and close over it |
 | `platform/audio-sonar.js` `SonarCtx` | gains a REQUIRED `newContext: () => AudioContext \| null` — the per-player context a child with an audio device of their own is routed through (it read `window.AudioContext`) | pass the same maker your `createAudio` receives |
+| `platform/tts.js` `TtsCtx` | gains REQUIRED `speech: SpeechPort` (it read `window.speechSynthesis` and `SpeechSynthesisUtterance`) and `now: () => number` (it read `performance.now`); `createAudio: () => HTMLAudioElement` and `loadKokoro: LoadKokoro` become REQUIRED (they defaulted to `document.createElement('audio')` and to the engine's own loader) | `speech` as in the `gameSay` row, `now: () => performance.now()`, `createAudio: () => document.createElement('audio')`, and `loadKokoro: () => import('@the-inclusionist/engine/platform/kokoro-runtime.js').then((m) => m.loadKokoroRuntime({ base: document.baseURI, fetch: (u) => fetch(u), compileWasm: (b) => WebAssembly.compile(b), instantiateWasm: (m2, i) => WebAssembly.instantiate(m2, i) }))` — keep it an `import()`, or espeak-ng and the ONNX runtime enter your bundle |
+| `platform/kokoro-runtime.js` `KokoroRuntimeDeps` | `fetch`, `compileWasm` and `instantiateWasm` become REQUIRED (they defaulted to the page's `fetch` and `WebAssembly`); `importModule` stays optional (`import()` is not a global) | see the loader in the row above |
 | `ui/settings-empathy.js` `EmpathySettingsCtx` | gains a REQUIRED `hearing: Pick<Audio, 'hearingLoss' \| 'setHearingLossGraph'>` — the button, the mark, the reset and the boot restore read the ROOT's sound (they imported the page-wide one) | pass your `Audio` itself: a copied `hearingLoss` would freeze the button |
 
 The additive half, on the `gameSpeed`/`menuIndexOn`/`t` precedent: **`Engine.audio`**, the root's `Audio` — the one its
@@ -3530,8 +3534,9 @@ panels.
   init and read the same names on `motor.audio`.
 - `game-platformer` is its own root (it calls no `createGame`): `app/js/main.ts:98` imports nineteen names of
   `platform/audio` (`initAudioMixer`, `_footCount` and `noiseBuffer` among them), `:99` `gameSay` (handed to
-  `game/quiz.ts` as `c.gameSay`), `:102` `createAudioSonar` and `:85` `initSettingsEmpathy` — it builds `createAudio({ newContext,
-  store })` and a `GameVoice` for `gameSay`, and passes `newContext` and `hearing: audio`. `app/js/platform/audio-nav.ts:27` imports only types of `audio-sonar`, which keep their shape.
+  `game/quiz.ts` as `c.gameSay`), `:102` `createAudioSonar`, `:105` `createTts` and `:85` `initSettingsEmpathy` — it builds
+  `createAudio({ newContext, store })`, a `GameVoice` for `gameSay`, and passes `newContext`, the four `TtsCtx` ports and
+  `hearing: audio`. `app/js/platform/audio-nav.ts:27` imports only types of `audio-sonar`, which keep their shape.
 - `game-2048`, `game-chess`, `game-whackwhack` and `pixi-15-puzzle` import none of these modules.
 
 ## DC · ADR-0232 D4-B5: heavy files and the recognisers receive the browser (issue #207)

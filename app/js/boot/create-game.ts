@@ -83,7 +83,8 @@ import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
 import { createLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
-import { createTts } from '../platform/tts.js';
+import { createTts, type LoadKokoro } from '../platform/tts.js';
+import type { SpeechPort } from '../platform/speech.js';
 import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
 import { createAudio, type Audio } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
@@ -978,21 +979,43 @@ export function createGame(o: CreateGameOptions): Engine {
   translator.applyDom(doc); // the host's markup, with THIS game's dictionary too — the module's pass reads only the page's
 
   // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: `createAudio` loads the mixer, and the voice reads it.
-  //    🔴 THE BROWSER'S SOUND IS LENT HERE, from the host's window (ADR-0232 D4): the audio context — made at the first sound,
-  //    never at boot, so it is born inside the child's gesture and the browser lets it run. The sonar's per-player contexts
-  //    come from the same maker.
+  //    🔴 THE BROWSER'S SOUND AND SPEECH ARE LENT HERE, from the host's window (ADR-0232 D4): the audio context — made at the
+  //    first sound, never at boot, so it is born inside the child's gesture and the browser lets it run — and the speech
+  //    synthesis the voice speaks through. The sonar's per-player contexts come from the same maker.
   const audioHost = win as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
   const newAudioContext = (): AudioContext | null => {
     const AC = audioHost.AudioContext ?? audioHost.webkitAudioContext;
     return AC ? new AC() : null;
   };
+  const speechHost = win as unknown as { speechSynthesis?: SpeechSynthesis; SpeechSynthesisUtterance: typeof SpeechSynthesisUtterance };
+  const speech: SpeechPort = {
+    synth: () => speechHost.speechSynthesis ?? null,
+    utterance: (text) => new speechHost.SpeechSynthesisUtterance(text),
+  };
+  /*
+   * THE ENGINE'S OWN KOKORO LOADER (ADR-0216 §1 and §5) — the Dev, 2026-09-21: «O jogo não deve precisar saber como isso funciona».
+   * ⚠️ IMPORTED AT THE FIRST NEURAL UTTERANCE AND NOT BEFORE: `kokoro-runtime` is what names espeak-ng and the ONNX runtime, so a
+   * game that never speaks neurally never loads a byte of them — which is the whole reason this is an `import()` and not an
+   * import. The page's address, `fetch` and WebAssembly are the host's.
+   */
+  const wasmHost = (win as unknown as { WebAssembly: typeof WebAssembly }).WebAssembly;
+  const loadKokoro: LoadKokoro = () => import('../platform/kokoro-runtime.js').then((m) => m.loadKokoroRuntime({
+    base: doc.baseURI,
+    fetch: (url) => win.fetch(url),
+    compileWasm: (bytes) => wasmHost.compile(bytes),
+    instantiateWasm: (module, imports) => wasmHost.instantiate(module, imports),
+  }));
   const mixer = createAudio({ newContext: newAudioContext, store });
   const { ensureAC, catNode, audioOut, setSoundOn, setVolume, tonePan, setCatGain, setHearingLossGraph } = mixer;
   const tts = createTts({
     store, translator, srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => mixer.soundOn, getVolume: () => mixer.volume, getAudioCat: () => mixer.audioCat,
     neuralVoice: !!o.uses?.neuralVoice, // ADR-0216 §3: the game says it wants one; the engine loads it
+    loadKokoro,
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
+    createAudio: () => doc.createElement('audio'),
+    speech,
+    now: () => win.performance.now(),
   });
   // 📌 The neural-voice line lives in `measureCartridgeProblems()`: the decline that silences it is the game's.
 
@@ -2152,7 +2175,7 @@ export function createGame(o: CreateGameOptions): Engine {
             const ss = win.speechSynthesis;
             if (!ss) return;
             ss.cancel();
-            const u = new SpeechSynthesisUtterance(sample);
+            const u = speech.utterance(sample);
             u.lang = 'pt-BR';
             if (chosen) u.voice = chosen;
             u.rate = 1; u.volume = 1;

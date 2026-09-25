@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/tts — spoken narration. The browser's voice speaks first (Web Speech, ADR-0200); the neural fallback is Kokoro, which
-// THE ENGINE ITSELF loads from the delivery (ADR-0216 §1) the first time a child picks it — the game only says it wants one. narrate()
+// THE ENGINE ITSELF loads from the delivery (ADR-0216 §1) the first time a child picks it — the game only says it wants one; the
+// loader, the browser's speech, the clock and the `<audio>` maker are the root's, received here (ADR-0232 D4). narrate()
 // is the entry point, gated by the mixer's narration toggle (audioCat.tts.on) — independent of captions. The PANEL's side (the
 // engine and voice lists) lives in `ui/voice-settings` and reads and writes the choice through this module. Injection by closure.
 
@@ -15,21 +16,12 @@ import {
   type LoadKokoro, type KokoroModule, type KokoroSession,
 } from './kokoro.js';
 
+import type { SpeechPort } from './speech.js';
+
 // They were declared here until ADR-0216 and are answered from the leaf now; re-exported so the name a consumer imports is the same.
 export type { LoadKokoro, KokoroModule, KokoroSession };
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
-
-/**
- * THE ENGINE'S OWN LOADER (ADR-0216 §1 and §5) — the Dev, 2026-09-21: «O jogo não deve precisar saber como isso funciona».
- *
- * ⚠️ IMPORTED AT THE FIRST NEURAL UTTERANCE AND NOT BEFORE: `kokoro-runtime` is what names espeak-ng and the ONNX runtime, so a
- * game that never speaks neurally never loads a byte of them — which is the whole reason this is an `import()` and not an import.
- */
-const fromDelivery: LoadKokoro = async () => {
-  const { loadKokoroRuntime } = await import('./kokoro-runtime.js');
-  return loadKokoroRuntime({ base: document.baseURI });
-};
 
 export interface TtsCtx {
   /**
@@ -58,17 +50,23 @@ export interface TtsCtx {
    */
   neuralVoice?: boolean;
   /**
-   * How that voice is built. Injected so a case can hand in a module without a wasm engine; the default is the engine's own loader,
-   * which reads the delivery. A game never passes this — it says `uses: { neuralVoice: true }` and the engine does the rest.
+   * How that voice is built (ADR-0216 §1 and §5). REQUIRED (ADR-0232 D4): the root's loader reads the delivery with the host's
+   * `fetch` and WebAssembly — `import('platform/kokoro-runtime')` at the FIRST neural utterance and not before, so a game that never
+   * speaks neurally never loads a byte of espeak-ng or the ONNX runtime. A game under `createGame` never passes this — it says
+   * `uses: { neuralVoice: true }` and the engine does the rest; a case hands in a module without a wasm engine.
    */
-  loadKokoro?: LoadKokoro;
+  loadKokoro: LoadKokoro;
   /** The child's speech rate, words a minute (ADR-0183 §1). Absent = each voice at its own rate. */
   getSpeechPpm?: () => number;
   /**
-   * Makes the element a neural utterance plays through. Injected so the rate can be measured; the default is the document's
-   * `<audio>`. An element, not an `AudioBufferSourceNode`: only a media element changes speed without changing pitch.
+   * Makes the element a neural utterance plays through: the root's `<audio>`, in its document. REQUIRED (ADR-0232 D4). An element,
+   * not an `AudioBufferSourceNode`: only a media element changes speed without changing pitch.
    */
-  createAudio?: () => HTMLAudioElement;
+  createAudio: () => HTMLAudioElement;
+  /** The browser's speech (`platform/speech`'s port), lent by the root from `host.win`. REQUIRED (ADR-0232 D4). */
+  speech: SpeechPort;
+  /** The clock a browser utterance and a neural load are timed with: the root's `performance.now`. REQUIRED (ADR-0232 D4). */
+  now: () => number;
 }
 
 export interface Tts {
@@ -136,14 +134,14 @@ export function createTts(ctx: TtsCtx): Tts {
    */
   const browserVoices = (): readonly NeuralVoice[] => {
     let list: readonly SpeechSynthesisVoice[] = [];
-    try { list = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
+    try { list = ctx.speech.synth()?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
     return voicesForLocale(bcp47(), list.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
   };
   const availableVoices = (): readonly NeuralVoice[] => [...browserVoices(), ...(ctx.neuralVoice ? voicesForLocale(bcp47(), KOKORO_VOICES) : [])];
   /** The browser voice an entry names, or null. */
   const browserVoice = (id: string | undefined): SpeechSynthesisVoice | null => {
     if (!id?.startsWith('webspeech:')) return null;
-    try { return window.speechSynthesis?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
+    try { return ctx.speech.synth()?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
   };
   function voiceInUse(): NeuralVoice | null {
     const list = availableVoices();
@@ -160,12 +158,12 @@ export function createTts(ctx: TtsCtx): Tts {
 
   function speakWebSpeech(text: string): boolean {
     try {
-      const ss = window.speechSynthesis; if (!ss) return false; ss.cancel();
+      const ss = ctx.speech.synth(); if (!ss) return false; ss.cancel();
       // `u.lang` follows the game's language. Fixed at pt-BR, a game in English or Spanish would ask the browser for a
       // PORTUGUESE voice for a text that is not Portuguese — and the result is not an accent, it is unintelligible: the
       // wrong phonetics applied to the wrong letters.
       const voiceName = _ttsVoiceObj ?? browserVoice(voiceInUse()?.voice);
-      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (voiceName) u.voice = voiceName; u.volume = Math.min(1, ctx.getVolume() * 1.4);
+      const u = ctx.speech.utterance(text); u.lang = bcp47(); if (voiceName) u.voice = voiceName; u.volume = Math.min(1, ctx.getVolume() * 1.4);
       // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
       // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
       const voiceIdOf = 'webspeech:' + (voiceName?.name ?? bcp47());
@@ -173,9 +171,9 @@ export function createTts(ctx: TtsCtx): Tts {
       const voiceBase = voiceAverage.get(voiceIdOf) ?? null;
       u.rate = ctx.getSpeechPpm && voiceBase ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), voiceBase).rate : 1;
       let startAt = 0;
-      u.onstart = () => { startAt = performance.now(); };
+      u.onstart = () => { startAt = ctx.now(); };
       u.onend = () => {
-        const seconds = startAt ? (performance.now() - startAt) / 1000 : 0;
+        const seconds = startAt ? (ctx.now() - startAt) / 1000 : 0;
         const measured = speechPlaybackRate(words, seconds, 150, null).voiceWpm;
         if (measured) media(voiceIdOf, measured / u.rate);
       };
@@ -205,7 +203,7 @@ export function createTts(ctx: TtsCtx): Tts {
       play: (sound, onFinish) => {
         const ac = ctx.ensureAC();
         if (!ac) { URL.revokeObjectURL(sound.url); return null; }
-        const el = ctx.createAudio ? ctx.createAudio() : document.createElement('audio');
+        const el = ctx.createAudio();
         el.preservesPitch = true;
         el.src = sound.url;
         el.playbackRate = sound.rate;
@@ -224,10 +222,10 @@ export function createTts(ctx: TtsCtx): Tts {
    * with threads otherwise (ADR-0192).
    */
   function loadKokoroEngine(forVoice: NeuralVoice): void {
-    const load = ctx.loadKokoro ?? fromDelivery;
+    const load = ctx.loadKokoro;
     const kv = KOKORO_VOICES.find((v) => v.voice === forVoice.voice);
     if (!kv) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
-    ttsLoading = true; loadedVoice = forVoice.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
+    ttsLoading = true; loadedVoice = forVoice.voice; const t0 = ctx.now(); ctx.srSay(t('sr.tts.downloading'));
     load().then(async (mod) => {
       const [symbolIds, table] = await Promise.all([mod.vocabulary(), mod.voice(kv.voice)]);
       const synthesiseWith = async (kokoroSession: KokoroSession, text: string): Promise<Float32Array> => {
@@ -244,8 +242,8 @@ export function createTts(ctx: TtsCtx): Tts {
       const fala = speakByWav(kv.voice, async (text) => wavDe(await synthesiseWith(used, text)));
       ttsEngine = { id: 'kokoro', speak: (text: string) => { fala.speak(text); } };
       ttsLoading = false;
-      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* noop */ }
-      narrate(t('sr.tts.ready', { s: ((performance.now() - t0) / 1000).toFixed(0) }));
+      try { ctx.speech.synth()?.cancel(); } catch (e) { /* noop */ }
+      narrate(t('sr.tts.ready', { s: ((ctx.now() - t0) / 1000).toFixed(0) }));
     }).catch(() => { ttsLoading = false; ttsFailed = true; ctx.srAlert(t('sr.tts.loadFailed')); });
   }
 

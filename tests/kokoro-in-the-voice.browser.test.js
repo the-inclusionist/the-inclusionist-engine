@@ -19,7 +19,7 @@ const ruido = () => { const o = tom(2400); o[9] = -20_561_670; return o; };
 // The engine's own loader, for the case that goes through `createGame` and so cannot inject one: `vi.mock` is hoisted above every
 // import, so it reads the fake through this binding, set when that case builds the game.
 let doCreateGame = null;
-vi.mock('../app/js/platform/kokoro-runtime.js', () => ({ loadKokoroRuntime: async () => doCreateGame.carregar() }));
+vi.mock('../app/js/platform/kokoro-runtime.js', () => ({ loadKokoroRuntime: async (deps) => { doCreateGame.deps = deps; return doCreateGame.carregar(); } }));
 
 /** A fake Kokoro runtime: `gpuFala` says whether WebGPU returns speech; every session and phonemization is recorded. */
 function portaFalsa({ gpuFala }) {
@@ -40,8 +40,17 @@ const tocados = [];
 const playOriginal = HTMLMediaElement.prototype.play;
 let vozGuardada;
 
+/** The browser's speech, the clock and the `<audio>` maker, lent the way the root lends them (ADR-0232 D4). */
+const feitos = []; // every element the lent maker made
+const doNavegador = {
+  speech: { synth: () => window.speechSynthesis, utterance: (t) => new SpeechSynthesisUtterance(t) },
+  now: () => performance.now(),
+  createAudio: () => { const el = document.createElement('audio'); feitos.push(el); return el; },
+};
+
 function ttsCom(porta) {
   return createTts({
+    ...doNavegador,
     store: createStorage(memoryBackend()),
     translator: createTranslator(), // the root's translator, played by the test (ADR-0232 D3)
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
@@ -81,7 +90,8 @@ describe('the voice list with the Kokoro port', () => {
 
   it('🔴 [Zero] without the port no Kokoro voice is listed', () => {
     const tts = createTts({ store: createStorage(memoryBackend()), translator: createTranslator(), srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
-      getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => null });
+      getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => null, ...doNavegador,
+      loadKokoro: () => { throw new Error('a game without the declaration never loads the voice'); } });
     expect(tts.voices(), 'a browser offering no voice and no port: nothing to list').toEqual([]);
   });
 });
@@ -99,6 +109,7 @@ describe('a Kokoro voice speaks', () => {
     tts.ttsSpeak('Pule a pedra e pegue a estrela agora mesmo.');
     await esperar(() => tocados.length > antes);
     expect(tocados.length, 'nothing played').toBeGreaterThan(antes);
+    expect(feitos, 'the utterance did not play through the element the root lent').toContain(tocados.at(-1));
     expect(porta.registo.fonemizados.at(-1), 'the Portuguese voice was phonemized in another language').toEqual(['Pule a pedra e pegue a estrela agora mesmo.', 'pt-br']);
     expect(porta.registo.voices).toEqual(['pf_dora']);
   });
@@ -166,6 +177,52 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
     expect(r.slice(0, 2)).toEqual(['❤️ Heart', '❤️ Bella']);
     expect(r.filter((x) => x.startsWith('❤️')).length).toBe(2);
     expect(r.length).toBe(28);
+  });
+});
+
+describe('the root\'s Kokoro loader reads the delivery with the HOST\'s fetch and WebAssembly (ADR-0232 D4)', () => {
+  // `platform/tts` no longer imports the runtime: the root does, at the first neural utterance, and lends it the page's address
+  // and the host window's `fetch` and WebAssembly. The host here is the real window with those three answered by spies, so a
+  // root that reached the globals instead would be seen.
+  it('🔴 [Right] the runtime is asked with the page\'s address, and its fetch and wasm calls reach the host', async () => {
+    const pedidos = [], compilados = [], instanciados = [];
+    const wasmDoHospedeiro = {
+      compile: (bytes) => { compilados.push(bytes); return WebAssembly.compile(bytes); },
+      instantiate: (module, imports) => { instanciados.push(module); return WebAssembly.instantiate(module, imports); },
+    };
+    const proprios = {
+      fetch: async (u) => { pedidos.push(String(u)); return new Response('', { status: 404 }); },
+      WebAssembly: wasmDoHospedeiro,
+    };
+    const hospedeiro = new Proxy(window, {
+      get(t, p) {
+        if (Object.hasOwn(proprios, p)) return proprios[p];
+        const v = Reflect.get(t, p);
+        return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(t) : v;
+      },
+    });
+    await setLocale('pt'); // the block above leaves the page in English, where `pf_dora` is not a voice of the language
+    document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
+      + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    doCreateGame = portaFalsa({ gpuFala: true });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: hospedeiro },
+      downloadHeavy: false, players: [{ ctrl: 0 }], uses: { neuralVoice: true } });
+    try {
+      expect(motor.tts.setVoice('pf_dora')).toBe(true);
+      motor.tts.ttsSpeak('Olá');
+      await esperar(() => motor.tts.getEngine());
+      const deps = doCreateGame.deps;
+      expect(deps?.base, 'the runtime was not asked with the page\'s address').toBe(document.baseURI);
+      await deps.fetch('heavy/x.bin');
+      expect(pedidos, 'the runtime\'s fetch did not reach the host').toEqual(['heavy/x.bin']);
+      const vazio = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]).buffer; // the smallest valid wasm module
+      const modulo = await deps.compileWasm(vazio);
+      await deps.instantiateWasm(modulo, {});
+      expect([compilados.length, instanciados.length], 'the runtime\'s wasm did not go through the host').toEqual([1, 1]);
+    } finally {
+      motor.dispose();
+    }
   });
 });
 

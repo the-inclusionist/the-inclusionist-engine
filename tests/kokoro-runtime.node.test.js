@@ -76,6 +76,18 @@ describe('the neural voice, loaded by the engine', () => {
     expect(fetched.filter((u) => u.endsWith('espeak-ng.wasm')), 'the 18 MiB wasm was fetched again for each sentence').toHaveLength(1);
   });
 
+  it('🔴 [Right] espeak-ng is instantiated through the injected `instantiateWasm`, with its own imports (ADR-0232 D4)', async () => {
+    // The host's WebAssembly is lent by the root; a runtime that reached the page's global instead would never call this.
+    const { deps, espeakRuns } = build();
+    const instanciados = [];
+    deps.instantiateWasm = async (module, imports) => { instanciados.push([module, imports]); return { fake: 'instance' }; };
+    const kokoro = await loadKokoroRuntime(deps);
+    await kokoro.phonemize('oi', 'pt-br');
+    const pronto = new Promise((resolve) => { espeakRuns[0].instantiateWasm({ env: 'imports' }, (i, m) => resolve([i, m])); });
+    expect(await pronto).toEqual([{ fake: 'instance' }, { fake: 'module' }]);
+    expect(instanciados).toEqual([[{ fake: 'module' }, { env: 'imports' }]]);
+  });
+
   it('📌 [Right] onnxruntime loads whether the module default-exports its API or IS the API', async () => {
     for (const ortExport of ['default', 'bare']) {
       const { deps, ort } = build({ ortExport });

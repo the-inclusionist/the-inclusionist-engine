@@ -46,6 +46,10 @@ function tts() {
     ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6,
     getAudioCat: () => ({ tts: { on: true, vol: 1 } }),
+    // the browser's speech, lent the way the root lends it (ADR-0232 D4) — read at each utterance, so the replacements above count
+    speech: { synth: () => window.speechSynthesis, utterance: (t) => new globalThis.SpeechSynthesisUtterance(t) },
+    now: () => performance.now(), createAudio: () => document.createElement('audio'),
+    loadKokoro: () => new Promise(() => {}), // required; this file declares no neural voice
   });
 }
 

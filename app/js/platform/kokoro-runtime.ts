@@ -25,12 +25,15 @@ const ESPEAK_WASM = 'voz:runtime:fonemas:wasm';
 export interface KokoroRuntimeDeps {
   /** The page's address, which `heavy/` is resolved against. */
   readonly base: string;
-  /** Injected so a case can answer without a network; the default is the page's own `fetch`. */
-  readonly fetch?: (url: string) => Promise<Response>;
-  /** `import()`, injected so a case can hand in the two modules without a network or a wasm engine. */
+  /**
+   * The host's `fetch`, and the host's `WebAssembly.compile` and `instantiate` below: REQUIRED (ADR-0232 D4). The root lends
+   * them from `host.win`; a default would be the page's globals reached from `platform/`, and a case answers without a network.
+   */
+  readonly fetch: (url: string) => Promise<Response>;
+  /** `import()`, injected so a case can hand in the two modules without a network. Optional: `import()` is not a global. */
   readonly importModule?: (url: string) => Promise<unknown>;
-  readonly compileWasm?: (bytes: ArrayBuffer) => Promise<WebAssembly.Module>;
-  readonly instantiateWasm?: (module: WebAssembly.Module, imports: WebAssembly.Imports) => Promise<WebAssembly.Instance>;
+  readonly compileWasm: (bytes: ArrayBuffer) => Promise<WebAssembly.Module>;
+  readonly instantiateWasm: (module: WebAssembly.Module, imports: WebAssembly.Imports) => Promise<WebAssembly.Instance>;
 }
 
 /** What the loaded espeak-ng module looks like: a factory, default-exported or not. */
@@ -41,9 +44,7 @@ type EspeakModule = { readonly default?: EspeakFactory } | EspeakFactory;
  * or has none of it — and «none of it» is a refusal the caller reports, not a silence.
  */
 export async function loadKokoroRuntime(d: KokoroRuntimeDeps): Promise<KokoroModule> {
-  const compile = d.compileWasm ?? ((bytes) => WebAssembly.compile(bytes));
-  const instantiate = d.instantiateWasm ?? ((module, imports) => WebAssembly.instantiate(module, imports));
-  const get = d.fetch ?? ((url: string) => fetch(url));
+  const { compileWasm: compile, instantiateWasm: instantiate, fetch: get } = d;
   const loadModule = d.importModule ?? ((url: string) => import(/* @vite-ignore */ url) as Promise<unknown>);
 
   const espeakModule = await loadModule(atDelivery(ESPEAK_GLUE, d.base)) as EspeakModule;
