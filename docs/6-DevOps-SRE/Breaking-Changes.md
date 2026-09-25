@@ -3819,7 +3819,7 @@ zeros, clamped at 99999, and a listener hears the number («12 points»), never 
 | mission: top left, level with the bar | top centre, just under the bar (`ui/top-band` writes its `top`); the bar's momentary name line covers it while a name shows | — |
 | power: top right | above the score, in the row | — |
 | learning bars: centred in the footer | stacked at the row's left; the whole row is hidden while the explanation shows | — |
-| `--rodape-h` = the footer's 2.6 lines + 8 px | + `--hud-row-h`, the row's height: the caption and the legend stand ABOVE the row | a game's workspace that ends at `--rodape-h` ends higher (98 px at 640×360 with only the clock in the row) |
+| `--rodape-h` = the footer's 2.6 lines + 8 px | the HUD ROW's room only: `--hud-row-h` plus `--hud-row-bottom` (the pad's lift). The caption, the legend and the explanation still stand above the row but are momentary and OVERLAY the workspace while they show (ADR-0239 erratum). The footer's own two lines are `--footer-band-h`, which the engine's panels keep free | a game's workspace that ends at `--rodape-h` ends LOWER (48 px at 640×360 with only the clock in the row, against 49.6 before); a game that must keep something clear of a showing caption reads `--footer-band-h` too |
 | `TopBandCtx.hud: { left, right }` | `{ left }` — the right column is in the row and no longer room at the top | a caller that passes `right` may keep passing it; it is not read |
 | — | new: `ui/hud-row` (`mountHudRow`, `reserveBottomBand`, `--hud-row-h`, `--hud-row-bottom`), `ui/session-clock` (`mountSessionClock`), `ui/hud-bands.fiveDigits`, the i18n keys `clock.label`, `hud.points` | — |
 

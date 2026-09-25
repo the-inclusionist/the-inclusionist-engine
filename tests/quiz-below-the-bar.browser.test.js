@@ -81,20 +81,26 @@ describe('the quiz page', () => {
     expect(document.documentElement.style.getPropertyValue('--quiz-alt-min')).toBe('');
   });
 
-  it('🔴 [Right] the last option ENDS INSIDE the region, above the footer zone (ADR-0163, ADR-0164 D1)', () => {
+  // ⚠️ REWRITTEN ON 2026-09-25 (ADR-0239 erratum): this case demanded the options end above the FOOTER zone — the caption,
+  // the legend and the explanation. Those are momentary and overlay the workspace while they show; what is ALWAYS on screen
+  // at the bottom is the HUD row, and the options must end above IT. The demand is the same — clear of what is always there.
+  it('🔴 [Right] the last option ENDS INSIDE the region, above the HUD row — what is always on screen (ADR-0163, ADR-0239)', () => {
     const regiao = document.getElementById('game-region').getBoundingClientRect();
     const opcoes = [...document.querySelectorAll('.quiz-alt')];
     const ultima = opcoes.at(-1).getBoundingClientRect();
-    // the footer height is a calc() on the region: resolve it through a probe, not by parsing the declaration
+    // the room is a calc() on the region: resolve it through a probe, not by parsing the declaration
     const sonda = document.createElement('div');
     sonda.style.cssText = 'position:absolute;height:var(--rodape-h,0px)';
     document.getElementById('game-region').appendChild(sonda);
     const rodape = sonda.getBoundingClientRect().height;
     sonda.remove();
-    expect(rodape, 'the footer zone resolved to nothing — the case would not see it').toBeGreaterThan(0);
+    const linha = document.querySelector('.hud-row')?.getBoundingClientRect();
+    expect(linha?.height, 'no HUD row on the page — the case would not see it').toBeGreaterThan(0);
+    expect(rodape, 'the room the game leaves at the bottom does not hold the row').toBeGreaterThanOrEqual(Math.floor(regiao.bottom - linha.top));
     expect(Math.round(regiao.height), 'the region is not at its 640×360 floor here').toBe(360);
-    expect(Math.round(ultima.bottom), `last option ends at ${Math.round(ultima.bottom - regiao.top)} of ${Math.round(regiao.height)} (footer ${rodape.toFixed(0)} px)`)
-      .toBeLessThanOrEqual(Math.round(regiao.bottom - rodape));
+    expect(Math.round(ultima.bottom), `last option ends at ${Math.round(ultima.bottom - regiao.top)} of ${Math.round(regiao.height)} (row from ${Math.round(linha.top - regiao.top)})`)
+      .toBeLessThanOrEqual(Math.round(linha.top));
+    expect(Math.round(ultima.bottom), 'the options do not end where the reserve says').toBeLessThanOrEqual(Math.round(regiao.bottom - rodape));
   });
 });
 
@@ -161,13 +167,14 @@ describe('the quiz with a face whose floor is 20 px (issue #172)', () => {
     expect(e.topoDaBarra, 'the bar left the top edge').toBe(0);
   });
 
-  it('🔴 [Right] and the last option still ends above the footer at 640×360', async () => {
+  // ⚠️ Rewritten with the case above (ADR-0239 erratum): «the footer» is now the room the HUD row keeps, --rodape-h.
+  it('🔴 [Right] and the last option still ends above the HUD row at 640×360', async () => {
     const regiao = document.getElementById('game-region').getBoundingClientRect();
     const ultima = [...document.querySelectorAll('.quiz-alt')].at(-1).getBoundingClientRect();
     const rodape = alturaDoRodape();
     try {
       expect(Math.round(regiao.height)).toBe(360);
-      expect(Math.round(ultima.bottom - regiao.top), `last option ends at ${Math.round(ultima.bottom - regiao.top)} (footer from ${Math.round(regiao.height - rodape)})`)
+      expect(Math.round(ultima.bottom - regiao.top), `last option ends at ${Math.round(ultima.bottom - regiao.top)} (row from ${Math.round(regiao.height - rodape)})`)
         .toBeLessThanOrEqual(Math.round(regiao.height - rodape));
     } finally {
       await ateAEscala('1');

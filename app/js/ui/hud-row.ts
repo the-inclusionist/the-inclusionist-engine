@@ -9,7 +9,8 @@
 //   · `--hud-row-bottom` — how far above the region's lower edge the row stands: 0, or the height of the on-screen pad's
 //     lower parts while the pad shows, so the row sits ABOVE the pad;
 //   · `--hud-row-h` — the row's own height, so the sound caption and the button legend sit above it, and a game's workspace
-//     ends above it (`--rodape-h` adds it).
+//     ends above it: `--rodape-h` is these two and nothing else, because the caption and the legend are momentary and
+//     overlay the workspace while they show (ADR-0239 erratum).
 // The explanation band covers the row while a menu is open: that is the stylesheet's alone.
 //
 // ⚠️ IT RECEIVES THE NODES and reaches no global (ADR-0232), like `ui/top-band`.

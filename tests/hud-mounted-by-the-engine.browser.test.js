@@ -316,22 +316,31 @@ describe('the HUD the engine mounts (issue #162), in one row at the bottom (ADR-
     expect(filhos.indexOf(document.querySelector('.hud-row'))).toBeLessThan(filhos.indexOf(document.querySelector('.rodape-da-tela')));
   });
 
-  it('🔴 [Right] the sound caption stands ABOVE the row, not over it (ADR-0239 point 6)', async () => {
+  /** `--rodape-h` is a `calc()` a custom property keeps unresolved: a probe of that height resolves it, as a game reads it. */
+  const salaDoJogo = () => {
+    const sonda = document.createElement('div');
+    sonda.style.cssText = 'position:absolute;height:var(--rodape-h)';
+    document.getElementById('game-region').appendChild(sonda);
+    const h = sonda.getBoundingClientRect().height;
+    sonda.remove();
+    return h;
+  };
+
+  // ⚠️ REWRITTEN ON 2026-09-25 (ADR-0239 erratum): this case demanded that `--rodape-h` hold the caption too. The caption is
+  // momentary and OVERLAYS the workspace; the room a game leaves free is the row's, which is always there.
+  it('🔴 [Right] the sound caption stands ABOVE the row, and a game\'s room is the ROW\'s — the caption overlays the workspace', async () => {
     motor = abrir({ hud: [...HUD(), ...BARRAS()] });
     await esperar(80);
+    const regiao = caixa('#game-region');
+    const antes = salaDoJogo();
+    expect(Math.abs(antes - (regiao.bottom - caixa('.hud-row').top)), 'the room a game leaves is not the row\'s').toBeLessThanOrEqual(1);
     motor.captionSound('Porta rangendo');
     await esperar(80);
     const legenda = document.querySelector('.legenda-de-som');
     expect(legenda?.hidden, 'no caption showing — the case measures nothing').toBe(false);
     expect(legenda.getBoundingClientRect().bottom, 'the caption covers the row').toBeLessThanOrEqual(caixa('.hud-row').top + 0.5);
-    // `--rodape-h` is a `calc()` a custom property keeps unresolved: a probe of that height resolves it, as a game reads it
-    const sonda = document.createElement('div');
-    sonda.style.cssText = 'position:absolute;height:var(--rodape-h)';
-    document.getElementById('game-region').appendChild(sonda);
-    const rodapeH = sonda.getBoundingClientRect().height;
-    sonda.remove();
-    expect(rodapeH, 'a game\'s workspace does not end above the row and the footer').toBeGreaterThanOrEqual(
-      caixa('#game-region').bottom - legenda.getBoundingClientRect().top - 1);
+    expect(salaDoJogo(), 'a momentary caption pushed the game\'s workspace').toBe(antes);
+    expect(legenda.getBoundingClientRect().top, 'the case needs the caption to reach into the workspace').toBeLessThan(regiao.bottom - antes);
   });
 
   it('🔴 [Right] where the on-screen pad shows, the row stands ABOVE the pad', async () => {

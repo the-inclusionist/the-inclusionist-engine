@@ -553,7 +553,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* THE QUIZ STARTS BELOW THE QUICK BAR (ADR-0148). The engine declares `--barra-a11y-h` on `#game-region`; the bar sits
    10 px from the top (`#title-icons`), and the statement was drawn behind it — measured on a screenshot of the Dev's. */
 /* Since issue #160 the variable is the WHOLE room (the bar's offset, the bar, the icon name line and a light gap): read as is. */
-.quiz-app{padding-top:var(--barra-a11y-h,0px);padding-bottom:var(--rodape-h,0px)} /* the footer band is its own zone (ADR-0164) */
+.quiz-app{padding-top:var(--barra-a11y-h,0px);padding-bottom:var(--rodape-h,0px)} /* the HUD row is always there; the footer bands overlay (ADR-0239 erratum) */
 /* ADR-0163: at 640×360 the bar, the statement, four 44 px options and the footer band had 404 px to fit in 360 (measured).
    The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
 .quiz-pergunta{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25}
@@ -591,15 +591,19 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    lines of text. The Dev saw a three-line explanation in the middle of the screen, over a quiz option, with outlined
    letters and no background. White on black at .82 over pure white composes to ~13:1 (the panel footer's arithmetic).
    With the quick-pause legend also showing, each keeps ONE line, so the band never grows past two.
-   `--rodape-h` is the room it takes, declared so a game's workspace can end above it (the `--barra-a11y-h` model). */
-#game-region{--rodape-h:calc(var(--ui-fs,16px) * 2.6 + 8px + var(--hud-row-h,0px))} /* + the HUD row the footer stands on (ADR-0239) */
+   `--footer-band-h` is the room those two lines take: the engine's panels keep it free under their last row.
+   🔴 `--rodape-h` is what a GAME leaves free at the bottom, and since ADR-0239's erratum it is the HUD ROW's room only — its
+   height plus how far the pad lifts it. The caption, the legend and the explanation are MOMENTARY and overlay the workspace
+   while they show: «a legenda é momentânea» (the Dev). Counting them made a band that is off most of the time take the
+   game's floor for good (the demo quiz lost its last option at 640×360). */
+#game-region{--footer-band-h:calc(var(--ui-fs,16px) * 2.6 + 8px);--rodape-h:calc(var(--hud-row-bottom,0px) + var(--hud-row-h,0px))}
 /* ADR-0163 rule 3: the region's text grows with the scale the engine forces — 16 px at 640×360, 32 at 1280×720 — times the
    communication cycle's type scale, which the root size also carries. Without it everything in the region read the ROOT
    16 px: measured at 1280×720, quiz options at 16 px and the bar's emoji at 20 px under a `--ui-fs` of 32. */
 #game-region{font-size:calc(var(--ui-fs,16px) * var(--fonte-escala,1))}
 /* ADR-0164 as the Dev corrected it: the EXPLANATION stands on a full-width dark band at the lowest edge (rule 2, rule 4);
    the BUTTON LEGEND runs the full width with NO band, a dark background only behind each «name: function» (rule 3), and
-   sits above the explanation. The column itself paints nothing. Padding adds to 8 px, so two lines fit `--rodape-h`. */
+   sits above the explanation. The column itself paints nothing. Padding adds to 8 px, so two lines fit `--footer-band-h`. */
 /* THE HUD the engine mounts from a cartridge's `hud` (ADR-0168, ADR-0175; issue #162): two columns level with the quick bar —
    points and mission top left, power top right — each narrowed by the root so it never reaches the bar. State on dark chips, like the
    icon's name; no pointer events, so a finger passes through to the game. */
@@ -633,7 +637,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* ===================== THE HUD ROW AT THE BOTTOM (ADR-0239; issue #94) =====================
    One row along the lower edge, left to right: the learning bars · the session clock, centred · the power over the score ·
    the game's map. `ui/hud-row` writes where it stands (`--hud-row-bottom`: above the on-screen pad while it shows) and its
-   height (`--hud-row-h`, which the footer and `--rodape-h` read). Three columns of which the outer two are equal, so the
+   height (`--hud-row-h`, which the footer and `--rodape-h` read — the row is all a game must leave free). Three columns of which the outer two are equal, so the
    clock is at the true centre; `minmax(0,…)` so a long cell never pushes it off. No pointer events: a finger passes through
    to the game. Empty — no clock, no band, no map — it is not drawn. */
 .hud-row{position:absolute;left:0;right:0;bottom:var(--hud-row-bottom,0px);z-index:12;pointer-events:none;box-sizing:border-box;
@@ -708,7 +712,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    spacing (ADR-0149) «◀ Realce de contraste: desligado ▶» is wider than the pause list's 26em. */
 #game-region .overlay__card{background:#0e1626;border:2px solid #ffd23f;border-radius:14px;padding:.25rem .7rem;width:auto;
   max-width:94%;height:100%;max-height:100%;box-sizing:border-box;
-  scrollbar-gutter:stable both-edges;box-shadow:0 8px 30px rgba(0,0,0,.5);scroll-padding-bottom:var(--rodape-h,50px)}
+  scrollbar-gutter:stable both-edges;box-shadow:0 8px 30px rgba(0,0,0,.5);scroll-padding-bottom:var(--footer-band-h,50px)}
 #game-region .overlay__card h2{font-size:1em;line-height:1.25;margin:0 0 .1rem;color:#ffd23f}
 #game-region .overlay__back{width:100%;margin:0 0 2px;justify-content:center;background:#1a2740;border:1px solid #6a7a96;border-radius:10px;color:#eaf2f8}
 #game-region .overlay__back:hover,#game-region .overlay__back:focus{background:#2a3a5e;border-color:#ffd23f;outline:2px solid #ffd23f;outline-offset:1px}
@@ -720,7 +724,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 #game-region .ctrl-row:hover,#game-region .ctrl-row:focus-within{background:#2a3a5e;border-color:#ffd23f}
 /* The card runs under the explanation band, as the pause card runs under its legend: the room at the end of the card and
    the scroll padding let the last row, and the focused one, come to rest above the band. */
-#game-region .overlay__card::after{content:"";display:block;height:var(--rodape-h,50px)}
+#game-region .overlay__card::after{content:"";display:block;height:var(--footer-band-h,50px)}
 /* HELP IS A SLIDE SHOW (interface log, 2026-09-13; `ui/help-panel`): «textos, figuras e no máximo animações», not a menu. One stop
    with the page arrows at its sides; the slide holds the child's key drawn as a key cap, the game's word and its sentence, and
    dots that say where the child is by fill and not by colour alone. The key cap presses itself now and then — the one animation,
