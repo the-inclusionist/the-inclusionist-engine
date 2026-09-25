@@ -34,7 +34,7 @@ const docQueGrava = {
   },
 };
 const make = (over = {}) => createFaceControl({
-  t: translate, doc: document, region, base: location.href, loop,
+  t: translate, doc: document, region, base: location.href, hasFile: async () => true, loop,
   controller: { press: (a, s) => presses.push(['press', a, s]), release: (a, s) => presses.push(['release', a, s]) },
   say: (s) => said.push(s), alert: () => {}, report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: { detect: () => face, delegate: () => 'GPU', eyeLines: { eyes: [], brows: [] }, faceLines: { eyes: [], brows: [], lips: [] }, close: () => {} } }),
@@ -54,6 +54,14 @@ beforeEach(() => {
 afterEach(() => { region.remove(); });
 
 describe('the face control', () => {
+  // 🔴 ADR-0232 D4: the checked cache is the ROOT's, and the loader asks it through the control — not through a global.
+  it('hands the loader the page and the cache question it was given', async () => {
+    const asked = [];
+    const hasFile = async () => true;
+    await make({ hasFile, loadTracker: async (deps) => { asked.push(deps); return { ok: false, missing: ['x'] }; } }).apply(true);
+    expect(asked).toEqual([{ base: location.href, hasFile }]);
+  });
+
   it('asks for the middle, measures the rest on a still face and says ready', async () => {
     await make().apply(true);
     expect(said[0]).toMatch(/rosto parado/);

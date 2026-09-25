@@ -936,6 +936,100 @@ describe('createGame em execução', () => {
 });
 
 /*
+ * D4-B5 · THE HEAVY FILES AND THE RECOGNISERS RECEIVE THE BROWSER FROM THE ROOT (ADR-0232 D4, issue #207).
+ *
+ * 🔴 The modules no longer reach `caches`, `fetch`, `crypto`, `navigator`, `AudioContext`, `performance` or `Worker`: each is
+ * a REQUIRED port, and the root fills it from the HOST's window. What these cases measure is that filling — the host's own
+ * doubles are what answer, so a root that went back to a global (or dropped a port) turns them red.
+ */
+describe('D4-B5 · the root lends the heavy files and the recognisers the host\'s browser (ADR-0232 D4)', () => {
+  beforeAll(async () => { await import('../app/js/boot/create-game.js'); }, 30000);
+
+  /** A host window with the browser the heavy files use, each piece a double that records who asked it. */
+  const hostWith = (win, log) => ({
+    ...win,
+    caches: { open: async (name) => { log.opened.push(name); return { match: async (u) => (u === 'https://kept.example/x' ? { ok: true } : undefined) }; } },
+    fetch: async (u) => { log.fetched.push(u); return { ok: false, status: 404 }; },
+    crypto: { subtle: { digest: async (alg) => { log.hashed.push(alg); return new Uint8Array([0xab]).buffer; } } },
+  });
+  const newLog = () => ({ opened: [], fetched: [], hashed: [] });
+
+  it('🔴 [Right] the download receives the host\'s cache, fetch, hash and page', async () => {
+    const pedidos = [];
+    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
+      ...(await original()),
+      downloadHeavy: async (options) => { pedidos.push(options); return []; },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { doc, win } = domFalso();
+      doc.baseURI = 'https://escola.example/jogo/';
+      const log = newLog();
+      const host = hostWith(win, log);
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host } });
+      const [o] = pedidos;
+      expect(o.cacheStorage, 'the download was not handed the host\'s Cache Storage').toBe(host.caches);
+      expect(o.base, 'the delivery is not resolved against the host\'s page').toBe('https://escola.example/jogo/');
+      await o.fetch('https://escola.example/jogo/heavy/a');
+      expect(log.fetched, 'the download does not fetch through the host').toEqual(['https://escola.example/jogo/heavy/a']);
+      expect(await o.digest(new ArrayBuffer(1)), 'the hash is not the host\'s crypto.subtle').toBe('ab');
+      expect(log.hashed).toEqual(['SHA-256']);
+    } finally {
+      vi.doUnmock('../app/js/platform/heavy.js');
+      vi.resetModules();
+    }
+  });
+
+  it('🎯 [Zero] a host with no cache, no fetch and no crypto (an insecure context) lends none — the global is never taken instead', async () => {
+    const pedidos = [];
+    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
+      ...(await original()),
+      downloadHeavy: async (options) => { pedidos.push(options); return []; },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() } });
+      // 📌 node HAS a global `fetch` and `crypto.subtle`: a root that fell back to them would hand them over here
+      expect(pedidos[0]).toMatchObject({ cacheStorage: undefined, fetch: undefined, digest: null });
+    } finally {
+      vi.doUnmock('../app/js/platform/heavy.js');
+      vi.resetModules();
+    }
+  });
+
+  it('🔴 [Right] the three camera controls ask the HOST\'s checked cache whether a file is there', async () => {
+    const recebidos = {};
+    const dublar = (nome, modulo) => vi.doMock(`../app/js/ui/${modulo}.js`, async (original) => ({
+      ...(await original()),
+      [nome]: (deps) => { recebidos[modulo] = deps; return { apply: async () => {} }; },
+    }));
+    dublar('createEyeControl', 'eye-control');
+    dublar('createFaceControl', 'face-control');
+    dublar('createHandControl', 'hand-control');
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { CACHE_HEAVY } = await import('../app/js/platform/heavy.js');
+      const { doc, win } = domFalso();
+      const log = newLog();
+      const host = { ...hostWith(win, log), navigator: { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [] }) } } };
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false });
+      const { hasFile } = recebidos['eye-control'];
+      expect(await hasFile('https://kept.example/x'), 'a file the host\'s cache holds was answered missing').toBe(true);
+      expect(await hasFile('https://missing.example/y')).toBe(false);
+      expect(log.opened, 'another cache than the checked one was asked').toEqual([CACHE_HEAVY, CACHE_HEAVY]);
+      expect(recebidos['face-control'].hasFile, 'the face asks another cache than the eyes').toBe(hasFile);
+      expect(recebidos['hand-control'].hasFile, 'the hands ask another cache than the eyes').toBe(hasFile);
+    } finally {
+      for (const m of ['eye-control', 'face-control', 'hand-control']) vi.doUnmock(`../app/js/ui/${m}.js`);
+      vi.resetModules();
+    }
+  });
+});
+
+/*
  * MOUNT AND UNMOUNT — one composition root, several cartridges (ADR-0142).
  *
  * ⚠️ The deciding case is the FIRST: without it, `mount()` would be a function that swaps a field while the diagnosis

@@ -29,22 +29,29 @@ export interface HeavyReport {
   readonly error?: string;
 }
 
+/**
+ * 🔴 WHAT THE DOWNLOAD USES OF THE BROWSER, RECEIVED AND NEVER REACHED (ADR-0232 point 2): the root reads each from the host's
+ * window. Required, because a port that falls back to the global is a global reached one step later (ADR-0224/0227).
+ */
 export interface HeavyOptions {
-  /** The browser's `caches`. Injected so the gate does not need one. */
-  readonly cacheStorage?: CacheStorage;
-  /** `fetch`. Injected for the same reason. */
-  readonly fetch?: typeof fetch;
+  /**
+   * The host's `caches`, as its window answers it: `undefined` where it has none (an insecure context), and then every file
+   * is reported and none fetched. Required all the same — the key is the root's statement of what it lent.
+   */
+  readonly cacheStorage: CacheStorage | undefined;
+  /** The host's `fetch`, `undefined` where it has none, with the same answer. */
+  readonly fetch: typeof fetch | undefined;
   /** Called on each resolved entry — what lets the interface say what is happening. */
   readonly onProgress?: (r: HeavyReport) => void;
   /**
-   * The SHA-256 of a body, as lowercase hex (issue #168). Injected for the gate; by default `crypto.subtle`. `null`, or a
-   * host without `crypto.subtle` (an insecure context), keeps NOTHING: unverifiable is not verified.
+   * The SHA-256 of a body, as lowercase hex (issue #168) — `sha256With(crypto.subtle)`. `null` (a host without
+   * `crypto.subtle`, which is an insecure context) keeps NOTHING: unverifiable is not verified.
    */
-  readonly digest?: ((payload: ArrayBuffer) => Promise<string>) | null;
+  readonly digest: ((payload: ArrayBuffer) => Promise<string>) | null;
   /** Only these ids, when given. For a consumer that wants the voices and not the rest. */
   readonly only?: readonly string[];
-  /** The page's address the delivery's `heavy/` folder is resolved against. By default the page's own (`location.href`). */
-  readonly base?: string;
+  /** The page's address the delivery's `heavy/` folder is resolved against (`document.baseURI`). */
+  readonly base: string;
 }
 
 /**
@@ -122,17 +129,17 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * subsystem has nowhere to come from yet" and "this subsystem is handled", exactly the distinction ADR-0119 measured as
  * missing: the engine PROMISED four things and delivered one, with nothing saying so.
  */
-export async function downloadHeavy(options: HeavyOptions = {}): Promise<HeavyReport[]> {
+export async function downloadHeavy(options: HeavyOptions): Promise<HeavyReport[]> {
   const targets = options.only ? HEAVY_FILES.filter((p) => options.only!.includes(p.id)) : HEAVY_FILES;
   const out: HeavyReport[] = [];
   const record = (r: HeavyReport): void => { out.push(r); options.onProgress?.(r); };
 
-  const { cacheStorage, fetchFile } = hostOf(options);
+  const { cacheStorage, fetch: fetchFile, digest, base } = options;
   if (!cacheStorage || !fetchFile) {
     for (const p of targets) record({ id: p.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' });
     return out;
   }
-  const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, ...checkAndBaseOf(options) };
+  const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, digest, base };
   for (const p of targets) record(await fetchOne(p, tools));
   return out;
 }
@@ -142,23 +149,7 @@ interface DownloadTools {
   readonly cache: Cache;
   readonly fetchFile: typeof fetch;
   readonly digest: ((body: ArrayBuffer) => Promise<string>) | null;
-  readonly base: string | undefined;
-}
-
-/** The host's Cache Storage and fetch, unless injected — either may be missing, and then nothing is attempted. */
-function hostOf(o: HeavyOptions): { cacheStorage: CacheStorage | undefined; fetchFile: typeof fetch | undefined } {
-  return {
-    cacheStorage: o.cacheStorage ?? (typeof caches !== 'undefined' ? caches : undefined),
-    fetchFile: o.fetch ?? (typeof fetch !== 'undefined' ? fetch : undefined),
-  };
-}
-
-/** The hash (an injected `null` means «cannot hash», and wins) and the page the delivery's folder is resolved against. */
-function checkAndBaseOf(o: HeavyOptions): Pick<DownloadTools, 'digest' | 'base'> {
-  return {
-    digest: o.digest === undefined ? (canComputeSha256() ? sha256Hex : null) : o.digest,
-    base: o.base ?? (globalThis as { location?: { href: string } }).location?.href,
-  };
+  readonly base: string;
 }
 
 /** One file's fate: already kept, fetched from the delivery and checked, or refused — always with the reason. */
@@ -167,8 +158,7 @@ async function fetchOne(p: HeavyFile, t: DownloadTools): Promise<HeavyReport> {
   try {
     if (await t.cache.match(p.url)) return { id: p.id, outcome: 'ja-tinha' };
     // from the delivery's own origin, never from the upstream host (ADR-0177)
-    const pathInDelivery = deliveryPath(p.url);
-    const resp = await t.fetchFile(t.base ? new URL(pathInDelivery, t.base).href : pathInDelivery);
+    const resp = await t.fetchFile(new URL(deliveryPath(p.url), t.base).href);
     if (!resp.ok) return { id: p.id, outcome: 'falhou', error: `HTTP ${resp.status}` };
     return await keepIfChecked(p, p.url, resp, t);
   } catch (e) {
@@ -192,12 +182,25 @@ async function keepIfChecked(p: HeavyFile, url: string, resp: Response, t: Downl
   return { id: p.id, outcome: 'baixado', bytes: p.bytes };
 }
 
-const canComputeSha256 = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
+/**
+ * THE SHA-256 OF A BODY AS LOWERCASE HEX, by the `crypto.subtle` it is handed (issue #168) — or `null` when there is none,
+ * which is a host outside a secure context: the answer `HeavyOptions.digest` reads as «cannot hash, so keep nothing».
+ */
+export function sha256With(subtle: Pick<SubtleCrypto, 'digest'> | null | undefined): ((payload: ArrayBuffer) => Promise<string>) | null {
+  if (!subtle) return null;
+  return async (payload) => {
+    const bytes = new Uint8Array(await subtle.digest('SHA-256', payload));
+    return [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
+  };
+}
 
-/** The SHA-256 of a body as lowercase hex, by `crypto.subtle` (issue #168). Needs a secure context. */
-export async function sha256Hex(payload: ArrayBuffer): Promise<string> {
-  const bytes = new Uint8Array(await (globalThis as { crypto: Crypto }).crypto.subtle.digest('SHA-256', payload));
-  return [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
+/**
+ * WHETHER A CATALOGUE FILE IS IN THE CHECKED CACHE, by its upstream address — what `platform/vision` and
+ * `platform/vosk-runtime` ask before loading anything. The host's `caches` is handed in; `undefined` (an insecure context)
+ * holds nothing, so every file is missing and the loader names them.
+ */
+export function checkedCacheHas(cacheStorage: CacheStorage | undefined): (upstreamUrl: string) => Promise<boolean> {
+  return async (url) => !!cacheStorage && !!(await (await cacheStorage.open(CACHE_HEAVY)).match(url));
 }
 
 /** The size of what is still missing, in bytes — so a notice can say how much is left before it starts. */

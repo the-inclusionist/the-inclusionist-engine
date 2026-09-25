@@ -15,7 +15,7 @@ const loop = { requestFrame: (cb) => { frameCb = cb; return 1; }, cancelFrame: (
 const PONTOS = Array.from({ length: 21 }, (_, i) => ({ x: i === 1 ? 0.2 : 0.3, y: 0.5, z: 0 }));
 const detection = (name) => ({ landmarks: [PONTOS], gestures: [[{ categoryName: name, score: 0.9 }]] });
 const make = (over = {}) => createHandControl({
-  t: translate, doc: document, region, base: location.href, loop,
+  t: translate, doc: document, region, base: location.href, hasFile: async () => true, loop,
   controller: { press: (a, s) => presses.push(['press', a, s]), release: (a, s) => presses.push(['release', a, s]) },
   say: (s) => said.push(s), alert: () => {}, report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: { detect: () => hand, delegate: () => 'GPU', handLines: [{ start: 0, end: 1 }], close: () => {} } }),
@@ -33,6 +33,14 @@ beforeEach(() => {
 afterEach(() => { region.remove(); });
 
 describe('the hand control', () => {
+  // 🔴 ADR-0232 D4: the checked cache is the ROOT's, and the loader asks it through the control — not through a global.
+  it('hands the loader the page and the cache question it was given', async () => {
+    const asked = [];
+    const hasFile = async () => true;
+    await make({ hasFile, loadTracker: async (deps) => { asked.push(deps); return { ok: false, missing: ['x'] }; } }).apply(true);
+    expect(asked).toEqual([{ base: location.href, hasFile }]);
+  });
+
   it('says ready, and a thumb up held presses L1 from the hands', async () => {
     await make().apply(true);
     expect(said).toContain('Pronto: já pode jogar com gestos das mãos.');

@@ -11,8 +11,15 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
-import { downloadHeavy, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256Hex, deliveryPath, heavyAtBoot } from '../app/js/platform/heavy.js';
+import { createHash, webcrypto } from 'node:crypto';
+import {
+  downloadHeavy as downloadWith, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256With, checkedCacheHas, deliveryPath, heavyAtBoot,
+} from '../app/js/platform/heavy.js';
+
+/** The page the delivery is resolved against — REQUIRED since ADR-0232 D4, so every case names one. */
+const BASE = 'https://escola.example/';
+/** The download with the page named; a case that is about another page, or another port, overrides it. */
+const downloadHeavy = (options) => downloadWith({ base: BASE, ...options });
 
 /** A fake Cache Storage that COUNTS what it is asked for. */
 function cacheFalsa(jaTem = []) {
@@ -29,7 +36,10 @@ function cacheFalsa(jaTem = []) {
 const corpo = (u) => new TextEncoder().encode(u).buffer;
 const resposta = (u, dados = corpo(u)) => ({ ok: true, status: 200, statusText: 'OK', headers: new Headers(), arrayBuffer: async () => dados, clone: () => ({}) });
 /** The upstream address a delivery path stands for (ADR-0177: the download asks the delivery, the body is still that file). */
-const urlDe = (pedido) => HEAVY_FILES.find((p) => p.url && deliveryPath(p.url) === pedido)?.url ?? pedido;
+const urlDe = (pedido) => {
+  const naEntrega = pedido.slice(pedido.indexOf('heavy/')); // the download asks for an ABSOLUTE address, under the page
+  return HEAVY_FILES.find((p) => p.url && deliveryPath(p.url) === naEntrega)?.url ?? pedido;
+};
 const buscarOk = () => async (u) => resposta(urlDe(u));
 /** #168: the pinned hash of the entry whose URL the body spells; anything else hashes to garbage. */
 const digestPelaUrl = async (buf) => {
@@ -97,7 +107,7 @@ describe('o buscador das coisas pesadas', () => {
   });
 
   it('⚠️ [Zero] sem Cache Storage nada rebenta — reporta e devolve', async () => {
-    const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk() });
+    const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk(), digest: digestPelaUrl });
     expect(r.every((x) => x.outcome === 'falhou' || x.outcome === 'sem-fonte')).toBe(true);
   });
 
@@ -116,18 +126,34 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
   const alvo = HEAVY_FILES.find((p) => p.url);
 
   it('🔴 [Zero] without Cache Storage EVERY file is reported, with the reason — the case above passed on an empty list', async () => {
-    const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk() });
+    const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk(), digest: digestPelaUrl });
     expect(r.length, '`every` on an empty list is true: nothing was reported').toBe(HEAVY_FILES.length);
     expect(r.every((x) => x.outcome === 'falhou' && /Cache Storage/.test(x.error))).toBe(true);
   });
 
   it('🔴 [Zero] without fetch the same — and the cache is never opened', async () => {
-    vi.stubGlobal('fetch', undefined);
+    const f = cacheFalsa();
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: undefined, digest: digestPelaUrl, only: [alvo.id] });
+    expect(r).toEqual([{ id: alvo.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' }]);
+    expect(f.cache._nome, 'a cache was opened on a host that cannot fetch into it').toBeUndefined();
+  });
+
+  /*
+   * 🔴 THE GLOBAL IS NEVER THE ANSWER (ADR-0232 D4): the host's `fetch` is what the download uses, and a global `fetch` that
+   * would answer is not asked. Before D4 an absent port fell back to the global — a download that worked here and in no
+   * second root of the same page.
+   */
+  it('🔴 [Right] only the INJECTED fetch is asked — the global one never is', async () => {
+    const global = vi.fn(async () => { throw new Error('the global fetch was reached'); });
+    vi.stubGlobal('fetch', global);
     try {
       const f = cacheFalsa();
-      const r = await downloadHeavy({ cacheStorage: f.cacheStorage, only: [alvo.id] });
-      expect(r).toEqual([{ id: alvo.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' }]);
-      expect(f.cache._nome, 'a cache was opened on a host that cannot fetch into it').toBeUndefined();
+      const pedidos = [];
+      const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: async (u) => { pedidos.push(u); return resposta(urlDe(u)); },
+        digest: digestPelaUrl, only: [alvo.id] });
+      expect(global).not.toHaveBeenCalled();
+      expect(pedidos).toEqual([`${BASE}${deliveryPath(alvo.url)}`]);
+      expect(r[0].outcome).toBe('baixado');
     } finally {
       vi.unstubAllGlobals();
     }
@@ -202,10 +228,10 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
     expect(r.find((x) => x.id === outro.id).outcome, 'one refusal stopped the list').toBe('baixado');
   });
 
-  it('🔴 [Right] with no injected digest, the REAL one runs — a body that is not the file is refused', async () => {
+  it('🔴 [Right] the digest `sha256With(crypto.subtle)` builds is the REAL one — a body that is not the file is refused', async () => {
     const f = cacheFalsa();
     const alvo = HEAVY_FILES.find((p) => p.url);
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), only: [alvo.id] });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: sha256With(webcrypto.subtle), only: [alvo.id] });
     expect(f.postos, 'the default path kept a body without hashing it').toEqual([]);
     // the hash it reports is the body's real SHA-256 — a broken default that hashed to anything would still refuse
     const real = createHash('sha256').update(alvo.url).digest('hex');
@@ -221,10 +247,28 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
     expect(r[0].error, 'the report does not say the host cannot hash').toMatch(/cannot compute a sha256/);
   });
 
-  it('🔴 [Right] the default digest IS SHA-256 — the FIPS 180-2 vector for «abc»', async () => {
+  it('🔴 [Right] the digest `sha256With` builds IS SHA-256 — the FIPS 180-2 vector for «abc»', async () => {
     // The refusal case above passes with any wrong algorithm (SHA-1 refuses a wrong body too); this pins the real one.
-    expect(await sha256Hex(new TextEncoder().encode('abc').buffer))
+    expect(await sha256With(webcrypto.subtle)(new TextEncoder().encode('abc').buffer))
       .toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+
+  it('🎯 [Zero] a host with no `crypto.subtle` gets NO digest — and the download keeps nothing from it', async () => {
+    // 📌 An insecure context has no `crypto.subtle`; `sha256With` answers `null` there, which is the download's «cannot hash».
+    expect(sha256With(undefined)).toBeNull();
+    expect(sha256With(null)).toBeNull();
+    const f = cacheFalsa();
+    const alvo = HEAVY_FILES.find((p) => p.url);
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: sha256With(undefined), only: [alvo.id] });
+    expect(f.postos).toEqual([]);
+    expect(r[0].error).toMatch(/cannot compute a sha256/);
+  });
+
+  it('🔴 [Right] the digest asks the subtle it was HANDED, for SHA-256 — never a global one', async () => {
+    const pedidos = [];
+    const subtle = { digest: async (alg, body) => { pedidos.push([alg, body.byteLength]); return new Uint8Array([0, 15, 255]).buffer; } };
+    expect(await sha256With(subtle)(new ArrayBuffer(4))).toBe('000fff');
+    expect(pedidos).toEqual([['SHA-256', 4]]);
   });
 
   it('📌 [Right] what was cached before the check is not trusted: the cache has a new name', () => {
@@ -261,6 +305,23 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
     const caminhos = HEAVY_FILES.filter((p) => p.url).map((p) => deliveryPath(p.url));
     expect(new Set(caminhos).size).toBe(caminhos.length);
     for (const c of caminhos) expect(c).toMatch(/^heavy\/[\w.-]+\//);
+  });
+});
+
+describe('whether a file is in the checked cache — the question the loaders ask (ADR-0232 D4)', () => {
+  const alvo = HEAVY_FILES.find((p) => p.url);
+
+  it('🔴 [Right] it opens THE checked cache, by its name, and answers what it holds', async () => {
+    const abertas = [];
+    const cacheStorage = { open: async (n) => { abertas.push(n); return { match: async (u) => (u === alvo.url ? { ok: true } : undefined) }; } };
+    const has = checkedCacheHas(cacheStorage);
+    expect(await has(alvo.url)).toBe(true);
+    expect(await has('https://outro.example/x')).toBe(false);
+    expect(abertas, 'another cache was asked — a file kept unchecked would count as present').toEqual([CACHE_HEAVY, CACHE_HEAVY]);
+  });
+
+  it('🎯 [Zero] a host with no Cache Storage holds nothing — every file is missing, nothing throws', async () => {
+    expect(await checkedCacheHas(undefined)(alvo.url)).toBe(false);
   });
 });
 

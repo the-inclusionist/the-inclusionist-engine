@@ -3404,7 +3404,30 @@ _Reserved: the rows land with the batch._
 
 ## DC · ADR-0232 D4-B5: heavy files and the recognisers receive the browser (issue #207)
 
-_Reserved: the rows land with the batch._
+**Who is affected:** anyone who calls the functions below outside `createGame`, or builds one of the deps listed by hand. A
+game that only calls `createGame` changes nothing: the root reads `caches`, `fetch`, `crypto.subtle`, the microphone, the
+audio context, the clock and the worker from `host.win`, and hands them down.
+
+📌 **Why:** outside the composition root a module reaches no browser global (ADR-0232 point 2). These modules held no state
+of their own; each was in the stateful set only because an optional port fell back to the global (`d.fetch ?? fetch`,
+`typeof caches !== 'undefined' ? caches : …`). A port that falls back to the global is the global reached one step later, and
+a game that forgets it silently gets the page's instead of its root's (ADR-0224/0227, erratum D2b): so each port is now
+REQUIRED. Where the host may genuinely lack the thing (an insecure context has no `caches` or `crypto.subtle`), the port is
+required and may carry the absence (`undefined` as the window answers it, `null` for a digest), which keeps the answer the
+module already gave: every file reported, nothing kept unverified.
+
+| old | new | migration |
+|---|---|---|
+| `platform/heavy.js` `downloadHeavy(options = {})` | `downloadHeavy(options)` — `HeavyOptions.cacheStorage: CacheStorage \| undefined`, `fetch: typeof fetch \| undefined`, `digest: ((body) => Promise<string>) \| null` and `base: string` are REQUIRED keys; nothing defaults to `caches`, `fetch`, `crypto` or `location` | `downloadHeavy({ only, cacheStorage: window.caches, fetch: window.fetch.bind(window), digest: sha256With(window.crypto?.subtle), base: document.baseURI })` — or let `createGame` download (its `downloadHeavy` option, unchanged) |
+| `platform/heavy.js` `sha256Hex(payload)` | removed: `sha256With(subtle)` answers the digest function for the `subtle` it is handed, or `null` without one | `sha256With(crypto.subtle)(payload)` |
+| — | `platform/heavy.js` `checkedCacheHas(cacheStorage)` (new): whether a catalogue file is in the checked cache — the question the vision and command loaders ask | pass it as `hasFile` below |
+| `platform/vision.js` `VisionDeps.hasFile` | REQUIRED (it defaulted to reading the global `caches`) | `loadFaceTracker({ base, hasFile: checkedCacheHas(window.caches) })`, the same for `loadHandTracker` |
+| `ui/eye-control.js` `EyeControlDeps` · `ui/face-control.js` `FaceControlDeps` · `ui/hand-control.js` `HandControlDeps` | each gains a REQUIRED `hasFile`, which the control hands to its tracker's loader | pass `checkedCacheHas(window.caches)` |
+
+📏 **Measured in the seven games, read-only, as information:** `pixi-15-puzzle` calls the download itself
+(`app/js/boot/standalone.ts`, under the 9.0 names `baixarPesados({ apenas })` from `platform/pesados.js`): on the bump it
+must pass the four ports, as in the migration above. The other six only set `createGame`'s `downloadHeavy: false` (9.0:
+`baixarPesados: false`), which is unchanged. No game calls `sha256Hex`, the vision loaders or builds a camera control's deps.
 
 ## DD · ADR-0232 D4-B6: render and layout become factories (issue #207)
 

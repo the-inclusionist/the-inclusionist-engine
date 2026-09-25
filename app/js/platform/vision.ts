@@ -11,7 +11,7 @@
 //   kept on purpose — nothing about the child's camera leaves the device.
 // · The camera is video only, 640×480: the lab's readings were measured at that size, and a larger capture changed them.
 
-import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './heavy.js';
+import { HEAVY_FILES, deliveryPath } from './heavy.js';
 
 /** The files the face reader needs, by catalogue id. */
 export const FACE_VISION_FILES = ['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:rosto'] as const;
@@ -54,8 +54,11 @@ export interface FaceLines extends EyeLines { readonly lips: Connections }
 export interface VisionDeps {
   /** The page's address, to make the delivery paths absolute. */
   readonly base: string;
-  /** Whether a catalogue file (by its upstream address) is in the checked cache. */
-  readonly hasFile?: (upstreamUrl: string) => Promise<boolean>;
+  /**
+   * Whether a catalogue file (by its upstream address) is in the checked cache — `platform/heavy`'s `checkedCacheHas`, over
+   * the host's `caches`. REQUIRED (ADR-0232 D4): the root lends the cache; this module reaches none.
+   */
+  readonly hasFile: (upstreamUrl: string) => Promise<boolean>;
   readonly importBundle?: (absoluteUrl: string) => Promise<TasksVision>;
 }
 
@@ -91,9 +94,6 @@ export type HandTrackerLoad =
 
 const urlOf = (id: string): string => HEAVY_FILES.find((x) => x.id === id)!.url!; // the vision entries are in the catalogue, with addresses
 
-const defaultHasFile = async (url: string): Promise<boolean> =>
-  typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_HEAVY)).match(url));
-
 const OPTIONS = (modelAssetPath: string, delegate: Delegate): object => ({
   baseOptions: { modelAssetPath, delegate }, runningMode: 'VIDEO', numFaces: 1,
   outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
@@ -103,7 +103,7 @@ interface Opened { readonly vision: TasksVision; readonly fileset: unknown; read
 
 /** Checks the files in the checked cache and opens the bundle; the missing ids when any file is not there. */
 async function open(deps: VisionDeps, files: readonly string[]): Promise<Opened | { missing: string[] }> {
-  const hasFile = deps.hasFile ?? defaultHasFile;
+  const { hasFile } = deps;
   const importBundle = deps.importBundle ?? ((u: string) => import(/* @vite-ignore */ u) as Promise<TasksVision>);
   const missing: string[] = [];
   for (const id of files) if (!(await hasFile(urlOf(id)))) missing.push(id);

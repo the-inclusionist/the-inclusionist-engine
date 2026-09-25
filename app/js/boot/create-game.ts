@@ -65,6 +65,7 @@ import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
+import { checkedCacheHas, sha256With } from '../platform/heavy.js';
 import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, wireBarCaption, showPauseOptions } from '../ui/pause-icons.js';
 // 📌 The bar's markup is a pure string builder and lives with the rest of the pause markup (ADR-0221, issue #203); what this
@@ -3573,6 +3574,14 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 The right channel is the one the function already has: `onHeavyProgress`, handed to whoever calls. A consumer who
    * wants to show «N MB left» or «the voice did not come down» has a way; the engine invents no surface.
    */
+  /*
+   * 🔴 THE BROWSER THE HEAVY FILES AND THE RECOGNISERS USE IS LENT HERE, ONCE (ADR-0232 D4, issue #207): the checked cache, the
+   * hash and `fetch` are read from the HOST's window, and the modules below receive them instead of reaching the globals.
+   * 📌 `caches` and `crypto.subtle` are ABSENT outside a secure context, and absent is an answer each module already gives: the
+   * download reports every file, a loader names the files it cannot find, and nothing is kept unverified.
+   */
+  const heavyCaches = (win as { caches?: CacheStorage }).caches;
+  const hasHeavyFile = checkedCacheHas(heavyCaches);
   if (o.downloadHeavy !== false) {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
     // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
@@ -3582,6 +3591,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
       only: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
       onProgress: o.onHeavyProgress,
+      cacheStorage: heavyCaches, fetch: win.fetch, digest: sha256With(win.crypto?.subtle), base: doc.baseURI,
     })
       .catch(() => { /* a background download brings down no boot */ });
   }
@@ -3969,7 +3979,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       now: () => win.performance.now(), every: (cb: () => void, ms: number) => win.setInterval(cb, ms), stopEvery: (h: number) => win.clearInterval(h),
     };
     const cameraDeps = {
-      t: translator.t, doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: virtualController, say: srSay, alert: srAlert,
+      t: translator.t, doc, region: gazeRegion, base: doc.baseURI, hasFile: hasHeavyFile, loop: visionLoop, controller: virtualController, say: srSay, alert: srAlert,
       report: (rowNode: string) => { if (!measuredProblems.includes(rowNode)) measuredProblems.push(rowNode); },
       turnOff: () => state.setCameraControlValue('off'),
     };

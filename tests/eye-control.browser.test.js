@@ -23,7 +23,7 @@ const loop = {
 };
 const tracker = () => ({ detect: () => face, delegate: () => 'GPU', eyeLines: { eyes: [], brows: [] }, close: () => { trackerClosed = true; } });
 const make = (over = {}) => createEyeControl({
-  t: translate, doc: document, region, base: location.href, loop,
+  t: translate, doc: document, region, base: location.href, hasFile: async () => true, loop,
   controller: { press: (action, source) => keys.push(['press', action, source]), release: (action, source) => keys.push(['release', action, source]) },
   say: (s) => said.push(s), alert: (s) => alerts.push(s), report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: tracker() }),
@@ -43,6 +43,14 @@ beforeEach(() => {
 afterEach(() => { region.remove(); });
 
 describe('turning it on', () => {
+  // 🔴 ADR-0232 D4: the checked cache is the ROOT's, and the loader asks it through the control — not through a global.
+  it('hands the loader the page and the cache question it was given', async () => {
+    const asked = [];
+    const hasFile = async () => true;
+    await make({ hasFile, loadTracker: async (deps) => { asked.push(deps); return { ok: true, tracker: tracker() }; } }).apply(true);
+    expect(asked).toEqual([{ base: location.href, hasFile }]);
+  });
+
   it('draws over the game region and asks for the middle', async () => {
     await make().apply(true);
     expect(region.querySelector('canvas.gaze-overlay')).not.toBeNull();

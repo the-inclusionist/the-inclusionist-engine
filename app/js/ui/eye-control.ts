@@ -34,6 +34,8 @@ export interface EyeControlDeps {
   readonly region: HTMLElement;
   /** The page's address, to reach `heavy/`. */
   readonly base: string;
+  /** Whether a file is in the checked cache, handed to the tracker's loader (ADR-0232 D4: the root lends the cache). */
+  readonly hasFile: VisionDeps['hasFile'];
   readonly loop: VisionLoopDeps;
   /** Where the presses go: seat 0's virtual controller. */
   readonly controller: VirtualController;
@@ -156,7 +158,7 @@ export function createEyeControl(d: EyeControlDeps): SwitchableControl {
   };
 
   const start = async (): Promise<void> => {
-    const load = await loadTracker({ base: d.base });
+    const load = await loadTracker({ base: d.base, hasFile: d.hasFile });
     if (!load.ok) {
       once('files', `eye control: ${load.missing.join(', ')} not on this device — the child cannot play with the eyes; open the game once online so the install fetches them`, t('sr.eyes.needsInternet'));
       d.turnOff();

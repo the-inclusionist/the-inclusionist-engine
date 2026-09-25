@@ -26,6 +26,8 @@ export interface FaceControlDeps {
   readonly doc: Document;
   readonly region: HTMLElement;
   readonly base: string;
+  /** Whether a file is in the checked cache, handed to the tracker's loader (ADR-0232 D4: the root lends the cache). */
+  readonly hasFile: VisionDeps['hasFile'];
   readonly loop: VisionLoopDeps;
   readonly controller: VirtualController;
   readonly say: (text: string) => void;
@@ -129,7 +131,7 @@ export function createFaceControl(d: FaceControlDeps): SwitchableControl {
   };
 
   const start = async (): Promise<void> => {
-    const load = await loadTracker({ base: d.base });
+    const load = await loadTracker({ base: d.base, hasFile: d.hasFile });
     if (!load.ok) {
       once('files', `face control: ${load.missing.join(', ')} not on this device — the child cannot play with the face; open the game once online so the install fetches them`, t('sr.face.needsInternet'));
       d.turnOff();
