@@ -24,13 +24,6 @@ import type { PanelLabels, PanelShell, PanelShellCtx } from './panel-shell.js';
 import { applyLabels, mountShell } from './panel-shell.js';
 import { navigableItems } from './menu-items.js';
 
-/**
- * The latest redraw of each mounted overlay. A panel mounted twice (two cartridges on one page, ADR-0139) keeps ONE
- * language listener, and the listener asks this table — so it redraws with the words and render of the last mount.
- */
-const redrawOf = new WeakMap<HTMLElement, () => void>();
-const alreadyListening = new WeakSet<HTMLElement>();
-
 /** The slice of the overlay stack a panel needs. Narrow on purpose: this file never opens a second panel. */
 export interface PanelStack {
   /** Brings the overlay to the front of the z-order, as `ui/settings-panel` computes it. */
@@ -45,6 +38,12 @@ export interface MountPanelCtx extends PanelShellCtx {
   /** Where the overlay lives. The composition root resolves it; this file does not guess at `#game-region`. */
   readonly host: HTMLElement;
   readonly overlays: PanelStack;
+  /**
+   * HEARS A LANGUAGE CHANGE, and returns its release — the root's `localeOn` (ADR-0232 D3 erratum point 4), which hands
+   * that release to the root's disposing door, so a panel of an ended root stops redrawing (ADR-0220). REQUIRED (ADR-0232
+   * D4): the panel used to listen for `i18n:change` on the window, a listener nothing ever took off.
+   */
+  readonly localeOn: (react: (locale: string) => void) => () => void;
 }
 
 export interface MountPanelSpec {
@@ -138,7 +137,7 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
    * position — `render()` rebuilds rows by `innerHTML`, and a redraw that drops focus on «Voltar» loses the child's place.
    * A hidden panel does nothing: its words are resolved when it opens.
    */
-  redrawOf.set(panelShell.overlay, () => {
+  ctx.localeOn(() => {
     if (panelShell.overlay.hidden) return;
     const doc = panelShell.card.ownerDocument;
     const focused = doc.activeElement as HTMLElement | null;
@@ -149,12 +148,6 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
     const destino = focused.isConnected ? focused : navigableItems(panelShell.card)[focusedIndex];
     if (destino && destino !== doc.activeElement) destino.focus();
   });
-  const win = panelShell.overlay.ownerDocument?.defaultView;
-  if (win && typeof win.addEventListener === 'function' && !alreadyListening.has(panelShell.overlay)) {
-    alreadyListening.add(panelShell.overlay);
-    win.addEventListener('i18n:change', () => { redrawOf.get(panelShell.overlay)?.(); });
-  }
-
   // Only when the panel does NOT wire its own button. See `closeOwn`: two listeners on the same control are two owners of
   // the same exit, and that is how exits drift.
   if (!spec.closeOwn) panelShell.close.addEventListener('click', closePanel);

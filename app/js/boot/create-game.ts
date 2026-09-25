@@ -1541,6 +1541,7 @@ export function createGame(o: CreateGameOptions): Engine {
       create: (tag: string) => doc.createElement(tag),
       host: pauseMountPoint as HTMLElement,
       overlays,
+      localeOn, // a language change redraws an open panel, and `dispose()` releases it (ADR-0232 D4)
     };
 
     /*
@@ -3063,6 +3064,7 @@ export function createGame(o: CreateGameOptions): Engine {
       create: (tag: string) => doc.createElement(tag),
       host: pauseMountPoint as HTMLElement,
       overlays,
+      localeOn, // a language change redraws an open panel, and `dispose()` releases it (ADR-0232 D4)
     };
     let padSteps: HTMLElement | null = null;
     let padHint: HTMLElement | null = null;

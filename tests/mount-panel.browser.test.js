@@ -17,6 +17,9 @@ import { mountPanel } from '../app/js/ui/mount-panel.js';
 
 let host;
 let registados;
+/** What each mount subscribed through `localeOn` — the root's door, played here: `mudarIdioma()` fires them. */
+let escutas;
+const mudarIdioma = (code) => { idioma = code; for (const react of [...escutas]) react(code); };
 
 const ctx = () => ({
   find: (s) => document.querySelector(s),
@@ -27,6 +30,7 @@ const ctx = () => ({
     register: (id, entry) => { registados.set(id, entry); },
     restoreFocus: (id) => { registados.set(`${id}:foco-reposto`, true); },
   },
+  localeOn: (react) => { escutas.add(react); return () => { escutas.delete(react); }; },
 });
 
 const spec = (extra = {}) => ({
@@ -51,11 +55,42 @@ beforeEach(() => {
   host.id = 'hospedeiro-de-teste';
   document.body.appendChild(host);
   registados = new Map();
+  escutas = new Set();
   renderizou = 0;
   idioma = 'pt';
 });
 
 afterEach(() => { host.remove(); });
+
+describe('a language changed with the panel open (ADR-0031), heard through the root\'s door (ADR-0232 D4)', () => {
+  it('🔴 [Right] an OPEN panel redraws in the new language when the root\'s `localeOn` fires', () => {
+    const p = mountPanel(ctx(), spec());
+    p.open();
+    const antes = renderizou;
+    mudarIdioma('en');
+    expect(p.shell.title.textContent, 'the open panel kept the old language').toBe('Fixture en');
+    expect(renderizou, 'the open panel was not re-rendered').toBe(antes + 1);
+  });
+
+  it('[Boundary] a HIDDEN panel does nothing: its words are resolved when it opens', () => {
+    const p = mountPanel(ctx(), spec());
+    mudarIdioma('en');
+    expect(renderizou).toBe(0);
+    expect(p.shell.title.textContent).toBe('Fixture pt');
+  });
+
+  it('🔴 [Right] it listens through `localeOn` ONLY — the window\'s `i18n:change` is the host\'s signal, not the panel\'s', () => {
+    // The window listener was never taken off: a panel of an ended root went on redrawing (ADR-0220). Through the root's
+    // door the release is the root's, and `dispose()` runs it.
+    const p = mountPanel(ctx(), spec());
+    p.open();
+    const antes = renderizou;
+    idioma = 'en';
+    window.dispatchEvent(new CustomEvent('i18n:change', { detail: { locale: 'en' } }));
+    expect(renderizou, 'the panel still listens on the window').toBe(antes);
+    expect(escutas.size, 'the panel did not subscribe exactly once through the root\'s door').toBe(1);
+  });
+});
 
 describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhuma das cinco linhas', () => {
   it('⚠️ [Interface] a casca entra NA ÁRVORE do hospedeiro e nasce escondida', () => {
