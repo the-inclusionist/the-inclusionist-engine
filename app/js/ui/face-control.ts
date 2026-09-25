@@ -10,7 +10,7 @@
 // · A frame with no face lets go of every held action: a face that left the camera is not holding anything.
 // · What cannot start is said, written once in `problems`, and puts the 📷 back to off — the same promise as the eyes.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
 import { faceScoresFromCategories, headTurn, createFaceMapReader, createFaceRest, type FaceRest } from '../input/face-map.js';
 import type { VirtualController } from '../input/virtual-controller.js';
@@ -21,6 +21,8 @@ import type { CameraFeed } from './eye-control.js';
 import type { SwitchableControl } from './switchable-control.js';
 
 export interface FaceControlDeps {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   readonly doc: Document;
   readonly region: HTMLElement;
   readonly base: string;
@@ -64,6 +66,7 @@ function draw(ctx: CanvasRenderingContext2D, w: number, h: number, restLeftMs: n
 }
 
 export function createFaceControl(d: FaceControlDeps): SwitchableControl {
+  const { t } = d;
   const loadTracker = d.loadTracker ?? loadFaceTracker;
   const said = new Set<string>();
   const once = (kind: string, line: string, spoken: string): void => { if (!said.has(kind)) { said.add(kind); d.report(line); } d.alert(spoken); };

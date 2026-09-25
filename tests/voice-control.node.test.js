@@ -17,6 +17,8 @@
 //     An open microphone nobody asked for is not a bug in the same class as the others.
 import { describe, it, expect } from 'vitest';
 import { createVoiceControl, VOICE_PULSE_MS } from '../app/js/ui/voice-control.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { voiceGrammar } from '../app/js/input/voice-map.js';
 import pt from '../app/js/i18n/pt.js';
 
@@ -38,6 +40,7 @@ function bench(over = {}) {
     async stop() { log.stopped += 1; },
   };
   const deps = {
+    t: translate,
     base: 'https://school.example/game/',
     language: () => 'pt-BR',
     controller: {

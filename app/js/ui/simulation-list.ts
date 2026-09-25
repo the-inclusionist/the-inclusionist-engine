@@ -20,10 +20,12 @@
 // explanation-bearing rows of the engine's panels did the same: `ui/settings-panel.fillExplain` DESTROYED the `.opt-hint` on
 // the way to the footer, so every producer's rewrite landed on a node that was no longer there. It now hides it instead.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { VIZ_BY_KEY } from '../render/viz-modes.js';
 
 export interface SimulationListCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** The host's DOM query — this module never reaches a global (ADR-0221 step 7d). */
   readonly find: <T extends Element>(selector: string) => T | null;
   /** Makes an element. Injected for the same reason: no `document` in here. */
@@ -48,6 +50,7 @@ export interface SimulationList {
 }
 
 export function createSimulationList(ctx: SimulationListCtx): SimulationList {
+  const { t } = ctx;
   /** The row, once. Everything after this writes into it. */
   function build(list: HTMLElement): HTMLSelectElement {
     const row = ctx.make('div');

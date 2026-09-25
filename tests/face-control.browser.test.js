@@ -6,6 +6,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createFaceControl } from '../app/js/ui/face-control.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 let region, presses, said, reports, offs, face, frameCb, now;
 const loop = { requestFrame: (cb) => { frameCb = cb; return 1; }, cancelFrame: () => { frameCb = null; }, now: () => now, every: () => 2, stopEvery: () => {} };
@@ -32,7 +34,7 @@ const docQueGrava = {
   },
 };
 const make = (over = {}) => createFaceControl({
-  doc: document, region, base: location.href, loop,
+  t: translate, doc: document, region, base: location.href, loop,
   controller: { press: (a, s) => presses.push(['press', a, s]), release: (a, s) => presses.push(['release', a, s]) },
   say: (s) => said.push(s), alert: () => {}, report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: { detect: () => face, delegate: () => 'GPU', eyeLines: { eyes: [], brows: [] }, faceLines: { eyes: [], brows: [], lips: [] }, close: () => {} } }),

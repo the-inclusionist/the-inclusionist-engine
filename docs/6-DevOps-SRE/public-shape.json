@@ -1990,6 +1990,7 @@
       "region",
       "report",
       "say",
+      "t",
       "turnOff"
     ]
   },
@@ -2005,6 +2006,7 @@
       "region",
       "report",
       "say",
+      "t",
       "turnOff"
     ]
   },
@@ -2074,6 +2076,7 @@
       "region",
       "report",
       "say",
+      "t",
       "turnOff"
     ]
   },
@@ -2188,7 +2191,8 @@
     "interface CrashNoticeCtx": [
       "create",
       "find",
-      "narrate?"
+      "narrate?",
+      "t"
     ]
   },
   "ui/menu-nav.ts": {
@@ -2814,7 +2818,8 @@
       "keys",
       "make",
       "picked",
-      "running"
+      "running",
+      "t"
     ],
     "interface SimulationList": [
       "render"
@@ -2903,6 +2908,7 @@
       "menuWords",
       "report",
       "say",
+      "t",
       "turnOff"
     ],
     "interface VoiceControl": [

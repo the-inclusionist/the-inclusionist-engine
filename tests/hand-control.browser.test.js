@@ -6,6 +6,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createHandControl } from '../app/js/ui/hand-control.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 let region, presses, said, reports, offs, hand, frameCb, now;
 const loop = { requestFrame: (cb) => { frameCb = cb; return 1; }, cancelFrame: () => { frameCb = null; }, now: () => now, every: () => 2, stopEvery: () => {} };
@@ -13,7 +15,7 @@ const loop = { requestFrame: (cb) => { frameCb = cb; return 1; }, cancelFrame: (
 const PONTOS = Array.from({ length: 21 }, (_, i) => ({ x: i === 1 ? 0.2 : 0.3, y: 0.5, z: 0 }));
 const detection = (name) => ({ landmarks: [PONTOS], gestures: [[{ categoryName: name, score: 0.9 }]] });
 const make = (over = {}) => createHandControl({
-  doc: document, region, base: location.href, loop,
+  t: translate, doc: document, region, base: location.href, loop,
   controller: { press: (a, s) => presses.push(['press', a, s]), release: (a, s) => presses.push(['release', a, s]) },
   say: (s) => said.push(s), alert: () => {}, report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: { detect: () => hand, delegate: () => 'GPU', handLines: [{ start: 0, end: 1 }], close: () => {} } }),

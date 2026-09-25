@@ -8,7 +8,7 @@
 // · A frame with no hand lets go of every held action.
 // · What cannot start is said, written once in `problems`, and puts the 📷 back to off.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
 import { gesturesSeen, createHandMapReader } from '../input/hand-map.js';
 import type { VirtualController } from '../input/virtual-controller.js';
@@ -19,6 +19,8 @@ import type { CameraFeed } from './eye-control.js';
 import type { SwitchableControl } from './switchable-control.js';
 
 export interface HandControlDeps {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   readonly doc: Document;
   readonly region: HTMLElement;
   readonly base: string;
@@ -47,6 +49,7 @@ function drawBones(g: CanvasRenderingContext2D, w: number, h: number, bones: Han
 }
 
 export function createHandControl(d: HandControlDeps): SwitchableControl {
+  const { t } = d;
   const loadTracker = d.loadTracker ?? loadHandTracker;
   const said = new Set<string>();
   const once = (kind: string, line: string, spoken: string): void => { if (!said.has(kind)) { said.add(kind); d.report(line); } d.alert(spoken); };

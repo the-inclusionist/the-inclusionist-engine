@@ -9,6 +9,8 @@
 // not a notice: the child does not read it.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createCrashNotice } from '../app/js/ui/loop-crash.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { startLoop } from '../app/js/core/loop.js';
 import pt from '../app/js/i18n/pt.js';
 import { readFileSync } from 'node:fs';
@@ -52,7 +54,7 @@ beforeEach(() => {
 describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou', () => {
   it('[Right] escreve a frase na região assertiva do leitor de tela', () => {
     const d = docFalso();
-    createCrashNotice({ find: d.find, create: d.create })(new Error('o jogo quebrou'));
+    createCrashNotice({ t: translate, find: d.find, create: d.create })(new Error('o jogo quebrou'));
     expect(d.el('#sr-alert').textContent).toBe(FRASE);
   });
 
@@ -64,7 +66,7 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
     // ⚠️ And a pseudo-element is wrong for a second reason: `content` text does not reliably enter the accessibility
     // tree, and this is the notice that can least depend on that. Hence `role="alert"`.
     const d = docFalso();
-    createCrashNotice({ find: d.find, create: d.create })(new Error('x'));
+    createCrashNotice({ t: translate, find: d.find, create: d.create })(new Error('x'));
     const caixa = d.caixa();
     expect(caixa, 'a caixa do aviso não foi acrescentada ao #game-region').toBeTruthy();
     expect(caixa.textContent).toBe(FRASE);
@@ -75,7 +77,7 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
     // The loop stops once, but nothing prevents a second failure call (another loop, a game that remounts). Two
     // overlapping boxes would be two identical sentences on screen and two in the reader.
     const d = docFalso();
-    const avisar = createCrashNotice({ find: d.find, create: d.create });
+    const avisar = createCrashNotice({ t: translate, find: d.find, create: d.create });
     avisar(new Error('x'));
     const primeira = d.caixa();
     // from here on the box exists in the document, and that is what the module looks for before creating
@@ -86,13 +88,13 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
 
   it('[Right] narra, para quem ouve em vez de ler', () => {
     const ditas = [];
-    createCrashNotice({ find: docFalso().find, create: docFalso().create, narrate: (s) => ditas.push(s) })(new Error('x'));
+    createCrashNotice({ t: translate, find: docFalso().find, create: docFalso().create, narrate: (s) => ditas.push(s) })(new Error('x'));
     expect(ditas).toEqual([FRASE]);
   });
 
   it('[Interface] o CONSOLE recebe o erro original — é o que sobra para quem depura', () => {
     const boom = new Error('causa de verdade');
-    createCrashNotice({ find: docFalso().find, create: docFalso().create })(boom);
+    createCrashNotice({ t: translate, find: docFalso().find, create: docFalso().create })(boom);
     expect(erroDoConsole).toHaveBeenCalled();
     // THE ERROR ITSELF, not a string about it: `String(erro)` loses the stack, the only thing that says WHERE the frame
     // broke. Checked by identity, in the argument where it goes.
@@ -104,7 +106,7 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
     // half. Without this order, an unavailable speech synthesis would erase the screen reader's text — and the child who
     // most needs the sentence is exactly the one who depends on both channels.
     const d = docFalso();
-    const avisar = createCrashNotice({ find: d.find, create: d.create, narrate: () => { throw new Error('sem voz'); } });
+    const avisar = createCrashNotice({ t: translate, find: d.find, create: d.create, narrate: () => { throw new Error('sem voz'); } });
     expect(() => avisar(new Error('x'))).not.toThrow();
     expect(d.el('#sr-alert').textContent).toBe(FRASE);
     expect(d.caixa()?.textContent).toBe(FRASE);
@@ -113,7 +115,7 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
   it('[Zero] documento sem as regiões: não lança, e o console continua a receber', () => {
     // A game whose host did not bring the markup loses the notice; what it must NOT do is gain a second error because of
     // the first.
-    const avisar = createCrashNotice({ find: docFalso([]).find, create: docFalso([]).create });
+    const avisar = createCrashNotice({ t: translate, find: docFalso([]).find, create: docFalso([]).create });
     expect(() => avisar(new Error('x'))).not.toThrow();
     expect(erroDoConsole).toHaveBeenCalled();
   });
@@ -131,7 +133,7 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
     const t = ticker();
     let quadros = 0;
     startLoop(t, () => { quadros++; throw new Error('o jogo quebrou'); }, 2,
-      { speed: () => 1, onFailure: createCrashNotice({ find: d.find, create: d.create }) });
+      { speed: () => 1, onFailure: createCrashNotice({ t: translate, find: d.find, create: d.create }) });
 
     t.passo(); t.passo(); t.passo();
 
@@ -145,7 +147,7 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
     const ditas = [];
     const t = ticker();
     startLoop(t, () => { throw new Error('x'); }, 2,
-      { speed: () => 1, onFailure: createCrashNotice({ find: docFalso().find, create: docFalso().create, narrate: (s) => ditas.push(s) }) });
+      { speed: () => 1, onFailure: createCrashNotice({ t: translate, find: docFalso().find, create: docFalso().create, narrate: (s) => ditas.push(s) }) });
     for (let i = 0; i < 10; i++) t.passo();
     expect(ditas).toHaveLength(1);
   });

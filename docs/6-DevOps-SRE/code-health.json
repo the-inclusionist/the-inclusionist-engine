@@ -65,7 +65,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2099,
+      "codeLines": 2101,
       "decisionNodes": 280,
       "maxDepth": 4,
       "fanOut": 88,
@@ -319,7 +319,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 25,
+      "fanIn": 19,
       "holds": [
         "let dict",
         "let locale",
@@ -1648,30 +1648,28 @@
       ]
     },
     "ui/eye-control.ts": {
-      "codeLines": 146,
+      "codeLines": 148,
       "decisionNodes": 21,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts",
         "platform/vision.ts"
       ]
     },
     "ui/face-control.ts": {
-      "codeLines": 130,
+      "codeLines": 132,
       "decisionNodes": 25,
       "maxDepth": 3,
-      "fanOut": 5,
+      "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts",
         "platform/vision.ts"
       ]
     },
@@ -1722,16 +1720,15 @@
       ]
     },
     "ui/hand-control.ts": {
-      "codeLines": 107,
+      "codeLines": 109,
       "decisionNodes": 19,
       "maxDepth": 2,
-      "fanOut": 5,
+      "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts",
         "platform/vision.ts"
       ]
     },
@@ -1822,17 +1819,14 @@
       "fanIn": 2
     },
     "ui/loop-crash.ts": {
-      "codeLines": 24,
+      "codeLines": 26,
       "decisionNodes": 5,
       "maxDepth": 1,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/menu-intent.ts": {
       "codeLines": 34,
@@ -2128,17 +2122,14 @@
       ]
     },
     "ui/simulation-list.ts": {
-      "codeLines": 56,
+      "codeLines": 58,
       "decisionNodes": 5,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "core/i18n.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/simulation-over-the-world.ts": {
       "codeLines": 74,
@@ -2253,16 +2244,15 @@
       ]
     },
     "ui/voice-control.ts": {
-      "codeLines": 102,
+      "codeLines": 104,
       "decisionNodes": 11,
       "maxDepth": 2,
-      "fanOut": 4,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 6,
-      "statefulEdges": 3,
+      "statefulEdges": 2,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts",
         "platform/voice-listener.ts",
         "platform/vosk-runtime.ts"
       ]

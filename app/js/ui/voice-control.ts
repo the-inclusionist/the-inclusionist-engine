@@ -13,7 +13,7 @@
 // always on for speech) is what keeps a direction held afterwards. That division is the whole reason the latch is forced there:
 // a child who says «acima» cannot also say «and keep holding it».
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
 import { voiceGrammar, createVoiceCommands, type VoiceCommands } from '../input/voice-map.js';
 import type { VirtualController } from '../input/virtual-controller.js';
@@ -25,6 +25,8 @@ import type { SwitchableControl } from './switchable-control.js';
 export const VOICE_PULSE_MS = 400;
 
 export interface VoiceControlDeps {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   readonly base: string;
   /** The child's language (`core/i18n.bcp47`): it chooses the model AND the words. */
   readonly language: () => string;
@@ -58,6 +60,7 @@ export interface VoiceControl extends SwitchableControl {
 }
 
 export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
+  const { t } = d;
   const loadRuntime = d.loadRuntime ?? loadVoskRuntime;
   const listen = d.listen ?? startVoiceListening;
   const said = new Set<string>();

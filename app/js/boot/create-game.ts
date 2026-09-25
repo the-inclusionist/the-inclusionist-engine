@@ -1895,6 +1895,7 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     // ONE LIST, NOT SEVEN BUTTONS (ADR-0159 rule 7) — `ui/simulation-list` says why, and it is not wiring.
     const simulationPicker = createSimulationList({
+      t: translator.t,
       find: $,
       make: (tag) => doc.createElement(tag),
       keys: WORLD_SIMULATIONS,
@@ -2467,6 +2468,7 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   const announceFailure = createCrashNotice({
+    t: translator.t,
     find: (sel) => $<HTMLElement>(sel),
     create: (tag) => doc.createElement(tag),
     narrate: (text) => tts.narrate(text),
@@ -3908,7 +3910,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       now: () => win.performance.now(), every: (cb: () => void, ms: number) => win.setInterval(cb, ms), stopEvery: (h: number) => win.clearInterval(h),
     };
     const cameraDeps = {
-      doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: virtualController, say: srSay, alert: srAlert,
+      t: translator.t, doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: virtualController, say: srSay, alert: srAlert,
       report: (rowNode: string) => { if (!measuredProblems.includes(rowNode)) measuredProblems.push(rowNode); },
       turnOff: () => state.setCameraControlValue('off'),
     };
@@ -3941,7 +3943,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
         .filter((s) => s.length > 1);
     };
     voiceControl = createVoiceControl({
-      base: doc.baseURI, language: () => bcp47(), controller: virtualController, menuWords,
+      t: translator.t, base: doc.baseURI, language: () => bcp47(), controller: virtualController, menuWords,
       say: srSay, alert: srAlert,
       report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },

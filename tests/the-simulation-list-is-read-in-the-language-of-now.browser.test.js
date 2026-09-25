@@ -21,8 +21,9 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
-import { setLocale } from '../app/js/core/i18n.ts';
+import { setLocale, createTranslator } from '../app/js/core/i18n.ts';
 import { createSimulationList } from '../app/js/ui/simulation-list.ts';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 let motor;
 let idiomaGuardado;
@@ -135,6 +136,7 @@ describe('the list, given the keys as data', () => {
     hospedeiro.id = 'solta';
     document.body.appendChild(hospedeiro);
     const lista = createSimulationList({
+      t: translate,
       find: (sel) => document.querySelector(sel),
       make: (tag) => document.createElement(tag),
       keys,
@@ -173,7 +175,7 @@ describe('the list, given the keys as data', () => {
     expect(sel.value).toBe('normal');
     hospedeiro.remove();
     const solto = createSimulationList({
-      find: () => null, make: (tag) => document.createElement(tag), keys: ['normal'], running: () => null, picked: () => {},
+      t: translate, find: () => null, make: (tag) => document.createElement(tag), keys: ['normal'], running: () => null, picked: () => {},
     });
     expect(() => solto.render('#nada')).not.toThrow();
   });

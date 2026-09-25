@@ -1382,6 +1382,25 @@ describe('createGame num documento de verdade', () => {
     expect(depois.getAttribute('aria-label')).toBe('Comando de voz: desligado');
   });
 
+  it('🔴 [Right] the 📷 that cannot start tells the child why in the root\'s language — the root hands the camera controls its `t` (ADR-0232 D3)', async () => {
+    // The face control no longer imports `t`: what it says comes from the `t` the root puts in its deps. There are no heavy
+    // files here, so it fails, says why and turns the 📷 back off — and a root that handed it anything else would read the
+    // key `sr.face.…` to the child.
+    const estado = await import('../app/js/core/state.js');
+    abrir();
+    const alerta = document.querySelector('#sr-alert');
+    alerta.textContent = '';
+    try {
+      estado.setCameraControlValue('face');
+      for (let i = 0; i < 200 && estado.cameraControl !== 'off'; i++) await new Promise((r) => { setTimeout(r, 10); });
+      for (let i = 0; i < 40 && !alerta.textContent; i++) await new Promise((r) => { setTimeout(r, 10); });
+      expect(alerta.textContent, 'the 📷 failed and said nothing — this case would measure nothing').not.toBe('');
+      expect(alerta.textContent, 'the face control spoke a raw key').not.toMatch(/\bsr\.face\./);
+    } finally {
+      estado.setCameraControlValue('off');
+    }
+  });
+
   /*
    * 🔴 SWITCHED TO A LANGUAGE WHOSE COMMAND MODEL IS NOT IN THE DELIVERY (ADR-0225, ADR-0169). The heavy files are chosen at
    * boot for the boot language, so the flag can reach a language the delivery never carried. The child hears why the 👄 went

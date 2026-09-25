@@ -12,7 +12,7 @@
 // · What cannot work is said to the child and written in `problems`, once: the files not on the device, the camera refused, frames that
 //   stop or crawl. A 📷 that is on and does nothing is the defect this module exists not to ship.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
 import { headPoseFromMatrix, scoresFromCategories, eyeGazeFromScores, bothEyesClosed } from '../input/face-signals.js';
 import { createGazeReader, GAZE_DEFAULTS, type GazeReading } from '../input/gaze-relative.js';
@@ -27,6 +27,8 @@ import type { SwitchableControl } from './switchable-control.js';
 export interface CameraFeed { readonly frame: unknown; ready(): boolean; close(): void }
 
 export interface EyeControlDeps {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   readonly doc: Document;
   /** Where the regions are drawn: `#game-region`. */
   readonly region: HTMLElement;
@@ -100,6 +102,7 @@ function drawFrame(canvas: HTMLCanvasElement, region: HTMLElement, reading: Gaze
 }
 
 export function createEyeControl(d: EyeControlDeps): SwitchableControl {
+  const { t } = d;
   const loadTracker = d.loadTracker ?? loadFaceTracker;
   const openFeed = d.openFeed ?? videoFeed(d.doc, d.doc.defaultView!.navigator.mediaDevices);
   const said = new Set<string>();

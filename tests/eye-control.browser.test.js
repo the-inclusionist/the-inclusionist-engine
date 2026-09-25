@@ -8,6 +8,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createEyeControl } from '../app/js/ui/eye-control.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { detection } from './fixtures/synthetic-face.js';
 
 let region, keys, said, alerts, reports, offs, face, feedClosed, trackerClosed, frameCb, now;
@@ -21,7 +23,7 @@ const loop = {
 };
 const tracker = () => ({ detect: () => face, delegate: () => 'GPU', eyeLines: { eyes: [], brows: [] }, close: () => { trackerClosed = true; } });
 const make = (over = {}) => createEyeControl({
-  doc: document, region, base: location.href, loop,
+  t: translate, doc: document, region, base: location.href, loop,
   controller: { press: (action, source) => keys.push(['press', action, source]), release: (action, source) => keys.push(['release', action, source]) },
   say: (s) => said.push(s), alert: (s) => alerts.push(s), report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: tracker() }),

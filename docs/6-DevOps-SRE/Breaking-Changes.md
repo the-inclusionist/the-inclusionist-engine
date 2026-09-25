@@ -3236,13 +3236,14 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 | the ui helpers that translate: `dom.toggleLabel`, `toggleAria` · `changed-mark.markChanged`, `markMenuChanged` · `item-announcement.announceItem` · `control-choices.keyName` · `audio-choices.caneDivMessage`, `sinkOptionLabel` · `caa-sets.caaLabel` · `mobility-choices.playerPrefix`, `easyAnnouncement` · `motion-choices.motionMasterLabel`, `sceneMotionAnnouncement`, `crtToggleAnnouncement`, `crtLevelLabel`, `crtRoundAnnouncement`, `stopResumeAllAnnouncement` · `typo-choices.fontRow`, `typoGroups` · `visual-choices.onOffLabel` · `menu-nav.controlParts` | each takes `t: Translate` as its FIRST parameter and stays a function | pass your root's `t` first: `toggleLabel(t, on)` |
 | `ui/menu-nav.js` `MenuNavCtx` · `ui/where-the-child-is.js` `WhereTheChildIsCtx` · `ui/game-options.js` `GameOptionsDrawCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
 | `platform/tts.js` `TtsCtx` | gains a REQUIRED `translator: Pick<Translator, 't' \| 'bcp47'>` — narration speaks the page's language, read at every utterance | pass your root's translator |
+| `ui/eye-control.js` `EyeControlDeps` · `ui/face-control.js` `FaceControlDeps` · `ui/hand-control.js` `HandControlDeps` · `ui/voice-control.js` `VoiceControlDeps` · `ui/loop-crash.js` `CrashNoticeCtx` · `ui/simulation-list.js` `SimulationListCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` |
 
 📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).
 `game-platformer` calls `initKeydown`, `initGamepad` and `initTouch` (`app/js/main.ts`); `game-soccer` calls `initGamepad`
 (`app/js/boot/main.ts`); no game calls `createPadWizard` or `mountTouchControls`. `game-platformer` calls
 `createAudioEarcons`, `createTts` and `createAudioSonar` (`app/js/main.ts`); `game-soccer` calls `createAudioEarcons`
 (`app/js/audio/sound.ts`). Of the ui helpers, only `game-platformer` calls any (`playerPrefix` ×3, `toggleLabel` ×2 and
-`initMenuNav`, in `app/js/main.ts`).
+`initMenuNav`, in `app/js/main.ts`). No game builds a camera, voice, crash-notice or simulation-list ctx by hand.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

@@ -20,12 +20,14 @@
 //   · `srAlert` searches the GLOBAL document. Whoever receives the document by injection (the engine, a test, a second
 //     game on the same page) would lose the notice. The announcement that everything stopped is the last place that
 //     should depend on a global search.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 /** The id of the notice box. Stable because the stylesheet and the test look for it. */
 const CRASH_NOTICE_ID = 'incl-parou';
 
 export interface CrashNoticeCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** `querySelector` of this game's document. Injected: the engine receives its own. */
   find: (sel: string) => HTMLElement | null;
   /** `document.createElement` — the notice box is a real element, not a pseudo-element. */
@@ -45,6 +47,7 @@ export interface CrashNoticeCtx {
  * fails halfway must deliver the other half — the same rule `startLoop` applies to this very callback.
  */
 export function createCrashNotice(ctx: CrashNoticeCtx): (failure: unknown) => void {
+  const { t } = ctx;
   return (failure: unknown): void => {
     try { console.error('[inclusionist] the frame threw; the loop stopped.', failure); } catch { /* noop */ }
 
