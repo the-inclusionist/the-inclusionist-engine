@@ -42,13 +42,17 @@
 | ✅ 11b | **ADR-0194 §4–§5** | um item travado dito pelo nome fala o motivo; um nome com palavra que o modelo não tem vai para `problems` | ✅ `10a12351` + `6353ba6a` (nada quebrante); `docs:7ac4e03` (ADR-0194 com os cinco portões). 📏 O runtime do Vosk não diz à página que palavras faltam (o aviso vai para a consola do worker); a engine lê o vocabulário do `Gr.fst` do modelo (pt: 99 105 palavras). Os modelos es e en não foram medidos. ⏸ O ADR-0200 §2 (Web Speech como reconhecedor padrão onde existe) continua por construir, na #190 |
 | ✅ 12 | **Portões da auditoria e #141** | forma que muda de tipo vista; títulos duplicados no `Breaking-Changes.md` recusados; #141 com caso | ✅ `fd6212f1`/`254ea1b1`/`0a2f6905` (cherry-pick; `Closes #141`); 14 mutações vermelhas; o ficheiro atual tem 126 títulos, todos únicos |
 
-**Do Dev (rodar, autorizar ou decidir):** ✅ download do player autorizado 25/09 («Permito»; o go/no-go corre) ·
-o lugar e a proteção das opções do relógio — 📌 «Se não rodar o app eu não tenho como escolher a tela»: sirvo o
-`dist` com o relógio e ele escolhe olhando · a construção da
-subengine no `game-platformer` (ordem dele, e há outra sessão viva nesse repositório) · F11 `records-token` ·
-item 9 (os 5 ficheiros ao espelho) · a rodada do microfone da leitura (itens 7/15, `localhost:8205`) · a rodada
-das mãos com a câmera (#199/#191) · R3 · #137 (ADR-0027) · a metade da ENTREGA do item 22 · reescrever a
-história git do ADR-0107.
+**Respostas do Dev de 25/09 (fim da tarde), e o que cada uma mudou:**
+- **Rota B do VLibras: por último** («Do jeito que está funciona bem para um MVP»). O 5c fica no fim da lista.
+- **Subengine (ADR-0237): NÃO é item deste plano** — é trabalho do `game-platformer`, depois de acabar a engine. 🔴 Eu a pus na lista de pendências da engine; o Dev: «por que está trazendo isso para a minha pergunta, que era sobre o que ainda há por fazer no plano DA ENGINE?»
+- **ADR-0027: já estava aceite desde 22/09** (errata com as palavras do Dev; #137 fechada). 🔴 Eu o listei como pendente; o Dev: «Já pedi para aceitar nesta conversa há dias!»
+- **Três línguas na entrega** (`docs:d5e4fbb`, errata do ADR-0225): comandos de voz pt/en/es por omissão — agente em curso. A leitura (~850 MiB) espera a resposta sobre onde ela mora.
+- **Leitura em voz alta:** o Dev acha que é função do cartucho; o ADR-0216 (decisão dele, 21/09) põe na engine o OUVIR e devolver o TEXTO, e no cartucho o que o texto significa. ⏸ Pergunta devolvida com essa explicação; no quiz aciona-se com o botão 1 (tecla `U`).
+- **Leitor de tela (NVDA) real:** só lê o link de pular, UM ícone da barra, o enunciado e o relógio em bruto — as opções do quiz não são lidas. 🔴 Defeito; agente em curso.
+- **Histórico do ADR-0107: não se reescreve** — o dado era a relação de família com a pessoa dona e autora da arte (uma das que farão as imagens), sem nome nem contato; regra do Dev: só se reescreve havendo PII.
+- **Espelho:** o onnxruntime já está no balde (200). O player do VLibras e os 632 sinais estão preparados em `the-inclusionist-lfs` (`vlibras-web-browsers-9d093f2/`, `vlibras-dictionary-sources-f8ddb37/`, com SHA256SUMS e licenças) — o envio é do Dev. O espeak-ng continua parado pela fonte GPL (#192), não pelo envio.
+- **Ainda do Dev:** push (engine 76, docs 66 commits) · `records-token` (F11).
+- **Meu, sem perguntar:** os sinais e o player do VLibras entrarem na cópia offline (pilar 8) · fechar #191/#199 com a rodada dos três modos de câmera · a fase 1 do `ROADMAP` (o editor de mapas saiu da engine).
 
 **Só o tempo:** F4/R5 (o veredito do co-change) · Fase 6 (cada acomodação entra quando o eixo dela existir).
 
