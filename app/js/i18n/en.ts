@@ -34,6 +34,7 @@ const en: Record<string, string> = {
   'sr.deaf.noSigning': 'No sign-language interpreter right now: the captions and the text stay on screen.',
   'sr.deaf.interpreter': 'Libras sign-language interpreter',
   'sr.eyes.needsInternet': 'Eye control has not reached this device yet: it downloads the first time the game opens with internet.',
+  'sr.eyes.failed': 'Eye control could not start on this device.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Look here',
   'gaze.loading': 'Loading...',
@@ -45,6 +46,7 @@ const en: Record<string, string> = {
   'sr.face.ready': 'Ready: you can play with your face.',
   'sr.face.noCamera': 'Face control needs the camera, and it did not open. Allow the camera for this page.',
   'sr.face.needsInternet': 'Face control has not reached this device yet: it comes down the first time the game opens online.',
+  'sr.face.failed': 'Face control could not start on this device.',
   'sr.face.stopped': 'Face control stopped getting pictures from the camera.',
   'sr.face.slow': 'Face control is slow on this device and may not answer.',
   'sr.eyes.lookMiddle': 'Look at the middle of the screen and keep your eyes still until I say ready.',
@@ -203,6 +205,7 @@ const en: Record<string, string> = {
   'sr.hands.ready': 'Ready: you can play with hand gestures.',
   'sr.hands.noCamera': 'Gesture control needs the camera, and it did not open. Allow the camera for this page.',
   'sr.hands.needsInternet': 'Gesture control has not reached this device yet: it comes down the first time the game opens online.',
+  'sr.hands.failed': 'Gesture control could not start on this device.',
   'sr.hands.stopped': 'Gesture control stopped getting pictures from the camera.',
   'sr.hands.slow': 'Gesture control is slow on this device and may not answer.',
   'icon.menu': 'Menu',

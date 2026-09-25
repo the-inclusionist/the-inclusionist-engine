@@ -19,6 +19,7 @@ import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platf
 import { gazeFontPx } from './gaze-overlay.js';
 import type { CameraFeed } from './eye-control.js';
 import type { SwitchableControl } from './switchable-control.js';
+import { startCameraReader } from './camera-control.js';
 
 export interface FaceControlDeps {
   /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
@@ -130,20 +131,20 @@ export function createFaceControl(d: FaceControlDeps): SwitchableControl {
     running = false; rest = null; read = null;
   };
 
+  /** Nothing started: said, written once, and the 📷 back to off — unless it already moved on, and then nobody is waiting (as the 👄). */
+  const failed = (kind: string, line: string, spoken: string): void => {
+    if (!current()) return;
+    once(kind, line, spoken);
+    d.turnOff();
+  };
+
   const start = async (): Promise<void> => {
-    const load = await loadTracker({ base: d.base, hasFile: d.hasFile });
-    if (!load.ok) {
-      once('files', `face control: ${load.missing.join(', ')} not on this device — the child cannot play with the face; open the game once online so the install fetches them`, t('sr.face.needsInternet'));
-      d.turnOff();
-      return;
-    }
-    try { feed = await d.openFeed(); } catch {
-      load.tracker.close();
-      once('camera', 'face control: the camera did not open — the child cannot play with the face; allow the camera for this page, or plug one in', t('sr.face.noCamera'));
-      d.turnOff();
-      return;
-    }
-    tracker = load.tracker;
+    const opened = await startCameraReader({
+      subject: 'face control', loses: 'play with the face',
+      spoken: { files: () => t('sr.face.needsInternet'), runtime: () => t('sr.face.failed'), camera: () => t('sr.face.noCamera') },
+    }, { load: () => loadTracker({ base: d.base, hasFile: d.hasFile }), openFeed: d.openFeed, failed });
+    if (!opened) return;
+    tracker = opened.tracker; feed = opened.feed;
     canvas = d.doc.createElement('canvas');
     canvas.className = 'face-overlay';
     canvas.setAttribute('aria-hidden', 'true');

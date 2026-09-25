@@ -35,6 +35,7 @@ const pt: Record<string, string> = {
   // the accessible name of the interpreter's frame, in front of the screen while it signs (ADR-0234)
   'sr.deaf.interpreter': 'Intérprete de Libras',
   'sr.eyes.needsInternet': 'O controle pelo olhar ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
+  'sr.eyes.failed': 'O controle pelo olhar não conseguiu começar neste aparelho.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Olhe aqui',
   'gaze.loading': 'Carregando...',
@@ -46,6 +47,7 @@ const pt: Record<string, string> = {
   'sr.face.ready': 'Pronto: já pode jogar com o rosto.',
   'sr.face.noCamera': 'O controle pelo rosto precisa da câmera, e ela não abriu. Permita a câmera para esta página.',
   'sr.face.needsInternet': 'O controle pelo rosto ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
+  'sr.face.failed': 'O controle pelo rosto não conseguiu começar neste aparelho.',
   'sr.face.stopped': 'O controle pelo rosto parou de receber imagens da câmera.',
   'sr.face.slow': 'O controle pelo rosto está lento neste aparelho e pode não responder.',
   'sr.eyes.lookMiddle': 'Olhe para o meio da tela e não mexa os olhos até eu dizer pronto.',
@@ -299,6 +301,7 @@ const pt: Record<string, string> = {
   'sr.hands.ready': 'Pronto: já pode jogar com gestos das mãos.',
   'sr.hands.noCamera': 'O controle por gestos precisa da câmera, e ela não abriu. Permita a câmera para esta página.',
   'sr.hands.needsInternet': 'O controle por gestos ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
+  'sr.hands.failed': 'O controle por gestos não conseguiu começar neste aparelho.',
   'sr.hands.stopped': 'O controle por gestos parou de receber imagens da câmera.',
   'sr.hands.slow': 'O controle por gestos está lento neste aparelho e pode não responder.',
   'icon.menu': 'Menu',

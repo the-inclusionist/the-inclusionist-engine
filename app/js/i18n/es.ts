@@ -35,6 +35,7 @@ const es: Record<string, string> = {
   'sr.deaf.noSigning': 'Sin intérprete de lengua de señas ahora: los subtítulos y el texto siguen en la pantalla.',
   'sr.deaf.interpreter': 'Intérprete de Libras (lengua de señas brasileña)',
   'sr.eyes.needsInternet': 'El control con la mirada todavía no llegó a este aparato: se descarga la primera vez que el juego se abre con internet.',
+  'sr.eyes.failed': 'El control con la mirada no pudo empezar en este aparato.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Mira aquí',
   'gaze.loading': 'Cargando...',
@@ -46,6 +47,7 @@ const es: Record<string, string> = {
   'sr.face.ready': 'Listo: ya puedes jugar con la cara.',
   'sr.face.noCamera': 'El control con la cara necesita la cámara, y no se abrió. Permite la cámara para esta página.',
   'sr.face.needsInternet': 'El control con la cara todavía no llegó a este dispositivo: baja la primera vez que el juego se abre con internet.',
+  'sr.face.failed': 'El control con la cara no pudo empezar en este aparato.',
   'sr.face.stopped': 'El control con la cara dejó de recibir imágenes de la cámara.',
   'sr.face.slow': 'El control con la cara va lento en este dispositivo y puede no responder.',
   'sr.eyes.lookMiddle': 'Mira al centro de la pantalla y no muevas los ojos hasta que diga listo.',
@@ -204,6 +206,7 @@ const es: Record<string, string> = {
   'sr.hands.ready': 'Listo: ya puedes jugar con gestos de las manos.',
   'sr.hands.noCamera': 'El control con gestos necesita la cámara, y no se abrió. Permite la cámara para esta página.',
   'sr.hands.needsInternet': 'El control con gestos todavía no llegó a este dispositivo: baja la primera vez que el juego se abre con internet.',
+  'sr.hands.failed': 'El control con gestos no pudo empezar en este aparato.',
   'sr.hands.stopped': 'El control con gestos dejó de recibir imágenes de la cámara.',
   'sr.hands.slow': 'El control con gestos va lento en este dispositivo y puede no responder.',
   'icon.menu': 'Menú',

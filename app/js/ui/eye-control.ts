@@ -9,8 +9,8 @@
 // · Nothing commands before the rest is measured: until then, and on a frame with no face or a head turning fast, the cycle is frozen.
 // · A reading that re-centres itself cancels the gesture in hand.
 // · Only the RIGHT eye is read (ADR-0213): the Dev's brain suppresses the left one, and a child's may too.
-// · What cannot work is said to the child and written in `problems`, once: the files not on the device, the camera refused, frames that
-//   stop or crawl. A 📷 that is on and does nothing is the defect this module exists not to ship.
+// · What cannot work is said to the child and written in `problems`, once: the files not on the device, a runtime that does not load,
+//   the camera refused, frames that stop or crawl (`ui/camera-control.startCameraReader` for the first three). A 📷 that is on and does nothing is the defect this module exists not to ship.
 
 import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
@@ -22,6 +22,7 @@ import { loadFaceTracker, openCamera, closeCamera, type FaceTracker, type FaceTr
 import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platform/vision-loop.js';
 import { drawGazeOverlay } from './gaze-overlay.js';
 import type { SwitchableControl } from './switchable-control.js';
+import { startCameraReader } from './camera-control.js';
 
 /** A camera picture the tracker can read. */
 export interface CameraFeed { readonly frame: unknown; ready(): boolean; close(): void }
@@ -157,20 +158,20 @@ export function createEyeControl(d: EyeControlDeps): SwitchableControl {
     running = false; wasReady = false;
   };
 
+  /** Nothing started: said, written once, and the 📷 back to off — unless it already moved on, and then nobody is waiting (as the 👄). */
+  const failed = (kind: string, line: string, spoken: string): void => {
+    if (!current()) return;
+    once(kind, line, spoken);
+    d.turnOff();
+  };
+
   const start = async (): Promise<void> => {
-    const load = await loadTracker({ base: d.base, hasFile: d.hasFile });
-    if (!load.ok) {
-      once('files', `eye control: ${load.missing.join(', ')} not on this device — the child cannot play with the eyes; open the game once online so the install fetches them`, t('sr.eyes.needsInternet'));
-      d.turnOff();
-      return;
-    }
-    try { feed = await openFeed(); } catch {
-      load.tracker.close();
-      once('camera', 'eye control: the camera did not open — the child cannot play with the eyes; allow the camera for this page, or plug one in', t('sr.eyes.noCamera'));
-      d.turnOff();
-      return;
-    }
-    tracker = load.tracker;
+    const opened = await startCameraReader({
+      subject: 'eye control', loses: 'play with the eyes',
+      spoken: { files: () => t('sr.eyes.needsInternet'), runtime: () => t('sr.eyes.failed'), camera: () => t('sr.eyes.noCamera') },
+    }, { load: () => loadTracker({ base: d.base, hasFile: d.hasFile }), openFeed, failed });
+    if (!opened) return;
+    tracker = opened.tracker; feed = opened.feed;
     canvas = d.doc.createElement('canvas');
     canvas.className = 'gaze-overlay';
     canvas.setAttribute('aria-hidden', 'true');

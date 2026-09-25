@@ -17,6 +17,7 @@ import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platf
 import { gazeFontPx } from './gaze-overlay.js';
 import type { CameraFeed } from './eye-control.js';
 import type { SwitchableControl } from './switchable-control.js';
+import { startCameraReader } from './camera-control.js';
 
 export interface HandControlDeps {
   /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
@@ -99,20 +100,20 @@ export function createHandControl(d: HandControlDeps): SwitchableControl {
     running = false;
   };
 
+  /** Nothing started: said, written once, and the 📷 back to off — unless it already moved on, and then nobody is waiting (as the 👄). */
+  const failed = (kind: string, line: string, spoken: string): void => {
+    if (!current()) return;
+    once(kind, line, spoken);
+    d.turnOff();
+  };
+
   const start = async (): Promise<void> => {
-    const load = await loadTracker({ base: d.base, hasFile: d.hasFile });
-    if (!load.ok) {
-      once('files', `gesture control: ${load.missing.join(', ')} not on this device — the child cannot play with gestures; open the game once online so the install fetches them`, t('sr.hands.needsInternet'));
-      d.turnOff();
-      return;
-    }
-    try { feed = await d.openFeed(); } catch {
-      load.tracker.close();
-      once('camera', 'gesture control: the camera did not open — the child cannot play with gestures; allow the camera for this page, or plug one in', t('sr.hands.noCamera'));
-      d.turnOff();
-      return;
-    }
-    tracker = load.tracker;
+    const opened = await startCameraReader({
+      subject: 'gesture control', loses: 'play with gestures',
+      spoken: { files: () => t('sr.hands.needsInternet'), runtime: () => t('sr.hands.failed'), camera: () => t('sr.hands.noCamera') },
+    }, { load: () => loadTracker({ base: d.base, hasFile: d.hasFile }), openFeed: d.openFeed, failed });
+    if (!opened) return;
+    tracker = opened.tracker; feed = opened.feed;
     canvas = d.doc.createElement('canvas');
     canvas.className = 'hand-overlay';
     canvas.setAttribute('aria-hidden', 'true');
