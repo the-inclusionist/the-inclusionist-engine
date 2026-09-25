@@ -1520,8 +1520,7 @@ describe('createGame num documento de verdade', () => {
     // interpreter reads a hidden node it clicks, so the click is where the text is read back; the clock is moved past its
     // one-utterance queue.
     const { vi } = await import('vitest');
-    const V = await import('../app/js/ui/vlibras.js');
-    abrir();
+    const motor = abrir();
     const heard = [];
     const real = HTMLElement.prototype.click;
     const click = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(function () {
@@ -1531,16 +1530,84 @@ describe('createGame num documento de verdade', () => {
     const icon = () => document.querySelector('#title-icons [data-pi="libras"]');
     try {
       expect(icon(), 'the 🦻 is not on this root\'s bar').not.toBeNull();
-      if (V.librasOpen) icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      if (motor.libras.isOpen()) icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
       heard.length = 0;
       icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(V.librasOpen, 'the 🦻 did not turn deaf mode on — this case would measure nothing').toBe(true);
+      expect(motor.libras.isOpen(), 'the 🦻 did not turn deaf mode on — this case would measure nothing').toBe(true);
       expect(heard.length, 'deaf mode came on and the interpreter was sent nothing').toBeGreaterThan(0);
       expect(heard.join(' | '), 'the interpreter was sent a raw key').not.toMatch(/\bsr\.libras\./);
     } finally {
-      if (V.librasOpen) icon()?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      if (motor.libras.isOpen()) icon()?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       click.mockRestore();
       now.mockRestore();
+    }
+  });
+
+  /*
+   * THE ANNOUNCER AND DEAF MODE ARE THE ROOT'S (ADR-0232 D4-B1): `engine.say`/`alert` write this root's regions, and Libras
+   * signs a root's announcements ONLY when the game connects the mirror — decision DD1, pending the Dev: the root must not
+   * start signing for the games that never wired it. The interpreter reads a hidden node it clicks, so the click is where a
+   * signed text is read back; each `Date.now()` is 10 s after the last, so the one-utterance queue never holds one back.
+   */
+  const interpreter = async () => {
+    const { vi } = await import('vitest');
+    const heard = [];
+    const real = HTMLElement.prototype.click;
+    const click = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(function () {
+      if (this.getAttribute('aria-hidden') === 'true') heard.push(this.textContent); else real.call(this);
+    });
+    let clock = Date.now();
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => (clock += 10_000));
+    return { heard, restore: () => { click.mockRestore(); now.mockRestore(); } };
+  };
+
+  it('🔴 [Right] `engine.say` and `engine.alert` write THIS root\'s regions, on the next frame', async () => {
+    const motor = abrir();
+    const status = document.querySelector('#sr-status');
+    const alerta = document.querySelector('#sr-alert');
+    motor.say('uma frase educada');
+    motor.alert('uma frase urgente');
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(status.textContent).toBe('uma frase educada');
+    expect(alerta.textContent).toBe('uma frase urgente');
+  });
+
+  it('🔴 [Right] DD1: the root signs NOTHING by itself; a game that connects the mirror gets its announcements signed', async () => {
+    const motor = abrir();
+    const { heard, restore } = await interpreter();
+    try {
+      motor.libras.toggle();
+      expect(motor.libras.isOpen(), 'deaf mode did not turn on — this case would measure nothing').toBe(true);
+      heard.length = 0;
+      motor.say('sem espelho');
+      motor.alert('também sem');
+      expect(heard, 'the root started signing its announcements for a game that never wired it').toEqual([]);
+      const release = motor.mirrorAnnouncements(motor.libras.say);
+      motor.say('com espelho');
+      expect(heard, 'the connected mirror signed nothing').toEqual(['com espelho']);
+      release();
+      motor.say('solto');
+      expect(heard, 'a released mirror went on signing').toEqual(['com espelho']);
+    } finally {
+      if (motor.libras.isOpen()) motor.libras.toggle();
+      restore();
+    }
+  });
+
+  it('🎯 [Right] a choice restored from storage signs after the game\'s first `engine.libras.tick()` — the behaviour kept', async () => {
+    localStorage.setItem('incl_libras', '1');
+    const { heard, restore } = await interpreter();
+    try {
+      const motor = abrir();
+      expect(motor.libras.isOpen(), 'the child who left deaf mode on found it off').toBe(true);
+      motor.libras.say('antes do tick');
+      expect(heard).toEqual([]);
+      motor.libras.tick();
+      motor.libras.say('depois do tick');
+      expect(heard).toEqual(['depois do tick']);
+    } finally {
+      localStorage.removeItem('incl_libras');
+      restore();
     }
   });
 

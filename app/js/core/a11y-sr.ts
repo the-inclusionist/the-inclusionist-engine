@@ -1,17 +1,56 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/a11y-sr.ts — announcements for the SCREEN READER. srSay = the "polite" aria-live region (status);
-// srAlert = the "assertive" region (alerts). Clear → requestAnimationFrame → write forces the reader to announce
-// the same text again when it repeats. It also mirrors the speech into LIBRAS, and that arrives by INJECTION
-// (setVlibrasSay) so this core module never imports ui/ (ADR-0173). ⚠️ Nothing inside the engine registers it
-// today — the boot that did was the platformer's — so the mirror is a no-op until a host calls it.
-// Depends only on core/dom-query ($). The #sr-status/#sr-alert regions live in the page.
-import { $ } from './dom-query.js';
+// core/a11y-sr.ts — announcements for the SCREEN READER. `say` = the "polite" aria-live region (`#sr-status`);
+// `alert` = the "assertive" region (`#sr-alert`). Clear → next frame → write forces the reader to announce the same text
+// again when it repeats.
+//
+// 🔴 A FACTORY (ADR-0232 D4, issue #207): the announcer used to be two module functions over the GLOBAL document, the
+// global `requestAnimationFrame` and a module-level Libras mirror a host registered — so a root building in another
+// document (an iframe, an editor beside the game) announced into the page's regions, and two roots shared one mirror.
+// Now each root builds its own over the document and the frames its host lends. The factory stays PUBLISHED for a game
+// that must announce with no root at all — its boot failed before `createGame` returned (game-chess's rootless alert).
+//
+// THE LIBRAS MIRROR IS AN EXPLICIT SINK OF EACH ANNOUNCER, and nothing connects it by default. Today a game that wants
+// its announcements signed connects it (`Engine.mirrorAnnouncements(engine.libras.say)`); the games that do not, do not
+// sign — the behaviour before this factory, kept on purpose until the Dev decides (D4 decision DD1). Having the root
+// mirror everything is the one line `announcer.mirrorTo(libras.say)` in the root. The sink arrives by injection so this
+// core module never imports ui/ (ADR-0173).
 
-let _vlibrasSay: (text: string) => void = () => { /* no-op until setVlibrasSay() */ };
-// Registers the Libras speech (the host calls it once vlibrasSay exists). See ui/vlibras.
-export function setVlibrasSay(fn: (text: string) => void): void { _vlibrasSay = fn; }
+/** What an announcer writes through: the document holding the two regions, and the host's next frame. */
+export interface AnnouncerPorts {
+  /** The document whose `#sr-status` and `#sr-alert` are written. A document without them announces nothing, silently. */
+  readonly doc: Pick<Document, 'querySelector'>;
+  /** Runs `cb` on the next frame — the host's `requestAnimationFrame`. The clear-then-write dance needs one frame between. */
+  readonly raf: (cb: () => void) => void;
+}
 
-// "Polite" announcement (status): does not interrupt what the reader is saying.
-export const srSay = (t: string): void => { const el = $('#sr-status'); if (el) { el.textContent = ''; requestAnimationFrame(() => { el.textContent = t; }); } _vlibrasSay(t); };
-// "Assertive" announcement (alert): interrupts and speaks now (errors, important warnings).
-export const srAlert = (t: string): void => { const el = $('#sr-alert'); if (el) { el.textContent = ''; requestAnimationFrame(() => { el.textContent = t; }); } _vlibrasSay(t); };
+/** One root's announcer. */
+export interface Announcer {
+  /** "Polite" announcement (status): does not interrupt what the reader is saying. */
+  readonly say: (text: string) => void;
+  /** "Assertive" announcement (alert): interrupts and speaks now (errors, important warnings). */
+  readonly alert: (text: string) => void;
+  /**
+   * Sends every announcement of THIS announcer also to `sink` (the Libras interpreter's `say`), until the returned release
+   * is called. One sink at a time: a second call replaces the first, and releasing a replaced sink changes nothing.
+   */
+  readonly mirrorTo: (sink: (text: string) => void) => () => void;
+}
+
+const NO_MIRROR = (): void => { /* nothing signs until a sink is connected */ };
+
+export function createAnnouncer({ doc, raf }: AnnouncerPorts): Announcer {
+  let mirror: (text: string) => void = NO_MIRROR;
+  const write = (region: string, text: string): void => {
+    const el = doc.querySelector<HTMLElement>(region);
+    if (el) { el.textContent = ''; raf(() => { el.textContent = text; }); }
+    mirror(text);
+  };
+  return {
+    say: (text) => { write('#sr-status', text); },
+    alert: (text) => { write('#sr-alert', text); },
+    mirrorTo: (sink) => {
+      mirror = sink;
+      return () => { if (mirror === sink) mirror = NO_MIRROR; };
+    },
+  };
+}

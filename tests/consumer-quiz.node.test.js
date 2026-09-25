@@ -43,8 +43,12 @@ describe('o consumidor obedece à própria regra', () => {
     expect(SPECS.filter((s) => s === 'pixi.js' || s.startsWith('pixi.js/') || s.startsWith('@pixi/'))).toEqual([]);
   });
 
-  it('[Interface] importa de core/ — a camada de a11y é alcançável sem trazer o jogo junto', () => {
-    expect(FONTE).toMatch(/from '\.\.\/core\/a11y-sr\.js'/);
+  it('[Interface] a camada de a11y é alcançável sem trazer o jogo junto — pelo MOTOR que o quiz montou (ADR-0232 D4)', () => {
+    // The announcer is a factory the root builds; the quiz announces through ITS engine (`motor.say`/`motor.alert`), and
+    // importing `core/a11y-sr` to build a second one would announce past this root's Libras mirror.
+    expect(FONTE).not.toMatch(/from '\.\.\/core\/a11y-sr\.js'/);
+    expect(FONTE).toMatch(/motor\?\.alert\(/);
+    expect(FONTE).toMatch(/motor\?\.say\(/);
     expect(FONTE).toMatch(/from '\.\.\/core\/i18n\.js'/);
   });
 });

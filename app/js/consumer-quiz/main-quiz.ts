@@ -127,7 +127,6 @@
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
 import { escapeHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
 import type { Translate } from '../core/i18n.js';
-import { srSay, srAlert } from '../core/a11y-sr.js';
 import { captionDuration } from '../core/caption-duration.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { announceItem } from '../ui/item-announcement.js';
@@ -163,6 +162,9 @@ let correctCount = 0;
 /** The question whose statement and options were last narrated — see `narrationOnDraw`. */
 let narratedQuestion = -1;
 let motor: Engine | null = null;
+/** The quiz announces through ITS engine's announcer (ADR-0232 D4): the same regions, and the Libras mirror if one is connected. */
+const srSay = (text: string): void => { motor?.say(text); };
+const srAlert = (text: string): void => { motor?.alert(text); };
 /**
  * THE QUIZ'S WORDS, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
  *

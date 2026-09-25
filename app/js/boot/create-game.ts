@@ -60,7 +60,7 @@ import { cartridgeProblems } from '../core/cartridge-problems.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
 import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
-import { srSay, srAlert } from '../core/a11y-sr.js';
+import { createAnnouncer } from '../core/a11y-sr.js';
 import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
@@ -80,7 +80,7 @@ import { reserveTopBand } from '../ui/top-band.js';
 import { createSettingsStore, type SettingsStore, type LetterCase } from '../core/state.js';
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
-import { vlibrasOpen, toggleLibras, initLibras } from '../ui/vlibras.js';
+import { createLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts } from '../platform/tts.js';
@@ -530,7 +530,31 @@ export interface Engine {
   readonly localeReady: () => Promise<void>;
   // ADR-0232 D4 anchors: each batch adds its handle members under its own marker, so parallel branches never touch one hunk.
   // D4-B1 (announcer, libras)
-
+  /**
+   * THIS ROOT'S SCREEN-READER ANNOUNCEMENTS (ADR-0232 D4): «polite» (`#sr-status`, does not interrupt) — the announcer every
+   * engine module receives. A game announces HERE instead of importing `core/a11y-sr`, which is a factory now: a second
+   * announcer would write the same regions but carry none of this root's Libras mirror.
+   */
+  readonly say: (text: string) => void;
+  /** The «assertive» announcement (`#sr-alert`): interrupts and speaks now — errors, a checkmate, a crash. See `say`. */
+  readonly alert: (text: string) => void;
+  /**
+   * SIGNS THIS ROOT'S ANNOUNCEMENTS TOO: every `say`/`alert` — the engine's and the game's — also goes to `sink`, until the
+   * returned release. Pass `engine.libras.say`. The root connects nothing by itself (decision DD1, pending the Dev): a game
+   * that signed its announcements before connects it here, and a game that did not keeps not signing.
+   */
+  readonly mirrorAnnouncements: (sink: (text: string) => void) => () => void;
+  /**
+   * THIS ROOT'S DEAF MODE (ADR-0232 D4): the one the bar's 🦻 toggles. `isOpen` is the child's choice; `say` signs a text
+   * while it is open (a queue of one); `tick` opens the interpreter for a choice restored from storage, and a game that
+   * signs calls it from its loop; `toggle` flips the mode from a game's own control, confirming in this root's language.
+   */
+  readonly libras: {
+    readonly isOpen: () => boolean;
+    readonly say: (text: string) => void;
+    readonly tick: () => void;
+    readonly toggle: () => void;
+  };
 
   // D4-B2 (settings store)
   /**
@@ -862,7 +886,18 @@ export function createGame(o: CreateGameOptions): Engine {
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
   const $$ = <T extends Element = Element>(sel: string): T[] => [...doc.querySelectorAll<T>(sel)];
-
+  /*
+   * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4): the screen reader's two regions written in the HOST's document on the
+   * host's frames, and the Libras interpreter over its store. A window with no frames (a test double) writes at once.
+   * 📌 DD1: the root does NOT mirror its announcements into Libras — a game connects that sink (`Engine.mirrorAnnouncements`),
+   * as before; mirroring everything would be `announcer.mirrorTo(libras.say)` here.
+   */
+  const announcer = createAnnouncer({
+    doc,
+    raf: typeof win.requestAnimationFrame === 'function' ? (cb) => { win.requestAnimationFrame(cb); } : (cb) => { cb(); },
+  });
+  const { say: srSay, alert: srAlert } = announcer;
+  const libras = createLibras({ doc, win, store, now: () => Date.now() });
   for (const sel of REQUIRED_MARKUP) {
     if (!$(sel)) hostProblems.push(`the page lacks ${sel}: the engine announces and draws into it, and without it a child who listens hears nothing — add it to the page`);
   }
@@ -1257,7 +1292,6 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const sceneMotion = readStoredScene(store, defaultReducedMotion(win.matchMedia));
   const saveSceneMotion = (): void => { storeScene(store, sceneMotion); };
-  initLibras(store); // deaf mode's stored choice, read before the bar asks `isLibrasOn` (ADR-0232)
   const pauseIcons = initPauseIcons({
     translator, store,
     settings: state, // the page's settings store itself: its live bindings are the reads the bar asks for (ADR-0232)
@@ -1325,8 +1359,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // ✅ The monolith's dead guard works again — see the note on `audio`, above.
     reflectTtsPanel: () => { audio?.reflectTts(); },
     reflectTtsPanelEnabled: true,
-    isLibrasOn: vlibrasOpen,
-    toggleLibras: () => toggleLibras(translator.t),
+    isLibrasOn: libras.isOpen,
+    toggleLibras: () => libras.toggle(translator.t),
     /*
      * ⚠️ WHAT THE GAME HANDS OVER: the three fields are optional on both sides. Absent, the pause card holds only what the
      * engine acts on, and the two visual icons follow their own rules. See the notes in `CreateGameOptions`.
@@ -4097,7 +4131,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     t: translator.t,
     localeReady: translator.ready,
     // D4-B1
-
+    say: srSay,
+    alert: srAlert,
+    mirrorAnnouncements: announcer.mirrorTo,
+    libras: { isOpen: libras.isOpen, say: libras.say, tick: libras.tick, toggle: () => { libras.toggle(translator.t); } },
 
     // D4-B2
     settings: state,

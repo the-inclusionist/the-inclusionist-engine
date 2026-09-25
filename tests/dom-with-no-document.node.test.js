@@ -33,10 +33,12 @@ describe('ui/dom sem documento nenhum (project node)', () => {
 
   it('⚠️ [Right] e um consumidor a jusante sobrevive — o anúncio cala-se, não rebenta', async () => {
     // The real path that brought this to light. A screen reader with no region to write to has nothing to announce;
-    // what it must not do is bring the game down over it.
-    const { srAlert, srSay } = await import('../app/js/core/a11y-sr.js');
-    expect(() => srAlert('a tecla já está em uso')).not.toThrow();
-    expect(() => srSay('Jogador 2 entrou')).not.toThrow();
+    // what it must not do is bring the game down over it. Since ADR-0232 D4 the announcer is built over the document it
+    // is GIVEN: one with no regions is the case here, and the global it no longer reads is absent too.
+    const { createAnnouncer } = await import('../app/js/core/a11y-sr.js');
+    const announcer = createAnnouncer({ doc: { querySelector: () => null }, raf: () => { throw new Error('no region, no frame'); } });
+    expect(() => announcer.alert('a tecla já está em uso')).not.toThrow();
+    expect(() => announcer.say('Jogador 2 entrou')).not.toThrow();
   });
 });
 
