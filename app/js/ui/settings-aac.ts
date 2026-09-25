@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-aac.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION MENU (ADR-0028, issue #57).
+// ui/settings-aac.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION MENU (ADR-0028, ADR-0233, issue #57).
 //
 // The catalogue (who exists, under which licence, in which tier) lives in ./aac-sets.js; only the screen is here. DI by
 // ctx, like the sibling panels: no global beyond what is injected.
 //
-// WHAT THIS MENU IS TODAY, said without make-up: a letter-case switch that already shows, beside it, the pictogram sets
-// to come. Only the letter case works — the pictograms are thousands of files that have not entered the repository, and
-// some of the sets depend on a negotiation that is not ours.
+// WHAT THIS MENU IS TODAY, said without make-up: a letter-case switch and, beside it, the two pictogram sets the project
+// would use — ARASAAC and PCS — both locked, because no licence has been obtained (ADR-0233). Only the letter case works.
 //
-// Showing what does not work would be dishonest if the menu did not say WHY. It does, with two different answers on
-// purpose: in preparation (the licence is settled, the work is ours) and awaiting negotiation (the permission is someone
-// else's). An educator who reads the first knows to wait; one who reads the second knows waiting does not help. Hiding
-// everything that does not work yet would make the educator conclude the game has no pictograms at all — the wrong
-// conclusion, and the one that costs most to whoever needs them.
+// Showing what does not work would be dishonest if the menu did not say WHY. It does: each locked set carries the reason
+// «no licence», as the pause card shows a locked item with its reason (ADR-0161). Hiding them would make the educator
+// conclude the game has no pictograms at all — the wrong conclusion, and the one that costs most to whoever needs them.
 //
 // LETTER vs PICTOGRAM: the case choice is `letterCase` (core/state). There is NO parallel `aacMode`, and that is a
 // decision: while only one question is answerable, a second variable for it would be duplication dressed as
@@ -31,7 +28,7 @@
 import type { Translate } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import type { LetterCase } from '../core/state.js';
-import { AAC_SETS, AAC_BY_KEY, aacReason, type AacSet } from './aac-sets.js';
+import { AAC_SETS, AAC_BY_KEY, aacReason, aacSelectable, type AacSet } from './aac-sets.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { controlRow, labelRow, sectionHeader, type ControlRowSpec } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
@@ -76,7 +73,9 @@ export function aacRowSpec(t: Translate, s: AacSet): ControlRowSpec {
 }
 
 /**
- * The menu's three sections, in decision order: the section says WHOSE turn it is to act.
+ * The menu's two sections: what works now (the letters switch), and the pictogram sets, each only with a licence
+ * (ADR-0233). Whether a set row is locked is the row's own business (its reason and its `disabled`), so a licence that
+ * arrives changes one row, not the sections.
  *
  * 📌 Each produces its own rows instead of filtering the catalogue, because the first does not come from the catalogue
  * — the letters are a switch and not a set, the Dev's decision that took them out of the list. A table whose first row
@@ -85,14 +84,9 @@ export function aacRowSpec(t: Translate, s: AacSet): ControlRowSpec {
 export const AAC_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: (t: Translate) => ControlRowSpec[] }> = [
   { title: 'aac.secao.agora', tag: 'aac.secao.agoraTag', rows: (t) => [lettersRowSpec(t)] },
   {
-    title: 'aac.secao.preparo',
-    tag: 'aac.secao.preparoTag',
-    rows: (t) => AAC_SETS.filter((s) => s.tier !== 'negotiating').map((s) => aacRowSpec(t, s)),
-  },
-  {
-    title: 'aac.secao.negociacao',
-    tag: 'aac.secao.negociacaoTag',
-    rows: (t) => AAC_SETS.filter((s) => s.tier === 'negotiating').map((s) => aacRowSpec(t, s)),
+    title: 'aac.section.pictograms',
+    tag: 'aac.section.pictogramsTag',
+    rows: (t) => AAC_SETS.map((s) => aacRowSpec(t, s)),
   },
 ];
 
@@ -122,15 +116,16 @@ export function mountAacInside(t: Translate, ctx: PanelShellCtx, list: HTMLEleme
 /**
  * A new row, with what the kit does not know about this panel: the set's key and the lock.
  *
- * No set is available today. A button that does nothing is worse than absence, because it spends trust — so it comes
- * locked, and the reason is already in `ariaLabel` for whoever navigates by keyboard.
+ * No set is licensed today (ADR-0233). A button that does nothing is worse than absence, because it spends trust — so an
+ * unlicensed set comes locked, and the reason is already in `ariaLabel` for whoever navigates by keyboard.
  */
 function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   const { row: row, control: control } = controlRow(ctx, spec);
   if (spec.id === 'caa-caixa-alta') { row.id = 'caa-letras'; return row; }
   const key = spec.id.replace('caa-set-', '');
   control.setAttribute('data-caa', key);
-  if (!AAC_BY_KEY[key]?.available) control.setAttribute('disabled', '');
+  const set = AAC_BY_KEY[key];
+  if (!set || !aacSelectable(set)) control.setAttribute('disabled', '');
   return row;
 }
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Tests of ui/settings-aac — the panel (BROWSER project: uses document). ADR-0028 (7th menu) + ADR-0029 (the mark).
+// Tests of ui/settings-aac — the panel (BROWSER project: uses document). ADR-0028 (7th menu) + ADR-0029 (the mark) +
+// ADR-0233 (the two candidate sets, locked until licensed).
 // The pure logic (catalogue, reasons, assembly) is in aac-sets.node.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsAac, mountAacInside } from '../app/js/ui/settings-aac.js';
@@ -55,16 +56,17 @@ describe('ui/settings-aac — escolher', () => {
   });
 
   it('🔴 [Right] every section and row is written in the language of the ctx\'s `t`, never as a key (ADR-0232 D3)', () => {
-    // The literals, so the case cannot pass by reading the same table the code reads. The letters row, a set in
-    // preparation and a set under negotiation each carry a different key, and each section its own title.
+    // The literals, so the case cannot pass by reading the same table the code reads. The letters row and an unlicensed
+    // set each carry a different key, and each section its own title.
     initSettingsAac(fullCtx()).render();
     const list = $('#caa-list');
     const words = [list.textContent, ...[...list.querySelectorAll('[aria-label]')].map((n) => n.getAttribute('aria-label'))].join(' | ');
     expect(words, 'a raw key reached the menu').not.toMatch(/\baac\.[a-zA-Z]/);
     expect(list.textContent).toContain('Disponível agora');
+    expect(list.textContent).toContain('Pictogramas');
     expect($('#caa-caixa-alta').closest('.ctrl-row').textContent).toContain('Letras maiúsculas');
-    expect(words, 'a set in preparation does not say so').toContain('Mulberry Symbols, em preparação');
-    expect(words, 'a set under negotiation does not say so').toContain('Sclera, aguardando negociação');
+    expect(words, 'an unlicensed set does not say so').toContain('ARASAAC, sem licença');
+    expect(words, 'an unlicensed set does not say so').toContain('PCS, sem licença');
   });
 
   it('[Right] o interruptor LIGADO parece ligado, e o desligado não', () => {
@@ -100,24 +102,24 @@ describe('ui/settings-aac — escolher', () => {
     // BEHAVIOUR, not a specific guard.
     const ctx = fullCtx();
     initSettingsAac(ctx).render();
-    const b = $('#caa-list button[data-caa="mulberry"]');
+    const b = $('#caa-list button[data-caa="arasaac"]');
     b.removeAttribute('disabled');
     b.click();
     expect(ctx.getCaso()).toBe('upper');
     expect(ctx.said).toHaveLength(0);
   });
 
-  it('[Interface] os sete pictogramas aparecem, e nenhum deles é clicável hoje', () => {
+  it('[Interface] the two candidate sets appear, and neither is clickable today (ADR-0233)', () => {
     // Appearing is a decision: hiding them would make the educator conclude the game does no pictograms at all, when the
-    // obstacle is a licence or pending work — and they are precisely the ones the school may already have.
+    // obstacle is a licence — and they are precisely the ones the school may already have. The dropped sets do not appear.
     const ctx = fullCtx();
     initSettingsAac(ctx).render();
-    const pict = ['mulberry', 'blissymbolics', 'tawasol', 'arasaac', 'sclera', 'pcs', 'symbolstix', 'widgit'];
-    for (const k of pict) {
+    for (const k of ['arasaac', 'pcs']) {
       const b = $(`#caa-list button[data-caa="${k}"]`);
       expect(b, k).not.toBeNull();
       expect(b.disabled, k).toBe(true);
     }
+    expect(document.querySelectorAll('#caa-list button[data-caa]')).toHaveLength(2);
   });
 });
 
@@ -149,19 +151,19 @@ describe('ui/settings-aac — a montagem pelo kit (ADR-0129)', () => {
   const kit = () => ({ find: (sel) => document.querySelector(sel), create: (tag) => document.createElement(tag) });
 
   it('[Zero] uma seção sem nenhuma linha NÃO desenha o cabeçalho dela', () => {
-    // An «Aguardando negociação» over nothing tells the educator there is something there and there is not: they look for
-    // the row the title promises. 📌 With the number of rows as an ARGUMENT this branch can be exercised — the catalogue is
-    // fixed and no section is empty today, so through the public API it would be unreachable — and being exercisable is
-    // what a rule needs to be one.
-    expect(sectionHeader(kit(), 'Aguardando negociação', 'a permissão não é nossa', 0)).toBeNull();
-    expect(sectionHeader(kit(), 'Aguardando negociação', 'a permissão não é nossa', 1)).not.toBeNull();
+    // A «Pictogramas» over nothing tells the educator there is something there and there is not: they look for the row
+    // the title promises. 📌 With the number of rows as an ARGUMENT this branch can be exercised — the catalogue is fixed
+    // and no section is empty today, so through the public API it would be unreachable — and being exercisable is what a
+    // rule needs to be one.
+    expect(sectionHeader(kit(), 'Pictogramas', 'cada um só com licença', 0)).toBeNull();
+    expect(sectionHeader(kit(), 'Pictogramas', 'cada um só com licença', 1)).not.toBeNull();
   });
 
-  it('[Right] a lista traz o interruptor mais os 8 conjuntos, em três seções', () => {
+  it('[Right] the list holds the switch plus the 2 sets, in two sections', () => {
     initSettingsAac(fullCtx()).render();
     expect($('#caa-caixa-alta')).not.toBeNull();
     for (const s of AAC_SETS) expect($(`#caa-list button[data-caa="${s.key}"]`), s.key).not.toBeNull();
-    expect(document.querySelectorAll('#caa-list .panel-sub')).toHaveLength(3);
+    expect(document.querySelectorAll('#caa-list .panel-sub')).toHaveLength(2);
   });
 
   it('[Right] toda linha nasce com a regra de menu por construção: um `.opt-hint` só, dentro do `<span>`', () => {
@@ -175,10 +177,13 @@ describe('ui/settings-aac — a montagem pelo kit (ADR-0129)', () => {
     }
   });
 
-  it('[Right] o indisponível vem travado, e o disponível não — nunca um botão que não faz nada', () => {
+  it('🔴 [Right] a set with no recorded licence comes LOCKED — never a button that does nothing (ADR-0233)', () => {
+    // The literal side of the licence gate: the lock is read from the licence text, not from the tier the code reads, so
+    // a set marked licensed with no licence written down cannot reach the child as a live button.
     initSettingsAac(fullCtx()).render();
     for (const s of AAC_SETS) {
-      expect($(`#caa-list button[data-caa="${s.key}"]`).disabled, s.key).toBe(!s.available);
+      const recorded = typeof s.license === 'string' && s.license.trim() !== '';
+      if (!recorded) expect($(`#caa-list button[data-caa="${s.key}"]`).disabled, s.key).toBe(true);
     }
     // The letters switch is the offline floor: it never depends on any file, so it never comes locked.
     expect($('#caa-caixa-alta').disabled).toBe(false);
@@ -193,7 +198,7 @@ describe('ui/settings-aac — a montagem pelo kit (ADR-0129)', () => {
     const botao = $('#caa-caixa-alta');
     mountAacInside(translate, kit(), lista);
     expect(lista.querySelectorAll('.ctrl-row')).toHaveLength(antes);
-    expect(lista.querySelectorAll('.panel-sub')).toHaveLength(3);
+    expect(lista.querySelectorAll('.panel-sub')).toHaveLength(2);
     expect($('#caa-caixa-alta'), 'o MESMO nó, ou a escuta ligada nele ficou para trás').toBe(botao);
   });
 });

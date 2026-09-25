@@ -3644,6 +3644,32 @@ selectors that read the page-wide `document` were the last global reach outside 
 
 Games (measured read-only): **game-platformer** imports `$` and `$$` from `ui/dom`; the other six do not.
 
+## DF · Only ARASAAC and PCS, locked until licensed: the AAC catalogue changes shape (ADR-0233, issue #57)
+
+**Who is affected:** a game that imports `ui/aac-sets` or reads the AAC menu's i18n keys. A game that mounts the AAC
+panel with `initSettingsAac` changes no code: its context and API keep their shape, and the menu now draws the letters
+switch plus two locked sets, in two sections instead of three.
+
+📌 **Why:** the Dev settled the roster (ADR-0233): the only candidates are ARASAAC and PCS, each only once a licence is
+obtained, and none is. The old tiers (`bundled`, `fetched`, `negotiating`) described sets that were never built or that
+the project dropped, so the tier now says one legal fact — licensed or not — and a set with no recorded licence can never
+be selectable (`tests/aac-sets.node.test.js`).
+
+| old | new | migration |
+|---|---|---|
+| `AacTier` = `'bundled' \| 'fetched' \| 'negotiating'` | `'licensed' \| 'unlicensed'` | compare with `'licensed'`, or call `aacSelectable(s)` |
+| `AacSet` (interface, `license: string \| null`, `available: boolean`) | a union: `tier: 'licensed'` with `license: string`, or `tier: 'unlicensed'` with `license: null`; `available` is gone | `aacSelectable(s)` for `s.available` |
+| `AAC_SETS`, `AAC_BY_KEY`: eight sets | two, `arasaac` and `pcs`, both `unlicensed`; `mulberry`, `blissymbolics`, `tawasol`, `sclera`, `symbolstix` and `widgit` left | a lookup of a dropped key answers `undefined` |
+| `aacReason(s)`: `'aac.emPreparo'` or `'aac.aguardandoNegociacao'` | `'aac.noLicence'`, or `null` for a selectable set | — |
+| `AAC_SECTIONS`: three sections | two: `aac.secao.agora` (the letters) and `aac.section.pictograms` (every set) | — |
+| i18n keys `aac.emPreparo`, `aac.aguardandoNegociacao`, `aac.secao.preparo(Tag)`, `aac.secao.negociacao(Tag)` | removed; `aac.noLicence`, `aac.section.pictograms(Tag)` are new | a game dictionary that overrode the old keys overrides the new ones |
+| — | `aacSelectable(s)` (new): whether the child may choose the set | — |
+
+📏 **Measured in the seven games, read-only, as information:** none imports `ui/aac-sets` or reads the AAC keys, under
+the 9.0 names (`caa-sets`, `CaaTier`, `CaaSet`, `CAA_SETS`, `caaMotivo`, …) or the current ones. `game-platformer` mounts
+the panel (`app/js/main.ts:83`, `initSettingsCaa` from `ui/settings-caa`, called at 1792): no code change, and on the bump
+its menu shows ARASAAC and PCS locked with «sem licença» instead of eight sets. The other six use none of this.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

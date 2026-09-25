@@ -79,11 +79,10 @@ request `g` of the filing asks to be put on record: the itemized list of those e
 - **Voices** — only **Kokoro-82M** (Apache-2.0 weights trained on permissive audio; `CREDITS.md`). A voice enters when its licence
   AND its starting point's (the model it was fine-tuned from, and that model's data) have been read — that chain took the Piper
   voices out (ADR-0207, [`notices/2026-09-14-piper-voices-withdrawn.md`](notices/2026-09-14-piper-voices-withdrawn.md)).
-- **Pictograms** — the layer is decided by the **LICENCE and nothing else** (**ADR-0028**): Mulberry,
-  Blissymbolics and Tawasol under CC BY-SA are embeddable; ARASAAC is **downloaded, never redistributed**; Sclera,
-  PCS, SymbolStix and Widgit appear in the menu as **unavailable, awaiting negotiation**.
-  ⚠️ And the **SA** reaches what we alter: a pictogram readjusted to the high-contrast palette
-  (ADR-0011) or to the pixel grid stays CC BY-SA.
+- **Pictograms** — **none is used** (**ADR-0233**, replacing ADR-0028's roster): the only candidates are
+  **ARASAAC** and **PCS**, each only once a licence is obtained, and no licence exists today. Both appear in the menu
+  **locked, with the reason «no licence»**; a set with no recorded licence can never be selected
+  (`tests/aac-sets.node.test.js`).
 - **Typefaces** — roster and restrictions in **ADR-0012**. ⚠️ Ronde and the alternatives OPTIFrench-Script and
   Merveille are **free for personal use only and CANNOT be packaged**: a download is offered, and the
   option stays disabled when none of them is present.

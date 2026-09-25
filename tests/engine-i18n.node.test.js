@@ -168,13 +168,12 @@ const CRU_CONHECIDO = {
   // game's word, and what names them to the child is each colour's accessible name, where they cross through `{param}`.
   'ui/visual-choices.ts': 3,
   'ui/settings-aac.ts': 5,
-  'ui/aac-sets.ts': 3,           // the pictogram sets' descriptions (licence, cultural origin)
   'ui/locale-flags.ts': 2,       // each language named IN ITSELF, beside its flag: a child who cannot read the current language still finds theirs
   // ✅ Entries leave by being FIXED, not only by counting: `ui/hud.ts` (the «aperte um botão para entrar» badge, now
   // `hud.waitBadge` — its own key, not `sr.player.pressToJoin`: that one is for whoever listens, this one says WHICH
   // button, because whoever reads it has other people around), `ui/settings-panel.ts` (the footer's idle
-  // `EXPLAIN_IDLE`, now resolved at each `fillExplain`, so it follows the language), `ui/settings-controls.ts` (#125)
-  // and `input/gamepad.ts` (#123).
+  // `EXPLAIN_IDLE`, now resolved at each `fillExplain`, so it follows the language), `ui/settings-controls.ts` (#125),
+  // `input/gamepad.ts` (#123) and `ui/aac-sets.ts` (its set notes and licence texts left with the sets ADR-0233 dropped).
   //
   // The `[Zero]` case — the list keeps no module that is already clean — is what forces them out: an orphan entry makes
   // the table lie about the debt's size, and a debt that looks bigger than it is ends up ignored as a whole.
