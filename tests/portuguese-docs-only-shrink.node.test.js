@@ -24,7 +24,7 @@ describe('Portuguese in the docs only shrinks', () => {
 
   it('🔴 [Right] no document carries more Portuguese prose lines than its baseline — a new one starts at zero', () => {
     const grew = Object.entries(now).filter(([f, n]) => n > (base.files[f] ?? 0)).map(([f, n]) => `${f}: ${base.files[f] ?? 0} -> ${n}`);
-    expect(grew, 'write the prose in English (the Dev\'s own words stay between «», in the language he said them)').toEqual([]);
+    expect(grew, 'write the prose in English (the Dev\'s own words stay between «», in the language they said them)').toEqual([]);
   }, 60_000);
 
   it('🔴 [Zero] no Markdown file carries a Portuguese NAME the baseline did not already list', () => {

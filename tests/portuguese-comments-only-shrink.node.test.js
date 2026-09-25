@@ -21,7 +21,7 @@ describe('Portuguese in comments only shrinks', () => {
 
   it('🔴 [Right] no file carries more Portuguese comment lines than its baseline — a new file starts at zero', () => {
     const grew = Object.entries(now).filter(([f, n]) => n > (base.files[f] ?? 0)).map(([f, n]) => `${f}: ${base.files[f] ?? 0} -> ${n}`);
-    expect(grew, 'write the comment in English (the Dev\'s own words stay between «» in the language he said them)').toEqual([]);
+    expect(grew, 'write the comment in English (the Dev\'s own words stay between «» in the language they said them)').toEqual([]);
   }, 60_000);
 
   it('📌 [Boundary] the baseline is the tree, not a wish: its total is what its files add up to', () => {
