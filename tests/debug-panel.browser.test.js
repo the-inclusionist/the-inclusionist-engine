@@ -11,6 +11,8 @@ const fullCtx = (over = {}) => ({
   JUICE: { dust: true, sparkle: true, squash: true, hitstop: true, shake: true, shimmer: true },
   saveJuice: () => {},
   search: '?debug=true',
+  doc: document, // required (ADR-0232 D4)
+  expose: () => {}, // required (ADR-0232 D4)
   ...over,
 });
 
@@ -54,5 +56,29 @@ describe('ui/debug-panel', () => {
   it('[Boundary] um knob de cadência mostra os fps (60/valor): walkHold=6 → 10fps', () => {
     initDebugPanel(fullCtx({ ANIM: { walkHold: 6, runHold: 4, idleHold: 12, swimHold: 8 } }));
     expect(document.querySelector('#debug-panel').textContent).toContain('10fps');
+  });
+
+  it('🔴 [Right] the panel is built in, and appended to, the INJECTED document — never the global one (ADR-0232 D4)', () => {
+    const other = document.implementation.createHTMLDocument('another host');
+    const el = initDebugPanel(fullCtx({ doc: other }));
+    expect(el.ownerDocument, 'the panel was built outside the injected document').toBe(other);
+    expect(other.body.contains(el), 'the panel was not appended to the injected body').toBe(true);
+    expect(document.querySelector('#debug-panel'), 'the panel reached the global document').toBeNull();
+  });
+
+  it('🔴 [Right] the probe hands its raw recording to `expose`, and writes no global (ADR-0232 D4)', () => {
+    let frame = null;
+    const exposed = [];
+    const sample = { textureId: 1, crop: '0,0 16x16', base: '256x256', position: '0,0', scale: '1,1', siblingsDrawing: 0, siblingPositions: '' };
+    initDebugPanel(fullCtx({
+      sampleCharacter: () => sample,
+      onFrame: (fn) => { frame = fn; return () => { frame = null; }; },
+      expose: (samples) => exposed.push(samples),
+    }));
+    document.querySelector('#debug-panel button').click();
+    for (let i = 0; i < 180 && frame; i++) frame();
+    expect(exposed.length, 'the recording did not reach `expose`').toBe(1);
+    expect(exposed[0].length).toBe(180);
+    expect('__sonda' in window, 'the probe wrote the window global').toBe(false);
   });
 });

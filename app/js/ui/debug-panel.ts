@@ -96,8 +96,18 @@ export interface DebugPanelCtx {
   sampleCharacter?: () => CharacterSample | null;
   /** Calls `fn` every frame and returns how to cancel. It is the render clock, injected as a verb. */
   onFrame?: (fn: () => void) => () => void;
-  /** Override for tests; defaults to location.search. */
-  search?: string;
+  /**
+   * The page's query string (`location.search`): the panel exists only under `?debug=true`. REQUIRED (ADR-0232 D4): the
+   * host reads its own location, and this module reaches none.
+   */
+  search: string;
+  /** The document the panel is built in and appended to (its `body`). REQUIRED (ADR-0232 D4): never the global one. */
+  doc: Document;
+  /**
+   * Where the probe's RAW recording goes, for whoever wants more than the summary without 180 lines in the panel — the
+   * platformer puts it on `window.__sonda`. REQUIRED (ADR-0232 D4): the module used to write that global itself.
+   */
+  expose: (samples: readonly CharacterSample[]) => void;
 }
 
 type Header = { h: string };
@@ -106,9 +116,8 @@ type Range = { label: string; get: () => number; set: (v: number) => void; min: 
 type Knob = Header | Toggle | Range;
 
 export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
-  const search = ctx.search ?? location.search;
-  if (!/[?&]debug=true/.test(search)) return null;
-  const { TUNE, ANIM, JUICE, saveJuice } = ctx;
+  if (!/[?&]debug=true/.test(ctx.search)) return null;
+  const { TUNE, ANIM, JUICE, saveJuice, doc } = ctx;
 
   const KNOBS: Knob[] = [
     { h: 'Movimento (valores absolutos)' },
@@ -140,7 +149,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     { label: '🌟 Cintilar dos itens', chk: () => JUICE.shimmer, set: (v: boolean) => { JUICE.shimmer = v; saveJuice(); } },
   ]; // The CRT look is not here: it lives in the visual sensitivity panel (the Dev's request).
 
-  const p = document.createElement('div');
+  const p = doc.createElement('div');
   p.id = 'debug-panel';
   p.hidden = true; // starts hidden; opened by the 🐞 Debug button
   p.setAttribute('role', 'group');
@@ -150,34 +159,34 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
 
   for (const k of KNOBS) {
     if ('h' in k) {
-      const h = document.createElement('div');
+      const h = doc.createElement('div');
       h.textContent = k.h;
       h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
       p.appendChild(h);
       continue;
     }
     if ('chk' in k) {
-      const row = document.createElement('label');
+      const row = doc.createElement('label');
       row.style.cssText = 'display:flex;gap:.4rem;align-items:center;margin-top:.4rem;font-size:12px;cursor:pointer';
-      const inp = document.createElement('input');
+      const inp = doc.createElement('input');
       inp.type = 'checkbox';
       inp.checked = k.chk();
       inp.addEventListener('change', () => k.set(inp.checked));
       row.appendChild(inp);
-      row.appendChild(document.createTextNode(k.label));
+      row.appendChild(doc.createTextNode(k.label));
       p.appendChild(row);
       continue;
     }
-    const row = document.createElement('div');
+    const row = doc.createElement('div');
     row.style.cssText = 'margin-top:.5rem';
-    const lab = document.createElement('label');
+    const lab = doc.createElement('label');
     lab.style.cssText = 'display:block;font-size:12px;margin-bottom:2px';
-    const val = document.createElement('strong');
+    const val = doc.createElement('strong');
     val.style.cssText = 'color:#ffd23f;float:right';
     const upd = () => { val.textContent = k.cadence ? `${k.get()} (${Math.round(60 / k.get())}fps)` : String(k.get()); };
     lab.textContent = k.label;
     lab.appendChild(val);
-    const inp = document.createElement('input');
+    const inp = doc.createElement('input');
     inp.type = 'range';
     inp.min = String(k.min);
     inp.max = String(k.max);
@@ -201,16 +210,16 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
      nothing. */
   if (ctx.sampleCharacter && ctx.onFrame) {
     const sampleCharacter = ctx.sampleCharacter, everyFrame = ctx.onFrame;
-    const h = document.createElement('div');
+    const h = doc.createElement('div');
     h.textContent = 'Sonda do personagem';
     h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
     p.appendChild(h);
 
-    const migrated = document.createElement('pre');
+    const migrated = doc.createElement('pre');
     migrated.style.cssText = 'margin:.4rem 0 0;font:11px/1.35 ui-monospace,monospace;white-space:pre-wrap;color:#cfe';
     migrated.setAttribute('aria-live', 'polite');
 
-    const btn = document.createElement('button');
+    const btn = doc.createElement('button');
     btn.type = 'button';
     btn.textContent = '🥷 Gravar 180 quadros';
     btn.style.cssText = 'margin-top:.4rem;width:100%;min-height:32px;font:inherit;font-weight:700;cursor:pointer;border-radius:6px;border:1px solid #ffd23f;background:#1a2740;color:#fff';
@@ -236,13 +245,13 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
           '→ ' + r.verdict,
         ].join(String.fromCharCode(10));
         // The RAW recording stays reachable for whoever wants more than the summary — without filling the panel with 180 lines.
-        (window as unknown as { __sonda?: unknown }).__sonda = samples;
+        ctx.expose(samples);
       });
     });
     p.appendChild(btn);
     p.appendChild(migrated);
   }
 
-  document.body.appendChild(p);
+  doc.body.appendChild(p);
   return p;
 }
