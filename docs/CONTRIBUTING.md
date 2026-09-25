@@ -28,6 +28,13 @@
 - The **map of where everything lives** is [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — **the first doc to open**
   for any task, to find what to read/change. Any structure/name/convention change is reflected there the same commit.
   The AI agent's operating rules are in [`CLAUDE.md`](../CLAUDE.md).
+- **Adding a module, or reading a setting:** a module imports types and pure functions, constants and tables; anything
+  with state or an effect — the translator's `t`, the settings store, storage, audio, `document`/`window` — arrives as a
+  parameter built by the composition root, `app/js/boot/create-game.ts`, never by import (ADR-0232). A game reads the
+  child's settings through `engine.settings`, not by importing `core/state`. `tests/code-health.node.test.js` refuses a
+  new module that reaches a browser global or imports a stateful one; the model is in
+  [`ARCHITECTURE.md` §3.5](ARCHITECTURE.md). A browser test file lends its own storage
+  (`tests/fixtures/file-storage.js`), so it never reads another file's keys.
 
 ## Contribution terms — read this before your first patch
 
