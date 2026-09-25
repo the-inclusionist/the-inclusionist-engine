@@ -707,6 +707,7 @@
     "HEAVY_FILES",
     "HeavyFile",
     "LIBRAS_PLAYER_FOLDER",
+    "LIBRAS_SIGNS_FOLDER",
     "commandsLanguageOf",
     "readingLanguageOf"
   ],
@@ -1667,6 +1668,10 @@
     "onOffLabel",
     "resolveVisualMode",
     "rgbToHex"
+  ],
+  "ui/vlibras-player.ts": [
+    "VlibrasPlayerPorts",
+    "createVlibrasInterpreter"
   ],
   "ui/vlibras.ts": [
     "DeafMode",

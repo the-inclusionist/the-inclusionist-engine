@@ -32,6 +32,8 @@ const pt: Record<string, string> = {
   // told to a deaf child when the sonar asks for signing and no interpreter can sign: what she keeps matters as much as what
   // she lost (ADR-0234)
   'sr.deaf.noSigning': 'Sem intérprete de Libras agora: as legendas e o texto continuam na tela.',
+  // the accessible name of the interpreter's frame, in front of the screen while it signs (ADR-0234)
+  'sr.deaf.interpreter': 'Intérprete de Libras',
   'sr.eyes.needsInternet': 'O controle pelo olhar ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Olhe aqui',

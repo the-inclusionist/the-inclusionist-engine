@@ -902,6 +902,33 @@ describe('createGame em execução', () => {
   });
 
   /**
+   * 🔴 THE LIBRAS PLAYER COMES DOWN ONLY WHILE DEAF MODE IS ON (ADR-0234, route A): 19.3 MiB of Unity build, asked for by the
+   * person's stored choice and never by the game — so a child who left deaf mode on finds the player kept for her, and one who
+   * never turned it on never pays for it.
+   */
+  it('🔴 [Right] the boot asks for the Libras player only when deaf mode is on', async () => {
+    const pedidos = [];
+    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
+      ...(await original()),
+      downloadHeavy: async ({ only: apenas }) => { pedidos.push(apenas); },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { memoryBackend } = await import('../app/js/platform/storage.js');
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso(), storage: memoryBackend() } });
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(),
+        host: { ...domFalso(), storage: memoryBackend([['incl_libras', '1']]) } });
+      const [ouvinte, surda] = pedidos.map((ids) => ids.filter((id) => id.startsWith('libras:')));
+      expect(ouvinte, 'deaf mode is off and the Libras player came down').toEqual([]);
+      expect(surda, 'deaf mode is on and the Libras player did not come down').toHaveLength(4);
+    } finally {
+      vi.doUnmock('../app/js/platform/heavy.js');
+      vi.resetModules();
+    }
+  });
+
+  /**
    * 🔴 AND READING COMES DOWN IN THE CHILD'S LANGUAGE (ADR-0216 §3; ADR-0201 erratum). 📏 The three models add up to 850
    * MiB — pt 378, en 162, es 310 —, so this game listens cannot mean download all three. The language is not a new
    * question: it is the one the interface booted in (ADR-0031).

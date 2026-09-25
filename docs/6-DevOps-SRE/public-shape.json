@@ -3202,6 +3202,17 @@
   "ui/visual-choices.ts": {
     "type RGB": "readonly [number, number, number]"
   },
+  "ui/vlibras-player.ts": {
+    "interface VlibrasPlayerPorts": [
+      "base",
+      "doc",
+      "fetch",
+      "loadTimeoutMs?",
+      "playerFolder?",
+      "title",
+      "win"
+    ]
+  },
   "ui/vlibras.ts": {
     "interface Interpreter": [
       "dispose",

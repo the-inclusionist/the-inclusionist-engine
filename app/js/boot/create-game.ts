@@ -80,7 +80,8 @@ import { reserveTopBand } from '../ui/top-band.js';
 import { createSettingsStore, type SettingsStore, type LetterCase } from '../core/state.js';
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
-import { createDeafMode, NO_INTERPRETER, type Interpreter } from '../ui/vlibras.js';
+import { createDeafMode, type Interpreter } from '../ui/vlibras.js';
+import { createVlibrasInterpreter } from '../ui/vlibras-player.js';
 import { screenText, unreadableWorldProblems, menuSonarPress, type ScreenTextCtx } from '../ui/screen-text.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
@@ -206,8 +207,9 @@ export interface EngineHost {
   readonly storage?: StorageLike;
   /**
    * WHO SIGNS IN DEAF MODE (ADR-0234): the Libras player behind the `Interpreter` port, handed the text the sonar reads. Absent:
-   * `NO_INTERPRETER`, which answers «signing unavailable» — a line of `problems` and a notice to the child, with the captions and
-   * the text intact. A test hands its double here.
+   * the VLibras player the delivery shipped (`ui/vlibras-player`, `inclusionist-heavy --libras`); and where it shipped none, the
+   * answer `NO_INTERPRETER` gives — «signing unavailable», a line of `problems` and a notice to the child, with the captions and
+   * the text intact. A host's own interpreter always wins; a test hands its double here.
    */
   readonly interpreter?: Interpreter;
 }
@@ -221,9 +223,12 @@ function hostStorage(host: EngineHost): StorageLike | null {
   try { return host.win.localStorage ?? null; } catch { return null; }
 }
 
-/** The interpreter the host lent, else the one that says no player is installed. */
-function hostInterpreter(host: EngineHost): Interpreter {
-  return host.interpreter ?? NO_INTERPRETER;
+/**
+ * The interpreter the host lent — it always wins — else the one the DELIVERY carries (`delivered`, built only when needed): the
+ * VLibras player where the delivery was built with `--libras`, which answers as `NO_INTERPRETER` where it was not.
+ */
+function hostInterpreter(host: EngineHost, delivered: () => Interpreter): Interpreter {
+  return host.interpreter ?? delivered();
 }
 
 /**
@@ -916,9 +921,10 @@ export function createGame(o: CreateGameOptions): Engine {
    * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4, ADR-0234): the screen reader's two regions written in the HOST's
    * document on the host's frames, and deaf mode over its store. A window with no frames (a test double) is the announcer's to answer.
    * 📌 Deaf mode hands the interpreter what the SONAR reads — the text on screen (`ui/screen-text`) — never the announcements,
-   * and that text is spoken with the mode off. The interpreter is the host's, else `NO_INTERPRETER` until a Libras player is
-   * installed (ADR-0234): the sonar's text is captioned, and «signing unavailable» goes to `problems` and to the child. The
-   * ports it calls later (`tts`, the caption, `measuredProblems`) are read when it calls.
+   * and that text is spoken with the mode off. The interpreter is the host's; else the VLibras player the DELIVERY shipped
+   * (`ui/vlibras-player`, ADR-0234 route A), opened from the page's own origin at the first request; and where the delivery
+   * shipped none, that player answers as `NO_INTERPRETER` does — the sonar's text is captioned, and «signing unavailable» goes
+   * to `problems` and to the child. The ports it calls later (`tts`, the caption, `measuredProblems`) are read when it calls.
    */
   const announcer = createAnnouncer({
     doc,
@@ -929,7 +935,9 @@ export function createGame(o: CreateGameOptions): Engine {
     store,
     captionsSetting: () => state.captionsOn,
     t: translator.t,
-    interpreter: hostInterpreter(o.host),
+    interpreter: hostInterpreter(o.host, () => createVlibrasInterpreter({
+      doc, win, fetch: win.fetch, base: doc.baseURI, title: () => t('sr.deaf.interpreter'),
+    })),
     speak: (text) => { tts.narrate(text); },
     caption: (text) => { writeSoundCaption(text); },
     tell: srSay,
@@ -3749,7 +3757,10 @@ export function createGame(o: CreateGameOptions): Engine {
       // 📌 AND THE COMMAND MODEL IS ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). A delivery built without
       // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
-      only: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
+      // 📌 The Libras player only while deaf mode is on (ADR-0234): 19.3 MiB a child who never asks for signing does not pay.
+      only: heavyAtBoot({
+        kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47(), libras: deafMode.isOn(),
+      }),
       onProgress: o.onHeavyProgress,
       cacheStorage: heavyCaches, fetch: win.fetch, digest: sha256With(win.crypto?.subtle), base: doc.baseURI,
     })

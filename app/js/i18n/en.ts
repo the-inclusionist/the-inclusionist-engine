@@ -32,6 +32,7 @@ const en: Record<string, string> = {
   'help.slide.tecla': 'Key {k}',
   'sr.libras.loading': 'The sign-language interpreter is still loading — try again in a moment.',
   'sr.deaf.noSigning': 'No sign-language interpreter right now: the captions and the text stay on screen.',
+  'sr.deaf.interpreter': 'Libras sign-language interpreter',
   'sr.eyes.needsInternet': 'Eye control has not reached this device yet: it downloads the first time the game opens with internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Look here',

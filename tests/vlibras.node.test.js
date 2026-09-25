@@ -189,15 +189,15 @@ describe('ui/vlibras — an interpreter that cannot sign never leaves her with n
     expect(s.problems).toEqual([]);
   });
 
-  it('🔴 [Right] until the Dev chooses a player, the interpreter the root injects says why it cannot sign', async () => {
+  it('🔴 [Right] where the delivery carries no player, the interpreter says why it cannot sign, and how to fix it', async () => {
     const result = await NO_INTERPRETER.sign(SONAR);
     expect(result.signed).toBe(false);
-    expect(result.reason).toMatch(/a Libras player is not installed yet/);
+    expect(result.reason).toMatch(/a Libras player is not installed in this delivery .*--libras/);
     const s = build({ port: NO_INTERPRETER, asked: [] });
     s.mode.toggle();
     s.mode.sonar(SONAR);
     await settle();
-    expect(s.problems[0]).toMatch(/a Libras player is not installed yet/);
+    expect(s.problems[0]).toMatch(/a Libras player is not installed in this delivery/);
     expect(s.told).toEqual([pt['sr.deaf.noSigning']]);
   });
 });
@@ -218,7 +218,7 @@ describe('ui/vlibras — dispose releases the interpreter', () => {
 
 // ========================= MUTATIONS CHECKED =========================
 // (2026-09-25, each run on `ui/vlibras.ts` and restored — all 24 red)
-//   M1 `NO_INTERPRETER` answering «signed»                              🔴 «until the Dev chooses»
+//   M1 `NO_INTERPRETER` answering «signed»                              🔴 «where the delivery carries no player»
 //   M2 `disposed` ignored · M20 `dispose` not releasing the interpreter 🔴 «dispose releases»
 //   M3 an answer heard with the mode off                                🔴 [Zero] «after the mode was turned off»
 //   M4 a SIGNED answer reported as unavailable                          🔴 «hands EXACTLY its text»

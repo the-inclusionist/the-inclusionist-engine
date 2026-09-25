@@ -12,13 +12,13 @@
 // THE STATE IS OURS. The mode is the person's choice, persisted, and never a reading of a third party's rectangle: it was
 // once inferred from a widget's geometry, and when the widget moved its markup the mode answered "on" forever.
 //
-// 📌 THE INTERPRETER IS A PORT, text in and a result out, the same shape whichever player signs. WHICH player is the Dev's
-// choice, still open: self-hosting the VLibras player, rebuilding a free one, or the hosted widget — which a COEP page
-// cannot show without a Chromium-only credentialless iframe, and which reports the page's address to an analytics service
-// (both measured 2026-09-25).
-// Until the choice, the root injects `NO_INTERPRETER`: every request answers «signing unavailable», which goes to `problems`
-// and to the child (ADR-0169). A player that fails the same way at run time (offline) takes the same path; the captions and
-// the text never depend on it.
+// 📌 THE INTERPRETER IS A PORT, text in and a result out, the same shape whichever player signs. The Dev chose route A and then
+// route B (ADR-0234 errata): the VLibras player served from the delivery's own origin now (`ui/vlibras-player`, which the root
+// uses when the host lends no interpreter of its own — `EngineHost.interpreter`), a free player after it — only the port's
+// implementation changes.
+// Where the delivery shipped no player, that interpreter answers as `NO_INTERPRETER` does: «signing unavailable», which goes to
+// `problems` and to the child (ADR-0169). A player that fails at run time (no WebGL, never loads) takes the same path; the
+// captions and the text never depend on it.
 import type { Translate } from '../core/i18n.js';
 import type { Store } from '../platform/storage.js';
 
@@ -35,12 +35,11 @@ export interface Interpreter {
   readonly dispose: () => void;
 }
 
-/** The interpreter until the Dev chooses a player (ADR-0234): it signs nothing and says why. */
+/** The interpreter of a delivery that carries no Libras player (ADR-0234): it signs nothing and says why, and how to fix it. */
 export const NO_INTERPRETER: Interpreter = {
   sign: () => Promise.resolve({
     signed: false,
-    reason: 'a Libras player is not installed yet — the Dev chooses between self-hosting the VLibras player, a free player, '
-      + 'or the hosted widget',
+    reason: 'a Libras player is not installed in this delivery — build it with `inclusionist-heavy <folder> --libras`',
   }),
   hide: () => { /* nothing on screen */ },
   dispose: () => { /* nothing held */ },

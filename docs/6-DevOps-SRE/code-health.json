@@ -30,10 +30,10 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2220,
+      "codeLines": 2225,
       "decisionNodes": 283,
       "maxDepth": 4,
-      "fanOut": 93,
+      "fanOut": 94,
       "globalReach": 0,
       "worstFunction": 72,
       "statefulEdges": 1,
@@ -411,7 +411,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 653,
+      "codeLines": 654,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -421,7 +421,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 653,
+      "codeLines": 654,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -431,7 +431,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 653,
+      "codeLines": 654,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -861,14 +861,14 @@
       "fanIn": 1
     },
     "platform/heavy-catalogue.ts": {
-      "codeLines": 135,
+      "codeLines": 136,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 3
+      "fanIn": 4
     },
     "platform/heavy-mirror.ts": {
       "codeLines": 29,
@@ -1890,15 +1890,25 @@
       "statefulEdges": 0,
       "fanIn": 1
     },
+    "ui/vlibras-player.ts": {
+      "codeLines": 146,
+      "decisionNodes": 23,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "globalReach": 0,
+      "worstFunction": 8,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
     "ui/vlibras.ts": {
-      "codeLines": 83,
+      "codeLines": 82,
       "decisionNodes": 8,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/voice-control.ts": {
       "codeLines": 162,

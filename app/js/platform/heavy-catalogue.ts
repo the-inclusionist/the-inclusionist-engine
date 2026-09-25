@@ -248,6 +248,12 @@ const LIBRAS_PLAYER: readonly HeavyFile[] = Object.freeze([
  * the files above from `heavy/`. Written by `inclusionist-heavy --libras`; the interpreter opens it and nothing else.
  */
 export const LIBRAS_PLAYER_FOLDER = 'libras/player/';
+/**
+ * Where the player is told to fetch sign bundles (`setBaseUrl`), on the page's own origin. 📌 EMPTY UNTIL PLAN ITEM 5b, which
+ * delivers the signs the build-time glosses use: until then every word 404s here and the player fingerspells it with the
+ * letters it carries.
+ */
+export const LIBRAS_SIGNS_FOLDER = 'libras/signs/';
 
 /**
  * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's

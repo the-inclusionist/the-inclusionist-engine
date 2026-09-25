@@ -1515,9 +1515,10 @@ describe('createGame num documento de verdade', () => {
 
   /*
    * DEAF MODE IS THE ROOT'S (ADR-0234): sounds get captions, and the sonar hands its text to the interpreter. The root's
-   * interpreter is `NO_INTERPRETER` until the Dev chooses a Libras player, so what a root shows here is that path: the
-   * sonar's text written, «signing unavailable» in `problems` and to the child. Handing the EXACT text to a player that signs
-   * is measured with a double of the port, in `tests/vlibras.node.test.js`.
+   * interpreter is the VLibras player the delivery shipped, and this test page ships none, so what a root shows here is the
+   * `NO_INTERPRETER` path: the sonar's text written, «signing unavailable» in `problems` and to the child. Handing the EXACT
+   * text to a player that signs is measured with a double of the port, in `tests/vlibras.node.test.js`, and the player's
+   * protocol with a fake player, in `tests/vlibras-player.browser.test.js`.
    */
   const soundCaption = () => document.querySelector('.legenda-de-som');
   /** The interpreter's answer arrives on a promise: one macrotask lets it land. */
@@ -1567,8 +1568,10 @@ describe('createGame num documento de verdade', () => {
       await new Promise((r) => requestAnimationFrame(r));
       expect(document.querySelector('#sr-status').textContent, 'the caption is not what the sonar found').toBe(written);
       expect(narrate, 'deaf mode spoke the sonar').not.toHaveBeenCalled();
-      await settle();
-      expect(motor.problems.join('\n')).toMatch(/deaf mode's sign-language interpreter could not sign: a Libras player is not installed yet/);
+      // the root's interpreter first asks the delivery for the player, which this page does not carry: a request, not a microtask
+      await vi.waitFor(() => {
+        expect(motor.problems.join('\n')).toMatch(/deaf mode's sign-language interpreter could not sign: a Libras player is not installed in this delivery/);
+      }, { timeout: 5000 });
       expect(soundCaption()?.textContent, 'she is deaf, and was not told in writing that no one will sign')
         .toBe(`${written} ${pt['sr.deaf.noSigning']}`);
       await new Promise((r) => requestAnimationFrame(r));
@@ -1579,13 +1582,72 @@ describe('createGame num documento de verdade', () => {
     }
   });
 
+  /**
+   * 🔴 AND WHERE THE DELIVERY SHIPPED A PLAYER, THE ROOT OPENS IT (ADR-0234, route A). The page is given a `<base>` at a fixture
+   * shaped like a delivery (`tests/fixtures/delivery/`, whose `libras/player/` is the fake player of
+   * `tests/vlibras-player.browser.test.js`) while the root is built — the root reads its address then — and the sonar's text
+   * reaches that player as the provisional gloss, after the signs' address, with nothing in `problems`.
+   */
+  it('🔴 [Right] where the delivery shipped the player, the sonar in deaf mode reaches it — and `dispose()` removes it', async () => {
+    const { vi } = await import('vitest');
+    const pt = (await import('../app/js/i18n/pt.js')).default;
+    const base = document.createElement('base');
+    base.href = `${location.origin}/tests/fixtures/delivery/`;
+    document.head.prepend(base);
+    let motor;
+    try { motor = abrir(); } finally { base.remove(); }
+    const frame = () => document.querySelector(`iframe[title="${pt['sr.deaf.interpreter']}"]`);
+    try {
+      motor.deafMode.toggle();
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      const received = () => frame()?.contentWindow?.received ?? [];
+      await vi.waitFor(() => { expect(received().map((m) => m.method)).toEqual(['setBaseUrl', 'playNow']); }, { timeout: 10_000 });
+      expect(frame().src).toBe(`${location.origin}/tests/fixtures/delivery/libras/player/index.html`);
+      expect(received()[0].params).toBe(`${location.origin}/tests/fixtures/delivery/libras/signs/`);
+      expect(received()[1].params, 'the sonar\'s text did not reach the player').toMatch(/^[A-Z0-9 ]+$/);
+      expect(motor.problems.join('\n'), 'the root answered «unavailable» with a player shipped').not.toMatch(/could not sign/);
+    } finally {
+      if (motor.deafMode.isOn()) motor.deafMode.toggle();
+      motor.dispose();
+    }
+    expect(frame(), 'a disposed root left its interpreter on the page').toBeNull();
+  });
+
+  it('🎯 [Right] ONE seam: the host\'s own interpreter wins even where the delivery shipped the player, which is never opened', async () => {
+    const { vi } = await import('vitest');
+    const signed = [];
+    const own = { sign: async (text) => { signed.push(text); return { signed: true }; }, hide: () => {}, dispose: () => {} };
+    const base = document.createElement('base');
+    base.href = `${location.origin}/tests/fixtures/delivery/`;
+    document.head.prepend(base);
+    let motor;
+    try { motor = abrir({ host: { doc: document, win: window, interpreter: own } }); } finally { base.remove(); }
+    try {
+      motor.deafMode.toggle();
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      await vi.waitFor(() => { expect(signed.length, 'the host\'s interpreter was not asked').toBe(1); });
+      await new Promise((r) => { setTimeout(r, 100); });
+      expect(document.querySelector('iframe[src*="libras/player/"]'), 'the delivered player opened beside the host\'s own').toBeNull();
+    } finally {
+      if (motor.deafMode.isOn()) motor.deafMode.toggle();
+      motor.dispose();
+    }
+  });
+
   it('🔴 [Right] `dispose()` releases deaf mode: an interpreter\'s answer arriving after it is dropped', async () => {
+    const { vi } = await import('vitest');
+    // the interpreter's answer waits on its question to the delivery: the case waits for that request, or it proves nothing
+    const asked = vi.spyOn(window, 'fetch');
     const motor = abrir();
-    motor.deafMode.toggle();
-    motor.sonar.sonar({ i: 0, x: 0, y: 0 });
-    motor.deafMode.toggle(); // the choice stored off for the next case — and on again, so the answer would be heard
-    motor.deafMode.toggle();
-    motor.dispose();
+    try {
+      motor.deafMode.toggle();
+      motor.sonar.sonar({ i: 0, x: 0, y: 0 });
+      motor.deafMode.toggle(); // the choice stored off for the next case — and on again, so the answer would be heard
+      motor.deafMode.toggle();
+      motor.dispose();
+      await vi.waitFor(() => { expect(asked.mock.calls.some(([u]) => String(u).includes('libras/player/'))).toBe(true); }, { timeout: 5000 });
+      await Promise.allSettled(asked.mock.results.map((r) => r.value));
+    } finally { asked.mockRestore(); }
     await settle();
     expect(motor.problems.join('\n'), 'a disposed root still took its interpreter\'s answer').not.toMatch(/could not sign/);
     motor.deafMode.toggle();
@@ -1927,3 +1989,9 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 //   S7 the FIRST open dialog · S8 the LAST, the focus not asked · S9 an `inert` layer counted as shown  🔴 «of a game's own dialogs…»
 //      ⚠️ S7 and S9 each SURVIVED the quiz file alone: the engine makes the layers under the front card `inert`, so either rule
 //      held the other there. A game's own dialogs, which nobody inerts, are what tells them apart.
+// ---- ADR-0234 route A, the root's interpreter (2026-09-25, each run on `boot/create-game.ts` and restored — all red) ----
+//   V1 the interpreter pointed at a folder the delivery never writes  🔴 «where the delivery shipped the player» · «`dispose()` releases»
+//   V2 its base address not the page's own (`doc.baseURI`)            🔴 «where the delivery shipped the player»
+//   V3 the boot's download never asking for the player (node file)    🔴 «the boot asks for the Libras player only when deaf mode is on»
+//   V4 the delivered player taking the place of the host's own        🔴 «ONE seam» (and the screen sonar's deaf-mode case)
+//   V5 the seam never reaching the delivered player (a fixed «no»)     🔴 «where the delivery shipped the player» · «`dispose()` releases»

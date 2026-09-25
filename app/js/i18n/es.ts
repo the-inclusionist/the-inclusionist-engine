@@ -33,6 +33,7 @@ const es: Record<string, string> = {
   'help.slide.tecla': 'Tecla {k}',
   'sr.libras.loading': 'El intérprete de lengua de señas todavía está cargando — inténtalo de nuevo en un momento.',
   'sr.deaf.noSigning': 'Sin intérprete de lengua de señas ahora: los subtítulos y el texto siguen en la pantalla.',
+  'sr.deaf.interpreter': 'Intérprete de Libras (lengua de señas brasileña)',
   'sr.eyes.needsInternet': 'El control con la mirada todavía no llegó a este aparato: se descarga la primera vez que el juego se abre con internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Mira aquí',

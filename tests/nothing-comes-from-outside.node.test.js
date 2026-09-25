@@ -163,6 +163,10 @@ const TOCAM_NA_REDE = {
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `heavy/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `deliveryPath`, never an upstream host, and only '
     + 'after the checked cache holds every file',
+  'ui/vlibras-player.ts': 'LOCAL. The host\'s `fetch` of the player\'s Unity configuration at `libras/player/` on the page\'s own '
+    + 'origin — the question «did the delivery ship the player?» — and `frame.src` of the player page beside it (ADR-0234, '
+    + 'route A). The page loads the VLibras files from `heavy/` on the same origin and fetches signs from `libras/signs/`, told so '
+    + 'by `setBaseUrl` before its first word: the hosted dictionary the player would otherwise ask is never reached',
   'platform/tts.ts': 'LOCAL. `el.src = som.url`, a `blob:` URL of the WAV the neural voice just synthesised here, played '
     + 'through a media element so the speech rate keeps the pitch (ADR-0183 §1); it never leaves the machine. The '
     + '`import()` of the neural runtime moved into the root with ADR-0232 D4',
