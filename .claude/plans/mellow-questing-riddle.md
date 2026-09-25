@@ -5,6 +5,39 @@
 
 ---
 
+## 🎯 ATÉ AO FIM — o plano adequado às decisões de 25/09 (esta é a ordem; as secções abaixo são histórico)
+
+> 📌 Dev, 25/09: «Agora que eu tomei as decisões, adeque o plano. E vamos terminá-lo.» As decisões que isto
+> incorpora: **VLibras pela rota A** («Correção: A em 15 minutos» — lida como a A do estudo do VLibras, o
+> último A/B/C posto ao Dev) e **os quatro plataformers partilham a camada de plataforma** («Eu pretendo fazer 4
+> plataformers»). Antes delas, no mesmo dia: CAA só ARASAAC/PCS e porta desabilitada (ADR-0233), modo pessoa
+> surda (ADR-0234), sem multiplayer pela internet (ADR-0235), relógio Time Timer de 1 h que fica vermelho
+> (ADR-0236), subengine numa pasta separável (ADR-0237), ADR-0129 aceite. Cada linha tem estado de fim.
+
+**Meu, na ordem:**
+
+| # | item | estado de fim | estado |
+|---|---|---|---|
+| ✅ 1 | Registar as duas decisões | errata no ADR-0237 e no ADR-0234, índice, validador são | ✅ `docs:cdc6527` (camada de plataforma partilhada; extração quando nascer o 2.º jogo de qualquer género) · `docs:c5fe0ef` (rota A; o widget hospedado e todo host de terceiro saem; o que A carrega está escrito) |
+| ✅ 2 | **CAA (#57) na `main`** | os dois commits do agente na `main`, linhas de base regeneradas, tsc/node/navegador verdes | ✅ cherry-pick (`416b4a9c` e o anterior) + linhas de base (`pause-icons` +4 linhas/+1 fan-out e `settings-aac` +4/+2 ramos: a porta desabilitada e a trava por licença). tsc 0, node 3044, navegador 1361/1361. 🔴 O único vermelho do node era MEU e anterior: aceitar o ADR-0129 deu-lhe `confirmed-by`, e o livro dos ponteiros mortos exigia que a entrada dele saísse — saiu. Fecha a #57 no push |
+| 🟡 3 | **Modo pessoa surda (#59)** | todo som de interface com legenda; a porta do intérprete injetada respondendo «sinalização indisponível»; nenhum host novo na CSP | 🟡 agente `a12732a5…` em curso |
+| 📋 4 | **VLibras rota A — go/no-go** | três medições com o player servido da PRÓPRIA origem sob os cabeçalhos reais da entrega: corre sem `unsafe-eval`? busca sinais num `setBaseUrl` da mesma origem? o que faz com palavra sem sinal? | ⏸ **espera a permissão de download do Dev** (o player: 4 ficheiros, ≈20,2 MB). Um vermelho na 1.ª pergunta mata a A (não se recompila) e devolve a escolha ao Dev |
+| 📋 5 | **VLibras rota A — construção** (só depois de um «go») | a entrega glosa o texto no build (`vlibras-translator` por regras, nunca o neural), copia só os sinais usados + alfabeto + dígitos com sha256; a porta do intérprete é preenchida pelo player; o sonar com intérprete ligado sinaliza o texto da tela no `dist` sem rede | 📋 |
+| 📋 6 | **Relógio Time Timer (#94)** | pizza contínua à direita da barra rápida, 60 min por omissão, vermelho no fim; as opções (duração; fim = vermelho · vermelho pulsando suave · tela trava) guardadas com escritor; o pulso pára com movimento reduzido; portões vermelhos por mutação; conferido no `dist` | 📋 — ⏸ o LUGAR das opções no menu e se ficam protegidas da criança são pergunta ao Dev; o relógio não espera por ela |
+| 📋 7 | **Restos da auditoria das 40 issues** | cada um consertado com prova, ou fechado com a medição | 📋 #204 (re-exports sem consumidor: apagar) · #190 (leitor de comandos Web Speech sem chamador: apagar) · #141 (caso do hospedeiro onde o pad não monta, depois fechar) · #150 (Cookie como recuo da ronde) · #134 regra 6 (largura `fit-content`) · portão da forma pública cego a interface→tipo · portão de títulos únicos no `Breaking-Changes.md` · no `docs`: registos que ainda dizem «NOT BUILT YET» (0112, 0143, 0145, 0200, 0210), ROADMAP fase 0 contra «publicar ✅» do `CLAUDE.md` |
+| ⏸ 8 | **D3, o último passo** (tirar o `t`/`registerDict` de módulo) | `core/i18n` fora do conjunto com estado (1 → 0) | ⏸ espera a escolha do Dev entre A (getters tardios), **B (o contrato recebe CHAVES e a engine resolve — recomendado)** e C (o jogo constrói o tradutor) |
+
+**Do Dev (rodar, autorizar ou decidir):** permissão do download do player (item 4) · o lugar e a proteção das
+opções do relógio (item 6) · D3 A/B/C (item 8) · se o contador de pontos do #93 fica · a construção da
+subengine no `game-platformer` (ordem dele, e há outra sessão viva nesse repositório) · F11 `records-token` ·
+item 9 (os 5 ficheiros ao espelho) · a rodada do microfone da leitura (itens 7/15, `localhost:8205`) · a rodada
+das mãos com a câmera (#199/#191) · R3 · #137 (ADR-0027) · a metade da ENTREGA do item 22 · reescrever a
+história git do ADR-0107.
+
+**Só o tempo:** F4/R5 (o veredito do co-change) · Fase 6 (cada acomodação entra quando o eixo dela existir).
+
+---
+
 ## 📋 O QUE FALTA — resumo em 24/09 (legenda do plano inteiro: ✅ feito · 📋 falta)
 
 > Marcas postas no identificador de cada item (tabelas, títulos e passos). O texto de cada item continua a ter o
