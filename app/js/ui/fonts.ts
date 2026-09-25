@@ -338,7 +338,11 @@ export function faceAvailable(it: FontItem, installed?: (family: string) => bool
 
 /** The faces the MENU may offer: only the general ones (ADR-0012 amendment). */
 export const OFERECIVEIS: FontItem[] = FONT_GROUPS.flatMap((g) => g.items).filter((it) => fontRole(it) === 'geral');
-export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g) => g.items.forEach((it) => { FONT_BY_KEY[it.k] = it; }));
+/**
+ * The catalogue by key. BUILT IN ONE EXPRESSION and never filled after it (ADR-0232 D4): the table was an empty object the
+ * module wrote into at import, which the code-health measure reads as module state. The last item with a key wins, as it did.
+ */
+export const FONT_BY_KEY: Record<string, FontItem> = Object.fromEntries(FONT_GROUPS.flatMap((g) => g.items.map((it) => [it.k, it])));
 
 /** Narrow store shape these need — lets a caller inject a fake without touching real storage. */
 export interface FontStore { get(key: string, fallback: string | null): string | null; set(key: string, v: string): void; }

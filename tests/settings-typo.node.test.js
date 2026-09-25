@@ -273,3 +273,12 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
     expect(typoGroups(translate, 'nao-existe').flatMap((g) => g.rows.filter((r) => r.selected))).toHaveLength(0);
   });
 });
+
+describe('FONT_BY_KEY — the catalogue by key, built in one expression (ADR-0232 D4)', () => {
+  it('holds every item of every group under its key, the last one winning, and nothing else', () => {
+    const expected = new Map();
+    for (const g of FONT_GROUPS) for (const it of g.items) expected.set(it.k, it);
+    expect(Object.keys(FONT_BY_KEY).sort()).toEqual([...expected.keys()].sort());
+    for (const [k, it] of expected) expect(FONT_BY_KEY[k], `${k} is not the catalogue's item`).toBe(it);
+  });
+});
