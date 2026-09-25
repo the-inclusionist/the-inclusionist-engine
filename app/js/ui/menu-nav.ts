@@ -67,7 +67,7 @@ export interface NavKeyEvent {
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // the listening port, generic over WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import { showPauseOptions, PM_VISIBLE_ITEMS } from './pause-icons.js';
+import { backToRoot, PM_VISIBLE_ITEMS } from './pause-icons.js';
 import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js';
@@ -354,7 +354,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       // «is this the options list?»: with three lists (ADR-0146), asking the second would make «no» from the game's own
       // options resume the game when the child asked to go back.
       const open = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
-      if (open && open.dataset.sub && open.dataset.sub !== 'raiz') { showPauseOptions(menu, 'raiz'); return; }
+      // ⚠️ AND THE CURSOR LANDS ON THE DOOR THAT OPENED THE LIST (ADR-0130 rule 1), not on the root's first item.
+      if (open && open.dataset.sub && open.dataset.sub !== 'raiz') { backToRoot(menu); return; }
       ctx.setPhase('playing'); return; // «no» at the root → back to the game (resumes everyone)
     }
 

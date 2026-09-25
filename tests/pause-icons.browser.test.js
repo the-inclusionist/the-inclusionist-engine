@@ -272,6 +272,23 @@ describe('buildScreenPause — a árvore construída', () => {
     }
   });
 
+  it('🔴 [Right] «Back» from the GAME\'s list lands the cursor on «Opções do jogo», the door that opened it (ADR-0130 rule 1)', () => {
+    // The third list (ADR-0146) comes back through the same table as the options list, and a root that knew only one door
+    // would put a child who looked at the game's options back on «Voltar».
+    const { sp, said } = mount(0, {
+      pmButtons: [...PM_BTNS, { act: 'opcoesdojogo', lbl: '🎮 Opções do jogo' }],
+      gameButtons: [{ act: 'pmback' }, { act: 'letra', lbl: '🔠 ABC' }],
+    });
+    sp.querySelector('.pause-menu[data-sub="raiz"] .pm-btn[data-act="opcoesdojogo"]').click();
+    expect(visibleList(sp), 'the game\'s door did not open its list — the case would measure nothing').toBe('jogo');
+    said.length = 0;
+    sp.querySelector('.pause-menu[data-sub="jogo"] .pm-btn[data-act="pmback"]').click();
+    expect(visibleList(sp)).toBe('raiz');
+    expect(sp.querySelector('.pm-sel')?.dataset.act, 'back from the game\'s list put the cursor elsewhere').toBe('opcoesdojogo');
+    const root = [...sp.querySelectorAll('.pause-menu:not([hidden]) .pm-btn:not([hidden])')];
+    expect(said.at(-1), 'the return said another item, or another place').toContain(`${root.indexOf(sp.querySelector('.pm-sel')) + 1} de ${root.length}`);
+  });
+
   it('🔴 [Right] «Accessibility», where a game lists it, closes the card and puts the cursor on the quick bar', () => {
     // Both halves: entering the bar no longer resumes by itself (ADR-0155), so this item resumes explicitly — without it
     // the child would be on the bar with the card still open over the game.

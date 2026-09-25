@@ -22,7 +22,7 @@
 import { navigableItems } from './menu-items.js';
 import { announceItem } from './item-announcement.js';
 import { controlParts } from './menu-nav.js';
-import { PM_VISIBLE_ITEMS } from './pause-icons.js';
+import { PM_VISIBLE_ITEMS, LIST_DOOR } from './pause-icons.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import type { Translate } from '../core/i18n.js';
 
@@ -70,7 +70,7 @@ function panelPlace(panel: HTMLElement, ctx: WhereTheChildIsCtx): Place {
 function cardPlace(card: HTMLElement, ctx: WhereTheChildIsCtx): Place {
   const sub = card.querySelector<HTMLElement>('.pause-menu:not([hidden])')?.dataset.sub ?? 'raiz';
   // a submenu is named by the item that opens it; the root by the card's title
-  const door = sub === 'opcoes' ? 'options' : sub === 'jogo' ? 'opcoesdojogo' : null;
+  const door = LIST_DOOR[sub as keyof typeof LIST_DOOR] ?? null;
   const button = door ? card.querySelector<HTMLElement>(`.pm-btn[data-act="${door}"]`) : null;
   const title = button ? accessibleLabel(button) : (card.querySelector('h2')?.textContent?.trim() ?? '');
   const items = [...card.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];

@@ -1631,8 +1631,8 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 615,
-      "decisionNodes": 81,
+      "codeLines": 628,
+      "decisionNodes": 85,
       "maxDepth": 3,
       "fanOut": 18,
       "globalReach": 0,
@@ -1902,11 +1902,11 @@
     },
     "ui/where-the-child-is.ts": {
       "codeLines": 43,
-      "decisionNodes": 9,
-      "maxDepth": 2,
+      "decisionNodes": 7,
+      "maxDepth": 1,
       "fanOut": 5,
       "globalReach": 0,
-      "worstFunction": 9,
+      "worstFunction": 8,
       "statefulEdges": 0,
       "fanIn": 1
     }

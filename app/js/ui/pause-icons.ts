@@ -513,6 +513,12 @@ export const PM_VISIBLE_ITEMS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])
 const DOOR_TO_LIST: Readonly<Record<string, PauseSub>> = Object.freeze({ options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' });
 
 /**
+ * The other direction of the same table: the item of the root that opens each list. It is where «back» puts the cursor
+ * (ADR-0130 rule 1), and the name a list is announced by (`ui/where-the-child-is`). The root has no door.
+ */
+export const LIST_DOOR: Readonly<Record<PauseSub, string | null>> = Object.freeze({ raiz: null, opcoes: 'options', jogo: 'opcoesdojogo' });
+
+/**
  * Switches the visible list of ONE pause card, and puts the cursor on the FIRST item of the list that came in.
  *
  * Free-standing (not a method of `init`) on purpose: `ui/menu-nav` needs it for «no» to go back to the root, and it has no
@@ -524,6 +530,26 @@ export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | 
   sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((b) => b.classList.remove('pm-sel', 'pi-sel'));
   if (first) first.classList.add('pm-sel');
   return first;
+}
+
+/**
+ * «BACK» FROM A LIST OF THE CARD: the root comes in with the cursor on THE ITEM THAT OPENED the list being left, not on
+ * the root's first item (ADR-0130 rule 1). A child who went into «Opções», looked, and came back is where she was; landing
+ * on «Voltar» would send her walking the root again to find her place, and a child who cannot see the mark would not even
+ * know she had been moved.
+ *
+ * Opening the card is another question and keeps `showPauseOptions(sp, 'raiz')`: a card opens on item 1 (ADR-0158).
+ * A door that is gone or hidden leaves the cursor on the first item, which is all there is to return to.
+ */
+export function backToRoot(sp: HTMLElement): HTMLElement | null {
+  const left = sp.querySelector<HTMLElement>('.pause-menu:not([hidden])')?.dataset.sub as PauseSub | undefined;
+  const first = showPauseOptions(sp, 'raiz');
+  const door = left ? LIST_DOOR[left] : null;
+  const opener = door ? [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)].find((b) => b.dataset.act === door) : undefined;
+  if (!opener || opener === first) return first;
+  first?.classList.remove('pm-sel');
+  opener.classList.add('pm-sel');
+  return opener;
 }
 
 
@@ -1119,11 +1145,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * with it (ADR-0044 item 3) and says how many items the new list has.
    */
   function announceList(sp: HTMLElement, sub: PauseSub): void {
-    const first = showPauseOptions(sp, sub);
-    if (!first) return;
+    // «back» lands on the door that opened the list being left (ADR-0130 rule 1); any other door, on the first item
+    const cursor = sub === 'raiz' ? backToRoot(sp) : showPauseOptions(sp, sub);
+    if (!cursor) return;
     const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
-    ctx.srSay(announceItem(t, 
-      { label: first.textContent || '', position: 1, total: items.length }, ctx.settings.menuIndexOn,
+    ctx.srSay(announceItem(t,
+      { label: cursor.textContent || '', position: items.indexOf(cursor) + 1, total: items.length }, ctx.settings.menuIndexOn,
     ));
   }
 
@@ -1245,6 +1272,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   /** One item of screen `i`'s pause card pressed — a locked one, a door between its lists, the quick bar, or an action. */
   function pressPauseItem(i: number, sp: HTMLElement, b: HTMLElement): void {
+    // 🔴 THE CURSOR GOES WHERE THE CHILD PRESSED (ADR-0130 rule 1). A finger or a mouse opens a panel without walking the
+    // arrows, and the mark stayed on the item the arrows had last reached — so «back» from the panel returned her to an
+    // item she never chose. The keyboard's press is already on its item; this is the pointer's half.
+    sp.querySelectorAll<HTMLElement>('.pm-sel').forEach((x) => x.classList.remove('pm-sel'));
+    b.classList.add('pm-sel');
     // LOCKED (ADR-0161): pressing it SAYS the reason and does nothing — neither door nor action.
     if (b.getAttribute('aria-disabled') === 'true') {
       const reason = b.dataset.motivo ?? '';
