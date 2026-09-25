@@ -31,7 +31,7 @@
   "modules": {
     "boot/create-game.ts": {
       "codeLines": 2226,
-      "decisionNodes": 283,
+      "decisionNodes": 284,
       "maxDepth": 4,
       "fanOut": 94,
       "globalReach": 0,
@@ -1652,7 +1652,7 @@
     },
     "ui/pause-icons.ts": {
       "codeLines": 633,
-      "decisionNodes": 85,
+      "decisionNodes": 86,
       "maxDepth": 3,
       "fanOut": 19,
       "globalReach": 0,
