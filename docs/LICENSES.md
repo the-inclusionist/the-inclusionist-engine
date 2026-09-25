@@ -89,6 +89,10 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     delivery carries only those pinned by sha256 in `scripts/libras-signs.json` — the 632 signs the engine's glosses use
     (15,086,780 bytes), from `vlibras-dictionary-sources` at a pinned commit — with the GPL-3.0 text and a NOTICE naming the
     source beside them (`libras/signs/`). See `CREDITS.md`.
+    **Route B** (the free player that replaces the Unity one) is built from the same dictionary's `.blend` sources
+    (**GPL-3.0**, pinned in `scripts/libras-export/sources.json`): `scripts/libras-export.mjs` exports one avatar and one clip
+    per sign, **GPL-3.0 derivatives** whose Corresponding Source is those `.blend` files plus the two export scripts. No
+    delivery carries them yet.
 
   ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
   lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.

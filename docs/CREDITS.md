@@ -232,6 +232,30 @@ the Dev's permission («Autorizo»); none is committed to this repository.
 - **Changed by this project:** nothing — the files are carried byte for byte.
 - **Copyright line: UNVERIFIED** — the bundles carry none, and the repository's own `LICENSE` and README were not read.
 
+## VLibras sign sources — LAViD-UFPB `vlibras-dictionary-sources`, `.blend` files — GPL-3.0 — EXPORTED, NOT YET DISTRIBUTED
+
+What the free player of route B is built from (ADR-0234, route B, phase B1): each sign's Blender 2.79 source,
+`FILES/BLENDS/BR/<NAME>.blend` of the same repository at the same commit `f8ddb378affd0d6da42f04c9fc888dafe1cc1299` — the whole
+avatar (meshes, armature, shape keys, materials) plus one Action named after the sign. Only the signs the engine's glosses use:
+**632 files, 1,141,253,870 bytes**, each pinned by sha256 and byte count in `scripts/libras-export/sources.json`. Downloaded with
+the Dev's permission (route B's first step) into a folder outside the repository; none is committed.
+
+- **Licence:** the repository declares **GPL-3.0**. What `scripts/libras-export.mjs` makes of them — **one avatar**
+  (`avatar.glb`, glTF 2.0) and **one clip per sign** (three.js AnimationClip JSON) — are **derivatives under GPL-3.0**, and a
+  delivery that carries them will carry the GPL-3.0 text and a NOTICE naming the pinned source, as it does for the bundles.
+- **Corresponding source of the exports:** the pinned `.blend` files plus `scripts/libras-export.mjs` and
+  `scripts/libras-export/export.py`, run with the Blender version the export's `manifest.json` names (5.2.2 LTS for the first
+  export).
+- **Changed by this project**, all in the export, none in the sources: the avatar's Blender Internal materials rebuilt as one
+  colour each, with the head's and the body's image (`cabecaAvatarCartoon.png`, `TxCorpo.png`) taken from the sign file `0`,
+  one of the twelve that pack them — most files only point at them by a path on LAViD's machines; the hair's normal map, which
+  no file carries, and two secondary texture slots are left out; the sign's constraints baked into bone tracks and its face's
+  driver-moved shape keys sampled into morph tracks; keys reduced within a stated tolerance; node names as three.js's glTF
+  loader renames them.
+- **Distributed: nothing yet** — no delivery and no package carries an export until the player of phase B2 exists.
+- **Copyright line: UNVERIFIED** — the `.blend` files carry none that was read, and the repository's own `LICENSE` and README
+  were not read.
+
 ## spaCy and its Portuguese model `pt_core_news_md` 3.8.0 — MIT and CC BY-SA 4.0 — BUILD TIME ONLY
 
 The Portuguese pipeline the translator's rules read (part of speech, morphology, dependencies, entities): spaCy 3.8 (Explosion,
