@@ -48,7 +48,7 @@ export const GROUPS = {
     what: 'the settings panels that should share one row builder (ADR-0129, issue #135)',
     landed: null, // four of nine use the kit; the adoption is not finished, so there is no line to draw yet
     files: ['ui/settings-audio.ts', 'ui/settings-mobility.ts', 'ui/settings-motion.ts', 'ui/settings-visual.ts',
-      'ui/settings-controls.ts', 'ui/settings-typo.ts', 'ui/settings-caa.ts', 'ui/settings-empathy.ts'],
+      'ui/settings-controls.ts', 'ui/settings-typo.ts', 'ui/settings-aac.ts', 'ui/settings-empathy.ts'],
   },
   dictionaries: {
     what: 'THE CONTROL GROUP: one decision written in three languages, irreducible by design (ADR-0010 pillar 3)',

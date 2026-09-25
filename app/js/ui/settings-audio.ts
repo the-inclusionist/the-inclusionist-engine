@@ -323,7 +323,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   /**
    * The kit's ctx comes from the LIST NODE itself, not from a global `document` nor from a new contract field —
    * `ownerDocument` is the document that list lives in, which is where its rows have to be born. Same shape as
-   * `ui/settings-caa`, and it is what removes this file's reach to `document` without touching `SettingsAudioCtx`.
+   * `ui/settings-aac`, and it is what removes this file's reach to `document` without touching `SettingsAudioCtx`.
    */
   const kitCtx = (list: HTMLElement): PanelShellCtx => ({
     find: (sel) => ctx.$<HTMLElement>(sel),

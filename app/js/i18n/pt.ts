@@ -459,7 +459,7 @@ const pt: Record<string, string> = {
   // a distinguir sete itens de relance. Dentro do painel já se sabe onde se está, e um emoji no `<h2>` é lido
   // em voz alta por quem usa leitor de tela antes do nome do que ele abriu.
   'menu.caa': 'Comunicação',
-  'caa.grupo.rotulo': 'Escolhas de comunicação',
+  'aac.grupo.rotulo': 'Escolhas de comunicação',
   // O nome vem do botão da pausa (`pause.anim`), sem o emoji, pela mesma razão do `menu.caa`. E o nome é
   // «Sensibilidade visual» e não «Animação» porque é o que a pessoa sente: quem precisa deste painel chega
   // por enjoo ou por crise, não por curiosidade sobre quadros por segundo.
@@ -567,22 +567,22 @@ const pt: Record<string, string> = {
   'a11y.changed': 'alterado',
   'sr.visual.reset': 'Acessibilidade visual restaurada aos padrões: contraste, realce, cores e contornos. As legendas e os outros menus não mudaram.',
   'sr.motion.reset': 'Sensibilidade visual restaurada aos padrões: animações e estética CRT. As animações voltam ao que o seu sistema pede.',
-  'caa.letras': 'Letras maiúsculas',
-  'caa.letras.dica': 'Ligado: o jogo inteiro em caixa alta, como a alfabetização brasileira costuma começar. '
+  'aac.letras': 'Letras maiúsculas',
+  'aac.letras.dica': 'Ligado: o jogo inteiro em caixa alta, como a alfabetização brasileira costuma começar. '
     + 'Desligado: maiúsculas e minúsculas, a escrita do dia a dia.',
-  'caa.emPreparo': 'em preparação',
-  'caa.aguardandoNegociacao': 'aguardando negociação',
-  'caa.secao.agora': 'Disponível agora',
-  'caa.secao.agoraTag': 'funciona sem rede',
-  'caa.secao.preparo': 'Em preparação',
-  'caa.secao.preparoTag': 'licença resolvida; falta o trabalho',
-  'caa.secao.negociacao': 'Aguardando negociação',
-  'caa.secao.negociacaoTag': 'a permissão não é nossa',
-  'sr.caa.escolha': 'Comunicação: {v}.',
-  'sr.caa.reset': 'Comunicação restaurada ao padrão: letras maiúsculas, como a alfabetização costuma começar.',
+  'aac.emPreparo': 'em preparação',
+  'aac.aguardandoNegociacao': 'aguardando negociação',
+  'aac.secao.agora': 'Disponível agora',
+  'aac.secao.agoraTag': 'funciona sem rede',
+  'aac.secao.preparo': 'Em preparação',
+  'aac.secao.preparoTag': 'licença resolvida; falta o trabalho',
+  'aac.secao.negociacao': 'Aguardando negociação',
+  'aac.secao.negociacaoTag': 'a permissão não é nossa',
+  'sr.aac.escolha': 'Comunicação: {v}.',
+  'sr.aac.reset': 'Comunicação restaurada ao padrão: letras maiúsculas, como a alfabetização costuma começar.',
   'pause.caa': 'Comunicação',
-  'sr.caa.caixaAltaOn': 'Letras maiúsculas ligadas: o jogo inteiro em caixa alta.',
-  'sr.caa.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
+  'sr.aac.caixaAltaOn': 'Letras maiúsculas ligadas: o jogo inteiro em caixa alta.',
+  'sr.aac.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
   'sr.quiz.bemVindo': 'Quiz. Use as setas para escolher e Enter para responder.',
   // AS PERGUNTAS DO QUIZ. O quiz NÃO é uma disciplina de idioma, logo nem a excepção do `CLAUDE.md` §A FRONTEIRA
   // se aplica: «o ENUNCIADO SEMPRE TRADUZ». Eram literais em pt-BR dentro do cartucho até 23/09, e trocar a

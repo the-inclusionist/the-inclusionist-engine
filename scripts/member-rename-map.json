@@ -242,10 +242,10 @@
       "render/viz-setters.ts VizSettersCtx.setModoCego": "setBlindMode"
     },
     "ui": {
-      "ui/caa-sets.ts CaaSet.nome": "name",
-      "ui/caa-sets.ts CaaSet.licenca": "license",
-      "ui/caa-sets.ts CaaSet.disponivel": "available",
-      "ui/caa-sets.ts CaaSet.nota": "note",
+      "ui/aac-sets.ts AacSet.nome": "name",
+      "ui/aac-sets.ts AacSet.licenca": "license",
+      "ui/aac-sets.ts AacSet.disponivel": "available",
+      "ui/aac-sets.ts AacSet.nota": "note",
       "ui/debug-panel.ts CharacterSample.texturaId": "textureId",
       "ui/debug-panel.ts CharacterSample.recorte": "crop",
       "ui/debug-panel.ts CharacterSample.posicao": "position",
@@ -396,7 +396,8 @@
       "ui/typo-choices.ts FontCssTarget.fonte": "font",
       "ui/typo-choices.ts FontCssTarget.cursiva": "cursive",
       "ui/settings-controls.ts SettingsControlsCtx.kbPadraoFor": "defaultSchemeFor",
-      "ui/panel-widgets.ts ControlRow.controle": "control"
+      "ui/panel-widgets.ts ControlRow.controle": "control",
+      "ui/shell.ts ShellCtx.openCaa": "openAac"
     },
     "boot": {
       "boot/create-game.ts Declinios.semAssistenteDePad": "noPadAssistant",

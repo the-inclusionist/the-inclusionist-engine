@@ -351,7 +351,7 @@ const es: Record<string, string> = {
   // ayuda a distinguir siete elementos de un vistazo. Dentro del panel ya se sabe dónde se está, y un emoji en
   // el `<h2>` se lee en voz alta antes del nombre de lo que abrió.
   'menu.caa': 'Comunicación',
-  'caa.grupo.rotulo': 'Opciones de comunicación',
+  'aac.grupo.rotulo': 'Opciones de comunicación',
   // Nombrado por lo que la persona siente, no por lo que hace el código: quien necesita este panel llega por
   // mareo o por riesgo de crisis, no por curiosidad sobre los fotogramas.
   'menu.animation': 'Sensibilidad visual',
@@ -453,22 +453,22 @@ const es: Record<string, string> = {
   'a11y.changed': 'modificado',
   'sr.visual.reset': 'Accesibilidad visual restaurada a sus valores predeterminados: contraste, realce, colores y contornos. Los subtítulos y los demás menús no cambiaron.',
   'sr.motion.reset': 'Sensibilidad visual restaurada a sus valores predeterminados: animaciones y estética CRT. Las animaciones vuelven a lo que pide su sistema.',
-  'caa.letras': 'Letras mayúsculas',
-  'caa.letras.dica': 'Encendido: todo el juego en mayúsculas, como suele empezar la alfabetización. '
+  'aac.letras': 'Letras mayúsculas',
+  'aac.letras.dica': 'Encendido: todo el juego en mayúsculas, como suele empezar la alfabetización. '
     + 'Apagado: mayúsculas y minúsculas, la escritura de cada día.',
-  'caa.emPreparo': 'en preparación',
-  'caa.aguardandoNegociacao': 'esperando negociación',
-  'caa.secao.agora': 'Disponible ahora',
-  'caa.secao.agoraTag': 'funciona sin red',
-  'caa.secao.preparo': 'En preparación',
-  'caa.secao.preparoTag': 'licencia resuelta; falta el trabajo',
-  'caa.secao.negociacao': 'Esperando negociación',
-  'caa.secao.negociacaoTag': 'el permiso no es nuestro',
-  'sr.caa.escolha': 'Comunicación: {v}.',
-  'sr.caa.reset': 'Comunicación restaurada a su valor predeterminado: letras mayúsculas, donde suele comenzar la alfabetización.',
+  'aac.emPreparo': 'en preparación',
+  'aac.aguardandoNegociacao': 'esperando negociación',
+  'aac.secao.agora': 'Disponible ahora',
+  'aac.secao.agoraTag': 'funciona sin red',
+  'aac.secao.preparo': 'En preparación',
+  'aac.secao.preparoTag': 'licencia resuelta; falta el trabajo',
+  'aac.secao.negociacao': 'Esperando negociación',
+  'aac.secao.negociacaoTag': 'el permiso no es nuestro',
+  'sr.aac.escolha': 'Comunicación: {v}.',
+  'sr.aac.reset': 'Comunicación restaurada a su valor predeterminado: letras mayúsculas, donde suele comenzar la alfabetización.',
   'pause.caa': 'Comunicación',
-  'sr.caa.caixaAltaOn': 'Letras mayúsculas activadas: todo el juego en mayúsculas.',
-  'sr.caa.caixaAltaOff': 'Letras mayúsculas desactivadas: mayúsculas y minúsculas.',
+  'sr.aac.caixaAltaOn': 'Letras mayúsculas activadas: todo el juego en mayúsculas.',
+  'sr.aac.caixaAltaOff': 'Letras mayúsculas desactivadas: mayúsculas y minúsculas.',
   'sr.quiz.bemVindo': 'Cuestionario. Use las flechas para elegir y Enter para responder.',
   // Las preguntas del quiz — claves, no frases, para que cambiar la bandera alcance la ACTIVIDAD y no sólo el
   // marco del motor (ADR-0225). Un quiz no es una materia de idioma: nada de esto queda sin traducir.

@@ -1549,7 +1549,7 @@ export function createGame(o: CreateGameOptions): Engine {
      *
      * 🔴 The «Comunicação» door left the inclusion settings: the letter case moves with the bar's 11th button, which is the
      * COMMUNICATION cycle (with ARASAAC and PCS disabled). Mounting a panel with no door would leave in the document a
-     * dialog nobody reaches — the defect ADR-0144 measured. The `ui/settings-caa` module stays in the engine for whoever
+     * dialog nobody reaches — the defect ADR-0144 measured. The `ui/settings-aac` module stays in the engine for whoever
      * wants to mount it.
      */
 

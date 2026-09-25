@@ -84,7 +84,7 @@ export interface MountPanelSpec {
    *
    * 📏 Measured across the eight on 2026-09-11, and the three-way split is why this field is a function rather
    * than a flag: `settings-typo`, `-motor`, `-controls`, `-visual` and `-audio` have no `close()` at all and
-   * need the whole five lines; `settings-caa` and `-empathy` have one AND bind the button themselves at init;
+   * need the whole five lines; `settings-aac` and `-empathy` have one AND bind the button themselves at init;
    * `settings-motion` has one and does NOT bind the button, so it takes the default path and its `close()`
    * simply goes unused.
    *

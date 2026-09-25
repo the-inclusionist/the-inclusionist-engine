@@ -244,7 +244,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
    * 📌 THE KIT'S CTX COMES FROM THE LIST NODE ITSELF, not from a global `document` nor a new contract field.
    * `ownerDocument` is the document that list LIVES in — exactly the document the rows must be born in —, so this
    * module's global reach stays ZERO (ADR-0221) and `SettingsVisualCtx`, which is published surface, gains no required
-   * member (ADR-0172). The same shape as `ui/settings-caa`.
+   * member (ADR-0172). The same shape as `ui/settings-aac`.
    */
   const kitCtx = (list: HTMLElement): PanelShellCtx => ({
     find: (sel) => ctx.$<HTMLElement>(sel),

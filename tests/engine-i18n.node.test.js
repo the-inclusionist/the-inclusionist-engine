@@ -167,8 +167,8 @@ const CRU_CONHECIDO = {
   // The color-blocking roles' names (`ROLE_LABELS`, `ui/visual-choices`), still DECLARED debt: «perigo (lava)» is ONE
   // game's word, and what names them to the child is each colour's accessible name, where they cross through `{param}`.
   'ui/visual-choices.ts': 3,
-  'ui/settings-caa.ts': 5,
-  'ui/caa-sets.ts': 3,           // the pictogram sets' descriptions (licence, cultural origin)
+  'ui/settings-aac.ts': 5,
+  'ui/aac-sets.ts': 3,           // the pictogram sets' descriptions (licence, cultural origin)
   'ui/locale-flags.ts': 2,       // each language named IN ITSELF, beside its flag: a child who cannot read the current language still finds theirs
   // ✅ Entries leave by being FIXED, not only by counting: `ui/hud.ts` (the «aperte um botão para entrar» badge, now
   // `hud.waitBadge` — its own key, not `sr.player.pressToJoin`: that one is for whoever listens, this one says WHICH

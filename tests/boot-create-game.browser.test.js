@@ -1018,7 +1018,7 @@ describe('createGame num documento de verdade', () => {
       // ⚠️ THESE CASES MEASURED THE AAC PANEL (the letter case, the close owner, the Escape chain) through the
       // «Comunicação» door. The Dev took it out of the inclusion settings: the letter case moves with the 11th button's
       // cycle. A panel with no door would be a dialog in the document nobody reaches, so the engine no longer mounts it —
-      // the cases of its behaviour left with the mounting, and the module has its own in `settings-caa.browser.test.js`.
+      // the cases of its behaviour left with the mounting, and the module has its own in `settings-aac.browser.test.js`.
       const motor = abrir();
       motor.pause.show(0);
       expect(document.querySelector('#caa'), 'o painel de CAA continua montado sem porta').toBeNull();

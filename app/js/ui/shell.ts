@@ -346,8 +346,8 @@ export interface ShellCtx {
   setMotionPlayer: (i: number) => void;
   /** ui/settings-motion.ts `motion.open`. */
   openMotion: () => void;
-  /** Opens the Augmentative and Alternative Communication menu (ui/settings-caa). */
-  openCaa: () => void;
+  /** Opens the Augmentative and Alternative Communication menu (ui/settings-aac). */
+  openAac: () => void;
   /** ui/settings-empathy.ts `empathy.open`. */
   openEmpathy: () => void;
   /** Scopes Visual and Empathy to the player who opened them. */
@@ -507,7 +507,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     resume: () => ctx.resumeGame(),
     // The door to the Augmentative and Alternative Communication menu (ADR-0028), where the letter case is one choice
     // among others.
-    caa: () => ctx.openCaa(),
+    caa: () => ctx.openAac(),
     nivel: () => ctx.setQuizLevel(ctx.getQuizLevel() % 5 + 1, true), // cycles 1..5
     tipo: () => ctx.openTypo(),
     // Only ever ADDS a player (never removes); the new screen WAITS for its player to press a button

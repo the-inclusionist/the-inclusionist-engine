@@ -475,6 +475,25 @@
         "GanchosDoCartucho": "CartridgeHooks",
         "MedicaoDeFlashes": "FlashMeasurement"
       }
+    },
+    "aac": {
+      "done": "2026-09-25",
+      "names": {
+        "CaaTier": "AacTier",
+        "CaaSet": "AacSet",
+        "CAA_SETS": "AAC_SETS",
+        "CAA_BY_KEY": "AAC_BY_KEY",
+        "caaAvailable": "aacAvailable",
+        "caaReason": "aacReason",
+        "caaLabel": "aacLabel",
+        "caaControlId": "aacControlId",
+        "caaRowSpec": "aacRowSpec",
+        "CAA_SECTIONS": "AAC_SECTIONS",
+        "mountCaaInside": "mountAacInside",
+        "SettingsCaaCtx": "SettingsAacCtx",
+        "SettingsCaaApi": "SettingsAacApi",
+        "initSettingsCaa": "initSettingsAac"
+      }
     }
   },
   "fileLayers": {
@@ -761,6 +780,15 @@
         "tests/viz-migracao.node.test.js": "tests/viz-migration-keeps-each-mode.node.test.js",
         "tests/webgazer-saiu.node.test.js": "tests/webgazer-left-the-engine.node.test.js",
         "docs/research/auditoria-creditos-pixellab.csv": "docs/research/pixellab-credits-audit.csv"
+      }
+    },
+    "aac": {
+      "done": "2026-09-25",
+      "files": {
+        "app/js/ui/caa-sets.ts": "app/js/ui/aac-sets.ts",
+        "app/js/ui/settings-caa.ts": "app/js/ui/settings-aac.ts",
+        "tests/caa-sets.node.test.js": "tests/aac-sets.node.test.js",
+        "tests/settings-caa.browser.test.js": "tests/settings-aac.browser.test.js"
       }
     }
   }

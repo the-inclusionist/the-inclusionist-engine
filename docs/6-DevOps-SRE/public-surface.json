@@ -1165,6 +1165,15 @@
     "vizGroupSay",
     "vizIndicatorFor"
   ],
+  "ui/aac-sets.ts": [
+    "AAC_BY_KEY",
+    "AAC_SETS",
+    "AacSet",
+    "AacTier",
+    "aacAvailable",
+    "aacLabel",
+    "aacReason"
+  ],
   "ui/audio-choices.ts": [
     "AudioCatDef",
     "AudioCatState",
@@ -1187,15 +1196,6 @@
   "ui/audio-rows-that-apply.ts": [
     "AudioRowsThatApplyCtx",
     "showOnlyRowsThatApply"
-  ],
-  "ui/caa-sets.ts": [
-    "CAA_BY_KEY",
-    "CAA_SETS",
-    "CaaSet",
-    "CaaTier",
-    "caaAvailable",
-    "caaLabel",
-    "caaReason"
   ],
   "ui/camera-control.ts": [
     "followCameraMode"
@@ -1507,6 +1507,17 @@
     "mountScanOverlay",
     "scanItemText"
   ],
+  "ui/settings-aac.ts": [
+    "AAC_SECTIONS",
+    "SettingsAacApi",
+    "SettingsAacCtx",
+    "aacControlId",
+    "aacRowSpec",
+    "initSettingsAac",
+    "lettersRowSpec",
+    "mountAacInside",
+    "upperCaseOn"
+  ],
   "ui/settings-audio.ts": [
     "AudioStore",
     "SettingsAudioApi",
@@ -1516,17 +1527,6 @@
     "initSettingsAudio",
     "mountAudioInside",
     "mountSoundInside"
-  ],
-  "ui/settings-caa.ts": [
-    "CAA_SECTIONS",
-    "SettingsCaaApi",
-    "SettingsCaaCtx",
-    "caaControlId",
-    "caaRowSpec",
-    "initSettingsCaa",
-    "lettersRowSpec",
-    "mountCaaInside",
-    "upperCaseOn"
   ],
   "ui/settings-controls.ts": [
     "ACT_LABEL",

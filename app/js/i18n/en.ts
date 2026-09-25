@@ -351,7 +351,7 @@ const en: Record<string, string> = {
   // tell seven items apart at a glance. Inside the panel you already know where you are, and an emoji in the
   // `<h2>` is read aloud before the name of what it opened.
   'menu.caa': 'Communication',
-  'caa.grupo.rotulo': 'Communication choices',
+  'aac.grupo.rotulo': 'Communication choices',
   // Named for what a person feels, not for what the code does: whoever needs this panel arrives through nausea
   // or a seizure risk, not through curiosity about frame rates.
   'menu.animation': 'Visual sensitivity',
@@ -454,22 +454,22 @@ const en: Record<string, string> = {
   'a11y.changed': 'changed',
   'sr.visual.reset': 'Visual accessibility restored to its defaults: contrast, enhancement, colours and outlines. Captions and the other menus did not change.',
   'sr.motion.reset': 'Visual sensitivity restored to its defaults: animations and CRT look. Animations go back to what your system asks for.',
-  'caa.letras': 'Capital letters',
-  'caa.letras.dica': 'On: the whole game in capitals, the way early literacy usually starts. '
+  'aac.letras': 'Capital letters',
+  'aac.letras.dica': 'On: the whole game in capitals, the way early literacy usually starts. '
     + 'Off: capitals and lower case, everyday writing.',
-  'caa.emPreparo': 'in preparation',
-  'caa.aguardandoNegociacao': 'awaiting negotiation',
-  'caa.secao.agora': 'Available now',
-  'caa.secao.agoraTag': 'works with no network',
-  'caa.secao.preparo': 'In preparation',
-  'caa.secao.preparoTag': 'licence settled; the work is ours',
-  'caa.secao.negociacao': 'Awaiting negotiation',
-  'caa.secao.negociacaoTag': 'the permission is not ours to give',
-  'sr.caa.escolha': 'Communication: {v}.',
-  'sr.caa.reset': 'Communication restored to its default: uppercase letters, where literacy usually starts.',
+  'aac.emPreparo': 'in preparation',
+  'aac.aguardandoNegociacao': 'awaiting negotiation',
+  'aac.secao.agora': 'Available now',
+  'aac.secao.agoraTag': 'works with no network',
+  'aac.secao.preparo': 'In preparation',
+  'aac.secao.preparoTag': 'licence settled; the work is ours',
+  'aac.secao.negociacao': 'Awaiting negotiation',
+  'aac.secao.negociacaoTag': 'the permission is not ours to give',
+  'sr.aac.escolha': 'Communication: {v}.',
+  'sr.aac.reset': 'Communication restored to its default: uppercase letters, where literacy usually starts.',
   'pause.caa': 'Communication',
-  'sr.caa.caixaAltaOn': 'Uppercase letters on: the whole game in capitals.',
-  'sr.caa.caixaAltaOff': 'Uppercase letters off: capitals and lowercase.',
+  'sr.aac.caixaAltaOn': 'Uppercase letters on: the whole game in capitals.',
+  'sr.aac.caixaAltaOff': 'Uppercase letters off: capitals and lowercase.',
   'sr.quiz.bemVindo': 'Quiz. Use the arrow keys to choose and Enter to answer.',
   // The quiz's questions — keys, not sentences, so that changing the flag reaches the ACTIVITY and not only the
   // engine's frame (ADR-0225). A quiz is not a language subject, so nothing here is exempt from translating.

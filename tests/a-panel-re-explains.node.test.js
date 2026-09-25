@@ -70,7 +70,7 @@ const reconstroiPorMarkup = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
  * ⚠️ REBUILDING IS ALSO DONE IN NODES — AND THAT IS HOW THIS SIEVE QUIETLY STOPPED WATCHING FIVE OF EIGHT PANELS.
  *
  * 📏 Measured on 2026-09-23, with the kit adoption of ADR-0129 closed: the question above asks only for
- * `.innerHTML =`, and the conversion replaced exactly that. `-caa`, `-typo`, `-visual`, `-motion` and `-audio`
+ * `.innerHTML =`, and the conversion replaced exactly that. `-aac`, `-typo`, `-visual`, `-motion` and `-audio`
  * now build their rows as NODES, so the answer for all five became `false` — and the `[Zero]` case walked past
  * them asserting nothing, GREEN. Nothing ever went red: the gate simply stopped covering the very panels the
  * conversion touched, one commit at a time. It is the shape this repository has already met three times in

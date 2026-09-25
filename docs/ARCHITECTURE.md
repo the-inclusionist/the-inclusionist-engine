@@ -222,7 +222,7 @@ dictionaries and the root».
 | **the pause card, the quick bar and menu navigation** | `ui/pause-icons.ts` | `ui/menu-nav.ts` 35% · `app/css/style.css` 21% · `ui/pause-buttons.ts` for the card's own buttons |
 | **a setting the child keeps** | `core/state.ts` | `platform/storage.ts` 31% — and the lifetime rule of ADR-0038, gated in `tests/lifetime-gate.node.test.ts` |
 | **what a key, a button, a finger does** | `input/keydown.ts` | `input/gamepad.ts` 53% · `input/touch-bindings.ts` 47% · `input/touch.ts` 40% · `ui/shell.ts` 27% — ⚠️ see the debt in §3.4 |
-| **a row in a settings panel** | `ui/settings-audio.ts`, `-motion`, `-mobility`, `-visual`, `-typo`, `-empathy`, `-caa`, `-controls` | `ui/mount-panel.ts` and `ui/panel-widgets.ts` build the row — ⚠️ see the debt in §3.4 |
+| **a row in a settings panel** | `ui/settings-audio.ts`, `-motion`, `-mobility`, `-visual`, `-typo`, `-empathy`, `-aac`, `-controls` | `ui/mount-panel.ts` and `ui/panel-widgets.ts` build the row — ⚠️ see the debt in §3.4 |
 | **which face the text is drawn in** | `ui/fonts.ts` | `app/public/vendor/fonts.css` 47% · `ui/settings-typo.ts` 46% · the catalogue `research/catalogo_tipografico.json` (the Dev's) |
 | **how the engine speaks** | `platform/tts.ts` | `ui/settings-audio.ts` 35% · `platform/kokoro-runtime.ts` for the neural voice |
 | **what gets downloaded, and from where** | `platform/heavy-catalogue.ts` | `platform/heavy.ts` 60% · `platform/heavy-mirror.ts` 30% · `scripts/heavy-into-the-delivery.mjs` fills a delivery, `scripts/licences/` puts each file's licence beside it |
@@ -249,7 +249,7 @@ down more than once. Two of them are the second kind, and naming them here is ch
   together 40–53% of the time. Whether to unify is a decision, not a cleanup.
 - ✅ **THE PANEL LINE IS PAID, on 2026-09-22.** `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is written
   once, and now **every panel that builds rows builds them through the kit**. The work took the shape the measurement gave
-  it rather than the shape the plain count suggested: of the five that were outside, only `-controls`, `-typo` and `-caa`
+  it rather than the shape the plain count suggested: of the five that were outside, only `-controls`, `-typo` and `-aac`
   BUILT rows — as HTML STRINGS (`'<div class="ctrl-row">…'`), which is the duplication the kit exists to end. `-empathy`
   builds none (it wires `#opt-hearing`, `#opt-onebtn` and `#opt-wheelchair`, which the composition root already builds WITH
   the kit) and `-panel` is not a panel at all — it is the shared overlay infrastructure. Converting those two would have

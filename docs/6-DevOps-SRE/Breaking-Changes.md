@@ -3284,6 +3284,72 @@ Printed by `node scripts/apply-member-rename.mjs --table ui` (the one row of thi
 (`git grep` for `controlRow` and `.controle` in `game-2048`, `game-chess`, `game-pinball`, `game-platformer`,
 `game-soccer`, `game-whackwhack` and `pixi-15-puzzle`: the only hits are the Portuguese word in comments and in UI text).
 
+## CX · The Portuguese acronym leaves the surface: CAA becomes AAC, in names, a member, two paths and the i18n keys (ADR-0219 phases 2 and 3, ADR-0230, issue #206)
+
+**Who is affected:** a game that mounts the augmentative and alternative communication panel itself, or reads its
+catalogue — the import path, the names, one member of the shell's ctx and, for a game that registers its own
+dictionary over the engine's, the i18n keys.
+
+📌 **Why now, after phases 2, 3 and 7 said done:** `caa` (*comunicação aumentativa e alternativa*) sat in the
+language gate's ENGLISH list, so every name built on it counted as clean. Moved to the Portuguese list, the inventory
+went from 11 to 26 identifiers (14 declarations in the two modules, 1 member of `ShellCtx`) — the measure widening,
+not new debt — and this note is the payment that brings it back to 11. The English acronym is AAC.
+
+Printed by `node scripts/print-rename-table.mjs aac` (names, phase 2):
+
+| was | is |
+|---|---|
+| `CAA_BY_KEY` | `AAC_BY_KEY` |
+| `CAA_SECTIONS` | `AAC_SECTIONS` |
+| `CAA_SETS` | `AAC_SETS` |
+| `caaAvailable` | `aacAvailable` |
+| `caaControlId` | `aacControlId` |
+| `caaLabel` | `aacLabel` |
+| `caaReason` | `aacReason` |
+| `caaRowSpec` | `aacRowSpec` |
+| `CaaSet` | `AacSet` |
+| `CaaTier` | `AacTier` |
+| `initSettingsCaa` | `initSettingsAac` |
+| `mountCaaInside` | `mountAacInside` |
+| `SettingsCaaApi` | `SettingsAacApi` |
+| `SettingsCaaCtx` | `SettingsAacCtx` |
+
+Printed by `node scripts/print-rename-table.mjs --files aac` (paths, phase 3) — the import specifier changes with it,
+`@the-inclusionist/engine/ui/settings-caa.js` → `@the-inclusionist/engine/ui/settings-aac.js`:
+
+| was | is |
+|---|---|
+| `app/js/ui/caa-sets.ts` | `app/js/ui/aac-sets.ts` |
+| `app/js/ui/settings-caa.ts` | `app/js/ui/settings-aac.ts` |
+| `tests/caa-sets.node.test.js` | `tests/aac-sets.node.test.js` |
+| `tests/settings-caa.browser.test.js` | `tests/settings-aac.browser.test.js` |
+
+The member (phase 7), the row printed by `node scripts/apply-member-rename.mjs --table ui`:
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `ui/shell.js` | `ShellCtx` | `openCaa` | `openAac` |
+
+The i18n keys, renamed by prefix in the three dictionaries and in every reader (`caa.letras` → `aac.letras`,
+`sr.caa.reset` → `sr.aac.reset`, and so on for all fifteen): `caa.grupo.rotulo`, `caa.letras`, `caa.letras.dica`,
+`caa.emPreparo`, `caa.aguardandoNegociacao`, `caa.secao.agora`, `caa.secao.agoraTag`, `caa.secao.preparo`,
+`caa.secao.preparoTag`, `caa.secao.negociacao`, `caa.secao.negociacaoTag`, `sr.caa.escolha`, `sr.caa.reset`,
+`sr.caa.caixaAltaOn`, `sr.caa.caixaAltaOff`. 📏 Measured before renaming: no stored value depends on one (no `incl_*` key in
+`platform/storage-keys` carries `caa`, and these keys are only ever handed to `t()` when a row is drawn or a sentence
+is said), and no game writes one.
+
+⚠️ **What stays `caa`, and why:** the pause ACTION id `caa` (`data-act="caa"`, the `caa` entry of the shell's action
+table and of the pause icons) and the keys built from it (`pause.caa`, `menu.caa`) are DATA a game's markup and code
+read, the same exemption the member map gives the other pause action ids; the DOM ids and data attributes the panel
+queries (`#caa`, `#caa-list`, `#caa-reset`, `#caa-close`, `#caa-caixa-alta`, `#caa-letras`, `caa-set-<key>`,
+`data-caa`, `data-caa-section`) are the markup contract with a game's page — `game-platformer`'s `app/index.html`
+writes four of them. No storage key contains `caa`, so none had to be kept.
+
+📏 **Measured in the seven games, read-only, as information:** only `game-platformer` is affected — `app/js/main.ts`
+imports `initSettingsCaa` from `@the-inclusionist/engine/ui/settings-caa.js` (line 83), calls it (line 1792) and passes
+`openCaa` in its `ShellCtx` (line 2099). `game-2048` names the `caa` pause action in comments only; `game-chess`,
+`game-pinball`, `game-soccer`, `game-whackwhack` and `pixi-15-puzzle` use none of it.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

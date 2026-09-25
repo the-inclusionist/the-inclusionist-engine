@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/caa-sets.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION CATALOGUE (ADR-0028). Leaf module: pure data and
-// two predicates, zero DOM, zero I/O. ui/settings-caa draws the menu; this file decides what it offers, because the
+// ui/aac-sets.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION CATALOGUE (ADR-0028). Leaf module: pure data and
+// two predicates, zero DOM, zero I/O. ui/settings-aac draws the menu; this file decides what it offers, because the
 // decision is about LICENSING and not about interface.
 //
 // WHO THIS EXISTS FOR: there are children who read symbols and not letters. For them, a pictogram is neither
@@ -14,7 +14,7 @@
 // says who has to act, the second says what the child can choose now.
 import type { Translate } from '../core/i18n.js';
 
-export type CaaTier =
+export type AacTier =
   /** CC BY-SA or ours: it may travel inside the game and works with no network at all. */
   | 'bundled'
   /** The licence allows use, not redistribution: the person downloads it, once, and it stays cached. */
@@ -22,10 +22,10 @@ export type CaaTier =
   /** Permission is missing. It appears in the menu and is not selectable. */
   | 'negotiating';
 
-export interface CaaSet {
+export interface AacSet {
   readonly key: string;
   readonly name: string;
-  readonly tier: CaaTier;
+  readonly tier: AacTier;
   /** The licence as it was VERIFIED, or null when there is none yet. Short text, to fit on screen. */
   readonly license: string | null;
   /** Does it work IN THIS build? The pictograms are files that have not arrived yet. */
@@ -39,7 +39,7 @@ export interface CaaSet {
 // two rows to discover they are the same question; a switch asks once.
 //
 // What remains here is genuinely a LIST: the pictogram sets, of which one is chosen.
-export const CAA_SETS: readonly CaaSet[] = [
+export const AAC_SETS: readonly AacSet[] = [
   // --- PICTOGRAMS that MAY travel with the game (CC BY-SA, verified by the Dev). ---
   { key: 'mulberry', name: 'Mulberry Symbols', tier: 'bundled', license: 'CC BY-SA', available: false },
   { key: 'blissymbolics', name: 'Blissymbolics', tier: 'bundled', license: 'CC BY-SA 4.0', available: false,
@@ -50,19 +50,19 @@ export const CAA_SETS: readonly CaaSet[] = [
   // --- PICTOGRAMS that must be DOWNLOADED. ---
   { key: 'arasaac', name: 'ARASAAC', tier: 'fetched', license: 'baixado à parte', available: false },
 
-  // --- AWAITING NEGOTIATION. Visible on purpose: see `caaReason`. ---
+  // --- AWAITING NEGOTIATION. Visible on purpose: see `aacReason`. ---
   { key: 'sclera', name: 'Sclera', tier: 'negotiating', license: null, available: false },
   { key: 'pcs', name: 'PCS', tier: 'negotiating', license: null, available: false },
   { key: 'symbolstix', name: 'SymbolStix', tier: 'negotiating', license: null, available: false },
   { key: 'widgit', name: 'Widgit Symbols', tier: 'negotiating', license: null, available: false },
 ];
 
-export const CAA_BY_KEY: Readonly<Record<string, CaaSet>> = Object.fromEntries(CAA_SETS.map((s) => [s.key, s]));
+export const AAC_BY_KEY: Readonly<Record<string, AacSet>> = Object.fromEntries(AAC_SETS.map((s) => [s.key, s]));
 
 /** Which SETS the child can choose today: none. The menu does not pretend otherwise — the pictograms are thousands
  *  of files that have not entered the repository, and four of the sets depend on negotiation. */
-export function caaAvailable(): CaaSet[] {
-  return CAA_SETS.filter((s) => s.available);
+export function aacAvailable(): AacSet[] {
+  return AAC_SETS.filter((s) => s.available);
 }
 
 /**
@@ -77,13 +77,13 @@ export function caaAvailable(): CaaSet[] {
  * game cannot do it — when the obstacle is a licence, not a capability. Hiding would answer the wrong question, and
  * answer it wrongly.
  */
-export function caaReason(s: CaaSet): string | null {
+export function aacReason(s: AacSet): string | null {
   if (s.available) return null;
-  return s.tier === 'negotiating' ? 'caa.aguardandoNegociacao' : 'caa.emPreparo';
+  return s.tier === 'negotiating' ? 'aac.aguardandoNegociacao' : 'aac.emPreparo';
 }
 
 /** A label ready for the menu row: the name + the reason, when there is one. */
-export function caaLabel(t: Translate, s: CaaSet): string {
-  const reason = caaReason(s);
+export function aacLabel(t: Translate, s: AacSet): string {
+  const reason = aacReason(s);
   return reason ? `${s.name} — ${t(reason)}` : s.name;
 }

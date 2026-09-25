@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-caa.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION MENU (ADR-0028, issue #57).
+// ui/settings-aac.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION MENU (ADR-0028, issue #57).
 //
-// The catalogue (who exists, under which licence, in which tier) lives in ./caa-sets.js; only the screen is here. DI by
+// The catalogue (who exists, under which licence, in which tier) lives in ./aac-sets.js; only the screen is here. DI by
 // ctx, like the sibling panels: no global beyond what is injected.
 //
 // WHAT THIS MENU IS TODAY, said without make-up: a letter-case switch that already shows, beside it, the pictogram sets
@@ -14,7 +14,7 @@
 // everything that does not work yet would make the educator conclude the game has no pictograms at all — the wrong
 // conclusion, and the one that costs most to whoever needs them.
 //
-// LETTER vs PICTOGRAM: the case choice is `letterCase` (core/state). There is NO parallel `caaMode`, and that is a
+// LETTER vs PICTOGRAM: the case choice is `letterCase` (core/state). There is NO parallel `aacMode`, and that is a
 // decision: while only one question is answerable, a second variable for it would be duplication dressed as
 // architecture. See the note in core/state.
 //
@@ -31,7 +31,7 @@
 import type { Translate } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import type { LetterCase } from '../core/state.js';
-import { CAA_SETS, CAA_BY_KEY, caaReason, type CaaSet } from './caa-sets.js';
+import { AAC_SETS, AAC_BY_KEY, aacReason, type AacSet } from './aac-sets.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { controlRow, labelRow, sectionHeader, type ControlRowSpec } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
@@ -45,12 +45,12 @@ export function upperCaseOn(letterCase: LetterCase): boolean {
   return letterCase === 'upper';
 }
 
-/** The id of a set's control. It comes from the catalogue `key`, unique by construction (`CAA_BY_KEY`). */
-export const caaControlId = (key: string): string => `caa-set-${key}`;
+/** The id of a set's control. It comes from the catalogue `key`, unique by construction (`AAC_BY_KEY`). */
+export const aacControlId = (key: string): string => `caa-set-${key}`;
 
 /** The letters switch. Always available: it is the offline floor, and never depended on any file. */
 export function lettersRowSpec(t: Translate): ControlRowSpec {
-  return { id: 'caa-caixa-alta', label: t('caa.letras'), hint: t('caa.letras.dica') };
+  return { id: 'caa-caixa-alta', label: t('aac.letras'), hint: t('aac.letras.dica') };
 }
 
 /**
@@ -63,12 +63,12 @@ export function lettersRowSpec(t: Translate): ControlRowSpec {
  * `ariaLabel` carries the reason, so whoever navigates by keyboard hears why the row does not respond without hunting
  * for the footer. `disabled` belongs to the CONTROL and not the text: the status leaves the label, never the button.
  */
-export function caaRowSpec(t: Translate, s: CaaSet): ControlRowSpec {
-  const reason = caaReason(s);
+export function aacRowSpec(t: Translate, s: AacSet): ControlRowSpec {
+  const reason = aacReason(s);
   const explains = [s.note, s.license ? `Licença: ${s.license}` : '', reason ? t(reason) : '']
     .filter(Boolean).join(' · ');
   return {
-    id: caaControlId(s.key),
+    id: aacControlId(s.key),
     label: s.name,
     ...(explains ? { hint: explains } : {}),
     ariaLabel: `${s.name}${reason ? ', ' + t(reason) : ''}`,
@@ -82,17 +82,17 @@ export function caaRowSpec(t: Translate, s: CaaSet): ControlRowSpec {
  * — the letters are a switch and not a set, the Dev's decision that took them out of the list. A table whose first row
  * is the exception to all the others lies about what it is.
  */
-export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: (t: Translate) => ControlRowSpec[] }> = [
-  { title: 'caa.secao.agora', tag: 'caa.secao.agoraTag', rows: (t) => [lettersRowSpec(t)] },
+export const AAC_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: (t: Translate) => ControlRowSpec[] }> = [
+  { title: 'aac.secao.agora', tag: 'aac.secao.agoraTag', rows: (t) => [lettersRowSpec(t)] },
   {
-    title: 'caa.secao.preparo',
-    tag: 'caa.secao.preparoTag',
-    rows: (t) => CAA_SETS.filter((s) => s.tier !== 'negotiating').map((s) => caaRowSpec(t, s)),
+    title: 'aac.secao.preparo',
+    tag: 'aac.secao.preparoTag',
+    rows: (t) => AAC_SETS.filter((s) => s.tier !== 'negotiating').map((s) => aacRowSpec(t, s)),
   },
   {
-    title: 'caa.secao.negociacao',
-    tag: 'caa.secao.negociacaoTag',
-    rows: (t) => CAA_SETS.filter((s) => s.tier === 'negotiating').map((s) => caaRowSpec(t, s)),
+    title: 'aac.secao.negociacao',
+    tag: 'aac.secao.negociacaoTag',
+    rows: (t) => AAC_SETS.filter((s) => s.tier === 'negotiating').map((s) => aacRowSpec(t, s)),
   },
 ];
 
@@ -103,8 +103,8 @@ export const CAA_SECTIONS: ReadonlyArray<{ title: string; tag: string; rows: (t:
  * row would leave a control in the document with no listener — a dead button that looks alive (ADR-0106 §5). And the
  * text may have been captured at boot, while the language was still the fallback.
  */
-export function mountCaaInside(t: Translate, ctx: PanelShellCtx, list: HTMLElement): void {
-  for (const section of CAA_SECTIONS) {
+export function mountAacInside(t: Translate, ctx: PanelShellCtx, list: HTMLElement): void {
+  for (const section of AAC_SECTIONS) {
     const specs = section.rows(t);
     const header = sectionHeader(ctx, t(section.title), t(section.tag), specs.length);
     if (header && !list.querySelector(`[data-caa-section="${section.title}"]`)) {
@@ -130,11 +130,11 @@ function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   if (spec.id === 'caa-caixa-alta') { row.id = 'caa-letras'; return row; }
   const key = spec.id.replace('caa-set-', '');
   control.setAttribute('data-caa', key);
-  if (!CAA_BY_KEY[key]?.available) control.setAttribute('disabled', '');
+  if (!AAC_BY_KEY[key]?.available) control.setAttribute('disabled', '');
   return row;
 }
 
-export interface SettingsCaaCtx {
+export interface SettingsAacCtx {
   /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
   t: Translate;
   $: <T extends Element = Element>(sel: string) => T | null;
@@ -151,18 +151,18 @@ export interface SettingsCaaCtx {
   restoreFocus?: (id: string) => boolean;
 }
 
-export interface SettingsCaaApi {
+export interface SettingsAacApi {
   render: () => void;
   open: () => void;
   close: () => void;
 }
 
-export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
+export function initSettingsAac(ctx: SettingsAacCtx): SettingsAacApi {
   const { t } = ctx;
   /*
    * 📌 THE KIT'S CTX COMES FROM THE LIST NODE ITSELF, not from a global `document` nor a new contract field.
    * `ownerDocument` is the document that list LIVES in — exactly the document the rows must be born in —, so this
-   * module's global reach stays ZERO (ADR-0221) and `SettingsCaaCtx`, which is published surface, gains no required
+   * module's global reach stays ZERO (ADR-0221) and `SettingsAacCtx`, which is published surface, gains no required
    * member (ADR-0172).
    */
   const panelCtx = (list: HTMLElement): PanelShellCtx => ({
@@ -183,7 +183,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   function render(): void {
     const el = ctx.$<HTMLElement>('#caa-list');
     if (!el) return;
-    mountCaaInside(t, panelCtx(el), el);
+    mountAacInside(t, panelCtx(el), el);
     reflect();
     ctx.fillExplain(ctx.$<HTMLElement>('#caa .overlay__card'));
     refreshMarks();
@@ -225,7 +225,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
     const turnOn = !upperCaseOn(ctx.getLetterCase());
     ctx.setLetterCase(turnOn ? 'upper' : 'mixed');
     render();
-    ctx.srSay(t(turnOn ? 'sr.caa.caixaAltaOn' : 'sr.caa.caixaAltaOff'));
+    ctx.srSay(t(turnOn ? 'sr.aac.caixaAltaOn' : 'sr.aac.caixaAltaOff'));
   });
 
   const closeBtn = ctx.$<HTMLElement>('#caa-close');
@@ -239,7 +239,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
   if (resetBtn) resetBtn.addEventListener('click', () => {
     ctx.setLetterCase(DEFAULTS.letterCase);
     render();
-    ctx.srSay(t('sr.caa.reset'));
+    ctx.srSay(t('sr.aac.reset'));
   });
 
   return { render, open, close };

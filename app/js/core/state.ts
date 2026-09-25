@@ -168,9 +168,9 @@ export interface GateTile { readonly tx: number; readonly ty: number }
 //     for two options, upper and lower case together or upper case only, and the first is text in its NATURAL case, not
 //     text forced to lower — forcing lower case on a proper noun teaches wrong.
 //
-//     THE DERIVATION MATTERS: there is no `caaMode` yet, on purpose. While only the two letter cases can be chosen, a
+//     THE DERIVATION MATTERS: there is no `aacMode` yet, on purpose. While only the two letter cases can be chosen, a
 //     second variable for the same question would be a duplicate state (#54). When a pictogram set can be chosen,
-//     `caaMode` is born and `letterCase` derives from it. ---
+//     `aacMode` is born and `letterCase` derives from it. ---
 export type LetterCase = 'mixed' | 'upper';
 export let letterCase: LetterCase = NULL_PORT.get(NULL_PORT.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
 export function setLetterCaseValue(c: LetterCase): void {

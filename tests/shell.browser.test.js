@@ -104,7 +104,7 @@ function boot(over = {}) {
     keyName: (c) => 'K:' + c,
     // The SHORT word comes from the 'game' — in a test, the fixture. A position with no name does not become a chip.
     shortLabel: (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null,
-    openCaa: () => log.acts.push('caa'),
+    openAac: () => log.acts.push('caa'),
     setQuizLevel: (n, a) => log.acts.push('nivel:' + n + ':' + a),
     getQuizLevel: () => 5,
     openTypo: () => log.acts.push('typo'),
