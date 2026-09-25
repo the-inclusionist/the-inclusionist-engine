@@ -109,7 +109,9 @@
     "docs/LICENSES.md",
     "docs/CREDITS.md",
     "scripts/heavy-into-the-delivery.mjs",
-    "scripts/licences"
+    "scripts/licences",
+    "scripts/vlibras-player.mjs",
+    "scripts/vlibras-player"
   ],
   "bin": {
     "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"

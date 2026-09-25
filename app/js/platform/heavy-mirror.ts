@@ -35,6 +35,12 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   // where. The version is in the folder name on purpose — a mirror that drops it cannot serve two versions during an upgrade.
   ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2', 'espeak-ng-1.0.2'],
   ['https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0', 'onnxruntime-web-1.27.0'],
+  // The Libras player (ADR-0234, route A): the path a base serves it under, the short commit in the folder name for the same
+  // reason as a version. ⚠️ THE PROJECT'S BUCKET DOES NOT HOLD IT: it carries Unity's closed runtime, whose redistribution terms
+  // nobody has determined, so nothing was uploaded — a remote base answers 404 for these four files and the delivery fails by
+  // name. A FOLDER on the build machine laid out this way works, and needs no network.
+  ['https://raw.githubusercontent.com/spbgovbr-vlibras/vlibras-web-browsers/9d093f259ac732d755a19e80cd03c8233c70435d/public/unity',
+    'vlibras-web-browsers-9d093f2/public/unity'],
 ];
 
 /**

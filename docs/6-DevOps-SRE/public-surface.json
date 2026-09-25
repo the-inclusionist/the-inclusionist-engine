@@ -706,6 +706,7 @@
     "CACHE_HEAVY",
     "HEAVY_FILES",
     "HeavyFile",
+    "LIBRAS_PLAYER_FOLDER",
     "commandsLanguageOf",
     "readingLanguageOf"
   ],

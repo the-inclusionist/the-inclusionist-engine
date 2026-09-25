@@ -63,7 +63,9 @@ const BUSCAS_A_MAO = {
     // 🔴 10 → 11 on 2026-09-22 and the extra one is the SAME address twice, which is the point: `espeak-ng@1.0.2` is in the
     // mirror table AND in `NOT_MIRRORED`, because the folder exists in the staging tree and is ON HOLD until the GPL source is
     // published beside the build. The duplicate IS the decision — mirrored in principle, upstream until the obligation is met.
-    urls: 11,
+    // 11 → 12 with the Libras player (ADR-0234, route A): the folder a LOCAL base serves the VLibras build under. The project's
+    // bucket does not hold it (Unity's runtime, redistribution undetermined), and the comment beside it says so.
+    urls: 12,
     porque:
       'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
       + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '
@@ -75,7 +77,7 @@ const BUSCAS_A_MAO = {
       + 'issue #192) — named so that «fetched upstream even with a base» is a written decision and not an omission',
   },
   'platform/heavy-catalogue.ts': {
-    urls: 5,
+    urls: 6,
     porque:
       'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0132, decisões do Dev ' +
       'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
@@ -88,7 +90,10 @@ const BUSCAS_A_MAO = {
       'same origin already defended above, and written here so the engine imports nothing from npm at run time. ' +
       '📌 The FIFTH is the project\'s own mirror (ADR-0203), which is not a third party: the reading models live there because ' +
       'both ONNX exports were made by this project and have no upstream to point at (ADR-0201 erratum, issue #185). ' +
-      'A SIXTH address, or a new origin, is a supplier entering without a decision. They leave this list when the bytes are ' +
+      '📌 The SIXTH is the VLibras player (ADR-0234, route A — the Dev: «Então coloque no plano a rota A seguida pela B.»): the ' +
+      'repository `spbgovbr-vlibras/vlibras-web-browsers` at a pinned COMMIT, which is what pins its bytes the way a version does; ' +
+      'fetched by the build only with `--libras`, and served to the child from the delivery\'s own origin. ' +
+      'A SEVENTH address, or a new origin, is a supplier entering without a decision. They leave this list when the bytes are ' +
       'servidos de origem própria',
   },
 };

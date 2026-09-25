@@ -861,7 +861,7 @@
       "fanIn": 1
     },
     "platform/heavy-catalogue.ts": {
-      "codeLines": 122,
+      "codeLines": 135,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
@@ -871,7 +871,7 @@
       "fanIn": 3
     },
     "platform/heavy-mirror.ts": {
-      "codeLines": 27,
+      "codeLines": 29,
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,
@@ -881,12 +881,12 @@
       "fanIn": 0
     },
     "platform/heavy.ts": {
-      "codeLines": 95,
-      "decisionNodes": 21,
+      "codeLines": 98,
+      "decisionNodes": 22,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 8,
+      "worstFunction": 9,
       "statefulEdges": 0,
       "fanIn": 5
     },

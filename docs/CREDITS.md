@@ -183,6 +183,26 @@ The command models (catalogue `commands:model:*`): `vosk-model-small-pt-0.3`, `v
 - **Copyright lines, as each archive's `README` states them:** en-us 0.15 «Copyright 2020 Alpha Cephei Inc»; es 0.42
   «Copyright 2022-2050 AC Technologies LLC»; pt 0.3 **none** (its `README` says only what the model is).
 
+## VLibras player — `spbgovbr-vlibras/vlibras-web-browsers` — LGPL-3.0 declared, Unity runtime closed
+
+The avatar deaf mode's interpreter drives (ADR-0234, route A; catalogue `libras:player:*`): `unity-loader.js`,
+`playerweb.wasm.framework.unityweb`, `playerweb.wasm.code.unityweb` and `playerweb.data.unityweb` from the repository's
+`public/unity/` at commit `9d093f259ac732d755a19e80cd03c8233c70435d`. Fetched by the build only with
+`inclusionist-heavy --libras`, and served to the child from the delivery's own origin.
+
+- **Licence:** the repository declares **LGPL-3.0**. The `LICENSE` a delivery writes beside the files is the LGPL-3.0 text
+  followed by the GPL-3.0 text it incorporates; the LGPL text was copied from LAViD's `vlibras-translator` 1.3.3 distribution,
+  not from this repository, whose own `LICENSE` file was not downloaded.
+- ⚠️ **What that licence does not cover, as far as this project knows:** the files are a **Unity 2018 WebGL build**. The wasm,
+  the framework JavaScript and the data file contain **Unity Technologies' proprietary runtime**; no corresponding source is
+  published, and the terms under which it may be redistributed have **not been determined**. The project carries it as a
+  declared, temporary exception until a free player (route B) replaces it.
+- **Changed by this project:** `playerweb.framework.noeval.js`, generated at delivery time from the framework file, whose
+  sha256 is checked first: decompressed, its one `eval(str)` replaced by a parser of plain calls with JSON arguments, so the
+  player runs under a Content-Security-Policy without `'unsafe-eval'` (`scripts/vlibras-player.mjs`).
+- **Copyright line: UNVERIFIED** — the four files carry none, and nothing of the repository beyond their metadata and its
+  declared licence was read.
+
 ## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
 
 The eye control draws four arrows over the game (`app/js/ui/gaze-overlay.ts`): Lucide's `arrow-up`, `arrow-right`, `arrow-down` and

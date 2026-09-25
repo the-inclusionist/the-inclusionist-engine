@@ -100,7 +100,8 @@ describe('o buscador das coisas pesadas', () => {
     //
     // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
     // a device actually fetches is `heavyAtBoot`, which asks for one language and for what the game declared.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1363);
+    // And since ADR-0234's route A, the Libras player: the four VLibras files, 19.3 MiB.
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1382);
     const f = cacheFalsa();
     const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
     expect(bytesLeftToDownload(r), 'depois de tudo descer não falta nada').toBe(0);
@@ -333,13 +334,14 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     // model. A game of shapes that downloaded 45.5 MiB of phonemizer would be the cost this filter exists to refuse.
     const ids = heavyAtBoot({ kokoro: false });
     expect(ids.filter((id) => id.startsWith('voz:')), 'a game that cannot speak Kokoro downloads its model or its runtime').toEqual([]);
-    expect(ids).toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => !id.startsWith('voz:') && !id.startsWith('reading:') && !id.startsWith('commands:')));
+    expect(ids).toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => !id.startsWith('voz:') && !id.startsWith('reading:') && !id.startsWith('commands:')
+      && !id.startsWith('libras:')));
     expect(ids.length).toBeGreaterThan(0);
   });
 
   it('🔴 [Right] with the neural voice declared, the whole voice — the model, the tokenizer and every voice', () => {
     expect(heavyAtBoot({ kokoro: true }))
-      .toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => !id.startsWith('reading:') && !id.startsWith('commands:')));
+      .toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => !id.startsWith('reading:') && !id.startsWith('commands:') && !id.startsWith('libras:')));
   });
 
   /**
@@ -408,6 +410,19 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
   // hash is the thing that USES it — the delivery run refuses to write bytes that do not match. 📏 So it was measured instead:
   // on 2026-09-21 all six files were written into `dist` from the staging tree, which is the six hashes proved against the
   // real bytes. A case that asserted the constant against itself would be the gate reading its own answer.
+  /**
+   * 🔴 THE LIBRAS PLAYER ONLY WHILE DEAF MODE IS ON (ADR-0234, route A): 19.3 MiB of Unity build that a device whose child never
+   * asks for signing never pays — and all four files together, since the page cannot load without any of them.
+   */
+  it('🔴 [Right] the Libras player comes whole with `libras`, and never without it', () => {
+    const player = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:'));
+    expect(player.length, 'the catalogue has no Libras player: the case would pass empty').toBe(4);
+    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:'))).toEqual(player);
+    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, libras: false }, { kokoro: false, commands: 'pt', reading: 'pt' }]) {
+      expect(heavyAtBoot(portas).filter((id) => id.startsWith('libras:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
+    }
+  });
+
   it('📌 [Boundary] the region is not the language: `es-MX` asks for the Spanish model', () => {
     expect(heavyAtBoot({ kokoro: false, reading: 'es-MX' }).filter((id) => id.startsWith('reading:'))).toEqual(doIdioma('es'));
   });

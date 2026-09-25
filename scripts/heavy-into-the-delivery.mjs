@@ -25,6 +25,7 @@ import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
+import { deliverLibrasPlayer } from './vlibras-player.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
@@ -97,19 +98,25 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  * · `--commands <pt|en|es>`, repeatable: the voice COMMANDS (issue #184), 31–39 MiB a language plus 3.1 MiB of runtime. No game
  *   declares this one — saying «menu» is a way into the controller, not a feature (ADR-0111) — so it is the DELIVERY that says
  *   which languages it serves. Without it a child who speaks is told the delivery carries no model for her language.
+ * · `--libras`: the Libras player deaf mode's interpreter drives (ADR-0234, route A) — the four published VLibras files, 19.3 MiB,
+ *   and then the player page with the patched framework (`scripts/vlibras-player.mjs`). No game declares it: deaf mode is the
+ *   person's, like speaking is, so the DELIVERY says whether it can sign. Without it the sonar in deaf mode says «signing
+ *   unavailable», as it always did.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
   let destino, base;
   const reading = [];
   const commands = [];
+  let libras = false;
   for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--libras') { libras = true; continue; }
     if (args[i] === '--base') { base = args[++i]; continue; }
     if (args[i] === '--reading') { const v = args[++i]; if (v) reading.push(v); continue; }
     if (args[i] === '--commands') { const v = args[++i]; if (v) commands.push(v); continue; }
     if (!args[i].startsWith('--') && destino === undefined) destino = args[i];
   }
-  return { destino, kokoro: args.includes('--kokoro'), reading, commands, base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
+  return { destino, kokoro: args.includes('--kokoro'), reading, commands, libras, base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
 }
 
 /** A `.env` beside the build, if there is one: Node reads it into `process.env`, and the command line still wins. */
@@ -121,8 +128,8 @@ export function carregarEnv(caminho = join(process.cwd(), '.env'), carregar = pr
 const executado = (() => { try { return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
 if (executado) {
   carregarEnv();
-  const { destino, kokoro, reading, commands, base } = argumentosDaEntrega(process.argv.slice(2));
-  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]…'); process.exit(2); }
+  const { destino, kokoro, reading, commands, libras, base } = argumentosDaEntrega(process.argv.slice(2));
+  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]… [--libras]'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
@@ -132,6 +139,7 @@ if (executado) {
     ...heavyAtBoot({ kokoro }),
     ...reading.flatMap((lingua) => heavyAtBoot({ kokoro: false, reading: lingua })),
     ...commands.flatMap((lingua) => heavyAtBoot({ kokoro: false, commands: lingua })),
+    ...(libras ? heavyAtBoot({ kokoro: false, libras: true }) : []),
   ])];
   if (base) console.log(`base: ${base}`);
   const { ok, linhas, licences } = await levarPesadosParaEntrega({
@@ -141,4 +149,15 @@ if (executado) {
   for (const l of licences) console.log(`licence   ${l.key} — ${l.folders.length} folder(s)`);
   if (licences.length) console.log('notices   heavy/THIRD-PARTY-NOTICES.md');
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
+  if (libras) {
+    const { LIBRAS_PLAYER_FOLDER } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
+    try {
+      const written = deliverLibrasPlayer({ destino, catalogue: HEAVY_FILES, deliveryPath, playerFolder: LIBRAS_PLAYER_FOLDER });
+      for (const path of written) console.log(`player    ${path}`);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      console.error('the Libras player was not delivered: this delivery cannot sign');
+      process.exit(1);
+    }
+  }
 }

@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- The Libras player's page (ADR-0234, route A): the engine's own, written into a delivery by `inclusionist-heavy --libras`.
+     The two %…% marks are filled by `scripts/vlibras-player.mjs`: where the published loader sits under `heavy/`, and the
+     revision of the sign set the delivery carries. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="libras-sign-set" content="%SIGN_SET%">
+<title>Libras</title>
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  #player { width: 100vw; height: 100vh; background: transparent !important; }
+  #player canvas { width: 100% !important; height: 100% !important; }
+</style>
+</head>
+<body>
+<div id="player"></div>
+<script src="%LOADER%"></script>
+<script type="module" src="player.js"></script>
+</body>
+</html>

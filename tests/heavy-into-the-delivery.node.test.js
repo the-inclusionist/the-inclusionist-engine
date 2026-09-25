@@ -136,19 +136,30 @@ describe('the script, reachable by a cartridge', () => {
   it('🔴 [Right] Kokoro enters a delivery only with `--kokoro`, in any position (ADR-0216 §3)', () => {
     const semBase = (a) => { const { base, ...resto } = argumentosDaEntrega(a, {}); return resto; };
     expect([semBase(['dist']), semBase(['--kokoro', 'dist']), semBase(['dist', '--kokoro'])])
-      .toEqual([{ destino: 'dist', kokoro: false, reading: [], commands: [] }, { destino: 'dist', kokoro: true, reading: [], commands: [] },
-        { destino: 'dist', kokoro: true, reading: [], commands: [] }]);
+      .toEqual([{ destino: 'dist', kokoro: false, reading: [], commands: [], libras: false }, { destino: 'dist', kokoro: true, reading: [], commands: [], libras: false },
+        { destino: 'dist', kokoro: true, reading: [], commands: [], libras: false }]);
     expect(argumentosDaEntrega(['--kokoro'], {}).destino, 'the flag taken for the folder').toBeUndefined();
   });
 
   it('🔴 [Right] the spoken languages are named one by one, and a flag never eats the delivery folder', () => {
     const semBase = (a) => { const { base, ...resto } = argumentosDaEntrega(a, {}); return resto; };
     expect(semBase(['dist', '--commands', 'pt', '--commands', 'es']))
-      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: ['pt', 'es'] });
+      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: ['pt', 'es'], libras: false });
     // ⚠️ AND WITH THE FLAG FIRST, which is the only position that can see its VALUE being taken for the folder: `--base` had
     // exactly this hole and a mutation walked through it there too.
     expect(semBase(['--commands', 'pt', 'dist']), 'the language was read as the delivery folder')
-      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: ['pt'] });
+      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: ['pt'], libras: false });
+  });
+
+  /**
+   * 🔴 THE LIBRAS PLAYER ENTERS ONLY WITH `--libras` (ADR-0234, route A): no game declares signing — deaf mode is the person's —
+   * so the delivery says whether it can sign. The flag takes no value, so it must never eat the folder either.
+   */
+  it('🔴 [Right] the Libras player enters a delivery only with `--libras`, in any position, and never eats the folder', () => {
+    expect(argumentosDaEntrega(['dist'], {}).libras, 'a delivery asked for nothing and got the player').toBe(false);
+    expect(argumentosDaEntrega(['dist', '--libras'], {})).toEqual(expect.objectContaining({ destino: 'dist', libras: true }));
+    expect(argumentosDaEntrega(['--libras', 'dist'], {}), 'the folder after the flag was lost')
+      .toEqual(expect.objectContaining({ destino: 'dist', libras: true }));
   });
 
   /**
@@ -174,11 +185,11 @@ describe('the script, reachable by a cartridge', () => {
     expect(argumentosDaEntrega(['dist'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' }).base).toBe('https://espelho.exemplo');
     const comFlag = argumentosDaEntrega(['dist', '--base', 'D:\\lfs', '--kokoro'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' });
     expect(comFlag, 'the flag must beat the environment, and the folder must not be eaten by it')
-      .toEqual({ destino: 'dist', kokoro: true, reading: [], commands: [], base: 'D:\\lfs' });
+      .toEqual({ destino: 'dist', kokoro: true, reading: [], commands: [], libras: false, base: 'D:\\lfs' });
     // ⚠️ AND WITH THE FLAG FIRST: the case above cannot see the value being taken for the folder, because the folder was read
     // before it. A mutation that forgot to skip the value survived exactly here.
     expect(argumentosDaEntrega(['--base', 'D:\\lfs', 'dist'], {}), 'the base\'s value was taken for the delivery folder')
-      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: [], base: 'D:\\lfs' });
+      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: [], libras: false, base: 'D:\\lfs' });
   });
 
   it('📌 [Boundary] run as a program without a destination, it stops with the usage — and never starts downloading', () => {

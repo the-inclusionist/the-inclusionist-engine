@@ -73,6 +73,14 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     here): **MIT**;
   - **commands** — the Vosk browser runtime built here from vosk-browser, vosk-api and Kaldi: **Apache-2.0**, with the
     BSD, Zlib and MIT parts its `NOTICE` lists; the Vosk small models (pt, en-us, es): **Apache-2.0**.
+  - **Libras** — the VLibras player (ADR-0234, route A), only in a delivery built with `inclusionist-heavy --libras`: four
+    files of `spbgovbr-vlibras/vlibras-web-browsers` at a pinned commit. ⚠️ **Not a free component, and said as such.** The
+    repository declares **LGPL-3.0**, but the files are a **Unity 2018 WebGL build** whose wasm, framework JavaScript and
+    data file contain **Unity Technologies' proprietary runtime**, with no corresponding source published and
+    **redistribution terms nobody has determined**. The delivery also carries one **modified** copy of the framework
+    JavaScript (its `eval` replaced by a parser; `scripts/vlibras-player.mjs`). It is carried as a **declared, temporary
+    exception** until route B, a free player, replaces it. What is ours around it — the player page, its glue, the CSP shim
+    and the parser (`scripts/vlibras-player/`) — is AGPL-3.0-or-later like the rest of the engine.
 
   ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
   lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.

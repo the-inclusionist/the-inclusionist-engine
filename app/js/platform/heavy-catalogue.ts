@@ -211,6 +211,45 @@ export function commandsLanguageOf(id: string): string | null {
 }
 
 /**
+ * THE LIBRAS PLAYER (ADR-0234, route A — the Dev: «Então coloque no plano a rota A seguida pela B.»): the avatar that signs, the
+ * VLibras Unity 2018 WebGL build, served from the delivery's own origin and driven through its `postMessage` API
+ * (`ui/vlibras-player`).
+ *
+ * 🎯 THE ADDRESS IS THE REPOSITORY'S, AT A PINNED COMMIT: `spbgovbr-vlibras/vlibras-web-browsers`, `public/unity/`, at `9d093f2`
+ * («feat: update unity build (28-08-26)», the last commit that touched the folder). 📏 Each file's git blob id there was read
+ * with `gh api` and matches the local copy the measurement of route A downloaded; the sha256 and the sizes are measured on that
+ * copy (2026-09-25).
+ *
+ * ⚠️ WHAT THESE FILES ARE, said where they enter: the repository is LGPL-3.0, but the build is Unity's — the wasm, the data file
+ * and the framework JavaScript carry Unity Technologies' closed runtime, with no corresponding source and redistribution terms
+ * nobody has determined (ADR-0234; `docs/LICENSES.md`, `docs/CREDITS.md`). Route B, a free player, replaces them.
+ *
+ * 🔴 THE FRAMEWORK IS NOT RUN AS PUBLISHED: Unity 2018 answers the player's calls to the page with `eval`, which the delivery's
+ * policy refuses. The delivery rewrites that one `eval(str)` into a parser of plain calls (`scripts/vlibras-player.mjs`), after
+ * checking this file's sha256 — a declared, temporary exception that ends with route B, and never an `unsafe-eval`.
+ *
+ * 📌 A DELIVERY CARRIES THESE ONLY WHEN IT IS BUILT WITH `--libras` (`inclusionist-heavy`), and a device fetches them at boot only
+ * while deaf mode is on (`heavyAtBoot`): 19.3 MiB that a child who never asks for signing never pays.
+ */
+const VLIBRAS_UNITY = 'https://raw.githubusercontent.com/spbgovbr-vlibras/vlibras-web-browsers/9d093f259ac732d755a19e80cd03c8233c70435d/public/unity';
+const LIBRAS_PLAYER: readonly HeavyFile[] = Object.freeze([
+  { id: 'libras:player:loader', url: `${VLIBRAS_UNITY}/unity-loader.js`, bytes: 150_016,
+    sha256: 'c1845b1e35a2784f237391802e36009872d9ae587a94c2ee5a66546696af4a88' },
+  { id: 'libras:player:framework', url: `${VLIBRAS_UNITY}/playerweb.wasm.framework.unityweb`, bytes: 76_883,
+    sha256: '7177d7748ffd7715e1150e202924f3d502df7531b672ccf6a39291cf8ccba3fb' },
+  { id: 'libras:player:code', url: `${VLIBRAS_UNITY}/playerweb.wasm.code.unityweb`, bytes: 2_996_753,
+    sha256: '4005cfe27f5252c8dafaccbca4c1338de9491c5076a62da8df2bfd036d6eeb4e' },
+  { id: 'libras:player:data', url: `${VLIBRAS_UNITY}/playerweb.data.unityweb`, bytes: 16_992_528,
+    sha256: '0c9897ea830739a09a8a2d132e219761d7017b22feae5ec9b2feb4ed075b1256' },
+]);
+
+/**
+ * WHERE THE DELIVERY PUTS THE PLAYER'S PAGE, beside the game's page: the engine's own small page, glue and CSP shim, which load
+ * the files above from `heavy/`. Written by `inclusionist-heavy --libras`; the interpreter opens it and nothing else.
+ */
+export const LIBRAS_PLAYER_FOLDER = 'libras/player/';
+
+/**
  * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
  * languages. The engine loads them itself when a game declares `uses.neuralVoice` (ADR-0216); the phonemizer and the runtime that
  * speak them are `VOICE_RUNTIME`, above.
@@ -237,6 +276,9 @@ export const HEAVY_FILES: readonly HeavyFile[] = Object.freeze([
 
   // the vision runtime and its models: eye control reads the face (ADR-0213); WebGazer left (ADR-0214)
   ...MEDIAPIPE,
+
+  // the Libras player deaf mode's interpreter drives (ADR-0234, route A), only in a delivery built with `--libras`
+  ...LIBRAS_PLAYER,
 
   /*
    * 🔴 THE ART COLLECTION — the fourth heavy thing of ADR-0119, and the only one WITHOUT A SOURCE. Measured: `art/` has

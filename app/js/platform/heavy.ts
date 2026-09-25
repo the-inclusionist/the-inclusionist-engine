@@ -68,9 +68,14 @@ export interface HeavyOptions {
  * · The command models (issue #184): one per language too, 112 MiB for the three, and the runtime that loads them. Nothing in
  *   the game decides this — speaking instead of pressing is a way INTO the controller, and a cartridge does not get to close
  *   one (ADR-0111). What decides is the delivery: `inclusionist-heavy --commands pt` puts Portuguese in it.
+ * · The Libras player (ADR-0234, route A), 19.3 MiB, only with `libras`: the root asks for it while deaf mode is on, so a device
+ *   whose child never asks for signing never downloads it. No game declares it either — deaf mode is the person's (ADR-0111) —
+ *   and a delivery built without `--libras` simply has none, the same quiet 404 as a missing command model.
  */
 export function heavyAtBoot(
-  declared: { readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null },
+  declared: {
+    readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null; readonly libras?: boolean;
+  },
 ): readonly string[] {
   const reading = declared.reading ? declared.reading.split('-')[0]!.toLowerCase() : null;
   const commands = declared.commands ? declared.commands.split('-')[0]!.toLowerCase() : null;
@@ -83,6 +88,7 @@ export function heavyAtBoot(
     const commanded = commandsLanguageOf(p.id);
     if (commanded) return commanded === commands;
     if (p.id.startsWith('commands:runtime')) return !!commands;
+    if (p.id.startsWith('libras:')) return !!declared.libras;
     if (p.id.startsWith('voz:runtime:onnx')) return declared.kokoro || !!reading;
     return declared.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
   }).map((p) => p.id);

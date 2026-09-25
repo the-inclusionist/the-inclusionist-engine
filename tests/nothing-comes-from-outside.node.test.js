@@ -89,6 +89,11 @@ const DECLARADAS = {
   'https://lfs-oinclusionista.jrocha.dev.br/vosk-models': 'THE MIRROR ABOVE, the three command models — alphacephei\'s small '
     + 'ones (Apache-2.0) repacked deterministically as the `.tar.gz` that build loads. 31–39 MiB a language, and a device asks '
     + 'for the child\'s',
+  'https://raw.githubusercontent.com/spbgovbr-vlibras/vlibras-web-browsers/9d093f259ac732d755a19e80cd03c8233c70435d/public/unity':
+    'THE LIBRAS PLAYER (ADR-0234, route A): the VLibras Unity build at a pinned commit of its repository, named in '
+    + '`platform/heavy-catalogue` and mapped to a local folder in `platform/heavy-mirror`. Fetched by the BUILD with '
+    + '`inclusionist-heavy --libras` into the delivery with its sha256 (ADR-0177); the page opens the player from `heavy/` and '
+    + '`libras/player/` on its own origin, and no VLibras host is ever contacted by the device',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/heavy`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };
