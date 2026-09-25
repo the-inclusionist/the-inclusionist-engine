@@ -40,16 +40,9 @@
     "input/touch.ts",
     "platform/audio-sonar.ts",
     "platform/audio.ts",
-    "platform/heavy.ts",
     "platform/kokoro-runtime.ts",
-    "platform/microphone.ts",
-    "platform/reading-in-worker.ts",
-    "platform/reading-runtime.ts",
     "platform/speech.ts",
     "platform/tts.ts",
-    "platform/vision.ts",
-    "platform/voice-listener.ts",
-    "platform/vosk-runtime.ts",
     "ui/debug-panel.ts",
     "ui/fonts.ts",
     "ui/mount-panel.ts",
@@ -58,13 +51,13 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2116,
+      "codeLines": 2130,
       "decisionNodes": 281,
       "maxDepth": 4,
-      "fanOut": 88,
+      "fanOut": 90,
       "globalReach": 1,
       "worstFunction": 70,
-      "statefulEdges": 19,
+      "statefulEdges": 15,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
@@ -80,10 +73,6 @@
         "input/touch.ts",
         "platform/audio-sonar.ts",
         "platform/audio.ts",
-        "platform/heavy.ts",
-        "platform/microphone.ts",
-        "platform/reading-in-worker.ts",
-        "platform/reading-runtime.ts",
         "platform/tts.ts",
         "ui/fonts.ts",
         "ui/mount-panel.ts",
@@ -1002,19 +991,14 @@
       "fanIn": 0
     },
     "platform/heavy.ts": {
-      "codeLines": 104,
-      "decisionNodes": 25,
+      "codeLines": 96,
+      "decisionNodes": 21,
       "maxDepth": 2,
       "fanOut": 1,
-      "globalReach": 3,
+      "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 5,
-      "reached": [
-        "caches",
-        "fetch",
-        "globalThis"
-      ]
+      "fanIn": 5
     },
     "platform/interruptible-speech.ts": {
       "codeLines": 39,
@@ -1033,11 +1017,8 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 2,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "platform/heavy.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "platform/kokoro-runtime.ts": {
       "codeLines": 39,
@@ -1084,19 +1065,14 @@
       "fanIn": 1
     },
     "platform/microphone.ts": {
-      "codeLines": 103,
+      "codeLines": 102,
       "decisionNodes": 13,
       "maxDepth": 2,
       "fanOut": 0,
-      "globalReach": 3,
+      "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "AudioContext",
-        "navigator",
-        "performance"
-      ]
+      "fanIn": 1
     },
     "platform/onnx-runtime.ts": {
       "codeLines": 40,
@@ -1105,24 +1081,18 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 5,
-      "statefulEdges": 1,
-      "fanIn": 2,
-      "statefulImports": [
-        "platform/heavy.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "platform/reading-in-worker.ts": {
-      "codeLines": 62,
+      "codeLines": 60,
       "decisionNodes": 8,
       "maxDepth": 1,
-      "fanOut": 1,
-      "globalReach": 1,
+      "fanOut": 0,
+      "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "Worker"
-      ]
+      "fanIn": 1
     },
     "platform/reading-model.ts": {
       "codeLines": 182,
@@ -1139,26 +1109,20 @@
       "decisionNodes": 22,
       "maxDepth": 2,
       "fanOut": 2,
-      "globalReach": 1,
-      "worstFunction": 9,
+      "globalReach": 0,
+      "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 2,
-      "reached": [
-        "fetch"
-      ]
+      "fanIn": 2
     },
     "platform/reading-worker.ts": {
-      "codeLines": 43,
+      "codeLines": 44,
       "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "platform/reading-runtime.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "platform/reading.ts": {
       "codeLines": 115,
@@ -1247,34 +1211,24 @@
       "fanIn": 3
     },
     "platform/vision.ts": {
-      "codeLines": 125,
+      "codeLines": 123,
       "decisionNodes": 12,
       "maxDepth": 2,
       "fanOut": 1,
-      "globalReach": 1,
-      "worstFunction": 6,
-      "statefulEdges": 1,
-      "fanIn": 3,
-      "reached": [
-        "caches"
-      ],
-      "statefulImports": [
-        "platform/heavy.ts"
-      ]
+      "globalReach": 0,
+      "worstFunction": 5,
+      "statefulEdges": 0,
+      "fanIn": 3
     },
     "platform/voice-listener.ts": {
-      "codeLines": 56,
-      "decisionNodes": 12,
+      "codeLines": 55,
+      "decisionNodes": 11,
       "maxDepth": 1,
       "fanOut": 0,
-      "globalReach": 2,
+      "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "AudioContext",
-        "navigator"
-      ]
+      "fanIn": 1
     },
     "platform/voice-plan.ts": {
       "codeLines": 9,
@@ -1287,23 +1241,14 @@
       "fanIn": 1
     },
     "platform/vosk-runtime.ts": {
-      "codeLines": 69,
+      "codeLines": 63,
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 2,
-      "globalReach": 1,
-      "worstFunction": 8,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "reached": [
-        "caches"
-      ],
-      "holds": [
-        "mutated loadedBundles"
-      ],
-      "statefulImports": [
-        "platform/heavy.ts"
-      ]
+      "globalReach": 0,
+      "worstFunction": 7,
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "render/canvas.ts": {
       "codeLines": 13,
@@ -1564,30 +1509,24 @@
       "fanIn": 1
     },
     "ui/eye-control.ts": {
-      "codeLines": 148,
+      "codeLines": 149,
       "decisionNodes": 21,
       "maxDepth": 2,
       "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "platform/vision.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/face-control.ts": {
-      "codeLines": 132,
+      "codeLines": 133,
       "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "platform/vision.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/focus-trap.ts": {
       "codeLines": 57,
@@ -1633,17 +1572,14 @@
       "fanIn": 3
     },
     "ui/hand-control.ts": {
-      "codeLines": 109,
+      "codeLines": 110,
       "decisionNodes": 19,
       "maxDepth": 2,
       "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 7,
-      "statefulEdges": 1,
-      "fanIn": 1,
-      "statefulImports": [
-        "platform/vision.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/help-panel.ts": {
       "codeLines": 184,
@@ -2101,18 +2037,14 @@
       ]
     },
     "ui/voice-control.ts": {
-      "codeLines": 104,
+      "codeLines": 110,
       "decisionNodes": 11,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 6,
-      "statefulEdges": 2,
-      "fanIn": 1,
-      "statefulImports": [
-        "platform/voice-listener.ts",
-        "platform/vosk-runtime.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/voice-settings.ts": {
       "codeLines": 238,

@@ -746,11 +746,12 @@
     "HeavyOptions",
     "HeavyReport",
     "bytesLeftToDownload",
+    "checkedCacheHas",
     "deliveryCacheKey",
     "deliveryPath",
     "downloadHeavy",
     "heavyAtBoot",
-    "sha256Hex"
+    "sha256With"
   ],
   "platform/interruptible-speech.ts": [
     "InterruptibleSpeech",
@@ -935,6 +936,7 @@
     "VoskModel",
     "VoskRecognizer",
     "commandModelId",
+    "createBundleLoader",
     "loadVoskRuntime"
   ],
   "render/canvas.ts": [

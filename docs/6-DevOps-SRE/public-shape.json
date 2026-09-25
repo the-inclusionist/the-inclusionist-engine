@@ -1293,10 +1293,10 @@
       "outcome"
     ],
     "interface HeavyOptions": [
-      "base?",
-      "cacheStorage?",
-      "digest?",
-      "fetch?",
+      "base",
+      "cacheStorage",
+      "digest",
+      "fetch",
       "onProgress?",
       "only?"
     ]
@@ -1382,9 +1382,9 @@
       "getTracks"
     ],
     "interface MicrophoneDeps": [
-      "createContext?",
-      "getUserMedia?",
-      "now?"
+      "createContext",
+      "getUserMedia",
+      "now"
     ],
     "interface RecordOptions": [
       "maxMs?",
@@ -1427,7 +1427,7 @@
       "base",
       "language",
       "report?",
-      "spawn?"
+      "spawn"
     ],
     "interface ReadingInWorker": [
       "close",
@@ -1464,7 +1464,7 @@
     ],
     "interface ReadingRuntimeDeps": [
       "base",
-      "fetch?",
+      "fetch",
       "importModule?",
       "language",
       "maxTokens?",
@@ -1473,6 +1473,7 @@
   },
   "platform/reading-worker.ts": {
     "interface WorkerScope": [
+      "fetch",
       "onmessage",
       "postMessage"
     ],
@@ -1639,7 +1640,7 @@
     ],
     "interface VisionDeps": [
       "base",
-      "hasFile?",
+      "hasFile",
       "importBundle?"
     ],
     "interface FaceTracker": [
@@ -1662,8 +1663,8 @@
   },
   "platform/voice-listener.ts": {
     "interface VoiceListenerDeps": [
-      "createContext?",
-      "getUserMedia?",
+      "createContext",
+      "getUserMedia",
       "grammar",
       "model",
       "onFinal?",
@@ -1699,9 +1700,9 @@
     ],
     "interface VoskDeps": [
       "base",
-      "hasFile?",
+      "hasFile",
       "language",
-      "loadBundle?"
+      "loadBundle"
     ],
     "type VoskLoad": "| { readonly ok: true"
   },
@@ -2082,6 +2083,7 @@
       "base",
       "controller",
       "doc",
+      "hasFile",
       "loadTracker?",
       "loop",
       "openFeed?",
@@ -2098,6 +2100,7 @@
       "base",
       "controller",
       "doc",
+      "hasFile",
       "loadTracker?",
       "loop",
       "openFeed",
@@ -2167,6 +2170,7 @@
       "base",
       "controller",
       "doc",
+      "hasFile",
       "loadTracker?",
       "loop",
       "openFeed",
@@ -3027,8 +3031,12 @@
       "alert",
       "base",
       "controller",
+      "createContext",
+      "getUserMedia",
+      "hasFile",
       "language",
       "listen?",
+      "loadBundle",
       "loadRuntime?",
       "menuWords",
       "report",
