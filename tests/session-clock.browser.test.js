@@ -81,22 +81,22 @@ describe('the clock the module draws', () => {
     expect(pie.width).toBe(pie.height);
   });
 
-  it('🔴 [Right] the digits count down in ONE format for the session: an hour reads H:MM:SS, and keeps it', () => {
+  it('🔴 [Right] the digits count down with hours only while there are hours: 1:00:00, then 59:59 (ADR-0239 errata)', () => {
     r = relogio();
     expect(r.digitos()).toBe('1:00:00');
     r.avancar(1000);
-    expect(r.digitos(), 'the digits did not move with the second').toBe('0:59:59');
-    r.o.minutes = 30; // an adult shortens it mid-session: the unit does NOT change
+    expect(r.digitos(), 'the «0:» of no hours is still drawn').toBe('59:59');
+    r.o.minutes = 30; // an adult shortens it mid-session: the length is read live
     r.avancar(1000);
-    expect(r.digitos(), 'the format changed mid-session').toBe('0:29:58');
+    expect(r.digitos()).toBe('29:58');
   });
 
-  it('🔴 [Right] a session under an hour reads MM:SS, and keeps it even when lengthened past an hour', () => {
+  it('🔴 [Right] a session under an hour reads MM:SS, and gains the hour when lengthened past one', () => {
     r = relogio({ minutes: 45 });
     expect(r.digitos()).toBe('45:00');
     r.o.minutes = 90;
     r.avancar(1000);
-    expect(r.digitos(), 'the format changed mid-session').toBe('89:59');
+    expect(r.digitos()).toBe('1:29:59');
   });
 
   it('🔴 [Right] a listener gets words, rewritten by the WHOLE minute, and no live region speaks them on a tick', () => {
@@ -272,6 +272,11 @@ describe('the clock the engine mounts, in the HUD row (issue #94)', () => {
     for (const sel of ['.session-clock-label', '.session-clock-digits']) {
       expect(parseFloat(getComputedStyle(document.querySelector(sel)).fontSize), `${sel} under the text floor`).toBeGreaterThanOrEqual(16);
     }
+    // The Dev: the label-and-digits block takes no more than two and a half pies (ADR-0239 errata), with the widest digits
+    // an hour-long session draws («1:00:00»).
+    expect(document.querySelector('.session-clock-digits').textContent).toBe('1:00:00');
+    expect(caixa('.session-clock-text').width, 'the TEMPO block is wider than two and a half pies')
+      .toBeLessThanOrEqual(2.5 * caixa('.session-clock-pie').width);
     expect(cruza(relogioBox, caixa('#title-icons')), 'the clock covers the quick bar').toBe(false);
     const sala = parseFloat(getComputedStyle(document.getElementById('game-region')).getPropertyValue('--hud-row-h'));
     expect(sala, 'the row\'s room does not hold the clock').toBeGreaterThanOrEqual(relogioBox.height);
@@ -325,3 +330,4 @@ describe('the clock the engine mounts, in the HUD row (issue #94)', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 // Each applied to the code, seen RED here, and undone (the results are in the commit that brought this file).
+// The digits at 1.5× the floor instead of 1.125×: 🔴 the TEMPO block is wider than two and a half pies (ADR-0239 errata).

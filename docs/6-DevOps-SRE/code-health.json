@@ -311,8 +311,8 @@
       "fanIn": 5
     },
     "core/session-clock.ts": {
-      "codeLines": 47,
-      "decisionNodes": 9,
+      "codeLines": 43,
+      "decisionNodes": 8,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
@@ -1671,7 +1671,7 @@
       "fanIn": 1
     },
     "ui/session-clock.ts": {
-      "codeLines": 72,
+      "codeLines": 71,
       "decisionNodes": 5,
       "maxDepth": 1,
       "fanOut": 1,

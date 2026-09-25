@@ -400,8 +400,7 @@
       "over"
     ],
     "type SessionEnding": "'red' | 'pulse' | 'lock'",
-    "type ClockLook": "'running' | 'red' | 'pulse'",
-    "type ClockFormat": "'hms' | 'ms'"
+    "type ClockLook": "'running' | 'red' | 'pulse'"
   },
   "core/setting-defaults.ts": {
     "type MediaQuery": "(query: string) => { readonly matches: boolean }"

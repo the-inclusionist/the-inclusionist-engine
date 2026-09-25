@@ -9,7 +9,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
-  readSession, clockLook, clockWords, clockFormat, clockDigits, toSessionMinutes, toSessionEnding, sessionEndingProblems,
+  readSession, clockLook, clockWords, clockDigits, toSessionMinutes, toSessionEnding, sessionEndingProblems,
 } from '../app/js/core/session-clock.js';
 import { fiveDigits } from '../app/js/ui/hud-bands.js';
 import { DEFAULTS } from '../app/js/core/setting-defaults.js';
@@ -96,26 +96,25 @@ describe('the disc empties continuously, and never below empty', () => {
   });
 });
 
-describe('the digits: one format for the whole session (ADR-0239, ADR-0236)', () => {
-  it('🔴 [Right] an hour or more reads H:MM:SS; less reads MM:SS', () => {
-    expect(clockFormat(60)).toBe('hms');
-    expect(clockFormat(90)).toBe('hms');
-    expect(clockFormat(59)).toBe('ms');
-    expect(clockDigits(60 * MIN, 'hms')).toBe('1:00:00');
-    expect(clockDigits(45 * MIN, 'ms')).toBe('45:00');
-    expect(clockDigits(3 * MIN + 7000, 'hms')).toBe('0:03:07');
+describe('the digits: hours only while there are hours (ADR-0239 errata — «Se não houver horas, não coloque 0: no começo»)', () => {
+  it('🔴 [Right] an hour or more reads H:MM:SS; under an hour, MM:SS with no «0:» in front', () => {
+    expect(clockDigits(60 * MIN)).toBe('1:00:00');
+    expect(clockDigits(75 * MIN)).toBe('1:15:00');
+    expect(clockDigits(45 * MIN)).toBe('45:00');
+    expect(clockDigits(3 * MIN + 7000)).toBe('03:07');
   });
 
-  it('🔴 [Right] a format never changes unit on its own: MM:SS past an hour, H:MM:SS under a minute', () => {
-    expect(clockDigits(75 * MIN, 'ms'), 'MM:SS switched to hours').toBe('75:00');
-    expect(clockDigits(30_000, 'hms'), 'H:MM:SS dropped its hours near the end').toBe('0:00:30');
+  it('🔴 [Boundary] the hour drops exactly when the last hour runs out: 1:00:00, then 59:59', () => {
+    expect(clockDigits(60 * MIN)).toBe('1:00:00');
+    expect(clockDigits(60 * MIN - 1000)).toBe('59:59');
+    expect(clockDigits(60 * MIN - 1000)).not.toMatch(/^0:/);
   });
 
   it('🔴 [Boundary] whole seconds rounded UP — the last second is not «0» early — and never below zero', () => {
-    expect(clockDigits(1, 'ms')).toBe('00:01');
-    expect(clockDigits(999, 'hms')).toBe('0:00:01');
-    expect(clockDigits(0, 'ms')).toBe('00:00');
-    expect(clockDigits(-5000, 'hms')).toBe('0:00:00');
+    expect(clockDigits(1)).toBe('00:01');
+    expect(clockDigits(999)).toBe('00:01');
+    expect(clockDigits(0)).toBe('00:00');
+    expect(clockDigits(-5000)).toBe('00:00');
   });
 });
 
@@ -178,3 +177,4 @@ describe('the name a screen reader hears', () => {
 //   M6 clockLook ignoring reducedMotion                                    🔴 under reduced motion
 //   M7 clockLook returning 'lock' as its own look                          🔴 «lock» is stored and not built
 //   M8 setSessionEndingValue without its emit                              🔴 each writer persists and tells
+//   M9 clockDigits always drawing the hour («0:59:59»)                  🔴 hours only while there are hours (3 cases)

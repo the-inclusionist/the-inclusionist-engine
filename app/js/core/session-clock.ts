@@ -48,25 +48,16 @@ export interface SessionReading {
   readonly over: boolean;
 }
 
-/** How the digits read: `H:MM:SS` for a session of an hour or more, `MM:SS` for a shorter one. */
-export type ClockFormat = 'hms' | 'ms';
-
 /**
- * The format for a session of `minutes`, chosen ONCE, when the session starts (ADR-0239, ADR-0236): the digits never switch
- * unit mid-session, not even when an adult changes the length — a longer length in `MM:SS` reads «75:00», a shorter one in
- * `H:MM:SS` reads «0:25:00».
+ * The time left as digits, whole seconds rounded UP — the last second reads «00:01», never «00:00» early. Hours show only while
+ * there are hours (`1:00:00`, then `59:59`): the Dev, «Se não houver horas, não coloque 0: no começo» (ADR-0239 errata).
  */
-export function clockFormat(minutes: number): ClockFormat {
-  return minutes >= 60 ? 'hms' : 'ms';
-}
-
-/** The time left as digits in `format`, whole seconds rounded UP — the last second reads «0:00:01», never «0:00:00» early. */
-export function clockDigits(leftMs: number, format: ClockFormat): string {
+export function clockDigits(leftMs: number): string {
   const total = Math.ceil(Math.max(0, leftMs) / 1000);
   const two = (n: number): string => String(n).padStart(2, '0');
-  const seconds = two(total % 60);
-  if (format === 'ms') return `${two(Math.floor(total / 60))}:${seconds}`;
-  return `${Math.floor(total / 3600)}:${two(Math.floor(total / 60) % 60)}:${seconds}`;
+  const hours = Math.floor(total / 3600);
+  const minutesAndSeconds = `${two(Math.floor(total / 60) % 60)}:${two(total % 60)}`;
+  return hours > 0 ? `${hours}:${minutesAndSeconds}` : minutesAndSeconds;
 }
 
 /**

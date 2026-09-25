@@ -204,12 +204,10 @@
     "screenGrid"
   ],
   "core/session-clock.ts": [
-    "ClockFormat",
     "ClockLook",
     "SessionEnding",
     "SessionReading",
     "clockDigits",
-    "clockFormat",
     "clockLook",
     "clockWords",
     "readSession",

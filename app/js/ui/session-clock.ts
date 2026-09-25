@@ -3,8 +3,8 @@
 // issue #94): a small label over the time left in digits, and the Time Timer pie to their right.
 //
 // The pie empties continuously over the session's length — green on a white face (ADR-0050 §3), drawn by the stylesheet
-// from `--left`, the share still to go. The digits count down in ONE format for the whole session (`core/session-clock`
-// `clockFormat`), so they never change unit as a warning. When the length runs out the pie turns red: a full red disc where
+// from `--left`, the share still to go. The digits count down and show hours only while there are hours (`core/session-clock`
+// `clockDigits`; the Dev, ADR-0239 errata). When the length runs out the pie turns red: a full red disc where
 // an almost empty white one was, so the end is told by more than colour (WCAG 1.4.1).
 //
 // 📌 FOR A LISTENER: the clock is ONE `role="img"` with a name in words («Play time: 45 minutes left»), rewritten only when
@@ -16,7 +16,7 @@
 // every tick — an adult's new length applies within a second, with no event to wire.
 import type { Translate } from '../core/i18n.js';
 import {
-  readSession, clockLook, clockWords, clockFormat, clockDigits, type SessionEnding, type ClockLook,
+  readSession, clockLook, clockWords, clockDigits, type SessionEnding, type ClockLook,
 } from '../core/session-clock.js';
 
 /**
@@ -85,7 +85,6 @@ export function mountSessionClock(ctx: SessionClockCtx): SessionClockMounted | n
   slot.appendChild(el);
   const timer: { now(): number } = clock; // the guard's answer, kept for the tick
   const start = timer.now();
-  const format = clockFormat(ctx.minutes()); // ONCE per session: the digits never change unit (ADR-0239)
   let look: ClockLook | null = null;
 
   function refresh(): void {
@@ -94,7 +93,7 @@ export function mountSessionClock(ctx: SessionClockCtx): SessionClockMounted | n
     const next = clockLook(reading, ctx.ending(), reduced);
     pie.style.setProperty('--left', reading.left.toFixed(4));
     write(label, ctx.t('clock.label'));
-    write(digits, clockDigits(reading.leftMs, format));
+    write(digits, clockDigits(reading.leftMs));
     const words = clockWords(reading);
     const name = ctx.t(words.key, { minutes: words.minutes });
     if (el.getAttribute('aria-label') !== name) el.setAttribute('aria-label', name);
