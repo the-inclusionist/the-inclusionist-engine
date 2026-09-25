@@ -8,6 +8,8 @@ import { describe, it, expect } from 'vitest';
 import {
   screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, counterLabel, applyCounterLabel,
 } from '../app/js/ui/hud.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 // No game constant here (item 19): the fixture DECLARES an objective, field 5 of the contract. A test that needed a
 // game's constant would be saying the module needs it too.
@@ -167,7 +169,7 @@ describe('ui/hud · vphudHtml', () => {
     const alvo = { setAttribute: (k, v) => posto.push([k, v]) };
     const raiz = { querySelector: (sel) => (sel === '.vphud-obj' ? alvo : null) };
 
-    applyCounterLabel(raiz, OBJ(3, 10, 'palavras'));
+    applyCounterLabel(translate, raiz, OBJ(3, 10, 'palavras'));
     expect(posto).toHaveLength(1);
     expect(posto[0][0]).toBe('aria-label');
     expect(posto[0][1]).toContain('palavras');
@@ -190,8 +192,8 @@ describe('ui/hud · vphudHtml', () => {
   });
 
   it('[Zero] sem o elemento do contador, aplicar o rótulo não lança', () => {
-    expect(() => applyCounterLabel(null, OBJ(1, 2))).not.toThrow();
-    expect(() => applyCounterLabel({ querySelector: () => null }, OBJ(1, 2))).not.toThrow();
+    expect(() => applyCounterLabel(translate, null, OBJ(1, 2))).not.toThrow();
+    expect(() => applyCounterLabel(translate, { querySelector: () => null }, OBJ(1, 2))).not.toThrow();
   });
 
   it('[Interface] a classe do contador é a do OBJETIVO, não a do que este jogo junta', () => {
@@ -218,19 +220,19 @@ describe('ui/hud · vphudHtml', () => {
 
 describe('ui/hud · contadorLabel', () => {
   it('[Right] nomeia o que se junta, e o nome vem do JOGO — não de uma tabela da engine', () => {
-    expect(counterLabel(OBJ(3, 10, 'palavras'))).toContain('palavras');
-    expect(counterLabel(OBJ(3, 10, 'contas'))).toContain('contas');
-    expect(counterLabel(OBJ(3, 10, 'estrelas'))).toContain('estrelas');
+    expect(counterLabel(translate, OBJ(3, 10, 'palavras'))).toContain('palavras');
+    expect(counterLabel(translate, OBJ(3, 10, 'contas'))).toContain('contas');
+    expect(counterLabel(translate, OBJ(3, 10, 'estrelas'))).toContain('estrelas');
   });
 
   it('[Right] os dois números aparecem', () => {
-    const txt = counterLabel(OBJ(3, 10));
+    const txt = counterLabel(translate, OBJ(3, 10));
     expect(txt).toContain('3');
     expect(txt).toContain('10');
   });
 
   it('[Zero] objetivo zerado ainda produz frase, e não "undefined de undefined"', () => {
-    expect(counterLabel(OBJ(0, 0, 'itens'))).toMatch(/0.*0.*itens/);
+    expect(counterLabel(translate, OBJ(0, 0, 'itens'))).toMatch(/0.*0.*itens/);
   });
 });
 
@@ -240,16 +242,16 @@ describe('ui/hud · contadorLabel', () => {
 
 describe('ui/hud · waitBadgeHtml', () => {
   it('[One] o índice é 0-based mas o texto fala com o jogador em 1-based', () => {
-    expect(waitBadgeHtml(0)).toContain('Jogador 1:');
-    expect(waitBadgeHtml(3)).toContain('Jogador 4:');
+    expect(waitBadgeHtml(translate, 0)).toContain('Jogador 1:');
+    expect(waitBadgeHtml(translate, 3)).toContain('Jogador 4:');
   });
 
   it('[Interface] carrega a classe .vp-wait, que é por onde clearWaitingBadge acha e remove o selo', () => {
-    expect(waitBadgeHtml(1)).toContain('class="vphud-quit vp-wait"');
+    expect(waitBadgeHtml(translate, 1)).toContain('class="vphud-quit vp-wait"');
   });
 
   it('[Right] o convite nomeia as DUAS entradas possíveis (teclado próprio ou controle livre)', () => {
-    const html = waitBadgeHtml(1);
+    const html = waitBadgeHtml(translate, 1);
     expect(html).toContain('teclado');
     expect(html).toContain('controle livre');
   });
@@ -275,13 +277,13 @@ describe('ui/hud · waitBadgeHtml', () => {
 
     try {
       registerDict('pt', { 'hud.waitBadge': 'ENTRADA TROCADA {n}' });
-      const html = waitBadgeHtml(2);
+      const html = waitBadgeHtml(translate, 2);
       expect(html, 'o selo ignorou o dicionário — o texto está colado no módulo').toContain('ENTRADA TROCADA 3');
       expect(html, 'o literal antigo continua lá').not.toContain('aperte um botão do SEU teclado');
     } finally {
       registerDict('pt', { 'hud.waitBadge': original });
     }
-    expect(waitBadgeHtml(0), 'a reposição falhou e a sobreposição vaza para os outros casos').toContain('Jogador 1:');
+    expect(waitBadgeHtml(translate, 0), 'a reposição falhou e a sobreposição vaza para os outros casos').toContain('Jogador 1:');
   });
 });
 
@@ -291,7 +293,7 @@ describe('ui/hud · waitBadgeHtml', () => {
 
 describe('ui/hud · hudRowView', () => {
   it('[Zero] jogador recém-nascido: nada juntado, sem poder, sem selo de abandono, HUD visível', () => {
-    const v = hudRowView({ activePower: 'off', quit: false }, POWERS, OBJ(0, 10));
+    const v = hudRowView(translate, { activePower: 'off', quit: false }, POWERS, OBJ(0, 10));
     expect(v.have).toBe('0');
     expect(v.power).toBe('—');
     expect(v.quitHidden).toBe(true);
@@ -303,36 +305,36 @@ describe('ui/hud · hudRowView', () => {
     // The case that measures the boundary: the same player, two objectives, two counters. If the number came from
     // `p.collected`, the HUD would know players GATHER things — and a quiz game does not.
     const pl = { activePower: 'off', quit: false };
-    expect(hudRowView(pl, POWERS, OBJ(2, 10)).have).toBe('2');
-    expect(hudRowView(pl, POWERS, OBJ(9, 10)).have).toBe('9');
+    expect(hudRowView(translate, pl, POWERS, OBJ(2, 10)).have).toBe('2');
+    expect(hudRowView(translate, pl, POWERS, OBJ(9, 10)).have).toBe('9');
   });
 
   it('[Right] poder conhecido vira o rótulo curto da tabela injetada', () => {
-    expect(hudRowView({ activePower: 'fly', quit: false }, POWERS, OBJ(3, 10)).power).toBe('🎈 Voo');
+    expect(hudRowView(translate, { activePower: 'fly', quit: false }, POWERS, OBJ(3, 10)).power).toBe('🎈 Voo');
   });
 
   it('[Interface] o resolvedor de poderes é INJETADO: o mesmo jogador rotula diferente com outro resolvedor', () => {
     const pl = { activePower: 'fly', quit: false };
-    expect(hudRowView(pl, POWERS, OBJ(3, 10)).power).toBe('🎈 Voo');
-    expect(hudRowView(pl, () => 'FLY', OBJ(3, 10)).power).toBe('FLY');
+    expect(hudRowView(translate, pl, POWERS, OBJ(3, 10)).power).toBe('🎈 Voo');
+    expect(hudRowView(translate, pl, () => 'FLY', OBJ(3, 10)).power).toBe('FLY');
   });
 
   it('[Error] poder fora da tabela cai no travessão em vez de vazar a chave crua', () => {
-    expect(hudRowView({ activePower: 'jetpack', quit: false }, POWERS, OBJ(1, 10)).power).toBe('—');
+    expect(hudRowView(translate, { activePower: 'jetpack', quit: false }, POWERS, OBJ(1, 10)).power).toBe('—');
   });
 
   it('[Boundary] resolvedor que devolve VAZIO ainda vira travessão (o HUD nunca fica em branco)', () => {
     // With the `|| '—'` in the injector, a resolver returning '' would leave the power field blank on screen. The guard
     // lives in `hudRowView`, where it does not depend on every future consumer remembering it.
-    expect(hudRowView({ activePower: 'fly', quit: false }, () => '', OBJ(1, 10)).power).toBe('—');
+    expect(hudRowView(translate, { activePower: 'fly', quit: false }, () => '', OBJ(1, 10)).power).toBe('—');
   });
 
   it('[Many] o contador NÃO é limitado ao alvo: passar de 10/10 mostra 12', () => {
-    expect(hudRowView({ activePower: 'off', quit: false }, POWERS, OBJ(12, 10)).have).toBe('12');
+    expect(hudRowView(translate, { activePower: 'off', quit: false }, POWERS, OBJ(12, 10)).have).toBe('12');
   });
 
   it('[Right] quem desistiu perde o contador (visibility hidden) e ganha o selo (hidden=false)', () => {
-    const v = hudRowView({ activePower: 'fly', quit: true }, POWERS, OBJ(5, 10));
+    const v = hudRowView(translate, { activePower: 'fly', quit: true }, POWERS, OBJ(5, 10));
     expect(v.have).toBe('5');
     expect(v.power).toBe('🎈 Voo');
     expect(v.quitHidden).toBe(false);
@@ -341,7 +343,7 @@ describe('ui/hud · hudRowView', () => {
 
   it('[Cross-check] selo e contador são sempre opostos: quitHidden === (visibility === "visible")', () => {
     for (const quit of [false, true]) {
-      const v = hudRowView({ activePower: 'off', quit }, POWERS, OBJ(0, 10));
+      const v = hudRowView(translate, { activePower: 'off', quit }, POWERS, OBJ(0, 10));
       expect(v.quitHidden).toBe(v.visibility === 'visible');
     }
   });
@@ -349,7 +351,7 @@ describe('ui/hud · hudRowView', () => {
   it('[Exercise] projetar não mexe no jogador (o HUD é leitor, o loop de jogo é o dono do estado)', () => {
     const pl = { activePower: 'superjump', quit: false };
     const obj = OBJ(4, 10);
-    hudRowView(pl, POWERS, obj);
+    hudRowView(translate, pl, POWERS, obj);
     expect(pl).toEqual({ activePower: 'superjump', quit: false });
     expect(obj).toEqual(OBJ(4, 10)); // nor the objective: projecting is READING
   });

@@ -7,6 +7,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
 import { initShell } from '../app/js/ui/shell.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 // THE SCENE BELONGS TO THE TEST: the phase is not in `core/state` — it is the `core/scenes` stack, and the three names
 // live in the composition root (ADR-0030 C3). What is engine receives BOOLEANS. This `let` plays the root's part, and
 // the cases stay written as they were.
@@ -74,6 +76,7 @@ function boot(over = {}) {
   let pending = null; // Print mode's 80ms setTimeout, fired by hand by the test
 
   const ctx = {
+    t: translate,
     // The shell does not switch scenes: it PROJECTS the scene the root has already switched (ADR-0030 C3). The fake
     // plays the root — it keeps the phase and answers the three facts. The TRANSITION rules (pausing pushes, the title
     // does not toggle) belong to the root's scene stack, not to the shell.
@@ -272,6 +275,8 @@ describe('updateTitleLegend — a legenda por dispositivo', () => {
     expect(html).toContain('✜');
     expect(html).toContain('START');
     expect(html).not.toContain('K:KeyW');
+    expect(html, 'the touch legend lost the word for the d-pad (ADR-0232 D3: the t the shell is given)').toContain('movimentar-se');
+    expect(html).not.toMatch(/legend\./);
   });
 
   it('com um gamepad no padrão, mostra os rótulos do MODELO', () => {
@@ -283,6 +288,8 @@ describe('updateTitleLegend — a legenda por dispositivo', () => {
     const html = $('#title-legend').innerHTML;
     expect(html).toContain('#2fae4e'); // a cor do A no design microsoft
     expect(html).not.toContain('K:KeyW');
+    expect(html, 'the pad legend lost the word for the d-pad (ADR-0232 D3: the t the shell is given)').toContain('movimentar-se');
+    expect(html).not.toMatch(/legend\./);
   });
 
   it('o aviso "Aguarde o Jogador 1" só aparece em multitela', () => {

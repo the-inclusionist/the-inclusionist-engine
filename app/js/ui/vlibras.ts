@@ -13,7 +13,7 @@
 // a docked panel that translates the text of the clicked element), which is why pillar 2 of ADR-0010 plans an
 // interpreter engine of our own in zdog. This file gives an honest toggle; the on-demand interpreter is separate
 // work.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { Store } from '../platform/storage.js';
 
 /** What deaf mode is read and written through: the page's store, built by the root (ADR-0232, issue #207). */
@@ -60,7 +60,7 @@ const vwBtn = (): HTMLElement | null => document.querySelector<HTMLElement>('[vw
 export function vlibrasOpen(): boolean { return librasOpen; }
 
 /** Turns deaf mode on/off. A real toggle: the state is ours, so it always flips. */
-export function toggleLibras(): void {
+export function toggleLibras(t: Translate): void {
   librasOpen = !librasOpen; _vlOpen = librasOpen;
   _store?.setBool('incl_libras', librasOpen);
   // A BEST-EFFORT attempt to wake the VLibras widget, if it is loaded. Failing here must not stop the mode from

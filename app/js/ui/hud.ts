@@ -20,7 +20,7 @@ import { screenGrid } from '../core/screens.js';
 import type { PlayerView } from '../core/entity.js';
 import type { Objective } from '../core/contract.js';
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -64,7 +64,7 @@ export function screenCount(n: number): number { return Math.max(1, n); }
 
 /** The text a screen reader hears on the counter. The FRAME is the key; the objective's NAME passes through as a
  *  parameter — pillar 3's rule (ADR-0010), the same the curriculum follows. */
-export const counterLabel = (o: Objective): string =>
+export const counterLabel = (t: Translate, o: Objective): string =>
   t('hud.contador', { have: String(o.have), need: String(o.need), nome: o.name.text });
 
 /**
@@ -94,8 +94,8 @@ export function vphudHtml(objective: Objective, icon: string): string {
  * `setAttribute` escapes by construction, which is why the answer is building nodes and not escaping by hand: a
  * forgotten escape leaves no trace; a forgotten `setAttribute` removes the label, and a case holds it.
  */
-export function applyCounterLabel(vphud: Element | null, objective: Objective): void {
-  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', counterLabel(objective));
+export function applyCounterLabel(t: Translate, vphud: Element | null, objective: Objective): void {
+  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', counterLabel(t, objective));
 }
 
 /**
@@ -121,7 +121,7 @@ function finiteOrZero(v: number): number {
  * at a screen with other people around and needs to know it is not just any keyboard. Merging them would erase that
  * half of one of the two.
  */
-export function waitBadgeHtml(i: number): string {
+export function waitBadgeHtml(t: Translate, i: number): string {
   return '<div class="vphud-quit vp-wait">' + t('hud.waitBadge', { n: i + 1 }) + '</div>';
 }
 
@@ -145,10 +145,10 @@ export interface HudRowView {
  * receive). A function and not a table: the text depends on the CURRENT language, and a table read at boot would stay
  * frozen in it.
  */
-export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, objective: Objective): HudRowView {
+export function hudRowView(t: Translate, p: HudPlayer, powerShort: (kind: string) => string, objective: Objective): HudRowView {
   return {
     have: String(objective.have),
-    label: counterLabel(objective),
+    label: counterLabel(t, objective),
     // The `|| '—'` STAYS, even with the resolver already handling unknowns. It is not redundancy: it guarantees the
     // power field NEVER appears blank on the HUD, and that cannot depend on every future consumer remembering the case.
     power: powerShort(p.activePower) || '—',
@@ -162,6 +162,8 @@ export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, o
 // ---------------------------------------------------------------------------------------------
 
 export interface HudCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the root owns — a module `let` would
    *  be shared by any second game the same page loads. */
   getNumPlayers: () => number;
@@ -215,6 +217,7 @@ export interface HudApi {
 }
 
 export function initHud(ctx: HudCtx): HudApi {
+  const { t } = ctx;
   let gameHudEl: HTMLElement | null = null;
   let vpHudDom: HTMLElement[] = [];
   let vpQuitDom: HTMLElement[] = [];
@@ -255,7 +258,7 @@ export function initHud(ctx: HudCtx): HudApi {
       const d = doc.createElement('div');
       d.className = 'vphud';
       d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
-      applyCounterLabel(d, ctx.hudObjective(i)); // #106: the name comes from the GAME — attribute, never markup
+      applyCounterLabel(t, d, ctx.hudObjective(i)); // #106: the name comes from the GAME — attribute, never markup
       exp.appendChild(d); vpHudDom.push(d);
 
       const q = doc.createElement('div');
@@ -283,7 +286,7 @@ export function initHud(ctx: HudCtx): HudApi {
       const p = ctx.getPlayers()[i] as HudPlayer | undefined;
       if (!p) continue;
       const d = vpHudDom[i];
-      const v = hudRowView(p, ctx.powerShort, ctx.hudObjective(i));
+      const v = hudRowView(t, p, ctx.powerShort, ctx.hudObjective(i));
       const n = d.querySelector('.vphud-n'); if (n) n.textContent = v.have;
       // The accessible label follows the number. Writing it only at mount would leave the screen reader repeating
       // "0 of 10" the whole match — worse than no label, because it sounds like information.
@@ -298,7 +301,7 @@ export function initHud(ctx: HudCtx): HudApi {
 
   function showWaitingBadge(i: number): void {
     const scr = vpScreens[i];
-    if (scr && !scr.querySelector('.vp-wait')) scr.insertAdjacentHTML('beforeend', waitBadgeHtml(i));
+    if (scr && !scr.querySelector('.vp-wait')) scr.insertAdjacentHTML('beforeend', waitBadgeHtml(t, i));
   }
 
   function clearWaitingBadge(i: number): void {

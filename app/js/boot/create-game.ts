@@ -1267,7 +1267,7 @@ export function createGame(o: CreateGameOptions): Engine {
     reflectTtsPanel: () => { audio?.reflectTts(); },
     reflectTtsPanelEnabled: true,
     isLibrasOn: vlibrasOpen,
-    toggleLibras,
+    toggleLibras: () => toggleLibras(translator.t),
     /*
      * ⚠️ WHAT THE GAME HANDS OVER: the three fields are optional on both sides. Absent, the pause card holds only what the
      * engine acts on, and the two visual icons follow their own rules. See the notes in `CreateGameOptions`.
@@ -2399,7 +2399,7 @@ export function createGame(o: CreateGameOptions): Engine {
     hudMounted = null;
     const regionEl = $<HTMLElement>('#game-region');
     const numbers = cartridge.hud ?? [];
-    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(doc, regionEl, numbers);
+    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(translator.t, doc, regionEl, numbers);
     reserveBarBand();
     if (hudMounted && !hudFrame && typeof win.requestAnimationFrame === 'function') {
       hudFrame = true;

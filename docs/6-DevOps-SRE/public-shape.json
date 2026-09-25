@@ -2057,8 +2057,7 @@
       "zone"
     ],
     "interface GazeOverlayOptions": [
-      "face?",
-      "say?"
+      "face?"
     ],
     "type GazeRegion": "GazeZone | 'middle'",
     "type ButtonShape": "'triangle' | 'circle' | 'cross' | 'square'",
@@ -2142,7 +2141,8 @@
       "hudObjective",
       "onBarsBuilt?",
       "onScreensBuilt?",
-      "powerShort"
+      "powerShort",
+      "t"
     ],
     "interface HudApi": [
       "buildGameHud",
@@ -2800,6 +2800,7 @@
       "showWaitingBadge",
       "srAlert",
       "srSay",
+      "t",
       "win"
     ],
     "interface ShellApi": [

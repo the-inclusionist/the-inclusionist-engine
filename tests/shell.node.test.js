@@ -10,6 +10,8 @@ import {
   phaseView, touchControlsPlan, chip, legendRow1, legendRow2, legendHtml,
   padActionGlyphs, touchActionGlyphs, pickLegendPad,
 } from '../app/js/ui/shell.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 
 // THE SHELL DOES NOT KNOW THE PHASES (ADR-0030 C3). `phaseView`/`touchControlsPlan` receive three BOOLEANS —
 // `SceneFacts` —, and the three names live in the composition root. This file stays written in
@@ -114,7 +116,7 @@ describe('legenda do título — os chips de dispositivo', () => {
   });
 
   it('as duas linhas saem na ordem fixa: direcional+pausa, depois pular/especial/correr/trocar', () => {
-    const l1 = legendRow1('✜', 'START');
+    const l1 = legendRow1(translate, '✜', 'START');
     const l2 = legendRow2({ action2: ['A', null], action3: ['B', null], action1: ['C', null], action4: ['D', null] }, (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null);
     // Against `t()` and not against the Portuguese: pinning the words here would bring back into the test the text that
     // left the code. The ORDER is what this case guards, and it depends on no language at all.

@@ -7,6 +7,8 @@
 // ZOMBIES + Right-BICEP. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initHud } from '../app/js/ui/hud.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228: `core/run-state` moved to `game-platformer` with the tile-world stack). This
  * file never tests the round — it HANDS one to what it measures — and the three members below are exactly the ones it
@@ -38,7 +40,7 @@ function mount(html = '<div id="game-hud"></div>') { document.body.innerHTML = h
 function makeCtx(over = {}) {
   const built = []; const announced = [];
   return {
-    $,
+    t: translate, $,
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     powerShort: POWERS,
     // The OBJECTIVE comes in through the ctx: the HUD does not read the player's `collected` (item 19). The fixture still
@@ -178,6 +180,19 @@ describe('ui/hud · initHud(ctx).updateGameHud', () => {
     expect(huds[0].querySelector('.vphud-pw').textContent).toBe('🎈 Voo');
     expect(huds[1].querySelector('.vphud-n').textContent).toBe('7');
     expect(huds[1].querySelector('.vphud-pw').textContent).toBe('🐇 Super-pulo');
+  });
+
+  it('🔴 [Right] the counter\'s accessible name is said in the language of the ctx\'s `t`, at mount AND at each frame (ADR-0232 D3)', () => {
+    // The literal, so the case cannot pass by reading the same table the code reads: `hud.contador` in pt.
+    mount();
+    setPlayers([mk({ collected: 3 })]);
+    const api = initHud(makeCtx());
+    api.buildGameHud();
+    const obj = () => document.querySelector('#game-hud .vphud-obj');
+    expect(obj().getAttribute('aria-label'), 'the mounted counter has no name, or a raw key').toBe('3 de 10 itens');
+    obj().setAttribute('aria-label', '');
+    api.updateGameHud();
+    expect(obj().getAttribute('aria-label'), 'the frame rewrote the counter\'s name with a raw key').toBe('3 de 10 itens');
   });
 
   it('[Right] quem desistiu: selo "Jogo abandonado" aparece e o contador some (visibility hidden)', () => {

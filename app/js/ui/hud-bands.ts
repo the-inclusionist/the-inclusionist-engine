@@ -16,7 +16,7 @@
 //
 // No I/O on import: `hudNumbersProblems` runs in node.
 import type { Speakable } from '../core/contract.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 
 export type HudBand = 'identity' | 'mission' | 'power' | 'learning';
 const HUD_BANDS: readonly HudBand[] = ['identity', 'mission', 'power', 'learning'];
@@ -75,13 +75,13 @@ export interface HudBandsMounted {
 }
 
 /** What the child reads, or hears on the bar: the frame in the dictionary, the name through a parameter (pillar 3). */
-function numberText(n: HudNumber & { band: 'identity' | 'mission' | 'power' }, seat: number): string {
+function numberText(t: Translate, n: HudNumber & { band: 'identity' | 'mission' | 'power' }, seat: number): string {
   const v = n.value(seat);
   return typeof v === 'number'
     ? t('hud.numero', { nome: n.name.text, valor: String(v) })
     : t('hud.contador', { have: String(v.have), need: String(v.need), nome: n.name.text });
 }
-function barLabel(name: string, bar: HudBar): string {
+function barLabel(t: Translate, name: string, bar: HudBar): string {
   const count = (c: string): string => String(bar.segmentos.filter((s) => s === c).length);
   const base = t('hud.barra', { nome: name, azuis: count('azul'), verdes: count('verde'), vermelhos: count('vermelho') });
   return bar.cor === 'roxa' ? `${base}. ${t('hud.barra.sobe')}` : bar.cor === 'laranja' ? `${base}. ${t('hud.barra.desce')}` : base;
@@ -92,7 +92,7 @@ function barLabel(name: string, bar: HudBar): string {
  * column with no number is hidden. The learning band goes in BEFORE the screen footer when one exists, so the explanation band, drawn later on the
  * same layer, covers it.
  */
-export function mountHudBands(doc: Document, region: HTMLElement, numbers: readonly HudNumber[], seat = 0): HudBandsMounted {
+export function mountHudBands(t: Translate, doc: Document, region: HTMLElement, numbers: readonly HudNumber[], seat = 0): HudBandsMounted {
   const band = (cls: string, count: number): HTMLElement => {
     const el = doc.createElement('div');
     el.className = `hud-faixa ${cls}`;
@@ -129,13 +129,13 @@ export function mountHudBands(doc: Document, region: HTMLElement, numbers: reado
   function refresh(): boolean {
     let changed = false;
     for (const [n, p] of lines) {
-      const text = numberText(n, seat);
+      const text = numberText(t, n, seat);
       if (p.textContent !== text) { p.textContent = text; changed = true; }
     }
     for (const [n, div] of bardivs) {
       const bar = n.value(seat);
       const shown = bar.segmentos.slice(-SEGMENTS);
-      const label = barLabel(n.name.text, { segmentos: shown, cor: bar.cor }); // in the key: a language change rewrites it
+      const label = barLabel(t, n.name.text, { segmentos: shown, cor: bar.cor }); // in the key: a language change rewrites it
       const key = `${bar.cor}:${shown.join(',')}:${label}`;
       if (div.dataset.estado === key) continue;
       div.dataset.estado = key;

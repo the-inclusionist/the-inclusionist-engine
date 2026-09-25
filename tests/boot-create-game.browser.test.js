@@ -1382,6 +1382,35 @@ describe('createGame num documento de verdade', () => {
     expect(depois.getAttribute('aria-label')).toBe('Comando de voz: desligado');
   });
 
+  it('🔴 [Right] the 🦻 turns deaf mode on in the root\'s language — the root hands `toggleLibras` its `t` (ADR-0232 D3)', async () => {
+    // `ui/vlibras` no longer imports `t`: the confirmation it sends the interpreter is made by the `t` it is called with. The
+    // interpreter reads a hidden node it clicks, so the click is where the text is read back; the clock is moved past its
+    // one-utterance queue.
+    const { vi } = await import('vitest');
+    const V = await import('../app/js/ui/vlibras.js');
+    abrir();
+    const heard = [];
+    const real = HTMLElement.prototype.click;
+    const click = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(function () {
+      if (this.getAttribute('aria-hidden') === 'true') heard.push(this.textContent); else real.call(this);
+    });
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 86_400_000);
+    const icon = () => document.querySelector('#title-icons [data-pi="libras"]');
+    try {
+      expect(icon(), 'the 🦻 is not on this root\'s bar').not.toBeNull();
+      if (V.librasOpen) icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      heard.length = 0;
+      icon().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(V.librasOpen, 'the 🦻 did not turn deaf mode on — this case would measure nothing').toBe(true);
+      expect(heard.length, 'deaf mode came on and the interpreter was sent nothing').toBeGreaterThan(0);
+      expect(heard.join(' | '), 'the interpreter was sent a raw key').not.toMatch(/\bsr\.libras\./);
+    } finally {
+      if (V.librasOpen) icon()?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      click.mockRestore();
+      now.mockRestore();
+    }
+  });
+
   it('🔴 [Right] the 📷 that cannot start tells the child why in the root\'s language — the root hands the camera controls its `t` (ADR-0232 D3)', async () => {
     // The face control no longer imports `t`: what it says comes from the `t` the root puts in its deps. There are no heavy
     // files here, so it fails, says why and turns the 📷 back off — and a root that handed it anything else would read the

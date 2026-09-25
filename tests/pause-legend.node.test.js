@@ -22,6 +22,8 @@
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { pauseLegendHtml, spokenGlyph } from '../app/js/ui/shell.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t; // the root's translator, played by the test (ADR-0232 D3)
 import { PAD_DESIGNS } from '../app/js/input/devices.js';
 
 /** A pad design's (yes, no) pair: the south button (index 0) and the east one (index 1) on every design, no swap (ADR-0013 erratum). */
@@ -33,7 +35,7 @@ function par(desenho) {
 describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido', () => {
   it('[Right] os chips visíveis ficam MUDOS e a frase falada nasce ao lado', () => {
     const [sim, nao] = par('microsoft');
-    const html = pauseLegendHtml(sim, nao);
+    const html = pauseLegendHtml(translate, sim, nao);
     // What is seen: two chips with the glyph and the word, marked for the screen reader to ignore.
     expect(html).toContain('<span class="lg" aria-hidden="true">');
     expect(html).toContain('>A<');
@@ -46,7 +48,7 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
     // The case that justifies the whole item. `✕` on screen is recognisable to whoever sees; to the ear it is
     // a multiplication sign or silence. Both have to hold at the same time.
     const [sim, nao] = par('sony'); // yes is the south button on PlayStation too: cross (ADR-0013 erratum)
-    const html = pauseLegendHtml(sim, nao);
+    const html = pauseLegendHtml(translate, sim, nao);
     expect(html).toContain('>○<');
     expect(html).toContain('>✕<');
     expect(html).toContain('<span class="sr-only">Botão xis para confirmar, botão bola para voltar.</span>');
@@ -56,7 +58,7 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
     // The regression this case prevents is the attribute returning to the `<p>`: that alone would make the spoken
     // sentence vanish with it, and the case above would stay green, because the sentence would be there — just unreachable.
     const [sim, nao] = par('generic');
-    const html = pauseLegendHtml(sim, nao);
+    const html = pauseLegendHtml(translate, sim, nao);
     expect(html.startsWith('<span class="lg"')).toBe(true); // no wrapper at all: the DOM builds the `<p>`
     expect(html).toContain('class="sr-only"');
     expect(html.indexOf('aria-hidden')).toBeGreaterThan(-1);
@@ -66,19 +68,19 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   it('[Boundary] glifo que já se lê passa INTOCADO — a tradução é só para os quatro que não se leem', () => {
     // Turning "A" into "letra A" would be noise added in the name of accessibility, which is the defect this
     // item fixes, turned inside out.
-    expect(spokenGlyph('A')).toBe('A');
-    expect(spokenGlyph('0')).toBe('0');
-    expect(spokenGlyph('✕')).toBe('xis');
-    expect(spokenGlyph('○')).toBe('bola');
-    expect(spokenGlyph('□')).toBe('quadrado');
-    expect(spokenGlyph('△')).toBe('triângulo');
+    expect(spokenGlyph(translate, 'A')).toBe('A');
+    expect(spokenGlyph(translate, '0')).toBe('0');
+    expect(spokenGlyph(translate, '✕')).toBe('xis');
+    expect(spokenGlyph(translate, '○')).toBe('bola');
+    expect(spokenGlyph(translate, '□')).toBe('quadrado');
+    expect(spokenGlyph(translate, '△')).toBe('triângulo');
   });
 
   it('[Interface] a cor do chip continua saindo do desenho do controle', () => {
     // The legend is the only colour cue that matches the screen to the physical controller in the child's hand. It
     // must not be a casualty of the accessibility change.
     const [sim, nao] = par('microsoft');
-    const html = pauseLegendHtml(sim, nao);
+    const html = pauseLegendHtml(translate, sim, nao);
     expect(html).toContain('background:' + sim[1]);
     expect(html).toContain('background:' + nao[1]);
   });

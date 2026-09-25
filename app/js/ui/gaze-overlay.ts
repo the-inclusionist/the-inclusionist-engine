@@ -11,7 +11,7 @@
 // the eyes and brows are the landmark lines only — never the camera's picture (ADR-0212) — mirrored, so they move the way the child moves.
 // What a region shows is decided by `whatRegionShows`, plain data; `drawGazeOverlay` only follows it. Places and colours: interface-log.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { GazeZone } from '../input/gaze-relative.js';
 import { GAZE_GROUPS, CANCEL, type GazePreview } from '../input/gaze-cycle.js';
 import type { EyeLines } from '../platform/vision.js';
@@ -96,14 +96,14 @@ function shape(ctx: Ctx, s: ButtonShape, x: number, y: number, r: number): void 
 export interface GazeOverlayOptions {
   /** The face of this frame, to highlight the eyes and brows. */
   readonly face?: { readonly landmarks: ReadonlyArray<{ readonly x: number; readonly y: number }>; readonly lines: EyeLines } | null;
-  readonly say?: (key: string) => string;
 }
 
-export function drawGazeOverlay(ctx: Ctx, width: number, height: number, view: GazeView, { face = null, say = t }: GazeOverlayOptions = {}): void {
+/** Draws the five regions and the face's lines. 	 is the root's translator (ADR-0232 D3): the regions' words are its keys. */
+export function drawGazeOverlay(t: Translate, ctx: Ctx, width: number, height: number, view: GazeView, { face = null }: GazeOverlayOptions = {}): void {
   ctx.clearRect(0, 0, width, height);
   const f = gazeFontPx(width, height);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  for (const region of Object.keys(GAZE_REGIONS) as GazeRegion[]) drawRegion(ctx, region, width, height, f, view, say);
+  for (const region of Object.keys(GAZE_REGIONS) as GazeRegion[]) drawRegion(ctx, region, width, height, f, view, t);
   if (face) drawFaceLines(ctx, face, width, height, f);
 }
 

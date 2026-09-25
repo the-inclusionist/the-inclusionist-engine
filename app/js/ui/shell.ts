@@ -28,7 +28,7 @@
 // NO I/O ON IMPORT: the module body only declares data and pure functions. Every effect goes through `initShell`.
 // GUARDS: every DOM lookup is null-guarded, which is what lets the `node` project run it with a fake `$` returning `null`.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 
 import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // a DATA leaf module (zero deps) — imported, not injected
@@ -159,7 +159,7 @@ export function chip(txt: string, col: string | null, word?: string): string {
  * `PAD_GLYPH_SPOKEN` in `input/devices` holds KEYS, not text, because it is a module `const` evaluated once on import —
  * resolved text would freeze the language at boot. It is resolved here, on each call, in the language of that moment.
  */
-export function spokenGlyph(g: string): string {
+export function spokenGlyph(t: Translate, g: string): string {
   const k = PAD_GLYPH_SPOKEN[g];
   return k ? t(k) : g;
 }
@@ -175,10 +175,10 @@ export function spokenGlyph(g: string): string {
  * Takes the `[glyph, colour]` pairs of the pad's design by position: yes is the south button (A · ✕ · B) and no the east one
  * (B · ◯ · A) on every design — no design swaps them (the Dev's association, ADR-0013 erratum).
  */
-export function pauseLegendHtml(sim: readonly [string, string], no: readonly [string, string]): string {
+export function pauseLegendHtml(t: Translate, sim: readonly [string, string], no: readonly [string, string]): string {
   const silentLegend = (g: readonly [string, string], word: string): string =>
     `<span class="lg" aria-hidden="true"><span class="lg-ico" style="background:${g[1]}">${g[0]}</span> ${word}</span>`;
-  const spoken = t('menu.legendSpoken', { sim: spokenGlyph(sim[0]), nao: spokenGlyph(no[0]) });
+  const spoken = t('menu.legendSpoken', { sim: spokenGlyph(t, sim[0]), nao: spokenGlyph(t, no[0]) });
   return silentLegend(sim, t('menu.yes')) + silentLegend(no, t('menu.no')) + `<span class="sr-only">${spoken}</span>`;
 }
 
@@ -197,7 +197,7 @@ export interface ActionGlyphs {
  * language at boot. The SHORT register on purpose: this row sits under a glyph and has no room for the longer wording the
  * remapping list uses.
  */
-export function legendRow1(dirTxt: string, pauseTxt: string): string {
+export function legendRow1(t: Translate, dirTxt: string, pauseTxt: string): string {
   return chip(dirTxt, null, t('legend.move')) + chip(pauseTxt, null, t('legend.pause'));
 }
 
@@ -263,6 +263,8 @@ export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number):
 // ---------------------------------------------------------------------------------------------------------
 
 export interface ShellCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** The three facts of the scene on TOP, asked on each use — the root holds the stack and names the scenes. A getter,
    *  not a value: the shell projects the CURRENT state, not the one of the moment it was wired. */
   sceneFacts: () => SceneFacts;
@@ -370,13 +372,14 @@ export interface ShellApi {
 }
 
 export function initShell(ctx: ShellCtx): ShellApi {
+  const { t } = ctx;
   /* ===================== the title legend ===================== */
 
   /** Rows 1 and 2 when there is neither touch nor a gamepad: Player 1's ACTUALLY configured keys. */
   function keyboardLegend(): [string, string] {
     const m = ctx.kbFor(0);
     const K = (a: string): string => ctx.keyName((m[a] || [])[0] || '?');
-    const l1 = legendRow1(`${K('up')} ${K('left')} ${K('down')} ${K('right')}`, 'Enter');
+    const l1 = legendRow1(t, `${K('up')} ${K('left')} ${K('down')} ${K('right')}`, 'Enter');
     const l2 = legendRow2({ action2: [K('action2'), null], action3: [K('action3'), null], action1: [K('action1'), null], action4: [K('action4'), null] }, ctx.shortLabel);
     return [l1, l2];
   }
@@ -386,7 +389,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     if (!el) return; // 2 ROWS, with what is CONFIGURED for the screen's player
     let l1: string, l2: string;
     if (ctx.isTouchMode()) {                       // VIRTUAL pad: 0/1/2/3 + START
-      l1 = legendRow1('✜', 'START');
+      l1 = legendRow1(t, '✜', 'START');
       l2 = legendRow2(touchActionGlyphs(), ctx.shortLabel);
     } else {
       const p0 = ctx.getPlayers()[0] as { pad?: number } | undefined;
@@ -395,7 +398,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       if (gp) {                                    // PHYSICAL pad: the model's design + the wizard's custom map
         const layout = gp.mapping === 'standard' ? ctx.padLayoutFromId(gp.id) : 'generic';
         const custom = gp.mapping !== 'standard' ? ctx.padMapFor(gp.id) : null;
-        l1 = legendRow1('✜', 'START');
+        l1 = legendRow1(t, '✜', 'START');
         l2 = legendRow2(padActionGlyphs(layout, custom), ctx.shortLabel);
       } else {
         [l1, l2] = keyboardLegend();               // KEYBOARD: the configured keys (remap honoured)
@@ -437,8 +440,8 @@ export function initShell(ctx: ShellCtx): ShellApi {
   /** The IMPURE half: takes the ready projection and stamps it on the document. */
   function applyPhaseView(v: PhaseView): void {
     // There is no global pause overlay to look for — see the note in `PhaseView`.
-    const t = ctx.$<HTMLElement>('#title-overlay');
-    if (t) t.hidden = v.titleOverlayHidden;
+    const title = ctx.$<HTMLElement>('#title-overlay');
+    if (title) title.hidden = v.titleOverlayHidden;
     ctx.getPauseScreens().forEach((sp) => { sp.hidden = v.screenPauseHidden; });
   }
 

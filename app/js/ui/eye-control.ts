@@ -93,9 +93,9 @@ function writeDiagnosis(canvas: HTMLCanvasElement, reading: GazeReading, out: Ga
 }
 
 /** The regions over the game at the region's size, the middle counting down while the rest is measured, and the face's lines. */
-function drawFrame(canvas: HTMLCanvasElement, region: HTMLElement, reading: GazeReading, out: GazeCycleOutput, det: Detection, lines: FaceTracker['eyeLines']): void {
+function drawFrame(t: Translate, canvas: HTMLCanvasElement, region: HTMLElement, reading: GazeReading, out: GazeCycleOutput, det: Detection, lines: FaceTracker['eyeLines']): void {
   const w = canvas.width = region.clientWidth, h = canvas.height = region.clientHeight;
-  drawGazeOverlay(canvas.getContext('2d')!, w, h, {
+  drawGazeOverlay(t, canvas.getContext('2d')!, w, h, {
     zone: reading.zone, armed: out.armed, preparing: out.preparing, preview: out.preview, restReady: reading.ready,
     restLeftMs: reading.ready ? undefined : Math.max(0, GAZE_DEFAULTS.restMs - (reading.stillMs ?? 0)),
   }, { face: det?.faceLandmarks?.[0] ? { landmarks: det.faceLandmarks[0], lines } : null });
@@ -138,7 +138,7 @@ export function createEyeControl(d: EyeControlDeps): SwitchableControl {
     const out = cycle(ms, cycleFrameOf(reading, scores));
     followPress(out.pressed);
     writeDiagnosis(canvas, reading, out, !!scores, tracker.delegate());
-    drawFrame(canvas, d.region, reading, out, det, tracker.eyeLines);
+    drawFrame(t, canvas, d.region, reading, out, det, tracker.eyeLines);
   };
 
   const health = (h: LoopHealth, fps: number): void => {
