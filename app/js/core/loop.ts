@@ -28,20 +28,13 @@ export interface LoopOptions {
   /**
    * Called ONCE, with the error, when the frame throws. It is the channel of whoever cannot see the screen stop.
    *
-   * The composition root wires it to `srAlert` and a visible message. Optional on purpose: a consumer that mounts the
-   * loop without a shell (a test, the quiz) still stops — the announcement is optional, **stopping is not**.
+   * A game beside `createGame` passes `engine.onFailure` (the screen reader, the narration and a visible message); a game
+   * that is its own root passes its own. 🔴 REQUIRED (ADR-0232 D4; the D2b erratum rejected the registration shape): the
+   * root used to register a default notice in this module, which was module state a second root overwrote, and an optional
+   * port is one more field a game forgets — a frame that stopped in silence is what a blind child cannot tell from a pause.
    */
-  onFailure?: (failure: unknown) => void;
+  onFailure: (failure: unknown) => void;
 }
-
-/**
- * THE NOTICE A LOOP USES WHEN ITS CALLER PASSED NONE (study item D1; ADR-0054: «stops the loop and says so»).
- * 📏 Measured on 2026-09-13: a game called `startLoop` without a failure notice, so its frame would stop in silence — the
- * announcement depended on each game remembering it. `createGame` registers its own notice here and withdraws it on
- * `unmount`; a caller's own `onFailure` still wins. The same shape as `registerKeyboardMapping`.
- */
-let registeredNotice: ((failure: unknown) => void) | null = null;
-export function registerCrashNotice(notice: ((failure: unknown) => void) | null): void { registeredNotice = notice; }
 
 export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, options: LoopOptions): void {
   let stopped = false;
@@ -55,8 +48,7 @@ export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2
       ticker.remove?.(step); // leave the ticker when possible: a callback running 60×/s for nothing costs on weak hardware
       // The announcement must not revive the problem. If the notice itself breaks — no screen reader, no DOM — an
       // exception here would be invisible inside the ticker again, which is exactly the defect this closes.
-      // read at the throw, not at the start: a root mounted after the loop began still announces it
-      try { (options.onFailure ?? registeredNotice)?.(failure); } catch { /* noop: the notice failed; the loop already stopped, which is what matters */ }
+      try { options.onFailure(failure); } catch { /* noop: the notice failed; the loop already stopped, which is what matters */ }
     }
   };
   ticker.add(step);

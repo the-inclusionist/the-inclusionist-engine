@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/loop-crash.ts — THE ANNOUNCEMENT THAT THE LOOP STOPPED. The other half of ADR-0054.
 //
-// `core/loop.startLoop` STOPS when a frame throws and calls its failure handler. This module builds that handler, and
-// the composition root registers it with `core/loop.registerCrashNotice`, so every loop without an `onFailure` of its
-// own announces the stop too.
+// `core/loop.startLoop` STOPS when a frame throws and calls its failure handler. This module builds that handler: the
+// composition root hands it to the game as `Engine.onFailure`, which the game passes as the loop's REQUIRED `onFailure`.
 //
 // ⚠️ AND IT IS THE HALF THAT MATTERS. A frozen screen is a VISUAL symptom. In blind mode, a stopped game and a thinking
 // game produce the same thing: silence. The child waits for a game that has already died, with nothing telling them to
@@ -37,7 +36,7 @@ export interface CrashNoticeCtx {
 }
 
 /**
- * Builds the handler for `startLoop(ticker, frame, maxDt, { onFailure })` or for `registerCrashNotice`.
+ * Builds the handler for `startLoop(ticker, frame, maxDt, { speed, onFailure })`.
  *
  * THE ORDER OF THE CHANNELS IS DELIBERATE: the console FIRST, because whoever debugs must not lose the error if the DOM
  * is broken — and a broken DOM is one plausible reason the frame threw. Then the screen reader, which has no other clue

@@ -50,7 +50,6 @@ import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard 
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { createCrashNotice } from '../ui/loop-crash.js';
-import { registerCrashNotice } from '../core/loop.js';
 import { sampleFlashes, type FlashMeasurement } from '../platform/flash-sampler.js';
 import { initFocusTrap, focusablesInDom } from '../ui/focus-trap.js';
 import { showReachNotice, REACH_NOTICE_ID } from '../ui/reach-notice.js';
@@ -641,9 +640,8 @@ export interface Engine {
    * a crash from a pause to think, and the silence is the same in both cases.
    *
    * ⚠️ IT COMES FROM THE ENGINE AND NOT FROM EACH GAME because the message is the same in all of them and the channel
-   * (screen reader + narration + what is SEEN) is infrastructure. The game owns the ticker and calls `startLoop`; this
-   * root also registers the notice with `core/loop` (study item D1), so a loop started without `onFailure` announces
-   * through it too.
+   * (screen reader + narration + what is SEEN) is infrastructure. The game owns the ticker and calls `startLoop`, whose
+   * `onFailure` is REQUIRED (ADR-0232 D4): the game passes this, and no registration in `core/loop` stands in for it.
    */
   readonly onFailure: (failure: unknown) => void;
   /**
@@ -666,7 +664,7 @@ export interface Engine {
    */
   mount(declaration: GameDeclaration, hooks?: CartridgeHooks): void;
   /**
-   * RELEASES THE CURRENT ONE: mappings and crash notice set to `null`, reach notice and HUD removed, reading thread
+   * RELEASES THE CURRENT ONE: mappings set to `null`, reach notice and HUD removed, reading thread
    * closed, scene stack emptied.
    *
    * ⚠️ The stack is emptied with `pop()` and not with a `clear()`, and the difference is the decision: a scene's `exit()`
@@ -2534,8 +2532,6 @@ export function createGame(o: CreateGameOptions): Engine {
     create: (tag) => doc.createElement(tag),
     narrate: (text) => tts.narrate(text),
   });
-  // study item D1: every `startLoop` that passes no `onFailure` announces through this one (measured: game-soccer passes none)
-  registerCrashNotice(announceFailure);
 
   /*
    * ⚠️ SHOWING REBUILDS THE ITEMS BEFORE REVEALING, and the order is the rule: ADR-0106 §5 says the child never sees an
@@ -4066,7 +4062,6 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     closeReadingThread();
     registerKeyboardMapping(null);
     registerPadMapping(null);
-    registerCrashNotice(null);
     removeReachNotice();
     hudMounted?.remove();
     hudMounted = null;

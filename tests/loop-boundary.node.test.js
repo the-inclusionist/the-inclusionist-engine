@@ -17,7 +17,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { startLoop, registerCrashNotice } from '../app/js/core/loop.js';
+import * as loopModule from '../app/js/core/loop.js';
+import { startLoop } from '../app/js/core/loop.js';
 
 /** A minimal ticker with the shape `startLoop` asks for, and with `remove` to prove the loop unregisters itself. */
 function fakeTicker(deltaTime = 1) {
@@ -82,7 +83,8 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     expect(chamadas).toBe(1);
   });
 
-  it('[Zero] sem `onFailure`, o laço ainda para — o anúncio é opcional, parar não é', () => {
+  it('[Zero] a caller that omits `onFailure` (plain JavaScript) still stops — stopping never depends on the notice', () => {
+    // The type REQUIRES it (ADR-0232 D4); this is the caller the type cannot reach, and the latch must still hold.
     const t = fakeTicker();
     let chamadas = 0;
     expect(() => {
@@ -92,42 +94,11 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     expect(chamadas).toBe(1);
   });
 
-  // STUDY ITEM D1 (ADR-0054). 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop` WITHOUT `onFailure`, so a frame
-  // that throws there stops in silence — the announcement depended on each game remembering. The root registers its own.
-  it('🔴 [Right] a loop started without `onFailure` announces through the one the root REGISTERED', () => {
-    const t = fakeTicker();
-    const erros = [];
-    registerCrashNotice((e) => erros.push(e));
-    try {
-      startLoop(t, () => { throw new Error('quadro'); }, 2, { speed: () => 1 });
-      t.tick(); t.tick();
-    } finally { registerCrashNotice(null); }
-    expect(erros.map((e) => e.message), 'the registered notice was not called exactly once').toEqual(['quadro']);
+  // ADR-0232 D4 (the D2b erratum's reasoning): the root used to REGISTER a default notice here, and a registration a root
+  // fills is module state — a second root overwrote the first root's notice. The notice is now each caller's own.
+  it('🔴 [Interface] the module holds no notice: there is nothing to register, only `startLoop`', () => {
+    expect(Object.keys(loopModule), 'a registration came back to core/loop').toEqual(['startLoop']);
   });
-
-  it('🎯 [Right] a game\'s own `onFailure` wins over the registered one — the engine\'s is a default', () => {
-    const t = fakeTicker();
-    const doRegisto = [];
-    const doJogo = [];
-    registerCrashNotice((e) => doRegisto.push(e));
-    try {
-      startLoop(t, () => { throw new Error('x'); }, 2, { speed: () => 1, onFailure: (e) => doJogo.push(e) });
-      t.tick();
-    } finally { registerCrashNotice(null); }
-    expect([doJogo.length, doRegisto.length]).toEqual([1, 0]);
-  });
-
-  it('🎯 [Zero] with the registration withdrawn, nothing is called — and the loop still stops', () => {
-    const t = fakeTicker();
-    const erros = [];
-    registerCrashNotice((e) => erros.push(e));
-    registerCrashNotice(null);
-    startLoop(t, () => { throw new Error('x'); }, 2, { speed: () => 1 });
-    t.tick();
-    expect(erros).toEqual([]);
-    expect(t.inscritas).toBe(0);
-  });
-
   it('[Interface] o que `onFailure` lançar não pode ressuscitar o problema', () => {
     // If the announcement itself breaks (no screen reader, the DOM is gone), that cannot become an exception inside the
     // ticker — which is where it would be invisible again.
