@@ -584,6 +584,7 @@
     "TouchCtx",
     "TouchMarkupCtx",
     "TouchMarkupSpec",
+    "TouchSlotChoice",
     "TouchStore",
     "closestPersona",
     "computePadPhysicalPx",
@@ -1386,15 +1387,20 @@
     "shellIds"
   ],
   "ui/panel-widgets.ts": [
+    "ChoicePosition",
+    "ChoiceSpec",
     "ControlRow",
     "ControlRowSpec",
     "ControlShape",
+    "MAX_CYCLE_POSITIONS",
     "StepsSpec",
     "controlRow",
     "labelRow",
+    "mountChoice",
     "mountSteps",
     "nextStep",
     "sectionHeader",
+    "updateChoice",
     "updateSteps"
   ],
   "ui/pause-buttons.ts": [

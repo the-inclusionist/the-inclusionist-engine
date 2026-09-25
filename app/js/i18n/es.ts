@@ -416,6 +416,8 @@ const es: Record<string, string> = {
   'audio.navsound.grupo': 'Sonidos de navegación',
   'audio.cane': 'Golpe del bastón',
   'audio.cane.dica': 'Cada cuánto suelo golpea el bastón. Uno por bloque es más calmo; cada medio bloque da más detalle.',
+  'audio.cane.block': 'uno por bloque',
+  'audio.cane.halfBlock': 'cada medio bloque',
   'audio.menuindex': 'Índice hablado de los menús',
   'audio.menuindex.dica': 'El lector de pantalla dice "3 de 7" al recorrer un menú, para saber dónde se está sin contar.',
   'audio.tts.dica': 'El juego lee en voz alta lo que está escrito en la pantalla.',

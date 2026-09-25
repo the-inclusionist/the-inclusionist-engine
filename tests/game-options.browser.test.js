@@ -17,7 +17,7 @@ const declaracao = () => ({
 });
 
 /** The cartridge's own state: what its readers answer and its writers change. */
-const jogo = { nivel: 'easy', dicas: false, ritmo: 'slow', escritas: [] };
+const jogo = { nivel: 'easy', dicas: false, ritmo: 'slow', tema: 'sol', escritas: [] };
 const opcoes = () => [
   {
     id: 'difficulty', kind: 'steps', label: 'Dificuldade', hint: 'Quanto o jogo ajuda.',
@@ -31,6 +31,12 @@ const opcoes = () => [
     id: 'pace', kind: 'list', label: 'Ritmo',
     values: [{ value: 'slow', label: 'devagar' }, { value: 'fast', label: 'depressa' }],
     read: () => jogo.ritmo, write: (v) => { jogo.escritas.push(['pace', v]); jogo.ritmo = v; },
+  },
+  {
+    // six positions: past the five a cycle holds, so a dropdown (ADR-0130 rule 3)
+    id: 'theme', kind: 'list', label: 'Tema',
+    values: ['sol', 'lua', 'mar', 'rio', 'mata', 'serra'].map((v) => ({ value: v, label: v })),
+    read: () => jogo.tema, write: (v) => { jogo.escritas.push(['theme', v]); jogo.tema = v; },
   },
 ];
 const porta = () => document.querySelector('#vp-pause-0 .pm-btn[data-act="opcoesdojogo"]');
@@ -65,7 +71,9 @@ describe('the game options panel', () => {
     expect(primeiro?.textContent ?? '', '«Voltar» is not the first item').toMatch(/Voltar/);
     expect(document.querySelector('#game-option-difficulty .passo-valor')?.textContent).toBe('Dificuldade: fácil');
     expect(document.querySelector('#game-option-hints')?.closest('.ctrl-row')?.querySelector('strong')?.textContent).toBe('Dicas');
-    expect([...document.querySelectorAll('#game-option-pace option')].map((o) => o.textContent)).toEqual(['devagar', 'depressa']);
+    // a list is drawn by its SIZE (ADR-0130 rule 3): two positions cycle, six drop down
+    expect(document.querySelector('#game-option-pace .passo-valor')?.textContent, 'a two-position list is not a cycle row').toBe('Ritmo: devagar');
+    expect([...document.querySelectorAll('#game-option-theme option')].map((o) => o.textContent)).toEqual(['sol', 'lua', 'mar', 'rio', 'mata', 'serra']);
     // a cartridge declares no defaults: a «restore» that does nothing would be a dead control (ADR-0106 §5)
     expect(document.querySelector('#game-options-reset')?.hidden, 'a restore button with nothing to restore').toBe(true);
     fecharTudo();
@@ -95,10 +103,13 @@ describe('the game options panel', () => {
     // the switch says its state in the root's language: the panel draws it with the `t` the root hands down (ADR-0232 D3)
     expect(interruptor.textContent, 'the switch shows a raw key').not.toMatch(/ui\.toggle/);
     expect(interruptor.textContent.trim().length, 'the switch says nothing').toBeGreaterThan(0);
-    const lista = document.querySelector('#game-option-pace');
-    lista.value = 'fast';
-    lista.dispatchEvent(new Event('change', { bubbles: true }));
+    // the two-position list cycles, and a step writes through the cartridge
+    document.querySelector('#game-option-pace').dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
     expect(jogo.ritmo).toBe('fast');
+    const lista = document.querySelector('#game-option-theme');
+    lista.value = 'mar';
+    lista.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(jogo.tema).toBe('mar');
     fecharTudo();
   });
 

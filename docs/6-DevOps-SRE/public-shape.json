@@ -1084,6 +1084,7 @@
     ],
     "interface TouchCtx": [
       "$",
+      "drawChoice?",
       "frontOverlay",
       "gameActions",
       "isMobile",
@@ -1097,6 +1098,11 @@
       "t",
       "viewport",
       "win"
+    ],
+    "interface TouchSlotChoice": [
+      "current",
+      "label",
+      "values"
     ],
     "interface PadMm": [
       "btn"
@@ -2553,6 +2559,15 @@
       "row"
     ],
     "interface StepsSpec": [
+      "current",
+      "label",
+      "values"
+    ],
+    "interface ChoicePosition": [
+      "label",
+      "value"
+    ],
+    "interface ChoiceSpec": [
       "current",
       "label",
       "values"

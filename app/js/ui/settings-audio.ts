@@ -19,7 +19,7 @@ import type { PlayerView } from '../core/entity.js';
 import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: the owner declares `_ac`/`_acOut`
 import type { DomQuery } from '../core/dom-query.js';
 import type { PanelShellCtx } from './panel-shell.js';
-import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
+import { controlRow, labelRow, mountChoice, updateChoice, type ControlRowSpec, type ChoiceSpec } from './panel-widgets.js';
 /*
  * 🔴 THE VOICE SECTION LIVES IN `ui/voice-settings` (ADR-0221, issue #203): speech — the narration switch, the engine, the
  * voice, the rate, the spoken index and the test button — and the sound categories, cane, blind mode and outputs never
@@ -166,14 +166,52 @@ export interface SettingsAudioApi {
   reflectTts: () => void;
 }
 
+/** The cane's two positions — one tap per block, one every half block — in the page's language. */
+function canePositions(t: Translate): ChoiceSpec['values'] {
+  return [{ value: '1', label: t('audio.cane.block') }, { value: '2', label: t('audio.cane.halfBlock') }];
+}
+
+/**
+ * THE CANE ROW, a CYCLE ROW «◀ Batida da bengala: uma batida por bloco ▶» (ADR-0130 rule 3: two positions).
+ *
+ * 🔴 It was the kit's `escolha`, a `<select>` nobody filled: offered to every game with a walker, it opened on nothing to
+ * choose. Two positions are a cycle, and the positions are the engine's words.
+ *
+ * 📌 THE `<strong>` STAYS, HIDDEN: it is where the game's word for the cane lands (`ui/audio-rows-that-apply`, ADR-0153),
+ * and `renderAudio` reads it into the cycle's own text. `hidden` keeps it out of the accessibility tree, so the name is
+ * heard once — from the control.
+ */
+function caneRow(t: Translate, ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
+  const row = ctx.create('div');
+  row.className = 'ctrl-row ctrl-row--passos';
+  const text = ctx.create('span');
+  const name = ctx.create('strong');
+  name.textContent = spec.label;
+  name.hidden = true;
+  text.appendChild(name);
+  if (spec.hint) {
+    const explanation = ctx.create('span');
+    explanation.className = 'opt-hint';
+    explanation.textContent = spec.hint;
+    text.appendChild(explanation);
+  }
+  row.appendChild(text);
+  // the pick is `initSettingsAudio`'s, which listens for the `change` every choice fires: this builder has no setter
+  const control = mountChoice(ctx, { label: spec.label, values: canePositions(t), current: '1' }, () => {});
+  control.id = spec.id;
+  row.appendChild(control);
+  return row;
+}
+
 /**
  * MOUNTS THIS PANEL'S INSIDE — the controls and containers it reaches.
  *
  * 🔴 IT IS THE LARGEST INVISIBLE CONTRACT OF THE PANELS: this file looks for `#opt-modocego`, `#cane-div`,
  * `#opt-menuindex`, `#opt-tts`, `#tts-vol` and more, and nothing in the type says so — which is why it builds them.
  *
- * ⚠️ AND EACH ONE'S TAG MATTERS, which makes this the worst place to guess: `#cane-div` and the voice selects have to be
- * `<select>` — the panel writes `.value` into them —, and the volumes have to be `<input type=range>`. On a `<button>`,
+ * ⚠️ AND EACH ONE'S TAG MATTERS, which makes this the worst place to guess: the voice selects have to be `<select>` — the
+ * panel writes `.value` into them —, the volumes `<input type=range>`, and `#cane-div` is the cycle row `caneRow` builds
+ * (a host's own `<select>` is still read). On a `<button>`,
  * writing `.value` gives no error at all: it creates a property nobody reads, and the child's choice vanishes silently.
  *
  * 📌 THE ORDER IS THE DECISION (ADR-0044 §2), from general to particular (see the composition below).
@@ -200,7 +238,8 @@ export function mountAudioInside(t: Translate, ctx: PanelShellCtx, card: HTMLEle
     // ⚠️ Their own short keys, not the bar's `icon.blind`/`icon.tts`: those carry «(navegação sonora)» and «(TTS)», and
     // a row keeps no explanation in parentheses (ADR-0158).
     { id: 'opt-modocego', label: t('audio.modocego') },
-    { id: 'cane-div', label: t('audio.cane'), hint: t('audio.cane.dica'), shape: 'escolha' },
+    // two positions, so a cycle row (ADR-0130 rule 3): built by `caneRow`, not by the kit
+    { id: 'cane-div', label: t('audio.cane'), hint: t('audio.cane.dica') },
     { container: '@lista' }, // the shell's list: sonar, guard and guide
     { id: 'opt-tts', label: t('audio.narracao'), hint: t('audio.tts.dica') },
     { id: 'tts-vol', label: t('audio.ttsVol'), shape: 'cursor' },
@@ -249,7 +288,7 @@ export function mountAudioInside(t: Translate, ctx: PanelShellCtx, card: HTMLEle
       if (rowNode) labelRow(rowNode, piece);
       continue;
     }
-    card.insertBefore(controlRow(ctx, piece).row, actions);
+    card.insertBefore(piece.id === 'cane-div' ? caneRow(t, ctx, piece) : controlRow(ctx, piece).row, actions);
   }
 }
 
@@ -489,24 +528,30 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     }
     const players = ctx.getPlayers();
     const n = Math.max(1, ctx.getNumPlayers());
+    /*
+     * 🔴 A PLAYER'S OUTPUT IS A CHOICE, AND ITS SIZE PICKS THE CONTROL (ADR-0130 rule 3): «shared» and up to four devices are
+     * a cycle row «◀ Jogador 1: Fone USB ▶», more a dropdown. The size is the room's today — it is drawn again at every
+     * detection, so a fifth headset plugged in turns the rows into dropdowns.
+     */
+    const outputs = [{ value: '', label: t('audio.sinkShared') }, ...devices.map((d, k) => ({ value: d.deviceId, label: sinkOptionLabel(t, d, k) }))];
     for (let i = 0; i < n; i++) {
       const p = players[i];
+      const name = t('audio.playerN', { n: i + 1 });
       const row = make('div'); row.className = 'ctrl-row';
-      const lbl = make('label'); lbl.textContent = t('audio.playerN', { n: i + 1 }); lbl.htmlFor = 'sink-p' + i;
-      const sel = make('select'); sel.className = 'vol'; sel.id = 'sink-p' + i;
-      const o0 = make('option'); o0.value = ''; o0.textContent = t('audio.sinkShared'); sel.appendChild(o0);
-      devices.forEach((d, k) => {
-        const o = make('option'); o.value = d.deviceId; o.textContent = sinkOptionLabel(t, d, k); sel.appendChild(o);
-      });
-      sel.value = sinkSelectValue(p);
-      sel.addEventListener('change', () => {
+      const choice = mountChoice(kitCtx(el), { label: name, values: outputs, current: sinkSelectValue(p) }, (value) => {
         if (!p) return;
-        p.audioSink = sel.value || null;
+        p.audioSink = value || null;
         ctx.store.set('incl_sink_p' + i, p.audioSink || '');
         if (p._ac) { try { p._ac.close(); } catch (e) { /* noop */ } p._ac = null; p._acOut = null; }
         ctx.srSay(t(p.audioSink ? 'sr.audio.sinkChanged' : 'sr.audio.sinkDefault', { n: i + 1 }));
       });
-      row.appendChild(lbl); row.appendChild(sel); el.appendChild(row);
+      choice.id = 'sink-p' + i;
+      if (choice.tagName === 'SELECT') {
+        // a dropdown keeps its name beside it; a cycle row already carries it in its own text
+        const lbl = make('label'); lbl.textContent = name; lbl.htmlFor = choice.id;
+        row.appendChild(lbl);
+      } else row.classList.add('ctrl-row--passos');
+      row.appendChild(choice); el.appendChild(row);
     }
   }
 
@@ -535,8 +580,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     renderNavSound();
     drawBlindMode();
     voice.render();
-    const cd = ctx.$<HTMLSelectElement>('#cane-div');
-    if (cd) cd.value = String(ctx.getCaneBlockDiv());
+    reflectCane();
     void enumerateSinks(); // not awaited: fire and carry on (the asynchronous list updates by itself)
     refreshMarks();
   }
@@ -621,11 +665,25 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     });
   }
 
-  const caneDivSel = ctx.$<HTMLSelectElement>('#cane-div');
-  if (caneDivSel) {
-    caneDivSel.value = String(ctx.getCaneBlockDiv());
-    caneDivSel.addEventListener('change', () => {
-      const div = parseCaneDiv(caneDivSel.value);
+  /**
+   * The cane's position in use. A host's own `<select>` gets its value; the engine's cycle row (`caneRow`) its words and
+   * value, with its name read from the row's hidden `<strong>` — where the game's word for the cane lands (ADR-0153).
+   */
+  function reflectCane(): void {
+    const cd = ctx.$<HTMLElement>('#cane-div');
+    if (!cd) return;
+    const current = String(ctx.getCaneBlockDiv());
+    if (cd.tagName === 'SELECT') { (cd as HTMLSelectElement).value = current; return; }
+    const label = cd.closest('.ctrl-row')?.querySelector('strong')?.textContent || t('audio.cane');
+    updateChoice(cd, { label, values: canePositions(t), current });
+  }
+
+  const caneDiv = ctx.$<HTMLElement>('#cane-div');
+  if (caneDiv) {
+    reflectCane();
+    caneDiv.addEventListener('change', () => {
+      // a host's `<select>` holds its value; the engine's cycle row carries it in `data-value` (`mountChoice`)
+      const div = parseCaneDiv(caneDiv.tagName === 'SELECT' ? (caneDiv as HTMLSelectElement).value : (caneDiv.dataset.value ?? ''));
       ctx.setCaneBlockDiv(div);
       ctx.srSay(caneDivMessage(t, div));
     });

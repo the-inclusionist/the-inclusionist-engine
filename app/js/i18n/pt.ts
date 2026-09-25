@@ -528,6 +528,9 @@ const pt: Record<string, string> = {
   'audio.navsound.grupo': 'Sons de navegação',
   'audio.cane': 'Batida da bengala',
   'audio.cane.dica': 'De quanto em quanto chão a bengala bate. Uma batida por bloco é mais calma; a cada meio bloco dá mais detalhe.',
+  // the two positions of the cycle row «◀ Batida da bengala: … ▶» (ADR-0130 rule 3)
+  'audio.cane.block': 'uma por bloco',
+  'audio.cane.halfBlock': 'a cada meio bloco',
   'audio.menuindex': 'Índice falado dos menus',
   'audio.menuindex.dica': 'O leitor de tela diz "3 de 7" ao andar num menu, para saber onde se está sem contar.',
   'audio.tts.dica': 'O jogo lê em voz alta o que está escrito na tela.',

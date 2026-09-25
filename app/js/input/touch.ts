@@ -85,6 +85,20 @@ export interface TouchCtx {
    * root never handed in, which is what took down every boot in a fake document once this was wired to `createGame`.
    */
   win: Pick<Window, 'addEventListener'> | null;
+  /**
+   * Draws ONE slot's choice by its size (ADR-0130 rule 3): five named positions or fewer are a cycle row, more a dropdown.
+   * Injected because the drawing lives in `ui/panel-widgets.mountChoice` and this module is a layer below it (ADR-0173);
+   * `createGame` hands it in. ABSENT, each slot stays a hand-built `<select>`, whatever its size — a host that builds its
+   * own touch panel keeps the control it always had.
+   */
+  drawChoice?: (spec: TouchSlotChoice, pick: (action: string) => void) => HTMLElement;
+}
+
+/** What a slot's choice is drawn from: the slot's name, the game's positions in its words, and the one it carries now. */
+export interface TouchSlotChoice {
+  readonly label: string;
+  readonly values: readonly { readonly value: string; readonly label: string }[];
+  readonly current: string;
 }
 
 // ===================== PURE (no DOM/store — node project) =====================
@@ -237,9 +251,28 @@ export function initTouch(ctx: TouchCtx): TouchApi {
   let _stickTravelPx = 42, _stickDeadPx = 12; // boot values; applyPadPhysical() sets the real ones
   const touchMap: Record<string, string> = normalizeTouchMap(ctx.store.getJSON(KEYS.touchmap, null));
 
+  /** A slot's choice landed: store it, and say it in the game's word — never the abstract name. */
+  function slotChosen(slot: string, slotLabel: string | null, action: string): void {
+    touchMap[slot] = action;
+    ctx.store.setJSON(KEYS.touchmap, touchMap);
+    // ⚠️ The spoken word is the SAME as the one read: it comes from the list that just built the control, so nothing has
+    // to make two tables agree.
+    const chosen = ctx.gameActions().find((x) => x.action === action);
+    const slotName = slotLabel || t('touch.slot.fallback');
+    // ⚠️ WITHOUT THE GAME'S WORD, THE ANNOUNCEMENT DROPS THE POSITION — IT DOES NOT FALL BACK TO THE ID. `action` is the
+    // ABSTRACT name (`action3`), and ADR-0074 says it never reaches a person; `7742ac0` already paid for this defect on the
+    // remapping screen and the way out is the same: a key of its own that says what matters.
+    // 📌 The fallback is reachable because `gameActions()` is a FUNCTION of the cartridge, reread on every choice: in an
+    // activity hub the list changes underneath and the control drawn before is orphaned.
+    ctx.srSay(chosen
+      ? t('sr.touch.slotSet', { slot: slotName, acao: chosen.label })
+      : t('sr.touch.slotSetUnnamed', { slot: slotName }));
+  }
+
   function renderTouchMap(): void {
     const el = ctx.$<HTMLElement>('#touchmap-list');
     if (!el) return;
+    if (ctx.drawChoice) { drawSlotChoices(el, ctx.drawChoice); return; }
     el.innerHTML = TOUCH_SLOTS.map((s) =>
       `<div class="ctrl-row"><label for="tm-${s.k}">${t(s.lbl)}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
       // ⚠️ THE OPTION IS BORN EMPTY and the `label` goes in just below through `textContent` (issue #106). It is the
@@ -258,24 +291,38 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     }
     el.querySelectorAll<HTMLSelectElement>('select[data-slot]').forEach((sel) => {
       sel.addEventListener('change', () => {
-        const slot = sel.dataset.slot || '';
-        touchMap[slot] = sel.value;
-        ctx.store.setJSON(KEYS.touchmap, touchMap);
         const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : null;
-        // ⚠️ The spoken word is the SAME as the one read: it comes from the list that just built the `<option>`, so
-        // nothing has to make two tables agree.
-        const chosen = ctx.gameActions().find((x) => x.action === sel.value);
-        const slotName = label || t('touch.slot.fallback');
-        // ⚠️ WITHOUT THE GAME'S WORD, THE ANNOUNCEMENT DROPS THE POSITION — IT DOES NOT FALL BACK TO THE ID. `sel.value`
-        // is the ABSTRACT name (`action3`), and ADR-0074 says it never reaches a person; `7742ac0` already paid for
-        // this defect on the remapping screen and the way out is the same: a key of its own that says what matters.
-        // 📌 The fallback is reachable because `gameActions()` is a FUNCTION of the cartridge, reread on every
-        // `change`: in an activity hub the list changes underneath and the `<option>` drawn before is orphaned.
-        ctx.srSay(chosen
-          ? t('sr.touch.slotSet', { slot: slotName, acao: chosen.label })
-          : t('sr.touch.slotSetUnnamed', { slot: slotName }));
+        slotChosen(sel.dataset.slot || '', label, sel.value);
       });
     });
+  }
+
+  /**
+   * THE SLOTS DRAWN BY THEIR SIZE (ADR-0130 rule 3), node by node: each slot is a choice among the game's named positions,
+   * so a game naming five or fewer gets cycle rows «◀ Botão 0: Confirmar ▶», and one naming more gets dropdowns. The id
+   * (`#tm-<slot>`) and `data-slot` stay on the control in both shapes — they are how the root finds the slots it hides.
+   */
+  function drawSlotChoices(el: HTMLElement, draw: NonNullable<TouchCtx['drawChoice']>): void {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    const doc = el.ownerDocument;
+    const positions = ctx.gameActions().map(({ action, label }) => ({ value: action, label }));
+    for (const s of TOUCH_SLOTS) {
+      const slotName = t(s.lbl);
+      const control = draw({ label: slotName, values: positions, current: touchMap[s.k] ?? '' }, (action) => slotChosen(s.k, slotName, action));
+      control.id = `tm-${s.k}`;
+      control.dataset.slot = s.k;
+      const row = doc.createElement('div');
+      row.className = 'ctrl-row';
+      if (control.tagName === 'SELECT') {
+        // a dropdown keeps its name beside it; a cycle row already carries it in its own text
+        const name = doc.createElement('label');
+        name.htmlFor = control.id;
+        name.textContent = slotName;
+        row.appendChild(name);
+      } else row.classList.add('ctrl-row--passos');
+      row.appendChild(control);
+      el.appendChild(row);
+    }
   }
 
   function openTouchCfg(): void {

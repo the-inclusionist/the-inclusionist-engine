@@ -417,6 +417,8 @@ const en: Record<string, string> = {
   'audio.navsound.grupo': 'Navigation sounds',
   'audio.cane': 'Cane tap spacing',
   'audio.cane.dica': 'How much ground between cane taps. One per block is calmer; every half block gives more detail.',
+  'audio.cane.block': 'one per block',
+  'audio.cane.halfBlock': 'every half block',
   'audio.menuindex': 'Spoken menu index',
   'audio.menuindex.dica': 'The screen reader says "3 of 7" as you move through a menu, so you know where you are without counting.',
   'audio.tts.dica': 'The game reads out loud what is written on the screen.',

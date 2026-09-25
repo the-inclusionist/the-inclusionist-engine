@@ -8,7 +8,7 @@
 //
 // No I/O on import: `gameOptionsProblems` runs in node.
 import type { Translate } from '../core/i18n.js';
-import { controlRow, mountSteps, updateSteps, nextStep } from './panel-widgets.js';
+import { controlRow, mountSteps, updateSteps, nextStep, MAX_CYCLE_POSITIONS } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import { toggleLabel } from './dom.js';
 
@@ -29,7 +29,10 @@ interface GameOptionBase {
 
 export type GameOption =
   | (GameOptionBase & {
-    /** Steps «◀ Label: value ▶», up to five positions; a list, any number (ADR-0130 erratum). */
+    /**
+     * An exclusive choice. The engine draws it by its SIZE (ADR-0130 rule 3): five positions or fewer are one row «◀ Label:
+     * value ▶», more a dropdown — whichever kind is declared. `steps` still refuses more than five, since the game asked for a cycle.
+     */
     readonly kind: 'steps' | 'list';
     readonly values: readonly GameOptionValue[];
     /** The value in use. Read at every opening and after every write: what shows is what the cartridge keeps. */
@@ -43,8 +46,6 @@ export type GameOption =
   });
 
 const KINDS: readonly GameOption['kind'][] = ['steps', 'list', 'switch'];
-/** ADR-0130 erratum, rule 3: steps cycle among FEW positions — up to five; past that, a list. */
-const MAX_STEPS = 5;
 
 /** Why a `gameOptions` declaration is malformed; empty when it is well formed. Absent is well formed: no options of its own. */
 export function gameOptionsProblems(options: unknown): string[] {
@@ -85,7 +86,7 @@ const FIELD_CHECKS: readonly (readonly [(o: Row) => boolean, string])[] = [
 function valuesProblems(o: Row, at: string): string[] {
   const values = o.values;
   if (!Array.isArray(values) || values.length < 2) return [`${at}.values must hold at least two positions`];
-  const out = o.kind === 'steps' && values.length > MAX_STEPS
+  const out = o.kind === 'steps' && values.length > MAX_CYCLE_POSITIONS
     ? [`${at}.values holds ${values.length} steps: steps hold at most five positions — past that, declare a list (ADR-0130)`] : [];
   const seen = new Set<string>();
   values.forEach((v: Row | null, j) => {
@@ -136,7 +137,8 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, opti
       continue;
     }
     const labelOf = (chosen: string): string => o.values.find((v) => v.value === chosen)?.label ?? chosen;
-    if (o.kind === 'list') {
+    // ⚠️ BY SIZE, NOT BY KIND (ADR-0130 rule 3): a `list` of five or fewer is a cycle row like `steps`, below
+    if (o.values.length > MAX_CYCLE_POSITIONS) {
       const { row: rowNode, control: control } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
       const sel = control as HTMLSelectElement;
       for (const v of o.values) {

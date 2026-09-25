@@ -44,16 +44,23 @@ describe('«Mapear toque»', () => {
   });
 
   it('🔴 [Right] only the buttons the pad draws are offered, each with the game\'s words', () => {
-    const visiveis = [...document.querySelectorAll('#touchmap-list select[data-slot]')].filter((s) => !s.closest('.ctrl-row').hidden).map((s) => s.dataset.slot);
+    const visiveis = [...document.querySelectorAll('#touchmap-list [data-slot]')].filter((s) => !s.closest('.ctrl-row').hidden).map((s) => s.dataset.slot);
     expect(visiveis.sort(), 'a slot the pad does not draw is offered, or a drawn one is missing').toEqual(['b0', 'b1', 'b3', 'down', 'up']);
-    const opcoes = [...document.querySelectorAll('#tm-b0 option')].map((o) => o.textContent);
-    expect(opcoes, 'the options are not the game\'s words').toEqual(['Cima', 'Baixo', 'Confirmar', 'Voltar', 'Menu']);
+    // five named positions: each slot is a cycle row «◀ Botão 0: Confirmar ▶» (ADR-0130 rule 3), walked here end to end
+    const b0 = document.querySelector('#tm-b0');
+    expect(b0.getAttribute('role'), 'five positions drawn as a dropdown').toBe('spinbutton');
+    const passo = (d) => b0.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true }));
+    for (let i = 0; i < 5; i++) passo(-1);
+    const opcoes = [b0.getAttribute('aria-valuetext')];
+    for (let i = 0; i < 4; i++) { passo(1); opcoes.push(b0.getAttribute('aria-valuetext')); }
+    expect(opcoes, 'the positions are not the game\'s words').toEqual(['Cima', 'Baixo', 'Confirmar', 'Voltar', 'Menu']);
   });
 
   it('🔴 [Right] a choice is stored and the pad button carries it', () => {
-    const sel = document.querySelector('#tm-b0');
-    sel.value = 'action3';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    const b0 = document.querySelector('#tm-b0');
+    const passo = (d) => b0.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true }));
+    for (let i = 0; i < 5; i++) passo(-1);
+    for (let i = 0; i < 3; i++) passo(1); // Cima → Baixo → Confirmar → Voltar (`action3`)
     expect(JSON.parse(localStorage.getItem('incl_touchmap') ?? '{}').b0, 'not stored').toBe('action3');
     expect(funcaoDoBotao(0), 'the pad button still carries its old function').toBe('Voltar');
   });

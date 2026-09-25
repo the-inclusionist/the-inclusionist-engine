@@ -455,10 +455,31 @@ describe('ui/settings-audio — saídas de áudio (sinks)', () => {
     const api = initSettingsAudio(ctx);
     api.renderAudio();
     await flush();
-    const rows = document.querySelectorAll('#audio-sinks select');
+    // «shared» and ONE output: two positions, so each player's row is a cycle row (ADR-0130 rule 3)
+    const rows = document.querySelectorAll('#audio-sinks [id^="sink-p"]');
     expect(rows.length).toBe(2); // 2 jogadores
-    expect(rows[0].value).toBe('d1');
-    expect([...rows[0].options].map((o) => o.textContent)).toEqual(['Padrão (compartilhado)', 'Fone USB']); // only audiooutput
+    expect(rows[0].getAttribute('role'), 'two positions drawn as a dropdown').toBe('spinbutton');
+    expect(rows[0].dataset.value).toBe('d1');
+    expect(rows[0].getAttribute('aria-valuetext')).toBe('Fone USB');
+    expect(rows[1].getAttribute('aria-valuetext')).toBe('Padrão (compartilhado)');
+    expect(rows[0].getAttribute('aria-valuemax'), 'the microphone became a position').toBe('1'); // only audiooutput
+  });
+
+  it('🔴 [Right] with five outputs a player\'s choice holds SIX positions, so it is a dropdown with its name beside it (ADR-0130 rule 3)', async () => {
+    const cinco = Array.from({ length: 5 }, (_, k) => ({ deviceId: `d${k}`, kind: 'audiooutput', label: `Saída ${k}` }));
+    stubMediaDevices({ devices: cinco });
+    const player = { audioSink: 'd3' };
+    const { ctx, store } = fullCtx({ players: [player] });
+    initSettingsAudio(ctx).renderAudio();
+    await flush();
+    const sel = document.querySelector('#sink-p0');
+    expect(sel.tagName, 'six positions made to cycle').toBe('SELECT');
+    expect(sel.options.length).toBe(6);
+    expect(sel.value).toBe('d3');
+    expect(document.querySelector('label[for="sink-p0"]')?.textContent, 'the dropdown lost its name').toBe('Jogador 1');
+    sel.value = 'd4';
+    sel.dispatchEvent(new Event('change'));
+    expect(store.get('incl_sink_p0')).toBe('d4');
   });
 
   it('[Interface] trocar a saída de um jogador persiste via store e anuncia', async () => {
@@ -468,9 +489,8 @@ describe('ui/settings-audio — saídas de áudio (sinks)', () => {
     const api = initSettingsAudio(ctx);
     api.renderAudio();
     await flush();
-    const sel = document.querySelector('#audio-sinks select');
-    sel.value = 'd1';
-    sel.dispatchEvent(new Event('change'));
+    const sel = document.querySelector('#sink-p0');
+    sel.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true })); // shared → the headset
     expect(player.audioSink).toBe('d1');
     expect(store.get('incl_sink_p0')).toBe('d1');
     expect(said.at(-1)).toBe('Jogador 1 — saída de áudio trocada.');
@@ -806,9 +826,7 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
     const { ctx } = fullCtx({ players: [player] });
     initSettingsAudio(ctx).renderAudio();
     await flush();
-    const sel = document.querySelector('#audio-sinks select');
-    sel.value = 'd1';
-    sel.dispatchEvent(new Event('change'));
+    document.querySelector('#sink-p0').dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
     expect(fechado, 'o contexto antigo ficou aberto: o som continua na saída de antes').toBe(true);
     expect(player._ac, 'o contexto fechado continua pendurado no jogador').toBeNull();
     expect(player._acOut, 'a saída do contexto antigo continua pendurada no jogador').toBeNull();
@@ -822,9 +840,8 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
     const { ctx, store } = fullCtx({ players: [player] });
     initSettingsAudio(ctx).renderAudio();
     await flush();
-    const sel = document.querySelector('#audio-sinks select');
-    sel.value = 'd1';
-    expect(() => sel.dispatchEvent(new Event('change'))).not.toThrow();
+    const sel = document.querySelector('#sink-p0');
+    expect(() => sel.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }))).not.toThrow();
     expect(player.audioSink).toBe('d1');
     expect(store.get('incl_sink_p0')).toBe('d1');
   });

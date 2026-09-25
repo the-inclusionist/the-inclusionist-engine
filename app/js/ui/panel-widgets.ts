@@ -277,6 +277,107 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
   return el;
 }
 
+/* ===================== ONE EXCLUSIVE CHOICE, DRAWN BY ITS SIZE (ADR-0130 rule 3 and erratum) ===================== */
+
+/**
+ * How many positions still CYCLE. The Dev's number (ADR-0130 erratum, 2026-09-12): «Acima de cinco itens deve ser dropdown».
+ * Five or fewer are one row «◀ Label: value ▶» — every position is one step away and the row always says where it is;
+ * more than five, a dropdown, because a cycle that long is walked more than it is chosen.
+ */
+export const MAX_CYCLE_POSITIONS = 5;
+
+/** One position of an exclusive choice: what is stored, and what is shown and heard (already translated). */
+export interface ChoicePosition {
+  readonly value: string;
+  readonly label: string;
+}
+
+/** An exclusive choice: its spoken name, its positions in order, and the value in use. */
+export interface ChoiceSpec {
+  readonly label: string;
+  readonly values: readonly ChoicePosition[];
+  readonly current: string;
+}
+
+/**
+ * Builds the control for ONE EXCLUSIVE CHOICE, and its SIZE picks the control, not the panel's author (ADR-0130 rule 3):
+ * up to `MAX_CYCLE_POSITIONS` a steps control (`mountSteps`), more a `<select>`. A choice whose size depends on the moment —
+ * the game's named positions, the audio outputs plugged in — takes the control its size asks for NOW, drawn again when it
+ * changes.
+ *
+ * Both shapes answer the same way, so whoever builds a row does not branch: `pick(value)` runs when the child chooses, the
+ * value in use is in `data-value`, and a bubbling `change` follows the pick — a list that listens for `change` hears either.
+ * A value not among the positions shows the first, as a `<select>` does.
+ */
+export function mountChoice(ctx: PanelShellCtx, spec: ChoiceSpec, pick: (value: string) => void): HTMLElement {
+  if (spec.values.length <= MAX_CYCLE_POSITIONS) {
+    const steps = mountSteps(ctx, stepsOf(spec));
+    writeCycle(steps, spec);
+    steps.addEventListener('passo', (ev) => {
+      // read back from the element, never from this closure: an `updateChoice` since may have brought other words
+      const live = readCycle(steps);
+      const from = indexOfValue(live);
+      const to = nextStep(from, live.values.length, (ev as CustomEvent<number>).detail);
+      if (to === from) return; // at the wall nothing moved, and nothing is picked
+      const value = live.values[to]!.value;
+      writeCycle(steps, { ...live, current: value });
+      pick(value);
+      steps.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    return steps;
+  }
+  const list = ctx.create('select') as HTMLSelectElement;
+  list.className = 'vol';
+  fillList(list, spec);
+  list.addEventListener('change', () => { list.dataset.value = list.value; pick(list.value); });
+  return list;
+}
+
+/** Where the current value sits among the positions; one not among them shows the first, as a `<select>` does. */
+const indexOfValue = (s: ChoiceSpec): number => Math.max(0, s.values.findIndex((v) => v.value === s.current));
+const stepsOf = (s: ChoiceSpec): StepsSpec => ({ label: s.label, values: s.values.map((v) => v.label), current: indexOfValue(s) });
+
+/**
+ * A cycle row keeps its whole choice ON THE ELEMENT — the positions in `data-positions`, the value in `data-value`, the
+ * name in `aria-label` — so the control carries no state of its own that a redraw could leave behind.
+ */
+function writeCycle(el: HTMLElement, s: ChoiceSpec): void {
+  el.dataset.positions = JSON.stringify(s.values);
+  el.dataset.value = s.current;
+  updateSteps(el, stepsOf(s));
+}
+function readCycle(el: HTMLElement): ChoiceSpec {
+  return {
+    label: el.getAttribute('aria-label') ?? '',
+    values: JSON.parse(el.dataset.positions ?? '[]') as ChoicePosition[],
+    current: el.dataset.value ?? '',
+  };
+}
+function fillList(list: HTMLSelectElement, s: ChoiceSpec): void {
+  // a `<select>` whose label is a sibling is announced as «combo box» and nothing else without its own name
+  list.setAttribute('aria-label', s.label);
+  while (list.firstChild) list.removeChild(list.firstChild);
+  for (const v of s.values) {
+    const option = list.ownerDocument.createElement('option');
+    option.value = v.value;
+    option.textContent = v.label; // text, never markup: a game's word goes through here
+    list.appendChild(option);
+  }
+  list.value = s.current;
+  list.dataset.value = list.value;
+}
+
+/**
+ * REWRITES a choice built by `mountChoice`: its name, its positions' words and the value in use — the redraw a panel does
+ * on every open, after a language change or when the value moved elsewhere. The SHAPE stays: a choice whose size can
+ * cross five is built again, not updated.
+ */
+export function updateChoice(el: HTMLElement, spec: ChoiceSpec): void {
+  if (el.tagName === 'SELECT') fillList(el as HTMLSelectElement, spec);
+  // read by the attribute `writeCycle` always writes, and not by `hasAttribute`: a host's minimal document may lack it
+  else if (el.dataset?.positions !== undefined) writeCycle(el, spec);
+}
+
 /** Reflects the current position: the written value, what is heard, and the ends that no longer move. */
 export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   const lastIndex = Math.max(0, spec.values.length - 1);

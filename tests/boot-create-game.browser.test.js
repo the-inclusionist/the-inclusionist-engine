@@ -1316,7 +1316,8 @@ describe('createGame num documento de verdade', () => {
 
       item.click();
       expect(document.querySelector('#audio').hidden, 'o clique não revelou o painel').toBe(false);
-      expect(document.querySelector('#cane-div').tagName, 'a bengala não é uma escolha').toBe('SELECT');
+      // the cane is a choice between TWO positions, so a cycle row and not a dropdown (ADR-0130 rule 3)
+      expect(document.querySelector('#cane-div').getAttribute('role'), 'a bengala não é uma escolha').toBe('spinbutton');
       expect(document.querySelector('#tts-vol').type, 'o volume da narração não é um cursor').toBe('range');
       // and the navigation-sound list was FILLED by the panel: an empty group is finding 6 again
       expect([...document.querySelectorAll('#navsound-list [data-acat]')].map((b) => b.dataset.acat),

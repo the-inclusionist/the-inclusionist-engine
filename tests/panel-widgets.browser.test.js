@@ -54,7 +54,7 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
   });
 
   it('🔴 [Interface] a FORMA decide a tag — um `<select>` pedido não pode nascer `<button>`', () => {
-    // ⚠️ IT IS THE DEFECT THAT RAISES NO ERROR. `settings-audio` does `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
+    // ⚠️ IT IS THE DEFECT THAT RAISES NO ERROR. `voice-settings` writes `.value` into the `<select>` it finds as `#tts-ppm`;
     // on a `<button>` that writes a property nobody reads, and the child's choice vanishes silently.
     expect(controlRow(ctx, { id: 'a', label: 'A' }).control.tagName).toBe('BUTTON');
     expect(controlRow(ctx, { id: 'b', label: 'B', shape: 'escolha' }).control.tagName).toBe('SELECT');
@@ -190,7 +190,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
   // setting's mirror on the quick bar, outside the panel, and is reached with a guard.
   const CONTROLES = {
     'opt-modocego': 'BUTTON',
-    'cane-div': 'SELECT',
+    'cane-div': 'DIV', // a cycle row of two positions (ADR-0130 rule 3); `renderAudio` reaches it through `updateChoice`
     'opt-menuindex': 'BUTTON',
     'opt-tts': 'BUTTON',
     'tts-vol': 'INPUT',

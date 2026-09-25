@@ -30,7 +30,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2202,
+      "codeLines": 2203,
       "decisionNodes": 283,
       "maxDepth": 4,
       "fanOut": 92,
@@ -411,7 +411,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 651,
+      "codeLines": 653,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -421,7 +421,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 651,
+      "codeLines": 653,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -431,7 +431,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 651,
+      "codeLines": 653,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -721,8 +721,8 @@
       "fanIn": 1
     },
     "input/touch.ts": {
-      "codeLines": 417,
-      "decisionNodes": 56,
+      "codeLines": 447,
+      "decisionNodes": 60,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
@@ -1411,7 +1411,7 @@
       "fanIn": 3
     },
     "ui/game-options.ts": {
-      "codeLines": 142,
+      "codeLines": 141,
       "decisionNodes": 18,
       "maxDepth": 3,
       "fanOut": 2,
@@ -1611,8 +1611,8 @@
       "fanIn": 1
     },
     "ui/panel-widgets.ts": {
-      "codeLines": 134,
-      "decisionNodes": 12,
+      "codeLines": 196,
+      "decisionNodes": 18,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
@@ -1691,8 +1691,8 @@
       "fanIn": 0
     },
     "ui/settings-audio.ts": {
-      "codeLines": 400,
-      "decisionNodes": 66,
+      "codeLines": 430,
+      "decisionNodes": 71,
       "maxDepth": 4,
       "fanOut": 7,
       "globalReach": 0,

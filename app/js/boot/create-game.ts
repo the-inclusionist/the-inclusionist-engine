@@ -117,7 +117,7 @@ import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem 
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
-import { mountSteps, updateSteps, nextStep, controlRow, labelRow } from '../ui/panel-widgets.js';
+import { mountSteps, updateSteps, nextStep, controlRow, labelRow, mountChoice } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, closestPersona } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
@@ -3019,6 +3019,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // buttons DIRECTLY (ADR-0166, which undid ADR-0157's «the pad stays over the menus»). The only two callers that show
     // the pad — the touch listener below and `reflectPadInMenus` — already ask `isMenuOpen()` first.
     padAllowed: () => players().length <= 1,
+    // each slot drawn by its size, five named positions or fewer a cycle row (ADR-0130 rule 3)
+    drawChoice: (spec, pick) => mountChoice({ find: (sel) => $<HTMLElement>(sel), create: (tag) => doc.createElement(tag) }, spec, pick),
   });
 
   /** A menu the child touches directly is open: the pause card or a settings panel (ADR-0166 rule 2). */
@@ -3478,7 +3480,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const hideSlotsWithoutAction = (): void => {
       const named = cartridgeActions();
       const padMap = touchPad.getTouchMap();
-      for (const sel of Array.from(touchPanel.shell.list.querySelectorAll<HTMLSelectElement>('select[data-slot]'))) {
+      for (const sel of Array.from(touchPanel.shell.list.querySelectorAll<HTMLElement>('[data-slot]'))) {
         const rowNode = sel.closest<HTMLElement>('.ctrl-row');
         if (rowNode) rowNode.hidden = !named.has(padMap[sel.dataset.slot ?? ''] ?? '');
       }
