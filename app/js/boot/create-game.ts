@@ -888,13 +888,13 @@ export function createGame(o: CreateGameOptions): Engine {
   const $$ = <T extends Element = Element>(sel: string): T[] => [...doc.querySelectorAll<T>(sel)];
   /*
    * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4): the screen reader's two regions written in the HOST's document on the
-   * host's frames, and the Libras interpreter over its store. A window with no frames (a test double) writes at once.
+   * host's frames, and the Libras interpreter over its store. A window with no frames (a test double) is the announcer's to answer.
    * 📌 DD1: the root does NOT mirror its announcements into Libras — a game connects that sink (`Engine.mirrorAnnouncements`),
    * as before; mirroring everything would be `announcer.mirrorTo(libras.say)` here.
    */
   const announcer = createAnnouncer({
     doc,
-    raf: typeof win.requestAnimationFrame === 'function' ? (cb) => { win.requestAnimationFrame(cb); } : (cb) => { cb(); },
+    raf: win.requestAnimationFrame, // as the host has it: the announcer answers a window with none (bound by the listener scope)
   });
   const { say: srSay, alert: srAlert } = announcer;
   const libras = createLibras({ doc, win, store, now: () => Date.now() });

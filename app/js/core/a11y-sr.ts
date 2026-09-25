@@ -19,8 +19,13 @@
 export interface AnnouncerPorts {
   /** The document whose `#sr-status` and `#sr-alert` are written. A document without them announces nothing, silently. */
   readonly doc: Pick<Document, 'querySelector'>;
-  /** Runs `cb` on the next frame — the host's `requestAnimationFrame`. The clear-then-write dance needs one frame between. */
-  readonly raf: (cb: () => void) => void;
+  /**
+   * The host's `requestAnimationFrame`, AS THE HOST HAS IT: the clear-then-write dance needs one frame between. REQUIRED, and
+   * `undefined` is an answer — a host with no frames (a test double): the announcer then writes at once,
+   * which is the only honest thing left to do. The absence is answered HERE so that no composition root grows a branch for it
+   * (ADR-0221: the root carries wiring, not decisions).
+   */
+  readonly raf: ((cb: FrameRequestCallback) => number) | undefined;
 }
 
 /** One root's announcer. */
@@ -39,10 +44,11 @@ export interface Announcer {
 const NO_MIRROR = (): void => { /* nothing signs until a sink is connected */ };
 
 export function createAnnouncer({ doc, raf }: AnnouncerPorts): Announcer {
+  const nextFrame = (cb: () => void): void => { if (raf) raf(() => { cb(); }); else cb(); };
   let mirror: (text: string) => void = NO_MIRROR;
   const write = (region: string, text: string): void => {
     const el = doc.querySelector<HTMLElement>(region);
-    if (el) { el.textContent = ''; raf(() => { el.textContent = text; }); }
+    if (el) { el.textContent = ''; nextFrame(() => { el.textContent = text; }); }
     mirror(text);
   };
   return {

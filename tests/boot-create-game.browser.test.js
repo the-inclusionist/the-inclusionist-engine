@@ -1567,6 +1567,8 @@ describe('createGame num documento de verdade', () => {
     const alerta = document.querySelector('#sr-alert');
     motor.say('uma frase educada');
     motor.alert('uma frase urgente');
+    // cleared now, written on the HOST's next frame: the root hands the announcer the window's frames, not nothing
+    expect(status.textContent, 'the root gave its announcer no frames: it wrote at once').toBe('');
     await new Promise((r) => requestAnimationFrame(r));
     expect(status.textContent).toBe('uma frase educada');
     expect(alerta.textContent).toBe('uma frase urgente');

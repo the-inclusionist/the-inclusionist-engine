@@ -59,6 +59,16 @@ describe('core/a11y-sr — the announcer writes the document it was BUILT with (
   });
 });
 
+describe('core/a11y-sr — a host with NO frames (`raf: undefined`) is the announcer\'s to answer (ADR-0221)', () => {
+  it('🔴 [Zero] it writes at once, and does not throw — no root grows a branch for the absence', () => {
+    document.body.innerHTML = '<p id="sr-status"></p><p id="sr-alert"></p>';
+    const a = A.createAnnouncer({ doc: document, raf: undefined });
+    expect(() => { a.say('sem quadros'); a.alert('também'); }).not.toThrow();
+    expect(document.querySelector('#sr-status').textContent, 'a frameless host announced nothing').toBe('sem quadros');
+    expect(document.querySelector('#sr-alert').textContent).toBe('também');
+  });
+});
+
 describe('core/a11y-sr — the Libras mirror is a sink of each announcer (DD1)', () => {
   it('🔴 [Right] a connected sink hears every say and alert at once (synchronous), until it is released', () => {
     document.body.innerHTML = '<p id="sr-status"></p><p id="sr-alert"></p>';
@@ -111,3 +121,5 @@ describe('core/a11y-sr — robustez', () => {
 //   · writing at once instead of through `raf` → the «frame the HOST lends» case and the [Interface] cases are red.
 //   · the mirror as ONE module-level binding again → the «two announcers share no mirror» case is red.
 //   · the release clearing the mirror unconditionally → the «second sink replaces» case is red.
+//   · the no-frames fallback throwing → the «NO frames» case is red, and so is `boot-create-game.node` (its window has none);
+//     the fallback writing NEVER → the «NO frames» case is red.
