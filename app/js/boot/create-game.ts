@@ -529,8 +529,6 @@ export interface Engine {
    * waits on it, or the screen is born in the fallback language.
    */
   readonly localeReady: () => Promise<void>;
-  // ADR-0232 D4 anchors: each batch adds its handle members under its own marker, so parallel branches never touch one hunk.
-  // D4-B1 (announcer, libras)
   /**
    * THIS ROOT'S SCREEN-READER ANNOUNCEMENTS (ADR-0232 D4): «polite» (`#sr-status`, does not interrupt) — the announcer every
    * engine module receives. A game announces HERE instead of importing `core/a11y-sr`, which is a factory now: a second
@@ -557,7 +555,6 @@ export interface Engine {
     readonly toggle: () => void;
   };
 
-  // D4-B2 (settings store)
   /**
    * THIS ROOT'S SETTINGS STORE (ADR-0232 D4): the child's settings, read through live getters (`settings.blindMode`) and written
    * by the setters, plus the bus a game subscribes and emits on. A game reads HERE instead of importing `core/state`, which is
@@ -565,7 +562,6 @@ export interface Engine {
    */
   readonly settings: SettingsStore;
 
-  // D4-B3 (input)
   /**
    * THIS ROOT'S INPUT STATE (ADR-0232 D4): the held keys and who pressed them, the transport in use per player, the pads'
    * frames, and `held(player, action)`. A game reads and writes HERE instead of importing `input/state`, which is a factory
@@ -579,7 +575,6 @@ export interface Engine {
    */
   readonly keyboardConfig: KeyboardConfigApi;
 
-  // D4-B4 (audio)
   /**
    * THIS ROOT'S SOUND (ADR-0232 D4): the context (made at the first sound, from the host's window), the master, the mixer and
    * the syntheses. Read through live getters (`audio.soundOn`, `audio.audioCat`) and moved by its methods (`ensureAC()`,
@@ -588,10 +583,6 @@ export interface Engine {
    */
   readonly audio: Audio;
 
-  // D4-B5 (heavy files, recognisers)
-
-
-  // D4-B6 (render, layout)
   /**
    * THIS ROOT'S CRT (ADR-0232 D4): its live config, `apply()` (classes on `#game-region`, kept in the store) and
    * `scanVars()`, which re-anchors the scanlines to real pixels. A game that scales its own stage with `ui/layout`'s
@@ -4178,26 +4169,18 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     menuIndexOn: () => state.menuIndexOn,
     t: translator.t,
     localeReady: translator.ready,
-    // D4-B1
     say: srSay,
     alert: srAlert,
     mirrorAnnouncements: announcer.mirrorTo,
     libras: { isOpen: libras.isOpen, say: libras.say, tick: libras.tick, toggle: () => { libras.toggle(translator.t); } },
 
-    // D4-B2
     settings: state,
 
-    // D4-B3
     input,
     keyboardConfig,
 
-    // D4-B4
     audio: mixer,
 
-    // D4-B5
-
-
-    // D4-B6
     crt,
     lq,
 
