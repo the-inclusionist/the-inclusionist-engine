@@ -30,8 +30,8 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2201,
-      "decisionNodes": 282,
+      "codeLines": 2202,
+      "decisionNodes": 283,
       "maxDepth": 4,
       "fanOut": 92,
       "globalReach": 0,
@@ -1741,8 +1741,8 @@
       "fanIn": 1
     },
     "ui/settings-panel.ts": {
-      "codeLines": 143,
-      "decisionNodes": 25,
+      "codeLines": 153,
+      "decisionNodes": 27,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,

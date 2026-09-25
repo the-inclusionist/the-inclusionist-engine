@@ -35,6 +35,9 @@ export const OVERLAY_SCOPE_SELECTOR = '#game-region .overlay';
  */
 export const EXPLAIN_IDLE = 'menu.explainIdle';
 
+/** The pause cards: the layer under the first overlay, since a panel opens from the card's options list. */
+const PAUSE_CARD_SCOPE_SELECTOR = '#game-region .screen-pause';
+
 /** Initial z-index of the stack: the first overlay brought to the front gets 61. */
 export const OVERLAY_BASE_Z = 60;
 
@@ -87,6 +90,16 @@ export interface SettingsPanelApi {
   escapeTarget: () => string | null;
   /** The highest VISIBLE overlay in the stack. A z tie: the last in the DOM wins. */
   topVisibleOverlay: () => HTMLElement | null;
+  /**
+   * Draws the MODAL BOUNDARY at the front card (ADR-0130 rule 1): every visible layer under it — the other overlays and
+   * the pause cards — is `inert`, and nothing is when no overlay is open. Opening, `restoreFocus` and `closeById` call it themselves
+   * (the last two BEFORE any focus goes back, since an inert element refuses focus); a host whose dialogs can also be hidden by paths that
+   * return no focus calls it when a `hidden` changes — `createGame` does, from its observer.
+   *
+   * OPTIONAL in the type only: `initSettingsPanel` always returns it, and an API built elsewhere (a host's own double of
+   * this shell) keeps compiling without a boundary to draw.
+   */
+  syncLayers?: () => void;
   /** Registered ids, in order — for tests/debugging only. */
   registeredIds: () => string[];
 }
@@ -249,8 +262,24 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
     const isInside = !!opener && typeof el.contains === 'function' && el.contains(opener);
     if (focusable && opener !== el && !isInside) openerOf.set(el.id, opener as HTMLElement);
     el.style.zIndex = String(++ovZ);
+    syncLayers();
     const card = el.querySelector<HTMLElement>('.overlay__card');
     if (card) fillExplain(card);
+  }
+
+  /*
+   * 🔴 THE MODAL BOUNDARY IS AT THE FRONT CARD, and only there (ADR-0130 rule 1: «focus, escape and the modal boundary all
+   * have to be right for each layer»). Every dialog card says `aria-modal="true"`, so with a panel open over another there
+   * were two modal dialogs alive at once, and which one a screen reader treats as THE dialog is left to each reader's
+   * heuristics — the lower card's rows could be reached by a virtual cursor while the child is in the front one. `inert`
+   * takes every layer under the front one out of the accessibility tree, the tab order and the pointer, by the platform's
+   * own rule rather than by a reader's guess. Only VISIBLE layers are made inert; a hidden one is left clean, so it opens
+   * clean.
+   */
+  function syncLayers(): void {
+    const top = topVisibleOverlay();
+    for (const o of ctx.$$<HTMLElement>(OVERLAY_SCOPE_SELECTOR)) o.inert = !!top && !o.hidden && o !== top;
+    for (const c of ctx.$$<HTMLElement>(PAUSE_CARD_SCOPE_SELECTOR)) c.inert = !!top && !c.hidden;
   }
 
   /**
@@ -264,6 +293,8 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
    * another that already closed, and then the caller decides (hence the boolean).
    */
   function restoreFocus(id: string): boolean {
+    // the layer below comes out of `inert` BEFORE the focus goes back into it: an inert element refuses focus
+    syncLayers();
     const opener = openerOf.get(id);
     openerOf.delete(id);
     if (!opener) return false;
@@ -282,6 +313,9 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
     const entry = registry.get(id);
     if (!entry) return false;
     entry.close();
+    // a closer that returns no focus (a host's own, or `menu-nav.dialogBack`'s fallback) still has to leave the boundary at
+    // the card now in front, before `dialogBack` puts the focus there — an inert card refuses it
+    syncLayers();
     return true;
   }
 
@@ -301,7 +335,7 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
   }
 
   return {
-    frontOverlay, fillExplain, register, closeById, escapeTarget, topVisibleOverlay, restoreFocus,
+    frontOverlay, fillExplain, register, closeById, escapeTarget, topVisibleOverlay, restoreFocus, syncLayers,
     registeredIds: () => [...registry.keys()],
   };
 }

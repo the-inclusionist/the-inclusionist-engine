@@ -2790,6 +2790,8 @@ export function createGame(o: CreateGameOptions): Engine {
       new Observer((records) => {
         const classes = records.map((r) => (r.target as Element).classList);
         if (classes.some((c) => c?.contains('screen-pause'))) updateCaption();
+        // the modal boundary follows the front card by ANY door, including a close that returns no focus (ADR-0130 rule 1)
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) overlays.syncLayers?.();
         if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) {
           announceContext();
           // 🔴 THE NAMES A CHILD CAN SAY CHANGED (ADR-0194 §1): this is the one signal that a card, one of its lists or a panel

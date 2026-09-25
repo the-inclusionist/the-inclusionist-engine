@@ -117,6 +117,87 @@ describe('the pause card: back from a list lands on the door that opened it', ()
 });
 
 /*
+ * ===================== THE STACK: EACH MENU IN FRONT OF THE LAST, AND THE BOUNDARY AT THE FRONT ONE =====================
+ * ADR-0130's own warning: «Stacking cards means more than one menu alive at once, and focus, escape and the modal boundary
+ * all have to be right for each layer». The deepest stack the engine has: the pause card, the motor panel over it, and the
+ * keyboard mapping panel over that (`opt-teclado-1`).
+ *
+ * 📏 Measured before: the drawing order, Escape (one layer per press, front first) and the focus back to the opener were
+ * already right. The boundary was not: every dialog card says `aria-modal="true"`, and with two panels open there were two
+ * modal dialogs alive at once and nothing under the front one was `inert` — which one is THE dialog was left to each
+ * screen reader's heuristics.
+ */
+const dialogOf = (overlay) => overlay.querySelector('[role="dialog"]');
+/** The layers a screen reader, a Tab or a pointer can reach: visible, and not inside anything inert. */
+const reachable = (el) => !el.closest('[inert]') && el.getClientRects().length > 0;
+function openKeyboardMapping() {
+  motor.pause.show(0);
+  item('options').click();
+  item('motora').click();
+  const door = document.getElementById('opt-teclado-1');
+  door.focus();
+  door.click();
+  return door;
+}
+
+describe('the stack: each layer in front, and the modal boundary at the front one', () => {
+  it('🎯 [Right] each new layer is drawn in front of the last, and its card is a labelled modal dialog', () => {
+    openKeyboardMapping();
+    const [motora, ctrl] = ['motora', 'ctrl'].map((id) => document.getElementById(id));
+    expect(openPanels().map((o) => o.id).sort()).toEqual(['ctrl', 'motora']);
+    expect(+getComputedStyle(ctrl).zIndex, 'the mapping panel is not in front of the motor panel').toBeGreaterThan(+getComputedStyle(motora).zIndex);
+    for (const layer of [motora, ctrl]) {
+      const d = dialogOf(layer);
+      expect(d?.getAttribute('aria-modal'), `#${layer.id} is not a modal dialog`).toBe('true');
+      expect(document.getElementById(d.getAttribute('aria-labelledby'))?.textContent.trim(), `#${layer.id} has no name`).toBeTruthy();
+    }
+    expect(ctrl.contains(document.activeElement), 'the focus did not enter the front layer').toBe(true);
+    expect(document.activeElement, 'the front layer does not open on its «Voltar» (ADR-0158)').toBe(document.getElementById('ctrl-close'));
+  });
+
+  it('🔴 [Right] only the FRONT layer is reachable: the layers under it are inert', () => {
+    openKeyboardMapping();
+    const [motora, ctrl] = ['motora', 'ctrl'].map((id) => document.getElementById(id));
+    expect(motora.inert, 'the motor panel under the mapping panel is still reachable').toBe(true);
+    expect(card().inert, 'the pause card under both panels is still reachable').toBe(true);
+    expect(ctrl.inert, 'the front layer itself was made inert').toBe(false);
+    const liveModals = [...document.querySelectorAll('[aria-modal="true"]')].filter(reachable);
+    expect(liveModals, 'more than one modal dialog is alive at once').toEqual([dialogOf(ctrl)]);
+    // an inert layer refuses the focus, which is what keeps a Tab or a virtual cursor from falling behind the front card
+    document.getElementById('opt-teclado-1').focus();
+    expect(ctrl.contains(document.activeElement), 'the focus went behind the front card').toBe(true);
+  });
+
+  it('🔴 [Right] Escape takes off ONE layer per press, front first, and the boundary moves down with it', () => {
+    const door = openKeyboardMapping();
+    const motora = document.getElementById('motora');
+    key('Escape');
+    expect(openPanels().map((o) => o.id), 'Escape closed the wrong layer, or two').toEqual(['motora']);
+    expect(motora.inert, 'the motor panel stayed inert after the layer in front of it closed').toBe(false);
+    expect(card().inert, 'the pause card is under the motor panel still').toBe(true);
+    expect(document.activeElement, 'the focus did not come back to the row that opened the mapping panel').toBe(door);
+    key('Escape');
+    expect(openPanels()).toEqual([]);
+    expect(card().inert, 'the pause card stayed inert with no panel over it').toBe(false);
+    expect(marked(), 'the card\'s cursor is not on the item that opened the motor panel').toBe('motora');
+    key('Escape');
+    expect(visibleList(), 'the third Escape did not go back from the list to the root').toBe('raiz');
+    expect(marked()).toBe('options');
+    key('Escape');
+    expect(card().hidden, 'the fourth Escape did not close the card').toBe(true);
+  });
+
+  it('🔴 [Right] a layer hidden by a path that returns no focus still takes the boundary down with it', async () => {
+    openKeyboardMapping();
+    document.getElementById('ctrl').hidden = true;
+    document.getElementById('motora').hidden = true;
+    await Promise.resolve(); // the root's observer runs on the microtask
+    await new Promise((r) => setTimeout(r, 0));
+    expect([...document.querySelectorAll('#game-region [inert]')].map((e) => e.id), 'a layer stayed inert with nothing over it').toEqual([]);
+  });
+});
+
+/*
  * MUTATIONS CHECKED (applied by script, restored from a copy):
  *   · `backToRoot` returning `showPauseOptions(sp, 'raiz')` untouched (the old behaviour) → the Escape, «Voltar» and
  *     reopen-after-back cases red (the last only in its setup line).
@@ -124,5 +205,15 @@ describe('the pause card: back from a list lands on the door that opened it', ()
  *     «Voltar» pressed stays green, since it goes through `pause-icons`.
  *   · `pressPauseItem` without its two marking lines → the pointer case red; the keyboard case stays green, since the
  *     arrows already put the mark there.
- *   · `pause.show` calling `backToRoot` instead of `showPauseOptions` → the [Zero] case red.
+ *   · `pause.show` calling `backToRoot` instead of `showPauseOptions` → all five pause-card cases red.
+ *   · `LIST_DOOR.jogo` null → the game-list case in `pause-icons.browser` red.
+ * The stack:
+ *   · `syncLayers` returning at once → the «only the front» and «one layer per press» cases red.
+ *   · `frontOverlay` not drawing the boundary → the «only the front» case red (the observer alone is a microtask late).
+ *   · `restoreFocus` not lifting the boundary before focusing → the Escape case red: the focus cannot go back into an inert
+ *     layer.
+ *   · the root's observer not calling `syncLayers` → the hidden-directly case red.
+ *   · the pause cards left out of the boundary → two cases red.
+ *   · `closeById` not drawing the boundary SURVIVES here — every closer `createGame` registers returns focus — and is red in
+ *     `menu-nav.browser` («fechar o de cima com OUTRO diálogo aberto devolve o foco»), whose host closes without it.
  */

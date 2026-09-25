@@ -2955,6 +2955,7 @@
       "register",
       "registeredIds",
       "restoreFocus",
+      "syncLayers?",
       "topVisibleOverlay"
     ]
   },
