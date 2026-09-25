@@ -39,6 +39,14 @@ export interface VoiceControlDeps {
   /** Puts the 👄 back to off when nothing could start. */
   readonly turnOff: () => void;
   readonly after: (fn: () => void, ms: number) => void;
+  /*
+   * 📌 WHAT THE RECOGNISER AND THE MICROPHONE USE OF THE BROWSER, lent by the root and handed on (ADR-0232 D4): the checked
+   * cache and the bundle's loader to `platform/vosk-runtime`, the microphone and the audio context to `platform/voice-listener`.
+   */
+  readonly hasFile: VoskDeps['hasFile'];
+  readonly loadBundle: VoskDeps['loadBundle'];
+  readonly getUserMedia: VoiceListenerDeps['getUserMedia'];
+  readonly createContext: VoiceListenerDeps['createContext'];
   readonly loadRuntime?: (deps: VoskDeps) => Promise<VoskLoad>;
   readonly listen?: (deps: VoiceListenerDeps) => Promise<VoiceListener>;
 }
@@ -104,7 +112,7 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     let load: VoskLoad;
     const language = d.language();
     try {
-      load = await loadRuntime({ base: d.base, language });
+      load = await loadRuntime({ base: d.base, language, hasFile: d.hasFile, loadBundle: d.loadBundle });
     } catch (e) {
       failed('runtime', `voice control: the recogniser did not open (${e instanceof Error ? e.message : String(e)}) — the child `
         + 'cannot play by speaking; check that the delivery carries the command files', t('sr.voice.failed'));
@@ -127,6 +135,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
       listener = await listen({
         model: load.model,
         grammar: grammarNow(),
+        getUserMedia: d.getUserMedia,
+        createContext: d.createContext,
         onPartial: (text) => { const a = commands?.partial(text); if (a) command(a); },
         onFinal: () => commands?.reset(),
       });

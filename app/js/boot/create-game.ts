@@ -66,6 +66,7 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { checkedCacheHas, sha256With } from '../platform/heavy.js';
+import { createBundleLoader } from '../platform/vosk-runtime.js';
 import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, wireBarCaption, showPauseOptions } from '../ui/pause-icons.js';
 // 📌 The bar's markup is a pure string builder and lives with the rest of the pause markup (ADR-0221, issue #203); what this
@@ -3582,6 +3583,10 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const heavyCaches = (win as { caches?: CacheStorage }).caches;
   const hasHeavyFile = checkedCacheHas(heavyCaches);
+  // 📌 The microphone and the audio context the recognisers open, from the same window: `undefined` is a device without one.
+  const mediaDevices = win.navigator?.mediaDevices;
+  const getUserMedia = mediaDevices?.getUserMedia?.bind(mediaDevices);
+  const HostAudioContext = (win as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
   if (o.downloadHeavy !== false) {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
     // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
@@ -4017,6 +4022,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },
       after: (fn, ms) => { win.setTimeout(fn, ms); },
+      // ⚠️ THE ADDRESS IS ABSOLUTE AND THE BUNDLER MUST NOT FOLLOW IT: the recogniser arrives with the delivery at runtime.
+      hasFile: hasHeavyFile, loadBundle: createBundleLoader((url) => import(/* @vite-ignore */ url)),
+      getUserMedia, createContext: () => new HostAudioContext!() as never,
     });
     stateOn('voiceControl', (on) => { void voiceControl?.apply(on); });
     // the words change with the menu that is open, and a menu opens on a key or a touch — so they are re-read on every draw of

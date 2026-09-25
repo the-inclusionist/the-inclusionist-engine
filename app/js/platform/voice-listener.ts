@@ -24,9 +24,13 @@ export interface VoiceListenerDeps {
   readonly model: VoskModel;
   /** Every phrase the recogniser may answer with: the language's words, plus what the open menu is showing (ADR-0194). */
   readonly grammar: readonly string[];
-  /** `navigator.mediaDevices.getUserMedia`. Absent is a device with no microphone: REFUSED and said, never hidden. */
-  readonly getUserMedia?: (constraints: { audio: object | boolean }) => Promise<StreamLike>;
-  readonly createContext?: () => AudioContextLike;
+  /**
+   * The host's `navigator.mediaDevices.getUserMedia`, lent by the root (ADR-0232 D4). REQUIRED, and `undefined` is a device
+   * with no microphone: REFUSED and said, never hidden.
+   */
+  readonly getUserMedia: ((constraints: { audio: object | boolean }) => Promise<StreamLike>) | undefined;
+  /** A new audio context from the host's `AudioContext`, lent by the root. REQUIRED. */
+  readonly createContext: () => AudioContextLike;
   /** What the recogniser has heard so far in this utterance. */
   readonly onPartial: (text: string) => void;
   /** The utterance ended: whoever counts what was already answered for starts a new sentence. */
@@ -49,10 +53,9 @@ const withUnknown = (grammar: readonly string[]): string => JSON.stringify([...g
  * in one room is the case, not the exception. Mono, because the recogniser hears one channel.
  */
 export async function startVoiceListening(d: VoiceListenerDeps): Promise<VoiceListener> {
-  const getUserMedia = d.getUserMedia
-    ?? (typeof navigator !== 'undefined' ? navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices) : undefined);
+  const { getUserMedia } = d;
   if (!getUserMedia) throw new Error('voice-listener: this device cannot open a microphone');
-  const context = (d.createContext ?? (() => new AudioContext() as unknown as AudioContextLike))();
+  const context = d.createContext();
 
   let recognizer: VoskRecognizer = new d.model.KaldiRecognizer(context.sampleRate, withUnknown(d.grammar));
   const listen = (r: VoskRecognizer): void => {

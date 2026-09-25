@@ -21,7 +21,7 @@
 // neighbours by itself») had seven red mutations against a double built in the image of that belief. A double can only measure
 // the contract you think you have; the one that exists was three lines of the served file away.
 
-import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './heavy.js';
+import { HEAVY_FILES, deliveryPath } from './heavy.js';
 import { commandsLanguageOf } from './heavy-catalogue.js';
 
 /** The three files of the runtime. The model is chosen by language, below. */
@@ -62,10 +62,16 @@ export interface VoskDeps {
   readonly base: string;
   /** The child's language (`core/i18n.bcp47`): it chooses the model. */
   readonly language: string;
-  /** Whether a catalogue file (by its upstream address) is in the checked cache. */
-  readonly hasFile?: (upstreamUrl: string) => Promise<boolean>;
-  /** Imports the bundle and answers with what it exports. Injected so a gate never imports 3 MiB of wasm loader. */
-  readonly loadBundle?: (absoluteUrl: string) => Promise<VoskApi>;
+  /**
+   * Whether a catalogue file (by its upstream address) is in the checked cache — `platform/heavy`'s `checkedCacheHas`, over the
+   * host's `caches`. REQUIRED (ADR-0232 D4): the root lends the cache; this module reaches none.
+   */
+  readonly hasFile: (upstreamUrl: string) => Promise<boolean>;
+  /**
+   * Imports the bundle and answers with what it exports — `createBundleLoader` below, built ONCE by the root, so the bundle is
+   * put in the page once per address. REQUIRED, and injected so a gate never imports 3 MiB of wasm loader.
+   */
+  readonly loadBundle: (absoluteUrl: string) => Promise<VoskApi>;
 }
 
 export type VoskLoad =
@@ -75,41 +81,25 @@ export type VoskLoad =
 
 const urlOf = (id: string): string | null => HEAVY_FILES.find((x) => x.id === id)?.url ?? null;
 
-const defaultHasFile = async (url: string): Promise<boolean> =>
-  typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_HEAVY)).match(url));
-
 /**
- * Puts the bundle in the page ONCE and answers with its global. A second call answers the same one: the bundle registers a
- * worker and a wasm module, and loading it twice would pay for both again on a machine that has little of either.
+ * PUTS THE BUNDLE IN THE PAGE ONCE PER ADDRESS, and answers with what it exports. A second call answers the same one: the
+ * bundle registers a worker and a wasm module, and loading it twice would pay for both again on a machine that has little of
+ * either. A rejection is forgotten, so a load that failed on a bad minute can be retried.
+ *
+ * 🔴 THE MEMO IS THE LOADER'S, AND THE LOADER IS BUILT ONCE BY THE ROOT (ADR-0232 D4), which hands it to every start of the
+ * recogniser. A memo built inside `loadVoskRuntime` was a new memo every call, so «once» only ever held within one call; a
+ * memo at module level was one per PAGE, shared by roots that share nothing else. `load` is the root's `import(url)`.
  */
-// 🔴 THE MEMO IS THE MODULE'S, not one per call, and a case is why: built inside `loadVoskRuntime` it was a new memo every
-// time, so «once» only ever held within a single call and a second one put the bundle in the page again. It is keyed by the
-// address, which is what identifies the bundle; a rejection is forgotten, so a load that failed on a bad minute can be retried.
-const loadedBundles = new Map<string, Promise<VoskApi>>();
-
-// ⚠️ THE ADDRESS IS ABSOLUTE AND THE BUNDLER MUST NOT FOLLOW IT: these bytes are not ours, they arrive with the delivery at
-// runtime. The same `@vite-ignore` the vision runtime carries, for the same reason.
-const moduleLoader = async (absoluteUrl: string): Promise<VoskApi> =>
-  (await import(/* @vite-ignore */ absoluteUrl)) as VoskApi;
-
-/**
- * ONCE PER ADDRESS, whoever the loader is — and it wraps the INJECTED loader too, because «once» is a promise of this runtime
- * and not a detail of one way of loading. A gate that could only reach it through the default loader would be measuring the
- * default loader; this way the rule is the same one the page runs.
- */
-function bundleOnce(load: (url: string) => Promise<VoskApi>, absoluteUrl: string): Promise<VoskApi> {
-  const alreadyAsked = loadedBundles.get(absoluteUrl);
-  if (alreadyAsked) return alreadyAsked;
-  const pending = (async (): Promise<VoskApi> => {
-    const api = await load(absoluteUrl);
-    if (typeof api?.createModel !== 'function') {
-      throw new Error('vosk-runtime: the bundle exported no `createModel` — the delivery has the wrong file');
-    }
-    return api;
-  })();
-  loadedBundles.set(absoluteUrl, pending);
-  pending.catch(() => { loadedBundles.delete(absoluteUrl); });
-  return pending;
+export function createBundleLoader(load: (absoluteUrl: string) => Promise<unknown>): (absoluteUrl: string) => Promise<VoskApi> {
+  const asked = new Map<string, Promise<VoskApi>>();
+  return (absoluteUrl) => {
+    const already = asked.get(absoluteUrl);
+    if (already) return already;
+    const pending = load(absoluteUrl) as Promise<VoskApi>;
+    asked.set(absoluteUrl, pending);
+    pending.catch(() => { asked.delete(absoluteUrl); });
+    return pending;
+  };
 }
 
 /**
@@ -121,16 +111,19 @@ function bundleOnce(load: (url: string) => Promise<VoskApi>, absoluteUrl: string
 export async function loadVoskRuntime(d: VoskDeps): Promise<VoskLoad> {
   const modelId = commandModelId(d.language);
   if (!modelId) return { ok: false, missing: ['language'] };
-  const hasFile = d.hasFile ?? defaultHasFile;
   const missing: string[] = [];
   for (const id of [...VOICE_RUNTIME_FILES, modelId]) {
     const url = urlOf(id);
-    if (!url || !(await hasFile(url))) missing.push(id);
+    if (!url || !(await d.hasFile(url))) missing.push(id);
   }
   if (missing.length) return { ok: false, missing };
 
   const at = (id: string): string => new URL(deliveryPath(urlOf(id)!), d.base).href;
-  const api = await bundleOnce(d.loadBundle ?? moduleLoader, at('commands:runtime'));
+  const api = await d.loadBundle(at('commands:runtime'));
+  // the loader answers whatever the address held; a file that is not the recogniser says so here, not as a TypeError below
+  if (typeof api?.createModel !== 'function') {
+    throw new Error('vosk-runtime: the bundle exported no `createModel` — the delivery has the wrong file');
+  }
   /*
    * WHERE THE BUNDLE'S TWO NEIGHBOURS LIVE, answered by us and never guessed. The logical names are the bundle's own
    * (`npm/vosk/…`), and an unknown one THROWS instead of falling back to a file that happens to be handy: a worker fed the

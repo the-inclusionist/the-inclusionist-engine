@@ -7,7 +7,7 @@
 // that keeps listening after the child turns voice off is the promise broken, however good the reason.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { startVoiceListening, VOICE_BLOCK } from '../app/js/platform/voice-listener.js';
 
 /** A fake model that records the grammars asked of it and returns controllable recognisers. */
@@ -145,6 +145,29 @@ describe('um aparelho sem microfone', () => {
     const { modelo } = modeloFalso();
     await expect(startVoiceListening({ model: modelo, grammar: [], getUserMedia: undefined, createContext: () => ({}), onPartial: () => {} }))
       .rejects.toThrow(/microphone/);
+  });
+
+  /*
+   * 🔴 THE MICROPHONE IS THE ONE THE ROOT LENT (ADR-0232 D4), and the page's global is never asked in its place: a global that
+   * answered would open a microphone this root did not lend — the case above passed with that fallback too, because node has
+   * no `navigator.mediaDevices`. Here the global HAS one, and it must stay untouched.
+   */
+  it('🔴 [Right] the global microphone and audio context are never reached — even where the page has them', async () => {
+    const { modelo } = modeloFalso();
+    const global = vi.fn(async () => ({ getTracks: () => [] }));
+    const GlobalContext = vi.fn();
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: global } });
+    vi.stubGlobal('AudioContext', GlobalContext);
+    try {
+      await expect(startVoiceListening({ model: modelo, grammar: [], getUserMedia: undefined, createContext: () => ({}), onPartial: () => {} }))
+        .rejects.toThrow(/microphone/);
+      const amb = ambiente();
+      await startVoiceListening({ model: modelo, grammar: [], getUserMedia: amb.getUserMedia, createContext: () => amb.context, onPartial: () => {} });
+      expect(global, 'the page\'s microphone was opened in place of the lent one').not.toHaveBeenCalled();
+      expect(GlobalContext, 'the page\'s AudioContext was built in place of the lent one').not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

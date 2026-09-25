@@ -1027,6 +1027,43 @@ describe('D4-B5 · the root lends the heavy files and the recognisers the host\'
       vi.resetModules();
     }
   });
+
+  it('🔴 [Right] the voice control receives the host\'s cache, microphone and audio context — and ONE bundle loader', async () => {
+    let recebido = null;
+    vi.doMock('../app/js/ui/voice-control.js', async (original) => ({
+      ...(await original()),
+      createVoiceControl: (deps) => { recebido = deps; return { apply: async () => {}, refreshGrammar: () => {}, languageChanged: async () => {} }; },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { CACHE_HEAVY } = await import('../app/js/platform/heavy.js');
+      const { doc, win } = domFalso();
+      const log = newLog();
+      const microfones = [];
+      class HostAudioContext {}
+      const host = {
+        ...hostWith(win, log), AudioContext: HostAudioContext,
+        navigator: { mediaDevices: { getUserMedia: async (c) => { microfones.push(c); return { getTracks: () => [] }; } } },
+      };
+      doc.defaultView = host; // the eye control, built too for a host with a camera, reads the camera through its document
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false });
+      expect(recebido, 'the voice control was not built for a host with a microphone').toBeTruthy();
+      expect(await recebido.hasFile('https://kept.example/x'), 'the recogniser does not ask the host\'s checked cache').toBe(true);
+      expect(log.opened).toEqual([CACHE_HEAVY]);
+      await recebido.getUserMedia({ audio: true });
+      expect(microfones, 'the listener would open another microphone than the host\'s').toEqual([{ audio: true }]);
+      expect(recebido.createContext(), 'the listener would build another audio context than the host\'s').toBeInstanceOf(HostAudioContext);
+      // 📌 ONE loader for the root: the same address asked twice is one load (the memo that left `platform/vosk-runtime`)
+      const endereco = 'file:///no-such-delivery/heavy/vosk.js';
+      const primeiro = recebido.loadBundle(endereco);
+      expect(recebido.loadBundle(endereco), 'the bundle would be put in the page twice').toBe(primeiro);
+      await primeiro.catch(() => {});
+    } finally {
+      vi.doUnmock('../app/js/ui/voice-control.js');
+      vi.resetModules();
+    }
+  });
 });
 
 /*

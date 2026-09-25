@@ -53,6 +53,11 @@ function bench(over = {}) {
     report: (s) => log.reported.push(s),
     turnOff: () => { log.off += 1; },
     after: (fn, ms) => { timers.push([fn, ms]); },
+    // the browser the root lends (ADR-0232 D4): never called here, only handed on — the doubles below record what reaches them
+    hasFile: async () => true,
+    loadBundle: async () => ({ createModel: async () => MODEL }),
+    getUserMedia: async () => ({ getTracks: () => [] }),
+    createContext: () => ({}),
     loadRuntime: async (d) => { log.loads += 1; log.lastLoad = d; return { ok: true, model: MODEL }; },
     listen: async (d) => { log.listens += 1; log.lastListen = d; onPartial = d.onPartial; onFinal = d.onFinal; return listener; },
     ...over,
@@ -70,6 +75,16 @@ function bench(over = {}) {
 }
 
 describe('ui/voice-control — a word becomes a press on the virtual controller', () => {
+  // 🔴 ADR-0232 D4: the cache, the bundle's loader, the microphone and the audio context are the ROOT's, handed on untouched.
+  it('🔴 [Right] the recogniser\'s loader and the listener receive the browser the root lent, not a global', async () => {
+    const b = bench();
+    await b.control.apply(true);
+    expect(b.log.lastLoad.hasFile, 'the loader asks another cache than the lent one').toBe(b.deps.hasFile);
+    expect(b.log.lastLoad.loadBundle, 'the bundle is loaded by another loader than the lent one').toBe(b.deps.loadBundle);
+    expect(b.log.lastListen.getUserMedia, 'the listener opens another microphone than the lent one').toBe(b.deps.getUserMedia);
+    expect(b.log.lastListen.createContext, 'the listener builds another audio context than the lent one').toBe(b.deps.createContext);
+  });
+
   it('🔴 [Right] turning it on loads the runtime for the CHILD\'S language and opens the microphone with the closed grammar', async () => {
     const b = bench();
     await b.control.apply(true);

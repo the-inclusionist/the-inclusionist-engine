@@ -123,13 +123,11 @@ const TOCAM_NA_REDE = {
   'boot/create-game.ts': 'LOCAL. `import(\'../platform/reading-runtime.js\')` — a chunk of this same package, cut by Vite and '
     + 'loaded at the FIRST `listen()` of a game that declared `uses: { reading: true }` (ADR-0216 §5). It is here and not inside '
     + 'the reading because the root is what knows the page\'s address and the game\'s answers; the module it loads is what names '
-    + 'the model files, so a game that never listens never reaches them',
-  'platform/vosk-runtime.ts': 'LOCAL. A `<script src>` of the recogniser bundle and the model it fetches, both at `heavy/` on '
-    + 'the page\'s own origin (ADR-0177) — addresses built by `deliveryPath`, never an upstream host, and neither is loaded '
-    + 'unless the install already checked it by sha256. ⚠️ A SCRIPT TAG and not an `import()`: the build is a UMD bundle that '
-    + 'defines a global and finds its worker and its wasm beside itself, which is also why the three files travel together into '
-    + 'one folder. It is the project\'s own build — every published `vosk-browser` evaluates text as code and the policy refuses '
-    + 'it (ADR-0193)',
+    + 'the model files, so a game that never listens never reaches them. 📌 AND, since ADR-0232 D4, the `import(url)` of the '
+    + 'command recogniser\'s bundle, which `platform/vosk-runtime` used to hold: the root builds the once-per-address loader '
+    + '(`createBundleLoader`) and the runtime receives it. The address is `heavy/` on the page\'s own origin, built by '
+    + '`deliveryPath` in the runtime and loaded only after the install checked every file by sha256 (ADR-0177, ADR-0193). '
+    + 'And the host\'s `fetch`, lent to the heavy-files download and to the reading that runs without a worker',
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `heavy/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `deliveryPath`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',

@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { loadVoskRuntime, commandModelId, VOICE_RUNTIME_FILES } from '../app/js/platform/vosk-runtime.js';
+import { loadVoskRuntime, commandModelId, createBundleLoader, VOICE_RUNTIME_FILES } from '../app/js/platform/vosk-runtime.js';
 import { HEAVY_FILES, deliveryPath } from '../app/js/platform/heavy.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
@@ -73,7 +73,6 @@ describe('nada é carregado sem ter sido conferido', () => {
     const api = apiFalsa();
     let resolver = null;
     api.loadBundle = async () => ({ createModel: async (m, resolve) => { resolver = resolve; return api.modelo; } });
-    // ⚠️ ITS OWN BASE: the memo is the module's and lives as long as the page — with the other cases' base this loader would never run.
     await loadVoskRuntime({ base: 'https://terceira.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...api });
     expect(() => resolver('npm/vosk/outra-coisa.js')).toThrow(/outra-coisa/);
   });
@@ -102,22 +101,45 @@ describe('nada é carregado sem ter sido conferido', () => {
   });
 
   /*
-   * 🔴 THE BUNDLE IS LOADED ONLY ONCE, and the promise belongs to the RUNTIME and not to one way of loading: it wraps the
-   * injected loader too, or this case would measure the double. The bundle opens a worker and compiles a wasm; asking for
-   * it again pays both again on the machine that can least afford it.
+   * 🔴 THE BUNDLE IS LOADED ONLY ONCE, and the promise belongs to the LOADER the root builds once (ADR-0232 D4) — not to a
+   * module-level memo every root on the page would share. The bundle opens a worker and compiles a wasm; asking for it again
+   * pays both again on the machine that can least afford it.
    */
-  it('🔴 [Right] o bundle é carregado UMA vez, mesmo pedido duas', async () => {
+  it('🔴 [Right] o bundle é carregado UMA vez, mesmo pedido duas — pelo carregador que a raiz constrói', async () => {
     const api = apiFalsa();
-    const deps = { base: 'https://uma.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...api };
+    const deps = { base: 'https://uma.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), loadBundle: createBundleLoader(api.loadBundle) };
     const um = await loadVoskRuntime(deps);
     const dois = await loadVoskRuntime(deps);
     expect(um.ok && dois.ok, 'o carregador não abriu o modelo').toBe(true);
     expect(api.pedidos.filter((p) => p[0] === 'bundle').length, 'o bundle foi carregado duas vezes').toBe(1);
   });
 
+  it('📌 [Right] once PER ADDRESS: another address is its own load, and the same one answers the same promise', async () => {
+    const pedidos = [];
+    const load = createBundleLoader(async (u) => { pedidos.push(u); return { createModel: async () => ({}) }; });
+    const a = load('https://a.example/x.js');
+    expect(load('https://a.example/x.js'), 'a second ask made a second promise').toBe(a);
+    await load('https://b.example/x.js');
+    expect(pedidos).toEqual(['https://a.example/x.js', 'https://b.example/x.js']);
+  });
+
+  it('⚠️ [Error] a load that FAILED is forgotten — the next ask tries again instead of answering the old failure', async () => {
+    let vezes = 0;
+    const load = createBundleLoader(async () => { vezes += 1; if (vezes === 1) throw new Error('bad minute'); return { createModel: async () => ({}) }; });
+    await expect(load('https://a.example/x.js')).rejects.toThrow(/bad minute/);
+    await expect(load('https://a.example/x.js')).resolves.toBeTruthy();
+    expect(vezes).toBe(2);
+  });
+
+  it('📌 [Right] two loaders share nothing — two roots on one page each load their own (ADR-0142)', async () => {
+    let vezes = 0;
+    const carregar = async () => { vezes += 1; return { createModel: async () => ({}) }; };
+    await createBundleLoader(carregar)('https://a.example/x.js');
+    await createBundleLoader(carregar)('https://a.example/x.js');
+    expect(vezes).toBe(2);
+  });
+
   it('🎯 [Zero] um bundle sem `createModel` falha DIZENDO, em vez de devolver um modelo torto', async () => {
-    // ⚠️ ANOTHER BASE on purpose: the memo is the MODULE's and lives as long as the page, so the case above has already left
-    // its address loaded. Reusing it here would measure the memo, not the bundle — which is how this case first failed.
     const vazio = { loadBundle: async () => ({}) }; // it loaded, and exports nothing: the delivery has the wrong file
     // 🔴 THE ENGINE'S SENTENCE, and not the word `createModel` — asking for `/createModel/` let a mutation survive: without
     // the guard, what blows up is «api.createModel is not a function», which ALSO contains the word. The assertion would

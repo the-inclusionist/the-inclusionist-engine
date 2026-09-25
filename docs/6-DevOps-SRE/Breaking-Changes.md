@@ -3423,11 +3423,16 @@ module already gave: every file reported, nothing kept unverified.
 | — | `platform/heavy.js` `checkedCacheHas(cacheStorage)` (new): whether a catalogue file is in the checked cache — the question the vision and command loaders ask | pass it as `hasFile` below |
 | `platform/vision.js` `VisionDeps.hasFile` | REQUIRED (it defaulted to reading the global `caches`) | `loadFaceTracker({ base, hasFile: checkedCacheHas(window.caches) })`, the same for `loadHandTracker` |
 | `ui/eye-control.js` `EyeControlDeps` · `ui/face-control.js` `FaceControlDeps` · `ui/hand-control.js` `HandControlDeps` | each gains a REQUIRED `hasFile`, which the control hands to its tracker's loader | pass `checkedCacheHas(window.caches)` |
+| `platform/vosk-runtime.js` `VoskDeps.hasFile`, `VoskDeps.loadBundle` | both REQUIRED; the module no longer reads `caches`, and no longer keeps the page-wide memo of loaded bundles | `hasFile: checkedCacheHas(window.caches)`, `loadBundle: createBundleLoader((url) => import(url))` — build the loader ONCE and reuse it, which is what keeps the bundle loaded once per address |
+| — | `platform/vosk-runtime.js` `createBundleLoader(load)` (new): the once-per-address loader, its memo per instance (a rejection is forgotten, so a failed load can be retried) | see the row above |
+| `platform/voice-listener.js` `VoiceListenerDeps.getUserMedia`, `createContext` | both REQUIRED; `getUserMedia` may be `undefined`, which is a device with no microphone and is refused as before | `getUserMedia: navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)`, `createContext: () => new AudioContext()` |
+| `ui/voice-control.js` `VoiceControlDeps` | gains REQUIRED `hasFile`, `loadBundle`, `getUserMedia` and `createContext`, handed to the recogniser's loader and to the listener | pass the four above |
 
 📏 **Measured in the seven games, read-only, as information:** `pixi-15-puzzle` calls the download itself
 (`app/js/boot/standalone.ts`, under the 9.0 names `baixarPesados({ apenas })` from `platform/pesados.js`): on the bump it
 must pass the four ports, as in the migration above. The other six only set `createGame`'s `downloadHeavy: false` (9.0:
-`baixarPesados: false`), which is unchanged. No game calls `sha256Hex`, the vision loaders or builds a camera control's deps.
+`baixarPesados: false`), which is unchanged. No game calls `sha256Hex`, the vision or command loaders, the voice listener,
+or builds a camera or voice control's deps.
 
 ## DD · ADR-0232 D4-B6: render and layout become factories (issue #207)
 
