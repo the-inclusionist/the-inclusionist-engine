@@ -108,10 +108,11 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-legend{position:absolute;left:0;right:0;bottom:8px}                 /* FOOTER, like the pause legend */
 .title-menu{display:flex;flex-direction:column;gap:.35em;align-items:stretch;padding:2px;width:13em;margin:0 auto} /* a fixed, LEAN width */
 .title-menu[hidden]{display:none}
-/* The main menu at TWICE the base width (13em → 26em): at 13em the labels wrapped onto TWO lines, and a two-line
-   button changes height with the language — the same screen with one geometry in pt-BR and another in Spanish.
-   Whoever finds their way by alignment loses the reference; whoever listens never knew it existed. */
-#tm-main{width:26em}
+/* THE WIDTH FOLLOWS THE WIDEST ITEM (ADR-0130 rule 6, issue #134). A fixed width is a translation defect that only
+   shows after translation: a label that fits in Portuguese wraps onto two lines, or is cut, in a longer language — and a
+   two-line button changes height with the language. `fit-content` is the widest label's own width, capped by the room
+   there is, so a label wraps only when the frame itself is narrower than it and the menu never leaves the canvas. */
+#tm-main{width:fit-content}
 /* ===================== THE OPENING SUBMENUS: A VERTICAL LIST THAT SCROLLS (ADR-0044) =====================
    They were two-column GRIDS, and the arrow moves in DOM order: “down” jumped to the right-hand column, across the
    screen. The ring of item 1 was already right in the code (`nextTitleIndex` wraps around) — it was the LAYOUT that
@@ -123,7 +124,7 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 
    The panel is OPAQUE for the same reason as the pause veil: the attract mode runs behind the opening, and text over a
    changing frame has whatever contrast the frame allows — an average of luck, not a guarantee. */
-#tm-alf,#tm-mat,#tm-tab,#tm-fr,#tm-cen{width:26em;max-height:72%;overflow-y:auto;overflow-x:hidden;background:var(--bg-solid);border-radius:10px;padding:.5em .7em}
+#tm-alf,#tm-mat,#tm-tab,#tm-fr,#tm-cen{width:fit-content;max-height:72%;overflow-y:auto;overflow-x:hidden;background:var(--bg-solid);border-radius:10px;padding:.5em .7em}
 /* The submenu's title STICKS to the top: in a scrolling list, a heading that scrolls away takes with it the only
    “where am I” cue that someone reading with residual vision has. */
 #tm-alf .tm-title,#tm-mat .tm-title,#tm-tab .tm-title,#tm-fr .tm-title,#tm-cen .tm-title{position:sticky;top:-.5em;z-index:1;background:var(--bg-solid);padding:.35em 0 .25em;margin:0}

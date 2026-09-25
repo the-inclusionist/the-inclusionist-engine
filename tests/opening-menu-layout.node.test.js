@@ -7,7 +7,7 @@
 //   · a narrow `#tm-main` (13em) makes labels take TWO lines. A two-line button changes height with its text, and the
 //     text changes with the language — the same screen has one geometry in pt-BR and another in Spanish. Someone
 //     navigating by ear does not notice; someone navigating by residual vision loses the alignment they used to
-//     orient themselves.
+//     orient themselves. (Since ADR-0130 rule 6 the width is the widest label's own, not a number.)
 //
 //   · arrow navigation walks in DOM order, so in a two-column GRID "down" jumps to the right-hand column. The ADR-0044
 //     ring (item 1) is right in code — `nextTitleIndex` wraps — and a grid LAYOUT would lie about it: the child
@@ -69,12 +69,13 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
     expect(declaracoes('.title-menu').length).toBeGreaterThan(0);
   });
 
-  it('[Right] o menu principal tem o DOBRO da largura base — rótulo em UMA linha', () => {
-    const base = em(prop('.title-menu', 'width'));
-    const principal = em(prop('#tm-main', 'width'));
-    expect(base, '.title-menu perdeu a largura em `em` — o gate mede relação, não pixel').not.toBeNaN();
-    expect(principal, '#tm-main não declara largura própria: voltou a herdar a estreita').not.toBeNaN();
-    expect(principal, `#tm-main (${principal}em) precisa ser o dobro da base (${base}em)`).toBeGreaterThanOrEqual(base * 2);
+  it('[Right] the six opening menus take the width of their widest item — `fit-content`, not a number (ADR-0130 rule 6)', () => {
+    // A number chosen in Portuguese truncates or wraps a longer translation. The browser half measures the result
+    // (`menu-width-follows-content.browser.test.js`); this half names the declaration, so the regression names itself.
+    const fixas = ['#tm-main', ...SUBMENUS]
+      .filter((s) => prop(s, 'width') !== 'fit-content')
+      .map((s) => `${s}: width=${prop(s, 'width')}`);
+    expect(fixas, 'an opening menu with a width that does not follow its content: ' + fixas.join(' | ')).toEqual([]);
   });
 
   it('[Right] nenhum submenu da abertura é grade de duas colunas', () => {
@@ -165,7 +166,7 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
 // ========================= MUTATIONS CHECKED =========================
 //   · putting back `#tm-alf{grid-template-columns:1fr 1fr}` → the [Right] no-grid case fails naming `#tm-alf: 1fr 1fr`.
 //   · removing `overflow-y:auto` from the five's rule → the [Right] scrolling case fails with the five names.
-//   · putting back `#tm-main{width:13em}` → the [Right] double-base-width case fails at "13 >= 26".
+//   · putting back `#tm-main{width:26em}` (2026-09-25) → the [Right] fit-content case fails naming `#tm-main: width=26em`.
 //   · removing `scroll-margin-top` from the buttons → the [Boundary] focused-item case fails with the five.
 //   · putting back `display:flex` (without `flex-direction:column`) on `#tm-fr .frac-nots` → the [Right] nothing-lies-
 //     horizontal case fails naming the selector.
