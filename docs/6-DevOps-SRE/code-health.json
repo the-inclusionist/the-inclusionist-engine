@@ -1821,12 +1821,12 @@
       "fanIn": 0
     },
     "ui/title.ts": {
-      "codeLines": 48,
-      "decisionNodes": 7,
+      "codeLines": 75,
+      "decisionNodes": 13,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 7,
+      "worstFunction": 10,
       "statefulEdges": 0,
       "fanIn": 0
     },

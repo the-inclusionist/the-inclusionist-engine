@@ -64,6 +64,65 @@ describe('ui/title · initTitle(ctx).show', () => {
     expect($('#tm-tab').hidden).toBe(false);
   });
 
+  // ===================== «BACK» RETURNS THE CURSOR TO WHAT OPENED THE MENU (ADR-0130 rule 1, issue #134) =====================
+  // 📏 Measured before: `show('tm-main')` from a submenu always focused tm-main's FIRST button, so a child who went into
+  // «Alfabetização» (item 2) and came back was put on «Ludico» — her place lost, and nothing said she had been moved.
+  it('🔴 [Right] back from a submenu puts the focus on the item that opened it, not on the first', () => {
+    mountTitleDom();
+    const title = initTitle({ $ });
+    title.show('tm-main');
+    const alfabetizacao = $('#tm-main').querySelectorAll('button')[1];
+    alfabetizacao.focus();
+    title.show('tm-alf');
+    expect(document.activeElement, 'going IN lands on the submenu\'s item 1').toBe($('#tm-alf button'));
+    title.show('tm-main');
+    expect(document.activeElement, 'back landed on the first item, not on the one that opened the submenu').toBe(alfabetizacao);
+  });
+
+  it('🔴 [Right] two levels deep, each back returns to its own opener', () => {
+    mountTitleDom();
+    $('#tm-alf').insertAdjacentHTML('beforeend', '<button type="button">Frações</button>');
+    const title = initTitle({ $ });
+    title.show('tm-main');
+    const doorToAlf = $('#tm-main').querySelectorAll('button')[1];
+    doorToAlf.focus();
+    title.show('tm-alf');
+    const doorToFr = $('#tm-alf').querySelectorAll('button')[1];
+    doorToFr.focus();
+    title.show('tm-fr');
+    title.show('tm-alf');
+    expect(document.activeElement, 'first back').toBe(doorToFr);
+    title.show('tm-main');
+    expect(document.activeElement, 'second back').toBe(doorToAlf);
+  });
+
+  it('🔴 [Zero] a second way in, by ANOTHER item, comes back to that item — the trail was popped, not kept', () => {
+    mountTitleDom();
+    const title = initTitle({ $ });
+    title.show('tm-main');
+    const [ludico, alfabetizacao] = $('#tm-main').querySelectorAll('button');
+    alfabetizacao.focus();
+    title.show('tm-alf');
+    title.show('tm-main');
+    ludico.focus();
+    title.show('tm-mat');
+    expect(document.activeElement, 'going in again did not open on item 1').toBe($('#tm-mat button'));
+    title.show('tm-main');
+    expect(document.activeElement, 'back returned to the FIRST way in\'s opener, a stale step').toBe(ludico);
+  });
+
+  it('[Boundary] an opener the game removed from the menu falls back to item 1, never to a detached node', () => {
+    mountTitleDom();
+    const title = initTitle({ $ });
+    title.show('tm-main');
+    const door = $('#tm-main').querySelectorAll('button')[1];
+    door.focus();
+    title.show('tm-alf');
+    door.remove();
+    title.show('tm-main');
+    expect(document.activeElement).toBe($('#tm-main button'));
+  });
+
   it('[Zero] elementos ausentes do DOM (legenda/bloco de título não montados) não quebram show()', () => {
     document.body.innerHTML = `<div id="tm-main"><button type="button">Ludico</button></div>
       <div id="tm-alf"></div><div id="tm-mat"></div><div id="tm-tab"></div><div id="tm-fr"></div><div id="tm-cen"></div>`;
@@ -71,3 +130,11 @@ describe('ui/title · initTitle(ctx).show', () => {
     expect(() => title.show('tm-main')).not.toThrow();
   });
 });
+
+/*
+ * MUTATIONS CHECKED for the «back» cases (ADR-0130 rule 1), applied by script and restored from a copy:
+ *   · coming back never returns the recorded opener → the three back cases red.
+ *   · the trail not popped on the way back → the second-way-in case red (a stale opener).
+ *   · nothing recorded on the way in → the two back cases red.
+ *   · the opener used without checking it is still in the menu → the removed-opener case red.
+ */
