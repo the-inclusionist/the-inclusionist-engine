@@ -3352,7 +3352,56 @@ imports `initSettingsCaa` from `@the-inclusionist/engine/ui/settings-caa.js` (li
 
 ## CY · ADR-0232 D4-B1: the announcer, Libras, the loop's crash notice, the shared RNG and the UI shells (issue #207)
 
-_Reserved: the rows land with the batch._
+**Who is affected:** every game — all seven announce through `core/a11y-sr` — and, besides, a game that calls
+`startLoop`, uses deaf mode (`ui/vlibras`), draws from the shared RNG, or mounts the pause icons or the debug panel
+itself.
+
+📌 **Why:** each of these modules held module-level state or reached a browser global — the announcer the global
+document and a registered Libras mirror, deaf mode its choice and queue, the loop a registered crash notice, the RNG
+two shared streams — so two roots on one page shared them, and a root building in another document announced into
+the page's regions. Each root now builds what holds state; a helper receives what it uses (ADR-0232 D4).
+
+| was | is |
+|---|---|
+| `import { srSay, srAlert } from '…/core/a11y-sr.js'` | `engine.say(text)` / `engine.alert(text)` — this root's announcer, over the host's document |
+| `setVlibrasSay(vlibrasSay)` (the root's announcements signed in Libras) | `engine.mirrorAnnouncements(engine.libras.say)` — returns its release. The root connects NOTHING by itself (decision DD1, pending the Dev): a game that did not call `setVlibrasSay` keeps not signing |
+| an announcement with no root (a boot that failed before `createGame` returned) | `createAnnouncer({ doc: document, raf: (cb) => requestAnimationFrame(cb) }).alert(text)` — the factory stays published for this |
+| `vlibrasOpen()` / `librasOpen` · `toggleLibras(t)` · `vlibrasSay(text)` · `vlTick()` | `engine.libras.isOpen()` · `engine.libras.toggle()` (confirms in the root's language) · `engine.libras.say(text)` · `engine.libras.tick()` — the ROOT's deaf mode, the one the bar's 🦻 toggles |
+| `initLibras(store)` · `setOnLibrasChange(fn)` (a game that is its own root) | `createLibras({ doc, win, store, now })` → `{ isOpen, toggle(t), say, tick, onChange(fn): release }`; the stored choice is read at build |
+| `startLoop(ticker, frame, maxDt, { speed })` relying on `registerCrashNotice` | `startLoop(ticker, frame, maxDt, { speed, onFailure: engine.onFailure })` — `onFailure` is REQUIRED; `registerCrashNotice` is gone |
+| `rnd` · `randInt` · `shuffle` · `reseed` from `core/rng` | `createRng(seed)` — a stream of the game's own |
+| `decorationRng` (`rngDecoracao` in 9.0) | `createRng(DEFAULT_SEED ^ 0x5eed)` — the same sequence, built by the game |
+| `initPauseIcons({ …, doc? })` | `doc` is REQUIRED (`Pick<Document, 'createElement'>`) |
+| `initDebugPanel({ …, search? })` | `search`, `doc` and `expose(samples)` are REQUIRED — pass `location.search`, `document` and `(s) => { window.__sonda = s; }` to keep what it did |
+| `mountPanel(ctx, spec)` | `ctx.localeOn(react): release` is REQUIRED — the root's door to a language change, instead of the window's `i18n:change` |
+
+⚠️ **Deaf mode's behaviour is unchanged, on purpose:** a choice restored from storage signs only after the first
+`tick`, the queue holds one utterance, and the root's own announcements reach the interpreter only through a mirror a
+game connects. Having the root sign everything is one line in the root (`announcer.mirrorTo(libras.say)`) the day the
+Dev decides it.
+
+📌 **Unchanged in shape:** `consumer-quiz/main-quiz` now exports `bootQuiz({ doc, win })`, called by `app/quiz.html`;
+it is not published. `ui/fonts.FONT_BY_KEY` is the same table with the same type, built in one expression.
+
+📏 **Measured in the seven games, read-only, as information** (9.0.0 names):
+- `core/a11y-sr` — all seven. `game-2048` (`app/js/boot/main.ts:13`, `src/standalone.ts:16`, `tests/announcement.browser.test.ts:15`);
+  `game-chess` (`app/js/boot/game-shell.ts:31`, `boot/narration.ts:28`, and `boot/standalone.ts:21`, whose `srAlert` at
+  `:150` is the rootless boot-failure alert → `createAnnouncer`); `game-pinball` (`app/js/main.ts:95`, passed on to
+  `shell/announce.ts`); `game-platformer` (`app/js/main.ts:163`, with `setVlibrasSay` at `:652`); `game-soccer`
+  (`app/js/boot/main.ts:11`); `game-whackwhack` (`app/js/boot/main.ts:21`, `boot/standalone.ts:39`); `pixi-15-puzzle`
+  (`app/js/cartridge.ts:35`, `boot/standalone.ts:27` with `setVlibrasSay` at `:151`, `tests/announce.browser.test.ts:21`).
+- `ui/vlibras` — `game-platformer` (`app/js/main.ts:166`: all six, `setOnLibrasChange(layout)` at `:2074`, `vlTick` on a
+  250 ms interval at `:2075`); `game-soccer` (`app/js/boot/main.ts:47`: its own Libras button toggles, `vlibrasSay` beside
+  its captions, `vlTick` each frame; `tests/libras.browser.test.ts:21`); `pixi-15-puzzle` (`app/js/boot/standalone.ts:28`,
+  `vlibrasSay` into the announcer and `vlTick` each frame). `game-2048`, `game-chess`, `game-pinball` and
+  `game-whackwhack` never signed, and still do not.
+- `startLoop` — `game-chess` (`app/js/boot/standalone.ts:104`), `game-platformer` (`src/standalone.ts:78`), `game-soccer`
+  (`app/js/boot/main.ts:1065`, which passed NO notice and relied on the registration), `game-whackwhack`
+  (`app/js/boot/standalone.ts:229`), `pixi-15-puzzle` (`app/js/boot/standalone.ts:212`).
+- `core/rng` — `game-platformer`'s `render/draw.ts:67`, `render/fx.ts:10` and `render/weather.ts:13` read `rngDecoracao`;
+  no game reads the shared four. The other imports are `createRng` and the `Rng` type, which stay.
+- `initPauseIcons` and `initDebugPanel` — `game-platformer` only (`app/js/main.ts:1241`, passing no `doc`; `:2323`).
+- `mountPanel` — no game.
 
 ## CZ · ADR-0232 D4-B2: the settings store becomes a factory (issue #207)
 
