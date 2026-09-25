@@ -159,7 +159,6 @@
     "Translator",
     "bcp47",
     "createTranslator",
-    "dictionaryGaps",
     "getLocale",
     "initI18n",
     "loadLocale",

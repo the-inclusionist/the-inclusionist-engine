@@ -65,12 +65,12 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2105,
-      "decisionNodes": 280,
+      "codeLines": 2107,
+      "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 88,
       "globalReach": 1,
-      "worstFunction": 68,
+      "worstFunction": 70,
       "statefulEdges": 24,
       "fanIn": 1,
       "reached": [
@@ -311,12 +311,12 @@
       "fanIn": 1
     },
     "core/i18n.ts": {
-      "codeLines": 142,
-      "decisionNodes": 30,
-      "maxDepth": 2,
+      "codeLines": 146,
+      "decisionNodes": 33,
+      "maxDepth": 3,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 8,
+      "worstFunction": 9,
       "statefulEdges": 0,
       "fanIn": 1,
       "holds": [
@@ -325,7 +325,6 @@
         "let localePort",
         "let pending",
         "mutated DICTS",
-        "mutated EXTRA",
         "mutated changeListeners"
       ]
     },

@@ -1127,6 +1127,31 @@ describe('createGame num documento de verdade', () => {
     const wordsOf = (el) => [el.textContent, ...[...el.querySelectorAll('[aria-label], [title]')]
       .flatMap((n) => [n.getAttribute('aria-label'), n.getAttribute('title')])].filter(Boolean).join(' | ');
 
+    it('🔴 [Right] a game\'s dictionaries are its ROOT\'s: its handle reads them, another root does not (ADR-0232 D3)', () => {
+      const game = abrir({ dictionaries: { pt: { 'thisGame.hello': 'Olá, criança' }, en: { 'thisGame.hello': 'Hello, child' } } });
+      const other = abrir();
+      expect(game.t('thisGame.hello'), 'the root did not register the dictionary it was given').toBe('Olá, criança');
+      expect(other.t('thisGame.hello'), 'another root on the page read this game\'s dictionary').toBe('thisGame.hello');
+      // the root's own words go through the same translator, so they still resolve
+      expect(game.t('state.on')).toBe('ligado');
+    });
+
+    it('🔴 [Right] the host\'s markup is translated with the game\'s dictionary at boot (ADR-0232 D3)', () => {
+      // A game names its own static text with `data-i18n` on its page; the root translates it before anything is shown.
+      const own = document.createElement('p');
+      own.setAttribute('data-i18n', 'thisGame.title');
+      document.body.appendChild(own);
+      try {
+        abrir({ dictionaries: { pt: { 'thisGame.title': 'O meu jogo' }, en: { 'thisGame.title': 'My game' }, es: { 'thisGame.title': 'Mi juego' } } });
+        expect(own.textContent, 'the game\'s markup was left untranslated at boot').toBe('O meu jogo');
+      } finally { own.remove(); }
+    });
+
+    it('🔴 [Right] a key the game gave in one language and not another is a line of `problems` (study item E4)', () => {
+      const motor = abrir({ dictionaries: { pt: { 'thisGame.lonely': 'sozinha' } } });
+      expect(motor.problems.join(' | '), 'the missing languages were not said').toMatch(/lacks en for [^|]*thisGame\.lonely/);
+    });
+
     it('🔴 [Right] the bar the root mounts names every icon in the root\'s language (ADR-0232 D3)', () => {
       // The root writes `#title-icons` from `iconsMarkup(translator, …)`; a root that handed it anything else would name
       // the icons by key to a screen reader.

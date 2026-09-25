@@ -44,7 +44,7 @@
 // game with a title screen. What it covers is what is the SAME in every game: language, screen reader, mixer, voice,
 // the dialog stack, the colour filters, the remappable keyboard, menu navigation, the pause card and the accessibility
 // bar, the settings panels, the navigation sonar, and every input transport.
-import i18nObject, { initI18n, dictionaryGaps, loadLocale, createTranslator, type Translate } from '../core/i18n.js';
+import i18nObject, { initI18n, loadLocale, createTranslator, type Translate } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
 import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
@@ -61,7 +61,6 @@ import { cartridgeProblems } from '../core/cartridge-problems.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
 import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
-import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
@@ -94,7 +93,6 @@ import { isBlind, isLowVision, DEFAULT_VISUAL, filterKey, simulationUnavailable,
 import { VIZ_FILTER } from '../render/viz-modes.js';
 import { createPadWizard } from '../input/pad-wizard.js';
 import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
-import { bcp47 } from '../core/i18n.js';
 // 📏 The drawing reporters (`barIntruders`, `belowFloor`, `minimumTarget` and their types) live in `ui/drawing-problems`
 // (ADR-0221, issue #203), and the root does not know them. An import that can be deleted is coupling that no longer
 // exists, and that is how this debt is paid: by subject.
@@ -338,6 +336,14 @@ export interface CreateGameOptions {
    * shows the buttons alone. A malformed list is refused at boot and at `mount`.
    */
   readonly howToPlay?: readonly HowToPlaySlide[];
+  /**
+   * THIS GAME'S DICTIONARIES, one per language (`pt`, `en`, `es`), registered into THIS ROOT's translator before anything is
+   * translated (ADR-0232 D3 erratum): a key resolves for this game and for no other root on the page. A string with markup is
+   * refused and named in the console, as `registerDict` does; a key given in one language and not another is a line of
+   * `problems`. Decision (mechanical, ADR-0232 D3): an option and not a method on the handle, because every game measured
+   * registers BEFORE `createGame` — and a method would come after the markup was translated.
+   */
+  readonly dictionaries?: Readonly<Record<string, Readonly<Record<string, string>>>>;
   /**
    * THE VIRTUAL CONTROLLER'S COMMANDS, CARRIED TO THE GAME (ADR-0111 and its erratum; issue #197): «a engine lida com o hardware e passa
    * para o jogo o nome virtual do botão». Each press and release of a position the child's hardware reached — the keyboard by the
@@ -785,6 +791,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * `localeOn` is that door — like `stateOn`, whatever subscribes through it is released by `dispose()` (ADR-0220).
    */
   const translator = createTranslator();
+  for (const [code, entries] of Object.entries(o.dictionaries ?? {})) translator.registerDict(code, entries);
+  // 📌 The root's own words go through ITS translator, which reads this game's dictionary (ADR-0232 D3).
+  const { t, bcp47 } = translator;
   const localeOn = (react: (locale: string) => void): (() => void) => { const off = translator.onChange(react); whenDisposed(off); return off; };
   /*
    * 🔴 THE PAGE'S ONE STORE IS BUILT HERE, from what the HOST lends (ADR-0232 point 2, issue #207): the backend the host
@@ -874,6 +883,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // 1. LANGUAGE BEFORE EVERYTHING. The interface cannot be built before the language is known. The document goes in:
   //    see finding 15.
   initI18n(doc);
+  translator.applyDom(doc); // the host's markup, with THIS game's dictionary too — the module's pass reads only the page's
 
   // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: the caller cannot swap these two lines.
   initAudioMixer(store);
@@ -4030,7 +4040,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
+    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...translator.dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
     onFailure: announceFailure,
     get reach() { return currentReach; },
   };

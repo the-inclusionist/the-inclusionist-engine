@@ -47,14 +47,13 @@ export function loadLocale(p: LocalePort): void { localePort = p; }
 const EXTRA: Record<string, LocaleDict> = {};
 
 /**
- * Registers THIS game's keys for a language. Callable before the language exists — whoever registers `en` before any
- * `setLocale('en')` is served when the switch happens.
- *
- * ⚠️ IT DOES NOT RE-APPLY THE DOM, on purpose. `applyDom` needs a ROOT, and reaching the global `document` under the
- * caller's feet is a defect that already cost one fix. A consumer registering after the static markup was translated
- * calls `applyDom(root)` itself — and the normal case is to register at boot, before any text is on screen.
+ * The game layers a key is looked up in, MOST SPECIFIC FIRST: a translator's own dictionary, then the page-wide one (ADR-0232
+ * D3). The module-level `t` reads only the page-wide one.
  */
-export function registerDict(code: string, entries: LocaleDict): string[] {
+type GameLayers = readonly Record<string, LocaleDict>[];
+
+/** Puts `entries` into `layer` for `code`, refusing what carries markup (see `hasMarkup`); returns the refused keys. */
+function addEntries(layer: Record<string, LocaleDict>, code: string, entries: LocaleDict): string[] {
   const refused: string[] = [];
   const accepted: LocaleDict = {};
   for (const key in entries) {
@@ -68,8 +67,20 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
       console.error('[inclusionist] i18n: keys refused because they contain markup — ' + refused.join(', '));
     } catch { /* noop */ }
   }
-  EXTRA[code] = { ...EXTRA[code], ...accepted };
+  layer[code] = { ...layer[code], ...accepted };
   return refused;
+}
+
+/**
+ * Registers THIS game's keys for a language. Callable before the language exists — whoever registers `en` before any
+ * `setLocale('en')` is served when the switch happens.
+ *
+ * ⚠️ IT DOES NOT RE-APPLY THE DOM, on purpose. `applyDom` needs a ROOT, and reaching the global `document` under the
+ * caller's feet is a defect that already cost one fix. A consumer registering after the static markup was translated
+ * calls `applyDom(root)` itself — and the normal case is to register at boot, before any text is on screen.
+ */
+export function registerDict(code: string, entries: LocaleDict): string[] {
+  return addEntries(EXTRA, code, entries);
 }
 
 /**
@@ -77,15 +88,16 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
  * one line per missing language, for `problems`. 📏 Measured: the games that register a dictionary do it in pt, en and es,
  * and nothing checked it — a key forgotten in one language shows Portuguese there, and nobody is told.
  * A cartridge that registered nothing is not accused: strings it never gave the engine, the engine cannot see.
+ * Over `layers` taken together — a translator asks it for its root's dictionary (ADR-0232 D3).
  */
-export function dictionaryGaps(): string[] {
+function gapsIn(layers: GameLayers): string[] {
   const registered = new Set<string>();
-  for (const code of AVAILABLE) for (const key in EXTRA[code] ?? {}) registered.add(key);
+  for (const layer of layers) for (const code of AVAILABLE) for (const key in layer[code] ?? {}) registered.add(key);
   if (!registered.size) return [];
   const SHOW = 5;
   const gapLines: string[] = [];
   for (const code of AVAILABLE) {
-    const missing = [...registered].filter((key) => !(key in (EXTRA[code] ?? {})));
+    const missing = [...registered].filter((key) => !layers.some((layer) => key in (layer[code] ?? {})));
     if (!missing.length) continue;
     const rest = missing.length > SHOW ? ` (and ${missing.length - SHOW} more)` : '';
     gapLines.push(`the cartridge's dictionary lacks ${code} for ${missing.slice(0, SHOW).join(', ')}${rest}: `
@@ -130,13 +142,11 @@ function hasMarkup(value: string | undefined): boolean {
  * Step 2 coming BEFORE step 3 is the only defensible order: the engine's right language is worth more than the
  * consumer's wrong one. Inverting it would show Portuguese in a Spanish interface that had the translation to hand.
  */
-function resolveKey(key: string, extra: Record<string, LocaleDict> = EXTRA): string {
-  const fromGame = extra[locale];
-  if (fromGame && key in fromGame) return fromGame[key];
-  if (key in dict) return dict[key];
-  const fromGameInPt = extra.pt;
-  if (fromGameInPt && key in fromGameInPt) return fromGameInPt[key];
-  return key in base ? base[key] : key;
+function resolveKey(key: string, layers: GameLayers = [EXTRA]): string {
+  for (const layer of layers) { const fromGame = layer[locale]; if (fromGame && key in fromGame) return fromGame[key]!; }
+  if (key in dict) return dict[key]!;
+  for (const layer of layers) { const fromGameInPt = layer.pt; if (fromGameInPt && key in fromGameInPt) return fromGameInPt[key]!; }
+  return key in base ? base[key]! : key;
 }
 
 /* ===================== THE LOADERS, AND WHY THEY ARE NOT A GLOB =====================
@@ -287,19 +297,27 @@ export interface Translator {
   readonly applyDom: (root: ParentNode) => void;
   /** Resolves when the language chosen at boot has loaded. */
   readonly ready: () => Promise<void>;
-  /** Registers a game's keys for a language; returns the refused ones (markup). */
+  /**
+   * Registers a game's keys for a language IN THIS TRANSLATOR — its root's dictionary, which no other root on the page
+   * reads (ADR-0232 D3 erratum); returns the refused ones (markup).
+   */
   readonly registerDict: (code: string, entries: LocaleDict) => string[];
-  /** The keys registered in one language and not another, for `problems` (study item E4). */
+  /** The keys this translator's game registered in one language and not another, for `problems` (study item E4). */
   readonly dictionaryGaps: () => string[];
 }
 
 /**
- * Builds a translator. ⚠️ TRANSITIONAL: it resolves against the page-wide game dictionary (`EXTRA`) that the module-level
- * `t` and `registerDict` still use, until every module receives its `t` from the root and each root keeps its own
- * dictionary (ADR-0232 D3, issue #207).
+ * Builds a translator, with a game dictionary of its OWN (ADR-0232 D3 erratum): what one root registers, another root on the
+ * same page does not read. The language stays the page's.
+ *
+ * ⚠️ TRANSITIONAL: after its own dictionary it still reads the page-wide one that the module-level `registerDict` writes,
+ * so a game that registers there before `createGame` keeps its words — until the Dev decides how a game translates what it
+ * declares, and the module-level `t` and `registerDict` leave (issue #207).
  */
 export function createTranslator(): Translator {
-  const tr: Translate = (key, params) => interpolate(resolveKey(key, EXTRA), params);
+  const own: Record<string, LocaleDict> = {};
+  const layers: GameLayers = [own, EXTRA];
+  const tr: Translate = (key, params) => interpolate(resolveKey(key, layers), params);
   const applyTo = (root: ParentNode): void => {
     root.querySelectorAll('[data-i18n]').forEach((el) => { const k = el.getAttribute('data-i18n'); if (k) el.textContent = tr(k); });
     root.querySelectorAll('[data-i18n-aria]').forEach((el) => { const k = el.getAttribute('data-i18n-aria'); if (k) el.setAttribute('aria-label', tr(k)); });
@@ -312,8 +330,8 @@ export function createTranslator(): Translator {
     onChange: (react) => { changeListeners.add(react); return () => { changeListeners.delete(react); }; },
     applyDom: applyTo,
     ready: () => pending,
-    registerDict,
-    dictionaryGaps,
+    registerDict: (code, entries) => addEntries(own, code, entries),
+    dictionaryGaps: () => gapsIn(layers),
   };
 }
 

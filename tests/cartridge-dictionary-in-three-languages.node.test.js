@@ -15,11 +15,14 @@ function dublarDocumento() {
   vi.stubGlobal('document', { documentElement: { lang: '' }, querySelectorAll: () => [] });
   vi.stubGlobal('window', { dispatchEvent: () => true });
 }
-/** A CLEAN instance: the registered dictionaries live in the module. */
+/**
+ * A CLEAN instance, and the translator a root builds from it: the dictionary is the root's since ADR-0232 D3, and so are
+ * its gaps. A fresh module too, so the page-wide layer a translator still reads (transitional) starts empty.
+ */
 async function carregarI18n() {
   vi.resetModules();
   dublarDocumento();
-  return import('../app/js/core/i18n.js');
+  return (await import('../app/js/core/i18n.js')).createTranslator();
 }
 
 describe('the three languages of a cartridge dictionary', () => {
