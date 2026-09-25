@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE STORED CRT IS APPLIED AT BOOT, YIELDS TO EVERY VISUAL ACCESSIBILITY MODE, AND ITS SCANLINES FOLLOW THE SCALE.
-// (study items A5 and B1; ADR-0020, ADR-0047, ADR-0001)
+// THE STORED CRT IS APPLIED AT BOOT, ITS SCANLINES STAY UNDER A COLOUR CORRECTION, AND THEY FOLLOW THE SCALE.
+// (study items A5 and B1; ADR-0020, ADR-0047, ADR-0241, ADR-0001)
 //
 // 📏 Measured in dist/quiz.html (study, 2026-09-12): the «Visual sensitivity» panel said «Scanlines: on» and the region had
 // no CRT class until a toggle was pressed — `createGame` never ran `render/crt`, so the yield rule had nothing to act on,
@@ -55,20 +55,22 @@ describe('the CRT under createGame', () => {
     window.dispatchEvent(new Event('resize'));
   });
 
-  it('🔴 [Right] a colour correction switched ON takes the CRT away, and OFF gives it back (ADR-0047)', () => {
+  it('🔴 [Right] the scanlines STAY under a colour correction, and are still there when it goes off (ADR-0241)', () => {
+    // This case asserted the opposite until ADR-0241. Every visual mode, one by one and with the vignette too, is measured in
+    // `the-crt-under-each-visual-mode.browser.test.js`.
     const cvd = document.querySelector('#title-icons [data-pi="cvd"]');
     expect(cvd, 'no 🚥 icon — the case would measure nothing').not.toBeNull();
     cvd.click(); // protan correction
-    expect(regiao.classList.contains('crt-scan-1'), 'the scanlines stayed over a correction').toBe(false);
+    expect(regiao.style.filter, 'the correction did not reach the world — the case would measure nothing').toMatch(/cvd-fix-/);
+    expect(regiao.classList.contains('crt-scan-1'), 'the scanlines were taken away by a colour correction').toBe(true);
     // the cycle: protan → deuter → tritan → off
     cvd.click(); cvd.click(); cvd.click();
     expect(regiao.style.filter, 'the cycle did not come back to no correction').toBe('');
-    expect(regiao.classList.contains('crt-scan-1'), 'the scanlines did not come back after the correction').toBe(true);
+    expect(regiao.classList.contains('crt-scan-1'), 'the scanlines are gone after the correction').toBe(true);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
 //   C1 the stored CRT not applied at boot                 🔴
-//   C2 the CRT does not follow the world filter          🔴 the correction case
 //   C3 the scanlines not re-anchored on a new scale      🔴 the period case
-//   C4 a colour correction does not count as a visual mode 🔴 the correction case
+//   C5 the scanline yields to a colour correction again   🔴 the correction case (ADR-0241)

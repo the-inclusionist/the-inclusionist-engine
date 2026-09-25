@@ -21,7 +21,11 @@
 /** The six colour-blindness mode keys — the SAME keys as `VIZ_MODES` in render/viz-modes. */
 export type CvdKey = 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan';
 
-/** Canonical order: the three simulations (what the person sees) before the three corrections (what helps them see). */
+/**
+ * Canonical order: the three simulations (what the person sees) before the three corrections (what helps them see).
+ * It is also THE list of colour-vision modes the rest of the engine asks about — `onlyColourVision` (render/viz-axes)
+ * reads it for the scanline that stays under them (ADR-0241).
+ */
 export const CVD_KEYS: readonly CvdKey[] = ['sim-protan', 'sim-deuter', 'sim-tritan', 'fix-protan', 'fix-deuter', 'fix-tritan'];
 
 /**

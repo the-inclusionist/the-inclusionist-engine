@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viz-axes — THE TWO AXES, and the simulation that is NOT one of them (ADR-0076). Only dependency: the shapes,
-// from `core/visual-state`.
+// render/viz-axes — THE TWO AXES, and the simulation that is NOT one of them (ADR-0076). Dependencies: the shapes, from
+// `core/visual-state`, and the list of colour-vision modes, from the leaf `render/cvd-matrices` that defines them.
 //
 // ========================= THE DEFECT THIS FIXES =========================
 // With ONE radio and `p.viz` keeping ONE string, choosing `fix-deuter` turned 7:1 contrast off, and choosing a contrast
@@ -25,6 +25,7 @@
 import type {
   Theme as TemaDoCore, Correction as CorrecaoDoCore, Simulation as SimulacaoDoCore, VisualState as VisualStateDoCore,
 } from '../core/visual-state.js';
+import { CVD_KEYS } from './cvd-matrices.js';
 /** The CONTRAST axis (`core/visual-state`). */
 export type Theme = TemaDoCore;
 /** The COLOUR CORRECTION axis (`core/visual-state`). */
@@ -131,6 +132,19 @@ export function isBlind(v: VisualState): boolean {
 /** Is it one of the five LOW-VISION simulations? They need the overlay as a texture, not only a filter. */
 export function isLowVision(v: VisualState): boolean {
   return v.simulacao !== null && v.simulacao.startsWith('lv-');
+}
+
+/**
+ * Is a COLOUR-VISION mode the only visual mode in this state — the 🚥 correction, or the simulation of the same colour
+ * blindness, with the theme at its default? The decorative scanline stays under these (ADR-0241): they change hue, not
+ * contrast or sharpness.
+ *
+ * 📌 The list is `CVD_KEYS`, where those six modes are defined with their matrices: a colour-vision mode added there
+ * counts here, with no second list of names to keep true.
+ */
+export function onlyColourVision(v: VisualState): boolean {
+  const key = filterKey(v);
+  return !hasHighContrast(v) && key !== null && (CVD_KEYS as readonly string[]).includes(key);
 }
 
 /** Is the theme off its default? It replaces a `/^hc-direto/` test on the old string. */

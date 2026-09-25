@@ -3823,6 +3823,25 @@ or implements `Engine` or `HudBandsMounted`; each only receives an `Engine`. On 
 gains the row with the session clock at the bottom of it — drawn OVER the bottom of its world, since none reads `--rodape-h`
 to end its workspace above it. That is the visible change each game meets.
 
+## DL · The CRT asks two questions: the scanlines stay under the colour-vision modes (ADR-0241)
+
+**Who is affected:** a game or page that builds `createCrt` itself. A game that lets `createGame` build it changes no code:
+the root answers both questions, and under a colour-vision mode on its own the scanlines now stay.
+
+📌 **Why:** the Dev, after testing the demo: «Modos de daltonismo estão tirando as scanlines sem necessidade.» A colour-vision
+correction (🚥) or the simulation of the same colour blindness changes hue, not contrast or sharpness, so the scanline stays
+under it; the vignette still yields to every visual mode, and the scanline still yields to every other one (ADR-0047).
+
+| was | is | migration |
+|---|---|---|
+| `CrtCtx.a11yVisualOn: () => boolean` — both effects yield when it is true | `scanlineYields: () => boolean` and `vignetteYields: () => boolean`, both REQUIRED; each effect follows its own | pass your old answer to `vignetteYields`; for `scanlineYields`, the same answer AND NOT «a colour-vision mode is the only visual mode on» — `render/viz-axes.onlyColourVision(state)` answers that for a visual state |
+| — | new: `render/viz-axes.onlyColourVision(state)` — a correction or a simulation of colour blindness, with the theme at its default; the list is `render/cvd-matrices.CVD_KEYS` | — |
+
+⚠️ **Behaviour, not shape:** under `createGame`, the game's 🌗 high-contrast theme now makes both effects yield — the root
+handed the game's writer straight through and never learned of the theme (ADR-0047's rule, which the root had not applied).
+
+📏 **Measured in the sibling repositories, read-only:** no game builds `createCrt` or names `a11yVisualOn`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

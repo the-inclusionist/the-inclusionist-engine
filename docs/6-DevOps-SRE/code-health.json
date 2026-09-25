@@ -30,7 +30,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2208,
+      "codeLines": 2211,
       "decisionNodes": 283,
       "maxDepth": 4,
       "fanOut": 92,
@@ -1148,7 +1148,7 @@
       "globalReach": 0,
       "worstFunction": 5,
       "statefulEdges": 0,
-      "fanIn": 2
+      "fanIn": 3
     },
     "render/hc-role-data.ts": {
       "codeLines": 6,
@@ -1241,10 +1241,10 @@
       "fanIn": 2
     },
     "render/viz-axes.ts": {
-      "codeLines": 100,
+      "codeLines": 105,
       "decisionNodes": 16,
       "maxDepth": 3,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,

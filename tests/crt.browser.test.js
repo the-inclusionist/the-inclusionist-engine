@@ -8,9 +8,14 @@ import { createCrt } from '../app/js/render/crt.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 const region = () => { document.body.innerHTML = '<div id="game-region" style="height:360px"></div>'; return document.querySelector('#game-region'); };
-/** A CRT over the page's `#game-region`, a store of its own, and the accessibility answer `a11y()`. */
-const crtWith = (a11y = () => false, store = createStorage(memoryBackend())) => createCrt({
-  region: () => document.querySelector('#game-region'), win: window, numPlayers: () => 1, a11yVisualOn: a11y, store });
+/**
+ * A CRT over the page's `#game-region`, a store of its own, and the root's two answers: `a11y()` for both effects, as
+ * under a mode both yield to — or `scanYields()` apart, for a colour-vision mode (ADR-0241).
+ */
+const crtWith = (a11y = () => false, store = createStorage(memoryBackend()), scanYields = a11y) => createCrt({
+  region: () => document.querySelector('#game-region'), win: window, numPlayers: () => 1,
+  scanlineYields: scanYields, vignetteYields: a11y, store });
+const NO_MODE = { scanlineYields: () => false, vignetteYields: () => false };
 const { cfg: CRT, apply: applyCrt, scanVars: crtScanVars } = crtWith();
 
 describe('render/crt — applyCrt (classes CSS no #game-region)', () => {
@@ -55,7 +60,7 @@ describe('render/crt — everything it touches arrives by injection (ADR-0232 D4
     const other = document.implementation.createHTMLDocument('other');
     const g = other.createElement('div'); other.body.appendChild(g);
     region(); // a #game-region in the page too — the one that must NOT be touched
-    createCrt({ region: () => g, win: { devicePixelRatio: 1 }, numPlayers: () => 1, a11yVisualOn: () => false,
+    createCrt({ region: () => g, win: { devicePixelRatio: 1 }, numPlayers: () => 1, ...NO_MODE,
       store: createStorage(memoryBackend()) }).apply();
     expect(g.classList.contains('crt-scan-1'), 'the handed region got no class').toBe(true);
     expect(document.querySelector('#game-region').classList.contains('crt-scan-1'), 'the page\'s region was touched').toBe(false);
@@ -67,7 +72,7 @@ describe('render/crt — everything it touches arrives by injection (ADR-0232 D4
     // two rows of screens: 2 real px per art line.
     const g = region(); g.style.height = '720px';
     const at = (dpr, players) => {
-      createCrt({ region: () => g, win: { devicePixelRatio: dpr }, numPlayers: () => players, a11yVisualOn: () => false,
+      createCrt({ region: () => g, win: { devicePixelRatio: dpr }, numPlayers: () => players, ...NO_MODE,
         store: createStorage(memoryBackend()) }).scanVars();
       return [g.style.getPropertyValue('--scan-per'), g.style.getPropertyValue('--scan-line')];
     };
@@ -101,10 +106,12 @@ describe('render/crt — everything it touches arrives by injection (ADR-0232 D4
 // reason the child turned it on.
 //
 // MUTATIONS CHECKED:
-//   · removing `&& !_a11yVisualAtiva()` from `render/crt.applyCrt`, the [Right] case fails with
+//   · removing `&& !ctx.vignetteYields()` from `render/crt.apply`, the [Right] case fails with
 //     "expected true to be false" — the vignette survives the accessibility mode.
 //   · dropping the `!` (suppressing when there is NO accessibility mode), the [Inverse] case fails — the vignette
 //     vanishes for whoever asked for no accessibility at all.
+//   · the scanline asking `vignetteYields` (or the vignette asking `scanlineYields`): the last block fails — each effect
+//     must follow its OWN answer (ADR-0241).
 describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', () => {
   // ONE instance for the block, over a store of its own (ADR-0232): the accessibility answer is a getter the case flips
   // mid-case, which is how the root's answer changes when the child turns a visual mode on.
@@ -151,7 +158,7 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
     expect(g.classList.contains('crt-scan-1')).toBe(false);
   });
 
-  it('[Right] os DOIS cedem juntos, e nenhuma chave os traz de volta', () => {
+  it('[Right] os DOIS cedem juntos quando o root diz que os dois cedem, e nenhuma chave os traz de volta', () => {
     // There is deliberately no per-effect escape key: the Dev removed it after seeing the result on screen
     // («Ceder fez muito bem ao jogo nos modos de acessibilidade»), so pillar 2 has no exception. This case keeps the key
     // from coming back unnoticed.
@@ -167,5 +174,28 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
     applyCrt();
     expect(g.classList.contains('crt-scan-1'), 'voltam sozinhas ao sair do modo').toBe(true);
     expect(g.classList.contains('crt-vig-1')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// EACH EFFECT FOLLOWS ITS OWN ANSWER (ADR-0241): under a colour-vision mode on its own the root says «the vignette
+// yields, the scanline does not». The CRT does not decide which modes are on — it draws what each answer lets it.
+describe('render/crt — the scanline and the vignette each follow their own answer (ADR-0241)', () => {
+  it('🔴 [Right] only the vignette yields: the scanline is drawn, the vignette is not', () => {
+    const g = region();
+    const crt = crtWith(() => true, createStorage(memoryBackend()), () => false);
+    Object.assign(crt.cfg, { scan: 1, vig: 1, round: 1 });
+    crt.apply();
+    expect(g.classList.contains('crt-scan-1'), 'the scanline yielded to the vignette\'s answer').toBe(true);
+    expect(g.classList.contains('crt-vig-1'), 'the vignette did not yield to its own answer').toBe(false);
+  });
+
+  it('🔴 [Right] only the scanline yields: the vignette is drawn, the scanline is not', () => {
+    const g = region();
+    const crt = crtWith(() => false, createStorage(memoryBackend()), () => true);
+    Object.assign(crt.cfg, { scan: 1, vig: 1, round: 1 });
+    crt.apply();
+    expect(g.classList.contains('crt-scan-1'), 'the scanline did not yield to its own answer').toBe(false);
+    expect(g.classList.contains('crt-vig-1'), 'the vignette yielded to the scanline\'s answer').toBe(true);
   });
 });

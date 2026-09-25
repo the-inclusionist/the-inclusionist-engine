@@ -26,8 +26,8 @@ function maquina(guardado) {
 
 /** The CRT the engine starts with on a machine that kept `guardado`. */
 async function arrancarCom(guardado) {
-  const { cfg } = createCrt({ region: () => null, win: { devicePixelRatio: 1 }, numPlayers: () => 1, a11yVisualOn: () => false,
-    store: createStorage(maquina(guardado)) });
+  const { cfg } = createCrt({ region: () => null, win: { devicePixelRatio: 1 }, numPlayers: () => 1,
+    scanlineYields: () => false, vignetteYields: () => false, store: createStorage(maquina(guardado)) });
   return { ...cfg };
 }
 

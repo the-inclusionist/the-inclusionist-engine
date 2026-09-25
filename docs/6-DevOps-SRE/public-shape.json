@@ -1836,10 +1836,11 @@
   },
   "render/crt.ts": {
     "interface CrtCtx": [
-      "a11yVisualOn",
       "numPlayers",
       "region",
+      "scanlineYields",
       "store",
+      "vignetteYields",
       "win"
     ],
     "interface Crt": [

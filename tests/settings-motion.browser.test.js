@@ -29,7 +29,7 @@ const $ = (sel) => document.querySelector(sel);
 let crt, CRT, applyCrt;
 function freshCrt() {
   crt = createCrt({ region: () => $('#game-region'), win: window, numPlayers: () => rodada.numPlayers,
-    a11yVisualOn: () => false, store: createStorage(memoryBackend()) });
+    scanlineYields: () => false, vignetteYields: () => false, store: createStorage(memoryBackend()) });
   CRT = crt.cfg; applyCrt = crt.apply;
 }
 

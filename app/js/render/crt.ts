@@ -3,8 +3,8 @@
 // region). `createCrt` builds one per root (ADR-0232 D4, issue #207): its `cfg` is the config {scan,vig,round} (0=off,1,2;
 // scan/vig are on/off) read from the injected store at build, migrating the old boolean format. `scanVars` anchors the
 // scanline to REAL PIXELS (recomputed from the region's real height + dpr → 1 line per art pixel, regular spacing).
-// Everything it touches arrives by injection: the region, the window's pixel ratio, the player count, the accessibility
-// question and the store.
+// Everything it touches arrives by injection: the region, the window's pixel ratio, the player count, the two
+// accessibility answers (does the scanline yield? does the vignette?) and the store.
 
 import { screenGrid } from '../core/screens.js';
 import type { Store } from '../platform/storage.js';
@@ -31,17 +31,19 @@ export interface CrtCtx {
    */
   numPlayers: () => number;
   /**
-   * Is ANY player in a visual accessibility mode? (anything other than `normal`.)
+   * Does the SCANLINE yield now? The ROOT answers, because the root is where the visual modes are known (ADR-0232): under
+   * every visual accessibility mode but a colour-vision one on its own (ADR-0241). A correction or a simulation of colour
+   * blindness changes hue; a stripe costs a low-vision child half the vertical resolution of a glyph (ADR-0047).
    *
-   * ADR-0020 decides that accessibility modes SUPPRESS the CRT and decorative effects — accessibility takes precedence
-   * over aesthetics. Without it, `crt-vig-1` survived in `hc-direto`, `fix-deuter`, `lv-blur` and `blind` with the
-   * vignette on: a vignette darkening the edges works against the mode that exists to RAISE contrast.
-   *
-   * `ANY` and not "player 1": the CRT is GLOBAL decoration, one for the whole screen. There is no darkening the edges of
-   * half a screen. If the decoration and any child's accessibility contradict each other, the decoration yields — which
-   * is literally what accessibility-over-aesthetics means.
+   * A question for the whole screen and not for "player 1": the CRT is GLOBAL decoration, and if it contradicts any
+   * child's accessibility, the decoration yields.
    */
-  a11yVisualOn: () => boolean;
+  scanlineYields: () => boolean;
+  /**
+   * Does the VIGNETTE yield now? Under EVERY visual accessibility mode, the colour-vision ones included (ADR-0047,
+   * kept by ADR-0241): darkened edges work against a mode that exists to raise contrast, whatever it does to hue.
+   */
+  vignetteYields: () => boolean;
   /** Where the CRT is read from at build and kept at every `apply()`. Required: a look read from nowhere resets each visit. */
   store: CrtStore;
 }
@@ -108,18 +110,14 @@ export function createCrt(ctx: CrtCtx): Crt {
   function apply(): void {
     const g = ctx.region(); if (!g) return;
     ['crt-scan-1', 'crt-vig-1', 'crt-round-0', 'crt-round-2'].forEach((c) => g.classList.remove(c));
-    // BOTH EFFECTS YIELD TO ACCESSIBILITY, WITH NO EXCEPTION (ADR-0020 + ADR-0047).
-    //
-    // A version with a per-effect escape switch existed, at the Dev's request. They removed it after SEEING the result
-    // on screen: «Ceder fez muito bem ao jogo nos modos de acessibilidade». It is noted because the switch's absence is a
-    // decision, not an oversight — and because pillar 2 is back to having no exception at all.
+    // EACH EFFECT YIELDS TO ITS OWN ANSWER (ADR-0047, ADR-0241): the vignette to every visual mode, the scanline to every
+    // one but a colour-vision mode on its own. There is no escape switch for the child, by the Dev's decision (ADR-0047).
     //
     // The stored value is NOT changed: the preference stays and counts again by itself on leaving the accessibility
     // mode. Suppressing is not turning off — it is the distinction that keeps the child from losing what they chose every
     // time they turn high contrast on.
-    const a11y = ctx.a11yVisualOn();
-    if (cfg.scan && !a11y) { g.classList.add('crt-scan-' + cfg.scan); scanVars(); }
-    if (cfg.vig && !a11y) g.classList.add('crt-vig-' + cfg.vig);
+    if (cfg.scan && !ctx.scanlineYields()) { g.classList.add('crt-scan-' + cfg.scan); scanVars(); }
+    if (cfg.vig && !ctx.vignetteYields()) g.classList.add('crt-vig-' + cfg.vig);
     if (cfg.round !== 1) g.classList.add('crt-round-' + cfg.round); // 1 = the default look (8px), no class
     store.setJSON(KEYS.crt, cfg);
   }
