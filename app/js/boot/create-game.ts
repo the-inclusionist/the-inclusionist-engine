@@ -90,7 +90,7 @@ import { createAudio, type Audio } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // The root is the layer that MAY know both axes: `render/` is below it, and it is the root's job to answer
 // `platform/audio-sonar`, which cannot import from here without inverting an edge (#104).
-import { isBlind, isLowVision, DEFAULT_VISUAL, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
+import { isBlind, isLowVision, hasHighContrast, DEFAULT_VISUAL, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 The mode → `url(#...)` table, which `render/cvd-matrices` installs and the `consumer-quiz` consumes.
 import { VIZ_FILTER } from '../render/viz-modes.js';
 import { createPadWizard, createPadMaps } from '../input/pad-wizard.js';
@@ -1092,14 +1092,15 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * THE CRT, applied by the engine (study items A5, B1). 📏 Measured: the panel said «Scanlines: on» and the region had no
    * CRT class until a toggle was pressed — `render/crt` was never started under `createGame`. It yields to a colour
-   * correction, a simulation and the contrast enhancement; its scanlines are re-anchored to real pixels at every scale.
+   * correction, a simulation, the game's high-contrast theme and the contrast enhancement; its scanlines are re-anchored
+   * to real pixels at every scale.
    */
   const crt: Crt = createCrt({
     region: () => $<HTMLElement>('#game-region'),
     win,
     // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
     numPlayers: () => Math.max(1, (cartridge.players ?? []).length),
-    a11yVisualOn: () => filterKey(worldState) !== null || lq.t() > 0,
+    a11yVisualOn: () => filterKey(worldState) !== null || hasHighContrast(worldState) || lq.t() > 0,
     store,
   });
   const { apply: applyCrt, scanVars: crtScanVars } = crt;
@@ -1349,6 +1350,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const sceneMotion = readStoredScene(store, defaultReducedMotion(win.matchMedia));
   const saveSceneMotion = (): void => { storeScene(store, sceneMotion); };
+  const setGameTheme = cartridge.setPlayerTheme;
   const pauseIcons = initPauseIcons({
     translator, store,
     settings: state, // the page's settings store itself: its live bindings are the reads the bar asks for (ADR-0232)
@@ -1463,7 +1465,16 @@ export function createGame(o: CreateGameOptions): Engine {
       reserveBarBand(); // the name line under the bar grows with the text (issue #160)
       return FONT_BY_KEY[position.font]?.fam ?? null;
     } : undefined,
-    ...(cartridge.setPlayerTheme ? { setPlayerTheme: cartridge.setPlayerTheme } : {}),
+    /*
+     * 🌗 THE THEME IS THE GAME'S TO DRAW (ADR-0148 erratum) AND THE ROOT'S TO KNOW: the decorative CRT yields to high
+     * contrast (ADR-0047), and a writer handed straight through left the root blind to it — the scanlines and the vignette
+     * stayed over a high-contrast screen.
+     */
+    ...(setGameTheme ? { setPlayerTheme: (i: number, theme: Theme) => {
+      setGameTheme(i, theme);
+      worldState = { ...worldState, tema: theme };
+      applyCrt();
+    } } : {}),
     /*
      * 🚥 COLOUR-VISION CORRECTION HAS AN ENGINE DEFAULT (ADR-0148 §1), so the icon is never missing for want of a writer.
      *

@@ -30,7 +30,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2203,
+      "codeLines": 2208,
       "decisionNodes": 283,
       "maxDepth": 4,
       "fanOut": 92,
