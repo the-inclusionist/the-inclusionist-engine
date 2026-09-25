@@ -3677,7 +3677,7 @@ engine's pause card a `caa` item stays locked with the same reason even when the
 case stays reachable through the quick bar's communication cycle (ADR-0151). New, additive: `aacMenuLocked()` in
 `ui/aac-sets`.
 
-## DE · ADR-0234: there is no Libras mode, there is a deaf mode
+## DG · ADR-0234: there is no Libras mode, there is a deaf mode
 
 **Who is affected:** a game that reads `engine.libras`, builds `createLibras` from `@the-inclusionist/engine/ui/vlibras.js`
 itself, or signed its announcements with `engine.mirrorAnnouncements(engine.libras.say)`.
