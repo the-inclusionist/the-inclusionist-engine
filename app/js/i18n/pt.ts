@@ -152,6 +152,7 @@ const pt: Record<string, string> = {
   'pause.motivo.ajuda': 'Este jogo ainda não disse o que cada botão faz.',
   'pause.motivo.addplayer': 'Quem decide quantos jogadores podem jogar é o jogo.',
   'pause.motivo.opcoesdojogo': 'Este jogo não tem opções próprias.',
+  'pause.motivo.caa': 'Menu desabilitado',
 
   // Acessibilidade (leitores de tela)
 

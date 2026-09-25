@@ -505,8 +505,9 @@ export function initShell(ctx: ShellCtx): ShellApi {
   // acted (pauseActor) — the panel opens on their tab.
   const pauseActs: PauseActs = {
     resume: () => ctx.resumeGame(),
-    // The door to the Augmentative and Alternative Communication menu (ADR-0028), where the letter case is one choice
-    // among others.
+    // The door to the Augmentative and Alternative Communication menu (ADR-0028). DISABLED while no pictogram set is
+    // licensed (ADR-0233 erratum): `ui/pause-icons` locks the `caa` item and `ui/settings-aac`'s `open` refuses, both
+    // saying only «menu disabled».
     caa: () => ctx.openAac(),
     nivel: () => ctx.setQuizLevel(ctx.getQuizLevel() % 5 + 1, true), // cycles 1..5
     tipo: () => ctx.openTypo(),

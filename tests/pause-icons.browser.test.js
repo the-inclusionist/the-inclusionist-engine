@@ -228,6 +228,27 @@ describe('buildScreenPause — a árvore construída', () => {
     expect((quit.dataset.motivo ?? '').length, 'a locked item without its reason').toBeGreaterThan(0);
   });
 
+  it('🔴 [Right] the AAC door is DISABLED even when the game hands over a `caa` action, and says only «Menu desabilitado» (ADR-0233 erratum)', () => {
+    // The menu exists for pictogram exercises and a keyboard once a set is licensed; none is. A game's own action must
+    // not unlock it, and the reason is the literal — no licence story reaches the child.
+    const opened = [];
+    const { sp, said, state } = mount(0, {
+      pmButtons: [...PM_BTNS, { act: 'options', lbl: '⚙ Opções' }],
+      getPauseActs: () => ({ resume: () => state.ran.push('resume'), caa: () => opened.push('caa') }),
+    });
+    expect(sp.querySelector('.pm-btn[data-act="options"]'), 'the fixture lost its «Opções» door').not.toBeNull();
+    const door = sp.querySelector('.pm-btn[data-act="caa"]');
+    expect(door, 'the fixture lost its AAC door').not.toBeNull();
+    expect(door.getAttribute('aria-disabled')).toBe('true');
+    expect(door.dataset.motivo).toBe('Menu desabilitado');
+    said.length = 0;
+    door.click();
+    expect(said).toEqual(['Menu desabilitado']);
+    expect(opened, 'the disabled AAC menu opened').toEqual([]);
+    // And a room whose only item is that door is an empty room: «Opções» is not offered live for it.
+    expect(actsVisiveis(sp)).not.toContain('options');
+  });
+
   // ============ found by the probe of 2026-09-24 (`scratchpad/sonda-pausa.py`): three answers of the card's click ============
   const visibleList = (sp) => sp.querySelector('.pause-menu:not([hidden])')?.dataset.sub;
 

@@ -671,6 +671,7 @@ const en: Record<string, string> = {
   'pause.motivo.ajuda': 'This game has not said yet what each button does.',
   'pause.motivo.addplayer': 'The game decides how many players can play.',
   'pause.motivo.opcoesdojogo': 'This game has no options of its own.',
+  'pause.motivo.caa': 'Menu disabled',
   // ===================== ARIA-LABELS FROM index.html =====================
   'a11y.communication': 'Communication: letters and symbols',
   'a11y.pauseMenu': 'Pause menu',

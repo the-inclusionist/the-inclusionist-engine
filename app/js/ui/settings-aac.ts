@@ -4,12 +4,11 @@
 // The catalogue (who exists, under which licence, in which tier) lives in ./aac-sets.js; only the screen is here. DI by
 // ctx, like the sibling panels: no global beyond what is injected.
 //
-// WHAT THIS MENU IS TODAY, said without make-up: a letter-case switch and, beside it, the two pictogram sets the project
-// would use — ARASAAC and PCS — both locked, because no licence has been obtained (ADR-0233). Only the letter case works.
-//
-// Showing what does not work would be dishonest if the menu did not say WHY. It does: each locked set carries the reason
-// «no licence», as the pause card shows a locked item with its reason (ADR-0161). Hiding them would make the educator
-// conclude the game has no pictograms at all — the wrong conclusion, and the one that costs most to whoever needs them.
+// WHAT THIS MENU IS TODAY, said without make-up: CLOSED. The menu exists for pictogram exercises and a pictogram keyboard,
+// once a set is licensed (ADR-0233 erratum); no set is, so its door is disabled and says only «menu disabled» (see
+// `lockDoor`), and `open` refuses. Letter case does not need it: the quick bar's communication cycle reaches upper case
+// (ADR-0151). Inside, the panel keeps the letters switch and the two candidate sets, ARASAAC and PCS, each locked with
+// «no licence» — rows no child reaches while the door is disabled.
 //
 // LETTER vs PICTOGRAM: the case choice is `letterCase` (core/state). There is NO parallel `aacMode`, and that is a
 // decision: while only one question is answerable, a second variable for it would be duplication dressed as
@@ -28,7 +27,7 @@
 import type { Translate } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import type { LetterCase } from '../core/state.js';
-import { AAC_SETS, AAC_BY_KEY, aacReason, aacSelectable, type AacSet } from './aac-sets.js';
+import { AAC_SETS, AAC_BY_KEY, aacMenuLocked, aacReason, aacSelectable, type AacSet } from './aac-sets.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { controlRow, labelRow, sectionHeader, type ControlRowSpec } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
@@ -191,7 +190,23 @@ export function initSettingsAac(ctx: SettingsAacCtx): SettingsAacApi {
     markMenuChanged(t, ctx.$<HTMLElement>('[data-act="caa"]'), [changed]);
   }
 
+  /**
+   * THE MENU'S DOOR IS DISABLED while no pictogram set is licensed (ADR-0233 erratum), with the pause card's lock
+   * (ADR-0161): `aria-disabled` and the reason in `data-motivo`, which the menu navigation speaks on reach and writes in
+   * the footer. The reason is ONLY «menu disabled»: the licence story is not the child's to hear. No unlock branch: the
+   * catalogue is static, so a licensed set means the door is never locked in the first place.
+   */
+  function lockDoor(): void {
+    const door = ctx.$<HTMLElement>('[data-act="caa"]');
+    if (!door || !aacMenuLocked()) return;
+    door.setAttribute('aria-disabled', 'true');
+    door.dataset.motivo = t('pause.motivo.caa');
+  }
+
   function open(): void {
+    // A game that wires its own door to `open` meets the same lock: the reason is said and nothing opens, so no
+    // per-set licence row reaches the child.
+    if (aacMenuLocked()) { lockDoor(); ctx.srSay(t('pause.motivo.caa')); return; }
     const ov = ctx.$<HTMLElement>('#caa');
     if (!ov) return;
     render();
@@ -225,6 +240,7 @@ export function initSettingsAac(ctx: SettingsAacCtx): SettingsAacApi {
 
   const closeBtn = ctx.$<HTMLElement>('#caa-close');
   if (closeBtn) closeBtn.addEventListener('click', close);
+  lockDoor();
 
   // ---- reset THIS menu's defaults (ADR-0028) ----
   // The menu has one choice, so the reset is one line — but where it returns to is worth saying: the default case,

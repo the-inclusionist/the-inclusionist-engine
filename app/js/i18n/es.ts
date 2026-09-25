@@ -668,6 +668,7 @@ const es: Record<string, string> = {
   'pause.motivo.ajuda': 'Este juego todavía no dijo qué hace cada botón.',
   'pause.motivo.addplayer': 'Es el juego quien decide cuántos jugadores pueden jugar.',
   'pause.motivo.opcoesdojogo': 'Este juego no tiene opciones propias.',
+  'pause.motivo.caa': 'Menú deshabilitado',
   // ===================== ARIA-LABEL DEL index.html =====================
   'a11y.communication': 'Comunicación: letras y símbolos',
   'a11y.pauseMenu': 'Menú de pausa',

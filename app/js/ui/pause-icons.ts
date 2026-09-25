@@ -118,6 +118,7 @@ import { KEYS } from '../platform/storage-keys.js';
 import { setMoveLatch } from './settings-mobility.js';
 import { latchRefusal } from './latch-refusal.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from './pause-buttons.js';
+import { aacMenuLocked } from './aac-sets.js';
 import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
 
 /**
@@ -442,9 +443,18 @@ const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'p
  * «Número de jogadores»: the GAME decides how many (ADR-0147) — and one general reason for the rest. Resolved at every
  * refresh, so it follows the language of the moment the card opens.
  */
-const OWN_REASONS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
+const OWN_REASONS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo', 'caa']);
 function itemReason(t: Translate, act: string): string {
   return t(OWN_REASONS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
+}
+
+/**
+ * A door the ENGINE keeps locked whatever the game hands over. Today one: `caa`, the AAC menu, disabled until a
+ * pictogram set is licensed (ADR-0233 erratum). Its reason is only «menu disabled» — no licence explanation reaches the
+ * child — and a game's own `caa` action does not unlock it.
+ */
+function lockedByEngine(act: string): boolean {
+  return act === 'caa' && aacMenuLocked();
 }
 
 /**
@@ -456,7 +466,7 @@ function itemsThatAct(
   buttons: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
 ): readonly PauseMenuButton[] {
-  return buttons.filter((b) => ENGINE_ITEMS.has(b.act) || typeof acts[b.act] === 'function');
+  return buttons.filter((b) => !lockedByEngine(b.act) && (ENGINE_ITEMS.has(b.act) || typeof acts[b.act] === 'function'));
 }
 
 /**

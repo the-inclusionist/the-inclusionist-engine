@@ -3670,6 +3670,13 @@ the 9.0 names (`caa-sets`, `CaaTier`, `CaaSet`, `CAA_SETS`, `caaMotivo`, …) or
 the panel (`app/js/main.ts:83`, `initSettingsCaa` from `ui/settings-caa`, called at 1792): no code change, and on the bump
 its menu shows ARASAAC and PCS locked with «sem licença» instead of eight sets. The other six use none of this.
 
+📌 **Not breaking, and said here because it changes what `game-platformer` shows (ADR-0233 erratum):** the AAC menu's
+DOOR is now disabled while no set is licensed. `initSettingsAac` marks the host's `[data-act="caa"]` with
+`aria-disabled="true"` and `data-motivo` «Menu desabilitado», and its `open()` says that reason and opens nothing; on the
+engine's pause card a `caa` item stays locked with the same reason even when the game hands over a `caa` action. Upper
+case stays reachable through the quick bar's communication cycle (ADR-0151). New, additive: `aacMenuLocked()` in
+`ui/aac-sets`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

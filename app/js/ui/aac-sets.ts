@@ -7,9 +7,9 @@
 // decoration nor a crutch — it is writing. An educational game that can only show letters does not speak to them.
 //
 // THE RULE THAT ORGANISES THE LIST (ADR-0233): only two sets are candidates, ARASAAC and PCS, and each only ONCE A LICENCE
-// IS OBTAINED. No licence exists today, so officially no set is used. The two stay in the menu, locked, with the reason
-// «no licence» — the same way the pause card shows a locked item with its reason (ADR-0161): an educator who looks for
-// PCS and does not find it concludes the game cannot do it, when the obstacle is a licence, not a capability.
+// IS OBTAINED. No licence exists today, so officially no set is used — and the AAC menu's door is DISABLED, saying only
+// that it is disabled, with no licence explanation (ADR-0233 erratum; `aacMenuLocked`). The two sets and their «no
+// licence» rows stay in the catalogue for the panel, which no child reaches until a set is licensed.
 //
 // `tier` is the whole legal fact, in two values: a set is LICENSED (a licence is recorded, the set may be chosen) or it
 // is not (it is shown locked, with the reason). ARASAAC's CC BY-NC-SA terms do not make it licensed: the project uses it
@@ -59,6 +59,16 @@ export function aacSelectable(s: AacSet): boolean {
 /** Which SETS the child can choose today: none, because no licence has been obtained (ADR-0233). */
 export function aacAvailable(): AacSet[] {
   return AAC_SETS.filter(aacSelectable);
+}
+
+/**
+ * Is the AAC menu's DOOR disabled? Yes while no set is licensed (ADR-0233 erratum): the menu exists for pictogram
+ * exercises and a pictogram keyboard, and with no set it has nothing to offer. The door then says only that the menu is
+ * disabled (`pause.motivo.caa`) — never the licence reason. Letter case does not wait for it: it lives in the quick bar's
+ * communication cycle (ADR-0151).
+ */
+export function aacMenuLocked(): boolean {
+  return aacAvailable().length === 0;
 }
 
 /**

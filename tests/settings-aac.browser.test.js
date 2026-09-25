@@ -204,16 +204,31 @@ describe('ui/settings-aac — a montagem pelo kit (ADR-0129)', () => {
 });
 
 describe('ui/settings-aac — abrir e fechar', () => {
-  it('[Right] open mostra o overlay e foca o primeiro botão; close o esconde e DEVOLVE o foco', () => {
-    // 🔴 This case's name promises the focus, and a probe on 22/09 found it did not measure it (deleting `f.focus()` left
-    // it green). Whoever opens a panel by keyboard and keeps the focus behind it has no way to reach what they just
-    // opened — and whoever closes it and does not get it back loses their place in the list.
+  it('🔴 [Right] the menu\'s DOOR is disabled and says only «Menu desabilitado» (ADR-0233 erratum, ADR-0161)', () => {
+    // The literal, so the case cannot pass by reading the key the code reads. The lock is the pause card's: `aria-disabled`
+    // (the keyboard still reaches the door and hears why) plus the reason in `data-motivo`, which menu-nav speaks.
+    initSettingsAac(fullCtx());
+    const door = $('[data-act="caa"]');
+    expect(door.getAttribute('aria-disabled')).toBe('true');
+    expect(door.dataset.motivo).toBe('Menu desabilitado');
+  });
+
+  it('🔴 [Right] open REFUSES while the door is disabled: it says the reason, shows nothing, and no licence row leaks', () => {
+    // A game that wires its own door to `open` (game-platformer does, through `ui/shell`'s `caa`) must meet the same lock.
+    // 📌 While no set is licensed the open-and-focus path cannot run; it returns with the first licence.
+    const ctx = fullCtx();
+    const api = initSettingsAac(ctx);
+    api.open();
+    expect($('#caa').hidden, 'the disabled menu opened').toBe(true);
+    expect(ctx.said).toEqual(['Menu desabilitado']);
+    expect(ctx.said.join(' '), 'the licence reason reached the child').not.toMatch(/licen/i);
+  });
+
+  it('[Right] close hides the overlay and GIVES THE FOCUS BACK', () => {
     const ctx = fullCtx();
     const devolvido = [];
     const api = initSettingsAac({ ...ctx, restoreFocus: (id) => { devolvido.push(id); return true; } });
-    api.open();
-    expect($('#caa').hidden).toBe(false);
-    expect(document.activeElement).toBe($('#caa').querySelector('button'));
+    $('#caa').hidden = false;
     api.close();
     expect($('#caa').hidden).toBe(true);
     expect(devolvido).toEqual(['caa']);
@@ -221,7 +236,8 @@ describe('ui/settings-aac — abrir e fechar', () => {
 
   it('[Right] o botão Fechar fecha', () => {
     const ctx = fullCtx();
-    initSettingsAac(ctx).open();
+    initSettingsAac(ctx);
+    $('#caa').hidden = false;
     $('#caa-close').click();
     expect($('#caa').hidden).toBe(true);
   });
