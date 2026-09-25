@@ -1737,7 +1737,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * rewrites by markup; built once, so its listener is not lost.
      */
     const captionsSpec = () => ({ id: 'opt-captions', label: t('visual.captions'), hint: t('visual.captions.dica') });
-    const { row: captionsRow, controle: captionsButton } = controlRow(panelCtx, captionsSpec());
+    const { row: captionsRow, control: captionsButton } = controlRow(panelCtx, captionsSpec());
     visualPanel.shell.card.insertBefore(captionsRow, visualPanel.shell.list.nextSibling);
     const reflectCaptions = (): void => {
       toggleBtn(captionsButton, state.captionsOn);
@@ -1793,7 +1793,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const word = subjectWord(cartridge.accommodations, 'ownerColors');
       return { id: 'opt-dono', label: word?.label ?? '', hint: word?.hint };
     };
-    const { row: ownerRow, controle: ownerButton } = controlRow(panelCtx, ownerSpec());
+    const { row: ownerRow, control: ownerButton } = controlRow(panelCtx, ownerSpec());
     const reflectOwner = (): void => {
       toggleBtn(ownerButton, state.ownerColors);
       ownerButton.textContent = toggleLabel(t, state.ownerColors);
@@ -3383,7 +3383,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * second press, and a game nobody presses twice has none to refuse.
      */
     const cooldownRowSpec = () => ({ id: 'opt-cooldown', label: t('motor.espera'), hint: t('motor.espera.dica') });
-    const { row: cooldownRow, controle: cooldownButton } = controlRow(mobilityCtx, cooldownRowSpec());
+    const { row: cooldownRow, control: cooldownButton } = controlRow(mobilityCtx, cooldownRowSpec());
     mobilityPanel.shell.list.appendChild(cooldownRow);
     const reflectCooldown = (): void => {
       labelRow(cooldownRow, cooldownRowSpec());
@@ -3461,7 +3461,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * answered: `ui/voice-control` says why and puts the answer back to off, and this row follows it like the icon does.
      */
     const voiceRowSpec = () => ({ id: 'opt-voice', label: t('motora.voz'), hint: t('motora.voz.dica') });
-    const { row: voiceRow, controle: voiceButton } = controlRow(mobilityCtx, voiceRowSpec());
+    const { row: voiceRow, control: voiceButton } = controlRow(mobilityCtx, voiceRowSpec());
     mobilityPanel.shell.list.appendChild(voiceRow);
     const reflectVoice = (): void => {
       labelRow(voiceRow, voiceRowSpec());

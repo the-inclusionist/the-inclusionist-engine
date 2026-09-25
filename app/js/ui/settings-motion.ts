@@ -207,7 +207,7 @@ function motionParts(ctx: PanelShellCtx, spec: MotionInsideSpec): MotionPart[] {
   const switchPart = (key: string, id: string, label: string, mark: readonly [string, string]): MotionPart => ({
     key,
     build: () => {
-      const { row: newRow, controle: switchButton } = controlRow(ctx, { id, label: label, ariaLabel: label });
+      const { row: newRow, control: switchButton } = controlRow(ctx, { id, label: label, ariaLabel: label });
       switchButton.setAttribute(mark[0], mark[1]);
       return newRow;
     },

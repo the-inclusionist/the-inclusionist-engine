@@ -130,7 +130,7 @@ export function mountTypoInside(t: Translate, ctx: PanelShellCtx, list: HTMLElem
       const spec = typoRowSpec(row);
       const old = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
       if (old) { labelRow(old, spec); dressRow(old, row); continue; }
-      const { row: rowNode, controle: faceButton } = controlRow(ctx, spec);
+      const { row: rowNode, control: faceButton } = controlRow(ctx, spec);
       faceButton.dataset.font = row.key;
       dressRow(rowNode, row);
       radios.appendChild(rowNode);

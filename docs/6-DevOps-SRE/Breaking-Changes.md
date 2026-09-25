@@ -3264,6 +3264,26 @@ calls `initSettingsPanel`, `initSettingsCaa`, `initSettingsEmpathy`, `initSettin
 (`app/js/ui/controls-panel.ts`). `game-platformer` calls `initPauseIcons` and `iconsMarkup()` (`app/js/main.ts`); no
 game calls `computeIconLabel`, `iconBtnMarkup`, `quickBarMarkup` or `screenPauseMarkup`.
 
+## CW · The member the word list hid: `ControlRow.controle` becomes `control` (ADR-0230, issue #206)
+
+**Who is affected:** anyone who calls `ui/panel-widgets`'s `controlRow` and reads the control it built —
+`const { row, controle } = controlRow(ctx, spec)` becomes `const { row, control } = controlRow(ctx, spec)`.
+
+📌 **Why now, after phase 7 was called done:** `controle` sat in the language gate's ENGLISH list until `18740e02`, so
+the member counted as clean; the map then filed it as an exclusion «pending decision». It was not pending: phase 7
+decided every Portuguese published member (ADR-0230), and this one mirrors nothing foreign and is stored nowhere. The
+exclusion leaves the map in the same commit.
+
+Printed by `node scripts/apply-member-rename.mjs --table ui` (the one row of this note):
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `ui/panel-widgets.js` | `ControlRow` | `controle` | `control` |
+
+📏 **Measured in the seven games, read-only, as information:** no game calls `controlRow` or reads a `ControlRow`
+(`git grep` for `controlRow` and `.controle` in `game-2048`, `game-chess`, `game-pinball`, `game-platformer`,
+`game-soccer`, `game-whackwhack` and `pixi-15-puzzle`: the only hits are the Portuguese word in comments and in UI text).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

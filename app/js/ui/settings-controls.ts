@@ -271,7 +271,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     const panelCtx: PanelShellCtx = { find: (sel) => ctx.$<HTMLElement>(sel), create: (tag) => el.ownerDocument.createElement(tag) };
     el.textContent = '';
     for (const { action: a, label: label } of ctx.gameActions()) {
-      const { row: row, controle: control } = controlRow(panelCtx, {
+      const { row: row, control: control } = controlRow(panelCtx, {
         id: ctrlControlId(a),
         label: label,
         shape: 'button',

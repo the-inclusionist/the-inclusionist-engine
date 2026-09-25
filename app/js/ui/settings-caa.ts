@@ -126,7 +126,7 @@ export function mountCaaInside(t: Translate, ctx: PanelShellCtx, list: HTMLEleme
  * locked, and the reason is already in `ariaLabel` for whoever navigates by keyboard.
  */
 function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
-  const { row: row, controle: control } = controlRow(ctx, spec);
+  const { row: row, control: control } = controlRow(ctx, spec);
   if (spec.id === 'caa-caixa-alta') { row.id = 'caa-letras'; return row; }
   const key = spec.id.replace('caa-set-', '');
   control.setAttribute('data-caa', key);

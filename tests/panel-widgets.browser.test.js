@@ -56,9 +56,9 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
   it('🔴 [Interface] a FORMA decide a tag — um `<select>` pedido não pode nascer `<button>`', () => {
     // ⚠️ IT IS THE DEFECT THAT RAISES NO ERROR. `settings-audio` does `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
     // on a `<button>` that writes a property nobody reads, and the child's choice vanishes silently.
-    expect(controlRow(ctx, { id: 'a', label: 'A' }).controle.tagName).toBe('BUTTON');
-    expect(controlRow(ctx, { id: 'b', label: 'B', shape: 'escolha' }).controle.tagName).toBe('SELECT');
-    const cursor = controlRow(ctx, { id: 'c', label: 'C', shape: 'cursor' }).controle;
+    expect(controlRow(ctx, { id: 'a', label: 'A' }).control.tagName).toBe('BUTTON');
+    expect(controlRow(ctx, { id: 'b', label: 'B', shape: 'escolha' }).control.tagName).toBe('SELECT');
+    const cursor = controlRow(ctx, { id: 'c', label: 'C', shape: 'cursor' }).control;
     expect(cursor.tagName).toBe('INPUT');
     expect(cursor.type).toBe('range');
     // ⚠️ AND WITH BOUNDS: a `range` without `min`/`max` assumes 0..100, and this project's volume is 0..1 — without this
@@ -71,9 +71,9 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     // A switch's `textContent` in this project is «▶ Desligado». Without `aria-label`, whoever navigates control by
     // control hears «Desligado, botão» and does not know WHAT is off — the `<strong>` beside it only serves whoever sees
     // the whole row.
-    const { controle } = controlRow(ctx, { id: 'x', label: 'Modo Fácil' });
-    expect(controle.getAttribute('aria-label')).toBe('Modo Fácil');
-    expect(controle.getAttribute('aria-pressed'), 'nasce sem estado dito, e um estado por dizer é um estado errado')
+    const { control } = controlRow(ctx, { id: 'x', label: 'Modo Fácil' });
+    expect(control.getAttribute('aria-label')).toBe('Modo Fácil');
+    expect(control.getAttribute('aria-pressed'), 'nasce sem estado dito, e um estado por dizer é um estado errado')
       .toBe('false');
   });
 
@@ -81,31 +81,31 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     // ⚠️ A hint that exists in one dictionary and not another must DISAPPEAR on retranslation. Not writing it is not
     // enough: the old text survives and the footer rests in the language the child just left. It is the same rule
     // `applyLabels` follows for the frame's `data-explain-idle`.
-    const { row: linha, controle } = controlRow(ctx, { id: 'x', label: 'Antes', hint: 'Explicação antiga.' });
+    const { row: linha, control } = controlRow(ctx, { id: 'x', label: 'Antes', hint: 'Explicação antiga.' });
     hospedeiro.appendChild(linha);
     labelRow(linha, { id: 'x', label: 'Depois' });
     expect(linha.querySelector('strong').textContent).toBe('Depois');
     expect(linha.querySelector('.opt-hint').textContent, 'a dica do idioma anterior sobreviveu').toBe('');
-    expect(controle.getAttribute('aria-label'), 'o nome falado ficou no idioma anterior').toBe('Depois');
+    expect(control.getAttribute('aria-label'), 'o nome falado ficou no idioma anterior').toBe('Depois');
   });
 
   it('🔴 [Right] relabelling names THE control with that id — not the first element of the row that has an id', () => {
     // Found by the probe of 2026-09-24: every kit row has one id, the control's, so «the first element with an id» and «the
     // element with this id» were the same answer. `labelRow` is published and takes any row, and a row built by hand — the
     // four colour swatches of the visual panel — carries several.
-    const { row: linha, controle } = controlRow(ctx, { id: 'x', label: 'Antes' });
+    const { row: linha, control } = controlRow(ctx, { id: 'x', label: 'Antes' });
     const outro = document.createElement('span');
     outro.id = 'outro';
     linha.prepend(outro);
     hospedeiro.appendChild(linha);
     labelRow(linha, { id: 'x', label: 'Depois' });
-    expect(controle.getAttribute('aria-label')).toBe('Depois');
+    expect(control.getAttribute('aria-label')).toBe('Depois');
     expect(outro.hasAttribute('aria-label'), 'another element of the row got the control\'s name').toBe(false);
   });
 
   it('[Right] `rotuloAria` ganha ao rótulo, para quando o nome falado não é o escrito', () => {
-    const { controle } = controlRow(ctx, { id: 'x', label: '↺', ariaLabel: 'Restaurar cores padrão' });
-    expect(controle.getAttribute('aria-label')).toBe('Restaurar cores padrão');
+    const { control } = controlRow(ctx, { id: 'x', label: '↺', ariaLabel: 'Restaurar cores padrão' });
+    expect(control.getAttribute('aria-label')).toBe('Restaurar cores padrão');
   });
 });
 

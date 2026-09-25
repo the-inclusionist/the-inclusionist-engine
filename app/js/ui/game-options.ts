@@ -119,7 +119,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, opti
   for (const o of options) {
     const id = `game-option-${o.id}`;
     if (o.kind === 'switch') {
-      const { row: rowNode, controle: switchButton } = controlRow(ctx, { id, label: o.label, hint: o.hint });
+      const { row: rowNode, control: switchButton } = controlRow(ctx, { id, label: o.label, hint: o.hint });
       const reflect = (): boolean => {
         const on = o.read();
         switchButton.classList.toggle('is-on', on);
@@ -137,7 +137,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, opti
     }
     const labelOf = (chosen: string): string => o.values.find((v) => v.value === chosen)?.label ?? chosen;
     if (o.kind === 'list') {
-      const { row: rowNode, controle: control } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
+      const { row: rowNode, control: control } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
       const sel = control as HTMLSelectElement;
       for (const v of o.values) {
         const op = ctx.create('option') as HTMLOptionElement;

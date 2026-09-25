@@ -58,7 +58,7 @@ export interface ControlRow {
   /** The whole `.ctrl-row`. It is where ADR-0029's `markChanged` puts the left-the-default mark. */
   readonly row: HTMLElement;
   /** The control itself, with the requested id. */
-  readonly controle: HTMLElement;
+  readonly control: HTMLElement;
 }
 
 /**
@@ -91,7 +91,7 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
   control.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
   rowNode.appendChild(control);
 
-  return { row: rowNode, controle: control };
+  return { row: rowNode, control: control };
 }
 
 /**

@@ -2305,7 +2305,7 @@
       "shape?"
     ],
     "interface ControlRow": [
-      "controle",
+      "control",
       "row"
     ],
     "interface StepsSpec": [
