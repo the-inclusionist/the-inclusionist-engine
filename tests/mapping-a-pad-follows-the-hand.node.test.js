@@ -13,6 +13,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { createPadWizard, PADWIZ_ORDER } from '../app/js/input/pad-wizard.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
@@ -31,6 +33,7 @@ function mkCtx(pads, named = THREE) {
   let ticks = 0;
   const ctx = {
     store: createStorage(memoryBackend()),
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
     getGamepads: () => pads,
     actionLabel: (a) => (named.includes(a) ? a.toUpperCase() : null),
     say: (p) => said.push(p),

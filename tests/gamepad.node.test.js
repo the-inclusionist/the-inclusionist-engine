@@ -8,6 +8,8 @@
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { PADWIZ_ORDER, initGamepad, padGameAnswers } from '../app/js/input/gamepad.js';
 import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/input/pad-reading.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
@@ -61,6 +63,7 @@ function buildCtx(over = {}) {
   return {
     // each ctx its own store (ADR-0232): a map one case saves cannot be the one another case reads
     store: createStorage(memoryBackend()),
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
     // the test plays the root: it answers from the real settings store, which the one-button cases turn on and off
     oneButton: () => estado.oneButton,
     $: (sel) => dom.get(sel) ?? null,
@@ -1189,11 +1192,12 @@ describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem exce
       'a frase do progresso deixou de usar a chave').toBe(true);
   });
 
-  it('⚠️ [Interface] nada no assistente sombreia o t do core/i18n', () => {
-    // A parameter or a local named `t` makes translating impossible where it is in scope — and nothing errors.
-    expect(FONTE, 'o assistente deixou de importar t').toMatch(/import \{ t \} from '\.\.\/core\/i18n\.js'/);
-    const sombras = CODIGO.filter(([, l]) => /\(\s*t\s*[:,)]|\bconst t\b|\blet t\b/.test(l)).map(([n, l]) => `${n}: ${l.trim()}`);
-    expect(sombras, 'um t local fecha a porta outra vez').toEqual([]);
+  it('⚠️ [Interface] the wizard translates with the `t` its ctx hands in, and nothing else in it is called `t` (ADR-0232 D3)', () => {
+    // A parameter or a local named `t` makes translating impossible where it is in scope — and nothing errors. The ONE
+    // binding is the root's translator, taken from the ctx at the top of `createPadWizard`.
+    const bindings = CODIGO.filter(([, l]) => /\(\s*t\s*[:,)]|\bconst t\b|\blet t\b|\{ t \}/.test(l)).map(([, l]) => l.trim());
+    expect(bindings, 'a second `t` in the wizard shadows the translator').toEqual(['const { t } = ctx;']);
+    expect(FONTE, 'the wizard reads the translator by import again').not.toMatch(/import \{[^}]*\bt\b[^}]*\} from '\.\.\/core\/i18n\.js'/);
   });
 
   it('[Interface] as cinco chaves existem nos tres dicionarios', () => {

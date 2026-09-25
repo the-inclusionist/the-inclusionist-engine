@@ -9,7 +9,7 @@
 //
 // ⚠️ ONE CACHE of stored maps for the whole page: a map saved by the engine's wizard is the one `initGamepad` reads on the next
 // frame, not a copy it cached before.
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { migrateControlMap } from './vocabulary-migration.js';
 import type { Store } from '../platform/storage.js';
 
@@ -77,6 +77,8 @@ function skipInSession(id: string): void {
 }
 
 export interface PadWizardCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** Where the finished map is stored — the page's store (ADR-0232). Required: a wizard that saved nowhere would ask the
    *  child the fourteen questions again at every visit, in silence. */
   store: PadMapStore;
@@ -107,6 +109,7 @@ export interface PadWizard {
 }
 
 export function createPadWizard(ctx: PadWizardCtx): PadWizard {
+  const { t } = ctx;
   let padWiz: WizState | null = null;
 
   /**

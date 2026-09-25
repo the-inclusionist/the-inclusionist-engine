@@ -11,6 +11,8 @@
 // `stopPropagation()`) needs this net — without it, Escape with Help open would UNPAUSE the game under the dialog.
 // If this case fails, someone touched the area: check the whole fix before updating the expectation.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { initKeydown } from '../app/js/input/keydown.js';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
 // The `input/state` PAIR (ADR-0109) — the same one `keydown.node.test.js` injects, for the same reason.
@@ -56,6 +58,7 @@ function wire({ pauseMenu = null } = {}) {
     win: host,
   });
   const keydown = initKeydown({
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     attractOnInput: () => false,
     handleCaptureKeydown: () => false,
     isTitleScreen: () => faseFalsa === 'title',

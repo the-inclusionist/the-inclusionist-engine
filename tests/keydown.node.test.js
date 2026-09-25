@@ -13,6 +13,8 @@
 //
 // The shell (DOM, focus, real propagation, menu-nav's capture) is in keydown.browser.test.js and is NOT repeated here.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { actionForCode } from '../app/js/input/keyboard-runtime.js';
 // ⚠️ THE REAL PAIR, NOT A DOUBLE OF IT (ADR-0109). A fake `markKey` here would be a SECOND implementation of the rule,
 // and the case would assert that a copy agrees with its own assertion — both move together and neither fails. With the
@@ -525,6 +527,7 @@ function mkCtx(over = {}) {
   const calls = [];
   const spy = (name) => (...args) => { calls.push([name, ...args]); };
   const ctx = {
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     attractOnInput: over.attractOnInput || (() => false),
     handleCaptureKeydown: over.handleCaptureKeydown || (() => false),
     // The scene's two facts (ADR-0030 C3). The fake keeps the string, as the cases read.

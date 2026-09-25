@@ -3230,8 +3230,11 @@ passes through its disposing door. The window's `i18n:change` event stays, as th
 | old | new | migration |
 |---|---|---|
 | `core/i18n.js` `applyDom(root)` | the root's `translator.applyDom(root)` — no longer published by the module | a game's markup is translated by its root; `createTranslator().applyDom` where a page translates its own |
+| `input/gamepad.js` `GamepadCtx` · `input/keydown.js` `KeydownCtx` · `input/pad-wizard.js` `PadWizardCtx` · `input/touch.js` `TouchCtx`, `TouchMarkupCtx` | each gains a REQUIRED `t: Translate` | pass your root's `t` (`createGame`'s engine answers for its own mounts) |
 
 📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).
+`game-platformer` calls `initKeydown`, `initGamepad` and `initTouch` (`app/js/main.ts`); `game-soccer` calls `initGamepad`
+(`app/js/boot/main.ts`); no game calls `createPadWizard` or `mountTouchControls`.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

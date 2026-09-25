@@ -2827,7 +2827,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
   };
   const touchPad = initTouch({
-    $, srSay, store, win,
+    $, srSay, store, win, t: translator.t,
     gameActions: labelledActions,
     root: doc.documentElement,
     isMobile: deviceAvailability.touch,
@@ -2870,7 +2870,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const padMap = touchPad.getTouchMap();
     const short = cartridge.preset ? shortLabellerFrom(cartridge.preset) : (): null => null;
     const pad = mountTouchControls(
-      { find: (sel) => $<HTMLElement>(sel), create: (tag) => doc.createElement(tag) },
+      { find: (sel) => $<HTMLElement>(sel), create: (tag) => doc.createElement(tag), t: translator.t },
       {
         map: padMap,
         gameActions: cartridgeActions(),
@@ -3235,7 +3235,7 @@ export function createGame(o: CreateGameOptions): Engine {
     controlPanel.shell.card.insertBefore(controlSentence, controlPanel.shell.list);
     controlPanel.shell.card.insertBefore(controlProgress, controlPanel.shell.list);
     padWizard = createPadWizard({
-      store,
+      store, t: translator.t,
       getGamepads: () => {
         const nav = win.navigator as Navigator | undefined;
         return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
@@ -3829,7 +3829,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   // menus it has open.
   const gameHooks = padGameAnswers(cartridge.gamepad, () => !menuWithDpad());
   const gamepad = initGamepad({
-    $, store,
+    $, store, t: translator.t,
     oneButton: () => state.oneButton, // the motor empathy, read each frame from the settings store (ADR-0232)
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // THE GAME'S WORD for a position: the engine knows the position exists, only the cartridge knows what it is called —

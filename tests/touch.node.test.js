@@ -6,6 +6,8 @@
 // outside — except for the last case, which mounts `initTouch` on a host with NO window, which is why only here it can be
 // measured.
 import { describe, it, expect } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import {
   padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap,
   IPHONE16_LONG_MM, IPHONE16_LONG_PX, IPHONE16_PXMM, TOUCH_SLOTS, TOUCH_ACTS,
@@ -191,6 +193,7 @@ describe('initTouch where there is no window at all', () => {
     const { initTouch } = await import('../app/js/input/touch.js');
     const guardado = new Map();
     const ctx = {
+      t: translate, // the root's translator, played by the test (ADR-0232 D3)
       $: () => null, srSay: () => {}, gameActions: () => [], padAllowed: () => true,
       store: {
         get: (k, fb = null) => (guardado.has(k) ? guardado.get(k) : fb), set: (k, v) => { guardado.set(k, String(v)); return true; },

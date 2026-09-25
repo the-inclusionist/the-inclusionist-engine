@@ -12,10 +12,13 @@
 //
 // MUTATIONS CHECKED at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { mountTouchControls, touchGaps } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
 
 const ctx = {
+  t: translate, // the root's translator, played by the test (ADR-0232 D3)
   find: (s) => document.querySelector(s),
   create: (t) => document.createElement(t),
 };

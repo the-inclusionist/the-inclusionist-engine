@@ -8,7 +8,7 @@
 // territory, not this module's.
 import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
 import { migrateTouchMap } from './vocabulary-migration.js';
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import { KEYS } from '../platform/storage-keys.js'; // the names only — reading and writing go through ctx.store (ADR-0232)
 import type { DomQuery } from '../core/dom-query.js';
 
@@ -30,6 +30,8 @@ export interface TouchStore {
  * boolean the game answers (`padAllowed` on the ctx). */
 
 export interface TouchCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
@@ -228,6 +230,7 @@ export interface TouchApi {
 }
 
 export function initTouch(ctx: TouchCtx): TouchApi {
+  const { t } = ctx;
   let padDesign = ctx.store.get(KEYS.padDesign, 'generic') || 'generic';
   let padBtnMm = ctx.store.getNum(KEYS.padBtnMm, 12.5);
   let padGapMm = ctx.store.getNum(KEYS.padGapMm, 3);
@@ -448,6 +451,8 @@ export function initTouch(ctx: TouchCtx): TouchApi {
 
 /** The three `document` things the pad's markup needs. Same shape as `ui/panel-shell`. */
 export interface TouchMarkupCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   find: (sel: string) => HTMLElement | null;
   create: (tag: string) => HTMLElement;
 }
@@ -472,7 +477,7 @@ const SLOT_NAME: Readonly<Record<string, string>> = {
   leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
   select: 'SELECT', start: 'START',
 };
-function buttonName(slotAction: string): string | null {
+function buttonName(t: Translate, slotAction: string): string | null {
   if (SLOT_NAME[slotAction]) return SLOT_NAME[slotAction]!;
   return slotAction === 'up' || slotAction === 'down' || slotAction === 'left' || slotAction === 'right' ? t(`touch.nome.${slotAction}`) : null;
 }
@@ -499,13 +504,14 @@ const SHOULDERS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
  * Idempotent: mounting twice returns the same node, its content rebuilt for the map of now.
  */
 export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
+  const { t } = ctx;
   const touchControls = ctx.find('#touch-controls') ?? ctx.create('div');
   touchControls.id = 'touch-controls';
   touchControls.className = 'touch';
   touchControls.hidden = true;
   while (touchControls.firstChild) touchControls.removeChild(touchControls.firstChild);
 
-  const f = padFacesOf(spec);
+  const f = padFacesOf(t, spec);
   // in the order they sit on the screen; a part the game names nothing for is an empty list, never an empty box
   const parts = [...directionPad(ctx, spec, f), ...actionButtons(ctx, spec, f), ...shoulderCorners(ctx, f), systemPills(ctx, f)];
   for (const part of parts) touchControls.appendChild(part);
@@ -519,12 +525,12 @@ interface PadFaces {
   readonly accessible: (slot: string) => string;
 }
 
-function padFacesOf(spec: TouchMarkupSpec): PadFaces {
+function padFacesOf(t: Translate, spec: TouchMarkupSpec): PadFaces {
   // 🔴 ONLY WHAT THE GAME NAMES (ADR-0162, superseding ADR-0157's minimum): «Vale para todos os botões: somente
   // aparecem se o jogo os nomeia.» A button on screen is a promise that it does something, and the game is who knows.
   const named = (slot: string): boolean => spec.gameActions.has(spec.map[slot] ?? '');
   // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
-  const nameOf = (slot: string): string => buttonName(spec.map[slot] ?? slot) ?? spec.slotLabel(slot);
+  const nameOf = (slot: string): string => buttonName(t, spec.map[slot] ?? slot) ?? spec.slotLabel(slot);
   const accessible = (slot: string): string => {
     const name = nameOf(slot);
     const purpose = spec.slotLabel(slot);

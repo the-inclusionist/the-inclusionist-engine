@@ -7,7 +7,7 @@
 // Boundary: this module only READS buttons/axes and maps them to actions; the physical button ARTWORK/labels
 // (PAD_DESIGNS) and the on-screen touch pad are input/devices.ts + input/touch — not here.
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE, type PadMapStore } from './pad-wizard.js';
@@ -184,6 +184,8 @@ export function seatEveryPlayer(list: readonly object[]): GamepadPlayer[] {
 }
 
 export interface GamepadCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /**
    * Where the controller maps a child made are kept — the page's store, built by the root (ADR-0232, issue #207). Required:
    * a pad whose map is read from nowhere answers with the standard layout, and a custom pad goes dead with no word said.
@@ -356,6 +358,7 @@ const MODAL_BY_POSITION: readonly (readonly [ActionKey, ModalIntent])[] = Object
 ] as const);
 
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
+  const { t } = ctx;
   let padWizAutoResume = false; // the wizard opened by itself mid-game -> resume when it closes
 
   // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
@@ -364,7 +367,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   // the wizard asks; what a position LOOKS like is drawn by the game (note CD), through the two hooks it may answer
   const wizard = createPadWizard({
-    store: ctx.store,
+    store: ctx.store, t,
     getGamepads: () => ctx.getGamepads(),
     actionLabel: (action) => ctx.actionLabel(action),
     say: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },

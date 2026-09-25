@@ -75,7 +75,7 @@
 // NO I/O ON IMPORT: the module body only declares frozen tables and pure functions. Every effect goes through
 // `initKeydown` (and even it does nothing until `attach()`).
 
-import { t } from '../core/i18n.js';
+import type { Translate } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed, type EdgeFlag } from './edges.js';
 
@@ -467,6 +467,8 @@ export function decideKeydown(ev: KeyEventFacts, s: KeydownSnapshot): KeydownDec
 /* ===================== ctx / api ===================== */
 
 export interface KeydownCtx {
+  /** Translates in the page's language — the root's translator (ADR-0232 D3). REQUIRED: text built from nowhere is a raw key. */
+  t: Translate;
   /* --- the two probes that DECIDE AND ACT: they run before the pure decision, in this order --- */
   /** The demo: resets idleness and ends the demo; `true` = the key was only to wake it up. */
   attractOnInput: () => boolean;
@@ -563,6 +565,7 @@ export interface KeydownApi {
 }
 
 export function initKeydown(ctx: KeydownCtx): KeydownApi {
+  const { t } = ctx;
   /** An open dialog = an element that exists AND is not `hidden` — so a flag stuck on `true` cannot lock the whole
    *  game's keyboard. */
   const visible = (id: string): boolean => { const el = ctx.$<HTMLElement>('#' + id); return !!el && !el.hidden; };

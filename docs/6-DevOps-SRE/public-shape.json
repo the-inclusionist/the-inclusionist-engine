@@ -566,6 +566,7 @@
       "srSay",
       "stopAttract",
       "store",
+      "t",
       "wizardStep",
       "wizardTick",
       "worldRunning"
@@ -758,6 +759,7 @@
       "playerEdge",
       "releaseKey",
       "srSay",
+      "t",
       "togglePause",
       "whichPlayer",
       "win"
@@ -837,7 +839,8 @@
       "progress",
       "say",
       "srAlert",
-      "store"
+      "store",
+      "t"
     ],
     "interface PadWizard": [
       "close",
@@ -963,6 +966,7 @@
       "root",
       "srSay",
       "store",
+      "t",
       "viewport",
       "win?"
     ],
@@ -993,7 +997,8 @@
     ],
     "interface TouchMarkupCtx": [
       "create",
-      "find"
+      "find",
+      "t"
     ],
     "interface TouchMarkupSpec": [
       "dpad?",

@@ -3,6 +3,8 @@
 // pattern as tests/settings-motion.browser.test.js):a ctx with FAKE $/srSay/store/root/isMobile/viewport/frontOverlay/
 // onPadDesignApplied (spies); the round and the phase are local to this file.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createTranslator } from '../app/js/core/i18n.js';
+const translate = createTranslator().t;
 import { initTouch } from '../app/js/input/touch.js';
 // THE SCENE BELONGS TO THE TEST: the phase is not in `core/state` — it is the `core/scenes` stack, and the three names
 // live in the composition root (ADR-0030 C3). What is engine receives BOOLEANS. This `let` plays the root's part, and the
@@ -65,6 +67,7 @@ function makeCtx(over = {}) {
     setJSON: (k, obj) => backing.set(k, JSON.stringify(obj)),
   };
   const ctx = {
+    t: translate, // the root's translator, played by the test (ADR-0232 D3)
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     srSay: (t) => calls.srSay.push(t),
