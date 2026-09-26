@@ -623,23 +623,46 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* ADR-0164 as the Dev corrected it: the EXPLANATION stands on a full-width dark band at the lowest edge (rule 2, rule 4);
    the BUTTON LEGEND runs the full width with NO band, a dark background only behind each «name: function» (rule 3), and
    sits above the explanation. The column itself paints nothing. Padding adds to 8 px, so two lines fit `--footer-band-h`. */
-/* THE HUD the engine mounts from a cartridge's `hud` (ADR-0168, ADR-0175; issue #162): two columns level with the quick bar —
-   points and mission top left, power top right — each narrowed by the root so it never reaches the bar. State on dark chips, like the
-   icon's name; no pointer events, so a finger passes through to the game. */
+/* THE PAD'S SHOULDER COLUMNS, as what else stands on the region must keep clear of them: while the pad shows them they own the
+   TOP CORNERS (ADR-0160; drawn only when the game names them, ADR-0162), and they are placed for REACH — a thumb finds a corner
+   without looking — so where they and anything else meet, the other thing moves. A shoulder is a `.touch-btn`, 56 px with the
+   target floor under it; a column holds one or two, 6 px apart. `--shoulders-right-reach` is how far down the right column
+   reaches, the edge margin under it counted: 0 while that corner holds none. */
+#game-region,.game-region{--shoulder-size:max(56px,var(--alvo-min,44px));--shoulders-right-reach:0px}
+#game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir),.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir){
+  --shoulders-right-reach:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size))}
+#game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir > :nth-child(2)),.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir > :nth-child(2)){
+  --shoulders-right-reach:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size) * 2 + 6px)}
+/* THE HUD the engine mounts from a cartridge's `hud` (ADR-0168; issue #162): the mission at the top centre, just under the quick
+   bar, and the rest in the HUD row at the bottom (ADR-0239 and its erratum; the row's rules are below). Where a caller mounts the
+   bands with no row they stand on the region: the points and the power down the right edge, the learning bars at the bottom
+   centre. State on dark chips, like the icon's name; no pointer events, so a finger passes through to the game.
+   📌 What it keeps clear of: the quick bar, which owns the top (ADR-0239's driver: «the top belongs to the quick accessibility
+   bar; the HUD no longer shares it») — `--barra-a11y-h` is the band `ui/top-band` measures —, the pad's shoulder columns (above),
+   and the pad itself, which the row stands above (ADR-0239 §6). */
+/* Where the bands have no row, the right edge's stack (the points, the power under them) starts under the bar's band and under
+   the right shoulders — whichever reaches lower — and never nearer the top than the edge margin. */
+#game-region,.game-region{--hud-corner-top:max(var(--margem-borda,8px),var(--barra-a11y-h,0px),var(--shoulders-right-reach))}
 .hud-faixa{position:absolute;z-index:12;margin:0;pointer-events:none;font-size:var(--ui-fs,16px);line-height:1.25;display:flex;gap:2px}
 .hud-faixa[hidden]{display:none}
 /* The MISSION sits at the TOP CENTRE, just under the quick bar (ADR-0239 erratum): `ui/top-band` writes its `top` from the
    bar's box. The class keeps its old name — a page-surface name is not renamed in passing. The bar's momentary name line is
    drawn over it while a name shows (the Dev: «a legenda é momentânea, a escrita da missão aparece o tempo todo»). */
 /* THE EDGE MARGIN (interface log 2026-09-26) where a caller mounts the bands on the region, with no row: `--margem-borda` from
-   the top and the side; the mission's `top` is otherwise `ui/top-band`'s, under the quick bar. */
-.hud-esquerda{top:var(--margem-borda,8px);left:50%;transform:translateX(-50%);max-width:calc(100% - 2 * var(--margem-borda,8px));flex-direction:column;align-items:center;text-align:center}
-.hud-direita{top:var(--margem-borda,8px);right:var(--margem-borda,8px);flex-direction:column;align-items:flex-end;text-align:right}
-/* The learning bars (ADR-0049 §5): one ten-segment bar per skill, side by side, centred at the bottom — under the footer
-   column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and a second cue beside
-   each, so no state is told by colour alone (WCAG 1.4.1): green carries a dot, red stripes, an empty slot only its outline;
-   a purple bar a ▲, an orange one a ▼. */
-.hud-aprendizagem{left:50%;bottom:var(--margem-borda,8px);transform:translateX(-50%);flex-direction:row;gap:.75em}
+   the side, and from the top the same place under the bar the root's mission takes (`--hud-mission-top`, which `ui/top-band`
+   writes; 0 with no bar) — at the margin it stood behind the bar's icons. Where the root mounts the mission, `ui/top-band`
+   writes that `top` on the element itself. */
+.hud-esquerda{top:max(var(--margem-borda,8px),var(--hud-mission-top,0px));left:50%;transform:translateX(-50%);max-width:calc(100% - 2 * var(--margem-borda,8px));flex-direction:column;align-items:center;text-align:center}
+.hud-direita{top:var(--hud-corner-top,8px);right:var(--margem-borda,8px);flex-direction:column;align-items:flex-end;text-align:right}
+/* The learning bars (ADR-0049 §5): one ten-segment bar per skill, one skill a line as in the row (ADR-0239 §1), centred at the
+   bottom — under the footer column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and
+   a second cue beside each, so no state is told by colour alone (WCAG 1.4.1): green carries a dot, red stripes, an empty slot
+   only its outline; a purple bar a ▲, an orange one a ▼. 📏 Side by side (ADR-0168 §3's footer, superseded), three bars were
+   501 px wide at 640×360 and, lifted above the pad, ran into the points and the power under the right shoulders. */
+.hud-aprendizagem{left:50%;bottom:var(--margem-borda,8px);transform:translateX(-50%);flex-direction:column;align-items:center;gap:2px}
+/* …and with no row, ABOVE the on-screen pad while it shows, as the row would stand (ADR-0239 §6): `--hud-row-bottom` is how high
+   the pad's lower parts reach (`ui/hud-row`). 📏 At the lower edge they stood under the START and SELECT pills. */
+.game-region > .hud-aprendizagem,#game-region > .hud-aprendizagem{bottom:calc(var(--hud-row-bottom,0px) + var(--margem-borda,8px))}
 /* The explanation band is 82% opaque: the bars showed through under its words. While it shows they are not drawn at all —
    the explanation has priority (ADR-0168 §3), and a segment behind a letter is noise for the child reading it. */
 .game-region:has(.barra-explicacao:not([hidden])) .hud-aprendizagem,#game-region:has(.barra-explicacao:not([hidden])) .hud-aprendizagem{visibility:hidden}
@@ -665,6 +688,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;column-gap:8px;
   padding:0 var(--margem-borda,8px) var(--margem-borda,8px); /* the edge margin (interface log 2026-09-26) */
   font-family:var(--font);font-size:var(--ui-fs,16px)}
+/* …and while the pad shows a shoulder column on a side, the row's cells stand clear of it on that side: lifted above the pad at
+   640×360 the row reaches up to the shoulders (the pad's directional is 179 px tall), and they keep their corner for reach
+   (ADR-0160). 📏 The power over the score stood 5 px into R1. */
+#game-region:has(#touch-controls:not([hidden]) > .touch-ombros--esq) > .hud-row,.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--esq) > .hud-row{
+  padding-left:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size))}
+#game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir) > .hud-row,.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir) > .hud-row{
+  padding-right:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size))}
 .hud-row:not(:has(.session-clock, .hud-faixa:not([hidden]), .hud-map > *)){display:none}
 .hud-row-learning{justify-self:start;min-width:0}
 .hud-row-clock{justify-self:center}
@@ -688,16 +718,16 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .session-clock-digits,.hud-points .hud-numero{font-family:var(--font-math);font-variant-numeric:tabular-nums;
   font-size:calc(var(--ui-fs,16px) * 1.25);line-height:1.1;white-space:nowrap}
 .hud-points .hud-numero{background:none;padding:0}
-.hud-points{top:var(--margem-borda,8px);right:var(--margem-borda,8px);flex-direction:column;align-items:flex-end} /* only where a caller mounts the bands with no row */
+.hud-points{top:var(--hud-corner-top,8px);right:var(--margem-borda,8px);flex-direction:column;align-items:flex-end} /* only where a caller mounts the bands with no row; `--hud-corner-top` above */
 /* …and there, at the top edge, the digits get a line that holds their glyphs: at 1.1 the face's box rose 1 px over the line
    (measured: 24 px of glyph box on a 22 px line at 640×360, 46 on 44 at 1280×720), into the edge margin */
 .game-region > .hud-points .hud-numero,#game-region > .hud-points .hud-numero{line-height:1.2}
-/* …and the POWER, which in the row stands over the points (ADR-0239 §3), has no room over them at the top edge: the same pair
-   reads top-down, the points in the corner and the power directly under them, on the same right edge — both at `top:margin`
-   drew one box over the other. The points' line is one line of digits, 1.25 × the text size on a 1.2 line (above); 2 px apart,
-   as in the row's cell. With no points shown the power is the corner's first line. */
+/* …and the POWER, which in the row stands over the points (ADR-0239 §3), has no room over them there: the same pair reads
+   top-down, the points first and the power directly under them, on the same right edge — both at one `top` drew one box over
+   the other. The points' line is one line of digits, 1.25 × the text size on a 1.2 line (above); 2 px apart, as in the row's
+   cell. With no points shown the power is the stack's first line. */
 .game-region:has(> .hud-points:not([hidden]) > .hud-numero:not([hidden])) > .hud-direita,
-#game-region:has(> .hud-points:not([hidden]) > .hud-numero:not([hidden])) > .hud-direita{top:calc(var(--margem-borda,8px) + var(--ui-fs,16px) * 1.25 * 1.2 + 2px)}
+#game-region:has(> .hud-points:not([hidden]) > .hud-numero:not([hidden])) > .hud-direita{top:calc(var(--hud-corner-top,8px) + var(--ui-fs,16px) * 1.25 * 1.2 + 2px)}
 /* THE SESSION CLOCK (ADR-0236, ADR-0239): the label over the time left, and the Time Timer pie to their right, as tall as a
    target. The pie is the share still to go (`--left`, written by `ui/session-clock`), green on a white face (ADR-0050 §3)
    inside a dark rim and a white ring, drawn inside its box. At the end the WHOLE pie turns red — an almost empty face

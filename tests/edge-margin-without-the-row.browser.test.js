@@ -101,10 +101,12 @@ describe.each([[640, 360, 8], [1280, 720, 16]])('the edge margin with no HUD row
     expect(found).toEqual([]);
   });
 
-  // THE POINTS AND THE POWER SHARE THE TOP-RIGHT CORNER WITHOUT A ROW (ADR-0239 §3: the score, and «above it the power in use»).
-  // In the row the power stands over the points; at the top edge there is no room over them, so the same pair reads top-down:
-  // the points in the corner, the power directly under them, both on the same right edge — never one box over the other.
-  it('🔴 [Right] the POINTS stand in the top-right corner and the POWER directly under them, never over them', async () => {
+  // THE POINTS AND THE POWER SHARE THE RIGHT EDGE WITHOUT A ROW (ADR-0239 §3: the score, and «above it the power in use»).
+  // In the row the power stands over the points; at the top there is no room over them, so the same pair reads top-down:
+  // the points first, the power directly under them, both on the same right edge — never one box over the other. And the
+  // pair starts under what owns the top: the quick bar's band (ADR-0239's driver) and, while the pad shows it, the right
+  // shoulder in its corner (ADR-0160) — `engine-pieces-never-overlap` measures every other piece against them.
+  it('🔴 [Right] the POINTS head the right edge under the bar and the shoulder, and the POWER stands directly under them', async () => {
     await atSize(document, w, h);
     const r = region.getBoundingClientRect();
     const box = (sel) => {
@@ -113,20 +115,25 @@ describe.each([[640, 360, 8], [1280, 720, 16]])('the edge margin with no HUD row
     };
     const points = box('.hud-points');
     const power = box('.hud-direita');
-    const seen = JSON.stringify({ points, power });
+    // what the stack stands under, measured: the band `ui/top-band` wrote, and the right shoulder's column
+    const band = parseFloat(region.style.getPropertyValue('--barra-a11y-h'));
+    const shoulders = box('#touch-controls > .touch-ombros--dir');
+    const head = Math.max(margin, band, shoulders.bottom + margin);
+    const seen = JSON.stringify({ points, power, band, shoulders });
+    expect(band, 'no bar band measured — the case would not see the bar').toBeGreaterThan(margin);
     const meet = power.left < points.right && points.left < power.right && power.top < points.bottom && points.top < power.bottom;
     expect(meet, `the power's box and the points' box overlap: ${seen}`).toBe(false);
-    expect(Math.abs(points.top - margin), `the points are not in the corner: ${seen}`).toBeLessThan(0.5);
-    expect(Math.abs(r.width - points.right - margin), `the points are not in the corner: ${seen}`).toBeLessThan(0.5);
+    expect(Math.abs(points.top - head), `the points do not head the right edge's stack: ${seen}`).toBeLessThan(0.5);
+    expect(Math.abs(r.width - points.right - margin), `the points are not on the right edge: ${seen}`).toBeLessThan(0.5);
     expect(power.top - points.bottom, `the power is not directly under the points: ${seen}`).toBeGreaterThanOrEqual(0);
     expect(power.top - points.bottom, `the power is not directly under the points: ${seen}`).toBeLessThanOrEqual(4);
     expect(Math.abs(power.right - points.right), `the power is not on the points' right edge: ${seen}`).toBeLessThan(0.5);
-    // a game with no points: the power is the corner's first line, not a line under an empty place
+    // a game with no points: the power is the stack's first line, not a line under an empty place
     const pointsBand = region.querySelector(':scope > .hud-points');
     pointsBand.hidden = true;
     try {
       await wait();
-      expect(Math.abs(box('.hud-direita').top - margin), 'with no points the power does not take the corner').toBeLessThan(0.5);
+      expect(Math.abs(box('.hud-direita').top - head), 'with no points the power does not head the stack').toBeLessThan(0.5);
     } finally {
       pointsBand.hidden = false;
       await wait();

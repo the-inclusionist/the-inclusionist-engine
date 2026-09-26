@@ -1978,7 +1978,7 @@
       "fanIn": 0
     },
     "ui/top-band.ts": {
-      "codeLines": 50,
+      "codeLines": 51,
       "decisionNodes": 8,
       "maxDepth": 1,
       "fanOut": 0,

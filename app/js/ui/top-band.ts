@@ -3,7 +3,9 @@
 //
 // The engine draws things over the game — the accessibility bar, the name of the pointed icon, the HUD's mission line
 // under the bar (the rest of the HUD is a row at the bottom, `ui/hud-row`) and the scan chip — and the game has to know how much of the top is not its own. This module measures what is there and
-// writes two variables on the region: `--barra-a11y-h`, the whole band, and `--scan-top`, where the chip sits.
+// writes three variables on the region: `--barra-a11y-h`, the whole band, `--scan-top`, where the chip sits, and
+// `--hud-mission-top`, where the mission stands under the bar (0 with no bar) — which the stylesheet reads for the bands a
+// caller mounts on the region with no HUD row, since those never pass through here.
 //
 // 📌 It is a calculation, not wiring, which is exactly what a composition root should not hold (Seemann; Fowler): a root
 // is large because it connects many things, not because it decides (ADR-0221).
@@ -73,17 +75,15 @@ function barRoom(ctx: TopBandCtx, top: number): { room: number; breath: number }
  * momentânea, a escrita da missão aparece o tempo todo» — so the mission is placed by the BAR and not by the name line, and
  * the room below the top counts whichever of the two reaches lower.
  */
-function hudRoom(ctx: TopBandCtx, top: number, breath: number, room: number): number {
-  const { region, bar, hud } = ctx;
+function hudRoom(ctx: TopBandCtx, top: number, breath: number, room: number, under: string): number {
+  const { region, hud } = ctx;
   if (!region || !hud || hud.left.hidden) return room;
-  const barBox = bar && typeof bar.getBoundingClientRect === 'function' ? bar.getBoundingClientRect() : null;
-  const gap = Math.max(breath, 4);
-  hud.left.style.top = barBox ? `${Math.ceil(barBox.bottom - top + gap)}px` : '';
-  return Math.max(room, hud.left.getBoundingClientRect().bottom - top + gap);
+  hud.left.style.top = under;
+  return Math.max(room, hud.left.getBoundingClientRect().bottom - top + Math.max(breath, 4));
 }
 
 /**
- * Measures the top and writes `--scan-top` and `--barra-a11y-h` on the region.
+ * Measures the top and writes `--hud-mission-top`, `--scan-top` and `--barra-a11y-h` on the region.
  *
  * 🔴 THE SCAN CHIP TAKES ROOM FOR THE SAME REASON AS THE NAME LINE (ADR-0218): it is HUD, and HUD that does not reserve its
  * space is the engine writing over the game. But it is PLACED by `--scan-top`, written BEFORE it widens the room; see
@@ -97,7 +97,12 @@ export function reserveTopBand(ctx: TopBandCtx): void {
 
   const top = region.getBoundingClientRect().top;
   const { room: barPart, breath } = barRoom(ctx, top);
-  let room = hudRoom(ctx, top, breath, barPart);
+  // the mission's place: just under the bar's own box, by the light gap — also for bands a caller mounts on the region with no
+  // row, which the stylesheet places by `--hud-mission-top`; with no bar there is nothing to stand under, and '' removes it
+  const barBox = ctx.bar && typeof ctx.bar.getBoundingClientRect === 'function' ? ctx.bar.getBoundingClientRect() : null;
+  const under = barBox ? `${Math.ceil(barBox.bottom - top + Math.max(breath, 4))}px` : '';
+  region.style.setProperty('--hud-mission-top', under);
+  let room = hudRoom(ctx, top, breath, barPart, under);
 
   region.style.setProperty('--scan-top', `${Math.ceil(Math.max(0, room - breath))}px`);
   const chip = region.querySelector<HTMLElement>('.scan-now');
