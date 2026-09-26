@@ -2,6 +2,9 @@
 metadata:
   status: "accepted"
   confirmed-by:
+    - tests/virtual-controller.node.test.js
+    - tests/menu-nav.browser.test.js
+    - tests/quiz-answers-by-real-key.browser.test.js
     - tests/a-delivered-key-does-not-also-click.browser.test.js
     - tests/key-default.node.test.js
     - tests/engine-boundary.node.test.js
@@ -10,6 +13,18 @@ metadata:
     - app/js/input/synthetic-source.ts
     - tests/virtual-controller.node.test.js
   errata:
+    - date: 2026-09-26
+      what: >-
+        ✅ A KEY THAT WENT TO SOMETHING ELSE IS NOT ALSO PLAYED — the second half of the erratum above. Measured on the
+        served quiz with real keys after it, four keys were still two actions: Space on the bar's ☰ opened the menus and
+        answered; Space on «resume» closed the card and answered; a key typed into a text field in play was delivered too;
+        with the focus on «Quatro», Space answered the quiz's cursor, «Três». The rule is now one rule from two sides: a
+        key the game heard is spent (its default is cancelled), and a key that went to something else is not delivered —
+        a key typed into an editable field, Space, Enter or NumpadEnter on the engine's own focused control
+        (`input/key-default.keyGoesToGame`), and any key the engine's menus consumed in the same event, including one
+        that closed the last menu (`MenuNavApi.consumed`). Other keys on a focused engine control stay the game's. A
+        cartridge whose cursor is its own follows the focus, so what a screen reader announces is what the activation
+        key answers; the demo quiz does. Engine `bdd719db`, `afcfe81e`, `888a015a`.
     - date: 2026-09-26
       what: >-
         ✅ THE ENGINE CANCELS THE DEFAULT OF A KEY IT DELIVERED. «a engine leva o evento para o jogo» makes a delivered
