@@ -1048,6 +1048,21 @@ export function createGame(o: CreateGameOptions): Engine {
     utterance: (text) => new speechHost.SpeechSynthesisUtterance(text),
   };
   /*
+   * THE DEVICE'S VOICES ARRIVE LATE, AND TWO THINGS FOLLOW THEM (ADR-0185 §4, erratum 2026-09-26): the hearing panel's speech rows
+   * and the 🗣 of the bars. The page has ONE `onvoiceschanged` slot, so this root takes it once and hands each change to every
+   * listener. The last root takes the slot, and an ended root empties it only if it is still its own (ADR-0220).
+   */
+  const voicesListeners: (() => void)[] = [];
+  const voicesChanged = (): void => { for (const again of voicesListeners) again(); };
+  const whenVoicesChange = (again: () => void): void => {
+    voicesListeners.push(again);
+    if (voicesListeners.length > 1) return;
+    try { if (speechHost.speechSynthesis) speechHost.speechSynthesis.onvoiceschanged = voicesChanged; } catch (e) { /* noop */ }
+    whenDisposed(() => {
+      try { if (speechHost.speechSynthesis?.onvoiceschanged === voicesChanged) speechHost.speechSynthesis.onvoiceschanged = null; } catch (e) { /* noop */ }
+    });
+  };
+  /*
    * THE ENGINE'S OWN KOKORO LOADER (ADR-0216 §1 and §5) — the Dev, 2026-09-21: «O jogo não deve precisar saber como isso funciona».
    * ⚠️ IMPORTED AT THE FIRST NEURAL UTTERANCE AND NOT BEFORE: `kokoro-runtime` is what names espeak-ng and the ONNX runtime, so a
    * game that never speaks neurally never loads a byte of them — which is the whole reason this is an `import()` and not an
@@ -1651,6 +1666,12 @@ export function createGame(o: CreateGameOptions): Engine {
     // is worse than a missing one (ADR-0106 §5), and the click path does not cover it, because this change comes from elsewhere.
     stateOn('voiceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
   }
+  // 🔴 AND THE 🗣 WHEN THE DEVICE'S VOICES CHANGE (ADR-0185 erratum 2026-09-26): they can arrive after load, or leave, and the
+  // icon's greyed-out look is the lock the child sees. Silent: the press says why on its own, and nothing else changed.
+  whenVoicesChange(() => {
+    if (a11yBar && barUsable) pauseIcons.reflectIconsIn(a11yBar, 0);
+    pauseIcons.reflectPauseIcons();
+  });
 
   // 4d. WHO OPENED THE PAUSE, when there is more than one seat — finding 3 of the `game-soccer` audit.
   //
@@ -2269,13 +2290,7 @@ export function createGame(o: CreateGameOptions): Engine {
             ss.speak(u);
           } catch (e) { /* the device refused to speak; the panel already says what it can do */ }
         },
-        whenVoicesChange: (again) => {
-          try { if (win.speechSynthesis) win.speechSynthesis.onvoiceschanged = again; } catch (e) { /* noop */ }
-          // one slot per page and the last root takes it: an ended root empties it only if it is still its own (ADR-0220)
-          whenDisposed(() => {
-            try { if (win.speechSynthesis?.onvoiceschanged === again) win.speechSynthesis.onvoiceschanged = null; } catch (e) { /* noop */ }
-          });
-        },
+        whenVoicesChange,
       },
       audioOutputs: {
         canList: () => !!(win.navigator?.mediaDevices && win.navigator.mediaDevices.enumerateDevices),

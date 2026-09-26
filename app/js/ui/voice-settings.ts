@@ -180,6 +180,8 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
   }
 
   const noVoice = (): boolean => !!ctx.tts.voices && ctx.tts.voices().length === 0;
+  /** The lock last drawn on the speech rows; `null` before it is first drawn. Compared when the voices change. */
+  let lockDrawn: boolean | null = null;
 
   /** The speech rate list: each step «N PPM», the stored one selected (ADR-0183 §1, ADR-0196). */
   function renderRate(): void {
@@ -192,10 +194,15 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     sel.value = String(ctx.settings.speechPpm);
   }
 
+  /** The voices of the language as ids, one per line: what the «Voz» list was last drawn from. */
+  const voiceIds = (): string => (ctx.tts.voices?.() ?? []).map((v) => v.voice).join('\n');
+  let listDrawn: string | null = null;
+
   function renderVoiceList(): void {
     const sel = ctx.$<HTMLSelectElement>('#tts-voz');
     if (!sel || !ctx.tts.voices) return;
     const list = ctx.tts.voices();
+    listDrawn = voiceIds();
     sel.replaceChildren(); // options built node by node: no markup sink
     if (!list.length) {
       const o = ports.newOption(); o.textContent = t('audio.voz.nenhuma'); sel.appendChild(o);
@@ -213,6 +220,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
    */
   function lockSpeechRows(): void {
     const lock = noVoice();
+    lockDrawn = lock;
     for (const id of SPEECH_ROWS) {
       const el = ctx.$<HTMLElement>(id);
       if (!el) continue;
@@ -336,7 +344,39 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
   }
   wireControls();
 
-  ports.whenVoicesChange(populateTtsVoices);
+  /**
+   * A LOCK THAT FLIPS UNDER THE CURSOR IS TOLD, and only there (ADR-0185 erratum 2026-09-26). The footer is written with what
+   * focusing the row would show NOW — the reason, or the row's own explanation — because it would otherwise go on saying «no
+   * voice» under a row that works. Locking is heard once, through the footer, which is `aria-live`, as when a locked row is
+   * focused. Unlocking gets one sentence more: the footer then gives the row's explanation, which does not say the state
+   * changed, and whether a removed `aria-disabled` on the focused control is spoken is left to each screen reader.
+   */
+  function tellUnderCursor(): void {
+    const el = SPEECH_ROWS.map((id) => ctx.$<HTMLElement>(id)).find((e) => !!e && e.ownerDocument?.activeElement === e);
+    if (!el) return;
+    const footer = el.closest<HTMLElement>('.overlay__card')?.querySelector<HTMLElement>('.opt-explain');
+    if (lockDrawn) {
+      if (footer) footer.textContent = el.dataset.motivo ?? '';
+      return;
+    }
+    if (footer) footer.textContent = el.closest<HTMLElement>('.ctrl-row')?.dataset.explain || (footer.dataset.idle ?? '');
+    ctx.srSay(t('audio.comVoz'));
+  }
+
+  /**
+   * 🔴 THE DEVICE'S VOICES CHANGED (ADR-0185 §4, erratum 2026-09-26): a device may list them a moment after load — empty first,
+   * then full — and may lose them. The lock is a fact about those voices, so it is evaluated again here, both ways, IN PLACE:
+   * attributes on the same nodes, never a redraw, so the focus stays where the child left it. Only a change is drawn or told:
+   * the voice list when its voices differ, the rows and the cursor's row when the lock flips.
+   */
+  function voicesChanged(): void {
+    populateTtsVoices();
+    if (voiceIds() !== listDrawn) renderVoiceList(); // the same voices keep the same options, which the child may be reading
+    const before = lockDrawn;
+    lockSpeechRows();
+    if (lockDrawn !== before) tellUnderCursor();
+  }
+  ports.whenVoicesChange(voicesChanged);
 
   return {
     render: (): void => {

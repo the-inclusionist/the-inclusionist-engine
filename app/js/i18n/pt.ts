@@ -575,6 +575,7 @@ const pt: Record<string, string> = {
   'audio.voz': 'Voz',
   'audio.voz.nenhuma': 'Nenhuma voz',
   'audio.semVoz': 'Não há voz que fale este idioma.',
+  'audio.comVoz': 'Agora há uma voz que fala este idioma.',
   'sr.audio.voz': 'Voz: {nome}.',
   'audio.ttsTest': 'Testar a voz',
   'audio.ttsTest.dica': 'Fala uma frase de exemplo com a voz escolhida agora.',
