@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2244,
+      "codeLines": 2247,
       "decisionNodes": 280,
       "maxDepth": 4,
       "fanOut": 96,
@@ -408,7 +408,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 649,
+      "codeLines": 650,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 649,
+      "codeLines": 650,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -428,7 +428,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 649,
+      "codeLines": 650,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -888,7 +888,7 @@
       "fanIn": 0
     },
     "platform/heavy.ts": {
-      "codeLines": 177,
+      "codeLines": 181,
       "decisionNodes": 44,
       "maxDepth": 3,
       "fanOut": 1,
@@ -978,8 +978,8 @@
       "fanIn": 2
     },
     "platform/reading-in-worker.ts": {
-      "codeLines": 60,
-      "decisionNodes": 8,
+      "codeLines": 89,
+      "decisionNodes": 11,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
