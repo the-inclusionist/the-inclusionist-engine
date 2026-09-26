@@ -2278,14 +2278,20 @@ export function createGame(o: CreateGameOptions): Engine {
       newElement: (tag) => doc.createElement(tag),
       speech: {
         voices: () => { try { return win.speechSynthesis?.getVoices() ?? []; } catch (e) { return []; } },
+        /*
+         * 🔴 THE SAMPLE SPEAKS THE PAGE'S LANGUAGE, read at every press: its text comes from the page's dictionary, so a fixed tag
+         * asked the browser for a Portuguese voice to read English words. And a chosen voice of ANOTHER language is not handed
+         * over (ADR-0185): the page's system-voice list offers every voice when none matches, and the one picked before a
+         * language switch outlives it. So the voice goes only if the engine's own list for the language (`tts.voices()`) has it.
+         */
         speakSample: (sample, chosen) => {
           try {
             const ss = win.speechSynthesis;
             if (!ss) return;
             ss.cancel();
             const u = speech.utterance(sample);
-            u.lang = 'pt-BR';
-            if (chosen) u.voice = chosen;
+            u.lang = bcp47();
+            if (chosen && tts.voices().some((v) => v.voice === 'webspeech:' + chosen.name)) u.voice = chosen;
             u.rate = 1; u.volume = 1;
             ss.speak(u);
           } catch (e) { /* the device refused to speak; the panel already says what it can do */ }
