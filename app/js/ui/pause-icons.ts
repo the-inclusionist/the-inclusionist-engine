@@ -1082,6 +1082,24 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // corrects it. 📌 Measured in a browser back when a guard skipped some of them: five icons in English and three still in
     // Portuguese, on the same bar.
     b.setAttribute('aria-label', computeIconLabel(t, k, st));
+    refreshCursorCaption(b);
+  }
+
+  /**
+   * THE NAME UNDER THE ROW FOLLOWS THE LABEL OF THE ICON UNDER THE CURSOR (ADR-0159 rule 10, ADR-0167). The caption is the
+   * visible half of what the cursor says, and the reflection is how a state changed ELSEWHERE reaches the icon — the 🦯, 📷
+   * and 👄 through the root's `stateOn`, the 🗣 through the hearing panel's `setCatGain`. Written only on a move or a press,
+   * the caption kept the state the child had left while the label spoke the new one.
+   *
+   * Only the CURSOR's icon (`.pi-sel`, which lives only on the bars `getA11yBars` hands over): another icon's name under the
+   * row would move the cursor's only visible mark. And only when the text CHANGED: the per-screen bar's caption is a live
+   * region, and the same words rewritten are said again.
+   */
+  function refreshCursorCaption(b: HTMLElement): void {
+    if (!b.classList.contains('pi-sel')) return;
+    const cap = ctx.getA11yBars().find((bar) => bar.contains(b))?.querySelector('.pause-icons-cap');
+    const text = accessibleLabel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
+    if (cap && cap.textContent !== text) cap.textContent = text;
   }
 
   function reflectIconsIn(root: ParentNode | null, i: number): void {
