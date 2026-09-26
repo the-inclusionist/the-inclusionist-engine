@@ -3988,7 +3988,7 @@ the behaviour of section E's two rows for this note.
 and never changed, because no scanned step moved a value; and §4's «what selects is ANY input» held for keys only — a touch on
 the game region, the on-screen pad, the camera modes, the voice and the gamepad still pressed what they pressed while the scan
 was on. On a control with a value the pass now offers «increase» and «decrease», and every transport's press takes the item
-shown (engine, branch `scan-sideways-and-any-input`: `22c23e8b` the sideways step, `aceae03e` any input; `main`'s hashes once integrated).
+shown (engine `07568574` the sideways step, `5f3e3732` any input).
 
 | was | is | migration |
 |---|---|---|

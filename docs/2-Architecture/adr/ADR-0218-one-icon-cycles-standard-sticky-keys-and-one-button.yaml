@@ -37,7 +37,7 @@ metadata:
         to «Galinha» and answered nothing; the same click on «cancelar» did nothing; a fake pad's START on «Acima» moved it back
         and opened no pause, its d-pad left on «Abaixo» moved it down, its A on «cancelar» did nothing; a click on ☝️ left
         one-button mode, and the next click on «Peixe» chose «Peixe». Engine, branch
-        `scan-sideways-and-any-input`: `22c23e8b` (the sideways step), `aceae03e` (any input); `main`'s hashes once integrated.
+        `07568574` (the sideways step), `5f3e3732` (any input).
     - date: 2026-09-26
       what: >-
         ✅ THE ENGINE'S DOORS ARE BUILT, AND SCANNING WORKS INSIDE THE MENUS. §3's «then the doors the engine itself opens» was
