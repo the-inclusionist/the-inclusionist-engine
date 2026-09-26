@@ -4606,7 +4606,11 @@
    "config": {
     "num_key_value_heads": 8,
     "num_attention_heads": 8,
-    "hidden_size": 512
+    "hidden_size": 512,
+    "encoder_config": {
+     "frame_ms": 5.0,
+     "sample_rate": 16000
+    }
    }
   },
   "en": {
@@ -6862,7 +6866,11 @@
    "config": {
     "num_key_value_heads": 8,
     "num_attention_heads": 8,
-    "hidden_size": 512
+    "hidden_size": 512,
+    "encoder_config": {
+     "frame_ms": 5,
+     "sample_rate": 16000
+    }
    }
   }
  }

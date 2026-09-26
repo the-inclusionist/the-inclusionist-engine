@@ -17,7 +17,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   READING_MODELS, READING_RATE, WHISPER_BANDS, WHISPER_FRAMES, WHISPER_SAMPLES,
-  logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens,
+  inWholeFrames, logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens, waveFrameOf,
 } from '../app/js/platform/reading-model.js';
 import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 
@@ -243,6 +243,39 @@ describe('which token comes next', () => {
 });
 
 /*
+ * 🔴 THE STREAMING ENCODER'S FRAMES (issue #185). Both Moonshines cut the wave into frames of `frame_ms` at `sample_rate` and
+ * refuse a wave that is not whole frames; the microphone's 4096-sample blocks are whole frames only five at a time.
+ */
+describe('the wave in whole frames', () => {
+  it('🔴 [Right] the frame is `frame_ms` at `sample_rate`, from the config; a config that names none takes any length', () => {
+    expect(waveFrameOf({ encoder_config: { frame_ms: 5, sample_rate: 16_000 } })).toBe(80);
+    expect(waveFrameOf({ encoder_config: { frame_ms: 10, sample_rate: 8000 } })).toBe(80);
+    expect(waveFrameOf({ encoder_config: { frame_ms: 10, sample_rate: 16_000 } })).toBe(160);
+    expect(waveFrameOf({}), 'a config with no encoder frame').toBe(1);
+    expect(waveFrameOf({ encoder_config: { frame_ms: 5 } }), 'half a frame named').toBe(1);
+  });
+
+  it('🔴 [Right] filled to the next whole frame with zeros at the END, the samples before them untouched', () => {
+    const wave = Float32Array.from({ length: 45_056 }, (_, i) => Math.sin(i) || 0.5);
+    const framed = inWholeFrames(wave, 80);
+    expect(framed.length).toBe(45_120);
+    expect([...framed.subarray(0, 45_056)]).toEqual([...wave]);
+    expect([...framed.subarray(45_056)]).toEqual(new Array(64).fill(0));
+  });
+
+  it('📌 [Boundary] a wave already in whole frames is handed on as it came; one sample over is a whole frame more', () => {
+    const whole = new Float32Array(160);
+    expect(inWholeFrames(whole, 80)).toBe(whole);
+    expect(inWholeFrames(new Float32Array(161), 80).length).toBe(240);
+    expect(inWholeFrames(new Float32Array(79), 80).length).toBe(80);
+  });
+
+  it('📌 [Zero] an empty recording is one frame of silence: both graphs stop at their `Pad` node on a wave of no samples', () => {
+    expect([...inWholeFrames(new Float32Array(0), 80)]).toEqual(new Array(80).fill(0));
+  });
+});
+
+/*
  * 🔴 AND THE COPY HAS TO STAY A COPY. The fixture holds the filters and the pieces so the arithmetic above runs anywhere; the
  * price of that is a second copy of bytes the catalogue already pins, and a copy that drifts is worse than no copy — it would
  * keep this file green while the model reads something else. Where the staging tree is on the machine, this says so.
@@ -277,6 +310,21 @@ describe.skipIf(!TEM_ARVORE)('the fixture against the files the catalogue fetche
     for (const lingua of ['pt', 'en', 'es']) {
       const caso = truth.tokenizers[lingua];
       expect(readingTextOf(lerDaArvore(`${caso.folder}/tokenizer.json`), caso.ids), lingua).toBe(caso.text);
+    }
+  });
+
+  it('🔴 [Right] the replay\'s encoder frame is the model\'s own, and it is the multiple the model\'s processor pads to', () => {
+    // 📌 Two files of the model say the same thing in two ways: `config.json` names the frame the encoder cuts, and
+    // `preprocessor_config.json` pads the wave to its multiple. The engine reads the first (the catalogue fetches it); this
+    // holds it to the second, which is what the model was run with.
+    const trace = JSON.parse(readFileSync('tests/fixtures/reading-trace.json', 'utf8'));
+    for (const lingua of ['en', 'es']) {
+      const { folder, config } = trace.languages[lingua];
+      const real = lerDaArvore(`${folder}/config.json`);
+      expect(config.encoder_config, `${lingua}: the fixture's frame is not the model's`).toEqual({
+        frame_ms: real.encoder_config.frame_ms, sample_rate: real.encoder_config.sample_rate,
+      });
+      expect(waveFrameOf(real), lingua).toBe(lerDaArvore(`${folder}/preprocessor_config.json`).pad_to_multiple_of);
     }
   });
 });

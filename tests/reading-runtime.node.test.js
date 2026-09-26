@@ -19,6 +19,10 @@ import { atDelivery } from '../app/js/platform/onnx-runtime.js';
 import { READING_MODELS, logMel, WHISPER_BANDS, WHISPER_FRAMES } from '../app/js/platform/reading-model.js';
 
 const trace = JSON.parse(readFileSync('tests/fixtures/reading-trace.json', 'utf8'));
+/** 5 ms at 16 kHz: the frame both Moonshine streaming encoders cut the wave into (`encoder_config.frame_ms` × `sample_rate`). */
+const MOONSHINE_FRAME = 80;
+/** What the microphone hands over: blocks of 4096 samples. Eleven of them are 45 056, and 45 056 is not a multiple of 80. */
+const ONZE_BLOCOS = 11 * 4096;
 const truth = JSON.parse(readFileSync('tests/fixtures/reading-ground-truth.json', 'utf8'));
 
 /** The files a language's model needs, answered from the fixture instead of from 378 MiB on a school's link. */
@@ -85,7 +89,18 @@ function ortFalso(lingua, { vocab = 60_000, encoderFrames = 750, steps } = {}) {
           .filter(([k]) => k.startsWith('past_key_values.'))
           .map(([k, v]) => [k, [...v.dims]])),
       });
-      if (nome === 'encoder') return { last_hidden_state: tensor('float32', new Float32Array(4), [1, encoderFrames, 620]) };
+      if (nome === 'encoder') {
+        // 🔴 AS THE REAL MOONSHINE ENCODERS REFUSE IT: their first node cuts the wave into frames of 80 samples, and onnxruntime
+        // refuses any other length — measured on both graphs, en's `/embedder/Reshape` and es's `node_view`, with the words of
+        // the browser's failure. Without this the fake heard any length and the replay could not see the defect. And a wave of
+        // no samples at all stops both at their `Pad` node, measured the same way.
+        const wave = inputs.input_values;
+        if (wave && wave.dims[1] % MOONSHINE_FRAME !== 0) {
+          throw new Error(`OrtRun: Reshape node. Input shape:{1,${wave.dims[1]}}, requested shape:{1,-1,${MOONSHINE_FRAME}}`);
+        }
+        if (wave && wave.dims[1] === 0) throw new Error('OrtRun: Pad node. an empty wave');
+        return { last_hidden_state: tensor('float32', new Float32Array(4), [1, encoderFrames, 620]) };
+      }
       const p = caso.steps[passo++];
       const out = { logits: tensor('float32', logitsDe(p, vocab), [1, 1, vocab]) };
       // the two halves of the cache, as the graphs name them: the self-attention one grows, the cross-attention one does not
@@ -146,7 +161,7 @@ async function ouvir(lingua, opcoes = {}) {
 }
 
 /** One second of a 440 Hz tone: not silence, so the mel filters change what the encoder sees (silence answers the same always). */
-const tom = () => Float32Array.from({ length: 16_000 }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 440 * i) / 16_000));
+const tom = (length = 16_000) => Float32Array.from({ length }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 440 * i) / 16_000));
 
 describe('the reading loop, on the real models\' numbers', () => {
   for (const lingua of ['pt', 'es', 'en']) {
@@ -276,6 +291,57 @@ describe('the reading loop, on the real models\' numbers', () => {
     }
   });
 
+  /**
+   * 🔴 THE MICROPHONE'S LENGTH, NOT THE REPLAY'S (2026-09-26, a served delivery, every English and Spanish reading): the
+   * encoder cuts the wave into frames of 80 samples and refuses any other length — `Input shape:{1,45056}, requested
+   * shape:{1,-1,80}` — and the child heard «This device cannot listen right now». The replay had never fed such a length:
+   * its second is 16 000 samples and the traced recording 50 000, both whole frames, while the microphone hands over blocks
+   * of 4096, which make whole frames only five blocks at a time.
+   * 📌 THE FIX IS THE MODEL'S OWN PROCESSOR'S: `pad_to_multiple_of: 80`, zeros, on the right — under 5 ms of silence after the
+   * child finished, and the wave she read reaches the encoder untouched.
+   */
+  it('🔴 [Right] a recording that is not whole frames (11 microphone blocks, 45 056 samples) is read, with the same words', async () => {
+    expect(ONZE_BLOCOS % MOONSHINE_FRAME, 'the length is whole frames: the case measures nothing').not.toBe(0);
+    for (const lingua of ['es', 'en']) {
+      const { texto } = await ouvir(lingua, { samples: tom(ONZE_BLOCOS) });
+      expect(texto, lingua).toBe(trace.languages[lingua].text.trim());
+    }
+  });
+
+  it('🔴 [Right] the wave is filled to whole frames with SILENCE AT THE END, and what the child said is untouched', async () => {
+    const samples = tom(ONZE_BLOCOS);
+    for (const lingua of ['es', 'en']) {
+      const { chamadas } = await ouvir(lingua, { samples });
+      const som = chamadas.find((c) => c.graph === 'encoder').sound;
+      const inteiro = Math.ceil(ONZE_BLOCOS / MOONSHINE_FRAME) * MOONSHINE_FRAME;
+      expect(som.dims, `${lingua}: not the next whole frame`).toEqual([1, inteiro]);
+      expect([...som.data.subarray(0, ONZE_BLOCOS)], `${lingua}: the child's wave moved`).toEqual([...samples]);
+      expect([...som.data.subarray(ONZE_BLOCOS)], `${lingua}: the fill is not silence`).toEqual(new Array(inteiro - ONZE_BLOCOS).fill(0));
+    }
+  });
+
+  it('🔴 [Right] the frame is the one the model\'s own config names, not a number written here', async () => {
+    // a config whose encoder cuts 10 ms frames: 16 001 samples fill to 16 160, where 5 ms frames would stop at 16 080
+    const config = { ...trace.languages.es.config, encoder_config: { frame_ms: 10, sample_rate: 16_000 } };
+    const { chamadas } = await ouvir('es', { samples: tom(16_001), config });
+    expect(chamadas.find((c) => c.graph === 'encoder').sound.dims).toEqual([1, 16_160]);
+  });
+
+  it('📌 [Zero] an empty recording reaches the encoder as one frame of silence, never as a wave of no samples', async () => {
+    for (const lingua of ['es', 'en']) {
+      const { chamadas } = await ouvir(lingua, { samples: new Float32Array(0) });
+      expect(chamadas.find((c) => c.graph === 'encoder').sound.dims, lingua).toEqual([1, MOONSHINE_FRAME]);
+    }
+  });
+
+  it('📌 [Zero] Whisper is not framed: its picture is 30 s whatever the length, and a whole-frame wave passes as it came', async () => {
+    const { chamadas } = await ouvir('pt', { samples: tom(ONZE_BLOCOS) });
+    expect(chamadas.find((c) => c.graph === 'encoder').sound.dims).toEqual([1, WHISPER_BANDS, WHISPER_FRAMES]);
+    const inteiro = tom(16_000);
+    const { chamadas: es } = await ouvir('es', { samples: inteiro });
+    expect(es.find((c) => c.graph === 'encoder').sound.data, 'a wave already in whole frames was copied').toBe(inteiro);
+  });
+
   it('🔴 [Right] and Whisper\'s picture is drawn with the mel filters the model ships, not with none', async () => {
     // 📌 The filters come from `preprocessor_config.json` and are the model's own ear. A TONE and not silence, because silence is
     // answered without reading the filters at all (every bin of zeros is zero) — the replay's silent second could not tell.
@@ -392,3 +458,14 @@ describe('the reading loop, on the real models\' numbers', () => {
 // The other two are EQUIVALENT BY THE CATALOGUE, and declared rather than caught: the mel filters are fetched when the model eats
 // log-mel AND ships a preprocessor, and dropping either half changes nothing today — the one log-mel model ships one, and the
 // two that eat the wave ship none.
+//
+// THE WHOLE FRAMES (2026-09-26) — `scratchpad/moonshine-fix/plan-frames.json`, 7 of 7 red with this file and
+// `reading-model.node.test.js`:
+//   · the wave handed on unframed                      → «11 microphone blocks … the same words» (the browser's own error)
+//   · the frame written here as 80                     → «the frame is the one the model's own config names»
+//   · the config's frame ignored (any length)          → the three cases above, and `waveFrameOf`'s own
+//   · the silence put at the START                     → «SILENCE AT THE END»
+//   · an empty recording handed on empty               → «one frame of silence»
+//   · the wave TRIMMED to whole frames                 → «SILENCE AT THE END» — ⚠️ and only there: the trimmed 45 040 samples are
+//                                                         whole frames, so the words case alone stayed green
+//   · a whole-frame wave copied anyway                 → «a whole-frame wave passes as it came»

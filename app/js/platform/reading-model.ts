@@ -14,6 +14,7 @@
 // · THE MEL FILTERS ARE NOT COMPUTED HERE. Whisper's own `preprocessor_config.json` carries them (80 × 201), which is most of its
 //   185 KB, and the catalogue already fetches it: a filterbank rebuilt from a formula is a second opinion about the model's input.
 // · Moonshine takes the WAVEFORM. No spectrogram, no padding to 30 s — it is a different front end, not a variant of this one.
+//   ⚠️ But the streaming encoder takes it in WHOLE FRAMES of 5 ms (80 samples), and refuses any other length: `inWholeFrames`.
 
 /** What the engine asks of a language: which catalogue files, and what the encoder eats. */
 export interface ReadingModelPlan {
@@ -110,6 +111,36 @@ export function logMel(samples: Float32Array, melFilters: readonly (readonly num
   // the floor is eight decades below the LOUDEST point of this window, not a constant, and the scale ends in (x + 4) / 4
   const floor = loudest - 8;
   for (let i = 0; i < out.length; i++) out[i] = (Math.max(out[i]!, floor) + 4) / 4;
+  return out;
+}
+
+/** The part of a `config.json` that says how a streaming encoder cuts the wave. */
+export interface WaveFrameConfig {
+  readonly encoder_config?: { readonly frame_ms?: number; readonly sample_rate?: number };
+}
+
+/**
+ * THE FRAME A STREAMING ENCODER CUTS THE WAVE INTO, in samples: `frame_ms` at `sample_rate`, from the model's own `config.json`
+ * — 5 ms at 16 kHz, 80, for both Moonshines. 1 where the config names no frame: a model without one takes any length.
+ */
+export function waveFrameOf(config: WaveFrameConfig): number {
+  const { frame_ms: ms, sample_rate: rate } = config.encoder_config ?? {};
+  return ms && rate ? Math.round((ms * rate) / 1000) : 1;
+}
+
+/**
+ * WHAT MOONSHINE STREAMING'S ENCODER EATS: the wave in WHOLE FRAMES. Its first node reshapes the samples to `[1, -1, 80]`, and
+ * onnxruntime refuses a length that is not a multiple of 80 — 📏 measured on both graphs (issue #185): a microphone hands over
+ * blocks of 4096, which make whole frames only five at a time, so most readings failed. The model's own processor pads with
+ * zeros on the right to a multiple of 80 (`preprocessor_config.json`: `pad_to_multiple_of`, `padding_side`, `padding_value`),
+ * and this is that step: under 5 ms of silence after the child finished, and her wave untouched. An empty recording becomes one
+ * frame of silence, because a graph handed nothing does not run; a wave already in whole frames is handed on as it came.
+ */
+export function inWholeFrames(samples: Float32Array, frame: number): Float32Array {
+  const whole = Math.max(1, Math.ceil(samples.length / frame)) * frame;
+  if (whole === samples.length) return samples;
+  const out = new Float32Array(whole);
+  out.set(samples);
   return out;
 }
 

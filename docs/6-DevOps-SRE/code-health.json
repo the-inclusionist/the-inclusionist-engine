@@ -988,8 +988,8 @@
       "fanIn": 1
     },
     "platform/reading-model.ts": {
-      "codeLines": 182,
-      "decisionNodes": 37,
+      "codeLines": 196,
+      "decisionNodes": 39,
       "maxDepth": 3,
       "fanOut": 0,
       "globalReach": 0,
@@ -998,7 +998,7 @@
       "fanIn": 1
     },
     "platform/reading-runtime.ts": {
-      "codeLines": 142,
+      "codeLines": 145,
       "decisionNodes": 22,
       "maxDepth": 2,
       "fanOut": 2,

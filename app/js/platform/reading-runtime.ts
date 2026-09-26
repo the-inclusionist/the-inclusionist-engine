@@ -9,7 +9,8 @@
 // THREE FAMILIES, and they differ in ways that matter:
 // · Whisper (pt) eats a log-mel spectrogram and opens with four tokens — «transcribe, in Portuguese, without timestamps» — and
 //   refuses 88 tokens that are not speech. Without that opening it answers in whatever language it feels like.
-// · Moonshine (es) eats the waveform and opens with one token, in two decoder graphs like Whisper's.
+// · Moonshine (es) eats the waveform, in whole frames of the length its config names, and opens with one token, in two decoder
+//   graphs like Whisper's.
 // · Moonshine (en) is the same model with ONE MERGED decoder graph, told which pass it is on by `use_cache_branch` and fed empty
 //   caches on the first. It is the shape most easily written wrong from a guess, which is why it is traced too.
 //
@@ -18,8 +19,8 @@
 
 import { atDelivery, loadOnnxRuntime, type OnnxRuntime, type OnnxSession, type OnnxTensor } from './onnx-runtime.js';
 import {
-  logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens, tokenIdOf, WHISPER_BANDS, WHISPER_FRAMES,
-  type GenerationConfig, type ReadingModelPlan, type TokenizerFile,
+  inWholeFrames, logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens, tokenIdOf, waveFrameOf, WHISPER_BANDS,
+  WHISPER_FRAMES, type GenerationConfig, type ReadingModelPlan, type TokenizerFile, type WaveFrameConfig,
 } from './reading-model.js';
 
 /** What the engine gets back: something that turns samples into words. */
@@ -45,8 +46,8 @@ export interface ReadingRuntimeDeps {
   readonly maxTokens?: number;
 }
 
-/** What `config.json` says about the caches: how many heads they hold and how wide each one is. */
-interface ModelConfig {
+/** What `config.json` says about the caches — how many heads they hold and how wide each one is — and the encoder's frame. */
+interface ModelConfig extends WaveFrameConfig {
   readonly num_key_value_heads?: number;
   readonly num_attention_heads?: number;
   readonly hidden_size?: number;
@@ -92,10 +93,11 @@ export async function loadReadingRuntime(d: ReadingRuntimeDeps): Promise<Reading
   const eos = generation.eos_token_id ?? -1;
   const { heads, width } = cacheSizeOf(config);
   const ceiling = d.maxTokens ?? MAX_TOKENS;
+  const frame = waveFrameOf(config);
 
   return {
     async transcribe(samples: Float32Array): Promise<string> {
-      const encoded = await encoder.run(soundFor(ort, plan, samples, melFilters));
+      const encoded = await encoder.run(soundFor(ort, plan, samples, melFilters, frame));
       const hidden = encoded[encoder.outputNames[0]!]!;
       const shape: DecodingShape = {
         ort, start, hidden, heads, width,
@@ -134,14 +136,17 @@ interface DecodingShape {
 
 /**
  * WHAT THE ENCODER HEARS. Whisper a log-mel picture of 30 s drawn with the model's own filters (80 bands × 3000 frames), Moonshine
- * the wave itself, every sample. The names are the graphs' own: a real session refuses any other.
+ * the wave itself, every sample, filled with silence to the whole frames its encoder cuts (`inWholeFrames`) — the microphone's
+ * length is not the model's. The names are the graphs' own: a real session refuses any other.
  */
 function soundFor(
-  ort: OnnxRuntime, plan: ReadingModelPlan, samples: Float32Array, melFilters: number[][] | null,
+  ort: OnnxRuntime, plan: ReadingModelPlan, samples: Float32Array, melFilters: number[][] | null, frame: number,
 ): { [name: string]: OnnxTensor } {
-  return plan.input === 'log-mel'
-    ? { input_features: new ort.Tensor('float32', logMel(samples, melFilters ?? []), [1, WHISPER_BANDS, WHISPER_FRAMES]) }
-    : { input_values: new ort.Tensor('float32', samples, [1, samples.length]) };
+  if (plan.input === 'log-mel') {
+    return { input_features: new ort.Tensor('float32', logMel(samples, melFilters ?? []), [1, WHISPER_BANDS, WHISPER_FRAMES]) };
+  }
+  const wave = inWholeFrames(samples, frame);
+  return { input_values: new ort.Tensor('float32', wave, [1, wave.length]) };
 }
 
 /** What one decoder step is handed: the opening on the first, then only the newest token, and the caches so far. */

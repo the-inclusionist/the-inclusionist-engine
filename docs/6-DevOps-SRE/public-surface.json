@@ -822,12 +822,15 @@
     "WHISPER_BANDS",
     "WHISPER_FRAMES",
     "WHISPER_SAMPLES",
+    "WaveFrameConfig",
+    "inWholeFrames",
     "logMel",
     "nextToken",
     "readingModelFor",
     "readingTextOf",
     "suppressedTokens",
-    "tokenIdOf"
+    "tokenIdOf",
+    "waveFrameOf"
   ],
   "platform/reading-runtime.ts": [
     "ReadingRuntimeDeps",

@@ -1593,6 +1593,9 @@
       "preprocessor?",
       "tokenizer"
     ],
+    "interface WaveFrameConfig": [
+      "encoder_config?"
+    ],
     "interface TokenizerFile": [
       "added_tokens?",
       "decoder?",
