@@ -15,6 +15,7 @@ import { createHash, webcrypto } from 'node:crypto';
 import {
   downloadHeavy as downloadWith, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256With, checkedCacheHas, deliveryPath, heavyAtBoot,
 } from '../app/js/platform/heavy.js';
+import { DELIVERY_LISTS } from '../app/js/platform/heavy-catalogue.js';
 
 /** The page the delivery is resolved against — REQUIRED since ADR-0232 D4, so every case names one. */
 const BASE = 'https://escola.example/';
@@ -80,7 +81,9 @@ describe('o buscador das coisas pesadas', () => {
     let n = 0;
     const buscar = async (u) => { n += 1; if (n === 1) throw new Error('rede caiu'); return resposta(urlDe(u)); };
     const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl });
-    expect(r.filter((x) => x.outcome === 'falhou').length, 'a falha não foi reportada').toBe(1);
+    // the catalogue's files; this fake delivery serves no list, which is reported apart (`a delivery's list`, below)
+    const doCatalogo = r.filter((x) => HEAVY_FILES.some((p) => p.id === x.id));
+    expect(doCatalogo.filter((x) => x.outcome === 'falhou').length, 'a falha não foi reportada').toBe(1);
     expect(r.filter((x) => x.outcome === 'baixado').length, 'a lista parou na primeira falha').toBe(HEAVY_FILES.filter((p) => p.url).length - 1);
   });
 
@@ -128,7 +131,7 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
 
   it('🔴 [Zero] without Cache Storage EVERY file is reported, with the reason — the case above passed on an empty list', async () => {
     const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk(), digest: digestPelaUrl });
-    expect(r.length, '`every` on an empty list is true: nothing was reported').toBe(HEAVY_FILES.length);
+    expect(r.length, '`every` on an empty list is true: nothing was reported').toBe(HEAVY_FILES.length + DELIVERY_LISTS.length);
     expect(r.every((x) => x.outcome === 'falhou' && /Cache Storage/.test(x.error))).toBe(true);
   });
 
@@ -447,7 +450,8 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
   it('🔴 [Right] the Libras player comes whole with `libras`, and never without it', () => {
     const player = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:'));
     expect(player.length, 'the catalogue has no Libras player: the case would pass empty').toBe(5);
-    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:'))).toEqual(player);
+    // the five files, and then the delivery's list of the player's page and signs
+    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:'))).toEqual([...player, 'libras:delivery']);
     for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, libras: false }, { kokoro: false, commands: 'pt', reading: 'pt' }]) {
       expect(heavyAtBoot(portas).filter((id) => id.startsWith('libras:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
     }
@@ -481,6 +485,124 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     expect(heavyAtBoot({ kokoro: false, reading: 'es-MX' }).filter((id) => id.startsWith('reading:'))).toEqual(doIdioma('es'));
   });
 });
+
+/**
+ * 🔴 WHAT A DELIVERY MAKES IS KEPT BY ITS LIST (ADR-0234, pillar 8). 📏 Measured on a served delivery (2026-09-25): the player's
+ * page, glue and glosses and the signs came from the network on every use — no precache entry, no route — and offline the frame
+ * never loaded and the interpreter told the child signing was unavailable. The delivery now lists them with their sha256, and
+ * the start keeps each, checked, under its own address, while deaf mode is on.
+ */
+describe('a delivery\'s list: the Libras player\'s page and signs, kept checked (ADR-0234, pillar 8)', () => {
+  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+  const digest = sha256With(webcrypto.subtle);
+  const hex = (text) => createHash('sha256').update(text).digest('hex');
+  const FILES = { 'libras/player/index.html': '<!doctype html>', 'libras/signs/AÇÃO': 'the sign', 'libras/player/glosses.json': '[]' };
+  const listOf = (files, extra = []) => ({ format: 1, files: [...Object.entries(files).map(([path, text]) => ({ path, sha256: hex(text), bytes: text.length })), ...extra] });
+  /** A Cache Storage holding real `Response`s, so the listed hash a kept file carries can be read back. */
+  function cacheWithResponses(held = new Map()) {
+    const put = [];
+    const cache = { match: async (u) => held.get(u), put: async (u, r) => { put.push(u); held.set(u, r); } };
+    return { held, put, cacheStorage: { open: async () => cache } };
+  }
+  /** The delivery, served: the list, and each file under the list's hash query; `served` overrides a file's bytes. */
+  function delivery(list, served = FILES) {
+    const asked = [];
+    const fetch = async (u, init) => {
+      asked.push({ u, init });
+      const url = new URL(u);
+      const path = decodeURIComponent(url.pathname.slice(1));
+      if (path === LIST.path) return new Response(JSON.stringify(list));
+      return path in served ? new Response(served[path], { headers: { 'content-type': 'text/html' } }) : new Response('', { status: 404 });
+    };
+    return { asked, fetch };
+  }
+  const keep = (c, d, only = [LIST.id]) => downloadHeavy({ cacheStorage: c.cacheStorage, fetch: d.fetch, digest, only });
+
+  it('🔴 [Right] each listed file is fetched from the page\'s origin, checked, and kept under its OWN address — the one the player asks', async () => {
+    const c = cacheWithResponses();
+    const d = delivery(listOf(FILES));
+    const [r] = await keep(c, d);
+    expect(r).toEqual({ id: LIST.id, outcome: 'baixado', bytes: Object.values(FILES).reduce((s, t) => s + Buffer.byteLength(t), 0) });
+    // 📏 the player asks `libras/signs/A%C3%87%C3%83O` (measured): the key is the address as a URL spells it
+    expect(c.put).toEqual(Object.keys(FILES).map((p) => new URL(p, BASE).href));
+    expect(c.put).toContain(`${BASE}libras/signs/A%C3%87%C3%83O`);
+    expect(d.asked[0], 'the list may come from a stale HTTP cache').toEqual({ u: `${BASE}${LIST.path}`, init: { cache: 'no-store' } });
+    expect(d.asked.slice(1).map((a) => new URL(a.u).origin)).toEqual(Object.keys(FILES).map(() => new URL(BASE).origin));
+    const kept = c.held.get(`${BASE}libras/player/index.html`);
+    expect(await kept.text()).toBe('<!doctype html>');
+    expect(kept.headers.get('content-type'), 'a page kept without its type does not open as a page').toBe('text/html');
+  });
+
+  it('🔴 [Right] a body that is not the listed one is NOT kept — the others are, and the report says which and why', async () => {
+    const c = cacheWithResponses();
+    const [r] = await keep(c, delivery(listOf(FILES), { ...FILES, 'libras/signs/AÇÃO': 'another sign' }));
+    expect(r.outcome).toBe('falhou');
+    expect(r.error).toMatch(/1 of 3 files of libras\/offline\.json not kept: libras\/signs\/AÇÃO: sha256 mismatch: expected [0-9a-f]{64}, got [0-9a-f]{64}/);
+    expect(c.put, 'the altered sign was kept').not.toContain(`${BASE}libras/signs/A%C3%87%C3%83O`);
+    expect(c.put.length, 'one bad file stopped the good ones').toBe(2);
+  });
+
+  it('📌 [Boundary] a file kept with the listed hash is not fetched again; one the list CHANGED is — and the old copy stays until the new one is checked', async () => {
+    const c = cacheWithResponses();
+    await keep(c, delivery(listOf(FILES)));
+    const again = delivery(listOf(FILES));
+    expect((await keep(c, again))[0]).toEqual({ id: LIST.id, outcome: 'ja-tinha' });
+    expect(again.asked.map((a) => a.u), 'a kept file was fetched again').toEqual([`${BASE}${LIST.path}`]);
+    // a new delivery changed the page, and a service worker would answer its old address from the cache: the hash is in the query
+    const changed = { ...FILES, 'libras/player/index.html': '<!doctype html><meta name="libras-sign-set" content="2">' };
+    const refreshed = delivery(listOf(changed), { ...changed, 'libras/player/index.html': 'truncated' });
+    await keep(c, refreshed);
+    expect(refreshed.asked[1].u).toBe(`${BASE}libras/player/index.html?sha256=${hex(changed['libras/player/index.html'])}`);
+    expect(await c.held.get(`${BASE}libras/player/index.html`).text(), 'the old page was lost to a body that failed its check').toBe('<!doctype html>');
+    expect((await keep(c, delivery(listOf(changed), changed)))[0].outcome).toBe('baixado');
+    expect(await c.held.get(`${BASE}libras/player/index.html`).text()).toBe(changed['libras/player/index.html']);
+  });
+
+  it('🔴 [Right] a list naming anything outside the player\'s folders is refused WHOLE — nothing of it is kept', async () => {
+    for (const path of ['quiz.html', 'libras/player/../../quiz.html', 'https://other.example/libras/player/x.js', 'libras/player/x.js?y=1', 'libras/player/', 'heavy/a/b.js']) {
+      const c = cacheWithResponses();
+      const [r] = await keep(c, delivery(listOf(FILES, [{ path, sha256: hex('x'), bytes: 1 }])));
+      expect(r.outcome, path).toBe('falhou');
+      expect(r.error, path).toMatch(/is refused: it names/);
+      expect(c.put, `${path}: a file of a refused list was kept`).toEqual([]);
+    }
+    const c = cacheWithResponses();
+    expect((await keep(c, delivery({ files: [{ path: 'libras/signs/X', sha256: 'abc' }] })))[0].error).toMatch(/is refused: a listed file is malformed/);
+    expect((await keep(c, delivery({ nothing: [] })))[0].error).toMatch(/is refused: it has no `files`/);
+  });
+
+  it('🎯 [Zero] a delivery without the player answers 404 for the list: reported, and nothing else is asked', async () => {
+    const c = cacheWithResponses();
+    const d = { asked: [], fetch: async (u) => { d.asked.push(u); return new Response('', { status: 404 }); } };
+    expect((await keep(c, d))[0]).toEqual({ id: LIST.id, outcome: 'falhou', error: `HTTP 404 — ${LIST.path}` });
+    expect(d.asked).toEqual([`${BASE}${LIST.path}`]);
+  });
+
+  it('🎯 [Zero] a host that cannot hash keeps nothing of the list — and does not even ask for it', async () => {
+    const c = cacheWithResponses();
+    const d = delivery(listOf(FILES));
+    const [r] = await downloadHeavy({ cacheStorage: c.cacheStorage, fetch: d.fetch, digest: null, only: [LIST.id] });
+    expect(r.outcome).toBe('falhou');
+    expect(c.put).toEqual([]);
+    expect(d.asked).toEqual([]);
+  });
+
+  it('🔴 [Zero] without deaf mode the list is not asked for — a child who never asks for signing downloads none of it', async () => {
+    expect(heavyAtBoot({ kokoro: false, libras: true })).toContain(LIST.id);
+    for (const portas of [{ kokoro: false }, { kokoro: true, reading: 'pt', commands: 'pt' }, { kokoro: false, libras: false }]) {
+      expect(heavyAtBoot(portas), JSON.stringify(portas)).not.toContain(LIST.id);
+    }
+    const d = delivery(listOf(FILES));
+    await downloadHeavy({ cacheStorage: cacheWithResponses().cacheStorage, fetch: d.fetch, digest, only: heavyAtBoot({ kokoro: false }) });
+    expect(d.asked.filter((a) => a.u.includes('/libras/')), 'the player\'s page or signs came down with deaf mode off').toEqual([]);
+  });
+});
+
+// MUTATIONS CHECKED for a delivery's list (2026-09-25), 12 of 12 red, each on `platform/heavy.ts` and restored from a copy: the
+// folder check removed · a query or fragment admitted · a folder admitted as a file · the body kept unchecked · a kept file
+// fetched on every start · the hash left out of the address asked · the kept file without its listed hash · the lists fetched
+// whatever `only` says · the start asking for the list without deaf mode · the list read without `no-store` · a malformed
+// sha256 admitted · the list read by a host that cannot hash.
 
 // MUTATIONS CHECKED for the patched VLibras framework (2026-09-25), 2 of 2 red: its entry removed from the catalogue · the start
 // leaving an entry the delivery makes out of `libras` (🔴 «comes whole» and «fetched from the delivery, checked»).

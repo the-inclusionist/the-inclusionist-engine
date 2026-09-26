@@ -922,10 +922,10 @@ describe('createGame em execução', () => {
       createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(),
         host: { ...domFalso(), storage: memoryBackend([['incl_libras', '1']]) } });
       const [ouvinte, surda] = pedidos.map((ids) => ids.filter((id) => id.startsWith('libras:')));
-      const { HEAVY_FILES } = await import('../app/js/platform/heavy-catalogue.js');
+      const { HEAVY_FILES, DELIVERY_LISTS } = await import('../app/js/platform/heavy-catalogue.js');
       expect(ouvinte, 'deaf mode is off and the Libras player came down').toEqual([]);
-      expect(surda, 'deaf mode is on and the Libras player did not come down, whole')
-        .toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:')));
+      expect(surda, 'deaf mode is on and the Libras player — its files and the list of its page and signs — did not come down, whole')
+        .toEqual([...HEAVY_FILES, ...DELIVERY_LISTS].map((p) => p.id).filter((id) => id.startsWith('libras:')));
     } finally {
       vi.doUnmock('../app/js/platform/heavy.js');
       vi.resetModules();

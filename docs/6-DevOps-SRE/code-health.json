@@ -878,9 +878,9 @@
       "fanIn": 0
     },
     "platform/heavy.ts": {
-      "codeLines": 107,
-      "decisionNodes": 24,
-      "maxDepth": 2,
+      "codeLines": 177,
+      "decisionNodes": 44,
+      "maxDepth": 3,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 9,

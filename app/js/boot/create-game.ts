@@ -3783,7 +3783,8 @@ export function createGame(o: CreateGameOptions): Engine {
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). ONE PER LANGUAGE THE PAGE
       // CAN SWITCH TO, the child's first (ADR-0225 erratum): a language changed mid-game, offline the next day, must find its
       // model kept. A language the delivery's `--commands` left out fails quietly here, and the transport says so when she speaks.
-      // 📌 The Libras player only while deaf mode is on (ADR-0234): 19.3 MiB a child who never asks for signing does not pay.
+      // 📌 The Libras player only while deaf mode is on (ADR-0234): its 19.7 MiB and the delivery's list of its page and signs,
+      // which a child who never asks for signing does not pay — and which keep it signing on the days without a network.
       only: heavyAtBoot({
         kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null,
         commands: [bcp47(), ...availableLocales()], libras: deafMode.isOn(),

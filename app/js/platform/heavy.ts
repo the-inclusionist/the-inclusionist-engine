@@ -16,7 +16,9 @@
 //     start over a resource it may not even use today.
 //  3. **IDEMPOTENT.** What is already in Cache Storage is not fetched again — which is what makes this safe to call on
 //     every start instead of only "on the first", which nobody can detect honestly.
-import { CACHE_HEAVY, HEAVY_FILES, readingLanguageOf, commandsLanguageOf, type HeavyFile } from './heavy-catalogue.js';
+import {
+  CACHE_HEAVY, HEAVY_FILES, DELIVERY_LISTS, readingLanguageOf, commandsLanguageOf, type HeavyFile, type DeliveryList,
+} from './heavy-catalogue.js';
 
 export { CACHE_HEAVY, HEAVY_FILES };
 
@@ -74,9 +76,11 @@ export interface HeavyOptions {
  *   every language the page can switch to, the child's first, because a language changed mid-game must find its model already
  *   kept (ADR-0225 erratum, the Dev: «A entrega leva as três línguas.»). The delivery carries the three unless its
  *   `--commands` list narrows it; a language it did not carry is a quiet 404 here and a line of `problems` when she speaks.
- * · The Libras player (ADR-0234, route A), 19.7 MiB, only with `libras`: the root asks for it while deaf mode is on, so a device
- *   whose child never asks for signing never downloads it. No game declares it either — deaf mode is the person's (ADR-0111) —
- *   and a delivery built without `--libras` simply has none, the same quiet 404 as a missing command model.
+ * · The Libras player (ADR-0234, route A), 19.7 MiB, and the delivery's list of its page and signs (15.2 MB in the engine's
+ *   delivery), only with `libras`: the root asks for them while deaf mode is on, so a device whose child never asks for signing
+ *   never downloads them. No game declares it either — deaf mode is the person's (ADR-0111) — and a delivery built without
+ *   `--libras` simply has none, the same quiet 404 as a missing command model.
+ * The ids are the catalogue's files, then the delivery lists (`DELIVERY_LISTS`), by one rule.
  */
 export function heavyAtBoot(
   declared: {
@@ -86,27 +90,31 @@ export function heavyAtBoot(
 ): readonly string[] {
   const baseLanguage = (tag: string): string => tag.split('-')[0]!.toLowerCase();
   const reading = declared.reading ? baseLanguage(declared.reading) : null;
-  const asked = declared.commands == null ? [] : typeof declared.commands === 'string' ? [declared.commands] : declared.commands;
-  const commands = [...new Set(asked.filter(Boolean).map(baseLanguage))];
-  const chosen = HEAVY_FILES.filter((p) => {
-    const language = readingLanguageOf(p.id);
+  const askedTags = declared.commands == null ? [] : typeof declared.commands === 'string' ? [declared.commands] : declared.commands;
+  const commands = [...new Set(askedTags.filter(Boolean).map(baseLanguage))];
+  const asked = (id: string): boolean => {
+    const language = readingLanguageOf(id);
     if (language) return language === reading;
     // 📌 THE COMMAND MODELS ARE A TRANSPORT'S, not a game's: no cartridge declares them, because a child who speaks instead of
     // pressing is reaching the controller, and a cartridge does not get to deny her a way in (ADR-0111). The LANGUAGES are
     // still asked, and the runtime comes with whichever one is.
-    const commanded = commandsLanguageOf(p.id);
+    const commanded = commandsLanguageOf(id);
     if (commanded) return commands.includes(commanded);
-    if (p.id.startsWith('commands:runtime')) return commands.length > 0;
-    if (p.id.startsWith('libras:')) return !!declared.libras;
-    if (p.id.startsWith('voz:runtime:onnx')) return declared.kokoro || !!reading;
-    return declared.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
-  });
+    if (id.startsWith('commands:runtime')) return commands.length > 0;
+    if (id.startsWith('libras:')) return !!declared.libras;
+    if (id.startsWith('voz:runtime:onnx')) return declared.kokoro || !!reading;
+    return declared.kokoro || !(id.startsWith('voz:kokoro:') || id.startsWith('voz:runtime:'));
+  };
+  const chosen = HEAVY_FILES.filter((p) => asked(p.id));
   // ⚠️ THE CHILD'S MODEL FIRST: the download is one file at a time (rule 1), so the command models take their slots in the order
   // the languages were asked — a Spanish child does not wait behind 70 MiB of Portuguese and English before her own.
   const models = chosen.filter((p) => commandsLanguageOf(p.id))
     .sort((a, b) => commands.indexOf(commandsLanguageOf(a.id)!) - commands.indexOf(commandsLanguageOf(b.id)!));
   let slot = 0;
-  return chosen.map((p) => (commandsLanguageOf(p.id) ? models[slot++]! : p).id);
+  return [
+    ...chosen.map((p) => (commandsLanguageOf(p.id) ? models[slot++]! : p).id),
+    ...DELIVERY_LISTS.map((l) => l.id).filter(asked),
+  ];
 }
 
 /**
@@ -148,21 +156,25 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * ⚠️ ENTRIES WITHOUT A `url` ARE NOT SKIPPED IN SILENCE — they return `sem-fonte`. It is the difference between "this
  * subsystem has nowhere to come from yet" and "this subsystem is handled", exactly the distinction ADR-0119 measured as
  * missing: the engine PROMISED four things and delivered one, with nothing saying so.
+ *
+ * The catalogue's files come first, then the delivery's lists (`DELIVERY_LISTS`), each list ONE report for all its files.
  */
 export async function downloadHeavy(options: HeavyOptions): Promise<HeavyReport[]> {
   const targets = options.only
     ? [...new Set(options.only)].flatMap((id) => HEAVY_FILES.filter((p) => p.id === id))
     : HEAVY_FILES;
+  const lists = DELIVERY_LISTS.filter((l) => !options.only || options.only.includes(l.id));
   const out: HeavyReport[] = [];
   const record = (r: HeavyReport): void => { out.push(r); options.onProgress?.(r); };
 
   const { cacheStorage, fetch: fetchFile, digest, base } = options;
   if (!cacheStorage || !fetchFile) {
-    for (const p of targets) record({ id: p.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' });
+    for (const p of [...targets, ...lists]) record({ id: p.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' });
     return out;
   }
   const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, digest, base };
   for (const p of targets) record(await fetchOne(p, tools));
+  for (const l of lists) record(await keepListed(l, tools));
   return out;
 }
 
@@ -202,6 +214,95 @@ async function keepIfChecked(p: HeavyFile, url: string, resp: Response, t: Downl
   if (got !== p.sha256) return refused(`sha256 mismatch: expected ${p.sha256}, got ${got} — not kept`);
   await t.cache.put(url, new Response(body, { status: resp.status, statusText: resp.statusText, headers: resp.headers }));
   return { id: p.id, outcome: 'baixado', bytes: p.bytes };
+}
+
+/** The header a file kept from a delivery's list carries its listed sha256 in: how a later start knows it is kept, and current. */
+const LISTED_SHA256 = 'x-inclusionist-sha256';
+
+/** One file a delivery's list names: its path as listed, its address under the page, and the sha256 its bytes must have. */
+interface ListedFile { readonly path: string; readonly url: string; readonly sha256: string }
+
+/**
+ * The files a delivery's list names, or a THROW saying why the list is refused whole: a list with no `files`, an entry without a
+ * path or a sha256, or one whose address falls outside the list's folders (a `..`, another origin, a query) — the list may only
+ * put the player's own files in the checked cache, never the game's page nor anything a route outside those folders serves.
+ */
+function listedFiles(data: unknown, l: DeliveryList, base: string): ListedFile[] {
+  const files = (data as { files?: unknown } | null)?.files;
+  if (!Array.isArray(files)) throw new Error('it has no `files`');
+  const folders = l.folders.map((folder) => new URL(folder, base).href);
+  return files.map((f: unknown) => {
+    const { path, sha256 } = (f ?? {}) as { path?: unknown; sha256?: unknown };
+    if (typeof path !== 'string' || typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(sha256)) {
+      throw new Error(`a listed file is malformed: ${JSON.stringify(f)}`);
+    }
+    const at = new URL(path, base);
+    const url = at.href;
+    if (at.search || at.hash || !folders.some((folder) => url.startsWith(folder) && url.length > folder.length)) {
+      throw new Error(`it names ${path}, outside ${l.folders.join(' and ')}`);
+    }
+    return { path, url, sha256 };
+  });
+}
+
+/**
+ * A DELIVERY'S LIST, KEPT FILE BY FILE (ADR-0234, pillar 8): the list is read from the page's origin, and each file it names is
+ * fetched from there, CHECKED against its listed sha256, and kept under its own address, where the service worker answers it
+ * offline. A file already kept with that sha256 is not fetched again; a body that is not the listed one is never kept, and the
+ * report names it. One report for the list: `baixado` with the bytes fetched, `ja-tinha`, or `falhou` with the files refused.
+ */
+async function keepListed(l: DeliveryList, t: DownloadTools): Promise<HeavyReport> {
+  const failed = (error: string): HeavyReport => ({ id: l.id, outcome: 'falhou', error });
+  const digest = t.digest;
+  if (!digest) return failed('this host cannot compute a sha256 (crypto.subtle needs a secure context)');
+  const files = await readList(l, t);
+  if (typeof files === 'string') return failed(files);
+  const refused: string[] = [];
+  let bytes = 0;
+  let fetched = 0;
+  for (const f of files) {
+    const kept = await keepListedFile(f, t, digest);
+    if (typeof kept === 'string') refused.push(`${f.path}: ${kept}`);
+    else if (kept !== null) { bytes += kept; fetched += 1; }
+  }
+  if (!refused.length) return fetched ? { id: l.id, outcome: 'baixado', bytes } : { id: l.id, outcome: 'ja-tinha' };
+  const more = refused.length > 5 ? `; and ${refused.length - 5} more` : '';
+  return failed(`${refused.length} of ${files.length} files of ${l.path} not kept: ${refused.slice(0, 5).join('; ')}${more}`);
+}
+
+/** The list's files, or why it is refused whole (not there, not JSON, or naming what it may not). */
+async function readList(l: DeliveryList, t: DownloadTools): Promise<ListedFile[] | string> {
+  try {
+    // never an old copy of the list: it is what says which files are current
+    const resp = await t.fetchFile(new URL(l.path, t.base).href, { cache: 'no-store' });
+    if (!resp.ok) return `HTTP ${resp.status} — ${l.path}`;
+    return listedFiles(await resp.json(), l, t.base);
+  } catch (e) {
+    return `the list ${l.path} is refused: ${e instanceof Error ? e.message : String(e)}`;
+  }
+}
+
+/** One listed file: `null` when it is already kept with its listed hash, the bytes kept, or why it was not kept. */
+async function keepListedFile(f: ListedFile, t: DownloadTools, digest: (body: ArrayBuffer) => Promise<string>): Promise<number | null | string> {
+  try {
+    if ((await t.cache.match(f.url))?.headers.get(LISTED_SHA256) === f.sha256) return null;
+    /*
+     * 📌 THE LISTED HASH GOES IN THE QUERY: the service worker answers these folders from this cache by their address, so a file
+     * the list CHANGED would be answered with the copy it replaces. Another address reaches the delivery, and the old copy stays
+     * kept until the new one is checked — offline a child keeps the player she had.
+     */
+    const resp = await t.fetchFile(`${f.url}?sha256=${f.sha256}`);
+    if (!resp.ok) return `HTTP ${resp.status}`;
+    const body = await resp.arrayBuffer();
+    const got = await digest(body);
+    if (got !== f.sha256) return `sha256 mismatch: expected ${f.sha256}, got ${got} — not kept`;
+    const headers = new Headers(resp.headers);
+    headers.set(LISTED_SHA256, f.sha256);
+    await t.cache.put(f.url, new Response(body, { status: resp.status, statusText: resp.statusText, headers }));
+    return body.byteLength;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
 }
 
 /**
