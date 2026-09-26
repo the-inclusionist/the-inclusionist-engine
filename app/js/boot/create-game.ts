@@ -4333,7 +4333,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     });
     stateOn('voiceControl', (on) => { void voiceControl?.apply(on); });
     void voiceControl.apply(state.voiceControl);
-    // and so does the microphone; pply(false) stops without writing the stored answer, which belongs to the child (ADR-0220)
+    // and so does the microphone; `apply(false)` stops without writing the stored answer, which belongs to the child (ADR-0220)
     whenDisposed(() => { void voiceControl?.apply(false); });
   }
   /*
