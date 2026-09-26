@@ -596,7 +596,12 @@ const pt: Record<string, string> = {
   'pause.caa': 'Comunicação',
   'sr.aac.caixaAltaOn': 'Letras maiúsculas ligadas: o jogo inteiro em caixa alta.',
   'sr.aac.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
-  'sr.quiz.bemVindo': 'Quiz. Use as setas para escolher e Enter para responder.',
+  // The quiz's welcome: the frame is here, the child's own keys cross as `{mover}`/`{responder}` (consumer-quiz `welcomeText`).
+  'sr.quiz.bemVindo': 'Quiz. Use {mover} para escolher e {responder} para responder.',
+  'sr.quiz.bemVindo.soEscolher': 'Quiz. Use {mover} para escolher.',
+  'sr.quiz.bemVindo.soResponder': 'Quiz. Use {responder} para responder.',
+  'sr.quiz.bemVindo.semTeclas': 'Quiz. Toque numa resposta para responder.',
+  'sr.quiz.teclas.duas': '{a} e {b}',
   // AS PERGUNTAS DO QUIZ. O quiz NÃO é uma disciplina de idioma, logo nem a excepção do `CLAUDE.md` §A FRONTEIRA
   // se aplica: «o ENUNCIADO SEMPRE TRADUZ». Eram literais em pt-BR dentro do cartucho até 23/09, e trocar a
   // bandeira mudava a moldura da engine sem tocar na atividade (ADR-0225).

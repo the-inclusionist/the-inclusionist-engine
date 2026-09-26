@@ -479,7 +479,11 @@ const es: Record<string, string> = {
   'pause.caa': 'Comunicación',
   'sr.aac.caixaAltaOn': 'Letras mayúsculas activadas: todo el juego en mayúsculas.',
   'sr.aac.caixaAltaOff': 'Letras mayúsculas desactivadas: mayúsculas y minúsculas.',
-  'sr.quiz.bemVindo': 'Cuestionario. Use las flechas para elegir y Enter para responder.',
+  'sr.quiz.bemVindo': 'Cuestionario. Use {mover} para elegir y {responder} para responder.',
+  'sr.quiz.bemVindo.soEscolher': 'Cuestionario. Use {mover} para elegir.',
+  'sr.quiz.bemVindo.soResponder': 'Cuestionario. Use {responder} para responder.',
+  'sr.quiz.bemVindo.semTeclas': 'Cuestionario. Toca una respuesta para darla.',
+  'sr.quiz.teclas.duas': '{a} y {b}',
   // Las preguntas del quiz — claves, no frases, para que cambiar la bandera alcance la ACTIVIDAD y no sólo el
   // marco del motor (ADR-0225). Un quiz no es una materia de idioma: nada de esto queda sin traducir.
   'quiz.pageTitle': 'The Inclusionist — cuestionario de demostración',

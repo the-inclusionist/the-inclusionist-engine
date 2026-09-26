@@ -130,6 +130,8 @@ import type { Translate } from '../core/i18n.js';
 import { captionDuration } from '../core/caption-duration.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { announceItem } from '../ui/item-announcement.js';
+import { keyName } from '../ui/control-choices.js';
+import type { KeyScheme } from '../core/entity.js';
 import { createGame, type Engine, type EngineHost, type VirtualCommand } from '../boot/create-game.js';
 import { QUIZ_DICTIONARIES } from './quiz-words.js';
 import type { GameDeclaration } from '../core/contract.js';
@@ -254,6 +256,35 @@ export function answerText(t: Translate, gotItRight: boolean, certa: string): st
 /** The closing line — how many were right out of how many — in the child's language. */
 export function endText(t: Translate, gotItRight: number, total: number): string {
   return t('quiz.fim', { n: gotItRight, m: total });
+}
+
+/** Named first when a position has more than one key: an arrow, then Space — keys a child finds by their name. */
+const KEYS_NAMED_FIRST: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+
+/** The one key said for a position, or `null` when the scheme gives it none: a sentence never names a key she lacks. */
+function keyToSay(codes: readonly string[] | null | undefined): string | null {
+  if (!codes?.length) return null;
+  return codes.find((c) => KEYS_NAMED_FIRST.includes(c)) ?? codes[0]!;
+}
+
+/**
+ * THE WELCOME LINE, WITH THE KEYS THIS CHILD HAS: the ones on `up` and `down` to choose, the one on `action2` to answer.
+ *
+ * 🔴 A fixed sentence here named Enter, which is `start` and opens the pause; and any fixed sentence is wrong for the child
+ * who remapped. So the keys come from her scheme (`engine.keyboard.kbFor(0)`) and cross as `{params}` — the frame is the
+ * dictionary's, the key names are `ui/control-choices.keyName`'s. One key per position keeps the line short.
+ */
+export function welcomeText(t: Translate, scheme: Pick<KeyScheme, 'up' | 'down' | 'action2'>, name: (code: string) => string): string {
+  const [up, down, responder] = [scheme.up, scheme.down, scheme.action2].map((codes) => {
+    const code = keyToSay(codes);
+    return code ? name(code) : null;
+  });
+  // One of the two is enough to reach every option: the cursor wraps around (`nextFocus`).
+  const mover = up && down ? t('sr.quiz.teclas.duas', { a: up, b: down }) : (up ?? down);
+  if (mover && responder) return t('sr.quiz.bemVindo', { mover, responder });
+  if (mover) return t('sr.quiz.bemVindo.soEscolher', { mover });
+  if (responder) return t('sr.quiz.bemVindo.soResponder', { responder });
+  return t('sr.quiz.bemVindo.semTeclas');
 }
 
 /**
@@ -557,7 +588,7 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
   void engine.localeReady().then(() => {
     engine.scenes.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
-    say(translate('sr.quiz.bemVindo'));
+    say(welcomeText(translate, engine.keyboard.kbFor(0), (code) => keyName(translate, code)));
   });
 
   /*

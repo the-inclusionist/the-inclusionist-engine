@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE QUIZ DEMO, answered with REAL key presses: one press is one answer.
+// THE QUIZ DEMO, answered with REAL key presses: the key its welcome names answers, and one press is one answer.
 //
 // 🔴 Measured on the served `dist` (2026-09-26, Playwright): one press of Space answered TWO questions. The engine carried
 // `action2` to the quiz, which answered the option under the cursor — and on the key's release the browser clicked the
@@ -45,13 +45,41 @@ async function pressAndWait(code) {
   await esperar(1300); // the quiz lets the answer be read (900 ms) before the screen changes
 }
 
+/**
+ * The key a child presses for the name she HEARD: the bar for «Espaço», the arrow for its glyph, a letter's own key. Read
+ * from the child's side on purpose — the case asks whether pressing what the line says answers, not whether the line
+ * agrees with the scheme it was built from. (No engine module is imported: that would make this an engine test.)
+ */
+const NOME_PARA_TECLA = { Espaço: 'Space', Enter: 'Enter', '↑': 'ArrowUp', '↓': 'ArrowDown', '←': 'ArrowLeft', '→': 'ArrowRight' };
+const teclaDoNome = (nome) => NOME_PARA_TECLA[nome] ?? (/^[A-Z]$/.test(nome) ? `Key${nome}` : /^\d$/.test(nome) ? `Digit${nome}` : null);
+
+/** The question after the one on screen — one press, one answer, one step. */
+const seguinte = () => {
+  const perguntas = ['quiz.p1', 'quiz.p2', 'quiz.p3'].map((k) => engine.t(k));
+  return perguntas[perguntas.indexOf(enunciado()) + 1];
+};
+
 describe('the quiz demo, by real key', () => {
+  it('🔴 [Right] the welcome in the status region names a key that REALLY answers — pressed, it answers once', async () => {
+    const boasVindas = falas.find((f) => f.startsWith('Quiz.'));
+    expect(boasVindas, 'the status region never said the welcome').toBeTruthy();
+    // pt, the boot language: «… e <key> para responder.»
+    const nomeada = /e (\S+) para responder\./.exec(boasVindas)?.[1];
+    expect(nomeada, `the welcome names no key to answer: «${boasVindas}»`).toBeTruthy();
+    const code = teclaDoNome(nomeada);
+    expect(code, `the welcome names «${nomeada}», which is no key a child can find: «${boasVindas}»`).toBeTruthy();
+    const depois = seguinte();
+    await pressAndWait(code);
+    expect(alertas, `pressing «${nomeada}» did not give exactly one answer`).toHaveLength(1);
+    expect(enunciado()).toBe(depois);
+  });
+
   it('🔴 [Right] one press of Space, on the focused option, answers ONE question — not that one and the next', async () => {
     expect(document.activeElement?.dataset.alt, 'no option has the focus: the button\'s own activation is not being measured').toBe('0');
-    const segunda = engine.t('quiz.p2');
+    const depois = seguinte();
     await pressAndWait('Space');
     expect(alertas, 'one press gave more than one answer (or none)').toHaveLength(1);
-    expect(enunciado(), 'the quiz did not stop at the SECOND question').toBe(segunda);
+    expect(enunciado(), 'the quiz did not stop at the NEXT question').toBe(depois);
   });
 
   it('🔴 [Boundary] a key the quiz does not use keeps its native behaviour: Tab still leaves the option', async () => {
@@ -65,5 +93,7 @@ describe('the quiz demo, by real key', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 // `mutate.mjs` (scratchpad), each alone, restored from a copy and verified by hash, 2026-09-26:
-//   · M1 the quiz's keydown stops calling `preventDefault` → case 1 RED: one Space gave 2 answers.
-//   · M2 the guard becomes «every key» → case 2 RED: Tab stayed on the option.
+//   · M1 the quiz's keydown stops calling `preventDefault` → the Space case RED (2 answers), and the welcome case with it.
+//   · M2 the guard becomes «every key» → the Tab case RED: Tab stayed on the option.
+//   · B1 the welcome goes back to a fixed sentence naming Enter → the welcome case RED: Enter is not a key of `action2`.
+//   · B2 the welcome reads `start` as the answering position (names H) → the welcome case RED.

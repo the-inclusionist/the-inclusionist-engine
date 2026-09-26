@@ -17,7 +17,8 @@
     "narrationOnDraw",
     "nextFocus",
     "questionHtml",
-    "questionNarration"
+    "questionNarration",
+    "welcomeText"
   ],
   "consumer-quiz/quiz-words.ts": [
     "QUIZ_DICTIONARIES"

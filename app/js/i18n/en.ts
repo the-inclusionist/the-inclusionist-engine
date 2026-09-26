@@ -480,7 +480,11 @@ const en: Record<string, string> = {
   'pause.caa': 'Communication',
   'sr.aac.caixaAltaOn': 'Uppercase letters on: the whole game in capitals.',
   'sr.aac.caixaAltaOff': 'Uppercase letters off: capitals and lowercase.',
-  'sr.quiz.bemVindo': 'Quiz. Use the arrow keys to choose and Enter to answer.',
+  'sr.quiz.bemVindo': 'Quiz. Use {mover} to choose and {responder} to answer.',
+  'sr.quiz.bemVindo.soEscolher': 'Quiz. Use {mover} to choose.',
+  'sr.quiz.bemVindo.soResponder': 'Quiz. Use {responder} to answer.',
+  'sr.quiz.bemVindo.semTeclas': 'Quiz. Tap an answer to give it.',
+  'sr.quiz.teclas.duas': '{a} and {b}',
   // The quiz's questions — keys, not sentences, so that changing the flag reaches the ACTIVITY and not only the
   // engine's frame (ADR-0225). A quiz is not a language subject, so nothing here is exempt from translating.
   'quiz.pageTitle': 'The Inclusionist — demo quiz',
