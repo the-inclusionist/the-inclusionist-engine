@@ -7,6 +7,10 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        THE FOOTER TAKES NO FOCUS. Asked whether it should, so that a keyboard-only child could hold the glide, the Dev: «Não.»
+        §3's hold by focus stays as built — it applies when focus is already inside the footer —, and no tab stop is added.
+    - date: 2026-09-26
+      what: >-
         §1 NEVER SAID WHAT WAS DECIDED. It wrote «moves up line by line», and the Dev had asked for a text that «poderia
         rolar … numa velocidade lenta»; seeing it built, the Dev: «Você está subindo uma linha por vez de forma analógica nas
         dicas, quando era para rolar de forma suave e contínua, lentamente.» and «Como na abertura de starwars.» So §1 reads:

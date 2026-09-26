@@ -45,6 +45,17 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        THE PAUSE IS PER SCREEN, and on a shared screen it is the first player's. The Dev, asked what another pad's START does
+        while the pause card is open: «Nada. O pause é por tela, não geral, e cada jogador tem sua tela. Em jogos onde há dois
+        ou mais jogadores na mesma tela / canvas só o primeiro player controla o pause e os menus.» So: each screen's pause
+        and menus answer the player of that screen; where several seats share one screen, only the first seat's START and
+        SELECT open, move or close them, and the others' do nothing. This corrects the reading of commit 8286e9fb, which gave
+        every seat its own quick pause on a shared screen.
+        AND THE PAD WIZARD HAS DEFAULT POSITIONS. Asked whether «Mapear controle» shows in a game that names no position, the
+        Dev: «Sim, as posições padrões são up, down, left, right, 1, 2, 3, 4, L1, L2, R1, R2, START e SELECT.» A game that names
+        none gets the row, and the wizard asks those fourteen, in the engine's own words.
+    - date: 2026-09-26
+      what: >-
         🔴 A PAD THE CHILD MAPPED HAD NO START AND NO SELECT, AND THE MAPPING WIZARD NOW ALWAYS ASKS THEM. §1 says «from any
         transport», and §4 (with ADR-0155 §4) refuses a preset that names `start` or `select`. The gamepad mapping wizard
         (`input/pad-wizard`) asked only the positions its host's labeller named, and both of its hosts label from the preset — the
