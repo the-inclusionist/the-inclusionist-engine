@@ -12,6 +12,8 @@
 // 🔴 EXCEPT THE TWO SYSTEM POSITIONS, which never reach play (ADR-0144 §4, ADR-0155 §4): `start` is the quick pause and `select`
 // opens the menus, a cartridge may not declare either, so the game has no word for them and nothing to do with them. 📏 Before
 // this, Enter in play opened the quick pause AND the quiz's `onCommand` heard `start`; F opened the card AND it heard `select`.
+// In play they go to the ENGINE instead (`systemPress`), so START and SELECT open the pause «from any transport» (ADR-0144 §1):
+// the eyes, the face, the hands, the voice and the scan press here and have no key in the world for the engine to hear.
 // With a menu open they are the menu's key like any other position — that is how a camera's START leaves the quick pause.
 
 import { SYSTEM, type Action } from '../core/actions.js';
@@ -52,6 +54,14 @@ export interface VirtualControllerDeps {
    * front (ADR-0234, `ui/screen-text.menuSonarPress`). Answers whether it took the press. Absent: every position is a key.
    */
   readonly menuAnswers?: (action: Action, player: number) => boolean;
+  /**
+   * A SYSTEM position pressed in play: the engine opens its pause for that seat — `start` the quick pause, `select` the menus
+   * (ADR-0144 §1, ADR-0155). Absent: it does nothing, as before.
+   *
+   * ⚠️ The keyboard does not come here: its key is already in the world, and the engine's own key listeners answer it even for
+   * a cartridge with no `onCommand` — the host's keyboard conductor does not press these two, or one key would pause twice.
+   */
+  readonly systemPress?: (action: Action, player: number) => void;
 }
 
 export interface VirtualController {
@@ -67,7 +77,8 @@ export interface VirtualController {
    * into or the engine's own control being pressed (`input/key-default`) — so it reaches nobody: nothing held, nothing delivered.
    * With a menu open it is the menu's all the same, as every press is (ADR-0111 erratum of 2026-09-26: one press, one action).
    *
-   * A system position (`start`, `select`) never reaches play, whatever `toPlay` says: it is the engine's (ADR-0144 §4).
+   * A system position (`start`, `select`) never reaches play, whatever `toPlay` says: it is the engine's (ADR-0144 §4), and in
+   * play it goes to `systemPress` — unless `toPlay` is false, when the press belongs to something else and reaches nobody.
    */
   press(action: Action, source: TransportName | undefined, player?: number, toPlay?: boolean): boolean;
   release(action: Action, source: TransportName | undefined, player?: number): void;
@@ -87,7 +98,8 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
         if (!d.menuAnswers?.(action, player) && code) d.menuKey(code, source);
         return false;
       }
-      if (!toPlay || ENGINE_POSITIONS.has(action)) return false;
+      if (!toPlay) return false;
+      if (ENGINE_POSITIONS.has(action)) { d.systemPress?.(action, player); return false; }
       if (code) d.holdKey(code, source);
       held.set(`${player}:${action}`, code ?? null);
       d.deliver({ action, pressed: true, source, player });

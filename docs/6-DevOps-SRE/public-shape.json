@@ -1220,7 +1220,8 @@
       "menuKey",
       "menuOpen",
       "releaseKey",
-      "scheme"
+      "scheme",
+      "systemPress?"
     ],
     "interface VirtualController": [
       "press",

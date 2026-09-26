@@ -2986,32 +2986,38 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!toOtherScreen) changePhase('playing');
   }
 
-  function toggleQuickPauseByStart(e: KeyboardEvent): void {
-    const seat = seatOfPosition(e.code, 'start');
-    if (seat === null) return;
-
+  /**
+   * START for a seat, by whatever door: the key below, or a transport pressing the virtual controller in play (`systemPress`,
+   * ADR-0144 §1 «from any transport»). Answers whether it acted — the key is consumed only then.
+   */
+  function startForSeat(seat: number): boolean {
     // GUARD 1 — A PANEL IS OPEN. With an overlay visible, `menuNavKey` receives the key, finds no intent in it and leaves
     // without consuming it. Without this guard the quick pause would open UNDER the panel the child is in. Escape closes
     // a panel, not START.
-    if (overlays.topVisibleOverlay()) return;
+    if (overlays.topVisibleOverlay()) return false;
 
     // START AGAIN LEAVES — the second way out of the mode that ADR-0044 item 7 already gave START.
-    if (inQuickPause.has(seat)) { leaveQuickPause(seat, 'jogo'); e.preventDefault(); return; }
+    if (inQuickPause.has(seat)) { leaveQuickPause(seat, 'jogo'); return true; }
 
     // GUARD 2 — THE CARD IS OPEN. With it open and a «start» key other than `Enter`, `menuNavKey` finds no intent and
     // lets it through. Closing the card belongs to «Voltar ao jogo» and to Escape.
     const findPauseCard = $<HTMLElement>(`#vp-pause-${seat}`);
-    if (findPauseCard && findPauseCard.hidden === false) return;
-
-    // GUARD 3 — THE KEY PRESSES THE ENGINE'S FOCUSED CONTROL. `Enter` is «start», and a focused button is activated by Enter as
-    // well as Space: on ☰ it is ☰'s press, not the pause (ADR-0111 erratum of 2026-09-26, one key one action). Left undecided
-    // here, so the browser clicks it. Only on the way IN: on the quick pause's own bar the leave above keeps its meaning.
-    if (keyPressesOwnControl(e.code, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY)) return;
+    if (findPauseCard && findPauseCard.hidden === false) return false;
 
     enterQuickPause(seat);
-    // 📌 AND ONLY HERE, once the key was in fact OURS. `Enter` is «start» by default (`input/default-bindings`), and
-    // without this the same press would pause AND activate whatever had focus.
-    e.preventDefault();
+    return true;
+  }
+
+  function toggleQuickPauseByStart(e: KeyboardEvent): void {
+    const seat = seatOfPosition(e.code, 'start');
+    if (seat === null) return;
+    // GUARD 3 — THE KEY PRESSES THE ENGINE'S FOCUSED CONTROL. `Enter` is «start», and a focused button is activated by Enter as
+    // well as Space: on ☰ it is ☰'s press, not the pause (ADR-0111 erratum of 2026-09-26, one key one action). Left undecided
+    // here, so the browser clicks it. Only on the way IN: on the quick pause's own bar the leave keeps its meaning.
+    if (!inQuickPause.has(seat) && keyPressesOwnControl(e.code, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY)) return;
+    // 📌 CONSUMED ONLY when it was in fact OURS. `Enter` is «start» by default (`input/default-bindings`), and without this
+    // the same press would pause AND activate whatever had focus.
+    if (startForSeat(seat)) e.preventDefault();
   }
 
   win.addEventListener('keydown', toggleQuickPauseByStart);
@@ -4108,6 +4114,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // With a menu open the game hears no press, so the engine answers the sonar there: R1 reads the menu in front, spoken or,
     // in deaf mode, captioned and signed — the same two doors the play sonar's words take (ADR-0234).
     menuAnswers: (action) => menuSonarPress(action, screen, (text) => { srSay(text); deafMode.sonar(text); }),
+    // START and SELECT in play from a transport with no key in the world — the eyes, the face, the hands, the voice, the scan —
+    // open the same pause the keys open, for the seat that pressed (ADR-0144 §1, ADR-0155).
+    systemPress: (action, seat) => { if (action === 'start') startForSeat(seat); else openSeatMenus(seat); },
   });
   /*
    * 🔴 THE KEYBOARD CONDUCTOR, AND ONLY THAT (ADR-0223). It resolves the action and PRESSES the virtual controller, like the
@@ -4137,7 +4146,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       const seat = keyboard.whichPlayer(e.code);
       if (seat < 0) return;
       const action = keyboard.actionOf(e.code, seat) as Action | null;
-      if (!action) return;
+      // ⚠️ START AND SELECT ARE NOT PRESSED HERE: their key is answered by the engine's own listeners above, which run for a
+      // cartridge with no `onCommand` too — pressed here as well, the controller would open the pause a second time (ADR-0144).
+      if (!action || action === 'start' || action === 'select') return;
       if (kind === 'keyup') { virtualController.release(action, source, seat); return; }
       // 🔴 A KEY THE MENUS CONSUMED IS NOT ALSO PLAYED (ADR-0111 erratum of 2026-09-26). `nav.attach()` put `menuNavKey` on this
       // window's capture first, so it has already decided — and a key that CLOSED the last menu (resume, «no» at the card's

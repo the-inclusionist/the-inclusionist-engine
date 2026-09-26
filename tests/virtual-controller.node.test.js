@@ -15,6 +15,7 @@ const make = ({ menu = false } = {}) => {
     scheme: () => SCHEME, menuOpen: () => menuOpen,
     holdKey: (code, source) => log.push(['hold', code, source]), releaseKey: (code) => log.push(['release', code]),
     menuKey: (code, source) => log.push(['menu', code, source]), deliver: (c) => log.push(['deliver', c]),
+    systemPress: (action, player) => log.push(['system', action, player]),
   });
   return { vc, log, setMenu: (v) => { menuOpen = v; } };
 };
@@ -64,21 +65,33 @@ describe('in play', () => {
     expect(log).toEqual([]);
   });
   // 🔴 THE SYSTEM POSITIONS ARE THE ENGINE'S (ADR-0144 §4, ADR-0155 §4): START is the quick pause, SELECT the menus, and a cartridge
-  // may not declare either — so play never hears them, from any transport, whatever the keyboard says about the focus.
+  // may not declare either — so play never hears them, from any transport. In play they go to the ENGINE instead (`systemPress`):
+  // that is how START and SELECT open the pause «from any transport» (ADR-0144 §1, erratum of 2026-09-26).
   for (const action of ['start', 'select']) {
-    for (const source of [undefined, 'teclado', 'olhos', 'toque', 'gamepad']) {
-      it(`${action} from ${source ?? 'an unsigned key'} in play holds nothing, delivers nothing, answers false — nor its release`, () => {
+    for (const source of [undefined, 'teclado', 'olhos', 'rosto', 'gestos', 'fala', 'toque', 'gamepad']) {
+      it(`${action} from ${source ?? 'an unsigned key'} in play goes to the ENGINE: nothing held, nothing delivered, false — nor its release`, () => {
         const { vc, log } = make();
         expect(vc.press(action, source, 0, true)).toBe(false);
         vc.release(action, source, 0);
-        expect(log).toEqual([]);
+        expect(log).toEqual([['system', action, 0]]);
       });
     }
   }
+  it('[Right] the engine is told the SEAT that pressed: player N\'s transport opens player N\'s pause', () => {
+    const { vc, log } = make();
+    vc.press('select', 'olhos', 2);
+    expect(log).toEqual([['system', 'select', 2]]);
+  });
+  it('[Zero] a system position held back from play (`toPlay` false) reaches nobody — not even the engine', () => {
+    const { vc, log } = make();
+    expect(vc.press('start', undefined, 0, false)).toBe(false);
+    expect(log).toEqual([]);
+  });
   it('[Boundary] the rule names the two system positions only: a verb beside them in play still reaches the game', () => {
     const { vc, log } = make();
     expect(vc.press('action4', undefined, 0, true)).toBe(true);
     expect(log.at(-1)).toEqual(['deliver', { action: 'action4', pressed: true, source: undefined, player: 0 }]);
+    expect(log.some((l) => l[0] === 'system'), 'a verb was handed to the engine as if it were START').toBe(false);
   });
 });
 
@@ -105,6 +118,7 @@ describe('with a menu open', () => {
   it('START is still the menu\'s key there — the way a camera\'s START leaves the quick pause', () => {
     const { vc, log } = make({ menu: true });
     expect(vc.press('start', 'olhos')).toBe(false);
+    // and ONLY the menu's: the engine's pause is not asked on top of it (the quick pause's own key leaves it)
     expect(log).toEqual([['menu', 'Enter', 'olhos']]);
   });
   it('a press the game heard is released to it even if a menu opened meanwhile', () => {
@@ -126,3 +140,8 @@ describe('with a menu open', () => {
 //   · only `start` in the rule / only `select` in the rule     → the five cases of the one left out
 //   · `action4` added to the rule                              → «[Boundary] … a verb beside them»
 //   · the rule asked before the menu                           → «START is still the menu's key there»
+// And (2026-09-26, START and SELECT from every transport) — `scratchpad/start-any/mutate.mjs`, restored and checked by SHA-256:
+//   · `systemPress` never called                                → the sixteen «goes to the ENGINE» cases
+//   · the seat not forwarded (always 0)                        → «the engine is told the SEAT»
+//   · `systemPress` asked before `toPlay`                       → «held back from play reaches nobody»
+//   · `systemPress` asked with a menu open too                  → «START is still the menu's key there»
