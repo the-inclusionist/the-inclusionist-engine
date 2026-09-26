@@ -1,6 +1,20 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/a-long-explanation-scrolls.browser.test.js
+    - tests/footer-scroll.node.test.js
+  errata:
+    - date: 2026-09-26
+      what: >-
+        CONFIRMED (`engine:b2ff44e6`): the pace is `ui/footer-scroll`, pure, and the DOM half `ui/footer-scroll-driver`,
+        watching the region from the root, for the screen's band and a panel's `.opt-explain`. Chosen in building it, where
+        the record was silent: the hold at the end is the time to read the last view's lines, as the first wait is the
+        first view's; a reduced-motion page stays for the words it brings, the last page for its own lines, repeating one
+        rather than showing a blank; reduced motion is the system's OR any scene switch the child reduced (pages carry the
+        same words, so a false «reduced» costs nothing); the same text written again is not a new text; beside another
+        footer line (ADR-0164: one line each) the view is one line. The text moves by `scrollTop`, so the live region is
+        never rewritten (§4). Measured at 640×360: all fifteen BNCC texts of the demo quiz overflow two lines (3 to 7).
   supersedes-in-part: [ADR-0164, ADR-0244]
   date: 2026-09-26
   decision-makers: [Dev]
@@ -58,8 +72,14 @@ decision-outcome:
       - "Moving text on screen, which some children find distracting; reduced motion is the way out"
 
   confirmation: |
-    Debt until the gate lands (issue to be opened with the implementation): a text that fits does not move; a longer one
-    reaches its last line at the pace set; reduced motion turns pages instead of gliding; pointer over it holds it.
+    ✅ The gates in confirmed-by, on the real stylesheet at 640×360 with faked timers: a text that fits gets no mark and no
+    timer and has not moved a minute later; a longer one reaches each line, and its last, when the words before it are read,
+    at 125, 145 and 175 words a minute, shows its last two lines whole and no slice of another, holds, and starts again from
+    the top; reduced motion (the system's, and the calm icon's) turns pages of two, in place at once, with no smooth scroll;
+    a pointer over it or focus in it holds it with no timer left, and leaving lets it go on; a new text starts from the top,
+    the same text written again does not; hiding the band or closing a panel leaves no timer; the scrolling band's box is the
+    clamped one to the pixel and `--footer-band-h`; beside the sound caption it scrolls through one line; the live region
+    keeps one text node. 27 mutations red.
 
 more-information: |
   The pace is the caption rate because it is the one reading speed the child already chose; a second speed setting would
