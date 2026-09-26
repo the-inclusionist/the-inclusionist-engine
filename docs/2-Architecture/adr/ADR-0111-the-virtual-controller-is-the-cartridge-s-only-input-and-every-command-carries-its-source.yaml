@@ -15,6 +15,19 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        ✅ THE SYSTEM POSITIONS NEVER REACH PLAY, AND TWO MORE KEYS STOP BEING TWO ACTIONS — the rule of the two errata below,
+        applied where it was still broken. 📏 Measured on the served quiz with real keys, its `onCommand` wrapped in flight:
+        Enter in play opened the quick pause AND the game heard `start`; F opened the card AND it heard `select`; Enter on the
+        focused ☰ opened the quick pause instead of pressing ☰; the arrow that ended print mode brought the card back AND was
+        heard as `down`. No rule ever gives `start` or `select` to the game — ADR-0144 §4 and ADR-0155 §4 refuse a cartridge
+        that declares either — so the virtual controller never delivers them to play, from any transport; with a menu open they
+        are still the menu's key. Enter on the engine's focused control is that control's press, as Space is
+        (`input/key-default.keyPressesOwnControl`, asked by START's listener on the way in); on the quick pause's bar Enter
+        stays the bar's «confirm». The key that ends print mode is print's: its listener runs after the conductor, so the
+        conductor reads print's armed state instead — no `stopImmediatePropagation`, so the listeners after it still see the
+        key. After: the game hears none of the four. Engine `e7cccc29`, `05db38df`, `292dc1eb`.
+    - date: 2026-09-26
+      what: >-
         ✅ A KEY THAT WENT TO SOMETHING ELSE IS NOT ALSO PLAYED — the second half of the erratum above. Measured on the
         served quiz with real keys after it, four keys were still two actions: Space on the bar's ☰ opened the menus and
         answered; Space on «resume» closed the card and answered; a key typed into a text field in play was delivered too;
