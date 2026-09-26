@@ -230,6 +230,21 @@ describe('the script, reachable by a cartridge', () => {
     expect(commandLanguagesOfTheDelivery(['en', 'none'], HEAVY_FILES, commandsLanguageOf)).toEqual(['en']);
   });
 
+  /**
+   * 🔴 A COMMAND LANGUAGE WITH NO MODEL STOPS THE COMMAND, as a reading one does. `--commands xx` used to carry the command
+   * runtime and no model at all, in silence — 3.1 MiB that open nothing, and a delivery that looks as if it could hear.
+   * 📏 Measured before the change through the program: `commands  xx`, and the three runtime files were the ones it went for.
+   */
+  it('🔴 [Right] a named language the catalogue has no command model for is refused by name, with the languages it has', () => {
+    const linguas = (asked) => commandLanguagesOfTheDelivery(asked, HEAVY_FILES, commandsLanguageOf);
+    expect(() => linguas(['xx']), 'a language with no model was carried as the runtime alone').toThrow(/--commands xx: .*pt, en, es/);
+    expect(() => linguas(['pt', 'fr', 'de'])).toThrow(/--commands fr, de:/);
+    expect(linguas(['pt-BR', 'es', 'pt']), 'a regional tag is its base language, once').toEqual(['pt', 'es']);
+    expect(() => idsOfTheDelivery(argumentosDaEntrega(['out', '--commands', 'xx'], {}),
+      { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf, readingLanguageOf }), 'the ids were computed past an unknown language')
+      .toThrow(/no command model/);
+  });
+
   it('🔴 [Right] each `--reading <language>` adds its model, and its value is never taken for the folder', () => {
     expect(argumentosDaEntrega(['dist'], {}).reading, 'a language appeared where nobody asked for one').toEqual([]);
     expect(argumentosDaEntrega(['dist', '--reading', 'pt'], {}).reading).toEqual(['pt']);
@@ -347,6 +362,12 @@ describe('the script, reachable by a cartridge', () => {
 //   L6 `none` read as a language                             🔴 `none` carries none
 //   ⚠️ The program's exit 2 on an unknown language is in its body, which needs `dist-pkg`: measured instead (2026-09-26),
 //      `node scripts/heavy-into-the-delivery.mjs dist --reading fr` exits 2 naming `fr` before a byte is fetched.
+//   K1 an unknown command language carried in silence      🔴 refused by name (`scratchpad/moonshine-fix/plan-commands.json`)
+//   K2 a regional tag (`pt-BR`) refused as unknown          🔴 same
+//   K3 the regional tags carried as they were written        🔴 same
+//   K4 the message without the catalogue's languages         🔴 same
+//   K5 the program checking the command languages late      measured instead (program body, `wiring-probe.mjs`): as written,
+//      `--commands xx` exits 2 naming `xx` with no download line; mutated, it dies with an uncaught exception, exit 1
 //   T1 a file already in the delivery gets no notice      🔴 a second run keeps the first run's notices
 //   T2 any file on disk gets a notice, pinned or not      🔴 bytes that are not the pinned ones get no notice
 //   T3 the program not passing the catalogue survives here (program body): measured instead on a real delivery,

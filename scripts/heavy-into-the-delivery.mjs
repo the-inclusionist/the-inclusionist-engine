@@ -114,7 +114,8 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   CARRIES EVERY LANGUAGE the catalogue has a command model for — pt, en and es, 108 MiB (ADR-0225 erratum, the Dev: «A entrega
  *   leva as três línguas.») — because the child can switch language mid-game and her model must already be there. The flag
  *   NARROWS: the languages named, and only those; `--commands none` carries no command model at all. A language left out is
- *   said to the child who speaks it, and named in `problems` with this fix.
+ *   said to the child who speaks it, and named in `problems` with this fix. A language the catalogue has no command model for
+ *   STOPS the command (exit 2) instead of carrying the runtime alone.
  * · `--libras`: the Libras player deaf mode's interpreter signs with (ADR-0234, route B) — LAViD-UFPB's signs exported to one
  *   avatar and 655 clips, the whole manual alphabet among them, 32.7 MiB, into `libras/avatar/`, each checked against
  *   `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`), from the pins' `source` or from their `mirror` folder under
@@ -155,11 +156,22 @@ export function argumentosDaEntrega(args, ambiente = process.env) {
 /**
  * THE SPOKEN LANGUAGES A DELIVERY CARRIES: those `--commands` named (less `none`, which names nothing), or — when the flag was
  * not given — every language the catalogue has a command model for (ADR-0225 erratum). `languageOf` is the catalogue's
- * `commandsLanguageOf`, so a fourth language with a model is carried by default the day it enters the catalogue.
+ * `commandsLanguageOf`, so a fourth language with a model is carried by default the day it enters the catalogue. Named languages
+ * are base languages (`pt-BR` is `pt`).
+ * ⚠️ A NAMED LANGUAGE WITH NO MODEL THROWS, naming it, as `--reading` does: `--commands xx` used to carry the command runtime and
+ * no model at all, in silence.
  */
 export function commandLanguagesOfTheDelivery(asked, catalogue, languageOf) {
-  if (asked.length) return asked.filter((lingua) => lingua !== 'none');
-  return [...new Set(catalogue.map((p) => languageOf(p.id)).filter(Boolean))];
+  const known = [...new Set(catalogue.map((p) => languageOf(p.id)).filter(Boolean))];
+  if (!asked.length) return known;
+  const base = (tag) => tag.split('-')[0].toLowerCase();
+  const named = asked.filter((lingua) => lingua !== 'none');
+  const unknown = named.filter((lingua) => !known.includes(base(lingua)));
+  if (unknown.length) {
+    throw new Error(`--commands ${unknown.join(', ')}: the catalogue has no command model for ${unknown.length > 1 ? 'these languages' : 'this language'} `
+      + `— it has ${known.join(', ')}. Name one of them, \`--commands none\` for no command model, or leave the flag out for every language`);
+  }
+  return [...new Set(named.map(base))];
 }
 
 /**
@@ -224,9 +236,13 @@ if (executado) {
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
   const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK, DELIVERY_LISTS, commandsLanguageOf, readingLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
-  // 📌 THE READING LANGUAGES FIRST, before a byte is downloaded: a language the catalogue has no model for stops here, named
-  let read;
-  try { read = readingLanguagesOfTheDelivery(reading, HEAVY_FILES, readingLanguageOf); } catch (e) {
+  // 📌 THE LANGUAGES FIRST, reading and command, before a byte is downloaded: a language the catalogue has no model for stops
+  // here, named
+  let read, spoken;
+  try {
+    read = readingLanguagesOfTheDelivery(reading, HEAVY_FILES, readingLanguageOf);
+    spoken = commandLanguagesOfTheDelivery(commands, HEAVY_FILES, commandsLanguageOf);
+  } catch (e) {
     console.error(e instanceof Error ? e.message : String(e));
     process.exit(2);
   }
@@ -261,7 +277,6 @@ if (executado) {
   }
   const ids = idsOfTheDelivery({ kokoro, reading, commands, libras },
     { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf, readingLanguageOf });
-  const spoken = commandLanguagesOfTheDelivery(commands, HEAVY_FILES, commandsLanguageOf);
   console.log(`commands  ${spoken.length ? spoken.join(', ') : 'none'}${commands.length ? '' : ' (every language, the default)'}`);
   console.log(`reading   ${read.length ? read.join(', ') : 'none'}${reading.includes('all') ? ' (every language)' : ''}`);
   if (base) console.log(`base: ${base}`);
