@@ -1315,6 +1315,32 @@
     "minimumTarget",
     "stageScale"
   ],
+  "ui/libras-avatar-clip.ts": [
+    "ClipJson",
+    "TrackJson",
+    "bindFaceTracks",
+    "clipFrom",
+    "valueAt"
+  ],
+  "ui/libras-avatar-plan.ts": [
+    "AvatarManifest",
+    "CROSS_FADE_S",
+    "ClipWindow",
+    "LIBRAS_AVATAR_FOLDER",
+    "LIBRAS_AVATAR_MANIFEST",
+    "SignPlan",
+    "SignSequencer",
+    "SignStep",
+    "StartClip",
+    "UnsignedWord",
+    "avatarManifestOf",
+    "createSignSequencer",
+    "leftOutText",
+    "nothingSigned",
+    "planSigns",
+    "playedLength",
+    "unsignedText"
+  ],
   "ui/libras-glosses.ts": [
     "GlossFile",
     "Glosser",

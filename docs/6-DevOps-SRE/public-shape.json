@@ -2480,6 +2480,53 @@
     ],
     "type LayoutDoc": "Pick<Document, 'querySelector'>"
   },
+  "ui/libras-avatar-clip.ts": {
+    "interface TrackJson": [
+      "interpolation?",
+      "name",
+      "times",
+      "type",
+      "values"
+    ],
+    "interface ClipJson": [
+      "duration",
+      "name",
+      "tracks"
+    ]
+  },
+  "ui/libras-avatar-plan.ts": {
+    "interface ClipWindow": [
+      "duration",
+      "file",
+      "from"
+    ],
+    "interface AvatarManifest": [
+      "avatar",
+      "clips"
+    ],
+    "interface SignStep": [
+      "clip",
+      "spells?"
+    ],
+    "interface UnsignedWord": [
+      "missing",
+      "word"
+    ],
+    "interface SignPlan": [
+      "steps",
+      "unsigned"
+    ],
+    "interface StartClip": [
+      "at",
+      "clip",
+      "fade"
+    ],
+    "interface SignSequencer": [
+      "play",
+      "stop",
+      "tick"
+    ]
+  },
   "ui/libras-glosses.ts": {
     "interface GlossFile": [
       "format",

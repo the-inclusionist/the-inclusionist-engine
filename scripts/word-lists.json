@@ -3169,6 +3169,23 @@
     "yomogi",
     "you",
     "zero",
-    "zone"
+    "zone",
+    "avatar",
+    "clip",
+    "clips",
+    "fade",
+    "finished",
+    "interpolation",
+    "manifest",
+    "mesh",
+    "meshes",
+    "morph",
+    "overlap",
+    "sequencer",
+    "slerp",
+    "spells",
+    "starts",
+    "unread",
+    "unsigned"
   ]
 }
