@@ -15,15 +15,21 @@
 // 📌 THE INTERPRETER IS A PORT, text in and a result out, the same shape whichever player signs. The Dev chose route A and then
 // route B (ADR-0234 errata): the VLibras player served from the delivery's own origin now (`ui/vlibras-player`, which the root
 // uses when the host lends no interpreter of its own — `EngineHost.interpreter`), a free player after it — only the port's
-// implementation changes.
+// implementation changes. The free player (`ui/libras-avatar-player`, route B) stands beside it, lent by a host that asks for it.
 // Where the delivery shipped no player, that interpreter answers as `NO_INTERPRETER` does: «signing unavailable», which goes to
 // `problems` and to the child (ADR-0169). A player that fails at run time (no WebGL, never loads) takes the same path; the
-// captions and the text never depend on it.
+// captions and the text never depend on it. A player that signed the text but LEFT PART OF IT OUT says what (`unsigned`), and
+// that goes to `problems` too — what works in part is reported (ADR-0169); the child keeps the captions, as for the rest.
 import type { Translate } from '../core/i18n.js';
 import type { Store } from '../platform/storage.js';
 
-/** What a sign request comes back with: signed, or why not — the reason goes into `problems`. */
-export type SignResult = { readonly signed: true } | { readonly signed: false; readonly reason: string };
+/**
+ * What a sign request comes back with: signed — and, when part of the text was left out, what and why (`unsigned`) — or why
+ * not. The reason and the part left out go into `problems`.
+ */
+export type SignResult =
+  | { readonly signed: true; readonly unsigned?: string }
+  | { readonly signed: false; readonly reason: string };
 
 /** A player of Libras: whatever signs, or a test's double. */
 export interface Interpreter {
@@ -90,6 +96,12 @@ export function signingUnavailableLine(reason: string): string {
     + 'text, but nothing is signed when she presses the sonar — give deaf mode a Libras player that can sign here (ADR-0234)';
 }
 
+/** The line `problems` gets when the interpreter signed a text but left part of it out: what, the child's cost, the fix. */
+export function signedInPartLine(unsigned: string): string {
+  return `deaf mode's sign-language interpreter signed only part of what the sonar found: ${unsigned}. A deaf child reads `
+    + 'those words in the captions and is not signed them — give the player the signs or the letters it lacks (ADR-0234)';
+}
+
 /** Builds a deaf mode. The stored choice is read here, at build, never at import (ADR-0232). */
 export function createDeafMode({ store, captionsSetting, t, interpreter, speak, caption, tell, report }: DeafModePorts): DeafMode {
   let on = store.getBool('incl_libras', false);
@@ -104,10 +116,13 @@ export function createDeafMode({ store, captionsSetting, t, interpreter, speak, 
    * The answer to one request, heard only while the mode that asked is still on and the root still alive. The first «no»
    * is told through the announcer AND written after the sonar's text: she is deaf, and the announcer alone is heard.
    */
+  const reportOnce = (line: string): void => { if (!reported.has(line)) { reported.add(line); report(line); } };
+  /** Signed, perhaps in part: what was left out is a diagnosis, not a notice — the child saw the rest signed. */
+  const signedPart = (unsigned: string | undefined): void => { if (unsigned) reportOnce(signedInPartLine(unsigned)); };
   const heard = (text: string, result: SignResult): void => {
-    if (disposed || !on || result.signed) return;
-    const line = signingUnavailableLine(result.reason);
-    if (!reported.has(line)) { reported.add(line); report(line); }
+    if (disposed || !on) return;
+    if (result.signed) { signedPart(result.unsigned); return; }
+    reportOnce(signingUnavailableLine(result.reason));
     if (told) return;
     told = true;
     const notice = t('sr.deaf.noSigning');

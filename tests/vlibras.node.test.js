@@ -9,7 +9,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createDeafMode, signingUnavailableLine, NO_INTERPRETER } from '../app/js/ui/vlibras.js';
+import { createDeafMode, signingUnavailableLine, signedInPartLine, NO_INTERPRETER } from '../app/js/ui/vlibras.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import pt from '../app/js/i18n/pt.js';
@@ -200,6 +200,23 @@ describe('ui/vlibras — an interpreter that cannot sign never leaves her with n
     expect(s.problems[0]).toMatch(/a Libras player is not installed in this delivery/);
     expect(s.told).toEqual([pt['sr.deaf.noSigning']]);
   });
+
+  it('🔴 [Right] a text signed IN PART puts what was left out in `problems`, once — and the child, who saw the rest signed, is not told «unavailable»', async () => {
+    const leftOut = '«ENTROU» lacks a sign of its own and could not be fingerspelled: the avatar lacks the clips for E, N, R, T, U';
+    const s = build(interpreterDouble(() => Promise.resolve({ signed: true, unsigned: leftOut })));
+    s.mode.toggle();
+    s.mode.sonar(SONAR);
+    await settle();
+    s.mode.sonar(SONAR);
+    await settle();
+    expect(s.problems, 'what the interpreter left out did not reach `problems`, or reached it once per press')
+      .toEqual([signedInPartLine(leftOut)]);
+    expect(s.problems[0]).toMatch(/signed only part/);           // the subject by name
+    expect(s.problems[0]).toMatch(/ENTROU/);                     // what was left out, as the player said it
+    expect(s.problems[0]).toMatch(/give the player the signs or the letters it lacks/); // the fix
+    expect(s.told, 'a partly signed text was told to the child as «no interpreter»').toEqual([]);
+    expect(s.captions).toEqual([SONAR, SONAR]);
+  });
 });
 
 describe('ui/vlibras — dispose releases the interpreter', () => {
@@ -231,3 +248,6 @@ describe('ui/vlibras — dispose releases the interpreter', () => {
 //   M15 the sonar's text not captioned · M16 the interpreter not asked  🔴 several, «hands EXACTLY» first
 //   M17 a THROWN sign escaping · M18 a REJECTED sign unhandled           🔴 «REJECTS or THROWS»
 //   M19 `captionsOn` as the setting alone, or as the mode alone          🔴 «every sound is captioned»
+// (2026-09-25, route B phase B2 — scripted, each applied and restored from a copy — both red)
+//   M25 a signed answer's `unsigned` ignored                             🔴 «signed IN PART»
+//   M26 the part-signed line reported at every press (no dedupe)         🔴 «signed IN PART»

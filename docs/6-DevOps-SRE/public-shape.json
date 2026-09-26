@@ -3333,7 +3333,7 @@
       "sonar",
       "toggle"
     ],
-    "type SignResult": "{ readonly signed: true } | { readonly signed: false",
+    "type SignResult": "| { readonly signed: true",
     "type DeafModeStore": "Pick<Store, 'getBool' | 'setBool'>"
   },
   "ui/voice-control.ts": {

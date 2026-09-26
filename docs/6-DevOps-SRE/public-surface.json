@@ -1727,6 +1727,7 @@
     "NO_INTERPRETER",
     "SignResult",
     "createDeafMode",
+    "signedInPartLine",
     "signingUnavailableLine"
   ],
   "ui/voice-control.ts": [

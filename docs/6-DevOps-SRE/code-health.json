@@ -1938,12 +1938,12 @@
       "fanIn": 1
     },
     "ui/vlibras.ts": {
-      "codeLines": 82,
-      "decisionNodes": 8,
+      "codeLines": 90,
+      "decisionNodes": 10,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 6,
+      "worstFunction": 5,
       "statefulEdges": 0,
       "fanIn": 2
     },
