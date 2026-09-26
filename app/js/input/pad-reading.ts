@@ -109,13 +109,18 @@ export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): bool
 }
 
 /** The snapshot when the CHILD recorded a map in the wizard: their directions fall back to the standard ones when the
- *  binding is not active, so the D-pad and the stick stay alive beside what they chose. */
+ *  binding is not active, so the D-pad and the stick stay alive beside what they chose.
+ *  ⚠️ `start` and `select` are read AS POSITIONS, as the table's reading does: the wizard asks them and stores them, and a
+ *  map read without `select` left a mapped pad with no door to the menus — not even as the one-button scan's switch
+ *  (ADR-0155, ADR-0218 §4). */
 function actionsFromTheSavedMap(gp: PadLike, custom: PadMap): PadActions {
   const A = (k: string): boolean => bindActive(gp, bindingAt(custom, k));
   const sd = stdDirs(gp);
   return {
     left: A('left') || sd.left, right: A('right') || sd.right, up: A('up') || sd.up, down: A('down') || sd.down,
-    action2: A('action2'), action1: A('action1'), action4: A('action4'), action3: A('action3'), _start: A('action2') || A('start'), _pause: A('start'),
+    action2: A('action2'), action1: A('action1'), action4: A('action4'), action3: A('action3'),
+    start: A('start'), select: A('select'),
+    _start: A('action2') || A('start'), _pause: A('start'),
   };
 }
 
