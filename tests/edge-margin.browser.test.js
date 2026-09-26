@@ -9,39 +9,25 @@
 // bottom, its clock 7.1 px from the bottom; the pause card's and a panel's title 6 px from the top; a panel's footer 4.8 px.
 //
 // What is walked, on the real quiz page with the real stylesheet: every visible TEXT (its line boxes, as a Range gives them,
-// cut by any ancestor that clips its overflow), every visible BUTTON, and the HUD row's chips — all but the quick bar
-// (`#title-icons`, which ADR-0180 put at the edge, and its icon name line). Screens: the start screen with its footer, a
-// question with the explanation shown, the pause card, and a panel — at 640×360 and again at 1280×720, where the margin is 16.
+// cut by any ancestor that clips its overflow), every visible BUTTON, and the HUD's chips — all but the quick bar
+// (`#title-icons`, which ADR-0180 put at the edge, and its icon name line); the measure is `fixtures/edge-measure`. Screens: the
+// start screen with its footer, a question with the explanation shown, the pause card, and a panel — at 640×360 and again at
+// 1280×720, where the margin is 16. What the quiz page does not show — the HUD bands on the region with no row, the caption
+// and the legend alone at the foot, the pad's pills, a simulation's dot — is `edge-margin-without-the-row.browser.test.js`.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import css from '../app/css/style.css?raw';
 import { QUIZ_BODY, openSkill } from './fixtures/quiz-page.js';
 import { FIFTEEN_SKILLS } from './fixtures/quiz-skills.js';
+import { shown, tooClose as tooCloseIn, atSize as atSizeIn } from './fixtures/edge-measure.js';
 
 const wait = (ms = 60) => new Promise((r) => setTimeout(r, ms));
 let engine, region;
 
-function shown(el) {
-  for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
-    const s = getComputedStyle(e);
-    if (e.hidden || s.display === 'none' || s.visibility === 'hidden') return false;
-  }
-  return el.getClientRects().length > 0;
-}
-/** A rectangle cut by every ancestor inside the region that clips its overflow — at the ancestor's PADDING box. */
-function clipped(el, rect) {
-  let x = { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
-  for (let a = el; a && a !== region; a = a.parentElement) {
-    if (getComputedStyle(a).overflow === 'visible') continue;
-    const c = a.getBoundingClientRect();
-    const left = c.left + a.clientLeft;
-    const top = c.top + a.clientTop;
-    x = { left: Math.max(x.left, left), top: Math.max(x.top, top), right: Math.min(x.right, left + a.clientWidth), bottom: Math.min(x.bottom, top + a.clientHeight) };
-  }
-  return x.right - x.left > 0.5 && x.bottom - x.top > 0.5 ? x : null;
-}
-const quickBar = () => document.getElementById('title-icons');
+/** What stands nearer this page's region's edges than its margin (`fixtures/edge-measure`, shared with the second pass). */
+const tooClose = (screen) => tooCloseIn(region, screen);
+const atSize = (w, h) => atSizeIn(document, w, h);
 /**
  * Where a card's CONTENT starts, from the region's top — below its border and top padding, whatever its list is scrolled to.
  * The pause card's is kept for the panel case to compare.
@@ -49,44 +35,6 @@ const quickBar = () => document.getElementById('title-icons');
 let pauseContentTop = NaN;
 const contentTop = (card) => card.getBoundingClientRect().top + card.clientTop + parseFloat(getComputedStyle(card).paddingTop)
   - region.getBoundingClientRect().top;
-/** Everything the margin is for on the screen now: [what, rect] — texts by line, buttons and HUD chips by box. */
-function measured() {
-  const out = [];
-  const bar = quickBar();
-  const walker = document.createTreeWalker(region, NodeFilter.SHOW_TEXT);
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-    const el = n.parentElement;
-    if (!n.textContent.trim() || bar.contains(el) || el.closest('.sr-only') || !shown(el)) continue;
-    const range = document.createRange();
-    range.selectNodeContents(n);
-    for (const line of range.getClientRects()) {
-      const x = line.width > 0 ? clipped(el, line) : null;
-      if (x) out.push([`«${n.textContent.trim().slice(0, 32)}» (${el.tagName.toLowerCase()}.${el.className})`, x]);
-    }
-  }
-  for (const el of region.querySelectorAll('button, .hud-row .hud-barra, .hud-row .session-clock')) {
-    if (bar.contains(el) || !shown(el)) continue;
-    const x = clipped(el, el.getBoundingClientRect());
-    if (x) out.push([`${el.tagName.toLowerCase()}.${el.className} «${el.textContent.trim().slice(0, 24)}»`, x]);
-  }
-  return out;
-}
-/** The margin the region declares, and what stands closer than it to any of the four edges. */
-function tooClose(screen) {
-  const r = region.getBoundingClientRect();
-  const m = parseFloat(region.style.getPropertyValue('--margem-borda'));
-  const items = measured();
-  const found = items.flatMap(([what, x]) => {
-    const d = { left: x.left - r.left, top: x.top - r.top, right: r.right - x.right, bottom: r.bottom - x.bottom };
-    return Object.entries(d).filter(([, v]) => v < m - 0.05).map(([side, v]) => `(${screen}) ${what} is ${v.toFixed(1)} px from the ${side} edge`);
-  });
-  return { found, items, m };
-}
-async function atSize(w, h) {
-  document.querySelector('.stage-wrap').style.cssText = `width:${w}px;height:${h}px;display:flex;flex:none`;
-  window.dispatchEvent(new Event('resize'));
-  await wait(120);
-}
 const pressBack = async () => {
   const t = document.activeElement && document.activeElement !== document.body ? document.activeElement : region;
   const code = engine.keyboard.kbFor(0).action3[0];

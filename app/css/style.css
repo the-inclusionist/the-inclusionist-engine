@@ -631,13 +631,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* The MISSION sits at the TOP CENTRE, just under the quick bar (ADR-0239 erratum): `ui/top-band` writes its `top` from the
    bar's box. The class keeps its old name — a page-surface name is not renamed in passing. The bar's momentary name line is
    drawn over it while a name shows (the Dev: «a legenda é momentânea, a escrita da missão aparece o tempo todo»). */
-.hud-esquerda{top:0;left:50%;transform:translateX(-50%);max-width:calc(100% - 8px);flex-direction:column;align-items:center;text-align:center}
-.hud-direita{top:0;right:4px;flex-direction:column;align-items:flex-end;text-align:right}
+/* THE EDGE MARGIN (interface log 2026-09-26) where a caller mounts the bands on the region, with no row: `--margem-borda` from
+   the top and the side; the mission's `top` is otherwise `ui/top-band`'s, under the quick bar. */
+.hud-esquerda{top:var(--margem-borda,8px);left:50%;transform:translateX(-50%);max-width:calc(100% - 2 * var(--margem-borda,8px));flex-direction:column;align-items:center;text-align:center}
+.hud-direita{top:var(--margem-borda,8px);right:var(--margem-borda,8px);flex-direction:column;align-items:flex-end;text-align:right}
 /* The learning bars (ADR-0049 §5): one ten-segment bar per skill, side by side, centred at the bottom — under the footer
    column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and a second cue beside
    each, so no state is told by colour alone (WCAG 1.4.1): green carries a dot, red stripes, an empty slot only its outline;
    a purple bar a ▲, an orange one a ▼. */
-.hud-aprendizagem{left:50%;bottom:4px;transform:translateX(-50%);flex-direction:row;gap:.75em}
+.hud-aprendizagem{left:50%;bottom:var(--margem-borda,8px);transform:translateX(-50%);flex-direction:row;gap:.75em}
 /* The explanation band is 82% opaque: the bars showed through under its words. While it shows they are not drawn at all —
    the explanation has priority (ADR-0168 §3), and a segment behind a letter is noise for the child reading it. */
 .game-region:has(.barra-explicacao:not([hidden])) .hud-aprendizagem,#game-region:has(.barra-explicacao:not([hidden])) .hud-aprendizagem{visibility:hidden}
@@ -686,7 +688,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .session-clock-digits,.hud-points .hud-numero{font-family:var(--font-math);font-variant-numeric:tabular-nums;
   font-size:calc(var(--ui-fs,16px) * 1.25);line-height:1.1;white-space:nowrap}
 .hud-points .hud-numero{background:none;padding:0}
-.hud-points{top:0;right:4px;flex-direction:column;align-items:flex-end} /* only where a caller mounts the bands with no row */
+.hud-points{top:var(--margem-borda,8px);right:var(--margem-borda,8px);flex-direction:column;align-items:flex-end} /* only where a caller mounts the bands with no row */
+/* …and there, at the top edge, the digits get a line that holds their glyphs: at 1.1 the face's box rose 1 px over the line
+   (measured: 24 px of glyph box on a 22 px line at 640×360, 46 on 44 at 1280×720), into the edge margin */
+.game-region > .hud-points .hud-numero,#game-region > .hud-points .hud-numero{line-height:1.2}
 /* THE SESSION CLOCK (ADR-0236, ADR-0239): the label over the time left, and the Time Timer pie to their right, as tall as a
    target. The pie is the share still to go (`--left`, written by `ui/session-clock`), green on a white face (ADR-0050 §3)
    inside a dark rim and a white ring, drawn inside its box. At the end the WHOLE pie turns red — an almost empty face
@@ -720,13 +725,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    top of a third line. */
 .barra-explicacao{order:2;padding:4px .6em 0;border-bottom:var(--margem-borda,8px) solid transparent;background:rgba(0,0,0,.82)}
 .pausa-legenda{order:1;padding:0 .6em}
-.rodape-da-tela:not(:has(> .barra-explicacao:not([hidden]))) > .pausa-legenda{padding-bottom:8px}
+.rodape-da-tela:not(:has(> .barra-explicacao:not([hidden]))) > .pausa-legenda{padding-bottom:var(--margem-borda,8px)}
 .pausa-legenda .lg-nome{background:rgba(0,0,0,.82);padding:0 .35em;border-radius:4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 /* The SOUND CAPTION (study item D3) tops the column — ADR-0164 rule 4: «the sound caption above, the explanation below
    it» — on a dark background behind its words only, two lines at most (rule 5). */
 .legenda-de-som{order:0;align-self:center;max-width:100%;box-sizing:border-box;margin:0 0 4px;padding:2px .6em;border-radius:6px;
   background:rgba(0,0,0,.82);color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);line-height:1.3;
   text-align:center;display:-webkit-box;-webkit-box-orient:vertical;--footer-lines:2;-webkit-line-clamp:var(--footer-lines);overflow:hidden}
+/* the caption as the column's lowest line (no legend, no explanation under it): the edge margin under it, not 4 px */
+.rodape-da-tela:not(:has(> .barra-explicacao:not([hidden]), > .pausa-legenda:not([hidden]))) > .legenda-de-som{margin-bottom:var(--margem-borda,8px)}
 /* two or more lines of the footer showing at once: one line each, so the footer does not climb into the workspace */
 .rodape-da-tela:has(> :not([hidden]) ~ :not([hidden])) > *{--footer-lines:1}
 .pausa-legenda[hidden],.barra-explicacao[hidden],.legenda-de-som[hidden]{display:none}
@@ -802,7 +809,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 #visual{background:rgba(0,0,0,.28)} /* colour: a translucent background, to see the effect on the game at once */
 
 /* Simulation indicator (top right corner): white=blindness, green=low vision. A double tap returns to normal. */
-#viz-indicator{position:absolute;top:6px;right:6px;z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* INSIDE the canvas (game-region) — it works as a button */
+#viz-indicator{position:absolute;top:var(--margem-borda,8px);right:var(--margem-borda,8px);z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* INSIDE the canvas (game-region) — it works as a button */
 #viz-indicator.blind{background:#fff}
 #viz-indicator.low{background:#36d36a}
 /* Low vision — 5 simulations (the blur comes from the filter on the canvas; only the overlays are here) */
@@ -951,9 +958,10 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
    (`#game-region .overlay`, 60) covered the pad (14), and a tap on an arrow landed on the veil. `--z-menu-max` is the top
    of the menu band, and that is the pad's role while a menu is open — a slot and not a new literal. */
 #game-region:has(.overlay:not([hidden])) .touch{z-index:var(--z-menu-max)}
-.touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
+/* the two pills stand the edge margin off the bottom (interface log 2026-09-26) — alone or side by side */
+.touch-sistema{position:absolute;left:50%;bottom:var(--margem-borda,8px);transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
 .touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
-.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--alvo-min,44px);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:var(--ls);background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
+.touch-start,.touch-select{position:absolute;left:50%;bottom:var(--margem-borda,8px);transform:translateX(-50%);width:auto;min-width:var(--alvo-min,44px);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:var(--ls);background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
 .touch-start:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* digital joystick: base (larger circle) + knob (smaller circle) */
 /* Directional (analogue/"lever"): base = surface + travel; knob = contact surface. Both in mm (JS). */
