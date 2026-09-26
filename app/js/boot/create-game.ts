@@ -1279,6 +1279,9 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   engineActions.quit = () => changePhase('title');
 
+  /** Print mode is armed: the next key is its way out, and not play's (read by the keyboard conductor). */
+  let printArmed = false;
+
   /*
    * PRINT — «ver a tela sem menus», and any button comes back.
    *
@@ -1293,6 +1296,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * neither to the game nor to the pause, it is the way out. 🎯 And it does not collide with the `start` hook (ADR-0144),
    * which bubbles: `goBack` reveals the card in the capture, and when the bubbling one arrives the card-already-open
    * guard sends it away.
+   *
+   * 🔴 AND THE KEY THAT ENDS IT IS NOT PLAYED (ADR-0111 erratum of 2026-09-26, one key one action). `goBack` is added after
+   * the keyboard conductor, on the same node and phase, so the conductor runs first and saw no menu: 📏 on the served quiz
+   * the arrow that ended print mode also moved the quiz's cursor. The conductor reads `printArmed` instead. Not
+   * `stopImmediatePropagation`: the cool-down, the motor filter and the pad's hiding listen after, and must still see the key.
    */
   engineActions.print = () => {
     const findPauseCard = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
@@ -1300,6 +1308,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!eventTarget) return;
     eventTarget.hidden = true;
     const goBack = (e?: Event): void => {
+      printArmed = false;
       if (e && typeof e.preventDefault === 'function') { try { e.preventDefault(); } catch { /* noop */ } }
       win.removeEventListener('keydown', goBack, true);
       win.removeEventListener('pointerdown', goBack, true);
@@ -1307,6 +1316,7 @@ export function createGame(o: CreateGameOptions): Engine {
       if (c) c.hidden = false;
     };
     win.setTimeout(() => {
+      printArmed = true;
       win.addEventListener('keydown', goBack, true);
       win.addEventListener('pointerdown', goBack, true);
     }, 80);
@@ -4132,7 +4142,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       // 🔴 A KEY THE MENUS CONSUMED IS NOT ALSO PLAYED (ADR-0111 erratum of 2026-09-26). `nav.attach()` put `menuNavKey` on this
       // window's capture first, so it has already decided — and a key that CLOSED the last menu (resume, «no» at the card's
       // root, a panel's «Voltar») leaves the controller no menu to see: 📏 Space on resume resumed AND answered the quiz.
-      if (nav.consumed(e)) return;
+      // 📌 And the key that ends print mode is print's: its listener runs after this one, so it is asked by its state (see there).
+      if (nav.consumed(e) || printArmed) return;
       const toPlay = keyGoesToGame(e.code, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY);
       if (virtualController.press(action, source, seat, toPlay)) e.preventDefault();
     }, true);

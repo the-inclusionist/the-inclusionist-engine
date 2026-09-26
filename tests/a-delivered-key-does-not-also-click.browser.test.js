@@ -384,6 +384,59 @@ describe('the system positions are the engine\'s: the game never hears START or 
   });
 });
 
+describe('the key that ends print mode is print\'s, not play\'s', () => {
+  // 📏 On the served quiz (2026-09-26) the arrow that ended print mode also moved the quiz's cursor: print's listener is added
+  // after the keyboard conductor, which ran first and saw no menu. Print is no longer in the stock root (ADR-0151), and its
+  // action stays for a list that names it — so the case adds that item to the card, as such a list would.
+  const cartao = () => document.getElementById('vp-pause-0');
+  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+  /** Every keydown the window's BUBBLE phase saw — where the cool-down, the motor filter and the pad's hiding listen. */
+  const naBolha = [];
+  const ouvirBolha = (e) => naBolha.push(e.code);
+
+  async function entrarNoPrint() {
+    motor.pause.show(0);
+    const lista = cartao().querySelector('.pm-btn')?.parentElement;
+    expect(lista, 'the card has no list of items: the case would measure nothing').toBeTruthy();
+    const item = document.createElement('button');
+    item.type = 'button'; item.className = 'pm-btn'; item.dataset.act = 'print'; item.textContent = 'Print';
+    lista.appendChild(item);
+    item.click();
+    item.remove();
+    expect(cartao().hidden, 'print did not hide the card: the case would measure nothing').toBe(true);
+    await esperar(150); // print answers a key only after 80 ms, or the key that entered would leave
+  }
+
+  it('🔴 [Right] the key that ends print mode brings the card back, and the game does not hear it', async () => {
+    const code = 'ArrowDown';
+    expect(motor.keyboard.actionOf(code, 0), `${code} has no position: the case would measure nothing`).toBe('down');
+    await entrarNoPrint();
+    window.addEventListener('keydown', ouvirBolha);
+    try {
+      botao().focus();
+      comandos.length = 0; naBolha.length = 0;
+      await userEvent.keyboard(`[${code}]`);
+      expect(cartao().hidden, 'the key did not end print mode').toBe(false);
+      expect(comandos, 'the key ended print mode AND reached the game').toEqual([]);
+      // Not silenced for everyone else: the listeners after it still see the key (no `stopImmediatePropagation`).
+      expect(naBolha, 'ending print mode silenced the window\'s later listeners').toEqual([code]);
+    } finally {
+      window.removeEventListener('keydown', ouvirBolha);
+      motor.pause.hide(0);
+    }
+  });
+
+  it('🔴 [Boundary] after print mode ended and the card closed, the next key is the game\'s again', async () => {
+    await entrarNoPrint();
+    botao().focus();
+    await userEvent.keyboard('[ArrowDown]');
+    motor.pause.hide(0);
+    comandos.length = 0;
+    await userEvent.keyboard('[ArrowDown]');
+    expect(presses('down'), 'print mode kept the key after it ended').toHaveLength(1);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 // `mutate.mjs` (scratchpad), each alone, CRLF normalised, exactly one occurrence required, restored from a copy and verified
 // by hash. Run with this file, `key-default.node`, `virtual-controller.node` and `quiz-answers-by-real-key`.
@@ -427,3 +480,8 @@ describe('the system positions are the engine\'s: the game never hears START or 
 //   K3 no focused element counts as the engine's control         🔴 node only: a browser key always has an element target
 //   G4 (the pin) `ui/menu-nav` stops consuming Enter on the bar  🔴 the bar's Enter case — no mutation of this change reaches
 //                                                                  the bar, whose Enter the menus consume before START sees it
+// Sixth pass (2026-09-26, the key that ends print mode is print's):
+//   P1 the conductor does not ask about print mode              🔴 the print case
+//   P2 print mode never arms its state                          🔴 the print case
+//   P3 ending print mode does not clear its state               🔴 the next key after print
+//   P4 `goBack` calls `stopImmediatePropagation`                🔴 the print case (the window's bubble no longer sees the key)
