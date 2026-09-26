@@ -107,8 +107,9 @@ const VOICE_RUNTIME: readonly HeavyFile[] = Object.freeze([
  * exported here from weights that ship no ONNX. The project mirrors them under ADR-0203 — «hospedar na Cloudflare do projeto» —
  * with the licence of each beside it in `the-inclusionist-lfs`.
  *
- * ⚠️ AND THEY ARE BIG: 378 MiB for pt, 162 for en, 310 for es. Nobody downloads all three — the start asks only for the child's
- * language (`heavyAtBoot`), and a game that does not declare `uses: { reading: true }` asks for none of them.
+ * ⚠️ AND THEY ARE BIG: 378 MiB for pt, 162 for en, 310 for es — and a device that reads keeps all three, because a child tries
+ * the three languages at once (ADR-0225 erratum, the Dev: «Negativo, baixar os três.»). The start asks for the child's language
+ * first and then each other whole (`heavyAtBoot`); a game that does not declare `uses: { reading: true }` asks for none of them.
  *
  * 📌 The ids are in English while their neighbours are not: what is here stays until the renaming of the whole catalogue (the
  * English plan, phase 2, a single BREAKING release), and nothing new arrives in Portuguese meanwhile.
@@ -179,10 +180,11 @@ export function readingLanguageOf(id: string): string | null {
  * rebuilt from lichess-org/vosk-browser with `-s DYNAMIC_EXECUTION=0` and runs under the policy as it is (`models.md`).
  * The models are alphacephei's small ones, repacked deterministically as the `.tar.gz` that build loads.
  *
- * ⚠️ ONE MODEL PER LANGUAGE, like the reading: pt 30.9 MiB, en 39.2, es 37.9. Unlike the reading, a delivery carries the three
- * unless `inclusionist-heavy --commands` narrows it, and the start asks for every language the page can switch to, the child's
- * first (ADR-0225 erratum: a language changed mid-game must find its model). 📌 And NO GAME DECLARES THIS: a
- * child who speaks instead of pressing is using a transport, and a cartridge does not get to deny her one (ADR-0111).
+ * ⚠️ ONE MODEL PER LANGUAGE, like the reading: pt 30.9 MiB, en 39.2, es 37.9. A delivery carries the three unless
+ * `inclusionist-heavy --commands` narrows it, and the start asks for every language the page can switch to, the child's first
+ * (ADR-0225 erratum: a language changed mid-game must find its model), as it does for the reading. 📌 But unlike the reading,
+ * NO GAME DECLARES THIS: a child who speaks instead of pressing is using a transport, and a cartridge does not get to deny her
+ * one (ADR-0111).
  *
  * ⚠️ sha256 MEASURED on the mirror's own files (2026-09-21), each checked against the `SHA256SUMS` its folder publishes.
  */

@@ -51,7 +51,7 @@ export interface HeavyOptions {
   readonly digest: ((payload: ArrayBuffer) => Promise<string>) | null;
   /**
    * Only these ids, when given, and IN THIS ORDER — the download is one at a time, so the order is who waits (`heavyAtBoot`
-   * puts the child's command model first). For a consumer that wants the voices and not the rest.
+   * puts everything of the child's language first). For a consumer that wants the voices and not the rest.
    */
   readonly only?: readonly string[];
   /** The page's address the delivery's `heavy/` folder is resolved against (`document.baseURI`). */
@@ -63,8 +63,10 @@ export interface HeavyOptions {
  *
  * · The neural voice — its model, its voices AND the runtime that speaks them: without that answer they are 372 MB taken from a
  *   school's link and a child's device for nothing.
- * · The reading models: 850 MiB for the three languages, so `reading` is not a yes or no but a LANGUAGE — the child's, known at
- *   boot. A delivery may carry more than one; a device downloads the one being read in. A game that never listens gets none.
+ * · The reading models, one per language (850 MiB for the three): `reading` is a language or a LIST of them, like `commands`, and
+ *   the root asks for every language the page can switch to, the child's first (ADR-0225 erratum, the Dev: «Negativo, baixar os
+ *   três. Toda criança vai experimentar as três línguas imediatamente.»). A language the delivery's `--reading` list left out is a
+ *   quiet 404 here and, when she reads in it, a line of `problems` and a sentence to her. A game that never listens gets none.
  * · 🔴 THE GRAPH RUNTIME IS NOT THE VOICE'S, and its `voz:` name said otherwise. `platform/onnx-runtime` runs Kokoro AND the
  *   reading models, so a game that only LISTENS needs it: without this line its delivery carried a 378 MiB model and nothing
  *   able to open it, and the first `listen()` asked for a file the build never wrote. Measured on 2026-09-21, building the
@@ -82,20 +84,23 @@ export interface HeavyOptions {
  *   `--libras` simply has none, the same quiet 404 as a missing command model. No catalogue file is the player's: it is all the
  *   delivery's own, kept by what the delivery carries.
  * The ids are the catalogue's files, then the delivery lists (`DELIVERY_LISTS`), by one rule.
+ *
+ * 🔴 THE ORDER IS WHO WAITS, because the download is one file at a time (rule 1): a file of a language takes that language's
+ * position in the list it was asked by, a file of no language (the runtimes, vision) takes the first, and the sort is stable. So
+ * everything of the child's language comes first, then each other language whole — her command model never waits behind 470 MiB
+ * of another language's reading.
  */
 export function heavyAtBoot(
   declared: {
-    readonly kokoro: boolean; readonly reading?: string | null;
+    readonly kokoro: boolean; readonly reading?: string | readonly string[] | null;
     readonly commands?: string | readonly string[] | null; readonly libras?: boolean;
   },
 ): readonly string[] {
-  const baseLanguage = (tag: string): string => tag.split('-')[0]!.toLowerCase();
-  const reading = declared.reading ? baseLanguage(declared.reading) : null;
-  const askedLanguages = declared.commands == null ? [] : typeof declared.commands === 'string' ? [declared.commands] : declared.commands;
-  const commands = [...new Set(askedLanguages.filter(Boolean).map(baseLanguage))];
+  const reading = languagesAsked(declared.reading);
+  const commands = languagesAsked(declared.commands);
   const asked = (id: string): boolean => {
     const language = readingLanguageOf(id);
-    if (language) return language === reading;
+    if (language) return reading.includes(language);
     // 📌 THE COMMAND MODELS ARE A TRANSPORT'S, not a game's: no cartridge declares them, because a child who speaks instead of
     // pressing is reaching the controller, and a cartridge does not get to deny her a way in (ADR-0111). The LANGUAGES are
     // still asked, and the runtime comes with whichever one is.
@@ -103,19 +108,26 @@ export function heavyAtBoot(
     if (commanded) return commands.includes(commanded);
     if (id.startsWith('commands:runtime')) return commands.length > 0;
     if (id.startsWith('libras:')) return !!declared.libras;
-    if (id.startsWith('voz:runtime:onnx')) return declared.kokoro || !!reading;
+    if (id.startsWith('voz:runtime:onnx')) return declared.kokoro || reading.length > 0;
     return declared.kokoro || !(id.startsWith('voz:kokoro:') || id.startsWith('voz:runtime:'));
   };
-  const chosen = HEAVY_FILES.filter((p) => asked(p.id));
-  // ⚠️ THE CHILD'S MODEL FIRST: the download is one file at a time (rule 1), so the command models take their slots in the order
-  // the languages were asked — a Spanish child does not wait behind 70 MiB of Portuguese and English before her own.
-  const models = chosen.filter((p) => commandsLanguageOf(p.id))
-    .sort((a, b) => commands.indexOf(commandsLanguageOf(a.id)!) - commands.indexOf(commandsLanguageOf(b.id)!));
-  let slot = 0;
+  const rank = (id: string): number => {
+    const read = readingLanguageOf(id);
+    if (read) return reading.indexOf(read);
+    const spoken = commandsLanguageOf(id);
+    return spoken ? commands.indexOf(spoken) : 0;
+  };
   return [
-    ...chosen.map((p) => (commandsLanguageOf(p.id) ? models[slot++]! : p).id),
+    // `Array.prototype.sort` is stable (ES2019): within a position, the catalogue's order
+    ...HEAVY_FILES.map((p) => p.id).filter(asked).sort((a, b) => rank(a) - rank(b)),
     ...DELIVERY_LISTS.map((l) => l.id).filter(asked),
   ];
+}
+
+/** The base languages asked — one tag or a list of them — without repeats, in the order asked (`es-MX` asks for `es`). */
+function languagesAsked(asked: string | readonly string[] | null | undefined): string[] {
+  const tags = asked == null ? [] : typeof asked === 'string' ? [asked] : asked;
+  return [...new Set(tags.filter(Boolean).map((tag) => tag.split('-')[0]!.toLowerCase()))];
 }
 
 /**

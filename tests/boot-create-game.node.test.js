@@ -932,32 +932,6 @@ describe('createGame em execução', () => {
     }
   });
 
-  /**
-   * 🔴 AND READING COMES DOWN IN THE CHILD'S LANGUAGE (ADR-0216 §3; ADR-0201 erratum). 📏 The three models add up to 850
-   * MiB — pt 378, en 162, es 310 —, so this game listens cannot mean download all three. The language is not a new
-   * question: it is the one the interface booted in (ADR-0031).
-   */
-  it('🔴 [Right] o jogo que ESCUTA baixa o modelo de uma língua só, e é a da interface', async () => {
-    const pedidos = [];
-    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
-      ...(await original()),
-      downloadHeavy: async ({ only: apenas }) => { pedidos.push(apenas); },
-    }));
-    vi.resetModules();
-    try {
-      const { createGame } = await import('../app/js/boot/create-game.js');
-      const { bcp47 } = await import('../app/js/core/i18n.js');
-      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { reading: true } });
-      const leitura = pedidos[0].filter((id) => id.startsWith('reading:'));
-      expect(leitura.length, 'o jogo declarou que escuta e nenhum modelo de leitura desce').toBeGreaterThan(0);
-      const linguas = new Set(leitura.map((id) => id.split(':')[1]));
-      expect([...linguas], 'desceu mais de uma língua, ou a língua errada').toEqual([bcp47(motor.locale()).split('-')[0].toLowerCase()]);
-    } finally {
-      vi.doUnmock('../app/js/platform/heavy.js');
-      vi.resetModules();
-    }
-  });
-
   it('[Right] um jogo SEM FASES não precisa inventar uma — `isNavigable` ausente vale `true`', async () => {
     // Finding 10 of the second consumer, turned default: the quiz had to declare itself paused to navigate its own menus.
     // The simplest case became the one that does not force a lie.
@@ -1007,6 +981,39 @@ describe('D4-B5 · the root lends the heavy files and the recognisers the host\'
       expect(log.fetched, 'the download does not fetch through the host').toEqual(['https://escola.example/jogo/heavy/a']);
       expect(await o.digest(new ArrayBuffer(1)), 'the hash is not the host\'s crypto.subtle').toBe('ab');
       expect(log.hashed).toEqual(['SHA-256']);
+    } finally {
+      vi.doUnmock('../app/js/platform/heavy.js');
+      vi.resetModules();
+    }
+  });
+
+  /**
+   * 🔴 A GAME THAT LISTENS GETS THE READING MODELS OF EVERY LANGUAGE THE PAGE CAN SWITCH TO, THE CHILD'S FIRST (ADR-0225
+   * erratum; the Dev: «Negativo, baixar os três. Toda criança vai experimentar as três línguas imediatamente.»). Asking for the
+   * boot language alone left a child who switched with a model the install never fetched, although the delivery carried it.
+   */
+  it('🔴 [Right] with `uses.reading`, the start asks for the pt, en and es reading models, the boot language\'s whole first', async () => {
+    const pedidos = [];
+    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
+      ...(await original()),
+      downloadHeavy: async (options) => { pedidos.push(options); return []; },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { HEAVY_FILES } = await import('../app/js/platform/heavy.js');
+      const doIdioma = (lingua) => HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith(`reading:${lingua}:`));
+      const { doc, win } = domFalso();
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: hostWith(win, newLog()) }, uses: { reading: true } });
+      const leitura = pedidos[0].only.filter((id) => id.startsWith('reading:'));
+      const dela = motor.locale().split('-')[0].toLowerCase();
+      const ordem = [...new Set(leitura.map((id) => id.split(':')[1]))];
+      expect(ordem[0], `the child (${dela}) waits behind another language's reading model`).toBe(dela);
+      expect([...ordem].sort(), 'a language the page can switch to has no reading model asked for').toEqual(['en', 'es', 'pt']);
+      expect(leitura, 'a language\'s reading model was not asked for whole, or came in pieces').toEqual(ordem.flatMap(doIdioma));
+      pedidos.length = 0;
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: hostWith(win, newLog()) } });
+      expect(pedidos[0].only.filter((id) => id.startsWith('reading:')), 'a game that never listens was given reading models').toEqual([]);
     } finally {
       vi.doUnmock('../app/js/platform/heavy.js');
       vi.resetModules();

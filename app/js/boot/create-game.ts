@@ -419,7 +419,8 @@ export interface CreateGameOptions {
    *   phonemizer, runtime or model. Absent, no Kokoro voice is listed, the audio panel does not offer the neural engine, and
    *   the 371 MiB of model, voices and runtime never enter the delivery.
    * · `reading: true` — a child reads aloud TO this game and it wants the text; the engine decides who hears her, and a
-   *   delivery carries the reading model of her language because of this answer. Absent, `motor.reading.listen()` refuses and
+   *   delivery carries the reading models of pt, en and es because of this answer (each device keeps the three, her
+   *   language's first: she can switch at any moment). Absent, `motor.reading.listen()` refuses and
    *   says which line is missing: a game that asks for a microphone it never declared would also be a delivery without the
    *   model, which is a silence in a school nobody can debug.
    */
@@ -3784,8 +3785,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * wants to show «N MB left» or «the voice did not come down» has a way; the engine invents no surface.
    */
   if (o.downloadHeavy !== false) {
-    // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
-    // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
+    // ⚠️ THE READING MODELS OF EVERY LANGUAGE THE PAGE CAN SWITCH TO, when the game listens (ADR-0225 erratum, the Dev:
+    // «Negativo, baixar os três. Toda criança vai experimentar as três línguas imediatamente.»). `bcp47()` is the language the
+    // interface booted in (ADR-0031), named first so everything of hers comes down before the 850 MiB of the three does.
     void downloadHeavy({
       // 📌 AND THE COMMAND MODELS ARE ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). ONE PER LANGUAGE THE PAGE
@@ -3794,7 +3796,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // 📌 The Libras player only while deaf mode is on (ADR-0234): the delivery's list of its avatar, clips, glosses and three.js,
       // which a child who never asks for signing does not pay — and which keep it signing on the days without a network.
       only: heavyAtBoot({
-        kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null,
+        kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? [bcp47(), ...availableLocales()] : null,
         commands: [bcp47(), ...availableLocales()], libras: deafMode.isOn(),
       }),
       onProgress: o.onHeavyProgress,

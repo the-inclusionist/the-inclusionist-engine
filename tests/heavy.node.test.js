@@ -102,7 +102,7 @@ describe('o buscador das coisas pesadas', () => {
     // neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer (−1.8 MiB). What has no source adds nothing.
     //
     // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
-    // a device actually fetches is `heavyAtBoot`, which asks for one language and for what the game declared.
+    // a device actually fetches is `heavyAtBoot`, which asks for what the game declared and what the delivery serves.
     // The Libras player has no catalogue entry: its files are the delivery's own, kept by its list (ADR-0234, phase B3 took the
     // Unity build's 19.7 MiB out of this total).
     expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1363);
@@ -349,21 +349,63 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
   });
 
   /**
-   * 🔴 THE READING MODEL IS ASKED FOR BY LANGUAGE, not by a yes (ADR-0216 §3; ADR-0201 erratum). 📏 The three are 850 MiB —
-   * pt 378, en 162, es 310 — so «the game listens» cannot mean «download all of them»: the child reads in one language, and
-   * it is the one the interface booted in.
+   * 🔴 THE READING MODELS OF EVERY LANGUAGE ASKED, THE FIRST ONE'S FIRST (ADR-0225 erratum; the Dev: «Negativo, baixar os três.
+   * Toda criança vai experimentar as três línguas imediatamente.»). The root asks with the page's languages, so a child who
+   * switches finds her new language's model kept; and each language comes WHOLE, in the order asked, because the download is
+   * one file at a time and the first language named is hers.
    */
-  it('🔴 [Right] the start asks for the model of the child\'s language, and of no other', () => {
+  it('🔴 [Right] a list asks for every listed language\'s reading model, whole, in the list\'s order', () => {
+    const ids = heavyAtBoot({ kokoro: false, reading: ['es-MX', 'pt', 'en', 'es'] });
+    expect(doIdioma('en').length, 'the fixture has no English model: the case would pass empty').toBeGreaterThan(0);
+    expect(ids.filter((id) => id.startsWith('reading:')), 'the reading models are not the three, each whole, in the order asked')
+      .toEqual([...doIdioma('es'), ...doIdioma('pt'), ...doIdioma('en')]);
+  });
+
+  /**
+   * 📌 ONE LANGUAGE STILL ASKS FOR ONE, which is what `inclusionist-heavy --reading pt` builds its delivery by: a school that
+   * narrows its delivery writes the same bytes it wrote before the three became the start's default.
+   */
+  it('🔴 [Right] one language asks for that language\'s model, and of no other', () => {
     const ids = heavyAtBoot({ kokoro: false, reading: 'pt-BR' });
-    expect(ids.filter((id) => id.startsWith('reading:')), 'the child\'s language model is not asked for').toEqual(doIdioma('pt'));
-    expect(doIdioma('en').length, 'the fixture has no English model to leave out: the case would pass empty').toBeGreaterThan(0);
+    expect(ids.filter((id) => id.startsWith('reading:')), 'the named language\'s model is not asked for').toEqual(doIdioma('pt'));
     for (const outra of ['en', 'es']) {
-      expect(ids.some((id) => id.startsWith(`reading:${outra}:`)), `a child reading in Portuguese downloaded the ${outra} model`).toBe(false);
+      expect(ids.some((id) => id.startsWith(`reading:${outra}:`)), `one language asked, and the ${outra} model came too`).toBe(false);
     }
   });
 
+  /**
+   * 🔴 THE ORDER IS WHO WAITS (rule 1: one file at a time). A file of a language takes its language's position, a file of no
+   * language (the runtimes, vision) the first, and the sort is stable — so everything of the child's language comes first, then
+   * each other language whole. 📏 What it prevents: in the catalogue's order the reading models sit before the command models, and
+   * a Spanish child's 38 MiB command model would wait behind 850 MiB of reading, 540 of it in languages she is not using.
+   */
+  it('🔴 [Right] everything of the child\'s language comes first — her command model never waits behind another language\'s reading', () => {
+    const idiomas = ['es', 'pt', 'en'];
+    const ids = heavyAtBoot({ kokoro: false, reading: idiomas, commands: idiomas });
+    const lingua = (id) => (id.startsWith('reading:') ? id.split(':')[1] : id.startsWith('commands:model:') ? id.split(':')[2] : null);
+    const posicoes = ids.map((id) => (lingua(id) ? idiomas.indexOf(lingua(id)) : 0));
+    expect(posicoes, `a file came before a language asked earlier than its own: ${ids.join(' ')}`)
+      .toEqual([...posicoes].sort((a, b) => a - b));
+    const primeiraDeOutra = ids.findIndex((id) => lingua(id) && lingua(id) !== 'es');
+    expect(ids.indexOf('commands:model:es'), 'her command model waits behind another language\'s file').toBeLessThan(primeiraDeOutra);
+    expect(ids.indexOf('reading:es:encoder'), 'her reading model waits behind another language\'s file').toBeLessThan(primeiraDeOutra);
+    for (const id of ids.filter((x) => !lingua(x))) {
+      expect(ids.indexOf(id), `${id}, which every language needs, waits behind another language`).toBeLessThan(primeiraDeOutra);
+    }
+    // stable: within the child's language, the catalogue's order — the runtime that opens a model before the model
+    const doCatalogo = HEAVY_FILES.map((p) => p.id);
+    const primeiros = ids.slice(0, primeiraDeOutra);
+    expect(primeiros, 'the first position is not in the catalogue\'s order').toEqual(doCatalogo.filter((id) => primeiros.includes(id)));
+  });
+
+  // MUTATIONS CHECKED for the reading list and the order (ADR-0225 erratum, 2026-09-26), all red: the catalogue's order kept (no
+  // rank) · a list read as its first language alone · the files of no language ranked last · the reading ranked by the commands'
+  // list · the command models ranked flat. The root asking for the boot language alone again is red in
+  // `boot-create-game.node.test.js`, the case that watches what the start asks for when a game listens.
+
   it('🔴 [Zero] a game that does not listen downloads no reading model, in any language', () => {
-    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, reading: null }]) {
+    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, reading: null }, { kokoro: false, reading: [] },
+      { kokoro: false, commands: ['pt', 'en', 'es'] }]) {
       expect(heavyAtBoot(portas).filter((id) => id.startsWith('reading:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
     }
   });
