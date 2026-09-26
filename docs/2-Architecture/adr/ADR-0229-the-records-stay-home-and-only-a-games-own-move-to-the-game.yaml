@@ -1,0 +1,122 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: ["ADR-0226"]
+  superseded-in-part:
+    - by: ADR-0242
+      what: "The choice (B) and its reading of the Dev's decision: the engine's own records and the contract no longer stay in `the-inclusionist-docs` — they live in the engine, which is what the Dev decided. What stands: a game's own records live in that game (the six in `game-platformer`), the order (the triage written first, the validator with `--repo` on both sides before and after), and ADR-0226 §1 and §3"
+  date: 2026-09-23
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's ruling of 2026-09-23, answering a recommendation this AI had framed as one of two readings:
+       «Novamente, isto não é recomendação, é a única forma correta de resolver o assunto.»"
+    - "What it was answering: «a triagem escrita primeiro, o movimento só para o que for de um jogo, e o validador
+       com `--repo` a correr dos dois lados antes e depois»"
+    - "ADR-0226 §2 — «the engine's documents come home» — which this changes"
+    - "ADR-0123 — the validator that carries a repository in each confirmation, which is what makes N trees safe"
+    - "`docs/2-Architecture/record-ownership-triage.md` — the triage, written before this record and before any move"
+    - "The measurement that shaped the choice: renaming tests left NINE records with `confirmed-by` pointing at
+       nothing, with the engine's whole suite green (2026-09-22)"
+  informed: []
+  # 📏 Confirmed on 2026-09-23 by running the validator on both sides after the move: this tree 223 records ·
+  # 223 sound, the platformer's 6 · 6, against 228 · 226 · 2 before. The prose `confirmation` stays as written.
+  confirmed-by:
+    - scripts/test-validate-adr.py
+    - game-platformer:docs/2-Architecture/adr/README.md
+  errata:
+    - date: 2026-09-23
+      what: >-
+        🔴 «SEVEN» WAS SIX. The triage named ADR-0034 among the records that move, and ADR-0034 is `superseded` by
+        ADR-0037, which stays: moving it would split a supersession pair across two repositories, and the old half
+        would sit in a game's tree pointing at a successor that game does not have. A superseded record belongs where
+        its successor is. 📏 Found by copying the files and running the validator on the platformer's tree, not by
+        reading. The confirmation's «7 of 7» therefore reads 6 of 6, and the triage says why ADR-0034 stays.
+
+title: The records stay in their own repository, and only a game's own records move to that game
+
+context-and-problem-statement: |
+  ADR-0226 decided four things, and its second clause was «the engine's documents come home» — in the Dev's words
+  of that day, «docs volta pra dentro do repositório da engine, ou melhor, o que for da engine». Read literally,
+  that is close to two hundred YAML files leaving `the-inclusionist-docs` for the engine's tree at once: every
+  contract record, every engine record, and with them every `confirmed-by`, every index line and every
+  cross-reference changing address in one move.
+
+  📏 **The cost of that shape is measured, not argued.** On 2026-09-22 a rename of test files — one repository,
+  paths only — left NINE records with `confirmed-by` pointing at nothing, and the engine's suite was entirely
+  green while it happened. Only `validate-adr.py --repo` saw it. The boundary between two repositories is exactly
+  where this breaks without a sound, and a move of two hundred records repeats that boundary two hundred times.
+
+  🔴 **This AI put the choice to the Dev as two readings with a recommendation, and that framing was the error.**
+  The Dev's answer was not a pick between options: «isto não é recomendação, é a única forma correta de resolver o
+  assunto». The same correction had been made the same day about `core/collision` — «Se tem só uma coisa a ser
+  feita, não é decisão» — and it is recorded here because a record that preserved the menu would teach the next
+  reader that there was one. The two options below are listed because the record format asks what was weighed;
+  they were never a choice for the Dev to make.
+
+decision-drivers:
+  - "A record is read where it is looked for — a game's contributor clones the game, not the records repository"
+  - "The boundary between repositories is where confirmations break silently; the move must cross it as few times as the truth requires"
+  - "What belongs to no single repository must keep a home, or the records repository is emptied rather than kept"
+
+considered-options:
+  - "A · every record moves to the repository whose code it is about — the engine's to the engine, a game's to the game"
+  - "B · the records stay in their own repository, and only a game's own records move to that game"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "The engine's records would sit beside the gates that confirm them, checkable on an engine push"
+    bad:
+      - "🔴 Close to two hundred records cross a repository boundary at once — the boundary where nine confirmations already died silently in one day"
+      - "The contract has no side to live on: it belongs to neither the engine nor a game, and a folder cannot say «contract»"
+      - "It empties the records repository instead of keeping it, and what belongs to no repository loses its home"
+  B:
+    good:
+      - "A game's contributor finds that game's decisions in the repository they cloned"
+      - "The boundary is crossed only as many times as there are records that truly belong to one game — seven today"
+      - "The contract keeps one address, readable by every game at once"
+    bad:
+      - "The engine's records do not sit beside its gates — a push to the engine does not re-check them; the validator with `--repo` does"
+      - "Two trees exist where there was one, and a record that should move and does not will sit quietly in the wrong one"
+
+decision-outcome:
+  chosen-option:
+    link: "B · the records stay in their own repository, and only a game's own records move to that game"
+    justification: |
+      **`the-inclusionist-docs` stays the home of the records**, and three families stay in it whatever
+      repositories they name: the contract (what a cartridge declares and the engine guarantees), process,
+      hosting, licences, delivery and curriculum (what belongs to no single repository), and the engine's own
+      decisions.
+
+      **A record MOVES only when the thing it decides lives in one game**, and then it moves to that game's
+      `docs/2-Architecture/adr/` — the path every record already uses, so a moved record keeps the shape of its own
+      links. ADR-0226 §1 survives intact: a game repository gets an ADR tree.
+
+      **The order is fixed and is part of the decision**: the triage is WRITTEN first; the move follows, one
+      repository at a time; and the validator runs with `--repo` on both sides before and after, with the number
+      it printed before the move being the number to beat.
+
+      ⚠️ **What this supersedes in ADR-0226 is §2, and the travel half of §4.** §4's classification — a contract
+      record is the engine's to define — can stand as a statement about ownership; its consequence, that such a
+      record «travels with the engine», does not. §1 (a game gets an ADR tree) and §3 (the validator runs in every
+      repository and counts what it cannot open) are untouched, and §3 matters more now than it did: under N trees
+      it is the only thing holding the graph together.
+
+  consequences:
+    good:
+      - "A game's contributor finds that game's decisions in the repository they cloned"
+      - "Two hundred records do not cross a repository boundary to prove nothing new"
+      - "The contract keeps one address, readable by every game at once"
+    bad:
+      - "The engine's records do not sit beside the gates that confirm them"
+      - "A record that should move and does not will sit quietly in the wrong tree"
+
+  confirmation: |
+    NOT YET CONFIRMED, and the debt is named rather than guessed (ADR-0128): the seven records the triage names move
+    to `game-platformer/docs/2-Architecture/adr/`, ADR-0037 and ADR-0102 get their `confirmed-by` repaired by
+    erratum, and `validate-adr.py --repo` runs on both sides. 📏 The number printed before the move was
+    **228 records · 226 sound · 2 with problems**; the move is done when this repository reads every record sound
+    and the platformer's tree reads 7 of 7.
+
+more-information: |
+  The triage this record follows: `docs/2-Architecture/record-ownership-triage.md` (`docs:51a0ea2`).

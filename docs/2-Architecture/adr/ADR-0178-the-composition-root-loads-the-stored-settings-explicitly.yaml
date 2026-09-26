@@ -1,0 +1,70 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/state-loaded-by-the-root.node.test.js
+    - engine:tests/state-loaded-at-boot.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #174 closed, `engine:61ed77f`): `core` imports no storage; the root loads the stored
+             settings before anything reads them; a write before the load throws, naming the setter, and a setter asks for
+             the port before changing anything."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0173 — layers: `core` below `platform`, which holds storage; the two imports `core/i18n` and `core/state` →
+       `platform/storage` are named debt (issue #167)"
+    - "ADR-0028 — every settings menu persists: a child's choice survives the next session"
+  informed: []
+
+title: The composition root loads the stored settings explicitly, and a write before the load fails loudly
+
+context-and-problem-statement: |
+  `core/state` and `core/i18n` read the child's stored settings (blind mode, captions, letter case, language) the moment they
+  are imported, which is why `core` imports `platform/storage` against the direction of ADR-0173. Injecting the store as is
+  would let the read happen after a game already wrote a default over the child's choice; moving storage into `core` would
+  contradict the layers.
+
+  Offered the explicit load — defaults until the root loads, a write before the load failing loudly, the games that use
+  `core/state` outside `createGame` measured and fixed — the Dev: «Concordo.»
+
+decision-drivers:
+  - "D1 — A CHILD'S SAVED CHOICE IS NEVER OVERWRITTEN IN SILENCE"
+  - "D2 — `core` DOES NOT REACH UP to the browser's storage (ADR-0173)"
+
+considered-options:
+  - "A — storage moves into `core`"
+  - "B — the store is injected, read whenever it arrives"
+  - "C — defaults until an explicit load by the composition root; a write before it throws"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No change for games. ❌ Contradicts ADR-0173 §1.
+  **B.** ✅ Follows the layers. ❌ A default written before the store arrives replaces the saved choice without a sign.
+  **C.** ✅ Follows the layers, and the dangerous order becomes an error. ❌ Every root, and every game that uses `core/state`
+  directly, calls the load first.
+
+decision-outcome:
+  chosen-option:
+    link: "C — an explicit load by the root; a write before it fails loudly"
+    justification: |
+      1. **`core/state` and `core/i18n` start from their defaults and import no storage.**
+      2. **The composition root loads the stored settings first** (`carregarEstado(store)` or its equivalent), before any
+         module reads or writes them; `createGame` does it for every cartridge.
+      3. **A setter called before the load throws**, naming the setting: that order would overwrite the child's saved choice.
+      4. **The sibling games that use `core/state` or `core/i18n` outside `createGame` are measured and fixed** with the change,
+         and a migration note names their lines.
+
+  consequences:
+    positive:
+      - "The two `core` → `platform/storage` debts of #167 leave"
+      - "The order that loses a child's settings cannot happen quietly"
+    negative:
+      - "A break for every root that reads settings before calling `createGame`"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #174, closed). Gates: `core` imports no storage; a write before the load
+    throws; after the load, the stored values are the ones read.
+
+more-information: |
+  Reading at import had one virtue this record keeps: nothing could read a setting before it was loaded. The explicit load keeps
+  that property by making the early write an error instead of a silent default.

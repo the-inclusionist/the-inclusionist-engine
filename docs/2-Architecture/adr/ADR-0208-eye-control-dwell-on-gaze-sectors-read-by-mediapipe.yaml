@@ -1,0 +1,73 @@
+---
+metadata:
+  status: "superseded"
+  superseded-by: ADR-0210
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0204 — five modalities, every candidate tested before the Dev's default map; the eyes are one modality"
+    - "ADR-0202 — the eye commands by a look and a blink pattern; they stand until the default map"
+    - "ADR-0205 and its errata — on the Dev's face the look up is not detected, blink and squint read as one, the sideways look is
+       retested; blendshape thresholds fixed for every face did not carry the eyes"
+    - "ADR-0132 — WebGazer kept beside MediaPipe for WHERE ON THE SCREEN a child looks"
+    - "📏 WebGazer 3.5.3 source, read 2026-09-14: its tracker is MediaPipe's legacy Face Mesh (`@tensorflow-models/face-landmarks-detection`
+       with `runtime: 'mediapipe'`, `@mediapipe/face_mesh` 0.4, 17 MB); what it adds is a ridge regression from eye patches to screen
+       coordinates, trained by clicks or `recordScreenPosition`, and it stores that training data across sessions by default
+       (`localforage`, `webgazerGlobalData`)"
+  informed: []
+
+title: Eye control — dwell on sectors of the player's own gaze, read by MediaPipe and calibrated per child
+
+context-and-problem-statement: |
+  The Dev, 2026-09-14: «Para controle por olhos, vamos tentar fazer um sistema de dwel com olhar num "gráfico de pizza" com zona morta
+  no centro? Que tal para isso usar WebGazer.js ao invés de Media Piper?» Told that WebGazer runs on MediaPipe's own face mesh and adds a
+  mapping to screen points: «Pela sua própria descrição não está fazendo muito sentido usar WebGazer se tudo que precisamos fazer é
+  calibrar e detectar para que setor de sua própria visão o jogador está olhando usando Media Piper mesmo.»
+
+decision-drivers:
+  - "D1 — THE SECTOR IS OF THE PLAYER'S OWN VIEW, not a point on the screen: a direction from the player's resting gaze"
+  - "D2 — DWELL, NOT BLINKS: holding a look on a sector selects it; a blink is involuntary and read together with a squint"
+  - "D3 — CALIBRATED PER CHILD: a threshold fixed for every face failed on the Dev's (the look up)"
+  - "D4 — ONE VISION RUNTIME: the engine already delivers MediaPipe's Face Landmarker"
+
+considered-options:
+  - "A — WebGazer: screen coordinates from its regression, the pie drawn on the screen"
+  - "B — MediaPipe Face Landmarker: the iris position within each eye, calibrated per child, the pie in the player's own view"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Screen coordinates out of the box. ❌ A second face tracker (TensorFlow.js and MediaPipe's legacy Face Mesh) beside the one
+  delivered; a screen mapping the pie does not need; eye-patch training data kept across sessions by default.
+  **B.** ✅ The runtime and model the engine already delivers; no eye images stored; the calibration measures this child's own range in
+  every direction. ❌ Head movement shifts the reading more than a screen regression that is retrained; unmeasured on a real face.
+
+decision-outcome:
+  chosen-option:
+    link: "B — MediaPipe, calibrated, the pie in the player's own view"
+    justification: |
+      1. **The reading:** the iris centre within each eye, from the Face Landmarker's iris landmarks, relative to the eye's corners and
+         lids, both eyes averaged — a gaze direction that does not need the screen.
+      2. **Calibration per child:** the resting gaze (the dead zone's centre) and a look to each sector's direction; each direction keeps
+         its own range, so a weak direction (the look up on the Dev's face) is scaled by what that child reaches.
+      3. **The pie:** sectors around a dead zone; a look inside the dead zone commands nothing; a look held on a sector for the dwell time
+         selects it, and nothing more fires until the gaze returns to the dead zone (ADR-0197 erratum's rest rule).
+      4. **Tested first** (ADR-0204): a lab page with the number of sectors, the dead zone and the dwell time adjustable, the bar protocol
+         (the app detects, the Dev rates the doing). The default map decides what each sector commands.
+      5. **WebGazer is not used for eye control.**
+
+  consequences:
+    positive:
+      - "Eye control without blinks and without a second tracker; a child's weak direction is calibrated, not lost"
+    negative:
+      - "Calibration is a step before playing, and a moved head may need it again"
+      - "ADR-0202's look-and-blink commands stand until the default map chooses between them and the pie"
+      - "WebGazer's remaining reason in the engine (ADR-0132) is the Dev's to weigh: it is still downloaded at every start"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #194** in `the-inclusionist-engine`. Gates: from recorded iris positions, a look held on a calibrated
+    direction for the dwell time selects that sector once; a look inside the dead zone selects nothing; a weak direction reaches its
+    sector at the child's calibrated range; the Dev's lab run rates each sector.
+
+more-information: |
+  Landmarks: the Face Landmarker's 478 points include the iris (468–477) beside the eye corners and lids. Dwell times in gaze
+  interaction run from about half a second for practised users to over a second for novices; the lab starts at 1 s and lets the Dev
+  change it.

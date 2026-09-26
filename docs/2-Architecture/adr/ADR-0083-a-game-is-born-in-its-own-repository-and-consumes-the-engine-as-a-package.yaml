@@ -1,0 +1,187 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0030, ADR-0036]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0036 — SUPERSEDED IN PART: it classified `consumer-quiz/` + `quiz.html` as ENGINE, `which are the
+       engine's own proof`. Everything else in it governs, including the order that `game/` leaves"
+    - "ADR-0030 — SUPERSEDED IN PART: its `confirmation` names that in-repo consumer as the instrument that
+       `already exists and must keep working`. The seven declared fields and the genre presets stand"
+    - "ADR-0027 — the heuristic this record obeys rather than replaces: a boundary is measured from the other
+       side of it, and step 4 made `createGame()` the test"
+    - "ADR-0068 §1 — one repository per game. This record is what makes that sentence true in practice"
+    - "ADR-0067 — a repository is created when a record declares its address, so a game has one from its
+       first commit"
+    - "ADR-0024 — the pinned-SHA update dance, weighed and REJECTED; and ADR-0068 §3, which names a manifest
+       of git tags as a submodule with a different spelling"
+    - "ADR-0066 §3 — private until the ato. §2 below exists so this record does not touch it"
+    - "ADR-0072 — the registry is public npmjs, and nothing is published yet"
+  informed: []
+
+title: A game is born in its OWN repository and consumes the engine as a PACKAGE — the in-repo consumer was proving the wrong boundary
+
+context-and-problem-statement: |
+  ADR-0068 §1 says one repository per game. ADR-0067 says a repository exists from the moment a record
+  declares its address. And the engine repository hosts two games: `app/js/game/` (29 files, plus `main.ts`
+  and `index.html`) and `app/js/consumer-quiz/` + `quiz.html`.
+
+  The second is there by instruction. ADR-0036 put it on the ENGINE side of its own inventory — *"`consumer-quiz/`
+  + `quiz.html`, which are the engine's own proof"* — and ADR-0030's `confirmation` depends on it: *"The
+  instrument already exists and must keep working: `app/js/consumer-quiz` may import from
+  `core/ input/ render/ platform/ ui/ audio/` and NEVER from `game/`"*.
+
+  ⚠️ AND THE INSTRUMENT MEASURES THE WRONG BOUNDARY. Measured 2026-09-06: `consumer-quiz` imports
+  `'../core/i18n.js'`, `'../boot/create-game.js'`, `'../ui/settings-typo.js'` — RELATIVE PATHS. There is not
+  one import by package name anywhere in `app/` or `tests/`. It proves the MODULE cut, which is real and
+  worth proving, and it proves nothing at all about the PACKAGE: the `exports` map, the `types` conditions,
+  the `peerDependencies`, or what `files` actually puts in the tarball.
+
+  ⚠️ AND THAT IS NOT A THEORETICAL GAP — IT IS THE LIST OF WHAT BROKE. Packaging the engine on 2026-09-05 had
+  to discover, one at a time: `import.meta.glob`, which exists only inside this repository's build; `env.d.ts`
+  leaking `__BUILD__`, a virtual module and `window.__incl` into a consumer's type space; the missing exports
+  for `./style.css` and `./assets/*`, whose absence gave *"a consumer that installed this package dialogs with
+  no styling and a typography menu offering 18 fonts that 404"*; and the missing `types` condition. **The
+  in-repo consumer caught none of them.** Packaging did.
+
+  ⚠️ AND `BUILD HERE, EXTRACT LATER` HAS A RECORD IN THIS REPOSITORY: it is 0 of 1. ADR-0036 ordered `game/`
+  out on 2026-08-25 as ONE cartridge. Twelve days later `app/js/game/` holds 29 files, `main.ts` and
+  `index.html` are still here, and `the-inclusionist-demos` holds a catalogue HTML and some docs.
+
+decision-drivers:
+  - "A boundary is measured from the other side of it (ADR-0027). The other side of a PACKAGE is a consumer
+     that installs it, not a folder that reaches it by `../`."
+  - "⚠️ The path a game takes has to be the path a volunteer, a school or a fork takes. Today no code in this
+     repository takes it."
+  - "One repository per game is already decided (ADR-0068). A practice that contradicts it turns the record
+     into decoration, and the platformer is the proof that the exception never expires by itself."
+  - "Nothing may require publishing before the ato (ADR-0066 §3)."
+
+considered-options:
+  - "P1 — keep the in-repo consumer as the boundary instrument, as ADR-0030 and ADR-0036 have it"
+  - "P2 — a game is born in its own repository and consumes the engine as a PACKAGE"
+  - "P3 — games outside, and the engine keeps no instrument at all"
+  - "P4 — games outside, consuming the engine as a GIT dependency pinned by tag"
+
+pros-and-cons-of-the-options:
+  P1:
+    good: ["The module cut is gated at EVERY engine commit, before anything is released — which is the one
+            thing ADR-0027 called decisive.",
+           "Nothing to move, and the instrument is already written."]
+    bad: ["⚠️ MEASURED: it proves the module cut and nothing about the package, and the package is what broke.",
+          "It sanctions a game living in the engine, which contradicts ADR-0068 and creates the precedent the
+           next game follows.",
+          "The exception has no expiry: `game/` was ordered out twelve days ago and is still here."]
+  P2:
+    good: ["The game takes the same path a stranger takes, so the surface that breaks is the surface under
+            test.",
+           "ADR-0068 and ADR-0067 stop being contradicted by the repository that wrote them.",
+           "⚠️ It needs NO registry to start: `npm pack` plus a path install resolves through `exports` and
+            `files` exactly as the registry would, so ADR-0066 §3 is untouched."]
+    bad: ["⚠️ An engine change that breaks a game appears when the GAME updates, not at the engine's commit.
+           That is a real loss of immediacy and no mitigation removes it entirely.",
+          "Every game needs the install step, and a stale tarball is a new way to be confused.",
+          "The module-cut gate needs something on the other side that is NOT a game."]
+  P3:
+    good: ["Simplest topology: the engine holds engine and nothing else."]
+    bad: ["⚠️ It throws away the gate ADR-0027 called decisive. `render/draw` importing `game/powerups` would
+           come back and nothing would say so until a consumer tripped on it."]
+  P4:
+    good: ["No registry, no tarball, and the pin is a tag."]
+    bad: ["⚠️ Already weighed and REJECTED by ADR-0024 as the `pinned-SHA update dance`, and named by
+           ADR-0068 §3 as a submodule with a different spelling.",
+          "It skips `files` entirely: a git dependency carries the whole repository, so the tarball's real
+           contents are never exercised — the same blindness as the relative import, one layer out."]
+
+decision-outcome:
+  chosen-option:
+    link: "P2 — the game is born in its own repository and consumes the engine as a package"
+    justification: |
+      ===== 1. THE RULE =====
+      **A game is born in its own repository, from its first commit, and consumes the engine as a PACKAGE.**
+      No game is built inside the engine to be extracted later. There is no `extract later`.
+
+      ===== 2. IT STARTS TODAY, WITH NOTHING PUBLISHED =====
+      ⚠️ `npm pack` produces the tarball through `prepack`, and the game installs it by path. npm resolves
+      that install through `exports` and `files` **exactly as it would from the registry**, so the whole
+      benefit of this record is available before any publication and ADR-0066 §3 is untouched:
+
+          # engine
+          npm pack
+          # game
+          npm i ../the-inclusionist-engine/the-inclusionist-engine-<version>.tgz
+
+      ⚠️ AND NOT `npm link`. A symlink walks straight past `files`, so it lets a game import what the tarball
+      does not carry — which is precisely the defect this record exists to expose. `pack` lies less.
+
+      ⚠️ AND NOT A GIT DEPENDENCY, even though it would work: ADR-0024 weighed and rejected the pinned-SHA
+      dance, ADR-0068 §3 calls it a submodule with a different spelling, and it has the same blindness as the
+      relative import — it carries the whole repository, so `files` is never exercised.
+
+      ===== 3. THE INSTRUMENT SPLITS, BECAUSE IT WAS TWO QUESTIONS IN ONE COAT =====
+      ⚠️ This is the correction that makes the rest work. `Where does a game live` and `how is the boundary
+      measured` were treated as one decision, and they are two:
+
+        · **THE MODULE CUT** — still gated at EVERY engine commit, by a FIXTURE that is not a game: not
+          playable, no page of its own, never gets a repository, never `moves out later`. It exists to make
+          `tests/engine-boundary.node.test.js` able to fail. ⚠️ Anything playable is a GAME and leaves.
+        · **THE PACKAGE SURFACE** — gated by a contract test the engine SHIPS and every game runs in its own
+          CI. `game-ci.yml` already exists to carry it (ADR-0068 §4).
+
+      ===== 4. WHAT THIS COSTS, AND IT IS NOT PAID BY A MITIGATION =====
+      With the game outside, an engine change that breaks it appears when the GAME updates — not at the
+      engine's commit. The contract test narrows the gap and does not close it. That is the price of a
+      topology that is true, and it is cheaper than a topology that is false in a way nobody notices until a
+      stranger installs the package.
+
+      ===== 5. THE PLATFORMER IS NOT AN EXCEPTION TO THIS =====
+      ⚠️ `app/js/game/`, `main.ts` and `index.html` were ordered out by ADR-0036 on 2026-08-25 and are still
+      here. This record does not re-decide that; it removes the excuse. The order stands, it now has a rule
+      behind it instead of an intention, and it gets an address in the backlog rather than an expiry date
+      nobody set.
+
+  consequences:
+    positive:
+      - "The surface a game exercises is the surface a stranger exercises: `exports`, `types`,
+         `peerDependencies` and the real contents of the tarball."
+      - "ADR-0068 §1 stops being contradicted by the repository that wrote it."
+      - "A game's history, licence, issues and CI are its own from the first commit, which is what ADR-0068
+         wanted the repository boundary to buy."
+      - "The module-cut gate survives, and survives as what it is — a fixture, not a game that will be moved
+         one day."
+    negative:
+      - "⚠️ IMMEDIACY IS LOST. The engine can be green and a game broken at the same moment, until that game
+         updates. Nothing removes this; the contract test only shortens it."
+      - "Every game gains an install step, and a stale tarball is a new way to be wrong."
+      - "The engine keeps a fixture that must be kept minimal, and `minimal` is a discipline rather than a
+         check — the last time a consumer lived here it grew a playable page."
+    neutral:
+      - "`consumer-quiz` is not deleted by this record. What it must stop being is the engine's proof of the
+         PACKAGE, which it never was."
+
+  confirmation: |
+    · No new game has a first commit inside this repository. Checkable by looking at where the repository was
+      created relative to its first commit (ADR-0067).
+    · At least one game installs the engine from a `npm pack` tarball, and its CI does the same — not a
+      symlink, not a git URL.
+    · The engine ships a contract test, and a game's CI runs it. A deliberately broken `exports` map fails
+      that game's pipeline.
+    · `tests/engine-boundary.node.test.js` still fails when an engine module reaches into `game/`, with a
+      fixture rather than a playable consumer on the other side.
+    · Nothing in `app/` that is playable remains after the platformer leaves.
+
+    ⚠️ NONE OF THIS PASSES TODAY. `consumer-quiz` is still a playable page reached by relative imports, and
+    `app/js/game/` is still 29 files.
+
+more-information: |
+  SUPERSEDES IN PART two records, and only in the clauses that put a consumer inside the engine:
+    · **ADR-0036** — the inventory line classifying `consumer-quiz/` + `quiz.html` as ENGINE, "the engine's
+      own proof". Its order that `game/` leaves for the demos repository is UNTOUCHED and is now overdue.
+    · **ADR-0030** — the `confirmation` clause naming `app/js/consumer-quiz` as the instrument that must keep
+      working. The seven declared fields, the genre presets and the batch order stand.
+
+  ⚠️ AND ADR-0027'S HEURISTIC IS OBEYED, NOT REPLACED. It says a boundary is measured from the other side, and
+  that a test whose fixture needs a COIN proves the cut did not take. This record agrees and adds the half it
+  was missing: the other side of a PACKAGE is somebody who installs it. A folder reaching in by `../` is not
+  the other side of anything.

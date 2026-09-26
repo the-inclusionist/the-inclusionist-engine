@@ -1,0 +1,63 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/help-panel.browser.test.js
+    - engine:tests/boot-create-game.browser.test.js
+  errata:
+    - date: 2026-09-14
+      what: '✅ CONFIRMED, pushed (issue #188 closed, `engine:a85bfee`): a cartridge''s slides show before the button slides, a figure stands still under reduced motion, a slide without text refuses the boot; the quiz demo declares two.'
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "Interface log 2026-09-13 — the help is a slide show: one slide per position the game names, the child's key drawn, the game's
+       word and sentence (`engine:e9a24d1`)"
+    - "ADR-0147 §4 — the help item shows the buttons and what each means"
+    - "ADR-0074, ADR-0086 — the engine never names a game's action; the game's words come from the cartridge"
+    - "`engine:CLAUDE.md` §1 — art is data: no PNG embedded in a game"
+  informed: []
+
+title: «How to play» is the cartridge's, and the engine shows it as slides
+
+context-and-problem-statement: |
+  The help became a slide show of what the engine knows — a position, the child's key, the game's word and sentence. Asked whether
+  a game may declare its own «how to play» slides, the Dev, 2026-09-14: «O "Como jogar" é justamente algo a ser feito pelo
+  cartucho.» The engine cannot describe a game; only the cartridge knows its goal, its rules and what a screen means.
+
+decision-drivers:
+  - "D1 — THE ENGINE DOES NOT DESCRIBE A GAME: how to play is the game's to tell"
+  - "D2 — THE HELP IS TEXT, FIGURES AND AT MOST ANIMATION, not a menu (the Dev, 2026-09-13)"
+
+considered-options:
+  - "A — the engine's button slides only"
+  - "B — the cartridge declares its «how to play» slides; the engine shows them before the button slides"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to declare. ❌ A child learns which button jumps and never what the game asks of her.
+  **B.** ✅ The game's own explanation, in the help every game shares. ❌ A contract field every cartridge that wants it must fill.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the cartridge's slides, shown by the engine"
+    justification: |
+      1. **A cartridge may declare «how to play» as an ordered list of slides**; each slide has its text, resolved at every
+         showing so it follows the language, and may have a figure the cartridge draws on a surface the engine gives it — art stays
+         data, drawn by the game, never an embedded picture.
+      2. **A figure may animate**; the engine gives it the time, and under reduced motion the time stands still.
+      3. **The help shows the cartridge's slides first, then the engine's button slides**, in one show turned by left and right.
+      4. **A cartridge that declares none shows the button slides alone**; a malformed slide (no text) refuses the boot, a cartridge's
+         contract rule (ADR-0169).
+
+  consequences:
+    positive:
+      - "Every game's help tells how to play it, in the same place and the same form"
+    negative:
+      - "A new optional contract field, and the figure's drawing is the cartridge's code to write"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #188, closed). Gates: a cartridge declaring slides shows them before the button slides,
+    in its words; a figure is drawn on the engine's surface and stands still under reduced motion; none declared shows the button
+    slides only; a slide without text refuses the boot.
+
+more-information: |
+  The figure's surface and signature are built with the field; this record decides who tells how to play and where it is shown.

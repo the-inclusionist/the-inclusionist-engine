@@ -1,0 +1,234 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0151
+      what: >-
+        the eleventh button's purpose. The typography cycle becomes the COMMUNICATION cycle and gains two
+        positions, ARASAAC and PCS, both disabled until their licences allow them.
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0148 — the accessibility bar is HUD and mounts the icons that work. This record adds the eleventh
+       seat to that bar, and answers the typography question ADR-0147 had left open"
+    - "ADR-0028 — `letterCase` moved to `core/state` with the values `upper` | `mixed`. Case is a PEDAGOGICAL
+       choice, not a visual one, and this record pairs it with the face instead of leaving them apart"
+    - "ADR-0012 and its emenda (issue #87) — the font roster and the `caligrafica` role. 🔴 This record REVOKES
+       what that role meant: `ui/fonts.ts` says calligraphic faces live «só DENTRO das atividades escolares,
+       nunca no HUD nem nos menus». Position (e) of the new cycle is exactly that, by the Dev's decision"
+    - "ADR-0010 pilar 2 — WCAG 2.2 + GAG. The BDA spacing is the typography half of it, and until today it
+       reached ONE face of twenty-six"
+    - "ADR-0106 §5 — an icon is mounted when its action works. This one always works: the engine owns every
+       face in the cycle"
+  informed: []
+  errata:
+    - date: 2026-09-14
+      what: "📌 WHERE THE SPACING REACHES, which this record left implicit. Measured on 2026-09-13: the browser's own stylesheet gives every `<button>` `letter-spacing: normal`, so the pause card's items and the quiz's options had no BDA spacing while the panels' text had 2.88 px. Asked whether buttons follow, the Dev: «Onde houver ESCRITA ele precisa valer, não células ou bordas. Se dentro de um botão tem texto, as regras de espaçamento valem para este texto, mesmo que seja uma única palavra.» The spacing is the text's, wherever the text is — a button, a select, an input; a cell's or a border's size is not spacing. Issue #187."
+    - date: 2026-09-12
+      what: "⚠️ **§2 OVERSTATED THE HOLE, and building it corrected the number.** It says the default face «has
+             no BDA spacing at all». The file says otherwise: `:root` already carried `--ls: 0.12em` /
+             `--ws: 0.16em`, which is the WCAG 2.2 §1.4.12 floor. 📏 The accurate statement is narrower and
+             still carries the decision: the BDA numbers — 0.18em / 0.63em, word ≥ 3.5× letter — lived ONLY in
+             `[data-fonte=\"dislexia\"]`, so the default face sat on the LOWER of the two floors, and sat
+             there because of a LABEL rather than a rule about faces. ✅ BUILT in `engine:6386175`: the BDA
+             numbers are the document default, the `dislexia` rule keeps only the family, and a joined face
+             returns both to `normal` through `data-cursiva`. 📌 §2's blast-radius warning stands unchanged —
+             the metrics of every screen in the catalogue moved at once."
+    - date: 2026-09-12
+      what: "🔴 §5's FALLBACK is superseded. It said a tag with no region, or a country with no face, falls
+             back to **Playwrite US Modern** — which is what the Dev had said at the time. They changed it the
+             next day: the fallback is the COLONISER's hand, by language — Spanish → Playwrite ES,
+             Portuguese → Playwrite PT, English → Playwrite GB J. 📌 It follows ADR-0012's own sentence («the
+             hand a child is taught is NATIONAL») rather than contradicting it: what that record never said is
+             what to do for the nations with no face, and «whatever the United States teaches» was a default
+             wearing a country's name. The region→face half of §5 STANDS. Full rule, the two-hand countries
+             and the packaging consequence: **ADR-0150**."
+    - date: 2026-09-12
+      what: "⚠️ §4 is NARROWED. It turned the `caligrafica` role from «never in the UI» into «never by
+             DEFAULT», which was wider than the decision needed. The Dev: «quero que abra exceção somente para
+             a Playwrite do país e os fallbacks». So Pinyon Script, UnifrakturMaguntia and Fondamento stay out
+             of the interface entirely — they are decorative, not a hand anybody is taught, and ADR-0012's
+             objection applies to them undiminished. Only the child's own national hand, and its language
+             fallback, reach position (e). In ADR-0150 §4."
+
+title: The eleventh quick-bar button cycles five typography presets — and the BDA spacing stops being Lexend's alone
+
+context-and-problem-statement: |
+  🎯 **The Dev closed ADR-0147's open question and opened a bigger one in the same sentence.** Asked whether
+  «tipografia não aparecendo durante o jogo» meant «no typography icon on the bar» or «general options only
+  from the title screen», they answered the first — and then asked for the bar to carry typography ANYWAY, as a
+  cycle rather than a door:
+
+    · a) fully UPPERCASE with Andika
+    · b) upper and lower with Andika
+    · c) upper and lower with Atkinson Hyperlegible (**the default**)
+    · d) upper and lower with Lexend
+    · e) upper and lower with Playwrite for the country (falling back to Playwrite US Modern), **25% larger**
+      and **without** the British Dyslexia Association spacing, to keep the connectors
+
+  ⚠️ And with it a rule that reaches much further than the button: «somente fontes cursivas não precisam
+  seguir [as regras de espaçamento da BDA]; ao usar todas as outras fontes, é obrigatório seguir».
+
+  🔴 **MEASURED, and that rule is not a refinement — it is a hole being closed.** `app/css/style.css:65` ties
+  `--ls:0.18em; --ws:0.63em` to `:root[data-fonte="dislexia"]` and nothing else. **The default face —
+  Atkinson Hyperlegible, which every one of the three hundred games renders — has no BDA spacing at all.** The
+  spacing reaches ONE face of the twenty-six in `app/public/vendor/fonts.css`, and it reaches it because that
+  face is labelled «dislexia», not because of a rule about faces.
+
+  📌 **And two of the five positions are a pairing that does not exist today.** `letterCase` (`upper` |
+  `mixed`, ADR-0028) lives in `core/state` and the FACE lives in `data-fonte`. They are set independently, so
+  «uppercase Andika» is a combination a child can only reach by finding two controls in two places. The Dev's
+  cycle makes the pairing the unit, which is what a child in literacy actually chooses between.
+
+  🔴 **AND POSITION (e) CONTRADICTS A WRITTEN RULE.** `ui/fonts.ts:18-20` says of the `caligrafica` role, in so
+  many words: «só DENTRO das atividades escolares, nunca no HUD nem nos menus, e por isso **não aparecem no
+  menu de fonte**. Elas existem para a criança APRENDER a ler letra cursiva, o que é matéria; usá-las como
+  interface é dar-lhe a matéria como obstáculo em todos os lugares onde ela só quer navegar.» The eight
+  Playwrite variants are exactly those faces, already vendored, already carrying `minPx: 20`.
+
+decision-drivers:
+  - "D1 — THE BDA SPACING IS A RULE ABOUT READING, NOT A PROPERTY OF ONE FACE. Tying it to «dislexia» made it
+     a label's side effect; every child reading the default face has been paying for that."
+  - "D2 — CASE AND FACE ARE ONE CHOICE FOR A CHILD LEARNING TO READ. «Uppercase Andika» is a teaching
+     decision; asking her to assemble it from two controls in two menus is asking her to know the model."
+  - "D3 — AND THE CHILD WHO IS LEARNING CURSIVE IS A READER TOO. The rule that kept calligraphic faces out of
+     the interface protected a child who did not choose them. It should not also refuse the one who did."
+  - "D4 — A CYCLE ON THE BAR IS REACHABLE DURING PLAY; A PANEL IS NOT. Typography is the adjustment a child
+     makes when she cannot read THIS screen, and a door two levels down arrives after she has given up."
+
+considered-options:
+  - "A — a typography ICON that opens the existing panel from the bar."
+  - "B — an eleventh button that CYCLES five fixed presets."
+  - "C — the cycle, but without position (e), keeping the calligraphic rule intact."
+  - "D — leave the bar alone; typography stays in «opções gerais» only."
+
+pros-and-cons-of-the-options: |
+  **A — an icon that opens the panel.**
+  ✅ No new concept: the panel exists and has every face.
+  ❌ It is a door, and the bar is for things done in one press while the game is up. It also re-opens what the
+     Dev has just closed — typography as an item during play.
+
+  **B — eleven seats, five presets.**
+  ✅ One press changes the pairing a child actually chooses between, without leaving the screen.
+  ✅ The full roster stays in «opções gerais» for whoever wants the other twenty-two faces.
+  ❌ Five fixed presets are a curated list, and a curated list is a judgement that will age.
+  ❌ Position (e) breaks a written rule, which has to be decided rather than slipped past.
+
+  **C — the cycle without Playwrite.**
+  ✅ Keeps ADR-0012's emenda untouched.
+  ❌ Refuses the child learning cursive the one place she would want it, to protect children who simply will
+     not select that position. It protects by removing a choice rather than by not defaulting to it.
+
+  **D — leave the bar alone.**
+  ✅ Nothing changes, and the bar stays at ten.
+  ❌ Typography stays two levels down during play, which is where a child stops looking.
+
+decision-outcome:
+  chosen-option:
+    link: "B — an eleventh quick-bar button cycling five typography presets, and the BDA spacing generalised"
+    justification: |
+      ===== 1. THE ELEVENTH BUTTON, AND THE FIVE POSITIONS =====
+      A new icon on the accessibility bar cycles, in this order:
+
+      | # | case | face | note |
+      |---|---|---|---|
+      | a | UPPERCASE | Andika | the literacy pairing |
+      | b | mixed | Andika | |
+      | c | mixed | Atkinson Hyperlegible | **the default — the cycle starts here** |
+      | d | mixed | Lexend | |
+      | e | mixed | Playwrite of the country | **+25% size**, and NO BDA spacing |
+
+      📌 It sets BOTH `letterCase` (`core/state`, ADR-0028) and the face, as one act. That pairing is the whole
+      point: it is what a child in literacy chooses between, and today she would have to find two controls.
+
+      ⚠️ The cycle is a SUBSET, not a replacement. The other twenty-two faces stay in the typography panel
+      under «opções gerais», which is where ADR-0147's erratum puts typography.
+
+      ===== 2. THE BDA SPACING IS THE RULE FOR EVERY NON-CURSIVE FACE =====
+      `--ls: 0.18em` and `--ws: 0.63em` stop being an attribute of `data-fonte="dislexia"` and become the
+      default for the document, removed only for cursive faces. 📏 Today they reach one face of twenty-six,
+      including not reaching the default one — so this is the single widest-reaching line in the record.
+
+      ===== 3. CURSIVE FACES ARE EXEMPT, AND THE REASON IS MECHANICAL =====
+      The Dev's words: «para manter os conectores». Letter spacing on a joined face pulls the letters apart at
+      exactly the joins that make it cursive — the spacing meant to help reading would destroy the thing being
+      read. This is not a concession; it is the same rule applied to a face where it inverts.
+
+      ===== 4. `caligrafica` STOPS MEANING «NEVER IN THE UI» =====
+      🔴 It now means: **never by DEFAULT, never without the size floor, and never as anything but an explicit
+      choice.** `minPx` stays, and position (e)'s +25% is the same protection expressed as a multiplier.
+
+      ⚠️ The objection that the old rule carried stays written, because the decision does not erase it: a
+      calligraphic face as interface hands a child the SUBJECT as an obstacle everywhere she only wants to
+      navigate. What changes is who decides — the roster decided for her before; now she does, from the bar,
+      and one more press undoes it.
+
+      ===== 5. THE COUNTRY, AND WHAT HAPPENS WHEN THERE IS NONE =====
+      Playwrite has eight vendored variants (BR, US Trad, US Modern, CA, MX, AR, CL, CO) and the engine's
+      locale is `pt` | `en` | `es` — a LANGUAGE, not a country. So the choice reads the REGION of the BCP-47
+      tag (`pt-BR` → Playwrite BR, `es-MX` → Playwrite MX), and falls back to **Playwrite US Modern** when the
+      tag carries no region or names a country with no variant. 📌 That fallback is the Dev's, stated by them.
+
+      ===== 6. FOUR FACES JOIN THE ROSTER =====
+      Fredoka, Comfortaa, Quicksand and Nunito, at the Dev's request. All four are SIL OFL 1.1 and self-hosted
+      like the other twenty-six — the PWA has to work offline on the first day (pilar 8), so a CDN link is not
+      an option. ⚠️ **«Fredoka One» is the LEGACY name**: Google Fonts ships the variable family as «Fredoka»,
+      and the old static «Fredoka One» corresponds to its 600 weight. The roster carries `Fredoka`, and this
+      line exists so nobody later reads the difference as an error.
+
+      They enter as `geral`/`sans` — they are rounded interface faces, not calligraphic and not game faces —
+      and therefore they DO follow the BDA spacing of §2.
+
+  consequences:
+    positive:
+      - "The BDA spacing reaches every non-cursive face instead of one, including the default that every game
+         renders — the widest-reaching change in the record, and it required no new mechanism"
+      - "A child changes case AND face in one press, during play, without leaving the screen"
+      - "The child learning cursive can read the interface in the letters she is learning, at a size floor
+         that was already measured for it"
+      - "Four more faces in the roster, self-hosted, offline on the first day"
+    negative:
+      - "🔴 The BDA spacing now changes the layout of EVERY existing game, because the default face gains
+         letter and word spacing it never had. Anything measured in characters or laid out by eye will move"
+      - "A calligraphic face can become the interface, which is what ADR-0012's emenda set out to prevent; the
+         protection is now a default and a size floor rather than a prohibition"
+      - "Five curated presets are a judgement that will age, and the bar has an eleventh seat — one more stop
+         for whoever sweeps it without seeing"
+      - "Four more font families to download and cache, against a precache budget that pilar 8 already
+         constrains"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #146** in `the-inclusionist-engine`.
+    The gates, named now:
+
+      1. The cycle has five positions in the order of §1, it STARTS at (c), and each press sets BOTH
+         `letterCase` and the face — asserting the pair, because setting one of the two passes a weaker case.
+      2. 🔴 The BDA spacing is present on a document using the DEFAULT face. This is the hole: a case that
+         only checks Lexend would stay green with the bug intact.
+      3. 🔴 Position (e) has NO letter/word spacing, and (a)–(d) have it — the pair that proves the exemption
+         is a rule and not a missing line.
+      4. Position (e) renders 25% larger, and never below the face's `minPx`.
+      5. The country comes from the BCP-47 REGION: `pt-BR` → Playwrite BR, `es-MX` → Playwrite MX, `en` with
+         no region → Playwrite US Modern. A case per branch, including the fallback.
+      6. The four new faces load from the vendored `fonts.css` with no network, and each carries its OFL
+         attribution.
+
+more-information: |
+  📏 **Where each fact was read**, 2026-09-12:
+
+    · `app/css/style.css:65` — `:root[data-fonte="dislexia"]{ --font:'Lexend',…; --ls:0.18em; --ws:0.63em; }`,
+      the only place the BDA numbers appear. `:62` gives Andika its own value with NO spacing, and `:14` the
+      default face with none either.
+    · `app/js/ui/fonts.ts:18-20` — the `caligrafica` rule, verbatim, that §4 revokes.
+    · `app/js/ui/fonts.ts:107-114` — the eight Playwrite variants, `papel: 'caligrafica'`, `minPx: 20`.
+    · `app/js/core/state.ts:316` — `letterCase`, `'upper' | 'mixed'`, persisted.
+    · `app/public/vendor/fonts.css` — twenty-six families, self-hosted woff2, subset by unicode-range.
+
+  ⚠️ **The thing this record is most likely to be wrong about is §2's blast radius.** Giving the default face
+  letter and word spacing changes the metrics of every screen in the catalogue at once. It is the right rule
+  and it is a layout change to three hundred games, so it wants measuring in the browser and not only in a
+  test — the same step that caught the two-language panel and the Portuguese footer.
+
+  📌 **And one sub-question is answered by choice rather than by evidence:** the BDA also asks for line
+  spacing of 1.5, and `--ls`/`--ws` carry no line-height today. This record generalises what EXISTS; whether
+  line-height joins them is left to the work, and named here so it is not lost.

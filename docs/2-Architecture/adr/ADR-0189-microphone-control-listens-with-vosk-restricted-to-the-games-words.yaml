@@ -1,0 +1,80 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/voice-map.node.test.js
+    - engine:tests/vosk-runtime.node.test.js
+    - engine:tests/voice-listener.node.test.js
+    - engine:tests/voice-control.node.test.js
+    - engine:tests/pause-icons.node.test.js
+    - engine:tests/no-need-to-hold.browser.test.js
+  superseded-in-part:
+    - by: ADR-0190
+      what: >-
+        Vosk as the ONLY recogniser. The Dev saw many errors in their test: Vosk stays for commands, and Moonshine joins for
+        reading, both built and tested in a game.
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "`engine:docs/1-Discovery/study-microphone-control.md` (2026-09-13) — four options compared with sources"
+    - "Vosk models page (alphacephei.com/vosk/models, read 2026-09-13) — small models pt 31 MB, es 39 MB, en-us 40 MB, Apache 2.0;
+       small pt WER 32.6 (Common Voice) and 68.9 (CORAA) on open speech"
+    - "ADR-0074, ADR-0113 — the voice is a transport; enabled, the latches become the law for every transport"
+    - "ADR-0177 — heavy files come with the delivery, checked by sha256"
+  informed: []
+
+title: Microphone control listens with Vosk, restricted to the game's words
+
+context-and-problem-statement: |
+  The Dev listed «configure microphone control» in the motor panel (ADR-0151 §2 item 5), and no transport listens. The study
+  compared the cloud Web Speech API (the child's audio to a third party, nothing offline), the on-device Web Speech API
+  (ChromeOS «to follow», languages unpublished, the language pack the browser's and not the delivery's), Vosk in WASM with a
+  grammar, and Whisper-class models (no closed vocabulary). Asked «Web Speech API ou conhece algo melhor?» and shown the study,
+  the Dev, 2026-09-13: «Vi agora seu estudo: C · Vosk in WASM (vosk-browser) with a grammar».
+
+decision-drivers:
+  - "D1 — A CHILD'S VOICE DOES NOT LEAVE THE DEVICE (pillar 4)"
+  - "D2 — IT WORKS WITHOUT NETWORK AFTER THE FIRST DAY (pillar 8)"
+
+considered-options:
+  - "A — Web Speech API, cloud"
+  - "B — Web Speech API, on-device"
+  - "C — Vosk in WASM with a grammar"
+  - "D — Whisper-class models in the browser"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to ship. ❌ The audio leaves the device; no network, no control.
+  **B.** ✅ Private and offline once installed. ❌ Not on ChromeOS yet; the pack is the browser's.
+  **C.** ✅ Private, offline from the delivery, CPU only, restricted to the game's words. ❌ `vosk-browser` unpublished for four
+  years; the small Portuguese model measured poorly on open speech.
+  **D.** ✅ Multilingual. ❌ Transcribes open speech on CPU, with no closed vocabulary.
+
+decision-outcome:
+  chosen-option:
+    link: "C — Vosk in WASM with a grammar"
+    justification: |
+      1. **The recogniser is Vosk in WASM**, run by the page; no audio leaves the device.
+      2. **Its grammar is the words the game names for its positions**, in the page's language; a word heard raises that
+         position's edge through the voice transport.
+      3. **The models (pt, es, en) are heavy files of the delivery** (ADR-0177), with their sha256.
+      4. **Before the transport is built, four measurements with a go/no-go**: the library loads under the engine's CSP in the
+         schools' Chrome; the small Portuguese model's accuracy on a closed list of command words; each named word is in the
+         model's lexicon; the Spanish and English models the same. A no-go comes back to the Dev.
+
+  consequences:
+    positive:
+      - "A child who cannot press can play by speaking the game's words, with nothing sent anywhere"
+    negative:
+      - "A delivery with microphone control carries about 110 MB of models"
+      - "A word outside a model's lexicon cannot be a command; the game's word may need a spoken alternative"
+      - "The library is unmaintained: a defect in it is ours to carry"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #184** in `the-inclusionist-engine`. Gates: the go/no-go measurements written with their numbers;
+    then a spoken word of the grammar raises its position's edge; a word outside the grammar raises nothing; no network request
+    carries audio; the models are in the heavy-file catalogue with their sha256.
+
+more-information: |
+  The measurements need `vosk-browser` from npm and the small models from alphacephei.com — downloads the Dev authorises one by
+  one. The child-voice accuracy cannot be measured on the developer's machine alone: an adult's voice is a first reading, not
+  the answer.

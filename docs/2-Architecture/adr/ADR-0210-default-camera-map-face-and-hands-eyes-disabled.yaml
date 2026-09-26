@@ -1,0 +1,111 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/face-map.node.test.js
+    - engine:tests/hand-map.node.test.js
+    - engine:tests/face-control.browser.test.js
+    - engine:tests/hand-control.browser.test.js
+  superseded-in-part:
+    - by: ADR-0213
+      what: >-
+        §2 «eyes disabled». Eye control as its own modality is decided: a relative reading of four zones and a cycle of twelve commands
+        and START, from the lab of 2026-09-16. The face and hand maps stand.
+  errata:
+    - date: 2026-09-25
+      what: >-
+        CONFIRMED for the readers: `input/face-map` and `input/hand-map` read the map (with its errata up to v12) and
+        `ui/face-control`/`ui/hand-control` drive the virtual controller; the Dev played with the face («Já joguei com
+        rosto e ganhei»). The live round of the hand gestures stays with issue #191.
+    - date: 2026-09-15
+      what: '📌 THE FACE MAP AFTER THE MAP RUNS (2026-09-15, twelve lab runs on the Dev''s face with a bar for any other position and the raw blendshapes logged). What changed and why: winks did not separate (a frown squinted the left eye; closing the right eye closed the left one more), teeth shown opened the mouth and lifted the smile and a child with an open bite cannot show them, lips rolled and pressed read as each other, a jaw to the side opened the mouth before reaching its own mark, and a look-and-return could not be held. The Dev confirmed the result: «Sim». The face column is now: up — brows up; down — frown; left / right — the head turned to the player''s left / right (nose tip against the face''s sides, from the calibrated rest, the mark near 18°); START — ONE eye squeezed (blink or squint) past 0.5 held about 1 s, the other eye free; SELECT — no expression; 1 — lips pressed; 2 — mouth open; 3 — smile; 4 — kiss (lips pushed out); L1 — a crossed look right then left, held on the left; R1 — left then right, held on the right; L2 / R2 — the mouth to the left / right. Reading rules the runs settled: the mouth positions (1, 2, 3, 4, L2, R2) hold 600 ms, since talking passed the mark in short syllables; the kiss has its own mark 0.6 (a relaxed mouth sits near 0.33); lips pressed clear the smile; the mouth to a side clears the kiss it projects; a squeeze at START''s mark clears the frown it pulls; a crossed look needs a first side that peaked at 0.6, the second side at 0.6 within 0.8 s and held 300 ms (the release''s overshoot, 0.28–0.43, presses nothing), stays down while the look stays past the mark, and is cancelled by a turned head. In the last run no position read as another, neither in the items nor in 26.5 s of looking around; crossings took 92 ms. Looking around still turns the head and moves the eyes the way the left/right and L1/R1 commands do. §2 is narrowed: the eyes'' blendshapes (a squeeze, a crossed look) are part of the face map; what stays disabled is eye control as its own modality (where on the screen the player looks, issue #194). The hand column stands.'
+  supersedes: [ADR-0199, ADR-0202, ADR-0208]
+  supersedes-in-part: [ADR-0197]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0204 and its errata — the whole controller (four directions, START, SELECT, buttons 1–4, L1, L2, R1, R2) mapped in each
+       modality after every candidate is tested; the bar protocol; the speech vocabulary; the face buttons by position"
+    - "ADR-0205 and its errata — the face's 17 candidates"
+    - "ADR-0206 and its errata — the hands' 14 candidates; index right, index down and two fingers right sent back to the lab by the
+       Dev for a retest, with thumb right and thumb left"
+    - "📏 The Dev's bar runs, 2026-09-14: Face Landmarker 17 of 17 detected, all rated «ok»; Gesture Recognizer 14 of 14 detected, all
+       «ok»; the bar protocol records detection and effort, not whether two candidates are confused"
+    - "ADR-0197, ADR-0199, ADR-0202, ADR-0208 — the first camera mappings and the eye approaches, standing until this map"
+  informed: []
+
+title: The default camera map — face and hands on the whole controller; eyes disabled
+
+context-and-problem-statement: |
+  With the candidates tested, the Dev wrote the default map, 2026-09-14. Face: «cima - levanta as sobrancelhas; baixo - franzir as
+  sobrancelhas; esquerda - boca para a esquerda; direita - boca para a direita; START - sorriso; SELECT - mostrar os dentes;
+  1 pressionar os lábios; 2 abrir a boca; 3 abrir a boca sem abrir os lábios; 4 letra O; L1 - mandíbula para a esquerda; L2 - piscar
+  com olho esquerdo; R1 - mandíbula para a direita; R2 - piscar com olho direito». Hands: «cima - indicador p/ cima; baixo - indicador
+  p/ baixo; esquerda - indicador p/ esquerda; direita - indicador p/ direita; START - i love you; SELECT - cachorro; 1 - v; 2 - mão
+  fechada; 3 - mão aberta; 4 - zero; L1 - polegar p/ cima; L2 - polegar p/ baixo; R1 - 3 dedos; R2 - 4 dedos». «Olhos: desabilitado
+  por enquanto.»
+
+decision-drivers:
+  - "D1 — A CHILD PLAYS A WHOLE GAME (ADR-0204): every position of the controller has a face expression and a hand gesture"
+  - "D2 — THE MAP IS THE DEV'S (ADR-0204), from the candidates tested"
+  - "D3 — NOTHING UNRELIABLE REACHES A CHILD: the eyes wait for a map the Dev accepts"
+
+considered-options:
+  - "A — keep the navigation mappings of ADR-0197/0199/0202 (up, down, confirm, back, menu) and the eye approaches"
+  - "B — the Dev's default map on the whole controller for face and hands; eyes disabled"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Readers already written. ❌ Menus only; mappings the tests replaced; eye readings that did not hold on a real face.
+  **B.** ✅ The whole controller from tested candidates. ❌ Readers to rebuild; pairs in the map not yet measured for confusion.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's default map; eyes disabled"
+    justification: |
+      Positions as in ADR-0204; «left» and «right» are the player's own; buttons 1–4 by position (ADR-0204 erratum).
+
+      | position | face (Face Landmarker blendshapes) | hand (Gesture Recognizer; lab classifier for the Dev's own) |
+      |---|---|---|
+      | up | brows up | index pointing up |
+      | down | brows down (frown) | index pointing down |
+      | left | mouth to the left | index pointing left |
+      | right | mouth to the right | index pointing right |
+      | START | smile | I Love You |
+      | SELECT | teeth shown | «cachorro» (middle and ring on the thumb, index and little out) |
+      | 1 | lips pressed | V (index and middle up) |
+      | 2 | mouth open | closed hand |
+      | 3 | jaw open with lips closed | open hand |
+      | 4 | lips in an «O» | zero (every finger closing a circle on the thumb) |
+      | L1 | jaw to the left | thumb up |
+      | L2 | left eye closed (a blink held) | thumb down |
+      | R1 | jaw to the right | three fingers |
+      | R2 | right eye closed (a blink held) | four fingers |
+
+      1. **One group at a time** (ADR-0197 erratum): the face map and the hand map are separate choices of the child.
+      2. **Eyes disabled**: no eye reading commands anything — neither ADR-0202's look-and-blink commands nor ADR-0208's calibrated dwell
+         pie, which did not hold on the Dev's face (the reading moved with every head movement) and whose position calibration the Dev
+         rejected. The eye work stays in the lab until the Dev accepts an eye map (issue #194).
+      3. **Index down and index right** enter the map before their retest (ADR-0206 left them out as uncomfortable or confused); the retest
+         the Dev asked for confirms them.
+      4. **Pairs to measure before a reader ships**, since the bar protocol did not measure confusion: mouth open (2) against jaw open with
+         lips closed (3), which also raises the jaw; smile (START) against teeth shown (SELECT); mouth to a side (left, right) against jaw
+         to the same side (L1, R1); a held blink (L2, R2) against an involuntary blink, which is shorter than the 300 ms hold; index down
+         (down) against thumb down (L2); four fingers (R2) against open hand (3), which differ by the thumb; I Love You (START) against
+         «cachorro» (SELECT); V (1) against index up (up).
+
+  consequences:
+    positive:
+      - "Face and hands reach every position of the controller"
+      - "No eye command can fire on a child's involuntary movement"
+    negative:
+      - "The engine's camera readers (`input/camera-gestures`) are rebuilt from this map; their navigation mappings go"
+      - "A player who can only move the eyes has no camera control until an eye map exists"
+
+  confirmation: |
+    ✅ BUILT (confirmed 2026-09-25 — see `confirmed-by`): the readers exist and each is held by recorded and synthetic frames. The Dev's live round of the fourteen hand gestures is still owed under issue #191. The gates as they were named before the work, kept as history: Gates: a lab run of the map where each position's bar sits beside a
+    bar for any other position, so the pairs above are measured on the Dev's face and hands; then the readers, where a recorded frame of
+    each mapped expression or gesture raises its position and no other; no eye reading raises a position.
+
+more-information: |
+  The speech map is ADR-0204's vocabulary erratum. V is MediaPipe's canned Victory and the lab's «two fingers up» — the same hand, left
+  as a separate candidate in ADR-0206 because it repeated.

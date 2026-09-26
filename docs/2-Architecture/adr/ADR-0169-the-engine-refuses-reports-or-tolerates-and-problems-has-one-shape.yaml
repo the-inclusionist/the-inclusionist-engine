@@ -1,0 +1,72 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/boot-create-game.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #163 closed, `engine:55eb3a4`): the thirteen Portuguese lines of `problems` are
+             English, and each line names its subject, the cost to the child and the fix."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "RFC 9413 (2023), «Maintaining Robust Protocols» — the revision of Postel's «be liberal in what you accept»: being
+       strict about what is accepted keeps defects from propagating"
+    - "the rubric written only in a comment of `engine:app/js/boot/create-game.ts`: a malformed declaration throws; a
+       host gap goes to `problems`"
+    - "ADR-0153 — a missing accommodation answer refuses the boot"
+    - "the study of engineering principles delivered to the Dev on 2026-09-13, candidate 1"
+  informed: []
+
+title: What the engine refuses, reports or tolerates — and `problems` has one language and one shape
+
+context-and-problem-statement: |
+  The Dev, on 2026-09-13, asked which of four candidates from the principles study should become records: «As quatro.»
+
+  📏 Measured: `problems` is the engine's only diagnostic channel to a cartridge and appears in 23 records, and no record
+  decides its language, its shape, or when a finding stops being a line and refuses the boot. Of the eight lines
+  `createGame` pushes, the older are in Portuguese («sem sítio para o menu de pausa…») and this week's in English («the
+  page does not link the engine stylesheet»). Several guards degrade in silence (`typeof win.getComputedStyle !==
+  'function'`), and «the panel opens empty, with no error» was a finding the study met more than once.
+
+decision-drivers:
+  - "D1 — A DEFECT IS SAID WHERE IT IS MADE. A cartridge author learns from the boot, not from a child"
+  - "D2 — ONE RUBRIC, WRITTEN ONCE. Each new gate chose its own answer"
+
+considered-options:
+  - "A — keep deciding case by case"
+  - "B — three bands, decided once, and one shape for a line of `problems`"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No work. ❌ Measured: two languages in one list, and silent degradations.
+  **B.** ✅ A cartridge author meets the same channel everywhere. ❌ Existing lines and guards must be brought to it.
+
+decision-outcome:
+  chosen-option:
+    link: "B — refuse, report, tolerate; one shape"
+    justification: |
+      1. **REFUSE (throw at boot)** what the contract declares malformed or missing where no safe default exists: a
+         malformed declaration, a missing required answer (ADR-0153). The error names the field and how to fix it.
+      2. **REPORT (a line of `problems`)** what works partly: a host gap, a cartridge measured against a rule (a target
+         under the floor, a key outside the storage scopes, a dictionary missing a language, a canvas that flashes).
+      3. **TOLERATE (degrade in silence)** only a capability of the ENVIRONMENT the cartridge cannot change and the child
+         does not lose by (a host double without `getComputedStyle` in a test, private-mode storage). Never a gap a
+         cartridge could close.
+      4. **A line of `problems` is in ENGLISH**, the language of the artefacts, and says three things: what is wrong, by
+         name (the node, the key, the field); what it costs the child; and the fix (the option, the export, the ADR).
+      5. **Existing lines and guards are brought to this**: the Portuguese lines translated, and each silent guard checked
+         against band 3.
+
+  consequences:
+    positive:
+      - "A cartridge author reads one channel, in one language, with the fix in the line"
+    negative:
+      - "The Portuguese lines change VALUE — a cartridge that matched their text must match the new one (migration note)"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #163, closed). Gates: no line of `problems` in Portuguese
+    (the pillar-3 raw-text gate already counts engine literals); each line names its subject and a fix.
+
+more-information: |
+  The principle is RFC 9413's revision of Postel; the engine's own form of it already existed in one comment and one
+  record (ADR-0153), and this record makes it the rule for every gate.

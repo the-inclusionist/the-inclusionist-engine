@@ -1,0 +1,78 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/public-page-surface.node.test.js
+    - engine:tests/exports-without-consumer.node.test.js
+    - engine:docs/6-DevOps-SRE/public-page-surface.json
+    - engine:docs/6-DevOps-SRE/exports-without-consumer.json
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (`engine:79814bf`, issue #164). Two readings the record left open, filled as built: TYPES are
+             outside the export check (a type costs no bytes and is judged by the public-shape gate), and a TEST counts as a
+             consumer — an export only a gate reads is still read. The page surface lists 8 variables, 14 classes, 6 ids,
+             5 `data-*` attributes and 8 keys, each with a reader measured in the sibling games or a record."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "D. Parnas, «On the Criteria To Be Used in Decomposing Systems into Modules» (1972) — a module is judged by what it
+       hides"
+    - "J. Ousterhout, «A Philosophy of Software Design» (2018) — deep modules: a narrow interface over a large
+       implementation"
+    - "R. Fielding (2000) and consumer-driven contracts — an interface is a versioned contract, not «what it happens to
+       answer today»"
+    - "the public-surface and public-shape gates and `engine:docs/6-DevOps-SRE/Breaking-Changes.md`"
+    - "the study of engineering principles delivered to the Dev on 2026-09-13, candidate 2"
+  informed: []
+
+title: The public contract includes what a cartridge reads from CSS, the DOM and the dictionaries — and only what a cartridge needs is exported
+
+context-and-problem-statement: |
+  The Dev, on 2026-09-13, on the four candidates of the principles study: «As quatro.»
+
+  📏 Measured in one day: the surface gate compares TypeScript names and shapes, and three kinds of contract passed it.
+  `--barra-a11y-h` changed meaning (issue #160); the classes `.rodape-da-tela`, `.legenda-de-som`, `.pause-icons-cap` and
+  the attribute `data-glifo` are read by games and tests and held by nothing. And the other way: `numerarItens` and
+  `ATRIBUTO_DO_NUMERO` were exported with no consumer in any sibling repository, and removing them was a `BREAKING CHANGE`
+  nobody had benefited from.
+
+decision-drivers:
+  - "D1 — WHAT A CARTRIDGE CAN READ, IT CAN DEPEND ON. A variable or class it reads breaks it as surely as a renamed function"
+  - "D2 — A NAME NOBODY NEEDS IS A BREAK WAITING. Every export is a promise"
+
+considered-options:
+  - "A — the contract is the TypeScript exports only"
+  - "B — the contract is what a cartridge can read, and exports are kept to what a cartridge needs"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Already gated. ❌ Measured: three kinds of break passed it in one day.
+  **B.** ✅ Breaks are named where cartridges feel them. ❌ A list of CSS and DOM surface to keep, and exports to prune.
+
+decision-outcome:
+  chosen-option:
+    link: "B — what a cartridge reads is contract; only what it needs is exported"
+    justification: |
+      1. **Public surface = what a cartridge may read**: the TypeScript exports, AND the CSS custom properties the engine
+         writes for games (`--barra-a11y-h`, `--alvo-min`, `--ui-fs`, `--tap`, `--rodape-h`…), the classes and `data-*`
+         attributes of what the engine mounts that a game is told to read or style, and the dictionary keys a game is
+         told to use. Changing one of them — name, or MEANING — writes a migration note, as an export does.
+      2. **That surface is LISTED and gated**: a list in the repository, and a gate that fails when the stylesheet or the
+         root stops writing a listed name.
+      3. **Only what a cartridge needs is exported.** A new export says which cartridge needs it; an export no sibling
+         repository uses is a candidate to become internal — measured across the catalogue first (`CLAUDE.md`: measure
+         the catalogue, not the house consumer).
+
+  consequences:
+    positive:
+      - "A change a game feels is named before it ships"
+      - "Fewer breaks that break nobody"
+    negative:
+      - "A second list to keep beside the TypeScript snapshot"
+
+  confirmation: |
+    `tests/superficie-da-pagina.node.test.js` and `tests/exports-sem-consumidor.node.test.js` (issue #164, closed): the listed
+    CSS variables, classes and attributes are all still written; a new export without a named consumer is flagged.
+
+more-information: |
+  Parnas' question — «what does this module hide?» — is the test for point 3: an export that only exposes an internal
+  step hides nothing and costs a promise.

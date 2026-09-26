@@ -1,0 +1,218 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0044 item 7 — the quick bar moved out of the pause card and into the HUD, so it is usable DURING
+       play. This record is the consequence nobody wrote down: a thing that lives on the play surface has to
+       own its space on it"
+    - "ADR-0106 §5 — «um ícone é montado quando a acção dele funciona». It is why three icons that WORK are
+       missing, and the rule is not at fault: the engine never handed itself the writers"
+    - "ADR-0145 — an accommodation has a SUBJECT or it does not, by genre. It is why ☝️ is absent from a quiz
+       correctly, and why that absence must not be «fixed»"
+    - "ADR-0104 — the two visual axes, contrast and colour-vision correction. The engine already builds both"
+    - "ADR-0113 — the three zones of the screen, by Gestalt: accessibility in the HEADER, options in the work
+       area, caption in the footer. This record gives the first of those three a measurable boundary"
+  informed: []
+  errata:
+    - date: 2026-09-12
+      what: "🔴 **§1 CLAIMED BOTH VISUAL ICONS FOR THE ENGINE, and only ONE of them is hers.** Measured while
+             building it (`engine:a64e042`): 🚥 colour-vision correction the engine genuinely can action —
+             `installCvdFilters` mounts the six SVG filters, `aplicarFiltroDeVisao` puts one on the world
+             element, and a FILTER does not need to know the game, which is the argument §1 itself used.
+             🔴 But 🌗 high contrast is NOT a filter: `setTemaDoJogador` is a REPAINT of the game's textures
+             (`render/textures`, `DIRECT_CFG`/`directSpriteCanvas`), and the levels `hc-direto-45` /
+             `hc-direto-7` are the WCAG 4.5:1 and 7:1 RATIOS. The engine has no textures, and approximating it
+             with `filter: contrast()` would announce a ratio nothing guarantees — the engine asserting what
+             it cannot know, which is the failure ADR-0087 names. So 🌗 stays the game's, and the gate that
+             landed asserts its ABSENCE beside 🚥's presence. ⚠️ §1's consequence «the engine writes to the
+             visual axes by default» therefore applies to ONE axis, not two."
+    - date: 2026-09-12
+      what: "📏 **And building §1 uncovered a defect older than this record, named here so it is not lost.**
+             `create-game` passes `getPlayers: () => cartucho.players ?? []` to `initPauseIcons` — an EMPTY
+             list — while the keyboard runtime gets `players()`, which falls back to ONE seat. Two answers to
+             the same question in one file. The empty one makes `P()[0]` `undefined`, and since the icon
+             cycles compute the next step from the player's own state, **🚥, ☝️ and 🧩 never advance past the
+             first position for a game that declares no players**. ⚠️ The one-line fix does NOT work:
+             `initPauseIcons` consumes `getPlayers()` EAGERLY at boot (`ui/pause-icons:822`), so the `const`
+             declared ~500 lines below lands in TDZ and the whole boot dies — 39 cases at once, measured. The
+             fix is hoisting `players`/`semJogadores` above that call, which is boot-order refactoring."
+    - date: 2026-09-12
+      what: "§1 recorded a difference rather than resolving it: the Dev had asked for «alto contraste (toggle
+             entre off e dois níveis)» and `CONTRAST_LEVELS` carries off plus THREE (`hc-direto`,
+             `hc-direto-45`, `hc-direto-7`, the last two being the WCAG 1.4.3 and 1.4.6 ratios). ✅ **Resolved
+             the same day, by them: «Fez bem, eu que errei me esquecendo de um deles».** The cycle is off plus
+             three, and the negative consequence «🌗 offers off plus three levels where the Dev said two» no
+             longer applies. 📌 Kept as an erratum rather than edited away, because the flagged difference is
+             the reason it got looked at."
+    - date: 2026-09-12
+      what: "§4 said this record does not decide whether the three `soon` icons keep their seats, and it still
+             does not. ⚠️ But the bar is no longer ten seats: **ADR-0149 adds an ELEVENTH**, a typography cycle,
+             at the Dev's request. The count in §1's table is the measurement of 2026-09-12 and stays as the
+             record of that day; the roster it belongs to now lives in that record."
+    - date: 2026-09-13
+      what: "✅ **§3's reserved rectangle, answered by the Dev for the icon's NAME.** Measured in the quiz: while an icon
+             is pointed at, its name (the line under the row, on a dark chip) falls over the quiz statement, because
+             `--barra-a11y-h` counts the row and not that line; at 640×360 there are 4 px to spare. Asked whether it
+             may stay, the Dev: «Não, é necessário que exista um leve espaçamento abaixo da barra de acessibilidade
+             rápida.» 📌 Built as: the reserved region is the row, the name line under it, and a light gap — nothing of
+             the game starts before its end. ⚠️ The consequence at 640×360 (the quiz's options pushed toward the
+             footer) is measured when built and reported, not assumed. Fills what §3 left open (ADR-0057 §1)."
+
+title: The accessibility bar is HUD — it owns its space, and it mounts the icons that work
+
+context-and-problem-statement: |
+  🔴 **TWO MEASUREMENTS, taken 2026-09-12 on `dist/quiz.html` with the service worker killed.**
+
+  **First: the bar mounts seven icons, and three of them do nothing yet.**
+
+  | mounted | `blind` 🦯 · `tts` 🗨️ · `libras` 🤟 · `tea` 🧩 · `face` 🧑 · `eyes` 👀 · `voice` 👄 |
+  |---|---|
+  | **absent** | `contrast` 🌗 · `cvd` 🚥 · `altmove` ☝️ |
+
+  ⚠️ `face`, `eyes` and `voice` carry `soon: true` — they are «under construction» and say so. So the bar
+  shows three placeholders while three icons that WOULD WORK are filtered out. That is not what ADR-0106 §5
+  means; §5 is about a control that does nothing when pressed, and it was never meant to seat a placeholder
+  ahead of a working control.
+
+  📏 **And the cause is measured, not guessed.** `iconesQueAccionam` asks, per icon, «does this one have
+  someone to action it»: `contrast` needs `escritores.tema`, `cvd` needs `escritores.correcao`, `altmove`
+  needs `seguraTeclas()`. 🎯 **`createGame` passes neither writer — while already RETURNING
+  `aplicarFiltroDeVisao` and `cvdFilters`.** The engine has the writers and does not hand them to its own
+  icons. This is the cheapest gap in the whole plan.
+
+  ⚠️ **`altmove` is a different case and must not be «fixed».** It is absent from the quiz because the quiz
+  answers `seguraTeclas(): false`, and a quiz holds no key — there is nothing to toggle. That is ADR-0145's
+  rule («does this have a SUBJECT here?») already working, through a contract field, before the record that
+  names it exists. Mounting it anyway would be the wheelchair-in-chess error on the bar.
+
+  **Second: nothing says the bar owns its space.** The Dev, 2026-09-12: «deve-se considerar os botões de
+  acessibilidade como HUD e evitar escrever elementos de jogo atrás ou na frente destes botões, como títulos
+  de quiz». Today there is no contract at all: the engine mounts the bar and the game draws wherever it
+  likes. 🔴 A title drawn over the bar does not fail anything — no test, no type, no console. It just covers
+  the row of buttons that a child who cannot see the game reaches for first.
+
+decision-drivers:
+  - "D1 — AN ICON THAT WORKS OUTRANKS AN ICON THAT DOES NOT. Three «under construction» placeholders sitting
+     where three working controls are filtered out inverts the whole point of §5."
+  - "D2 — THE ENGINE MUST NOT ASK THE GAME FOR WHAT THE ENGINE ALREADY HAS. `aplicarFiltroDeVisao` and
+     `cvdFilters` are built by `createGame` and returned by it; requiring a game to inject them back is the
+     five-of-six arrangement ADR-0139 measured failing."
+  - "D3 — AND IT MUST NOT MOUNT WHAT HAS NO SUBJECT. `altmove` is genre-bound through a contract field that
+     already answers correctly. Absence there is the rule working."
+  - "D4 — A CONTROL THAT CAN BE COVERED IS A CONTROL THAT CAN BE TAKEN AWAY, silently, by a game that meant
+     no harm. The failure has no error and no test; only a boundary prevents it."
+
+considered-options:
+  - "A — leave it: a game that wants contrast and CVD injects the writers."
+  - "B — the engine hands its own writers to its own icons, and declares the bar's region as reserved."
+  - "C — mount all ten icons unconditionally and let the dead ones be dead."
+  - "D — drop the three `soon` icons instead, to make room."
+
+pros-and-cons-of-the-options: |
+  **A — the game injects.**
+  ✅ No engine change; the seam already exists.
+  ❌ 📏 Measured: zero of the games do it, and the engine already owns both writers. It is asking three
+     hundred games to hand back something they received.
+
+  **B — the engine wires its own, and the bar owns its space.**
+  ✅ Contrast and colour-vision correction reach every game with no consumer line.
+  ✅ `altmove` keeps answering by genre, so §5 and ADR-0145 both stay intact.
+  ✅ The covering failure becomes measurable — a rectangle either overlaps or it does not.
+  ❌ The engine now writes to the visual axes by default, which a game with its own theme pipeline may want
+     to take over. It must be able to.
+
+  **C — mount all ten.**
+  ✅ The bar never changes shape between games, which is the steadiness the Dev asked for on the pause card.
+  ❌ It reintroduces exactly the dead button §5 exists to forbid, and for a child who cannot see, a control
+     that announces itself and then does nothing is worse than one that is not there.
+
+  **D — remove the `soon` icons.**
+  ✅ Honest about what is built.
+  ❌ They are a promise the project made on purpose, and they say «under construction» out loud. Removing
+     them is a separate decision about the roadmap, not about this gap.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine hands its own writers to its own icons, and the bar's region is reserved"
+    justification: |
+      ===== 1. THE ENGINE ACTIONS 🌗 AND 🚥 BY DEFAULT =====
+      `createGame` supplies `escritores.tema` and `escritores.correcao` from what it already builds —
+      `aplicarFiltroDeVisao` and `cvdFilters` — so both icons mount in every game. A game that passes its own
+      writers still wins: the engine's are a DEFAULT, not a seizure. 📌 That is the same shape as the pause
+      action table (ADR-0144's erratum): the engine guarantees one exists, the cartridge overrides it.
+
+      · 🌗 cycles `CONTRAST_LEVELS` — `normal`, `hc-direto`, `hc-direto-45`, `hc-direto-7`. ⚠️ That is off plus
+        THREE levels, and the Dev said «dois níveis». The list is already written and its three steps are the
+        WCAG ratios (4.5:1 and 7:1 are 1.4.3 and 1.4.6); the record keeps the three and flags the difference
+        rather than silently dropping one.
+      · 🚥 cycles `CVD_SEQ` — `normal` plus protan, deuter, tritan. Exactly «off e cada um dos três tipos».
+
+      ===== 2. ☝️ STAYS GENRE-BOUND, AND THE ABSENCE IS THE RULE WORKING =====
+      `altmove` continues to ask `seguraTeclas()`. It is absent from a quiz because a quiz holds no key, which
+      is ADR-0145's question asked of a contract field. Mounting it everywhere would put a switch with no
+      subject in front of a child, which is the error ADR-0145 was written to stop.
+
+      ===== 3. THE BAR IS HUD, AND ITS RECTANGLE IS RESERVED =====
+      The bar occupies a region of the play surface, and no game element may be drawn over or under it. The
+      engine DECLARES that region — it is the only party that knows how tall the bar is, because it mounts it
+      — and the game reads it.
+
+      📌 Reuse rather than invent: `ui/layout.alvoMinimoDeToque` / `REGUA_DE_ALVO` already derive target size
+      from screen height for WCAG 2.5.5. The bar's height falls out of that ruler; a second number would be a
+      second thing to keep in sync.
+
+      ⚠️ The gate is a RECTANGLE and not a look: with the bar mounted, no node of the game intersects it,
+      measured by `getBoundingClientRect`. A visual check cannot see a title drawn one pixel behind.
+
+      ===== 4. WHAT THIS DOES NOT DECIDE =====
+      Whether the three `soon` icons keep their seats. They announce themselves as unbuilt, which is a
+      different thing from a dead control, and removing them is a roadmap decision rather than this one.
+
+  consequences:
+    positive:
+      - "High contrast and colour-vision correction reach all three hundred games, from writers the engine
+         already builds — the cheapest reach in the current plan"
+      - "The bar stops seating three placeholders ahead of three working controls"
+      - "A game covering the accessibility bar becomes a measurable failure instead of an invisible one"
+      - "`altmove` keeps answering by genre, so this record does not weaken ADR-0145 to fix a neighbour"
+    negative:
+      - "The engine writes to the visual axes by default, and a game with its own theme pipeline must override
+         rather than simply provide — a difference that will surprise somebody"
+      - "The bar's composition still varies between games because of ☝️, so the layout is steady in nine of
+         ten seats and not ten"
+      - "A reserved region is a constraint on every game's layout, declared after some of them were written"
+      - "🌗 offers off plus three levels where the Dev said two; the difference is flagged, not resolved"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #145** in `the-inclusionist-engine`.
+    The gates, named now:
+
+      1. 🔴 A game that supplies NOTHING beyond `createGame` mounts 🌗 and 🚥, and pressing each one CHANGES
+         the stored value. Counting icons would pass with both inert.
+      2. 🌗 walks the four steps of `CONTRAST_LEVELS` and 🚥 the four of `CVD_SEQ`, announcing each — and
+         position 0 of the CVD cycle says «trichromatic», never «off» (the distinction `CVD_NAMES` already
+         carries in writing).
+      3. 🔴 A game that declares `seguraTeclas(): false` does NOT get ☝️ — asserting the ABSENCE, which is the
+         case that keeps this record from quietly overriding ADR-0145.
+      4. A game that passes its OWN `tema`/`correcao` writers keeps them: the engine's are a default.
+      5. 🔴 With the bar mounted, no node of the game intersects its rectangle, measured with
+         `getBoundingClientRect` — and the pair: the bar itself still reaches its own space, so a gate that
+         passes by hiding the bar fails.
+
+more-information: |
+  📏 **Where each fact was read**, 2026-09-12:
+
+    · `PAUSE_ICONS` — `engine:app/js/ui/pause-icons.ts:97`; the ten icons, with `soon: true` on three.
+    · `iconesQueAccionam` — `:376`; the per-icon question, and the comment recording that a single boolean
+      for both writers had been a SURVIVING mutation: `&&` hid an icon that works and `||` showed one that
+      does not.
+    · `CONTRAST_LEVELS` — `engine:app/js/ui/settings-visual.ts:30`.
+    · `CVD_SEQ` / `CVD_NAMES` — `engine:app/js/ui/pause-icons.ts:131` and `:141`.
+    · The mounted bar in `dist/quiz.html`: seven icons, the three above absent.
+
+  ⚠️ **The thing this record is most likely to be wrong about is the default.** Handing the engine's visual
+  writers to the icons means the engine repaints a game it does not know. 📌 What makes it defensible is that
+  it repaints through `aplicarFiltroDeVisao`, which is a FILTER over whatever the game drew — it does not
+  need to know the game to be correct — and that a game with its own pipeline overrides rather than fights.

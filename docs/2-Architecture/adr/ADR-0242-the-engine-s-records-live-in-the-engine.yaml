@@ -1,0 +1,154 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0123, ADR-0229]
+  date: 2026-09-26
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-23 about the architecture records: «(i) a engine fica com eles»"
+    - "The Dev, 2026-09-26, on finding that only six records had moved: «Por que se eu pedi para que os documentos
+       em doc que fossem da engine fossem passados para a engine?»"
+    - "ADR-0226 §2 — «docs volta pra dentro do repositório da engine, ou melhor, o que for da engine» — the clause
+       ADR-0229 superseded, and which this record restores"
+    - "ADR-0229 — SUPERSEDED IN PART: its choice kept the engine's own decisions and the contract in
+       `the-inclusionist-docs`"
+    - "ADR-0123 — SUPERSEDED IN PART: clause 1, the address of the tree, for the records that are the engine's"
+    - "ADR-0057 — a record changes by supersession; this record does not edit the two it supersedes"
+    - "`docs/2-Architecture/record-ownership-triage.md` — the triage of 2026-09-23, and the reading of 2026-09-26
+       that replaces its rule"
+  informed: []
+
+title: The engine's records live in the engine — `the-inclusionist-docs` keeps only what belongs to the whole project
+
+context-and-problem-statement: |
+  🔴 **THE DEV'S DECISION WAS READ BACKWARDS, AND THE READING WAS WRITTEN DOWN AS A DECISION.** On 2026-09-23 the Dev
+  decided about the architecture records: «(i) a engine fica com eles». ADR-0226 carried it — «docs volta pra dentro
+  do repositório da engine, ou melhor, o que for da engine» — and the same day ADR-0229 turned it into its opposite:
+  `the-inclusionist-docs` stays the home, the engine's own decisions and the contract stay with it, and only what
+  belongs to ONE GAME moves. Six records moved to `game-platformer`; the engine received none. Today the Dev asked
+  why: «Por que se eu pedi para que os documentos em doc que fossem da engine fossem passados para a engine?»
+
+  ⚠️ **ADR-0229's argument was a cost, and the cost was real — it was never the Dev's to weigh against their own
+  decision.** A move across a repository boundary is where confirmations break without a sound (nine did on
+  2026-09-22, with the engine's suite green). That is a reason to move CAREFULLY — copy byte for byte, verify by hash,
+  run the validator with `--repo` on every side before and after — not a reason to move something else.
+
+  📏 **READ, NOT COUNTED.** Every one of the 235 records was classified by one question: «whose repository breaks or
+  must change if this decision changes?». A record that cites a game is usually not that game's; a record that
+  cites the engine is not always the engine's. The answer: **182 are the engine's** (the engine, the contract it
+  publishes, the UI it draws, delivery, accessibility, its tooling and the address of its own records); **44 belong
+  to the whole project** (pillars, compliance, organisation and hosting, licences and art, the catalogue, the
+  project's governance); **6 belong to systems that have no records tree yet** (the labs, the pixel-data pipeline);
+  and **3 read as `game-platformer`'s** and did not move to it here. The full table, one line per record with its
+  reason, is in `docs/2-Architecture/record-ownership-triage.md`.
+
+decision-drivers:
+  - "The Dev decided it: the engine's records live in the engine"
+  - "A record is checked where it lives — the engine's records beside the gates that confirm them, on every engine push"
+  - "Nothing is deleted from the old home before the copy exists, is identical by hash and is green (ADR-0123 driver 5)"
+  - "No citation may be lost: every number stays findable from every tree, with the validator saying what it could not open"
+
+considered-options:
+  - "A · every record that is the engine's moves to the engine; `the-inclusionist-docs` keeps what belongs to the whole project"
+  - "B · ADR-0229 as it stands: the records stay in `the-inclusionist-docs`, and only a game's own move to that game"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "It is what the Dev decided, in their words, twice"
+      - "The engine's records sit beside the code and the gates that confirm them, and its CI checks them without a token"
+      - "A contributor to the engine finds the engine's decisions in the repository they cloned — ADR-0226's own reason"
+    bad:
+      - "🔴 182 records cross a repository boundary at once; every `confirmed-by` and every cross-reference has to survive it"
+      - "Nine supersession pairs end up with one half in each repository, and the validator has to learn to read the other half"
+      - "Two copies of the records tooling, held equal by a drift gate"
+  B:
+    good:
+      - "Nothing crosses a boundary"
+    bad:
+      - "It is not what the Dev decided — it is the misreading this record exists to correct"
+
+decision-outcome:
+  chosen-option:
+    link: "A — the engine's records live in the engine; `the-inclusionist-docs` keeps what belongs to the whole project"
+    justification: |
+      📌 The two options are listed because the format asks what was weighed; the Dev's words had already decided it.
+      Six clauses.
+
+      1. **WHAT MOVES: every record that is the engine's — 182, and this one with them.** The engine, the contract
+         (ADR-0226 §4 stands again: the engine publishes `CreateGameOptions`, and a cartridge conforms to it), the UI the
+         engine draws, delivery, accessibility, the engine's tooling, and the address of the engine's own records
+         (ADR-0123, ADR-0226, ADR-0229 and this record, which are one supersession chain). **The numbers never change.**
+         Two documents go with them: `interface-log.md`, because every entry in it is a two-way door of the engine's
+         interface, and `record-ownership-triage.md`, the triage of the engine's records.
+
+      2. **WHERE: `docs/2-Architecture/adr/` in the engine**, with its index `README.md`. It is the path every record
+         already uses (ADR-0123 §1, ADR-0226 §1), and the engine's `docs/ARCHITECTURE.md` files the architecture phase
+         under `docs/2-Architecture/`, where the tree lived before 2026-09-09. Nothing argues for another place.
+
+      3. **WHAT `the-inclusionist-docs` KEEPS: the records that belong to no single repository**, and the tooling to
+         check them. By family:
+         · pillars, privacy and compliance — ADR-0005, 0006, 0007, 0008, 0010, 0017, 0034, 0037, 0048, 0052, 0056, 0063,
+           0098, 0235;
+         · organisation, hosting, repositories and the catalogue — ADR-0024, 0025, 0026, 0055, 0058, 0066, 0067, 0068,
+           0069, 0070, 0071, 0072, 0073, 0081, 0082, 0097, 0118, 0125, 0152;
+         · licences, art and contribution — ADR-0064, 0078, 0107, 0133;
+         · the project's governance — ADR-0009, 0057, 0126, 0128, 0171, 0172, 0209;
+         · systems with no records tree of their own yet — ADR-0023 (the labs), ADR-0134 to 0138 (the pixel-data
+           pipeline);
+         · ⚠️ and three that read as `game-platformer`'s — ADR-0045, ADR-0060 (the interaction button's jobs live in its
+           `game/run-toggle` and `game/carry`) and ADR-0237 (a folder and a gate inside it). They stay here rather than
+           go to the engine, which is not theirs, until a move to `game-platformer` is made in that repository.
+
+      4. **HOW A CITATION CROSSES A REPOSITORY.** Three mechanisms, all in `scripts/validate-adr.py`:
+         · **every index keeps a row for every record.** A record that lives elsewhere has a row whose link names its
+           repository — `| [ADR-0010](docs:docs/2-Architecture/adr/ADR-0010-….yaml) |` — and that row answers for the
+           number; with that repository's root declared, the validator also opens the file;
+         · **`--repo name=path` declares another repository's root**: the validator reads its tree and its index, so a
+           number found there is a number that exists;
+         · **a `confirmed-by` carries its repository**, as ADR-0123 §2 decided — and a record that now lives with its
+           code writes its paths WITHOUT a prefix, so the moved records' `engine:` prefixes become local paths;
+         · **a supersession pair may cross.** The validator reads the other half from the declared tree and checks the
+           mirror; without that root, it COUNTS the pointer and SAYS so on every run — the rule of ADR-0123 §3, one
+           floor down. A pair whose other half no tree and no row knows still FAILS.
+
+      5. **THE TOOLING EXISTS IN BOTH REPOSITORIES, IDENTICAL, AND A GATE HOLDS IT SO.** `validate-adr.py`, its test,
+         `tempo-dos-registos.py`, `divida-dos-registos.py` and its test: `the-inclusionist-docs` keeps records, so it
+         keeps the tools that check them — «cada repositório precisa ter seus validadores e gates para ADRs». The
+         engine's drift gate compares all five. **The engine's CI validates its own tree on every push, with no token.**
+         With the token that reads `the-inclusionist-docs` it also validates that tree with `--repo engine=.` — the
+         engine is still the only repository that can open the confirmations naming it (ADR-0123 §4) — and runs the
+         drift gate. **`the-inclusionist-docs`' CI validates what it keeps and does not check out the engine** (ADR-0123
+         §5, unchanged).
+
+      6. **A GAME'S RECORDS ARE CHECKED AGAINST THE ENGINE.** `game-ci.yml`'s `adr-records` step checks out the engine,
+         which holds both the validator and an index that answers for every number in the project, and runs the
+         validator with `--repo engine=…`. The token it needs reads `the-inclusionist/the-inclusionist-engine`; it no
+         longer needs `the-inclusionist-docs`.
+
+  consequences:
+    good:
+      - "The engine's records are validated on every engine push, without a token, beside the code they name"
+      - "`the-inclusionist-docs` holds what its name promises: the documents of the whole project"
+      - "The validator now checks a supersession pair across repositories instead of failing it or ignoring it"
+    bad:
+      - "🔴 Two repositories, two trees, and nine supersession pairs across them: without `--repo`, eighteen pointers are counted, not checked"
+      - "Five tooling files exist twice; the drift gate holds them equal only when the engine's CI can read `the-inclusionist-docs`"
+      - "⚠️ Three records that read as a game's wait in `the-inclusionist-docs` for a move that has to be made in the game's repository"
+      - "Every other repository that cited `the-inclusionist-docs` as the home of the engine's records has a sentence to correct"
+
+  confirmation: |
+    Owed by the move itself, and measured before it: the validator in `the-inclusionist-docs` read
+    **235 records · 235 sound**; the engine's copy, run on that tree from the engine, read **235 · 234 · 1** (ADR-0229's
+    unprefixed `scripts/test-validate-adr.py`, which does not exist beside the engine — the move puts it there); and
+    `game-platformer`'s six read **6 · 6** with `--repo docs` and `--repo engine`.
+
+    It is confirmed when four things are true: the engine's tree reads every record sound with `--repo engine=.`, with
+    and without the other roots; `the-inclusionist-docs` reads every record it keeps sound; `game-platformer`'s six
+    read sound against the engine alone; and every copy is byte-identical to its original, by hash, before the
+    original is deleted.
+
+more-information: |
+  What this record does NOT decide: whether ADR-0045, ADR-0060 and ADR-0237 are `game-platformer`'s — the reading says
+  so, and the move belongs to a session that writes in that repository; and whether the systems with no tree (the labs,
+  the pixel-data pipeline) get one. Both are named so they are found by reading rather than by breaking.

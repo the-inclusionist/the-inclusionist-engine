@@ -1,0 +1,180 @@
+---
+metadata:
+  status: "superseded"
+  superseded-by: ADR-0207
+  supersedes-in-part: [ADR-0065]
+  superseded-in-part:
+    - by: ADR-0184
+      what: "ONLY where the runtime comes from: its download-catalogue entries leave, since the game bundles the provider and onnxruntime; piper stays the voice"
+    - by: ADR-0132
+      what: >-
+        the clause naming what would bring sherpa back — «mintplex actually deprecated, a locale piper cannot
+        serve, or the HF_BASE guard blocking a school mirror». The Dev withdrew it hours later: «Deixe isso em
+        ADR para não voltar mais.» 📏 The cost of leaving a door ajar is measured here rather than argued: the
+        sherpa adoption sat `accepted` for two months with ZERO lines written, while three records went on
+        naming a runtime the code did not use. A future change of TTS runtime is a NEW decision on new
+        evidence, not the resumption of a July plan whose motive was measured false. ⚠️ Everything else in
+        this record stands: the runtime is piper, the «discontinued» premise was false, and Approach B is
+        inherited.
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-09: «piper-tts, mediapipe (webgazer não), e LPCP: devem acompanhar a
+       engine.» They named PIPER as the TTS runtime that travels with the engine, while three accepted records
+       said the runtime is sherpa-onnx-wasm. This record settles which, because the two produce different work"
+    - "ADR-0065 §1 — SUPERSEDED IN PART: «THE RUNTIME IS UNCHANGED — sherpa-onnx-wasm, as ADR-0022 chose it».
+       ⚠️ IT IS 0065 AND NOT 0022 THAT THIS RECORD SUPERSEDES, and the distinction was nearly got wrong:
+       ADR-0022 is already `status: superseded` WHOLE by ADR-0065, so superseding part of it would move
+       nothing and the live clause would stay standing in 0065. A supersession has to point at the record that
+       still speaks"
+    - "ADR-0022 — where the choice was originally made, now superseded whole by ADR-0065. Its Approach B shape
+       survives through 0065 and is carried forward here; what falls is «adopt sherpa-onnx-wasm and drop
+       @mintplex-labs»"
+    - "ADR-0124 — the heavy runtimes are the engine's and arrive on INSTALL. It settled OWNERSHIP and DELIVERY
+       and left the VENDOR unstated; this record is the half it did not write"
+    - "issue #129 — «de onde vem o WASM», whose blocking question ADR-0124 answered and whose second question
+       — WHICH runtime — is this one"
+  informed: []
+
+title: The neural TTS runtime is piper, and the sherpa swap is retired because its motive was measured false
+
+context-and-problem-statement: |
+  🔴 THREE ACCEPTED RECORDS SAY ONE THING AND THE DEV SAID ANOTHER, and the difference is not cosmetic — it
+  decides what gets built. ADR-0022's title is «Adopt sherpa-onnx-wasm as the neural TTS runtime», ADR-0065 §1
+  carries that choice forward verbatim, and the Dev's line of 2026-09-09 names **piper-tts**. Under sherpa the
+  work is «build `OfflineTts` by Approach B»; under piper it is «the engine owns the library the cartridge
+  currently opens». Two different pieces of work, and nothing in the tree said which.
+
+  📏 AND THE MOTIVE THAT PRODUCED ADR-0022 WAS MEASURED FALSE ON 2026-09-09 — not by reading a record, which is
+  how it propagated to six places, but by the npm registry and the installed package:
+
+  · «DISCONTINUED»: no version of `@mintplex-labs/piper-tts-web` carries a `deprecated` field, and 1.0.5 was
+    published on 2026-08-11 — after ADR-0022 (2026-07-06) declared it dead.
+  · «ONLY TWO pt-BR VOICES»: the installed 1.0.4's `VoiceId` union carries 118 voices, and among them the
+    FOUR exact voices ADR-0110 guarantees.
+
+  ⚠️ THAT DOES NOT MAKE SHERPA A BAD CHOICE, and this record refuses to pretend it does. ADR-0022's positive
+  arguments stand on their own: active maintenance across many languages and platforms, and a universal loader
+  whose Approach B makes a voice a DATA change rather than a code change. What died is the reason to LEAVE
+  mintplex, and a swap justified by a false premise is a swap nobody should pay for.
+
+  📏 AND NOBODY IS PAYING FOR IT ANYWAY. Measured: the engine has ZERO runtime dependencies and cannot speak
+  neurally at all; the only neural path is the cartridge's door. ADR-0022 was accepted on 2026-07-06 and two
+  months later not one line of sherpa exists. A decision that nobody builds is not a decision in force — it is
+  a plan, and the code has been quietly running the alternative the whole time.
+
+  🎯 SO THE REAL QUESTION IS NOT «WHICH IS BETTER» BUT «WHICH DOES THE ENGINE OWN TODAY», and the Dev answered
+  it with the name of the thing that already works.
+
+decision-drivers:
+  - "A record whose motive was measured false must not keep directing work"
+  - "The engine must be able to speak without a cartridge; that is ADR-0110's promise and it is unbuilt"
+  - "Choosing the runtime that already runs is the shortest path from promise to delivery"
+  - "A swap that has not started in two months is a cost nobody has agreed to pay"
+  - "Whichever wins, the ENGINE owns it — ADR-0124, and that part is not reopened here"
+
+considered-options:
+  - "A · the runtime is piper (`@mintplex-labs/piper-tts-web`), owned by the engine"
+  - "B · the runtime is sherpa-onnx-wasm, as ADR-0022 chose, and the engine builds it by Approach B"
+  - "C · the engine supports both behind one port and picks at runtime"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "📏 It already speaks, in three of six games, and carries the four voices ADR-0110 names."
+      - "The work is ownership, not construction: move the door's implementation into the engine."
+      - "The false premise stops directing work, and the six places that repeated it can be corrected at once."
+    bad:
+      - "🔴 It pins the project to a single small vendor, which is the risk ADR-0022 was right to weigh."
+      - "It brings `onnxruntime-web` — 10.73 MB measured — as a non-optional peer, so the engine pays what ADR-0094 refused to make each cartridge pay."
+      - "Its `HF_BASE` is hard-wired to one Hugging Face repo with a guard rejecting any other host, so a school mirror is unreachable without patching the library."
+  B:
+    good:
+      - "Approach B makes a voice a data change; adding a fifth locale would cost no code."
+      - "Wider language and platform coverage, which a project aiming at 300 games will eventually need."
+    bad:
+      - "🔴 Two months, zero lines. The cost is not the runtime, it is that nobody has started."
+      - "It would be adopted on a comparison whose decisive negative about the alternative is now false."
+  C:
+    good:
+      - "Keeps sherpa reachable without blocking delivery."
+    bad:
+      - "🔴 Two runtimes is two ways to fail offline, and the child gets whichever the machine happened to load."
+      - "The port already exists (ADR-0094); a second implementation behind it is cost with no reader today."
+
+decision-outcome:
+  chosen-option:
+    link: "A — the runtime is piper, owned by the engine"
+    justification: |
+      **The neural TTS runtime is `@mintplex-labs/piper-tts-web`, and the engine owns it.** Three clauses:
+
+      1. **THE SWAP IS RETIRED**, and only the swap — superseded in **ADR-0065 §1**, which is where the clause
+         still speaks, since ADR-0022 is already superseded whole. Its Approach B shape — the engine builds the
+         speaker with NO model embedded, fetches each voice's files at runtime, and treats voices as a data
+         table — is carried forward here, because that shape is what makes ADR-0110's four voices possible at
+         all. What falls is «adopt sherpa-onnx-wasm and drop @mintplex-labs».
+      2. **THE ENGINE OWNS IT, THE CARTRIDGE'S DOOR STAYS.** ADR-0124 already decided ownership and delivery;
+         this record only names the thing. `carregarVozNeural` is not removed — a game may still supply its
+         own — but a game that declares nothing stops being silent.
+      3. 🛑 **THIS CLAUSE WAS SUPERSEDED THE SAME DAY — SEE ADR-0132.** The Dev closed the door it leaves
+         open: «Deixe isso em ADR para não voltar mais.» What follows stays as it was written, because a
+         record is not rewritten; what governs is the supersession.
+         **AND SHERPA IS NOT CLOSED, IT IS UNBLOCKED FROM A FALSE PREMISE.** What would reopen it is written
+         here so the next reader does not have to re-derive it: mintplex being actually deprecated, a locale
+         the project needs that piper cannot serve, or the `HF_BASE` guard blocking a school mirror the
+         deployment requires. Any one of those is a new record, not a revival of this one.
+
+  consequences:
+    good:
+      - "ADR-0110's promise becomes buildable: the engine can speak without a cartridge opening a door."
+      - "The false «discontinued» premise stops directing work, and the places that repeat it can be corrected."
+      - "The four voices `platform/voice-plan` names are the four the library already carries — no mapping layer."
+      - "📏 It also explains the model host: `platform/pesados` fetches from the mirror this library reads, which is why HOST_DOS_MODELOS moved to `diffusionstudio` on the same day."
+    bad:
+      - "🔴 A single small vendor becomes load-bearing for an accessibility feature children depend on."
+      - "`onnxruntime-web` at 10.73 MB is now the engine's to deliver, and install day grows by it."
+      - "The library's host guard means a school mirror needs the library patched, not configured — a real limit in exactly the deployment this project targets."
+      - "ADR-0022's comparison work is spent without being used; if sherpa returns, it returns on new measurements."
+
+  confirmation: |
+    ⚠️ NOT YET BUILT. This record names the runtime; **the wiring is issue #133**, and this paragraph exists so
+    the code cannot pick the other one by inertia — which is exactly how the tree ended up disagreeing with
+    three records for two months.
+
+    📌 THE ISSUE IS NAMED HERE BECAUSE ADR-0126 REQUIRES IT, and the requirement caught this very record:
+    minutes after it was written, `scripts/divida-dos-registos.py` counted it as the ONE record declaring a
+    debt with no issue and no `confirmed-by` — unfollowable from here. That is the fourth home of ADR-0126
+    working on the record that was being written while the rule was still warm.
+
+    The gates this owes:
+
+    · THE ENGINE SPEAKS WITHOUT A CARTRIDGE — a case where no `carregarVozNeural` is supplied and a neural
+      voice still loads. ⚠️ It is the whole promise of ADR-0110 §3 and today it fails, which is the point of
+      writing it before the code.
+    · THE CARTRIDGE'S DOOR STILL WINS — with both present, the game's provider is used. ADR-0094's argument is
+      superseded in part, not deleted, and this is the case that holds the surviving half. 📌 It CANNOT be
+      written before the engine has a runtime of its own, which is why ADR-0124's confirmation records the
+      same gap.
+    · NO SECOND RUNTIME CREEPS IN — an inventory, in the shape of `tests/nada-de-cdn-a-mao.node.test.js`, that
+      the engine names ONE neural TTS vendor. Two runtimes is two ways to fail offline.
+    · AND THE FALSE PREMISE IS GONE FROM THE TREE — a sieve that «DISCONTINUED» no longer appears beside
+      `piper-tts-web` in any file. 📏 It propagated to six places by being read rather than measured; a
+      comment that repeats a dead motive will re-decide this in a year.
+
+more-information: |
+  Supersedes ADR-0065 in part: §1's runtime clause and the instruction it carries forward to drop
+  @mintplex-labs. Everything else in 0065 stands — the locales, the ownership, §5's ban on `ncnn` and `int8`
+  with its measured reason, and §6's voices-as-data.
+
+  ⚠️ AND THE TARGET WAS NEARLY WRONG, which is worth keeping because the mistake is invisible: the obvious
+  move is to supersede ADR-0022, since that is where «adopt sherpa» is written. But ADR-0022 is already
+  `status: superseded` WHOLE by ADR-0065 — superseding part of it would have moved nothing, and the live
+  clause would have stayed standing in a record nobody had touched. **A supersession has to point at the
+  record that still speaks, not at the one that first spoke.**
+
+  ADR-0022's Approach B shape, its comparison method and everything it says about voices-as-data are untouched
+  and carried forward through 0065.
+
+  Deliberately NOT decided here: the ORIGIN that serves the runtime's bytes (ADR-0124 leaves it open because no
+  deploy is connected); whether the library is vendored or fetched; and what happens if a school mirror is
+  required, which the host guard makes a real question rather than a hypothetical.

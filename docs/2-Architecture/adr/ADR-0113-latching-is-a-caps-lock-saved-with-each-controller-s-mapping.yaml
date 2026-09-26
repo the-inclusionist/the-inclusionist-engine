@@ -1,0 +1,203 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/latching-per-transport.node.test.js
+    - engine:tests/latch-scope.node.test.js
+    - engine:tests/latch-sync.node.test.js
+    - engine:tests/settings-mobility.browser.test.js
+    - engine:tests/transport-per-player.node.test.js
+    - engine:app/js/input/latch-sync.ts
+  errata:
+    - date: 2026-09-09
+      what: >-
+        the confirmation opened with «NOT YET BUILT — the rule module exists, the wiring does not», and the
+        wiring exists. MEASURED file by file rather than recalled: the flag is read from the transport in use
+        and the legacy key inherits for every transport
+        (`tests/alternancia-por-transporte.node.test.js`, `tests/latch-scope.node.test.js`); the `altmove`
+        icon is mounted and writes the flag of the transport in use (`tests/pause-icons.*`,
+        `tests/settings-motor.browser.test.js`); the assisted transports refuse with `aria-disabled` and a
+        `.opt-hint` carrying the REASON, which that browser case asserts on `#opt-altmove`; and the per-player
+        enabling is exercised in `tests/entrada-por-jogador.node.test.js`.
+        🎯 THE FIFTH GATE CHANGED SHAPE AND GOT STRONGER, which is why it is worth writing down. It asked for
+        an inventory of READERS of `pl.toggleMove` shrinking to zero; the wiring made that field a DERIVED
+        CACHE, so its readers are the point and they stay. What is asserted instead is the other side —
+        `tests/latch-sync.node.test.js` holds that the engine has exactly ONE writer, because a second writer
+        in any module makes the cache diverge silently. Issue #127 closed on this.
+        Errata and not supersession: nothing was decided differently.
+  supersedes-in-part: [ADR-0109]
+  superseded-in-part:
+    - by: ADR-0115
+      what: >-
+        the assumption that latching is a control EVERY game offers, with a factory default. The Dev revoked
+        their own clause of the same day: «ERREI E ERREI FEIO! Nem todo jogo precisa de alternância, somente os
+        que precisam de tecla segurando. Logo, cabe ao jogo decidir o mapeamento padrão de cada dispositivo, e
+        isso vale para teclas de alternância.» ⚠️ WHAT THIS RECORD GOT RIGHT SURVIVES INTACT — where latching
+        exists, the value belongs to the controller's mapping like a caps-lock, the icon stays reachable, and
+        the four assisted transports cannot switch it off. All three now carry a PRECONDITION instead of being
+        universal: this game holds keys. 📏 And the measurement that made the correction necessary is that the
+        contract could not answer it — `holdsAtOnce()` refuses zero with a reason about reachability, and the
+        quiz declares 1 while holding nothing, so «one at a time» and «one held» are the same number today.
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-08, verbatim: «Da mesma forma que a criança ao mudar um controle vai
+       jogar com o mapeamento padrão ou o último mapa criado por ela para aquele controle, teclas de
+       alternância devem ser entendido como uma espécie de caps-lock que fica salva para aquele controle como
+       parte do mapeamento. isso faz com que ela ainda precise de um botão para ligar e desligar de fácil
+       acesso, sendo apenas impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)»"
+    - "The problem they were answering, in their own framing of issue #127: «Retirar da criança um controle de
+       acessibilidade que ela hoje tem»"
+    - "ADR-0109 — SUPERSEDED IN PART: the clause that latching «stops being a SAVED CHOICE»"
+    - "ADR-0104 §C — latching is saved PER TRANSPORT, always on for eyes/face/gestures/speech. This record
+       re-affirms it and says where the value lives"
+    - "ADR-0077 §2 — already superseded by ADR-0104 §C on the same question"
+    - "ADR-0010 pillar 2 (a11y-first): when aesthetics fight accessibility, accessibility wins"
+    - "`input/latch-scope.ts` (53cb4a8) — built: the key carries the transport in its name, the four assisted
+       transports of a command are always on, and the legacy key inherits for all"
+    - "`input/transporte-em-uso.ts` — built: the automaton that says WHICH transport is in use"
+    - "issue #127 — the walk-latching wiring, blocked on this decision"
+  informed: []
+
+title: Latching is a CAPS-LOCK saved with each controller's mapping — the icon stays, and only the assisted transports may refuse to turn it off
+
+context-and-problem-statement: |
+  🔴 A COLLISION BETWEEN TWO ACCEPTED RECORDS, and it had a child on the losing side.
+
+  ADR-0109 decided that walk-latching FOLLOWS THE DEVICE, and wrote that it «stops being a SAVED CHOICE». Read
+  literally, that removes two things a child has today: the `altmove` icon on the pause bar, which she presses
+  to turn latching on and off, and the key saved per player (`KEYS.toggleMoveP(i)`), which remembers her
+  answer.
+
+  ⚠️ AND THE CHILD IT COSTS IS NAMEABLE. Someone with a motor difficulty who plays on the KEYBOARD and needs
+  latching loses it by ADR-0109's rule 1 — the keyboard is not an assisted transport, so the automaton hands
+  her the default, which is off — and she is left with no way to ask for it back. The record that exists to
+  serve her would have taken it away.
+
+  📏 AND HALF THE COLLISION WAS MADE ON THE SAME DAY, by this project, in both directions at once: ADR-0106
+  stage 1b (`8dcaafc`) gave the engine a DEFAULT writer for `definirAlternanciaDeMarcha` — entrenching the
+  saved-per-player model — while ADR-0109 retired it, and neither record mentions the other. The automaton
+  (`input/transporte-em-uso`) is built and measured, and NOBODY READS IT: `game/physics.ts:189` and
+  `game/run-toggle.ts:66` still read `pl.toggleMove`.
+
+decision-drivers:
+  - "Pillar 2: an accessibility control a child uses today is not removed to make a model tidy"
+  - "A child who needs latching on a keyboard must have somewhere to ask for it"
+  - "A child on eyes/face/gestures/speech must not be able to switch off the thing that makes her input work"
+  - "One answer per question: two places that decide latching is the collision this record closes"
+  - "The mechanism must already exist, or the decision buys a rewrite"
+
+considered-options:
+  - "L1 · Literal ADR-0109 — the automaton decides, the icon and the saved key are removed"
+  - "L2 · The automaton gives the per-match DEFAULT and the saved choice overrides it"
+  - "L3 · Defer §C and keep the rule written but unwired"
+  - "L4 · Latching is part of the CONTROLLER'S MAPPING, like a caps-lock"
+
+pros-and-cons-of-the-options:
+  L1:
+    good:
+      - "One answer, no stored state, and the automaton is already built and measured."
+      - "«The adjustment follows the device» is exactly what a child moving between a webcam and a keyboard experiences."
+    bad:
+      - "🔴 Removes a control a child uses today — the failure the Dev named in one sentence."
+      - "A keyboard player who needs latching has no way to ask for it: rule 1 hands her the default and there is no icon."
+      - "Discards every saved value without migration, which is the adjustment of every child who has already played."
+  L2:
+    good:
+      - "Keeps the icon and the saved value, and the automaton still supplies a sensible default."
+      - "Rule 4 can disable the icon with a reason where latching is mandatory."
+    bad:
+      - "⚠️ Leaves TWO sources of truth — a per-match default and a per-player saved value — and the record has to say which wins in every case."
+      - "The saved value is still global to the player, so switching device does not switch the setting; the collision is softened, not closed."
+  L3:
+    good:
+      - "Costs nothing and breaks nothing; `input/latch-scope` stays written and aferido."
+    bad:
+      - "The rule keeps having no consumer, and issue #127 stays blocked."
+      - "`game/physics.ts` keeps reading `pl.toggleMove`, so the model in the code is the one the records retired."
+  L4:
+    good:
+      - "One source of truth, and it is the one the child already understands: change controller, get that controller's setup."
+      - "The keyboard player keeps her control; the webcam player cannot break her own input."
+      - "📏 The mechanism EXISTS — `input/latch-scope` already writes the key with the transport in its name and already inherits the legacy value."
+      - "Closes the ADR-0109 / ADR-0106-1b collision without discarding either record's useful half."
+    bad:
+      - "Two children sharing one keyboard share one flag: a transport is a device, not a seat."
+      - "A child who turns it on with a gamepad and then plays on the keyboard finds it off — correct, and possibly read as forgetting."
+      - "The two readers in the cartridge still have to migrate; the decision does not do that work."
+
+decision-outcome:
+  chosen-option:
+    link: "L4 — latching belongs to the controller's mapping, like a caps-lock"
+    justification: |
+      **L4.** Latching is not a global preference and not a per-match default: it is **a flag that belongs to a
+      controller's mapping**, saved and restored exactly like the key map itself.
+
+      The rule, in the Dev's own frame: when a child changes controller she plays with that controller's default
+      map or with the last map SHE made for it. Latching follows the same law. It is a caps-lock — a sticky mode
+      that belongs to the device it sticks on.
+
+      Four clauses:
+
+      1. **THE VALUE IS SAVED PER TRANSPORT, AS PART OF THAT TRANSPORT'S MAPPING.** Not per player-and-global,
+         and not per match. Changing transport swaps the flag the way it swaps the key map.
+      2. **THE ICON STAYS.** She still needs a button to turn it on and off, within easy reach — the Dev said so
+         in the same sentence that decided the storage. Removing it was never the point of ADR-0109.
+      3. **THE ASSISTED TRANSPORTS MAY NOT TURN IT OFF.** On eyes, face, gestures and speech, latching is what
+         makes the input work at all; the control is DISABLED there, with the reason said, not hidden.
+      4. **THE AUTOMATON KEEPS ITS JOB, WHICH IS SMALLER THAN IT LOOKED.** `input/transporte-em-uso` answers
+         WHICH transport is in use. It no longer decides whether latching is on; it decides WHOSE flag is read.
+
+      ⚠️ WHAT THIS SUPERSEDES IS ONE CLAUSE, NOT THE RECORD. ADR-0109's four rules about which transport is in
+      use are untouched and are what makes clause 1 decidable — in particular rule 3 («pressing a key returns
+      the keyboard without switching»), which is why the edge had to carry its origin. What falls is the
+      sentence that latching «stops being a SAVED CHOICE». It is a saved choice; it is saved in a different
+      place.
+
+      📌 AND THE MECHANISM IS ALREADY BUILT, which is what makes this cheap. `input/latch-scope.ts` (`53cb4a8`)
+      already writes the key with the TRANSPORT IN ITS NAME, already forces the four assisted transports of a
+      command on, and already inherits the legacy key for all of them so no child loses the adjustment she has.
+      That module was written for ADR-0104 §C and this record is what it was waiting for.
+  consequences:
+    good:
+      - "The child on a keyboard keeps the control she has today, and the child on a webcam cannot break her own input"
+      - "The collision between ADR-0109 and ADR-0106 stage 1b is closed — there is one place that decides"
+      - "`input/latch-scope` stops being a rule with no consumer; the wiring of issue #127 is unblocked"
+      - "«Change controller, get that controller's setup» becomes one law instead of two (key map, and now latching)"
+    bad:
+      - "Two children sharing one keyboard share one flag: the mapping is per transport, and a transport is a device"
+      - "A child who turns latching on with a gamepad and then plays on the keyboard finds it off, correctly, and may read that as the game forgetting rather than as the controller changing"
+      - "`game/physics.ts` and `game/run-toggle.ts` read `pl.toggleMove` today; the migration is real work in the cartridge"
+  confirmation: |
+    ⚠️ NOT YET BUILT — the rule module exists, the wiring does not. Written first so the wiring has something
+    to be measured against, and so the code cannot re-decide this one convenient field at a time.
+
+    The gates it owes:
+
+    · THE FLAG IS READ FROM THE TRANSPORT IN USE — a case where the same player, with two transports, gets two
+      answers, and switching transport switches the answer WITHOUT any storage write. ⚠️ Not a case that calls
+      a function twice: it has to be a SEQUENCE, because «change controller and the setting changes with it»
+      is meaningless without having changed controller. ADR-0109's own gate learned this.
+    · THE ICON IS STILL THERE AND STILL WORKS — a case that `altmove` is mounted on the bar and that pressing
+      it writes the flag OF THE TRANSPORT IN USE, not a global one.
+    · THE ASSISTED TRANSPORTS REFUSE, WITH A REASON — `aria-disabled` and a `.opt-hint` naming why, in the
+      shape ADR-0076's simulation refusal already took (`ui/simulation-refusal`, `2144da1`). ⚠️ The reason is
+      a FACT about the transport, never a reprimand: «gaze control needs latching to work» and not «you cannot
+      turn this off».
+    · A CHILD'S EXISTING VALUE SURVIVES — the legacy key inherits for every transport, asserted rather than
+      assumed. This is the clause that decides whether the decision costs a real child her adjustment on the
+      day it ships, and `input/latch-scope` already implements it.
+    · NOBODY READS `pl.toggleMove` ANY MORE — an INVENTORY sieve that SHRINKS, in the shape of
+      `tests/fronteira-de-entrada.node.test.js`, because the two readers live in the cartridge and a flat
+      prohibition would be red for months and get switched off.
+
+more-information: |
+  Supersedes ADR-0109 in part: only the clause that latching stops being a saved choice. Its four rules about
+  the transport in use are what this record depends on.
+
+  Re-affirms ADR-0104 §C, which had already decided «saved per transport», and adds what §C left open: WHERE
+  the value lives (with the mapping), and that the control REMAINS reachable.
+
+  Deliberately NOT decided here: whether two children on one keyboard can have separate flags (a transport is
+  a device, and «seats on a keyboard» is the open half of issue #112); how the icon says «this controller»
+  rather than «this game» to a child; and the migration order for `game-platformer`'s two readers.

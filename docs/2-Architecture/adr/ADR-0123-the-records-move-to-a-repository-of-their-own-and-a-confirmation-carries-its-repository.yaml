@@ -1,0 +1,198 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0068]
+  superseded-in-part:
+    - by: ADR-0226
+      what: "ONLY the CONCENTRATION — one tree for the whole project. Every repository now keeps the records about itself and the engine's return to the engine. The other three clauses stand and matter more under N trees: a confirmation carries its repository, what cannot be opened is counted and SAID on every run, and the validator and the gates run in every repository"
+    - by: ADR-0242
+      what: "Clause 1's address, for the ENGINE's records: they live in the engine's own `docs/2-Architecture/adr/`, and `the-inclusionist-docs` keeps only what belongs to the whole project. The path, the qualified `confirmed-by` (clause 2), the count of what was not checked (clause 3) and the gates in every repository (clauses 4 and 5) stand"
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-09: «Que tal termos um repositório próprio somente para a árvore de ADR
+       que é usada por todo o projeto?», and then, with the measurement in front of them and against this AI's
+       recommendation of a partial move: «https://github.com/the-inclusionist/the-inclusionist-docs criados.
+       Vamos de A.»"
+    - "ADR-0068 §5 — SUPERSEDED IN PART: «A game repository has NO `adr/` folder and never will. The records
+       stay in the engine, where the validator, the eight gate checks and the supersession graph already are»"
+    - "ADR-0067 §5 — a repository exists when a RECORD declares its address; this is that record"
+    - "ADR-0057 — a record changes by supersession; errata is the only edit in place"
+    - "ADR-0058 — five systems, nine repositories: the project this tree now serves"
+    - "issue #101 — seven records decide things that are not the engine's, and the migration was blocked
+       because no destination ran the validator"
+    - "ADR-0053 — the annual report is a CI gate or it is nothing: the argument this record has to answer"
+  informed: []
+
+title: The records move to a repository of their own — and a confirmation carries the repository that holds it
+
+context-and-problem-statement: |
+  📏 THE MEASUREMENT THAT PRODUCED THE QUESTION. Issue #101 has been blocked for days on one fact: the four
+  repositories that were supposed to receive records have **no ADR tree and do not run the validator**. A
+  record migrated today would leave a place where it is checked on every push and arrive somewhere it is a
+  file. That is the defect ADR-0053's own title refuses — «a promise without execution is a promise that
+  decays».
+
+  ⚠️ AND ADR-0068 §5's ARGUMENT WAS NEVER «THE ENGINE» — IT WAS «ONE PLACE». Its words: *«Three hundred places
+  to decide architecture is three hundred places for a decision to contradict this one quietly, and the whole
+  point of ADR-0057 is that a contradiction has to be visible.»* The engine was the incumbent, not the
+  conclusion. Today the project is five systems and nine repositories, and the engine is demonstrably the
+  wrong home for records about login, an adult's panel and legal basis.
+
+  📏 MEASURED BEFORE ANSWERING, by running the validator from OUTSIDE the tree: **122 records, 113 sound, 9
+  with problems** — and the nine were exactly the nine carrying `confirmed-by`. No record was wrong. Checking
+  the FORM travels; checking that a record was BUILT did not, because it resolved paths against the caller's
+  working directory.
+
+  🔴 THIS AI RECOMMENDED MOVING ONLY THE CROSS-PROJECT RECORDS. The Dev chose to move the whole tree, and the
+  record says so plainly: the recommendation was «B+C», the decision is «A».
+
+decision-drivers:
+  - "One place for the decisions, which is ADR-0068 §5's own argument taken to its end"
+  - "A record must be checked where it lives, or it is a file"
+  - "A record that spans two products has no home today — 0048 and 0052 each have two, and two homes are two records"
+  - "The engine must stop being the default home for decisions that are not about the engine"
+  - "Nothing may be deleted from the old home before the new one exists and is green"
+
+considered-options:
+  - "A · the WHOLE tree moves — every record, the validator, the index"
+  - "B · only the cross-project records move, plus the tooling; engine records stay beside the engine's gates"
+  - "C · only the TOOLING moves (validator, schema, reusable workflow); every record stays where its gate runs"
+  - "D · nothing moves; each destination grows its own tree when it needs one"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "One tree, one validator, one supersession graph — the reader never asks which repository decided something."
+      - "Issue #101 stops being a migration problem: there is no per-destination precondition left to satisfy."
+      - "A record with two products has an unambiguous home, which it does not have today."
+      - "📏 The form check travels intact: 113 of 122 passed from outside before any change, and 122 after."
+    bad:
+      - "🔴 70 of the 122 records name a path inside the engine; the tree is deeply anchored to code it no longer sits beside."
+      - "The 9 records with `confirmed-by` (24 paths) can only be checked when the engine's root is passed in — and the docs repository's own CI has no engine checkout."
+      - "The daily habit changes: a decision is no longer one folder away from the code it governs."
+  B:
+    good:
+      - "Moves 7 records instead of 122, and every record stays beside the gate that confirms it."
+      - "Answers the two-homes question without touching the engine's own records."
+    bad:
+      - "Two trees, and the boundary is a judgement per record — a wrong judgement puts a record where nobody reads it."
+      - "Two validators, or one that has to be told which tree it is looking at."
+  C:
+    good:
+      - "Cheapest: the validator is already portable, and the destinations could run it without owning tooling."
+      - "The `game-ci.yml` shape, already proven: one file, called by everyone."
+    bad:
+      - "Does not answer where a record with two homes lives, which is the thing #101 is stuck on."
+  D:
+    good:
+      - "No work, no migration risk."
+    bad:
+      - "Leaves the engine deciding login and legal basis, which §5 of issue #101 names as the criterion for done."
+      - "Every new destination repeats the same precondition problem."
+
+decision-outcome:
+  chosen-option:
+    link: "A — the whole tree moves to `github.com/the-inclusionist/the-inclusionist-docs`"
+    justification: |
+      **Every record moves to `the-inclusionist-docs`, and the validator moves with them.** Four clauses:
+
+      1. **THE ADDRESS IS DECLARED HERE**, which is what ADR-0067 §5 requires of a repository that exists:
+         `github.com/the-inclusionist/the-inclusionist-docs`, private like the rest of the organisation until
+         the ato. The tree keeps the path it had — `docs/2-Architecture/adr/` — so that every link written in
+         a hundred and twenty-two records keeps working, and so the other SDD phases can follow it later
+         without a second reorganisation. The repository is named for DOCUMENTS, not for records: the ADR tree
+         is its first tenant, not its only one.
+      2. **A CONFIRMATION CARRIES ITS REPOSITORY.** `confirmed-by` entries become `engine:app/js/x.ts` — what
+         confirms the record, and where that artefact lives. Unqualified paths still resolve against the
+         local root, so a record confirmed by something in this repository writes what it always wrote.
+      3. 🔴 **WHAT IS NOT CHECKED IS COUNTED AND SAID, ON EVERY RUN.** Without the engine's root, the 24 paths
+         cannot be opened, and the validator prints «24 `confirmed-by` paths in `engine` NOT checked». A sieve
+         that checks nothing and prints «all sound» is worse than no sieve — it is the false report this
+         project has caught three times. Passing `--repo engine=<path>` checks them for real, and it was
+         proved to: 122 sound with the root, 9 failing with a wrong one.
+      4. 🔴 **THE TREE IS CONCENTRATED; THE VALIDATOR AND THE GATES ARE NOT.** The Dev's correction, in their
+         words: *«ADR foi concentrada, validador não precisa ser»* and *«Cada repositório precisa ter seus
+         validadores e gates para ADRs»*. So every repository keeps an `adr` job of its own, and the engine's
+         job is the one that can do what this repository cannot: it has the CODE, so it checks the
+         confirmations that name it — `--repo engine=.` against the tree it checks out from here.
+
+         ⚠️ THIS OVERRULES AN OBJECTION OF THIS AI, AND THE REASON IT LOSES IS WORTH KEEPING. I argued that a
+         tool copied into N repositories drifts, which is ADR-0068 §4's argument for `game-ci.yml`. The Dev's
+         rule is stronger where it collides: **a gate that lives elsewhere is a gate that does not run here**,
+         which is ADR-0053's «a promise without execution decays» applied to the tool instead of the record.
+         📌 The two survive together in the shape §4 already proved: the GATE is local to every repository —
+         it reddens there, on their push — and the SCRIPT it runs comes from this one, so there is one
+         implementation and N gates rather than N copies.
+
+      5. **THIS REPOSITORY'S OWN CI DOES NOT CHECK OUT THE ENGINE**, deliberately, and it is the mirror of
+         clause 4 rather than an exception to it. A record naming an engine artefact that disappeared is the
+         ENGINE's breakage, and it must redden where somebody can fix it. Making this repository red on
+         another repository's rename is the coupling ADR-0121 was written about, pointing the other way.
+
+      ⚠️ AND THE ORDER IS PART OF THE DECISION: the tree is created here FIRST and proved green; only then is
+      it removed from the engine, in its own commit, leaving a pointer. Issue #101 states the rule and it
+      applies to this migration too — «não apagar daqui antes de o destino existir. Um ADR aceito que some sem
+      sucessor é pior que um ADR no repositório errado».
+  consequences:
+    good:
+      - "Issue #101's blocking precondition disappears: there is one destination and it runs the validator"
+      - "A record that spans two products has one home instead of two"
+      - "The engine stops being the default home for decisions that are not about the engine"
+      - "The supersession graph is complete in one place — the property ADR-0057 depends on"
+    bad:
+      - "🔴 The 24 `confirmed-by` paths are unchecked in THIS repository's CI, and the count is printed rather than fixed — the engine's own job is what checks them"
+      - "The engine keeps its `adr` job but loses the habit of reading a decision one folder from the code: the tree arrives by checkout, not by `cd ..`"
+      - "70 records name engine paths in prose; those were never checked and still are not"
+      - "⚠️ Two repositories now have to be pushed together when a decision and its code land in the same hour"
+      - "⚠️ Every repository's `adr` job depends on being able to check out THIS one — a private repository, so the token has to reach it"
+  confirmation: |
+    ✅ PROVED BEFORE THIS RECORD WAS WRITTEN, by exit code, three runs:
+
+    · in this repository, no `--repo` → 122 records, 122 sound, exit 0, plus the line naming 24 unchecked;
+    · with `--repo engine=<path>` → 122 sound, exit 0 — every confirmation opened across repositories;
+    · with a wrong root → 9 records fail, each message naming the root it measured against.
+
+    What this record owes:
+
+    · **THE REMOVAL FROM THE ENGINE, in its own commit**, with a pointer left behind and its `adr` job
+      REWIRED — not deleted (clause 4): it stops validating a local folder and starts checking out this tree
+      and running `--repo engine=.`, which is the only place the 24 confirmations can actually be opened.
+      Until that lands the tree exists twice, and two copies of a record are two records — the state this
+      decision exists to end.
+    · ✅ **A GATE THAT THE UNCHECKED COUNT IS PRINTED — PAID** (`scripts/test-validate-adr.py`, in this
+      repository's CI). Four assertions over a temporary fixture: the sieve reads it at all; without a root
+      it is sound AND says what it skipped, naming the repository; with the right root it checks for real and
+      stops warning; with a wrong root it FAILS and the message names both the path and the root it measured
+      against. Three mutations confirmed — delete the warning loop, turn the skip into a failure (a gate that
+      can never be green is a gate somebody switches off), and drop `--repo` from the parser.
+    · ✅ **THE DRIFT BETWEEN THE TWO COPIES OF THE VALIDATOR — PAID** (`tests/validador-sem-deriva.node.test.js`
+      in the engine, `9d4a5e3`). Clause 4 buys two copies of one tool, and 📏 they diverged on DAY ONE: `--repo`
+      was added beside the records while the engine's copy still had only `--root`, and the first
+      cross-repository run returned nine false failures. ⚠️ The defect is not the stale copy, it is the
+      VERDICT — the same tree green in one repository and red in the other, with nothing to say which is
+      right. Two cases, vacuum first (emptying one copy fails BOTH, instead of comparing two empty reads).
+
+    · ⚠️ **AND THE ONE THIS RECORD CANNOT PAY: nothing checks that `engine:` still names a real repository.**
+      If the engine is renamed, the prefix rots and the validator reports «not checked», which reads exactly
+      like the normal case. It is named here so it is found by reading rather than by breaking.
+
+      ✅ **CORRECTION, SAME DAY: THE SENTENCE ABOVE WAS BADLY PUT, AND THE GATE IS PAID.** A prefix is not a
+      repository's name on GitHub — it is a LABEL somebody binds to a root with `--repo`. Renaming the
+      repository does not rot it. What rots it is a label no `--repo` ever supplies, and that case wears the
+      uniform of the normal one: `enigne:app/js/x.ts` is counted as «not checked», which is what a run without
+      a root prints every day. 🎯 So the validator now holds a DECLARED list of prefixes: a known one without
+      a root is counted, an unknown one is a PROBLEM. Mutation confirmed — with the list removed, a record
+      carrying a typo reports «3 records · 3 sound · 0 with problems», the typo living inside the message that
+      exists to say everything is fine. ⚠️ The wrong sentence stays: it was true of what I believed that
+      morning, and the correction is what the reader needs beside it.
+
+more-information: |
+  Supersedes ADR-0068 in part: §5's clause that the records stay in the engine. Everything else in that record
+  — one repository per game, no `adr/` folder in a game, the catalogue that chooses instead of holding — is
+  untouched, and §5's ARGUMENT is what this record executes rather than contradicts.
+
+  Deliberately NOT decided here: whether the other SDD phases (`1-Discovery`, `3-Sprint-Design`, `6-DevOps-SRE`
+  and the rest) follow the records into this repository; whether the docs CI should one day check out the
+  engine to close the 24; and what happens to `docs/compliance/` and the annual-report gate, which ADR-0053
+  anchors to the engine by three artefacts and one npm script.

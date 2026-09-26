@@ -1,0 +1,62 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0001]
+  confirmed-by:
+    - engine:tests/fractional-scale.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #175 closed, `engine:e038a18`): on a fractional display scale the region never goes under 2 CSS px a pixel, `--ui-fs` holds 16 px."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0001 — the region is an integer multiple of 320×180 in REAL pixels, never under 2×"
+    - "ADR-0163 — the engine forces the resolution: ≥640×360, text ≥16 px, targets ≥44 px, in CSS pixels"
+    - "WCAG 2.2 — 1.4.4 Resize Text (AA) and 2.5.8 Target Size (AA) are stated in CSS pixels"
+  informed: []
+
+title: On a fractional display scale, the 16 px floor wins over the whole pixel
+
+context-and-problem-statement: |
+  📏 Measured on 2026-09-13 with `ui/layout.escalaDoPalco`: on a window at the 640×360 minimum, a fractional device pixel
+  ratio makes the two records disagree. At 110% the integer choice gives k = 1.82 CSS px per logical pixel — text 14.55 px
+  and a region of 582×327. At 125% the minimum of 2× rounds up to 3 device pixels, k = 2.4, and the region (768×432) is larger
+  than the window, which cuts it. A larger window at the same scale (1366×768 at 110%, k = 3.6) meets both.
+
+  Asked which rule yields when both cannot hold, the Dev: «Piso de 16px (WCAG 2.2 AA é quem decide).»
+
+decision-drivers:
+  - "D1 — WCAG 2.2 AA decides: text and targets are measured in CSS pixels"
+  - "D2 — the whole pixel stays wherever it can hold"
+
+considered-options:
+  - "A — the whole pixel wins: text under 16 px and a region cut on the minimum window"
+  - "B — the 16 px floor wins: the scale never goes under 2 CSS px per logical pixel, whole or not"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Pixel art stays crisp on every window. ❌ Text under the AA floor and a cut region on the smallest windows.
+  **B.** ✅ AA holds on every window. ❌ On the minimum window at a fractional scale the pixels are not whole, and may blur.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the 16 px floor wins"
+    justification: |
+      1. **The scale is the largest whole multiple in real pixels that fits, as ADR-0001 says, unless that gives under 2 CSS px
+         per logical pixel; then it is exactly 2 CSS px**, whole in real pixels or not: 640×360 CSS, text 16 px, targets 44 px.
+      2. **The minimum of 2× is counted in CSS pixels, never rounded up in device pixels**, so the region never outgrows a
+         window that fits 640×360.
+      3. Everywhere the whole multiple already reaches 2 CSS px, nothing changes.
+
+  consequences:
+    positive:
+      - "Text and targets meet WCAG 2.2 AA on the minimum window at every display scale"
+    negative:
+      - "Pixel art may blur on the minimum window at a fractional scale"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #175, closed). Gates:
+    at 640×360 with device pixel ratios 1.1, 1.25 and 1.75 the region is 640×360 CSS, `--ui-fs` is 16 px and the region fits
+    the window; at 1366×768 and 1920×1080 the whole multiple is unchanged.
+
+more-information: |
+  The rounding up of the 2× minimum in device pixels is what cut the region at 125%; it is part of what this record removes.

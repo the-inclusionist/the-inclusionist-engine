@@ -1,0 +1,66 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "`engine:docs/2-Architecture/STRIDE.md` — the client pass: four third-party hosts reached from the child's device"
+    - "issues #168 (sha256 before keeping), #169 (WebGazer from the checked cache), #170 (the Content-Security-Policy)"
+    - "ADR-0010 pillars 4 and 8 — the local law of the deployment, and the PWA first day online then offline"
+    - "ADR-0110, ADR-0116, ADR-0117 — the heavy files descend at install, once"
+  informed: []
+
+title: The heavy files are packaged with the delivery and served from its own origin
+
+context-and-problem-statement: |
+  📏 Measured on 2026-09-13: the neural voices (four of about 63 MB each), the vision runtime and models (about 32 MB), the ONNX
+  runtime (11.2 MB) and WebGazer (1.9 MB) descend at install from Hugging Face (redirected to `*.hf.co`), jsDelivr, Google
+  Storage and webgazer.cs.brown.edu. Each file is checked by sha256, and the school's IP reaches four companies.
+
+  Offered two ways — Cloudflare R2 on the project's address with the official servers as fallback — the Dev agreed, and then:
+  «Concordo, mas e quando os servidores forem da prefeitura? isso deve ser empacotado e pronto.»
+
+decision-drivers:
+  - "D1 — A DELIVERY THAT RUNS WHERE IT IS INSTALLED: a municipality's server, a school's network, the project's own site"
+  - "D2 — NOTHING OF THE CHILD'S DEVICE REACHES A COMPANY THE DEPLOYMENT DID NOT CHOOSE"
+
+considered-options:
+  - "A — third-party hosts at runtime, checked by sha256 (today)"
+  - "B — a mirror on the project's address, with the official servers as fallback"
+  - "C — packaged with the delivery, served from its own origin; the official servers only at build time"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No hosting. ❌ Four companies see the school; a filtered network blocks the voices.
+  **B.** ✅ One company in the normal path. ❌ A municipality's server would still depend on the project's mirror, and the
+  fallback brings the four companies back.
+  **C.** ✅ The delivery is whole wherever it is installed; the Content-Security-Policy names only the origin. ❌ Every
+  delivery carries about 300 MB of files to serve, and a static host that limits file size needs its own route for them.
+
+decision-outcome:
+  chosen-option:
+    link: "C — packaged with the delivery, served from its own origin"
+    justification: |
+      1. **Voices, vision models and runtimes are part of the delivery**, served from the game's own origin — never fetched
+         from a third party by the child's device.
+      2. **The pinned upstream addresses become build-time sources**: a build step fetches each one, checks its sha256 (#168),
+         and writes it into the delivery. A file whose hash does not match stops the build.
+      3. **The download at install stays** (ADR-0110): the files descend from the origin into the checked cache the first day,
+         and play offline afterwards.
+      4. **The Content-Security-Policy names the origin** for scripts and connections (the four hosts of #170 leave it).
+
+  consequences:
+    positive:
+      - "A municipality's or a school's server needs nothing outside itself"
+      - "The school's IP reaches no company because of the heavy files"
+    negative:
+      - "About 300 MB in every delivery that offers voices and vision"
+      - "The project's Cloudflare Pages site limits a file to 25 MiB: the voices need a route on the same origin (an R2 bucket
+         bound to a path), decided when that site is set up"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #173** in `the-inclusionist-engine`. Gates: no runtime fetch address outside the origin; the
+    build refuses a file whose sha256 differs; the policy names no third-party host.
+
+more-information: |
+  This record answers the question left open in the report of the STRIDE client pass (#170): who the child's device may
+  contact without an adult being told. For the heavy files, the answer is nobody but the origin.

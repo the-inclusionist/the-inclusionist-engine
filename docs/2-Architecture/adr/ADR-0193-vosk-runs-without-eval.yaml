@@ -1,0 +1,82 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/voice-map.node.test.js
+    - engine:tests/voice-listener.node.test.js
+    - engine:tests/vosk-runtime.node.test.js
+  errata:
+    - date: 2026-09-14
+      what: '📏 THE LICHESS BUILD FAILS, AND VOSK IS COMPILED HERE. Measured 2026-09-14 with the page and its worker under the engine''s policy: `@lichess-org/vosk-browser` 0.0.3 still evaluates text — embind''s `craftInvokerFunction` builds invokers with `newFunc(Function, args)` — and the model never loads (engine#184). Shown the choice between compiling Vosk with `-sDYNAMIC_EXECUTION=0` and leaving commands to Web Speech meanwhile, the Dev: «Pode baixar e compilar.» Vosk is compiled here with `-sDYNAMIC_EXECUTION=0` (§2''s first route), the Emscripten SDK and Vosk/Kaldi toolchain downloaded for it.'
+    - date: 2026-09-14
+      what: '📌 THE BUILD KEPT, left open by §2 («compiled here or taken from a build already published»). The Dev, 2026-09-14: «vamos usar o do Lichess, tem permissão para baixar, um modelo de tamanho small que não erra comandos e nomes de menus é justamente o que precisamos como controle». The engine keeps `@lichess-org/vosk-browser` (0.0.3, Apache-2.0; its commit «untangle vosk-browser emscripten. now we can use wasm-unsafe-eval») with Vosk''s small models, for commands and menu names — once it loads under the engine''s policy with no violation. Issue #184.'
+    - date: 2026-09-13
+      what: "📌 THE FIRING MODE, left open by this record. Measured on the test page with the Dev's recordings: firing at the end of the utterance reached the game 1.3–1.4 s after the word, with no false command over 25.6 s of reading; firing on the partial hypothesis, 0.25–0.45 s, with one. The Dev, after trying both live: «Disparar no parcial ficou melhor. Ambos não entendem tudo que é dito.» Commands fire on the partial hypothesis; neither mode understood every word said."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0189 — Vosk in WASM with the game's words as grammar; its first go/no-go is «the library loads under the engine's CSP»"
+    - "ADR-0190 — Moonshine and Whisper beside Vosk; both built and tested in a game"
+    - "ADR-0170, ADR-0192 — the engine's Content-Security-Policy and cross-origin isolation"
+    - "📏 Lab, 2026-09-13: `vosk-browser` 0.0.8 under the engine CSP throws `EvalError` — its worker evaluates text as code
+       (embind's `createNamedFunction` among them), and it fetches its own `.wasm` as a `data:` URL, which `connect-src` refuses.
+       With `createNamedFunction` patched out, a second evaluation remained that a text search does not find"
+    - "📏 Lab, 2026-09-13, on the Dev's recordings: Vosk small pt with a grammar recognised 6 of 6 spoken commands and raised no
+       command over 25.6 s of a read poem; Whisper tiny transcribed the same commands as open speech and missed most; on the poem
+       Vosk small pt read 34.6% WER and Whisper tiny 42.3%"
+  informed: []
+
+title: Vosk runs without eval — an isolated page tests it, and a kept Vosk is rebuilt
+
+context-and-problem-statement: |
+  ADR-0189's first go/no-go failed: `vosk-browser` cannot run under the engine's policy, because it evaluates text as code. Three
+  ways were shown to the Dev — `'unsafe-eval'` in the policy, a patched worker, or an isolated page — and a fourth, rebuilding Vosk
+  with Emscripten's `-sDYNAMIC_EXECUTION=0`, which emits no evaluation of code. The Dev, 2026-09-13: «Vamos de página isolada só
+  para teste. Se ele se mostrar superior em algum aspecto, não quero usar unsafe eval nem remendar, quero recompilar o vosk com a
+  flag do Emscripten que desliga a avaliação de código (-sDYNAMIC_EXECUTION=0), ou pegar no huggingface esse trabalho já feito.»
+
+decision-drivers:
+  - "D1 — THE GAME'S PAGE KEEPS ITS POLICY: no evaluation of code where a game's or a cartridge's text lives"
+  - "D2 — WHAT SHIPS IS BUILT, NOT PATCHED: a hand-patched bundle is redone at every release and hides what it changed"
+
+considered-options:
+  - "A — `'unsafe-eval'` in the engine's policy"
+  - "B — patch `vosk-browser`'s worker"
+  - "C — an isolated page with its own policy, for the test only"
+  - "D — Vosk rebuilt with `-sDYNAMIC_EXECUTION=0`, or such a build already published"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to build. ❌ Every game page may evaluate text, in every delivery, microphone or not.
+  **B.** ✅ The policy stays. ❌ An evaluation still unfound; a fork of a 4.3 MB bundle redone at every release.
+  **C.** ✅ The game page's policy unchanged; `vosk-browser` as published. ❌ A second document and a message bridge; the
+  evaluating page must never reach a delivery.
+  **D.** ✅ Runs under the engine's policy as is. ❌ An Emscripten and Kaldi build to set up, unless a build is found done.
+
+decision-outcome:
+  chosen-option:
+    link: "C to test, D to keep"
+    justification: |
+      1. **The test runs Vosk in an isolated page**: same origin, its own policy admitting evaluation, holding no game or
+         cartridge text, embedded in a game page that keeps the engine's policy; it sends the recognised word by message. It is a
+         test instrument and ships in no delivery.
+      2. **If Vosk proves superior in any aspect** — commands or reading — the engine ships a Vosk **built with
+         `-sDYNAMIC_EXECUTION=0`**, compiled here or taken from a build already published (Hugging Face among the places to look),
+         running under the engine's policy unchanged.
+      3. **Never `'unsafe-eval'` in the engine's policy, and never a patched bundle.**
+      4. If Vosk is superior in nothing, the recognisers are those of ADR-0190.
+
+  consequences:
+    positive:
+      - "The comparison runs in a game with the game's page as it ships"
+    negative:
+      - "Keeping Vosk costs a build of Vosk (or finding one), before any child uses it"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #184** in `the-inclusionist-engine`. Gates: the isolated test page drives a game by voice with the
+    game page's policy unchanged; the comparison with Moonshine/Whisper written with its numbers; if kept, the rebuilt Vosk loads
+    under the engine's policy with no violation and its `.wasm` is a checked heavy file.
+
+more-information: |
+  What is measured so far favours Vosk for commands, where a grammar restricts what it can hear, and is thin for reading: one
+  adult reading, Vosk's small Portuguese model against Whisper's smallest; the larger Whisper models and Vosk's large Portuguese
+  model are unmeasured.

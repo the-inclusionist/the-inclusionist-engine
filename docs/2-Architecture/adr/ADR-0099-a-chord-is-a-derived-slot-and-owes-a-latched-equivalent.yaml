@@ -1,0 +1,170 @@
+---
+# ⚠️ READ AGAINST THE TREE OF 2026-09-07, and not against the memory of whoever drafted it. What changed between
+# the drafting and the entry is noted in the body; what was confirmed too, because a premise that stays true is
+# only useful if someone says they checked it.
+#
+# ⚠️ AND IT DOES NOT SUPERSEDE ANYTHING YET. The draft declared `supersedes-in-part`, and that would be false in a
+# `proposed` record: a supersession is a PAIR (ADR-0057), and marking the old record as partly revoked by a
+# proposal would tell the reader that a decision was taken when it was not. The pointers get filled in — on both
+# sides, in the same turn — if and when the Dev accepts. What it INTENDS to supersede is written in the body.
+metadata:
+  status: "proposed"
+  date: 2026-09-07
+  supersedes-in-part: []
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0079 §1 — WHAT THIS RECORD INTENDS TO SUPERSEDE IN PART, if accepted: a transport declares
+       SLOTS and the player assigns actions to them, one action per slot. A chord is one act reached by two
+       slots at once, which that model has no shape for. Everything else it decides governs untouched"
+    - "ADR-0096 — the two-player keyboard, written the day after the draft. ⚠️ IT TIGHTENS THIS RECORD: the
+       fourteen positions are now assigned for TWO players at the same time, and a chord consumes two of them.
+       On a keyboard with two players seated, player 2's `R1+R2` are `NumpadMultiply` and `NumpadAdd` — keys
+       that exist, but whose combination the keyboard rollover of many cheap devices does not report. The
+       latched equivalent stops being only the motor accommodation and becomes also the second player's route
+       on school hardware"
+    - "ADR-0077 §2 — latching is a per-action, per-player control OPTION, and its rejected option M3 is the
+       argument this record reuses: an accommodation implemented per game exists only in the games somebody
+       remembered"
+    - "ADR-0074 — the engine owns positions and the game owns words. A chord's MEANING stays with the game"
+    - "ADR-0086 — `rightShoulder` and `rightTrigger`, the two positions the first chord uses"
+    - "ADR-0013 — motor input accessibility, and the one-button mode this record must answer to"
+    - "ADR-0010 pillar 2 — WCAG 2.2, and 2.1.1 in particular"
+    - "`game-soccer` — the consumer that asked. Its scheme is `R1` = through ball, `R2` = switch player,
+       `R1+R2` = lofted through ball, so the R2 of the chord must not also switch"
+  informed: []
+
+title: A chord is a derived slot, and every chord owes a latched equivalent
+
+context-and-problem-statement: |
+  The football game's control scheme needs two buttons pressed together to mean a third thing: `R1` plays a
+  through ball, `R2` switches player, and `R1+R2` lofts the through ball. The `R2` of the chord must
+  therefore NOT also switch player.
+
+  ⚠️ THE ENGINE HAS NO SHAPE FOR THIS. ADR-0079 models a transport as slots with one action each; two slots
+  producing a third act is not a slot.
+
+  ⚠️ AND ONE PREMISE OF THIS RECORD EXPIRED BETWEEN DRAFTING AND WRITING, which is worth keeping rather than
+  quietly correcting. The draft read: *«There is exactly one chord in the whole repository today and it is
+  hard-coded in `app/js/game/physics.ts` — `swap` plus `especial` — which is the platformer's own private
+  arrangement and not a facility.»* On 2026-09-07 that file left, with the whole cartridge (issue #111), so
+  the engine now has **no chord at all** — not one hard-coded example, none.
+
+  ⚠️ THE ARGUMENT GOT STRONGER, NOT WEAKER. The draft's case was «one game arranged this privately, and the
+  next will arrange it again». What is true now is that the facility does not exist anywhere and the first
+  game to want one is a SEPARATE REPOSITORY that cannot reach into `game/` for a precedent. The platformer
+  will want its own chord back the day it needs one, and it will write a second implementation unless the
+  engine owns the first.
+
+  ⚠️ AND THE HARD PART IS NOT THE CHORD. It is that a chord is IMPOSSIBLE for a child using one switch:
+  `input/keydown.ts` releases every other held game key when a new one arrives, deliberately, so two
+  buttons can never be down together. Any chord the engine offers is a function she cannot reach — which
+  is WCAG 2.1.1 failing, quietly, in whichever games happened to use one.
+
+decision-drivers:
+  - "⚠️ THE ONE-SWITCH EQUIVALENT IS THE WHOLE DECISION. Where the chord itself lives is a question of cost;
+     where the equivalent lives is a question of whether it exists at all. ADR-0077's M3 measured this: an
+     accommodation implemented per game exists in the games somebody remembered, and three hundred games
+     will not all remember."
+  - "A chord is a property of how a TRANSPORT is operated, and every transport needs the same answer - two
+     fingers on touch, two keys on a keyboard, a latched modifier on a switch."
+  - "The MEANING stays with the game. `R1+R2 = lofted through ball` is a word, and ADR-0074 already decided
+     words are the game's."
+  - "The first consumer resolved this in sixty lines with no game imports at all, so the engine is not being
+     asked to invent a mechanism - only to own one that already exists and is proved."
+
+considered-options:
+  - "K1 - the engine gains chords as DERIVED SLOTS, and refuses any chord that has no latched equivalent"
+  - "K2 - the engine gains chords, and the latched equivalent is each game's responsibility"
+  - "K3 - chords stay in games. `game-soccer` keeps its own `input/chord.ts` and the next game writes another"
+
+pros-and-cons-of-the-options:
+  K1:
+    good:
+      - "The equivalent exists everywhere, by construction, because a chord without one cannot be declared."
+      - "⚠️ IT IS STICKYKEYS, which is the operating system's own answer to exactly this problem: one
+         actuation ARMS the modifier, the next act spends it. Nothing has to be invented and a child who
+         already uses StickyKeys meets a familiar shape."
+      - "One resolver, so the grace window, the sticky loft and the double-fire proof are decided once."
+    bad:
+      - "⚠️ It puts a WCAG obligation into a type. A game that wants a chord and cannot express its latched
+         form is refused at boot rather than at review, which is stricter than the engine has been anywhere
+         else - and strictness that surprises people gets worked around."
+  K2:
+    good:
+      - "Cheaper, and the engine stays out of a game's accessibility decisions."
+    bad:
+      - "⚠️ It is ADR-0077's M3 with a different noun. The chord ships in three hundred games and the
+         equivalent ships in the ones that remembered, and nothing anywhere reports the difference."
+  K3:
+    good:
+      - "No engine change at all, and the first consumer already has it working."
+    bad:
+      - "The second game writes it again, and its one-switch equivalent - the part that matters - is written
+         by whoever thought of it. The chess paid this exact price once already, with 383 lines of a second
+         i18n system, because a facility a game needed was not in the engine."
+
+decision-outcome:
+  chosen-option:
+    link: "K1 - a derived slot, and no chord without its latched equivalent"
+    justification: |
+      ===== 1. A CHORD IS A DERIVED SLOT =====
+
+      A transport declares its slots (ADR-0079, unchanged). A game may additionally declare a DERIVED slot:
+      an act reached by two slots held together. It is derived because it produces no new position - the
+      two it uses are already declared - and it is a slot because everything downstream, the remap screen
+      included, treats it as one.
+
+      ===== 2. THE ANCHOR AND THE MODIFIER =====
+
+      One of the two is the ANCHOR and the other the MODIFIER, and they are not symmetric. The anchor opens
+      the act; the modifier changes it while it is open. The modifier's OWN act is deferred by a short grace
+      window and cancelled if the anchor arrives inside it.
+
+      ⚠️ THE GRACE WINDOW IS FOR A HAND, NOT FOR A BUG. A child who means "both at once" and delivers the
+      modifier twenty milliseconds early has not made a mistake to punish; that is what hands do. The window
+      is per player and settable to zero, at which point the reinterpretation is simply off.
+
+      ⚠️ AND THE MODIFIER IS STICKY once it has landed: releasing it mid-act still produces the modified
+      act. Requiring both held to the end doubles the motor demand for no gameplay reason and makes the
+      outcome depend on a millisecond.
+
+      ===== 3. NO CHORD WITHOUT ITS LATCHED EQUIVALENT =====
+
+      **A chord with no latched equivalent is a conformance failure.** A declaration that offers one and
+      cannot express the other is refused. The equivalent is StickyKeys: one actuation arms the modifier,
+      the next act spends it, and every function stays reachable by single actuations - WCAG 2.1.1.
+
+      ===== 4. WHAT THE ENGINE DOES NOT DECIDE =====
+
+      ⚠️ WHICH pairs are chords and WHAT they mean stay with the game. `R1+R2 = lofted through ball` is a
+      word, and ADR-0074 already settled that words are the game's. The engine owns the resolution and the
+      obligation; it owns no football.
+
+      ===== 5. AND A DEFECT FOUND WHILE MEASURING THIS =====
+
+      ⚠️ `oneButton` IS HONOURED ONLY ON THE KEYBOARD PATH. `input/gamepad.ts`'s `pollPads` has no
+      equivalent, so a child in one-button mode with a pad plugged in is not in one-button mode. That is a
+      silent hole in pillar 2, it is older than this record, and it is not fixed here — it is an issue, and
+      it is written down so it stops being invisible.
+
+  consequences:
+    positive:
+      - "The one-switch route exists for every chord in every game, or the chord does not exist."
+      - "The grace window, the sticky modifier and the double-fire proof are decided once."
+    neutral:
+      - "The first consumer's implementation moves rather than being rewritten: it is a leaf module with no
+         game imports, written that way on purpose."
+    negative:
+      - "A game can now be refused at boot for an accessibility reason, which is new."
+      - "One more concept on the remap screen: a row that is two positions."
+
+  confirmation: |
+    A declaration with a chord and no latched equivalent is refused, with a message naming the chord. Every
+    ordering of the four edges of a two-slot chord produces at most one act of each kind, and never both -
+    exhaustively, over all twenty-four orderings. In `oneButton` mode the latched route reaches the modified
+    act with no two positions ever held together.
+
+more-information: |
+  The football game's `app/js/input/chord.ts` is the shape being proposed, and it is already gated: the
+  twenty-four-ordering proof, the sticky modifier, the grace boundary at zero and at the window's edge, and
+  the latched route. It has no imports from the game, which is what makes adopting it a file move.

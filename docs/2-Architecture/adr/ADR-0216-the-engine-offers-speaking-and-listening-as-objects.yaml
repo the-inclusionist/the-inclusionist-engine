@@ -1,0 +1,118 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/reading.node.test.js
+    - engine:tests/reading-model.node.test.js
+    - engine:tests/reading-runtime.node.test.js
+    - engine:tests/microphone.node.test.js
+    - engine:tests/reading-no-createGame.browser.test.js
+    - engine:tests/kokoro-runtime.node.test.js
+    - engine:tests/tts.node.test.js
+    - engine:tests/the-quiz-declares-what-it-uses.node.test.js
+    - engine:tests/heavy-into-the-delivery.node.test.js
+    - engine:tests/boot-create-game.node.test.js
+  supersedes-in-part:
+    - ADR-0198
+  date: 2026-09-21
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0111 — the virtual controller is the only input a cartridge sees: the engine deals with the hardware and hands the game a name"
+    - "ADR-0198 §5 — the neural voice arrives through a port the GAME fills (`carregarKokoro`), and the delivery carries Kokoro only with `--kokoro`"
+    - "ADR-0200 and its erratum — the browser's voice speaks first; recognition runs on the device or not at all"
+    - "ADR-0201 erratum — the reading models: Whisper small for pt, Moonshine streaming small for en and es"
+    - "📏 Measured 2026-09-21: the quiz demo's port is `consumer-quiz/kokoro-porta.ts` and `kokoro-carregar.ts` — about 200 lines that
+       name espeak-ng, onnxruntime-web, the model, the tokenizer, the voice table and the paths under `pesados/`. Every game that wants a
+       neural voice copies them."
+  informed: []
+  errata:
+    - date: 2026-09-26
+      what: >-
+        WHERE READING ALOUD LIVES, confirmed by the Dev after asking whether it should be the cartridge's alone: «A
+        capacidade fica na engine. A forma de usar é que é do cartucho. Por exemplo, falar e selecionar a opção correta
+        entre as alternativas do quiz é do cartucho quiz.» That is this record's split, unchanged: the engine hears and
+        returns the text (`motor.reading.listen()`), and what the text means — choosing the option that was said — is the
+        cartridge's (the demo quiz's `heardAlternative`).
+    - date: 2026-09-21
+      what: >-
+        📏 THE COST IS SMALLER THAN THIS RECORD SAYS, measured while building it. The negative consequence «the engine's package
+        gains espeak-ng and an ONNX runtime; a consumer's build carries those chunks» assumed the engine would IMPORT them from
+        npm, as the quiz's port does. It does not have to: the vision runtime already shows the other way (ADR-0177) — the files
+        are catalogued, the build puts them in the delivery, and the page loads them from `pesados/` on its own origin. Measured:
+        espeak-ng 1.0.2 (glue 178 386 bytes, wasm 18 485 010) and onnxruntime-web 1.27.0 (ESM 113 035, jsep glue 46 614, jsep wasm
+        26 827 543) — 45.5 MiB, all from jsDelivr, which the network inventory already declares, and all already on the build
+        machine from the dev dependency, so nothing new is downloaded to pin them. So: the published package gains NO runtime
+        dependency, a game that declares neither ability carries none of it, and the `?url` imports of the quiz's port (which only
+        a Vite build understands) never enter the package.
+
+title: The engine offers speaking and listening as objects, as it offers the controller
+
+context-and-problem-statement: |
+  The Dev, 2026-09-21: «Assim como a engine oferece o objeto de controle, ela deve oferecer objetos de leitura e TTS. O jogo não deve
+  precisar saber como isso funciona, apenas deve pedir para ouvir e receber o texto.»
+
+  Speaking is half there: `motor.tts.narrate(text)` is the engine's, but the NEURAL voice arrives through a port the game fills
+  (ADR-0198 §5), so a game that wants it carries the loader, the phonemizer, the runtime and the paths. Listening is not there at all:
+  the models are mirrored and catalogued (issue #192), and nothing in the engine reads a child's voice. The same question the virtual
+  controller answered in ADR-0111 — «does the cartridge see the hardware, or a name?» — is open for the microphone and the voice.
+
+decision-drivers:
+  - "D1 — A CARTRIDGE ASKS AND RECEIVES: `listen()` gives text; which engine produced it is the engine's business, as a button's name is"
+  - "D2 — ONE PLACE TO GET IT RIGHT: privacy (nothing leaves the device), the language, the fallbacks and the checked cache are one decision, not one per game"
+  - "D3 — WEIGHT IS NOT A CARTRIDGE'S PROBLEM, BUT IT IS A PROBLEM: 380 MiB of reading models must not enter a puzzle game's delivery"
+
+considered-options:
+  - "A — keep the port: the game brings the library and the worker, the engine captures the microphone"
+  - "B — the engine owns both, loaded lazily; the game declares WHAT it wants, never how"
+  - "C — the engine owns both and always carries them"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The engine's package stays thin. ❌ Every game repeats ~200 lines it cannot test, and a game that gets privacy or the
+  fallback order wrong ships that mistake to a school.
+  **B.** ✅ One implementation, one privacy rule, one cache; the game says «this game reads aloud» and «this game listens to reading».
+  ❌ The engine gains the dependencies (espeak-ng, GPL-3.0-or-later — compatible with the engine's AGPL-3.0 — and an ONNX runtime), and
+  every consumer's build carries those chunks, even though nothing loads them until asked.
+  **C.** ✅ Nothing to declare. ❌ A game of shapes downloads reading models it will never open: the opposite of the delivery budget the
+  pilar 8 exists for.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine owns both, the game declares what it wants"
+    justification: |
+      1. **`motor.tts` stays and grows**: it, and not the game, loads the neural voice. `CreateGameOptions.carregarKokoro` leaves, and
+         with it the decline `semVozNeural`.
+      2. **`motor.reading` is new**: `listen()` returns the text the child read, `stop()` gives the microphone back, and it says whether
+         it can serve the current language at all. The game never names Vosk, Whisper or Moonshine.
+      3. **The game declares WHAT, not HOW** — a field on `CreateGameOptions` saying that this game speaks with a neural voice, or
+         listens to reading. The delivery (`inclusionist-pesados`) copies exactly what those answers ask for; a game that declares
+         neither gets neither, and downloads neither.
+      4. **Privacy is the engine's promise, in one place**: recognition runs on the device or does not run (ADR-0200 erratum); the
+         child's voice never becomes a request.
+      5. **Everything heavy loads late**: nothing is imported until the first `narrate` that needs it or the first `listen`.
+
+  consequences:
+    positive:
+      - "A game asks to be heard in one line, and cannot get the privacy rule or the fallback order wrong"
+      - "The reading models the project now mirrors have a consumer, which issue #185 was waiting for"
+    negative:
+      - "The engine's package gains espeak-ng and an ONNX runtime; a consumer's build carries those chunks even when nothing loads them"
+      - "The quiz demo's port (~200 lines) is deleted, and any game that copied it breaks at the bump — a BREAKING change with a migration note"
+      - "A game that declares neither ability has no neural voice and no listening, which is a silence somebody must notice: it goes to `problems`"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #200), each red by mutation before it counted: a game that declares it listens gets text from
+    `listen()`; a game that declares nothing has no reading and no neural voice, and the delivery copies neither; nothing heavy is
+    imported before the first request; a recogniser that would leave the device is never built; the child's language decides which model
+    is asked for, and an unsupported language says so instead of failing silently. The demo is the measurement of the promise: it asks
+    for the voice in one line and to listen in one more, and no file of it names a phonemizer, a runtime, a microphone, a model or a path.
+    🔴 TWO MUTATIONS SURVIVED FIRST and neither was a hole in the code: the demo's declaration and its `listen()` could both be DELETED
+    with the gate still green, because the comment beside each one quotes it. The gate now reads the tree with its comments stripped —
+    prose about code is the one thing prose can always produce.
+    ⚠️ TWO THINGS THIS DOES NOT YET CONFIRM, and both are named in issue #185: a reading transcribed from a REAL microphone (the round is
+    the Dev's), and the transcription running in a worker — today it runs on the main thread, where the lab measured Whisper cutting the
+    audio into 4 s gaps.
+
+more-information: |
+  The reading models are mirrored and checked (issue #192, `models.md`): Whisper small for Portuguese, Moonshine streaming small for
+  English and Spanish. The commands-by-voice route (Vosk with the game's words as grammar, ADR-0193, ADR-0194) is a different door and
+  is not merged into this one: it answers with a position of the controller, not with text.

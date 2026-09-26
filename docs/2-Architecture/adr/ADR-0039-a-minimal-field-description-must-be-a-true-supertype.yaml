@@ -1,0 +1,149 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0033 (the engine entity declares what the ENGINE owns), ADR-0036 (demos consumes the engine
+              as a module), "issue #78 (_ac has two owners)", "issue #79 (one field, two descriptions)"]
+  informed: []
+
+title: A minimal field description must be a TRUE SUPERTYPE of the real one — or the entity must not describe the field at all
+
+context-and-problem-statement: |
+  The same defect appeared three times in two days, and it only became visible when `main.js` became `main.ts`
+  and the compiler could finally read the composition root.
+
+  THE SHAPE: one field of the player is described TWICE, in two modules, incompatibly. The entity declares a
+  small approximation; the module that owns the type declares the real thing. Neither is wrong on its own;
+  together they are unassignable, and the composition root — the only place both meet — is where the error lands.
+
+      _ac    core/entity: { close(): void } | null    ·  platform/audio-sonar: SinkAC | null
+      quiz   game/entity: PlayerQuiz (kind: string)   ·  game/quiz: Quiz = MathQuiz | SilabasQuiz | PreQuiz |
+                                                          AlfQuiz | BrailleQuiz
+
+  `game/entity.ts` states the intent in its own comment: "game/quiz estreita isto para a uniao Quiz". That
+  sentence contains the bug. NARROWING IS NOT REFINEMENT: a narrower type does not accept a wider one, so a
+  `GamePlayer` (whose `quiz` is `PlayerQuiz`) cannot be passed where a `QuizPlayer` (whose `quiz` is `Quiz`) is
+  expected. Twelve of the seventy-four remaining errors are that one sentence.
+
+  The `_ac` case is the same shape with a different alibi. `platform/audio-nav.ts` documents a THIRD answer —
+  intersection over a view — and justifies the entity minimal declaration with "core/ nao pode importar tipos
+  de Web Audio". THAT JUSTIFICATION IS FALSE AS STATED: `tsconfig.json` sets lib to ES2022 + DOM + DOM.Iterable,
+  so `AudioContext` and `GainNode` are ambient globals and there is no import to make. And `audio-nav` is not
+  the good example issue #78 cited: it produces its own error at the injection point (main.ts:455, a callback
+  parameter instead of an array).
+
+  So the project answers ONE question in THREE ways — minimal declaration, imported type, intersection over a
+  view — and three answers to one question is what produced the three rows.
+
+decision-drivers:
+  - "The rule must be mechanical: whoever adds a field must not weigh taste to know which form applies."
+  - "ADR-0033 already fixed WHO owns a field. This record fixes HOW the non-owner may mention it."
+  - "The error must stay visible in the type budget rather than be silenced by a cast — a cast moves the
+     unsafety out of the compiler report and into the reader blind spot."
+  - "A type-only import is erased at compile time, so it costs READING rather than coupling — but a layer
+     inversion still costs reading, and reading is what this repository optimizes for."
+
+considered-options:
+  - "B1 — the entity imports the owner type (GamePlayer.quiz: Quiz | null) and the minimal description is deleted"
+  - "B2 — keep both descriptions and make the narrowing explicit at a named bridge, as jogadores()/controlados() already do"
+  - "B3 — the minimal description becomes a TRUE SUPERTYPE, proved by a type test, and whoever needs the union narrows by discriminator"
+  - "A1 (for _ac) — the entity stops declaring the field at all; the owner declares it where it is born"
+  - "A2 (for _ac) — the entity declares _ac as unknown, matching its neighbour _acOut"
+
+pros-and-cons-of-the-options:
+  B1:
+    good: ["Deletes one of the two descriptions, so the disagreement cannot recur for that field.",
+           "No cycle: game/quiz imports only PlayerView from core/entity, never game/entity."]
+    bad: ["The entity depends on the quiz module, inverting the layer — erased at runtime, but a reader of
+           game/entity now has to open game/quiz to know what a player is."]
+  B2:
+    good: ["Preserves the layer exactly as drawn."]
+    bad: ["A cast reappears at every bridge, and a cast is the signature of I-knew-more-than-the-compiler,
+           which nobody can re-verify two months later."]
+  B3:
+    good: ["The minimal description keeps its purpose — the entity says what a player HAS without knowing what
+            a quiz IS — and stops being a lie, because a type test proves the union really extends it.",
+           "Assignability flows the right way by construction: every Quiz IS a PlayerQuiz, so the wide value
+            goes where the narrow one is expected and the composition root stops needing casts.",
+           "The discriminator the consumer must then use is a RUNTIME check, so the narrowing is proved at the
+            point of use instead of asserted at the point of injection."]
+    bad: ["The five quiz variants must be reshaped to satisfy a common supertype — the most expensive option.",
+          "A type test is a new kind of artifact here, and a kind that fails silently if nobody runs it."]
+  A1:
+    good: ["Coherent with ADR-0033: _ac is an AudioContext per player, owned by the audio platform and not by
+            the engine entity.",
+           "Removes the field from the entity entirely, so no second description is left to disagree."]
+    bad: ["ui/settings-audio reads _ac and _acOut through a PlayerView and must gain the same intersection the
+           owner uses."]
+  A2:
+    good: ["Consistent with the neighbouring _acOut declared as unknown."]
+    bad: ["Pushes a cast into every consumer: the compiler goes green and the guarantee disappears."]
+
+decision-outcome:
+  chosen-option:
+    link: "B3 for quiz, A1 for _ac — and the general rule is the union of the two"
+    justification: |
+      THE RULE, which is the point of this record rather than the two cases:
+
+        A module that is NOT the owner of a field type may mention that field in exactly two ways.
+
+          1. NOT AT ALL. If the field belongs to another subsystem lifetime and the entity merely carries it,
+             the entity does not declare it. The owner declares it where the field is born, and every consumer
+             that needs it asks the owner. This is `_ac` and `_acOut` (option A1).
+
+          2. AS A TRUE SUPERTYPE, proved by a type test. If the entity genuinely needs to say that a player HAS
+             this field without knowing what the field IS, the minimal description must be a type the real one
+             EXTENDS — never an approximation of it. Whoever needs the real type narrows with a runtime
+             discriminator, not with a cast. This is `quiz` (option B3).
+
+        What is forbidden is the third form the tree uses today: a minimal description that merely RESEMBLES
+        the real one. "Narrowing" is the word that made it look sound, and narrowing is exactly what breaks
+        assignability.
+
+      WHY NOT B1, which was the recommendation: it is cheaper and it is correct, but it buys the fix by
+      deleting the question. The entity would then know what a quiz is, and the next field of the same shape —
+      and there will be one, this is the third in two days — would arrive with no rule to follow, only a
+      precedent to copy. B3 costs more once and answers the class.
+
+      WHY `_ac` DOES NOT ALSO GET B3: there is no supertype worth having. `{ close(): void }` is not a
+      description of an AudioContext; it is the one method the entity happened to call. A true supertype would
+      be AudioContext itself — and if the entity is going to declare the owner type, not declaring it is
+      cleaner and is what ADR-0033 already says.
+
+      WHAT `platform/audio-nav` MUST STOP CLAIMING: its comment reason — that core/ cannot import Web Audio
+      types — is factually wrong, since lib.dom is on and no import is needed. The real reason is layering, and
+      layering is what A1 acts on. The comment is corrected rather than deleted, because the next reader will
+      otherwise re-derive the same false argument.
+
+  consequences:
+    good:
+      - "One question, one answer. The author of a new field reads two lines and knows which form applies."
+      - "Twelve of the remaining type errors — and the four powerups errors behind them — come from the same
+         sentence and close with the same change."
+      - "The type test makes the supertype claim FALSIFIABLE, which the prose comment never was."
+    bad:
+      - "Reshaping the five quiz variants to a common supertype is the most expensive option that was on the
+         table, and it is real work across five files."
+      - "A type test nobody runs is decoration; it must ride the command the pipeline already runs."
+    neutral:
+      - "ui/settings-audio gains the intersection it needs for _ac. That cost was measured before the choice,
+         not discovered after it."
+
+  confirmation: |
+    A type test in the node project asserting that every member of the Quiz union is assignable to PlayerQuiz —
+    the claim the old comment made in prose. It rides the existing `npx vitest run` surface rather than a new
+    command, and it is written failing first: reshape one variant so it does NOT extend the supertype and
+    confirm the test goes red before it counts.
+
+    For `_ac`: the confirmation is the type budget. core/entity stops declaring _ac and _acOut, and
+    scripts/check-types.mjs falls by the errors those two fields carry, with zero errors outside main.ts
+    throughout. No cast may appear in the diff.
+
+more-information: |
+  Issues #78 and #79 hold the measurements this record is built on, including the correction that
+  platform/audio-nav is NOT the good example #78 cited: it fails at main.ts:455 for the same reason, and its
+  stated justification does not survive reading tsconfig.json.
+
+  Related: ADR-0033 (who owns a field), ADR-0038 (how long a field lives). Those two plus this one answer the
+  three questions a new field on the player raises — who owns it, how long it lives, and how a non-owner is
+  allowed to mention it.

@@ -1,0 +1,85 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-07-05
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Educational-software documentation subset — learning artifacts + e-learning interop standards
+
+context-and-problem-statement: |
+  ADR-0003 tiered the general software (SDD) doc schema. But this is educational software, which has a SECOND catalog
+  that general SE never covers: (A) instructional-design / pedagogical-intent artifacts and (B) e-learning
+  interoperability standards (SCORM/xAPI/cmi5/LTI/QTI/Common-Cartridge/Caliper/AfA), plus (C) educational-game
+  specifics (pedagogical model, education-specific accessibility). The Dev's structural rule: **1-Discovery is
+  software/engine only; pedagogical content lives in the educational plans**. Which of these artifacts do we adopt,
+  and where do they live?
+
+decision-drivers:
+- The Dev's rule — pedagogical/curriculum content is a separate layer from software (curriculum vs engine two-layer).
+- Our pillars pre-commit some standards — telemetry = 1EdTech + xAPI + Caliper (pillar 6); offline store-and-forward
+  (pillar 9); a11y-first (pillar 1).
+- Offline-first — favors xAPI (offline-capable) over connectivity-bound analytics.
+- No backend / no LMS today — the interop standards are deferred; the pedagogical artifacts are needed now.
+- Scale — 35+ games across infantil/fundamental/medio, BNCC-bound → coverage/traceability matters.
+
+considered-options:
+- &all "Adopt the full educational catalog now (incl. SCORM/QTI/IMS-LD schemas)"
+- &tiered "Adopt the pedagogical-intent artifacts now; defer the interop standards to the backend/LMS; reject the legacy/ill-fitting ones"
+
+pros-and-cons-of-the-options:
+  all:
+    cons:
+    - "SCORM/IMS-LD are legacy/abandoned; QTI/Common-Cartridge need an LMS we don't have -> dead schemas now."
+  tiered:
+    pros:
+    - "Builds the curriculum layer we need now (objectives, curriculum map, pedagogical model) as pt-BR domain docs."
+    - "Commits xAPI (pillar + offline-fit) without building it before the telemetry milestone."
+    - "Rejects the LMS-playback legacy that doesn't fit a standalone accessible PWA."
+
+decision-outcome:
+  chosen-option:
+    link: *tiered
+    justification: |
+      Adopt the pedagogical-intent artifacts now in a new pt-BR `docs/educational/` layer (the curriculum side of the
+      two-layer model); defer the e-learning interop standards to the backend/telemetry/LMS milestones, pre-committing
+      xAPI (offline-capable, pillar 6/9) as the telemetry format; reject the legacy LMS-playback packaging that a
+      standalone accessible game doesn't need.
+  consequences:
+    positive:
+    - "The curriculum layer (Learning Objectives + Curriculum Map + Pedagogical Model) has a real home, BNCC-traceable."
+    - "1-Discovery is cleanly software-only; SRS-as-curriculum is removed (its role moves to docs/educational/)."
+    neutral:
+    - "Interop standards are homed as a deferred stub (2-Architecture/learning-interop.md) with a per-standard trigger."
+    negative:
+    - "The educational plans (plano-*) still need to migrate into docs/educational/ (tracked)."
+  confirmation: |
+    Every activity ties to a measurable Learning Objective (BNCC code + Mager behavior/condition/degree) in
+    docs/educational/; the Curriculum Map shows BNCC coverage; each interop standard is either committed-deferred with
+    a trigger or recorded rejected below.
+
+more-information: |
+  Adopt/defer/reject matrix (from the educational-software artifact study):
+
+    Cat  Artifact                          State    Why / home
+    A    IDD / Learning Design (prose)      NOW      = our educational plans (plano-*); docs/educational/
+         IMS Learning Design (XML schema)   REJECT   abandoned since ~2003 (Larnaca stalled)
+         ADDIE process documents            REJECT   we don't run formal ADDIE; phases map informally onto our flow
+         Learning Objectives (Mager+Bloom)  NOW      aaa-threshold core; BNCC code + behavior/condition/degree; educational/Learning-Objectives
+         Storyboard (e-learning)            REJECT   games, not slides; role split across plano + Gherkin(bdd) + Design
+         Curriculum Map / Scope&Sequence    NOW      Jacobs; BNCC coverage across grades; educational/Curriculum-Map
+         Assessment / Rubric                NOW      light; folded into objectives' Degree; QTI encoding deferred
+    B    SCORM                              REJECT   legacy LMS-playback; doesn't fit a standalone PWA (cmi5 if ever)
+         xAPI                               DEFER*   COMMITTED by pillar 6; offline-fit for store-and-forward (pillar 9)
+         cmi5                               DEFER    only if LMS-launched distribution; preferred over SCORM
+         LTI 1.3                            DEFER    LMS SSO / roster / grade return (pillar-mentioned)
+         QTI                                DEFER    assessment-item interchange; likely never (in-game assessment)
+         Common Cartridge                   DEFER    LMS course-package export
+         Caliper                            DEFER    xAPI preferred for offline; Caliper if tight LMS analytics interop
+         OneRoster / CASE / CLR             DEFER    school integration; flag CASE to represent BNCC machine-readably
+    C    Pedagogical Model / Learning Theory NOW     Ferreiro & Teberosky (literacy), mastery, spaced-rep, ZPD; educational/Pedagogical-Model
+         AfA / ISO 24751 (PNP/DRD matching) NOW(concept)/DEFER(schema)  our a11y settings = de-facto PNP; formalize at the Student Manager
+
+  * xAPI is "deferred" only in build time — it is a committed direction, scoped in 1-Discovery/Event-Storming.md and
+    2-Architecture/learning-interop.md. Idempotency for offline resend is flagged in 7-Async-Systems.

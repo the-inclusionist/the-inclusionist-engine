@@ -1,0 +1,110 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-22
+  decision-makers: [Dev]
+  supersedes: [ADR-0131]
+  consulted:
+    - "the Dev, 2026-09-22, on being shown that ADR-0131 was still `proposed` while the menus it argues about had already been
+       built: «Concordo» — supersede it and close the issue"
+    - "ADR-0131 — the record this one replaces: it asked whether captions belong in the auditory menu and whether one-button
+       and wheelchair mode belong in the motor menu rather than in the empathy one"
+    - "ADR-0151 — the Dev's own composition of the pause card and of the panels, written three days AFTER ADR-0131: it lists
+       captions under the VISUAL panel and cuts wheelchair mode from the menus"
+    - "ADR-0218 — «Jeito de apertar»: the accommodation that ADR-0131 called one-button is a CYCLE in the mobility panel"
+    - "ADR-0181 — «um botão por vez» and «sem força para segurar» are SIMULATIONS, and simulations are what the empathy panel is for"
+    - "📏 Measured 2026-09-22 in `engine:app/js/boot/create-game.ts`: `#opt-captions` is built into the VISUAL panel; `#opt-onebtn`
+       and `#opt-semforca` are built into the EMPATHY panel as the two motor simulations; the mobility panel carries the ☝️ cycle;
+       and no engine panel mounts `#opt-wheelchair` — only `ui/settings-empathy`, the platformer's own module, still names it"
+  informed: []
+
+title: Where the three controls of ADR-0131 actually live, and why the question is closed
+
+context-and-problem-statement: |
+  ADR-0131 (2026-09-09) asked three placement questions and stayed `proposed` for thirteen days. In the meantime the menus it
+  argues about were rebuilt, and three later decisions answered all three questions — none of them by citing it.
+
+  📏 What is true today, measured rather than recalled:
+
+  · **Captions live in the VISUAL panel.** ADR-0151 §2, written by the Dev three days after ADR-0131, lists them there, and
+    that is where `createGame` builds `#opt-captions`. ADR-0131 argued the opposite — that the menu follows the NEED and not
+    the output channel, as blind mode does — and lost to a later decision that simply placed them.
+
+  · **One-button became two different things, and that is the part worth keeping.** The SIMULATION («um botão por vez», with
+    «sem força para segurar») stayed in the empathy panel, which is exactly what that panel is for; the ACCOMMODATION — playing
+    with a single switch, by scanning — became a position of the ☝️ cycle «Jeito de apertar» in the MOBILITY panel (ADR-0218).
+    ADR-0131 read a single control where there were two, and the distinction it could not see is the one that resolves its
+    complaint: nobody's real accommodation is framed as a pretence any more, and the simulation did not have to move.
+
+  · **Wheelchair mode left the menus entirely** (ADR-0151). The question of which panel should hold it has no subject.
+
+  🔴 WHY THIS NEEDS A RECORD RATHER THAN A CLOSED ISSUE. A `proposed` record that the tree has contradicted does not sit still:
+  it argues its case again in the next conversation, with whoever reads it — which is the mechanism ADR-0057 describes and the
+  reason revocation is a new record and never an edit in place. This one exists so that ADR-0131 stops recommending a menu
+  that no longer exists.
+
+decision-drivers:
+  - "A record whose premise the tree has already contradicted misleads the next reader, and the next reader is often me"
+  - "Two of the three questions were answered by the Dev's own later decisions; re-opening them would be re-deciding"
+  - "The empathy/mobility split turned out to be a distinction between SIMULATION and ACCOMMODATION, which is worth writing down
+     because it is the rule that will decide the next such question"
+  - "Moving a control costs the child and the educator who learned where it was — ADR-0131 said so itself, and nothing here moves"
+
+considered-options:
+  - "A · supersede ADR-0131 with this record of what is, and close issue #136"
+  - "B · accept ADR-0131 as written and move captions to the auditory panel"
+  - "C · leave ADR-0131 `proposed` and close the issue alone"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "The tree and the records agree, and the criterion that survived — simulation in the empathy panel, accommodation in the
+         mobility one — is written where the next question will look for it"
+      - "Nothing moves, so nobody has to learn a menu again"
+    bad:
+      - "⚠️ It leaves ONE placement that does not follow the need-not-channel criterion: captions. This record does not hide that
+         — it names it as a decision of the Dev (ADR-0151 §2), not as an oversight"
+  B:
+    good:
+      - "One criterion, no exception"
+    bad:
+      - "🔴 It would overturn a decision the Dev took after ADR-0131 and that is already built, and a deaf child who learned where
+         captions are would have to learn again for the sake of a rule's tidiness"
+  C:
+    good:
+      - "No writing"
+    bad:
+      - "🔴 The `proposed` record stays, and keeps arguing for a move that will not happen — the exact failure ADR-0057 was written about"
+
+decision-outcome:
+  chosen-option:
+    link: "A · supersede ADR-0131 with this record of what is, and close issue #136"
+    justification: |
+      Nothing moves; the records catch up with the menus. And the rule that outlives ADR-0131 is not the one it proposed: the
+      panel is chosen by whether the control SIMULATES an experience or ACCOMMODATES one. «Um botão por vez» simulates, so it
+      belongs with the empathy panel; «Jeito de apertar» accommodates, so it belongs with mobility. Captions stay where the Dev
+      put them, and this record says so out loud rather than leaving a rule with an unexplained exception.
+
+  consequences:
+    positive:
+      - "A reader who opens ADR-0131 is sent here instead of to a proposal the tree contradicts"
+      - "The simulation/accommodation rule is stated once, and it is the question to ask of the next control"
+      - "Issue #136 closes for the right reason — answered, not abandoned"
+    negative:
+      - "⚠️ One placement (captions) follows the channel and not the need, and the tree therefore carries a named exception. Writing
+         it down is the honest half; it is still an exception"
+      - "This record documents rather than decides, which is the cheapest kind of record and the easiest to skip reading"
+
+  confirmation: |
+    📏 Confirmed by MEASUREMENT on the day it was written, not by a gate — this record moves no code, so there is nothing to gate.
+    In `engine:app/js/boot/create-game.ts`: `#opt-captions` is inserted into the visual panel's card; `#opt-onebtn` and
+    `#opt-semforca` are inserted into the empathy panel's card as the two motor simulations; the ☝️ cycle of ADR-0218 lives in the
+    mobility panel; and `#opt-wheelchair` is mounted by no engine panel (`git grep` finds it only in `ui/settings-empathy`, the
+    platformer's module, which the engine does not mount).
+    ⏸ What would falsify it: a control that simulates an experience appearing outside the empathy panel, or an accommodation
+    appearing inside it. There is no gate for that, and inventing a fragile one over element ids would be worse than the rule.
+
+more-information: |
+  Issue #136 carried this question in the tracker since 2026-09-09 and is closed by this record (ADR-0126: a decision lives in a
+  record, and an issue is a piece of work). ADR-0131 stays readable, superseded — the point of superseding rather than editing is
+  that its reasoning about need-versus-channel remains available to whoever asks the question again.

@@ -1,0 +1,77 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0201
+      what: >-
+        the 2026-09-14 erratum's «reading in Portuguese and Spanish is recognised by Whisper base». Moonshine recognises reading wherever it covers the language (English, Spanish); Whisper only Portuguese.
+    - by: ADR-0200
+      what: >-
+        the neural recognisers as the first route. Web Speech recognition first where available; Vosk and Moonshine/Whisper are the fallback.
+  supersedes-in-part: [ADR-0189]
+  date: 2026-09-13
+  errata:
+    - date: 2026-09-14
+      what: "📌 THE READING MODEL, left open. Measured on the Dev's reading of a poem (52 words): Whisper base q8 (onnx-community, 81 MB) 15.4 % WER, Whisper tiny 42.3 %, Vosk small pt 34.6 % (25 % guided by the text). Asked whether Whisper base is the reading recogniser for Portuguese and Spanish, the Dev: «Sim.» Reading in Portuguese and Spanish is recognised by Whisper base; commands stay with Vosk (ADR-0193, in-game: 7/7 against Whisper base 1/7). Issue #185."
+    - date: 2026-09-13
+      what: "§4, THE OPEN POINT, ANSWERED BY THE DEV the same day: «Moonshine atualmente só tem Inglês, espanhol, mandarim, árabe,
+             japonês, coreano, ucraniano e vietnamita. Use Whisper.» Reading in Portuguese and Spanish uses Whisper; English
+             reading uses Moonshine. 📏 The Dev counts a Spanish Moonshine that `onnx-community` does not publish (measured the
+             same day): Spanish reading takes Whisper until one is found there. Fills what §4 left open (ADR-0057 §1)."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0189 — SUPERSEDED IN PART: Vosk as the ONLY recogniser. Vosk for commands stands"
+    - "Hugging Face `onnx-community` models, read through its API on 2026-09-13 — Moonshine: `moonshine-tiny-ONNX` and
+       `moonshine-base-ONNX` (English) and variants in zh, ja, ar, ko, fr, vi, uk; NONE in Portuguese or Spanish. Quantized
+       encoder + merged decoder: moonshine-tiny 26.9 MB, moonshine-base 60.1 MB; whisper-tiny 39.0 MB, whisper-base 73.3 MB
+       (Whisper is multilingual)"
+  informed: []
+
+title: Two recognisers — Vosk for commands, Moonshine for reading
+
+context-and-problem-statement: |
+  ADR-0189 chose Vosk with the game's words as grammar. The Dev, 2026-09-13: «Vosk via WASM para entender comandos seria o
+  ideal, mas vi muitos erros sendo cometidos no teste que fiz. Por outro lado, Moonshine (27M-331M) via transformers.js (Whisper
+  é muito grande, não?) para atividades que envolvem leitura, se mostrou excepcional onde precisão ser importante. Vamos
+  implementar ambas e testar em jogo.»
+
+decision-drivers:
+  - "D1 — A COMMAND IS A FEW WORDS, A READING IS A SENTENCE: each needs the recogniser that is good at it"
+  - "D2 — MEASURED IN A GAME, NOT ASSUMED: both are built and tried where a child plays"
+
+considered-options:
+  - "A — Vosk only (ADR-0189)"
+  - "B — Vosk for commands and Moonshine for reading, both built and tested in a game"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One model per language. ❌ The Dev saw many errors in their test; open reading is what it does worst.
+  **B.** ✅ Each task gets its recogniser, and the choice is tried in play. ❌ Two runtimes and two sets of models.
+
+decision-outcome:
+  chosen-option:
+    link: "B — both, tested in a game"
+    justification: |
+      1. **Vosk in WASM, with the game's words as grammar, recognises COMMANDS** (ADR-0189 §1–3 stand).
+      2. **Moonshine through transformers.js, in the browser, recognises READING**: an activity where the child reads aloud
+         and precision matters.
+      3. **Both are built and tried in a game** before either is taken as the answer; neither sends audio off the device.
+      4. ⚠️ OPEN, for the Dev: `onnx-community` publishes Moonshine in English and seven other languages, none of them
+         Portuguese or Spanish. Reading in pt-BR and Spanish needs a model that covers them — a Moonshine flavour from another
+         source, or a multilingual Whisper (tiny 39.0 MB quantized, between Moonshine tiny and base).
+
+  consequences:
+    positive:
+      - "A reading activity can hear a whole sentence with the precision the Dev measured"
+    negative:
+      - "A delivery with voice control carries two runtimes and their models"
+      - "Until a Portuguese and Spanish reading model is chosen, reading recognition covers English only"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #185** (Moonshine) in `the-inclusionist-engine`, beside **#184** (Vosk). Gates: a read sentence
+    is transcribed on the device with no network request carrying audio; the models are in the heavy-file catalogue with their
+    sha256; both recognisers are tried in a game and the result written.
+
+more-information: |
+  The Dev asked whether Whisper is too large: the quantized whisper-tiny (39.0 MB) sits between moonshine-tiny (26.9 MB) and
+  moonshine-base (60.1 MB), and whisper-base is 73.3 MB — the gap is smaller than its name suggests, and it covers Portuguese
+  and Spanish. Measured sizes, not accuracy.

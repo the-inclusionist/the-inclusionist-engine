@@ -1,0 +1,198 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0093]
+  superseded-in-part:
+    - by: ADR-0124
+      what: >-
+        the cartridge's door stops being the ONLY path, extended from the voice to the VISION runtime.
+        The Dev decided on 2026-09-09 that piper-tts, MediaPipe and the LCP art all accompany the engine.
+        The 135 MB argument is UNTOUCHED and is precisely why the ENGINE pays it once instead of every
+        cartridge paying it — what falls is only the exclusivity of the door, not the door itself.
+    - by: ADR-0114
+      what: >-
+        the same door, seen from the RUNTIME rather than the voices. ADR-0110 removed «the only path a voice
+        arrives by»; this removes «the only path a heavy RUNTIME arrives by». 📌 The 135 MB argument is not
+        weakened — it is the reason for the answer: a runtime that no cartridge should pay for is paid ONCE, by
+        the application, vendored into its `dist` and precached by the service worker, so a school machine that
+        never had a network still has it. ⚠️ And the split this record did not make is the whole point: the
+        RUNTIME is small, fixed and needed before any voice speaks; the MODELS are ~60 MB each and chosen per
+        child. The door here survives as the OVERRIDE for a game that wants a different supplier.
+    - by: ADR-0110
+      what: "the clause that the game's door is the ONLY way a neural voice arrives. ⚠️ The door itself SURVIVES,
+             and so does the argument under it — 135 MB of WASM cannot be paid by a game that never speaks. What
+             changed is who opens it: issue #91 measured that `carregarVozNeural` was declared by three of the
+             six local games and NOT by the other three, which had no neural voice at all while nothing said so
+             — against ADR-0065 §3's written promise that a cartridge «does not have to know one exists». A door
+             every cartridge must remember to open is the ADR-0106 §2 defect, and three hundred games cannot
+             each answer a question about speech synthesis. From ADR-0110 the engine guarantees the voices and
+             fetches them itself; this record's door remains as the OVERRIDE for a game that wants a different
+             supplier."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0093 — SUPERSEDED IN PART: the choice of FIELD (`dependencies`) and the number that held it up. The
+       two-direction gate, which is the other half of that record, stays whole and is what makes THIS decision
+       checkable"
+    - "The consumer's report, verbatim: `um jogo que nunca usa a voz neural não deveria carregar 27 MB de
+       WASM por obrigação`. Measured: it is 135.4 MB, in four `.wasm` variants"
+    - "ADR-0035 — `render/port`: the precedent of the inversion, and the reason it did NOT serve as an argument
+       yesterday and does today"
+    - "ADR-0022 — the swap to sherpa-onnx-wasm: it is the port that makes it a ONE-LINE change in the game
+       instead of a second contract shock"
+    - "ADR-0010 pillar 1 (Brazilian public-school hardware and bandwidth) and pillar 2 (a11y-first) — the two
+       sides of this scale, and pillar 1 is the one that changed sides when the right number appeared"
+  informed: []
+
+title: The neural voice arrives through a PORT the game opens — the engine names no supplier
+
+context-and-problem-statement: |
+  ADR-0093 closed, on the same day, a serious defect: the published `6.36.1` could not be compiled by any
+  consumer, because `platform/tts` did `import('@mintplex-labs/piper-tts-web')` — SHIPPED code — with the package
+  declared in `devDependencies`, which npm does not install for whoever consumes.
+
+  That record moved the package to `dependencies` and wrote, as part of the justification, that the price was
+  low: **«0,5 MB e ZERO dependências transitivas»**.
+
+  ⚠️ THE NUMBER WAS WRONG, AND THE ERROR HAS AN EXACT IRONY: I read the supplier's `dependencies` field, which is
+  empty, and **did not read `peerDependencies`** — which is the field that caused the whole defect. The supplier
+  declares `onnxruntime-web` as a NON-optional peer, and npm 7+ installs peers on its own.
+
+  MEASURED IN A CLEAN CONSUMER, installing the tarball:
+
+      onnxruntime-web    135.4 MB   (four .wasm variants, the largest 26.5 MB)
+      pixi.js             12.3 MB
+      the engine           2.3 MB
+      TOTAL              165.6 MB
+
+  That is: `dependencies` fixed the build and imposed **135 MB on every consumer**, including a puzzle game that
+  will never speak with a neural voice. It was the consumer who noticed, again.
+
+decision-drivers:
+- "⚠️ 135.4 MB measured, and not 0.5 MB. With the right number, ADR-0093's argument against the port — «custaria
+   a11y por omissão para poupar 0,5 MB» — inverts on its own: it is 135 MB imposed on a public school for a
+   pt-BR-only engine from a DISCONTINUED supplier, and pillar 1 (school hardware and bandwidth) comes to weigh on
+   the other side of pillar 2."
+- "⚠️ `optionalDependencies` does NOT solve it, and this is a correction of premise: npm installs
+   `optionalDependencies` by default — it only tolerates the FAILURE of the install. It would swap 135 mandatory
+   MB for 135 mandatory MB plus an intermittent failure mode."
+- "An optional peer does not either: npm does not install it, so the `Rolldown failed to resolve` comes back
+   identical."
+- "⚠️ The fallback already exists and is good: without a neural engine the narration falls back to Web Speech,
+   which speaks the right language, is immediate and weighs nothing. The absence of the port does not SILENCE the
+   product — and that is what separates this decision from an accessibility cut."
+
+considered-options:
+- "P1 - keep `dependencies` (the state of ADR-0093)"
+- "P2 - the PORT: `carregarVozNeural` in `CreateGameOptions`, the game is the one that names"
+- "P3 - `optionalDependencies`"
+
+pros-and-cons-of-the-options:
+  P1:
+    good:
+    - "The neural voice works by default for every consumer, without anyone having to know it exists."
+    bad:
+    - "⚠️ 135.4 MB of `onnxruntime-web` in the `node_modules` of whoever will never use it — in a product whose
+       pillar 1 is Brazilian public-school hardware and bandwidth."
+    - "The engine comes to depend, at run time, on a discontinued supplier; ADR-0022's swap would be a second
+       contract shock for all consumers at the same time."
+  P2:
+    good:
+    - "Measured: the clean consumer drops from **165.6 MB to 23.1 MB**, and the emitted `platform/tts.js` stops
+       having ANY third-party specifier — only relative imports, nothing for the bundler to resolve."
+    - "⚠️ ADR-0022's swap stops being a shock: whoever wants sherpa-onnx-wasm changes their own line, whenever
+       they want, without waiting for an engine version."
+    - "⚠️ AND IT UNLOCKED A PATH NOBODY COULD TEST: the header of `tests/tts.node.test.js` said in writing
+       «NÃO exercito o caminho Piper, que faz import() de CDN». With the port, the whole loading runs against
+       a fake, with no network and no supplier installed. It was the only path in the module that no test
+       walked."
+    bad:
+    - "⚠️ Neural narration is OFF by default, and that is a real accessibility cost — mitigated, not cancelled,
+       by the fact that the fallback speaks the right language."
+    - "One more option in `CreateGameOptions`, which already has many."
+  P3:
+    bad:
+    - "It does not do what whoever proposed it expected: `optionalDependencies` IS installed by default. The
+       weight stays exactly the same and one more failure mode is gained."
+
+decision-outcome:
+  chosen-option:
+    link: "P2 - the port. Decided by the Dev on 2026-09-06, after seeing the measurement that corrected 0.5 MB to
+           135.4 MB — and BEFORE publishing, which is what prevented the second wrong version"
+    justification: |
+      ===== WHAT CHANGES, AND IT IS LITTLE CODE =====
+      `TtsCtx` gains `carregarVozNeural?: CarregarVozNeural`, and `CreateGameOptions` passes it on. On the game's
+      side it is one line:
+
+          carregarVozNeural: () => import('@mintplex-labs/piper-tts-web')
+
+      ⚠️ `main.ts` — the composition root of this repository's GAME, which sits OUTSIDE the published package —
+      is the ONLY point in the tree that names the supplier. That is why it stays in `devDependencies` here, and
+      that is why the published package comes to have no `dependencies` at all.
+
+      ===== AND THE TYPE DOES NOT COME FROM THE SUPPLIER EITHER =====
+      `ModuloNeural`/`SessaoNeural` are written by hand, with the TWO calls the engine makes. Importing the
+      supplier's type would force the package to be installed for the consumer's `tsc` to run — it would be the
+      same defect as ADR-0093 moved to another field, from `dependencies` to the type space.
+
+      ===== THE ABSENCE IS SAID, NOT SILENT =====
+      Three consequences, and none is «não acontece nada»:
+        · `sr.tts.neuralNotBundled` — a NEW sentence, and different from `sr.tts.noNeuralForLanguage` on
+          purpose. Saying «não há voz para este idioma» would send the child switching languages in search of
+          what is not there in any language.
+        · the guard comes BEFORE the language question, for the same reason.
+        · the audio panel stops OFFERING the neural engine (`opcoesDeMotor`). An option that cannot work is
+          worse than one option fewer: whoever chooses it is left waiting for a download that never starts, and
+          whoever navigates by ear has no way to see that it did not start.
+
+      ===== WHAT THIS RECORD DOES NOT TOUCH =====
+      ADR-0093's two-direction gate stays whole, and it is what makes this decision checkable instead of
+      declared: with the port, `[Zero]` becomes true by CONSTRUCTION — no shipped module names any package at
+      all —, and the reciprocal keeps watching `pixi.js`.
+
+  consequences:
+    positive:
+    - "The clean consumer drops from 165.6 MB to 23.1 MB."
+    - "The published package stops having `dependencies`: the only thing it asks of the consumer is the peer it
+       actually names."
+    - "The neural voice's loading path becomes testable without a network."
+    negative:
+    - "⚠️ A consumer who wants a neural voice has to know it exists. Mitigation chosen: the option DISAPPEARS
+       from the panel instead of appearing dead, and `CreateGameOptions` carries the one-line example in the
+       field's own prose — the documentation lives where whoever integrates is already looking."
+    neutral:
+    - "`@mintplex-labs/piper-tts-web` stays in this repository's `devDependencies`, because this repository is
+       also the APP that uses it. `pixi.js` stays a peer, for ADR-0093's reason."
+  confirmation: |
+    ⚠️ PROVED WHERE THE DEFECT LIVED — a clean install of the tarball, with and without the port:
+
+        before (ADR-0093, `dependencies`)   165.6 MB · onnxruntime-web present
+        after (port)                         23.1 MB · onnxruntime-web ABSENT, supplier absent
+
+    And the installed package's `dist-pkg/platform/tts.js` has no third-party specifier at all — the two
+    occurrences of the name left there are COMMENTS, which is exactly the distinction the gate's
+    `linhasDeCodigo` makes.
+
+    The four new cases of `tests/tts.node.test.js` were born with TWO confirmed mutations, applied by script to
+    the file and restored from a copy: swapping `neuralNotBundled` for `noNeuralForLanguage` (the notice loses
+    the distinction) and `neuralDisponivel` fixed at `true`. Both went red.
+
+    This repository's app did NOT regress: `npm run build` still emits `ort.bundle.min` and `voices_static` in
+    separate chunks, that is, the `import()` in `main.ts` stays lazy and code-split.
+
+    Suites: 190 files / 3345 tests green in both projects · `tsc --noEmit` clean.
+
+more-information: |
+  ⚠️ THIS IS THE SECOND RECORD OF THE SAME DAY ABOUT THE SAME DEFECT, and the sequence is the information: ADR-0093
+  fixed the symptom with an incomplete measurement, and the complete measurement arrived because a consumer put a
+  number on paper — «27 MB de WASM» — that did not match mine. Checking their number was what prevented the
+  publication of a second wrong version.
+
+  The lesson is not about npm. It is that **the cost of a dependency is not read in the `dependencies` field**: a
+  non-optional peer is installed all the same, and it was a non-optional peer that caused both halves of this
+  story — the defect and the wrong number of the first fix.
+
+  ⚠️ And there is a consequence for issue #113 that changes sign: the consumer's repository had added the package
+  as ITS OWN devDependency, with a test to fail when the engine moved it to `dependencies`. The engine did NOT move
+  it — it goes back to being a devDependency here, and over there the patch can go for good: whoever wants a
+  neural voice declares the port, whoever does not stops carrying 135 MB.

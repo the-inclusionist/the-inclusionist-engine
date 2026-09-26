@@ -1,0 +1,60 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/owner-colours-and-outlines.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #183 closed, `engine:04f1e34`): an answer without the two refuses the boot; answered with a word, each row is in the visual panel with that word; answered «not here», no row."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0153 — the cartridge answers every GAME_KEYED accommodation: its word, or «not here»; an absent answer refuses the boot"
+    - "ADR-0151 §2 item 6 — the visual panel lists «itens na cor do dono» and «contorno de 1º e 2º plano»"
+    - "`core/state` — `ownerColors`, `hcOutlineFg`, `hcOutlineBg`: stored and announced, with no row under `createGame`"
+  informed: []
+
+title: Owner colours and contrast outlines are game-keyed subjects
+
+context-and-problem-statement: |
+  The Dev listed «itens na cor do dono» and «contorno de 1º e 2º plano» in the visual panel (ADR-0151 §2). Both are settings a
+  GAME applies — whether items have an owner, whether its drawing has a foreground and a background to outline — and nothing
+  the engine holds answers whether they have a subject, so `createGame` offered neither (`oferecer: { dono: false }`).
+  Asked whether to create the two subjects in the accommodation catalogue or derive them (two or more players; high contrast
+  on), the Dev, 2026-09-13: «Criar os dois assuntos.»
+
+decision-drivers:
+  - "D1 — A ROW WITH NO SUBJECT IS NOT OFFERED (ADR-0106 §5, ADR-0153)"
+
+considered-options:
+  - "A — derive: owner colours with two or more players, outlines with high contrast on"
+  - "B — two GAME_KEYED subjects the cartridge answers"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No new answer to give. ❌ A row appears in a game with no owned items or nothing to outline.
+  **B.** ✅ The row appears only where the game says it has the subject, in its word. ❌ Every cartridge answers two more.
+
+decision-outcome:
+  chosen-option:
+    link: "B — two game-keyed subjects"
+    justification: |
+      1. **`ownerColors`** joins GAME_KEYED: do items belong to a player, shown in that player's colour?
+      2. **`contrastOutlines`** joins GAME_KEYED: does the game draw outlines around foreground and background in high contrast?
+      3. Each answered with the game's word enters the visual panel as its row, writing the stored setting the game reads
+         (`core/state`); «not here» leaves the row out.
+      4. ⚠️ BREAKING: a cartridge that answers the GAME_KEYED list as it was is refused at boot until it answers the two. A note
+         in `Breaking-Changes.md` says what to add.
+
+  consequences:
+    positive:
+      - "A multiplayer game with owned items offers owner colours; a quiz does not"
+    negative:
+      - "Every cartridge's accommodation answers grow by two, and the ones already published must be updated"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #183, closed). Gates: an answer without the two refuses the boot; answered
+    with a word, each row is in the visual panel with that word and writes its stored setting; answered «not here», no row.
+
+more-information: |
+  The ids are English like the rest of the catalogue (`core/accommodations`). The panel rows the engine's visual module already
+  draws for a game with owners (`ui/settings-visual`, `oferecer.dono`) are reused, offered by the answer instead of a constant.

@@ -1,0 +1,264 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-11
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0139 §5 — this record pays the debt that one names. It put one `createGame` behind N cartridges,
+       chose a delegating declaration to carry the platform until the engine could do better, and said out
+       loud that `engine.problems` and `engine.alcance` are not to be trusted in platform mode meanwhile"
+    - "ADR-0038 — THE BOUNDARY WAS ALREADY NAMED. State is cut PAGE / RUN / GAME, and a cartridge swap is
+       exactly the RUN-to-GAME cut. This record does not invent a lifetime; it says which of the three each
+       eager read belongs to"
+    - "ADR-0080 — the engine holds nothing per game, and its test is «would a second game want a different
+       value here?». §5 below shows why a mount pointer passes that test rather than breaking it"
+    - "ADR-0084 — a value read once where a function was meant, going stale in silence. The same defect, at
+       the scale of a whole boot rather than one field"
+    - "ADR-0106 §5 — why `reflectPauseIcons` exists at all, and the comment beside it that made this record
+       smaller: «a tabela de acções deste jogo pode ter mudado desde a montagem». The engine already
+       anticipated the swap in one place"
+    - "ADR-0115 — where `seguraTeclas` comes from. 📏 Measured 2026-09-11: it is ALREADY a function in the
+       contract (`core/contract.d.ts:219`), so nothing here changes the contract. What is frozen is the
+       pause-icons CONTEXT, which is an engine defect and an issue, not a clause of this record"
+    - "ADR-0141 — the game side of ADR-0080 §2's RNG rule. Same family of defect, opposite direction: there a
+       cartridge reaches shared state, here the engine holds it"
+  informed: []
+  confirmed-by:
+    - engine:app/js/boot/create-game.ts
+    - engine:tests/boot-create-game.node.test.js
+  errata:
+    - date: 2026-09-11
+      what: "`more-information` said the frozen `seguraTeclas` in the pause-icons context «goes to the engine
+             as an issue». It did not: the Dev asked «pra que abrir issue se podemos corrigir agora?» and it
+             was fixed in the same session. `EscritoresVisuais.seguraTeclas` and `PauseIconsCtx.seguraTeclas`
+             became `() => boolean`, `create-game` passes the reference instead of the result, and three test
+             fixtures were corrected — one of which, the MINIMAL ctx of `pause-icons.browser.test.js`, was
+             passing its §5 case BY ACCIDENT, because an omitted field is `undefined` and `undefined` is
+             falsy. ERRATUM under ADR-0057 §1 and not a supersession: the decision is untouched, and what the
+             sentence described was the DISPOSAL of a defect this record deliberately kept outside itself.
+             ⚠️ The record's own subject — `mount()` and `unmount()` — remains unbuilt, so no `confirmed-by`."
+    - date: 2026-09-11
+      what: "§2's first row is WRONG, and it was measured on the build output rather than on the source.
+             `conformanceProblems(o.declaration)` does not feed `problems`: it THROWS —
+             `app/js/boot/create-game.ts:428-431`, «createGame: declaração malformada». A malformed
+             declaration is a precondition and not a diagnostic. ➡️ So `mount()` must THROW on a malformed
+             cartridge rather than refresh a list, which is a better rule than the one this record wrote and
+             a different one. 📏 And the rest of `problems` splits: of its seven feeders FOUR are about the
+             HOST and do not move on a swap (`:441` missing markup, `:512` no filter host, `:519` no
+             accessibility bar, `:620` a bar that takes no content), and THREE depend on the cartridge
+             (`:454` the declared world, `:469` the neural-voice line through `declines`, `:682` seats
+             without a pause actor). ⚠️ Also: the eight sites are NOT «the second third» — measured in the
+             source they run from line 428 to 885 across a 947-line file, interleaved with 24 top-level
+             bindings that feed each other. ERRATUM under ADR-0057 §1: the DECISION — the engine gains mount
+             and unmount — is untouched; what was wrong is this record's description of the work."
+    - date: 2026-09-11
+      what: "the confirmation claimed the mapping gate was «NOT TESTABLE TODAY WITHOUT WIDENING THE PUBLIC
+             SURFACE». FALSE, and the Dev asked the question that exposed it — «explique melhor». There is
+             no reader of the FIELD, which is what the claim looked at, but `fabricaComOJogo()` and
+             `tabelaDoPad()` are both exported and both change their RESULT depending on whether a mapping
+             is registered. The gate was written by behaviour, needed no new export, and is the stronger
+             shape anyway. ⚠️ The claim was also harmful beyond being wrong: it handed the Dev a decision —
+             whether to widen the public surface — that never needed taking. Both outstanding gates landed
+             the same day, the reach notice in the browser project where the node double cannot see it; the
+             confirmation now reports six and not four. ERRATUM under ADR-0057 §1: no decision moves, only a
+             statement about what could be measured."
+
+title: The engine MOUNTS and UNMOUNTS a cartridge, so one composition root can serve many
+
+context-and-problem-statement: |
+  ADR-0139 decided that the shell calls `createGame` once and a cartridge supplies the game-owned half
+  of its options, because six calls would deduplicate the bytes and multiply the runtime. It also
+  wrote down what that costs, because the cost was known when the choice was made: `createGame` takes
+  `declaration` as a VALUE and runs `conformanceProblems` on it once, so with N cartridges the
+  diagnostic describes whichever one was mounted first.
+
+  📏 MEASURED ON 2026-09-11 against `dist-pkg/boot/create-game.js` (587 lines), and the measurement is
+  the reason this record is small. The engine reads the declaration and the game's hooks in TWO ways:
+
+    · THROUGH CLOSURES — `topology`, `targetsOf`, `nameAt`, `roleAt`, `focusOf`, `world` at the point of
+      use, `isBlindMode`, `sonarPlayers`, `setPhase`, `comIndice`, `isNavigable`, `naBarraDe`, `navBar`.
+      ⚠️ THESE NEED NOTHING. A delegating declaration already reaches them, and ADR-0084 is the record
+      that made half of them functions in the first place.
+    · EAGERLY, AT BOOT — and these are the whole of the problem. Nine sites in the study, EIGHT once the
+      pause-icons defect leaves for its own issue.
+
+  So the question is not «how does the platform swap games», which ADR-0139 answered. It is «who owns
+  the eight», and today the answer is the shell, duplicating a diagnostic the engine already owns.
+
+decision-drivers:
+  - "A stale diagnostic is worse than none: `engine.problems` describing the wrong cartridge is a gate that
+     reports green about a game it never looked at"
+  - "The shell should not have to re-implement `conformanceProblems` to know what the engine already knows"
+  - "Whatever is decided must keep the child's accessibility profile across a swap — it is PAGE lifetime by
+     ADR-0038, and losing it between games is the failure one origin exists to prevent"
+  - "The engine must still hold nothing a second game would want different (ADR-0080)"
+
+considered-options:
+  - "M1 — keep ADR-0139's interim: a delegating declaration, and the shell re-runs the conformance check
+     itself on each swap"
+  - "M2 — the engine gains `mount(declaration, hooks)` and `unmount()`, and re-derives the eight"
+  - "M3 — one `createGame` per cartridge, torn down and rebuilt on each swap"
+
+pros-and-cons-of-the-options:
+  M1:
+    good:
+      - "It exists today and unblocks the first two cartridges without touching the engine"
+      - "No new engine surface to get wrong before anything is built"
+    bad:
+      - "🔴 `engine.problems` and `engine.alcance` stay wrong in platform mode, and they are PUBLIC. Anyone
+         reading them believes a number about a cartridge the engine never inspected"
+      - "The shell duplicates `conformanceProblems`, so two implementations of one question drift"
+      - "⚠️ The reach warning of `create-game.js:526` creates DOM at boot and nothing removes it — a cartridge
+         with nothing to warn about inherits the previous one's warning, and no amount of shell code reaches
+         inside the engine to take it down"
+  M2:
+    good:
+      - "The eight are re-derived by the module that owns them, once, in one place"
+      - "`unmount()` has the doors it needs already: `registrarMapeamentoDoTeclado(null)` and
+         `registrarMapeamentoDoPad(null)` both accept null, and nobody has ever used that"
+      - "📏 The scene stack needs NO new method: measured, the four `exit()` handlers across the six games are
+         DOM cleanup, so emptying with repeated `pop()` fires exactly the teardown wanted"
+      - "It states the RUN-to-GAME boundary of ADR-0038 in code, where until now it was only in prose"
+    bad:
+      - "⚠️ It is engine work, and the engine is the one repository every game depends on — a defect here is a
+         defect in six"
+      - "`problems` and `alcance` stop being fixed fields, which is a change to a public shape"
+  M3:
+    good:
+      - "No new concept: it is just boot, again"
+    bad:
+      - "🔴 Already rejected by ADR-0139 for the reason that record exists: it rebuilds the accessibility bar,
+         the TTS, the keyboard runtime and the pause card on every swap"
+      - "The child's PAGE-lifetime profile would be reconstructed between games, which is what one origin is
+         for in the first place"
+
+decision-outcome:
+  chosen-option:
+    link: "M2 — the engine gains `mount(declaration, hooks)` and `unmount()`"
+    justification: |
+      ===== 1. THE BOUNDARY WAS ALREADY NAMED, IN ADR-0038 =====
+      That record cuts state three ways — PAGE, RUN, GAME — and a cartridge swap is the RUN-to-GAME cut.
+      ⚠️ SO THIS RECORD INVENTS NO LIFETIME. It says which of the three each thing belongs to, and makes
+      the engine act on the answer.
+
+      ===== 2. WHAT `mount(declaration, hooks)` RE-DERIVES =====
+      The eight eager reads, by line in `dist-pkg/boot/create-game.js` as measured on 2026-09-11:
+
+        :99   `conformanceProblems(o.declaration)` — the contract diagnostic
+        :120  `world()` and the selector check that pushes into `problems`
+        :324  the seat count, `(o.players ?? []).length`
+        :392  `registrarMapeamentoDoTeclado` / `registrarMapeamentoDoPad`
+        :407  the player list
+        :518  `acoesDoJogo` from `presetActions(o.preset)`
+        :523  `alcance(...)`, which becomes `engine.alcance`
+        :526  `mostrarAvisoDeAlcance(...)`, which CREATES DOM
+
+      📌 This is an EXTRACTION, not a rewrite: the second third of `createGame` becomes a named function
+      that boot calls once and `mount` calls again.
+
+      ===== 3. WHAT `unmount()` RELEASES =====
+        · `registrarMapeamentoDoTeclado(null)` and `registrarMapeamentoDoPad(null)`. ⚠️ The doors already
+          exist and were never used, and 📏 measured: none of the six games registers a mapping of its own,
+          so nothing but the engine's own registration is erased.
+        · The scene stack, emptied with repeated `pop()`.
+        · The reach warning of :526.
+
+      ===== 4. WHAT MUST NOT MOVE, AND THE RECORD SAYS SO TO STOP A FUTURE FIX =====
+        · **The child's profile is PAGE lifetime** — ADR-0038 names eleven: blind mode, contrast outlines,
+          caption, letter case, cane width, wheelchair, one-button, colour-blind safety, owner colours,
+          visual mode. «One page, one child, one profile.» ⚠️ `state.modoCego` is module-level mutable
+          state reached through a LIVE binding, and here that is CORRECT. It must survive the swap.
+          It is not the defect of ADR-0141; that one is the GAME's state shared, this one is the CHILD's.
+        · **The scene stack needs no `clear()`.** 📏 Measured: only three of six use it, only two define
+          `exit:` — `pixi-15-puzzle/app/js/boot/main.ts:265` and `game-whackwhack/app/js/boot/main.ts:428`
+          and `:450` — and all are DOM cleanup. A `clear()` that skipped `exit()` would be the WRONG fix,
+          because it would skip the cleanup.
+        · **The sonar needs nothing.** Its context takes `topology`, `targetsOf`, `nameAt` and `roleAt` as
+          functions already.
+        · **The heavy downloads are not re-triggered.** `baixarPesados` is host-owned by ADR-0139's split,
+          so it is outside `mount` by construction — a swap does not re-fetch 241 MB.
+
+      ===== 5. WHY A MOUNT POINTER DOES NOT BREAK ADR-0080 =====
+      ⚠️ THE OBJECTION IS FAIR AND HAS TO BE ANSWERED: ADR-0080 says the engine holds nothing per-game, and
+      a mount pointer is, literally, the current game.
+
+      Its test is the answer: «would a second game want a different VALUE here?» For every item ADR-0080
+      names — the RNG stream, the storage prefix, the topology, the grid metric, the world element — a
+      second game wants a different value, so the engine may not hold it. For the mount pointer a second
+      game does not want a different value: **it wants to BE the value**, one at a time. That is not
+      per-game state; it is the composition root's bookkeeping about which game is current, and it is the
+      mechanism by which ADR-0080's rule stays keepable once N games share one page.
+
+      ===== 6. `problems` AND `alcance` BECOME DERIVED =====
+      They stop being fields fixed at boot and start describing the mounted cartridge. Whether that is a
+      getter or a re-read after each `mount` is an implementation choice; what this record fixes is that
+      reading them must not return a statement about a different game.
+  consequences:
+    positive:
+      - "ADR-0139's stated debt is paid, and `engine.problems` stops being a trap in platform mode"
+      - "The shell stops duplicating `conformanceProblems`, so there is one implementation of one question"
+      - "The reach warning can be taken down between cartridges, which no amount of shell code could do"
+      - "ADR-0038's RUN-to-GAME cut becomes something the code performs rather than something prose asserts"
+    negative:
+      - "⚠️ Engine work, in the one repository all six games depend on"
+      - "`problems` and `alcance` change shape on a public interface, so a consumer reading them as constants
+         has to stop"
+      - "The extraction touches the middle of `createGame`, which is the densest part of the boot"
+    neutral:
+      - "Nothing in the contract changes. `seguraTeclas` is already a function; what is frozen is the
+         pause-icons context, and that is an engine defect with its own issue, not a clause here"
+      - "No game repository has to change for this record. The cartridge shape is ADR-0139's"
+  confirmation: |
+    BUILT on 2026-09-11, in `app/js/boot/create-game.ts`, with five cases in
+    `tests/boot-create-game.node.test.js`. Suite green: 172 files, 2683 tests; browser 66/66; `tsc` clean.
+
+    WHAT THE GATES ASSERT, and which of the five planned ones landed:
+
+      1. ✅ **The one that decides.** Boot a cartridge whose declared world is absent, assert `problems`
+         says so, `mount()` a sound one, assert the line is gone — and the PAIR in the other direction, so
+         that «it disappeared» cannot pass for «it never looked». 🔴 Mutation-checked: making `problems`
+         return only the host half turns 5 of 44 red.
+      2. ✅ `mount()` throws on a malformed declaration, and the sound cartridge stays mounted — a refusal
+         must not leave the root half-swapped.
+      3. ✅ `declaration` hands back the mounted cartridge and not the one that booted.
+      4. ✅ `unmount()` empties the scene stack and every popped scene's `exit()` runs. ⚠️ And the case
+         measures only the TAIL, because `push` already fires the `exit()` of the scene beneath — measured
+         here rather than assumed, and asserting the whole list would have credited `unmount` with it.
+
+      5. ✅ **The reach notice**, in the BROWSER project, where it had to be: the node double answers YES to
+         any selector not listed in `ausentes`, so `#reach-notice` reads as present whether or not it was
+         ever created, and its `removeChild` is an empty function — both halves of the question are
+         invisible to it. What the case measures is not the notice APPEARING but it LEAVING when the next
+         cartridge has nothing to warn about. 🔴 Mutation-checked: making `retirarAvisoDeAlcance()` a no-op
+         turns it red.
+      6. ✅ **Both mappings after `unmount()`**, by BEHAVIOUR: `fabricaComOJogo()` returns the engine's
+         keyboard factory again, and `tabelaDoPad()` returns the `GAMEPAD_STANDARD` constant itself —
+         identity, which also proves the per-seat memo was cleared.
+
+    ⚠️ AND ONE CLAIM IN THE FIRST VERSION OF THIS BLOCK WAS FALSE — see the erratum of 2026-09-11. It said
+    the mapping gate was «not testable today without widening the public surface», because both registrars
+    are write-only. The first half is true and the conclusion was not: there is no reader of the FIELD, but
+    two exported functions change their RESULT depending on whether it is set. Asserting behaviour rather
+    than internal state is also the better gate — «the field is null» measures the implementation, «after
+    the cartridge is released the keys go back to the engine's» measures what the child finds.
+
+    📌 The PAGE half of ADR-0038 — that the child's blind mode, contrast and typeface survive a swap — is
+    true by construction rather than by assertion: `state` is a live module binding and `mount()` does not
+    touch it. A case for it is still worth having, and is not written.
+
+more-information: |
+  ⚠️ THIS RECORD SUPERSEDES NOTHING, and that was checked rather than assumed. The index was searched for a
+  record fixing the shape of what `createGame` RETURNS — the `Engine` interface — and there is none. The
+  records that touch this ground decide other things: ADR-0080 decides what the engine may HOLD, ADR-0038
+  decides how long state LIVES, ADR-0139 decides what a cartridge SUPPLIES. The return shape was never
+  anyone's decision, which is why `problems` and `alcance` could be fixed fields without a record noticing.
+
+  WHAT THIS RECORD DOES NOT DECIDE:
+
+    · Whether `problems` and `alcance` become getters or are re-read after `mount`. Implementation.
+    · The pause-icons context freezing `seguraTeclas`. `create-game.js:230` calls the function once and
+      stores the boolean; `ui/pause-icons.d.ts:199` and `:433` type it `readonly seguraTeclas: boolean`, and
+      `reflectPauseIcons` then refreshes from stale data. The contract is fine — the context should take
+      `() => boolean`. That is a defect with no decision in it, and it goes to the engine as an issue.
+    · Whether `mount` is idempotent, and what mounting over a mounted cartridge does. To be settled against
+      the implementation rather than guessed here.

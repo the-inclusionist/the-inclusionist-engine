@@ -1,0 +1,65 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+    - engine:tests/touch.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #154 closed): the actions sit 1 4 over 2 3 (`engine:7981f6c`); the shoulders in the
+             top corners with the trigger over the bumper, wired through a touch transport of 13 slots (`engine:757392a`)."
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0157 — the pad always has the directional and four action buttons, plus SELECT and START. It decided WHICH
+       buttons exist, not WHERE they sit; this record adds the where"
+    - "`core/actions` — the action names `action1`..`action4`, `leftShoulder`, `leftTrigger`, `rightShoulder`,
+       `rightTrigger` (L1, L2, R1, R2)"
+  informed: []
+
+title: Where the virtual pad's buttons sit — actions 1 and 4 on top, 2 and 3 below; L2 over L1 and R2 over R1 in the top corners
+
+context-and-problem-statement: |
+  The Dev, on the virtual pad: «a posição dos botões de ação é 1 4 / 2 3, isto é, com os números 1 e 4 em cima e 2 e 3
+  embaixo. Botões no canto superior esquerdo é L2 em cima e L1 embaixo, e no canto superior direito é R2 em cima e R1
+  embaixo.»
+
+  📏 Measured before writing: `input/touch.montarControleDeToque` puts the four action buttons in one flex row, in slot
+  order `b0 b1 b2 b3` (`.touch-pad{display:flex}`), and draws no shoulder or trigger button at all.
+
+decision-drivers:
+  - "D1 — A FIXED PLACE PER ACTION. The quick pause legend names action 2, 3 and 4 by number; the child finds them in
+     the same place in every game"
+  - "D2 — THE SHOULDERS WHERE A PHYSICAL CONTROLLER HAS THEM: on top, the trigger (2) above the bumper (1)"
+
+considered-options:
+  - "A — keep the single row in slot order"
+  - "B — the Dev's layout: a 2×2 block by action number, and the shoulders in the top corners"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No change. ❌ The place of an action depends on the slot map, and the legend's numbers point nowhere fixed.
+  **B.** ✅ Each action has one place, the same in every game. ❌ The block is taller than the row.
+
+decision-outcome:
+  chosen-option:
+    link: "B — 1 4 over 2 3; L2 over L1 top-left, R2 over R1 top-right"
+    justification: |
+      1. **The four action buttons form a 2×2 block**: top row `action1` (left) and `action4` (right); bottom row
+         `action2` (left) and `action3` (right). The place follows the ACTION, not the slot the child remapped.
+      2. **The top-left corner holds L2 above L1** (`leftTrigger` over `leftShoulder`), and **the top-right corner R2
+         above R1** (`rightTrigger` over `rightShoulder`).
+
+  consequences:
+    positive:
+      - "The numbers of the quick pause legend have a fixed place on the screen"
+    negative:
+      - "The action block needs two rows of the pad's height"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #154, closed). Gates: measured positions of the four action
+    buttons (1 and 4 above 2 and 3; 1 and 2 left of 4 and 3), and of the shoulder buttons (L2 above L1 in the top-left
+    corner, R2 above R1 in the top-right corner), on the real stylesheet.
+
+more-information: |
+  Open, and not decided here: whether the four shoulder buttons are drawn in every game, like the minimum of ADR-0157,
+  or only when the game's preset names them. They have no role in the menus, which is what made the minimum necessary.

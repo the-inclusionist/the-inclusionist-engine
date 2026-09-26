@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/webgazer-left-the-engine.node.test.js
+  supersedes-in-part: [ADR-0132]
+  errata:
+    - date: 2026-09-16
+      what: '✅ CONFIRMED, pushed (issue #198 closed, `engine:ed2181b`, `game-platformer:689971d`): no module names WebGazer, `visao:olhar`
+             left the catalogue, `blob:` left `script-src`; the gate is in `confirmed-by`. The Dev played with the eyes on the MediaPipe
+             reading the same day.'
+  date: 2026-09-16
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0132 — WebGazer returned beside MediaPipe («Traga o WebGazer de volta. Vamos usar ambos.») for the gaze POINT on the screen"
+    - "ADR-0213 — eye control by a relative reading of four zones and a cycle; no point on the screen and no calibration"
+    - "ADR-0111 §4 — a transport does not disguise itself as a keyboard; `ui/webcam` dispatched synthetic keys"
+    - "📏 The eye lab, 2026-09-15/16: a gaze point did not hold on this stack, and four zones read from the eye's own rest did"
+    - "📏 Measured 2026-09-16: `ui/webcam` (WebGazer) is imported by one sibling game, `game-platformer` (five names and the `#opt-eyes`
+       button); the catalogue entry `visao:olhar` is 1 895 169 bytes, GPL, fetched at install on every device"
+  informed: []
+
+title: WebGazer leaves — eye control is MediaPipe's relative reading
+
+context-and-problem-statement: |
+  ADR-0132 brought WebGazer back beside MediaPipe because WebGazer answers WHERE ON THE SCREEN the child looks, and MediaPipe only where the
+  iris is. ADR-0213 then decided eye control needs no point on the screen: four zones read by how far the eye moved from its own rest, built
+  in the engine on MediaPipe. Asked whether WebGazer is still needed, the Dev: «WebGazer é desnecessário, não?» and, asked to confirm its
+  removal, «sim, remova-o».
+
+decision-drivers:
+  - "Eye control no longer needs a screen point, which was WebGazer's only reason to exist here"
+  - "1.9 MB of GPL research code fetched at install on every device for a control nothing uses"
+  - "`ui/webcam` reached games by synthetic keys, which ADR-0111 §4 refuses"
+
+considered-options:
+  - "A — keep WebGazer for a future gaze-pointer mode"
+  - "B — remove it; eye control is ADR-0213's reading"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ A pointer mode stays one step away. ❌ It stays downloaded and unmaintained for a mode nobody asked for; the lab measured the point
+  as unreliable.
+  **B.** ✅ One vision library, a smaller install, no disguised keyboard. ❌ A future gaze pointer starts from zero.
+
+decision-outcome:
+  chosen-option:
+    link: "B — remove it"
+    justification: |
+      1. The engine drops `ui/webcam`, the catalogue entry `visao:olhar`, and whatever only WebGazer needed in the page's policy.
+      2. Eye control is ADR-0213's reading, reached through the 👀 on the quick bar.
+      3. `game-platformer` loses its WebGazer eye button; a game that wants eyes gets them from the engine's quick bar.
+      4. ADR-0132's other half — sherpa-onnx closed, as ADR-0186 left it — stands.
+
+  consequences:
+    positive:
+      - "About 1.9 MB less at install, on every device"
+      - "No synthetic keyboard left in the engine's camera path"
+    negative:
+      - "Breaking for `game-platformer`, which imports `ui/webcam`"
+      - "A gaze-pointer mode, if ever asked for, has no ground left"
+
+  confirmation: |
+    The gate in `confirmed-by` (engine issue #198, closed). Gates: no module under `app/js` names WebGazer; the heavy-file catalogue has no `visao:olhar`;
+    the page's content policy lists no source only WebGazer needed.
+
+more-information: |
+  ADR-0124 had already chosen MediaPipe over WebGazer («webgazer não»); ADR-0132 reversed that parenthesis, and this returns to it.

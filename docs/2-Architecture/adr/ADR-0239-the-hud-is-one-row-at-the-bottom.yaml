@@ -1,0 +1,98 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-25
+      what: >-
+        THE CLOCK'S DIGITS AND SIZE, from the Dev after seeing it run: «Temo está com letras grandes demais. Se não houver
+        horas, não coloque 0: no começo. O bloco "tempo" com horas embaixo deve ocupar menos espaço na tela, não mais que dois
+        relógios de pizza e meio.» So the digits show the hour only while there is one (`1:00:00`, then `59:59`), which
+        replaces §2's «format fixed for the whole session»; the label stays at the 16 px text floor (ADR-0163) and loses
+        weight instead; and the label-and-digits block is never wider than two and a half pies, held by a test with the
+        widest digits an hour draws.
+    - date: 2026-09-25
+      what: >-
+        THE GAME'S WORKSPACE ENDS AT THE HUD ROW, NOT AT THE FOOTER BANDS ABOVE IT. Built, the row plus the room reserved for
+        the sound caption and the button legend (§6) pushed the demo quiz's last option below its floor at 640×360 (it ends at
+        297 px; the row starts at 310 px, the reserve at 262). The Dev had already given the rule for this, of the mission:
+        «a legenda é momentânea, a escrita da missão aparece o tempo todo» — what is momentary may cover what is always
+        there. So the caption and the legend still sit above the row, but they overlay the workspace while they show; the
+        room a game must leave free at the bottom is the row's, which is always there. Announced to the Dev with the way to
+        override it.
+    - date: 2026-09-25
+      what: >-
+        §5 WAS MY READING, NOT THE DEV'S DECISION, and the Dev answered it the same day: «Topo no centro, abaixo dos menus,
+        mas isso faz com que seja coberta com a legenda dos menus. Tudo bem, a legenda é momentânea, a escrita da missão
+        aparece o tempo todo.» So the mission sits at the TOP CENTRE, under the quick accessibility bar, and the bar's
+        momentary legend (the name line under the icons) may cover it while it shows. This also sets aside ADR-0175 §3
+        («nothing of the HUD sits under the quick bar») for the mission. Of §6, the Dev: «Como está está bom.» Of the
+        dictionary label over the clock: «Ok. Vamos experimentar assim.»
+  supersedes-in-part: [ADR-0168, ADR-0175, ADR-0236, ADR-0238]
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim, with a screenshot of Super Mario World's HUD: «Vamos reorganizar o hud. Inferior esquerda: barra(s) de pontuação(ões) de ZDP. Inferior centro: relógio (TIME em cima, tempo ambaixo) + relógi time-timer à direita. inferior entre centro e direita: potuação com 5 dígitos e aima da pontuação, poder em uso. Inferiori direita: mapa em jogos que tenham mapa. Use o relógio e a pontuação do Mário como inspiração.»"
+    - "ADR-0168 — SUPERSEDED IN PART: §2 (the clock at the top right) and §3 (the learning bars centred in the footer), and driver D2's «the footer owns the bottom». Who mounts the HUD and the bands a game declares stand"
+    - "ADR-0175 — SUPERSEDED IN PART: §2 (the power under the clock) and §4 (the learning bars' place). §1's mission, top left, stands: the Dev's layout does not name it"
+    - "ADR-0236 — SUPERSEDED IN PART: only where the clock sits (top right, beside the quick bar). The Time Timer pie, 60 minutes, red at the end and the options stand"
+    - "ADR-0238 — SUPERSEDED IN PART: only the corner. Five digits with leading zeros, clamped at 99999, spoken as a number, stand"
+    - "ADR-0164 — the footer: sound caption, button legend, explanation band"
+    - "ADR-0162 — the on-screen pad: the directional bottom left, the buttons bottom right, the shoulders in the corners"
+  informed: []
+
+title: The HUD is one row at the bottom — learning bars, clock, score and power, and the game's map
+
+context-and-problem-statement: |
+  The HUD was split between the top corners (points and mission on the left, clock and power on the right, ADR-0175) and
+  the footer (the learning bars, ADR-0168). The Dev reorganised it into one row along the bottom of the game region, with
+  Super Mario World's clock and score as the visual reference: a label over the digits, the digits bold, legible at a glance.
+
+decision-drivers:
+  - "The Dev's layout, position by position"
+  - "The top belongs to the quick accessibility bar (ADR-0148); the HUD no longer shares it"
+
+considered-options:
+  - "A · Keep ADR-0175's two top columns and ADR-0168's footer bars"
+  - "B · One bottom row, as the Dev laid it out"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ Not what the Dev chose. **B.** ✅ The top of the game region is the bar's and the game's; every number the child
+  tracks sits on one line. ❌ The bottom is also the footer's (captions, button legend, explanation) and, in games that ask
+  for it, the on-screen pad's; the rules below settle who sits over whom.
+
+decision-outcome:
+  chosen-option:
+    link: "B — one row at the bottom of the game region"
+    justification: |
+      The Dev's decision, left to right:
+      1. **Bottom left — the learning bars** (the ZPD bars, one to three, as built by issue #162).
+      2. **Bottom centre — the clock:** a label over the time left in digits, and the Time Timer pie to its right. The
+         label is a dictionary word («TEMPO» / «TIME» / «TIEMPO»), since every interface string is localisable (pillar 3).
+         The digits count down; their format is fixed for the whole session, so they never change unit as a warning
+         (ADR-0236).
+      3. **Between the centre and the right — the score**, five digits with leading zeros (ADR-0238), and **above it the
+         power in use** (the `power` band).
+      4. **Bottom right — the game's map**, only in games that have one: the engine reserves the slot and the game mounts
+         its map in it (the minimap left the engine with the tile world, ADR-0228).
+      5. **The mission stays at the top left** (ADR-0175 §1): the Dev's layout does not move it.
+      6. **Who sits over whom at the bottom:** the sound caption and the button legend sit above the HUD row; the
+         explanation band covers the row while a menu is open (the game is paused then); where a game shows the
+         on-screen pad, the HUD row sits above the pad. These placements are interface choices, logged, and the Dev sees
+         them in the running app.
+      Super Mario World is the reference for the look (label over bold digits), not a source of assets: no art or font is
+      taken from it.
+
+  consequences:
+    positive:
+      - "The top of the game region carries only the quick bar and the mission"
+      - "Every number the child tracks during play is on one line"
+    negative:
+      - "The bottom is shared by the HUD, the footer and the pad; the order above is what keeps them apart"
+      - "A game with a map gains a slot to fill (additive)"
+
+  confirmation: |
+    ⏳ Not built. Debt: issue #94 — the clock and the score are built there, in this row; the learning bars and the power
+    move with them, and the map slot is added.
+
+more-information: |
+  ZPD (zona de desenvolvimento proximal) names the learning bars in the Dev's words.

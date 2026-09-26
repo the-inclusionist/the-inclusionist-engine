@@ -1,0 +1,93 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0191
+      what: >-
+        §1's «at the engine repository root». The catalogue and its instructions live in `research/`, where the Dev put
+        them; everything else stands.
+  supersedes-in-part: [ADR-0150]
+  date: 2026-09-13
+  confirmed-by:
+    - engine:tests/faces-answer-to-the-type-catalogue.node.test.js
+    - engine:tests/what-fonts-the-package-carries.node.test.js
+    - engine:tests/font-size-floor.node.test.js
+    - engine:tests/an-offered-font-loads.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #172 closed; `engine:a5e8534`, `192f777`, `0223db1`): every offered face is an active catalogue entry, the floors hold, and every active family is packaged. The catalogue's place is `research/` since ADR-0191."
+    - date: 2026-09-13
+      what: "✅ POINT 7, THE OPEN ONE, ANSWERED BY THE DEV the same day. Asked whether the engine packages only the reading
+             menu's faces and a cartridge declares and fetches the rest at build: «Engine empacota tudo por enquanto.» The
+             engine packages every `ativo` family (R4 still keeps `removida` and `referencia_externa` out). ⚠️ «Por enquanto»
+             is the Dev's: the weight — 166 families not packaged yet, 60.2 MB as full TTF, before subsetting — is measured
+             again when packaged, against pillar 1. Fills what point 7 left open (ADR-0057 §1)."
+    - date: 2026-09-13
+      what: "✅ COVERAGE NOT MEASURED — iA Writer Quattro and OpenDyslexic have `cobertura: null` in the catalogue. Asked whether
+             they stay in the menu until measured: «Ficam.» Point 5 reads `cobertura`; a face whose coverage is null stays
+             offered, named as not verified, until the catalogue measures it. Fills what point 5 left open."
+  decision-makers: [Dev]
+  consulted:
+    - "`engine:catalogo_tipografico.json` and `engine:catalogo_tipografico_INSTRUCOES.md` — written by the Dev; 260 families,
+       two layers, measured fields, rules R1–R7"
+    - "ADR-0012, ADR-0108, ADR-0149, ADR-0150 — the fonts the engine packaged and why; the catalogue now says which exist"
+    - "ADR-0010 pillars 1 and 8 — school hardware, and the PWA first day online then offline"
+  informed: []
+
+title: The typographic catalogue is the engine's source for fonts, and the engine only reads it
+
+context-and-problem-statement: |
+  The engine kept its own list of 52 faces in `ui/fonts.ts`. The Dev wrote a catalogue instead and moved it into the engine
+  repository with instructions: «Sobre fontes na engine, ao invés de deixar na engine, deixei as fontes no arquivo json. Vou
+  adicionar mais fontes, não faça alterações no catálogo, apenas se adeque a usá-lo», and then «Coloquei o catálogo na raiz do
+  repositório da engine junto com as instruções. Leia as instruções, crie o ADR adequado».
+
+  📏 Measured on 2026-09-13: 260 families — 217 `ativo` (152 layer A, 65 layer B), 40 `removida`, 3 `referencia_externa`
+  (the three French rondes). Of the 52 packaged faces, 51 are `ativo` and Comic Neue is not in the catalogue. 166 `ativo`
+  families are not packaged: 102 of layer A (37.9 MB as full TTF) and 64 of layer B (22.3 MB). The Dev also: «Fonte geral do
+  grupo manuscrito deve ser a Playwrite Brasil.»
+
+decision-drivers:
+  - "D1 — ONE LIST OF FONTS, AND IT IS THE DEV'S: a second list in code drifts, as the 52 already had (Comic Neue)"
+  - "D2 — THE CATALOGUE'S RULES ARE ACCESSIBILITY RULES: the size floor, the coverage and the two layers keep text legible"
+
+considered-options:
+  - "A — the engine keeps `ui/fonts.ts` as its list and copies from the catalogue by hand"
+  - "B — the engine reads the catalogue, keyed by `id`, and never writes it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No build step reads JSON. ❌ Two lists; the Dev adds families and the engine does not see them.
+  **B.** ✅ A family the Dev adds reaches the engine by reading. ❌ The engine's font code is rebuilt on the catalogue's shape,
+  and its gates follow the catalogue's rules.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine reads the catalogue and never writes it"
+    justification: |
+      1. **`catalogo_tipografico.json`, at the engine repository root, is the source for which fonts exist**, with
+         `catalogo_tipografico_INSTRUCOES.md` beside it as the contract for whoever edits it. The engine reads it, keyed by
+         `id`; it never edits it (instructions §10: status, floors, provenance and additions are the Dev's).
+      2. **Only `status: "ativo"` is offered or packaged**; `removida` never comes back; `referencia_externa` is named, never
+         packaged (R4).
+      3. **The reading menu offers layer A only**; layer B is display a cartridge may use for ornament and never as the only
+         carrier of something needed to play (R1).
+      4. **A face is never drawn below its `piso_tamanho_px`** (R2) — the number replaces the engine's own `minPx`.
+      5. **A face offered for Portuguese text has `cobertura.pt_br: true`** (R3); the engine's gates read `cobertura`, not the name.
+      6. **The handwriting group's general face is Playwrite BR** (the Dev); Comic Neue, absent from the catalogue, leaves.
+      7. ⚠️ **Open, for the Dev: what the engine PACKAGES.** Everything `ativo` would be tens of megabytes of precache in every
+         game; the alternatives are measured in the report of 2026-09-13 and this record gains an erratum when answered.
+
+  consequences:
+    positive:
+      - "A family the Dev adds is one edit away from the engine"
+      - "Size floor, coverage and layer become gates instead of comments"
+    negative:
+      - "`ui/fonts.ts` and its tests are rebuilt on the catalogue's fields"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #172, closed). Gates: every face the engine offers is `ativo` and in the
+    catalogue; no layer B face in the reading menu; no face used below its floor; a face offered for Portuguese covers pt_br.
+
+more-information: |
+  The catalogue's measured numbers (stroke width, file size, coverage) are not recomputed by the engine (instructions §1);
+  `arquivo_kb` is the full TTF, and a packaged subset is measured again.

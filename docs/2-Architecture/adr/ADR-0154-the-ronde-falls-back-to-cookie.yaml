@@ -1,0 +1,77 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0012, ADR-0108]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0012 — SUPERSEDED IN PART: its ronde clause (iv), «keeps the Ronde option DISABLED while no font is
+       present». Clauses (i)–(iii) stand: the three faces are never shipped"
+    - "ADR-0108 §4 — SUPERSEDED IN PART: «while no ronde font is present the control stays disabled». Its demand
+       that the option NAME the three installable faces stands, and now has a different job (below). §3, the ronde
+       is never packaged, is untouched"
+    - "LICENSES.md §3 — a licence is read before a file is packaged. Cookie was read on 2026-09-12 (below)"
+    - "ADR-0150 — the collection is offered to cartridge programmers, who choose; this record adds one face to it
+       and changes no other"
+  informed: []
+
+title: The ronde falls back to Cookie — three faces the child may install, and one the engine ships
+
+context-and-problem-statement: |
+  The French ronde has **three** faces and none can be packaged: **Ronde Script**, **OPTIFrench-Script** (a
+  contested copy of the Ronde) and **Merveille** (Lauren Thompson) are free for PERSONAL use only (ADR-0012). So
+  the ronde option was disabled until a device had one installed, and ADR-0108 made the disabled option name the
+  three.
+
+  On 2026-09-12, correcting a report that named only «a Ronde» as the unpackaged face, the Dev wrote: **«Não
+  empacotada são três, não só a Ronde. Inclui também OPTIFrench-Script … e Merveille da Lauren Thompson.
+  Fallback: Cookie.»**
+
+decision-drivers:
+  - "D1 — A FAMILY STACK WITH NOTHING PACKAGED AT ITS END IS A DISABLED CONTROL ON MOST DEVICES. A school tablet
+     with none of the three installed never reaches the ronde at all"
+  - "D2 — THE THREE STAY UNPACKAGED. A fallback must change what the device can show, never what the engine
+     redistributes"
+
+considered-options:
+  - "A — keep the option disabled until one of the three is installed (ADR-0012 iv, ADR-0108 §4)"
+  - "B — stack the three installable faces and end the stack in Cookie, which the engine packages"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Whatever is shown is a real ronde. ❌ On a device with none installed, the option does nothing.
+  **B.** ✅ The option always works, offline, from the first day. ❌ Cookie is a joined brush script, NOT the ronde
+  a French classroom teaches: a child on a device without the three sees a related hand, not hers.
+
+decision-outcome:
+  chosen-option:
+    link: "B — Ronde Script, OPTIFrench-Script, Merveille, then Cookie"
+    justification: |
+      1. **The ronde entry's family stack is the three installable faces, in that order, then Cookie.** The first
+         one the device has wins; Cookie answers when it has none.
+      2. **Cookie is packaged like the other faces** — self-hosted woff2, in the precache (pilar 8).
+      3. **The three are still never packaged**, checked by the gate that already looks for them by family AND by
+         filename.
+      4. **The option is no longer disabled.** The notice naming the three stays, and changes job: it stops being
+         the reason a control is off and becomes the remedy for a hand that is close but not the ronde.
+
+  consequences:
+    positive:
+      - "The ronde option works on every device, offline"
+      - "Nothing about the three unpackaged faces changes, so no licence question reopens"
+    negative:
+      - "🔴 On a device without the three, the child who chose the ronde sees Cookie — a similar joined hand, not
+         the one taught in school. The notice is the only thing that says so"
+      - "The precache grows by one face (Cookie has a single weight, 400)"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — the work is **issue #150** in `the-inclusionist-engine`. Gates, named now: the ronde
+    entry's family stack ends in Cookie; Cookie is in `fonts.css` with its file present; none of the three faces is
+    packaged (the existing gate); the ronde entry is no longer `off`, and its notice still names all three in pt,
+    en and es.
+
+more-information: |
+  📏 **Cookie's licence, read on 2026-09-12** from `google/fonts` `ofl/cookie/METADATA.pb`: designer Ania Kruk,
+  licence **OFL**, «Copyright (c) 2011 by Ania Kruk, with Reserved Font Name Cookie». One weight (400), subsets
+  latin and latin-ext. ⚠️ The Reserved Font Name means a MODIFIED version may not be called «Cookie»; the engine
+  ships the woff2 as Google Fonts serves it, unmodified, which is how every other OFL face in the collection is
+  shipped.

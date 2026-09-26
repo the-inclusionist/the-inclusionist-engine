@@ -1,0 +1,229 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0102
+      what: "§1's placement of the SKIP-LINK in `CAPTIONS` (26000). That put the keyboard's emergency exit
+              below `MENU` (30000) and below `MODAL_SCRIM` (29000) — a 'skip to content' a modal covers is not
+              reachable, which inverts WCAG 2.4.1: the mechanism for bypassing repeated blocks becomes another
+              block. ⚠️ THE STYLESHEET WAS RIGHT AND THIS RECORD WAS WRONG: `.skip-link` carried a literal
+              `z-index:100`, above everything the sheet declared, and the adoption ledger in
+              `tests/z-order-css.node.test.js` said so verbatim — «o `Z` ERRA, não o CSS». ADR-0102 gives it
+              `SKIP_LINK: 41000`, above even `TRANSITION`, because an exit must not sit behind anything the
+              person does not control. The rest of the table, the two scales and the post-fx chain stand."
+    - by: ADR-0046
+      what: "§1's FILTER TARGET. This record decided the CSS filter goes on `#game-region`, `o elemento que
+              contém a canvas E os menus`, and it was right for the case it examined — a COLOUR-BLIND child was
+              getting the game corrected and the menus raw, and the menus are where the words are, including the
+              words of the accessibility settings themselves. ⚠️ But it states the target flatly, with no
+              distinction by MODE, and ADR-0046 supplies the one that was missing: the reach depends on what the
+              mode IS. `alcanceDoModo(m) = simulatesDisability(m) ? mundo : mundo-e-menus`. A SIMULATION must
+              degrade the experience and never the control, so `.screen-a11y` is a SIBLING of `.screen-exp` and
+              not a descendant — CSS `filter` descends to every descendant and a child cannot cancel it.
+              ⚠️ THE HARM IS CONCRETE: implementing this record literally puts blind-mode `brightness(0)` on the
+              element that contains the accessibility bar, and the child is locked inside the simulation with no
+              way to switch it off. The CORRECTION half of §1 stands unchanged and is why ADR-0046 kept
+              `mundo-e-menus` as the default."
+  errata:
+    - date: 2026-08-24
+      what: "the record said A11Y_CORRECTION is ALWAYS last, full stop, and it is not — FLASH_LIMIT runs after
+             it. The record held a contradiction rather than a wrong decision, and resolving it needed a
+             distinction it never made: CORRECTION versus SAFETY. A11Y_CORRECTION decides how the image LOOKS,
+             so it must see the final composite, menus included — that is why it outranks the CRT. FLASH_LIMIT
+             decides whether the image can HARM, and WCAG 2.3.1 bounds luminance change over time, so the only
+             frame whose luminance matters is the one the eye actually receives. A limiter placed before the
+             correction clamps an image that no longer exists. ERRATUM under ADR-0057 §1: the safety ordering
+             was always required by the standard the record cites; the sentence just did not carry it."
+  date: 2026-07-06
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Canonical Z-order registry (two scopes, PIXI + DOM) + post-process is a filter chain
+
+context-and-problem-statement: |
+  Render layers were created ad-hoc with `addChildAt(camera.getChildIndex(neighbour))`, welding each layer's z to the
+  ASSEMBLY ORDER of the render-graph. That coupled every layer to its neighbours (moving/extracting one risked a silent
+  visual regression — it blocked the scene-sky extraction, #43) and there was no single definition of "what each z means".
+  The Dev asked to define the layer stack once so the coupling ends. Two extra questions surfaced: where do CRT/vignette
+  and the a11y filters (high-contrast, colour-blind correction, disability simulation) sit, and do they cover the menus?
+
+decision-drivers:
+- "Decouple: a layer must place itself by a NAMED z, never by referencing its neighbours."
+- "a11y-first (ADR-0010/0011): the accessibility filters must cover EVERYTHING (game + HUD + menus), and must not be
+  degraded by decorative effects."
+- Multiplayer runs on separate viewports via per-screen render-textures — the world stack is per-viewport, the UI is global.
+- The frame is half PIXI canvas (world) and half DOM/CSS (menus/HUD/captions) — one registry must span both.
+- Inserting a future layer must not force renumbering everything.
+
+considered-options:
+- &adhoc "Keep ad-hoc addChildAt(getChildIndex(neighbour))"
+- &magic "Scatter raw z-index numbers at each call site"
+- &registry "A single named z-order registry (core/layers.ts) in two scopes, spanning PIXI+DOM, with post-FX as a separate filter chain"
+
+pros-and-cons-of-the-options:
+  adhoc:
+    cons:
+    - "Every layer coupled to its neighbours; z welded to creation order; extraction risks silent visual regressions."
+  magic:
+    cons:
+    - "Unnamed numbers drift and collide; no shared meaning; same coupling in disguise."
+  registry:
+    pros:
+    - &decouple "Each layer sets its own named z (PIXI zIndex + sortableChildren for world; CSS z-index for DOM overlay) — zero neighbour coupling."
+    - &gaps "Step-100 spacing + a reserved MENU range (2600–2999) → insert a layer without renumbering."
+    - &twoscopes "Two scopes make the per-viewport (world) vs global (overlay) split explicit, which is what the multiplayer render-textures need."
+    - &a11ycovers "The a11y correction covers the WHOLE composited frame (menus included) — fixing the current gap where it did not."
+
+decision-outcome:
+  chosen-option:
+    link: *registry
+    justification: |
+      Adopt `app/js/core/layers.ts` as the single source of truth: a named `Z` map in two scopes — WORLD (per viewport,
+      applied as PIXI `zIndex` with `sortableChildren` on the camera) and OVERLAY (global, used as CSS `z-index` on the
+      DOM menus/HUD/captions). Layer semantics (bottom→top): sky · sky-anim · parallax 4..1 · bg-decor · tiles ·
+      interactive-scenery · vfx-back · fauna-decor · npc · items · PLAYER · vfx-front · foreground/weather · world-a11y ·
+      then overlay: hud · touch-controls · captions · dialogue · game-msg · modal-scrim · menu(range) · transition · debug.
+      Two confirmed calls: ITEMS render BEHIND the player (DK barrels / Yoshi / SMW keys); the filters cover EVERYTHING.
+      Post-process is NOT a z-layer: CRT/vignette and the a11y filters are a CHAIN over the composited frame
+      (`POST_FX_ORDER`), applied inner→outer, with **A11Y_CORRECTION last among the CORRECTION passes** (else the CRT
+      re-tints and breaks the colour-blind correction), a11y modes **suppress** the decorative CRT/flashes, and the
+      overlay is **palette-aware** (swaps to a CB-safe palette — extends the CB-safe UI work, ADR unlocks the "filter
+      also covers the menu" fix).
+      AMENDED 2026-08-24 (see ADR-0027): this record used to say A11Y_CORRECTION is ALWAYS last, full stop. It is not.
+      **FLASH_LIMIT runs after it**, and the distinction that resolves the contradiction is between CORRECTION and
+      SAFETY. A11Y_CORRECTION decides how the image LOOKS and must therefore see the final composite, menus included —
+      that is why it outranks the CRT. FLASH_LIMIT decides whether the image can HARM: WCAG 2.3.1 bounds luminance
+      change over time, and the only frame whose luminance matters is the one the eye actually receives. A limiter
+      placed before the correction clamps an image that no longer exists, and the correction is free to re-open the
+      swing it just closed — a colour-blindness matrix redistributes luminance by design. Safety is the outermost
+      pass because it is the last thing that is true about the frame.
+  consequences:
+    positive:
+    - *decouple
+    - *gaps
+    - *twoscopes
+    - *a11ycovers
+    neutral:
+    - "World layers switch to PIXI `zIndex` + `sortableChildren` on the camera (fixed layers → negligible sort cost)."
+    - "All ~54 addChild/addChildAt sites in game.js get rewired to `Z.*` — a dedicated round; scene-sky's 6 layers move too."
+    negative:
+    - "One-time large mechanical rewiring with visual-regression risk the sandbox can't verify → Dev eyeballs post-build."
+
+  amendment-2026-08-26: |
+    ⚠️ THREE CLAIMS OF THIS RECORD DO NOT HOLD IN THE IMPLEMENTATION. Measured in the browser on 2026-08-26,
+    with the build `main-C-6FZO5r.js`. They stay here with the original text intact above — a record that corrects
+    itself by hiding what it used to say teaches nothing.
+
+    ===== 1. "THE FILTERS COVER EVERYTHING (game + HUD + menus)" IS FALSE, AND IT IS A LIVE DEFECT =====
+    It is this ADR's a11y driver, and the declared reason A11Y_CORRECTION comes after the CRT. Measurement, with
+    the colour-blindness correction `fix-deuter` active:
+
+      · the CANVAS carries `filter: url(#cvd-fix-deuter)`  → filter chain: [CANVAS]
+      · the MENU (`.screen-pause`, sibling DOM inside `#game-region`) → filter chain: []
+
+    The colour-blind child receives the GAME corrected and the MENUS raw. And the menu is where the words are —
+    including those of the accessibility settings themselves. No `body` class makes up for it:
+    `document.body.classList` is EMPTY in that state, and the only CSS rule that reacts to a mode
+    (`body.blind-mode … {visibility:hidden}`) hides the HUD, it does not filter.
+
+    THE CAUSE is one of mechanism, not of forgetting: half the frame is canvas and half is DOM, and **a PIXI
+    filter does not reach the DOM**. This record assumed "a CHAIN of passes over the ALREADY COMPOSED frame" as if
+    a single composed frame existed. It does not.
+
+    THE MECHANISM THAT WORKS exists and is simple: a CSS `filter` on `#game-region`, which is the element that
+    contains the canvas AND the menus. Today the filter is on the canvas. Moving the target is one line at the
+    composition root (the verb `AplicarFiltroCss`, created on 2026-08-26) — but it changes the look of EVERY menu
+    in ALL 16 vision modes, so it is a change the Dev checks on screen, not one that gets pushed.
+
+    Consequence for the ORDER: with the filter on `#game-region`, the CRT becomes filtered ALONG with it, which is
+    exactly what `POST_FX_ORDER` prescribes (CRT_VIGNETTE is the innermost pass, A11Y_CORRECTION comes after).
+    Today the real order is the REVERSE — the scanline is a pseudo-element at `z-index:500`, painted ON TOP of the
+    already-corrected canvas.
+
+    ✅ RESOLVED ON 2026-08-27 BY ADR-0047, and this is the half that had been missing since 2026-07-06: the
+    scanline AND the vignette now YIELD to any visual accessibility mode, by default. The question this amendment
+    left open ("does the scanline yield the way the vignette came to yield, or not?") is closed, and closed with
+    a better answer than yes or no — it yields, and the child has one switch per effect in the Visual sensitivity
+    menu to say otherwise. This record's `POST_FX_ORDER` finally describes what the code does.
+
+    ===== 2. "A11Y MODES SUPPRESS THE DECORATIVE CRT" IS NOT IMPLEMENTED =====
+    Measured with the vignette on (`CRT.vig = 1`): the class `crt-vig-1` survives in `hc-direto`, `fix-deuter`,
+    `lv-blur` and `blind` — in all sixteen modes, in fact. The "a11y > aesthetics" precedence this record decides
+    does not exist in code.
+
+    The REAL impact is conditional and worth stating honestly: the vignette ships OFF by default
+    (`CRT_DEFAULT.vig = 0`), so it only reaches whoever turns it on in the Visual sensitivity menu. Whoever turns
+    it on and uses high contrast gets a vignette darkening the edges — working against the mode that exists to
+    increase contrast.
+
+    ===== 3. THE SCOPES ARE THREE, NOT TWO =====
+    This record says "two scopes": WORLD (per viewport, inside the camera) and OVERLAY (global, DOM). The middle one
+    is missing, and that is why `app.stage` is the only place that still positions itself by INSERTION ORDER.
+
+    Measured: in solo the `stage` has 4 children (camera, `weatherLayer`, `fogG`, `titleG`); with 3 screens it has
+    10 — the same four plus 3 sprites of 320×180 (the per-player render-textures), the 640×360 frame and the
+    indicator dots. All with `zIndex: 0` and `stage.sortableChildren === false`.
+
+    The last six are created by `render/screen-pipeline` and RECREATED on every change in the number of screens.
+    And there is an order dependency that holds multi-screen up: `screen-pipeline` does
+    `stage.addChildAt(camera, 0)` — the camera has to stay below the output sprites, otherwise the raw world covers
+    the composed screens.
+
+    THE MISSING SCOPE IS CALLED **COMPOSITION**: the world ALREADY RENDERED to a texture, laid out on the screen,
+    once per player. It is not WORLD (which is the content INSIDE each viewport) nor OVERLAY (which is DOM).
+    Fitting it into the free numeric space between `WORLD_A11Y` (23000) and `HUD` (24000) would be a category
+    error: those sprites are not "one more world layer", they are another scope.
+
+    Until it has its own name in `Z`, the `stage` stays in insertion order — and staying that way is more honest
+    than inventing a number that would start lying with authority.
+
+  confirmation: |
+    Recorded retroactively on 2026-08-06, and PARTIAL — stated as such rather than ticked. `app/js/core/layers.ts`
+    exists and holds the named registry (`Z`, `POST_FX_ORDER`), so the decision is implemented. It is not yet ADOPTED:
+    `game.js` is the only importer, meaning the ~54 layer sites still place themselves the old way. Rewiring them is
+    issue !52. The decision stands; its rollout is unfinished, and this record should not read as though it were done.
+
+    UPDATED 2026-08-26, with measurement (see the amendment above). The WORLD scope IS adopted: the "R1" block of
+    `main.ts` turns on `camera.sortableChildren` and positions ~27 layers by `Z.*`; ONE
+    `addChildAt(getChildIndex(...))` is left in the tree, the one for `titleG`, and it is on the `stage` — the scope
+    this record did not name. The OVERLAY scope is NOT adopted: there are 17 literal `z-index` values in
+    `style.css`, from 4 to 500, with no relation to the `Z` slots. And `POST_FX_ORDER` is declared and has never
+    been read by any code: the only occurrence outside `core/layers.ts` itself is this paragraph.
+
+more-information: |
+  ===== AMENDMENT 2026-08-27 — WHAT IS PER SCREEN, AND THE ONE EXCEPTION =====
+  This record stated only the implementation FACT: "Multiplayer runs on separate viewports via per-screen
+  render-textures". The Dev turned it into a RULE, and the rule is stronger than the fact — it forbids a future
+  optimisation that looks obvious:
+
+    "Nunca unificar multi tela. Correções / melhorias são por tela. Modos multi são por tela. O único ponto que
+     exige modo solo é o modo cego: ele limita a quantidade de telas para a quantidade de áudio, e os efeitos
+     ligados a áudio (redução de fx etc.) têm prioridade e funcionam para todos ao mesmo tempo."
+
+  In this record's terms: **every vision adjustment is per VIEWPORT**, never a single filter over `app.stage`.
+  At a two-player table where only one child needs high contrast, a global filter would correct the other's screen
+  too — a silent regression, and of the kind nobody reports because the screen "got better".
+
+  SOUND IS NOT AN EXCEPTION TO THE RULE — it is another reality, and the Dev insisted on the distinction: "é pra
+  deixar claro a exceção do modo cego (acessibilidade), que NÃO É UMA EXCEÇÃO, mas sim uma realidade que não
+  permite trabalhar de outro modo."
+
+  The difference is not rhetorical. An exception is a choice someone could have made another way and decided not
+  to — and an exception invites being revisited ("what if we...?"). Here there is no other way: **audio has no
+  viewport.** There is no cropping sound to a region of the screen, the way an image is cropped. Two simultaneous
+  narrations at the same table are not two narrations, they are noise.
+
+  From that it follows, and it follows from PHYSICS and not from policy: blind mode is GLOBAL, it holds for the
+  whole table, and that is why it LIMITS the number of screens — not because rendering does not scale, but because
+  hearing does not divide. Same logic for everything tied to audio (effects reduction, sonar, earcons): it has
+  priority and holds for everyone at the same time.
+
+  This is an amendment and not a new record because it is the same scope decision the original paragraph dealt
+  with by half. What makes it necessary: the fact was descriptive and the rule is prohibitive — only the second
+  stops someone from "optimising" later.
+
+  Registry + filter-chain live in `app/js/core/layers.ts` (`Z`, `POST_FX_ORDER`). Relates to ADR-0011 (visual a11y),
+  ADR-0010 (pillars: a11y-first), and the CB-safe UI work. Y-sorting within an actor band is NOT adopted (side-view
+  platformer → fixed order is standard); revisit only for a future top-down mode. The rewiring of the 54 sites is
+  tracked as its own modularization round (a new issue).

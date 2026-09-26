@@ -1,0 +1,79 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/cross-origin-isolation.node.test.js
+    - engine:tests/page-revisions.node.test.js
+  errata:
+    - date: 2026-09-14
+      what: '✅ CONFIRMED, pushed (issue #186 closed, `engine:e8a3bd6`, `engine:4822c8c`): `_headers` sends COOP same-origin and COEP require-corp to every page; a precache stored before a header change is refreshed; the quiz demo, served with them, is cross-origin isolated and onnxruntime ran three worker threads on a Kokoro synthesis (`engine:f8fa77d`).'
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0186 — Kokoro and Piper are both default; a Kokoro voice is listed where it runs"
+    - "ADR-0183 — Kokoro fp32 with WebGPU. The Dev keeps fp32: quantizing is not the remedy (below)"
+    - "ADR-0170 / issue #170 — the page's Content-Security-Policy in `app/public/_headers`, which these two headers join"
+    - "📏 Lab, 2026-09-13, scratchpad `vosk/kokoro.html` under the engine CSP: espeak-ng pt-br phonemes → Kokoro vocab →
+       onnxruntime-web, `model.onnx` fp32 and `pf_dora`, a 3.0 s sentence. WASM on one thread (no isolation, as the engine
+       serves today): 8.7 s, Whisper tiny hears all 8 words. WASM isolated (COOP + COEP), 16 logical cores: 2.7 s, audio
+       intact. WebGPU (AMD gcn-5): non-speech — Whisper hears «(risos)», «(música)» — on onnxruntime-web 1.22.0-dev, on 1.29.0
+       (the version the games bundle) and through transformers.js (the kokoro-js route); the first 25 samples reach 2×10⁷"
+  informed: []
+
+title: The page is cross-origin isolated, so the voice runtime runs on threads
+
+context-and-problem-statement: |
+  ADR-0186 made Kokoro a default engine, and ADR-0183 chose fp32 on WebGPU. Measured on 2026-09-13, WebGPU produced no speech on
+  the Dev's machine, and WASM, the fallback every device has, took 8.7 s to say a 3 s sentence: onnxruntime-web runs WASM on one
+  thread unless the page is cross-origin isolated, since threads need `SharedArrayBuffer`. The engine's `_headers` sends no
+  `Cross-Origin-Opener-Policy` and no `Cross-Origin-Embedder-Policy`. Isolated, the same sentence took 2.7 s.
+
+  Offered the q8 model as another way to speed WASM up, the Dev, 2026-09-13: «Negativo. Em Kokoro a qualidade está ligada a voz.
+  Para inglês, as vozes de melhor qualidade são Heart e Bella. Para português e espanhol, todas as vozes (Dora, Alex e Santa) tem
+  baixa qualidade. Descer de fp32 para inteiro não é a solução.» Asked whether the engine sends COOP/COEP — threads about 3× faster,
+  and a page that then refuses a third-party resource served without CORS — the Dev: «Sim.»
+
+decision-drivers:
+  - "D1 — A NEURAL VOICE THAT LAGS THE MENU IS NO VOICE: the child navigating by ear is several items behind the cursor"
+  - "D2 — THE VOICE'S QUALITY IS NOT TRADED FOR SPEED (the Dev: fp32 stays)"
+
+considered-options:
+  - "A — no isolation: WASM on one thread"
+  - "B — COOP `same-origin` + COEP `require-corp` on every response"
+  - "C — COEP `credentialless`: cross-origin no-CORS requests go without credentials instead of being refused"
+  - "D — quantize the model (q8) to speed WASM up"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing changes. ❌ 8.7 s for 3 s of speech on a 16-core machine; a school laptop is slower.
+  **B.** ✅ Threads for every onnxruntime runtime the page loads (Kokoro, Piper, the recognisers). ❌ A cross-origin subresource
+  without CORS or `Cross-Origin-Resource-Policy` is refused, and a popup the page opens loses its opener.
+  **C.** ✅ Refuses less. ❌ Not supported by Safari; it hides a third-party fetch instead of naming it.
+  **D.** ✅ Faster on one thread. ❌ Refused by the Dev: quality lives in the voice, and integer weights lower it.
+
+decision-outcome:
+  chosen-option:
+    link: "B — COOP same-origin + COEP require-corp"
+    justification: |
+      1. **Every response the engine's page serves carries `Cross-Origin-Opener-Policy: same-origin` and
+         `Cross-Origin-Embedder-Policy: require-corp`**, in `app/public/_headers` beside the Content-Security-Policy.
+      2. **Kokoro stays fp32** (ADR-0183); speed comes from threads, not from quantizing.
+      3. What reaches another origin does so by CORS: today that is the Hugging Face voice fetch, which CORS already serves.
+
+  consequences:
+    positive:
+      - "onnxruntime's WASM runs on threads: 3.2× faster on the measured sentence"
+    negative:
+      - "A cross-origin image, script or frame without CORS or CORP stops loading, and a game that embeds one has to serve it
+         from its own origin or with those headers"
+      - "Each game's delivery carries the same two headers, or its page is not isolated"
+      - "A navigation the service worker answers must keep both headers, or the page loses isolation offline"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #186, closed). Gates: every page is sent both headers and no narrower rule removes them;
+    a page's precache revision follows `_headers`. Measured in `dist`: `crossOriginIsolated` true, the quiz standing, zero violations,
+    and onnxruntime's thread workers started on a voice synthesis.
+
+more-information: |
+  WebGPU is not dropped by this record: it gave non-speech on one AMD gcn-5 machine, on two onnxruntime versions and on the
+  transformers.js route, and whether it is the runtime or the driver needs another GPU to tell. `kokoro-web` (MIT) runs the same
+  pipeline on onnxruntime-web 1.21.0-dev.

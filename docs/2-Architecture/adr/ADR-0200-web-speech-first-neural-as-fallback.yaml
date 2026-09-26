@@ -1,0 +1,77 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/browser-voice-first.browser.test.js
+  errata:
+    - date: 2026-09-25
+      what: >-
+        HALF BUILT, measured in an issue audit. Speech: where the browser offers a voice for the language, it leads the list
+        and speaks and no neural voice loads (`engine:ded6bcb` and after). Recognition: the on-device route exists
+        (`platform/speech-recognition`, used by reading aloud), but commands are still heard by Vosk, and Web Speech is not
+        the default command recogniser where the language is available — that half stays with issue #190.
+    - date: 2026-09-14
+      what: '📌 §4, THE OPEN POINT, ANSWERED. Asked whether Web Speech recognition counts as available only on the device (`processLocally`) or also through Chrome''s servers, the Dev: «Só local, voz da criança não deve sair do aparelho.» Recognition is available only when it runs on the device; Chrome''s server recognition is never used. Issue #190.'
+  supersedes-in-part: [ADR-0186, ADR-0190]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0186 — SUPERSEDED IN PART: «Kokoro and Piper are both default». They stay, as the fallback"
+    - "ADR-0190 §3 — SUPERSEDED IN PART: the neural recognisers are no longer the first route; Vosk for commands and
+       Moonshine/Whisper for reading stand as the fallback"
+    - "ADR-0198 — Kokoro voices through the game's port; unchanged, now a fallback"
+    - "📏 Lab, 2026-09-14: in the Claude pane's Chrome 152, Web Speech on-device recognition (`processLocally`) answered
+       «unavailable» for pt-BR, es and en; not measured in the Dev's Chrome"
+  informed: []
+
+title: Web Speech first — neural voices and recognisers are the fallback
+
+context-and-problem-statement: |
+  The engine made its neural voices the default (ADR-0186) and chose neural recognisers (ADR-0190). The Dev, 2026-09-14: «O objetivo
+  de escolher modelos de TTS e de transcrição é encontrar fallbacks. O modo primário, se estiver disponível, deve ser Web Speech API
+  do Chrome para transcrição assim como sua síntese de voz, evitando assim sobrecarregar memória e processador de dispositivos mais
+  simples com redes neurais.»
+
+decision-drivers:
+  - "D1 — A SCHOOL'S DEVICE: a neural network in memory is a cost a simple device should pay only when nothing else speaks or hears"
+  - "D2 — THE MODELS ARE FOR WHEN THE BROWSER CANNOT: fallbacks, chosen for quality where they are needed"
+
+considered-options:
+  - "A — neural voices and recognisers by default (ADR-0186, ADR-0190)"
+  - "B — Web Speech first where available; neural as the fallback"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The same voice and recogniser on every device. ❌ Hundreds of MB and a busy processor on the devices least able to
+  carry them.
+  **B.** ✅ Nothing to download or run where the browser already speaks and hears. ❌ The voice and the recognition differ between
+  browsers and systems; Chrome's recognition, unless on the device, sends the child's voice to Google's servers.
+
+decision-outcome:
+  chosen-option:
+    link: "B — Web Speech first"
+    justification: |
+      1. **Synthesis**: where the browser offers a Web Speech voice for the language, it speaks by default; Piper and Kokoro are the
+         fallback, still offered in the voice list.
+      2. **Recognition**: where Web Speech recognition is available for the language, it recognises by default; Vosk (commands,
+         ADR-0193) and Moonshine/Whisper (reading, ADR-0201) are the fallback.
+      3. «Available» is measured on the device — a voice listed for the language, recognition that answers — never assumed from
+         the browser's name.
+      4. ⚠️ OPEN, for the Dev: whether recognition counts as available only on the device (`processLocally`), or also through
+         Chrome's server recognition, where a child's voice leaves the device (ADR-0010 pillar 4; ADR-0190 said «neither sends audio
+         off the device»). → Answered in the erratum: on the device only.
+
+  consequences:
+    positive:
+      - "A device whose browser speaks and hears loads no neural voice or recogniser"
+    negative:
+      - "What a child hears and how well they are heard depends on the browser and the system"
+      - "Until point 4 is answered, server recognition is not turned on"
+
+  confirmation: |
+    ✅ In part (errata of 2026-09-25): the SPEECH half is built and held by `confirmed-by`. 📋 The RECOGNITION half is still owed under **issue #190**: Web Speech on the device as the default command recogniser where the language is available, the neural one as the fallback. The gates as they were named before the work, kept as history: Gates: with a Web Speech voice for the language, speech goes
+    through it and no neural voice loads; without one, the neural fallback speaks; with recognition available, it recognises and
+    no recogniser model is fetched; without it, the fallback recognises.
+
+more-information: |
+  The Dev asked earlier for Web Speech on-device recognition as a comparison (lab page `escuta-webspeech.html`); its results in the
+  Dev's Chrome are not in yet.

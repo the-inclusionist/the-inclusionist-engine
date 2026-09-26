@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/game-speed.node.test.js
+    - engine:tests/hourglass-on-the-bar.node.test.js
+    - engine:tests/hourglass-on-the-bar.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #176 closed, `engine:d65f111`): the ⏳ button is on the bar in a clock game and absent in a turn game; `startLoop` hands out the frame time times the speed; the choice is stored and published."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "Game Accessibility Guidelines — «Include an option to adjust the game speed» (Basic, motor and cognitive)"
+    - "Celeste Assist Mode — game speed from 100% down to 50% in steps of 10% (celeste.ink/wiki/Assist_Mode)"
+    - "ADR-0139 §3 — a cartridge never calls `startLoop`; the shell does"
+    - "ADR-0148 — the quick accessibility bar is HUD"
+  informed: []
+
+title: The game speed is an hourglass on the quick bar, applied by the engine's loop
+
+context-and-problem-statement: |
+  📏 Measured on 2026-09-13: the contract's `tick: 'clock'` is declared by the platformer, whack, pinball and soccer (by
+  profile); `core/loop.startLoop` hands the frame time to three of the four through their shells, and the pinball runs its own
+  frames. Nothing in the engine slows a game. Asked where «Velocidade do jogo» goes, the Dev: «No painel de acessibilidade
+  rápida (ícone de dedo, já existe no Platformer inclusive).» — the quick bar, where the finger icon (toggle keys) already
+  is — «Para velocidade, emojis para ampulheta (caracol, tartaruga e lebre podem ser ofensivos).»
+
+decision-drivers:
+  - "D1 — ONE CONTROL SLOWS THE WHOLE GAME (GAG Basic): timers, reaction windows and the world's pace at once"
+  - "D2 — NO ANIMAL FOR SLOWNESS: a snail, a turtle or a hare can read as an insult to the child who needs it"
+
+considered-options:
+  - "A — each game multiplies its own time by a value the engine stores"
+  - "B — the engine applies the speed where the frame time is handed out, and publishes the value for a game's own loop"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No change to the loop. ❌ A game that forgets to multiply offers a switch that does nothing.
+  **B.** ✅ Every game on `startLoop` slows with no line of its own. ❌ A game with its own loop (pinball) still reads the value.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine applies it in the loop and publishes it"
+    justification: |
+      1. **An hourglass icon ⏳ on the quick bar cycles the game speed: 100%, 90%, 80%, 70%, 60%, 50%**, the Celeste steps the
+         GAG cites; its spoken name says the value. No animal stands for slowness.
+      2. **The icon exists only in a game whose time runs by itself** (`tick: 'clock'`); a turn-based game has nothing to slow.
+      3. **The choice is stored and carried between games**, like the other quick-bar settings.
+      4. **`startLoop` multiplies the frame time it hands out** by the chosen speed; **the engine publishes the value** for a
+         game that runs its own frames.
+      5. A game's own pace control (the soccer's `assists.tempo`) is the cartridge's: it decides whether to keep it beside the
+         engine's.
+
+  consequences:
+    positive:
+      - "Three of the four clock games slow with no change of their own"
+    negative:
+      - "The pinball, and any game with its own loop, must read the published value"
+      - "A game with its own pace control multiplies the two unless it chooses otherwise"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #176, closed). Gates: the ⏳ icon is on the bar in a clock game and
+    absent in a turn game; each press moves one step and wraps; the frame time `startLoop` hands out is the raw time times the
+    speed; the choice survives a reload; the published value is the same one.
+
+more-information: |
+  The bar moving to the screen's top edge, asked in the same answer, is a two-way door: an entry in the interface log.

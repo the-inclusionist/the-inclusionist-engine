@@ -1,0 +1,68 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-14
+      what: '📌 §2, THE MODELS KEPT. The Dev, after the table of the five on the Dev''s readings: «Vamos usar whisper small para pt, e moonshine streamming small para en e es. Eu não sou nativo, mas pelo desempenho é esperado que para nosso uso moonshine streaming small ofereça um resultado melhor que o base para nativos.» Portuguese: Whisper small (onnx-community, q8, 238 MB; 7.7 % WER, 22.0 s for 25.6 s of reading). English: Moonshine streaming small (`Workmind/moonshine-streaming-small-ONNX`, 158 MB; 19.3 % on a non-native reader, where Moonshine base read 16.9 %). Spanish: Moonshine streaming small-es exported here (encoder fp32, decoders q8, 310 MB; 7.2 %, 7.2 s). Tiny and base are not kept. Issue #185.'
+    - date: 2026-09-14
+      what: '📌 §4, THE OPEN POINT, ANSWERED. Asked which Spanish Moonshine — the base model under the Moonshine AI Community License, or the MIT streaming models exported to ONNX here — the Dev: «Streaming com licença MIT.» Spanish reading uses `moonshine-ai/moonshine-streaming-tiny-es` or `-small-es` (MIT), exported to ONNX here for the browser. Issue #185.'
+  supersedes-in-part: [ADR-0190]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0190 erratum (2026-09-14) — SUPERSEDED IN PART: «Reading in Portuguese and Spanish is recognised by Whisper base»"
+    - "ADR-0193 — Vosk small with the game's words recognises COMMANDS and menu names; unchanged"
+    - "📏 Hugging Face API, 2026-09-14: Spanish Moonshine exists — `moonshine-ai/moonshine-es` (base, ONNX, 19.8 + 41.3 MB quantized;
+       Moonshine AI Community License, for makers under $1M annual revenue); `moonshine-ai/moonshine-streaming-tiny-es` (103 MB) and
+       `-small-es` (431 MB), MIT, safetensors only (no ONNX); `izaaku16/moonshine-base-es-ONNX`, a transformers.js layout of the
+       base Spanish model, no license declared. English: `onnx-community/moonshine-base-ONNX` (MIT) and
+       `Workmind/moonshine-streaming-small-ONNX` (MIT, transformers.js, 71.5 + 86.6 MB quantized)"
+    - "📏 Lab, 2026-09-14, the Dev's Portuguese reading: Whisper base 15.4 % WER, Whisper tiny 42.3 %"
+  informed: []
+
+title: Reading recognisers — Moonshine where it speaks the language, Whisper for Portuguese
+
+context-and-problem-statement: |
+  ADR-0190's erratum gave reading in Portuguese and Spanish to Whisper base. The Dev, 2026-09-14: «Moonshine é melhor para
+  dispositivos econômicos, prefira moonshine para ES também, deixe whisper somente onde moonshine não contempla, isto é, PT. Se
+  realmente não houver moonshine para ES, usaremos Whisper, sem problemas, mas eu acredito que exista. Vamos tentar, além de
+  whisper tiny e base, whisper small, moonshine base e moonshine small em inglês.» And on the roles: «os whisper e moonshine serão
+  usados para atividades onde o jogador precisa ler textos como avaliadores de leitura, é outro uso.»
+
+decision-drivers:
+  - "D1 — A CHEAP DEVICE: Moonshine is smaller and faster than Whisper at the same task"
+  - "D2 — READING IS ASSESSED, COMMANDS ARE CONTROL: two uses, two kinds of recogniser"
+
+considered-options:
+  - "A — Whisper for Portuguese and Spanish, Moonshine for English (ADR-0190 erratum)"
+  - "B — Moonshine wherever it covers the language; Whisper only where it does not"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One model for two languages. ❌ The larger model on the devices that can least carry it, where a smaller one exists.
+  **B.** ✅ The smaller model wherever there is one. ❌ Spanish Moonshine is either under a community license, or MIT without an ONNX
+  export the browser can run.
+
+decision-outcome:
+  chosen-option:
+    link: "B — Moonshine where it speaks the language"
+    justification: |
+      1. **Reading in English and Spanish is recognised by Moonshine; reading in Portuguese by Whisper**, the only one of the two that
+         covers it. If no usable Spanish Moonshine is found, Spanish takes Whisper.
+      2. **Tried, before one is kept**: Whisper tiny, base and small; Moonshine base and small in English.
+      3. **These recognise reading** — an activity assessing a child's reading aloud. Commands and menu names are Vosk's (ADR-0193).
+      4. ⚠️ OPEN, for the Dev: which Spanish Moonshine — the base model under the Moonshine AI Community License, or the MIT streaming
+         models exported to ONNX here. → Answered in the erratum: the MIT streaming models.
+
+  consequences:
+    positive:
+      - "The smallest recogniser that covers a language is the one a child's device runs"
+    negative:
+      - "Three model families to fetch, check and try"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #185** in `the-inclusionist-engine`. Gates: each candidate's reading measured on the Dev's recordings
+    (WER per language); the kept models in the heavy-file catalogue with sha256; a read sentence transcribed on the device.
+
+more-information: |
+  The Dev's recordings for this (2026-09-14): commands and a read text in Portuguese, Spanish and English, in the engine's
+  `research/` folder — personal data, never committed.

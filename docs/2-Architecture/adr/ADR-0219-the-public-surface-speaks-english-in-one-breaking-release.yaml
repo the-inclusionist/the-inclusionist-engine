@@ -1,0 +1,152 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/rename-map.node.test.js
+    - engine:tests/public-surface-shrinks-by-declaration.node.test.js
+    - engine:tests/portuguese-stays-out.node.test.js
+    - engine:tests/heavy-files-through-the-service-worker.node.test.js
+  errata:
+    - date: 2026-09-22
+      what: >-
+        🔴 «PHASE 3 IS INTERNAL» WAS WRONG, AND IT WAS NEVER MEASURED. This record said file names could land at any time
+        because they were internal. 📏 Measured on 2026-09-21, by reading the import statements of the seven repositories
+        rather than assuming: five module PATHS the games import carried a Portuguese word — `core/anel.js`,
+        `core/rotulo-acessivel.js`, `platform/pesados.js`, `render/cenario-data.js` and `render/set-cenario.js`. A game
+        writes `from '@the-inclusionist/engine/core/anel.js'`, so moving the file breaks it exactly as renaming the export
+        does. Phase 3's module half therefore landed in the SAME major as phase 2, on 2026-09-22, with its own notes (AT, AU,
+        AV, AW) and its own tables — so a consumer edits an import once instead of twice. ⚠️ What stays true is the ORDER: phase
+        2 first, because moving a file that phase 2 renames makes two histories to follow. And what remains genuinely internal
+        is the rest of phase 3 — 136 tests, 5 scripts, one tool and the docs, which no consumer imports.
+    - date: 2026-09-21
+      what: >-
+        🔴 ACCEPTED, AND THE CODEMOD IS OUT. The Dev, reading this record: «Pode renomear e nada de mexer nos outros
+        repositórios, quando eu for consertá-los eu adequo o código à nova versão da engine». So item 3 of the outcome below
+        loses `npx inclusionist-rename <repo>` and the confirmation loses «the seven games compile after the codemod» — what
+        the games get is the TABLE, and when each one is adapted is their call, not this release's. ⚠️ The consequence they
+        accepted with it is that a game stays on the old engine until they touch it, which is exactly what a major release is
+        for; what this record must not do is pretend somebody else's repository was made ready.
+  date: 2026-09-21
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev, 2026-09-14: the artefacts are in English because the project is open-source and English is what attracts contribution — and they have protested more than once that they are not"
+    - "the Dev, 2026-09-21: «Se está como tarefa o assunto já está aberto» — the cleanup plan, written for «later», is open"
+    - "the Dev, 2026-09-21, deciding this record: «Pode renomear e nada de mexer nos outros repositórios, quando eu for consertá-los eu adequo o código à nova versão da engine»"
+    - "engine:CLAUDE.md §0 — docs, comments, UI strings in source and commit messages in English; pt-BR only in i18n, in the educational layer and in CLAUDE.md itself"
+    - "ADR-0172 — a one-way door (contract, public surface, stored keys, packages) is a registro; an interface choice a commit undoes is a line in the interface log"
+    - "ADR-0170 §3 — the public surface is a promise: `docs/6-DevOps-SRE/public-surface.json` and the gate that refuses a name disappearing"
+    - "ADR-0120 and ADR-0121 — a contract field was retired on a premise measured in THIS repository's quiz; four of the five games used it. Measure the catalogue, not the house consumer"
+    - "📏 Measured 2026-09-21, with the portrait fixed to see every declarator: 454 public names carry a Portuguese word, out of 1612, across 94 of 179 modules"
+    - "📏 Measured 2026-09-21 by reading the IMPORT statements of the seven game repositories: they import 345 engine names, of which 61 are in Portuguese — platformer 40, 2048 12, pixi-15-puzzle 11, soccer 5, pinball 3, whackwhack 3, chess 1"
+    - "📏 Measured 2026-09-21: the delivery cache is keyed by the UPSTREAM address (`chaveDaEntrega`), so renaming the `pesados/` folder does not make an installed school re-download the 814 MiB — it only makes an OLD delivery 404 against a NEW engine"
+    - "📏 Measured 2026-09-21: of the 47 stored keys, only one carries a Portuguese word; the `incl_*` prefix is already English"
+  informed: []
+
+title: The public surface speaks English, in one breaking release
+
+context-and-problem-statement: |
+  The engine's public names are half in Portuguese. `createGame` sits beside `GanchosDoCartucho`; a game imports
+  `baixarPesados`, `iconesQueAccionam` and `lerVisualGuardado` from a package whose README is in English. 📏 Measured with the
+  portrait that now sees every declarator: **454 public names of 1612 carry a Portuguese word**, in 94 of 179 modules.
+
+  The gate of the cleanup plan's phase 0 (`engine:91e1a6c`) stopped the growth — a new Portuguese identifier fails the build,
+  and the debt only shrinks. What it cannot do is pay what is already published, because every one of those names is a
+  promise to seven repositories, and `ADR-0170 §3` makes the engine refuse to drop a public name without a declaration.
+
+  So the debt is not going to shrink by itself, and the longer it waits the more it costs: each new game that consumes the
+  package copies the Portuguese names into one more repository. What has to be decided is not WHETHER — the Dev opened the
+  subject — but with what shape, because a rename of the public surface is a one-way door for everyone downstream.
+
+decision-drivers:
+  - "D1 — THE CONSUMERS ONLY FIND OUT AT THE BUMP: the games consume the PUBLISHED package, so a rename does not fail their build the day it is written; it fails it on the day they upgrade, which is the day of a delivery to a school"
+  - "D2 — A RENAME MUST BE MECHANICAL AND VERIFIABLE: 61 names across seven repositories by hand is how a rename loses one"
+  - "D3 — THE SURFACE IS ALREADY GUARDED, and the guard must keep working through the rename: the portrait refuses a name that disappears, and every renamed name disappears"
+  - "D4 — A CHILD ALREADY PLAYING MUST NOT PAY: nothing about this may cost a re-download of the heavy files, lose a stored setting, or leave a delivery that no longer answers"
+  - "D5 — THE PROJECT IS OPEN-SOURCE AND THE READER IS FOREIGN: the reason the plan exists at all"
+
+considered-options:
+  - "A — one major release: every public Portuguese name renamed, a generated old→new table, no aliases"
+  - "B — rename with deprecated aliases re-exported for one major, removed in the next"
+  - "C — rename module by module, as each is touched, over many releases"
+  - "D — rename only the 61 names the games actually import, and leave the other 393 for later"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One day of breakage, one note, one table, one codemod — and the seven repositories are the same person's, upgraded
+  when they choose. ✅ The portrait and the exports gate keep their meaning: what left, left, and the note says so. ❌ The diff
+  is enormous and touches 94 modules; it cannot be reviewed by reading, only by tooling and by the suites.
+  **B.** ✅ Nobody breaks on the day of the bump. ❌ The surface DOUBLES while the aliases live, the `exports-sem-consumidor`
+  gate starts refusing names nothing imports, and the removal — the part that actually costs — happens anyway, one release
+  later, with the memory of why it was done already gone. 📏 And the measurement that makes the safety net pointless: the seven
+  consumers are this project's own repositories.
+  **C.** ✅ Small commits. ❌ The public surface would be half-renamed for months; a game upgrading twice gets broken twice, and
+  each time by a different handful of names. It is the shape that maximises the number of breaking days.
+  **D.** ✅ The smallest possible change to the seven repositories. ❌ It leaves the engine speaking two languages on the same
+  page — `createGame` next to `GanchosDoCartucho` — which is the thing the Dev keeps objecting to, and the new contributor it
+  is meant to attract meets the Portuguese half anyway.
+
+decision-outcome:
+  chosen-option:
+    link: "A — one major release, with a generated table; nothing outside this repository is touched"
+    justification: |
+      1. **One major, one note.** Every public name that carries a Portuguese word is renamed in the same release. The note in
+         `docs/6-DevOps-SRE/Breaking-Changes.md` carries the complete old→new table, which is GENERATED from the rename map and
+         never typed twice.
+      2. **No deprecated aliases.** They would double the surface, break the gate that refuses exports with no consumer, and
+         buy a safety net for seven repositories the same person releases.
+      3. **The rename map is a FILE, and the map is what does the work** (`scripts/rename-map.json`): the engine renames itself
+         from it and the migration table is printed from it, so a name cannot be renamed without being written down — which a
+         hand-typed table cannot promise. ⚠️ **And nothing outside this repository is touched** (the Dev, 2026-09-21): the games
+         get the table, and each one is adapted when they go to it.
+      4. **One commit per layer**, in the direction the dependencies run (`i18n → core → platform → input/render → ui → boot`),
+         each one green on `tsc`, both suites, `build` and `build:pkg`. The layers are the only cut that keeps every commit
+         compiling; a cut by module would not.
+      5. **The delivery folder `pesados/` becomes `heavy/` and the `bin` `inclusionist-pesados` becomes `inclusionist-heavy`**
+         — 📏 and the measurement says what that costs: the verified cache is keyed by the UPSTREAM address, so an installed
+         school does not re-download anything. What breaks is a delivery built by the OLD bin under a NEW engine: the page asks
+         for `heavy/…` and gets a 404. The release note says, in one line, that the delivery is rebuilt with the new bin.
+      6. **Stored keys are NOT renamed in this release.** 📏 Only one of 47 carries a Portuguese word, and a key that changes
+         name loses the child's setting unless the old one is read and migrated. It is a separate, smaller decision with its own
+         cost, and mixing it into this one would hide it.
+      7. **What stays in Portuguese, and is not debt:** the i18n dictionaries, the educational layer, the Gherkin features, the
+         `CLAUDE.md`, and any literal that is DATA for a recogniser rather than prose — the voice vocabulary of `input/voice-map`
+         is the first of those (issue #184), and the i18n gate's exemption list says so in writing.
+
+  consequences:
+    positive:
+      - "A foreign contributor reads one language, which is the whole point of the plan"
+      - "The Portuguese debt of the engine falls by 454 identifiers in one release, and the gate keeps it from growing back"
+      - "The rename map makes the seven games a scripted edit instead of seven manual ones"
+    negative:
+      - "A major release that breaks every consumer on the day they upgrade, and the upgrade is when a school gets a delivery"
+      - "An enormous diff: 94 modules, and the review is by tooling and suites rather than by reading"
+      - "A delivery built by the old bin stops answering a new engine until it is rebuilt — one line of the release note, and a 404 for whoever skips it"
+      - "Git blame moves for every renamed line; the history is kept by `--follow` only for file renames, which are phase 3"
+
+  confirmation: |
+    ✅ **DONE on 2026-09-21, in eight commits — one per layer plus the delivery folder.** 📏 The measurement that closes it:
+    **zero of the 1620 public names carries a Portuguese word**, against 454 of 1612 the day it started; the tree's own debt
+    (every identifier, not only the published ones) fell from 1487 to 1020. Every layer landed green on `tsc`, both suites,
+    `build` and `build:pkg`, and the tables of notes AL, AM, AN, AO, AP, AQ and AR are PRINTED from the rename map, so a
+    name cannot have been renamed without appearing in one.
+    🔴 What the work cost, and it is the part worth reading: the tool was wrong five times, always in the same shape — it
+    could not tell a NAME from a WORD. A glob read as a comment, a regex read as a string, a sentence read as a name, the
+    gate's own dictionary rewritten, and a compound VALUE («dentro-da-zona») half-translated. Each one is now a case in
+    `engine:tests/rename-map.node.test.js`, and the scanner is TypeScript's parser rather than a heuristic.
+    📌 What is NOT confirmed, by the Dev's decision: that the seven games compile. They stay on the engine they have until the Dev
+    adapts each one — this record would be lying if it claimed a repository it never touches was made ready.
+
+more-information: |
+  📌 THE MEASUREMENT THAT CHANGED THE SIZE OF THIS WORK. The plan said «~286 exports», counted in 2026-09-14 by a scan of this
+  conversation. The portrait says 454, and the difference is not drift: the snapshot script read one name per line, so
+  `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` published three names and the gate guarded one (fixed in
+  `engine:8da217b`). A rename planned against the old number would have left names behind that nothing would have reported.
+
+  📌 WHAT THE SEVEN GAMES ACTUALLY IMPORT, which is the part of the surface that will cost them work, measured by reading their
+  import statements rather than grepping identifiers: 61 names. The platformer carries 40 of them and is the only repository
+  where this is more than an afternoon; the chess imports one. The other 393 public Portuguese names are renamed in the same
+  release because they are published, not because anybody outside is using them.
+
+  ⚠️ THIS IS PHASE 2 OF THE CLEANUP PLAN. Phase 4 (comments, at the rhythm of whoever touches a module) and phase 5 (docs) are
+  internal and can land at any time. 🔴 PHASE 3 IS NOT — see the erratum of 2026-09-22: a file name is a path, and a path a game
+  imports is as much a contract as a name. Phase 2 still goes first, because moving a file that phase 2 renames would make two
+  histories to follow instead of one.

@@ -1,0 +1,235 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/accommodations.node.test.js
+    - engine:tests/rows-follow-the-answer.browser.test.js
+  superseded-in-part:
+    - by: ADR-0153
+      what: >-
+        §1's genre as the unit that answers. The Dev: «Gênero não é obrigatório» and «não precisa responder todas
+        as acomodações, mas sim o cartucho, obrigatoriamente». The general catalogue and «no subject, absent» stand.
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0085 — `ActionPreset`. 🎯 THIS RECORD IS THAT CONTRACT ONE LEVEL UP. `Partial<Record<Action,
+       ActionWord>>` already says «um jogo declara SÓ as posições que usa», with its own word for each, and
+       `labellerFrom` returns `null` for the ones it does not name because «devolver `action7` seria pôr um
+       nome abstrato à frente de uma criança». The accommodations need exactly the same shape"
+    - "ADR-0106 §5 — «um ícone é montado quando a acção dele funciona, e não antes». This record names a
+       SECOND way a control can be dead, which §5 does not reach: not missing a writer, but missing a subject"
+    - "ADR-0086 — `Action` instead of `string` in `acoesDoJogo`, «enquanto foi `string`, um jogo podia declarar
+       uma posição que não existe e a linha era desenhada com teclas vazias». The same closed vocabulary is
+       what makes a catalogue checkable rather than a convention"
+    - "ADR-0033 — the engine's entity declares what the ENGINE owns. It is the record that explains why
+       `jumpEdge` sits on `Player` at all, and why this record does not rename it"
+    - "ADR-0068 §6 — the template for the three hundred game repositories. A genre is the unit those three
+       hundred fall into, and this record is what a genre template would carry"
+  informed: []
+  errata:
+    - date: 2026-09-25
+      what: >-
+        CONFIRMED in the form ADR-0153 gave it: the general catalogue lives in `core/accommodations` (three families),
+        the CARTRIDGE answers the game-keyed ones at boot (the genre is optional), and a row with no subject is absent
+        while an applying one carries the game's word. Issue #143 closes with this.
+    - date: 2026-09-12
+      what: "§4's starting classification put NAVIGATION SOUND among the general entries. 📏 The study this
+             record asked for in §3 has been done — `engine:docs/1-Discovery/study-accommodations-by-genre.md`,
+             crossing all 35 categories and 380 games of the catalogue — and it measures navigation sound
+             (cane, sonar, guide) at **6 of 35 genres · 67 games · 18%**. It is GENRE-BOUND, not general.
+             ⚠️ And the reason matters more than the number: blind mode and its cane need a SPATIAL world to
+             cross. Where there is none — cards, quiz, typing, board, narrative — the same child plays through
+             NARRATION and the SPOKEN MENU INDEX, which are universal and already built. So the engine has two
+             mechanisms for one person and only one of them needs space; coverage for a child who cannot see
+             stays at 100%, by two paths rather than one. Classifying them together would have been the
+             symmetrical error to the wheelchair-in-chess one that produced this record. ERRATUM under
+             ADR-0057 §1: the DECISION — a general catalogue, a genre declaring its own — is untouched; what
+             was wrong is one line of the starting list §4 itself called «a starting point and not the answer»."
+    - date: 2026-09-12
+      what: "§4 left `oneButton` deliberately unclassified, saying it would go into the study. The study
+             settles it: **12 of 35 genres · 135 games · 36%**, and GENRE-BOUND. It has a subject where the
+             game has more than one action AND real-time pressure — arcade, shooters, runner, platformer,
+             sports, rhythm, reaction, party, fighting, local multiplayer, hybrids, and the experimental
+             corner where «one-button games» is already a sub-genre. 📌 And the rule for WHAT collapses into
+             WHAT is genre-bound too, which is why 36% does not make it general."
+    - date: 2026-09-12
+      what: "📏 THE TWO ERRATA ABOVE WERE MEASURED UNDER A KEY THE DEV THEN CORRECTED. The study used the 35
+             categories of the catalogue as genres, and they are a production backlog, not a taxonomy
+             (`engine:docs/1-Discovery/study-accommodations-by-genre.md` §0). Re-keyed with ONE axis per
+             accommodation (§0.1, `engine:40179bd`) and cross-checked against the 105 Game Accessibility
+             Guidelines (§0.2, `engine:d953caf`), both numbers change, and one conclusion with them.
+             · **Navigation sound and blind mode: 78%, not 18%.** The reasoning of the first erratum SURVIVES
+               and is now the contract's own rule: the sonar needs a world (`world: none` ⇒ no sonar) AND a
+               direction (`bearing` is `none` on `hotspots`). What changed is the count — every grid and
+               continuous space has a direction, the board games included. Cards, quiz and narrative still go
+               through narration and the spoken index.
+             · **One-button: 93% and GAG Basic — NOT genre-bound.** The second erratum's conclusion does not
+               survive. Its subject is any game played by actions, which is an answer the contract already
+               gives (`needsPointer()`), and «what collapses into what» is the scanning rule, not a genre's.
+             📌 AND THE RE-KEYING BEARS ON §5, WHICH LEFT OPEN WHERE THE DECLARATION LIVES — it does not
+             decide it: of the 54 accommodations, 23 are general, **15 have a subject the contract already
+             answers** (`tick`, `seguraTeclas()`, `needsPointer()`, `world()` × `topology()`, the players
+             list) and 16 need the game to say. The catalogue now holds those three families as types
+             (`engine:app/js/core/accommodations.ts`). ERRATUM under ADR-0057 §1: the decision — a general
+             catalogue, and what has no subject is absent — is untouched; what was wrong is two measurements."
+
+title: The accommodation catalogue is GENERAL, and a GENRE declares its subset and its own additions
+
+context-and-problem-statement: |
+  📏 **Measured on 2026-09-12, classifying every ctx field of the two visual panels by where it would come
+  from**, the engine can already answer 11 of `settings-empathy`'s 15 fields and 10 of `settings-visual`'s 17:
+  `platform/audio.setHearingLossGraph`, `core/state.setOneButtonValue`, `core/state.setWheelchairValue`,
+  `setCbSafeValue`, `setOwnerColorsValue`, `setOutlineFgValue`/`Bg`, `render/lq-filter.setLq`.
+
+  🔴 **AND THE DEV READ THAT MEASUREMENT AND SAID IT IS WORSE THAN IT LOOKS**, in their own words:
+
+      «Não faz sentido um modo cadeira de rodas num xadrez ou num snake. […] Modo empatia cadeira de rodas só
+       pode aparecer no gênero plataforma, ou seja, é uma opção própria deste gênero, assim como peças
+       diferentes é algo que somente existe em jogos de tabuleiro (xadrez, damas, gamão).»
+
+  🎯 **THE MEASUREMENT CONFUSED TWO DIFFERENT QUESTIONS.** «The engine owns the flag» and «the setting belongs
+  in this game» are not the same sentence. `core/state.wheelchair` exists, so the engine CAN write it — and a
+  wheelchair toggle in a chess game is still a control with no subject.
+
+  ⚠️ **AND THAT IS A SECOND KIND OF DEAD BUTTON, WHICH ADR-0106 §5 DOES NOT REACH.** §5 forbids the control
+  whose ACTION does not work, and the engine can detect that one: the writer is missing, so the row is not
+  mounted and the gap goes to `problems`. A control with no SUBJECT passes every check — the writer exists,
+  the state persists, the announcement speaks — and it is worse for the child, because nothing anywhere
+  reports it. It is a button that works and means nothing.
+
+  📌 **THE SAME SPLIT ALREADY EXISTS ONE LEVEL DOWN AND IS ALREADY SOLVED.** The remapping screen used to show
+  eight fixed rows, and `SettingsControlsCtx` still carries why that was wrong: «a engine decidia que todo
+  jogo tem exatamente pular, correr, trocar e especial. Um quiz mostraria quatro linhas para ações que não
+  existem nele, e uma criança tentaria remapear um botão que não faz nada.» The cure was `ActionPreset`. The
+  accommodations are the same problem, unfixed.
+
+decision-drivers:
+  - "D1 — A CONTROL WITH NO SUBJECT IS INVISIBLE TO EVERY GATE WE HAVE. It is the only defect class in this
+     area that neither a type error, nor `problems`, nor a mutation over the engine can surface."
+  - "D2 — THE THREE HUNDRED GAMES ARE NOT THREE HUNDRED SPECIAL CASES. They fall into genres, and a genre is
+     the unit at which «does this accommodation apply» has one answer instead of three hundred."
+  - "D3 — AND THE ENGINE MUST NOT LOSE WHAT IT KNOWS. Hearing loss, low vision and colour-blindness
+     simulation apply to almost every genre; making everything genre-declared would make each game re-derive
+     what the engine already decided."
+  - "D4 — RENAMING IS A COST WITHOUT A BUYER. `jumpEdge` and its five siblings are `Player` fields (ADR-0033)
+     read by the engine's own latch, collision and draw. Renaming them to `Action` vocabulary is a break paid
+     by everyone to solve a naming discomfort of one genre."
+
+considered-options:
+  - "A — Every accommodation is the engine's, and a game that cannot use one simply has a switch that does
+     nothing meaningful."
+  - "B — Every accommodation is the game's, declared one by one, with the engine offering none by default."
+  - "C — A GENERAL catalogue in the engine; a GENRE declares which entries apply, with its own words, and adds
+     its own entries when the genre has something the catalogue does not."
+
+pros-and-cons-of-the-options: |
+  **A — everything is the engine's.**
+  ✅ One rule, zero declaration, and it is what today's code implies.
+  ❌ It is the wheelchair-in-chess outcome. Every genre pays for every other genre's accommodations, and the
+     cost lands on the child as a menu full of switches that mean nothing to her game.
+
+  **B — everything is the game's.**
+  ✅ Nothing meaningless ever appears.
+  ❌ It is the arrangement ADR-0106 was written to end: «cada jogo está precisando montar do seu jeito». And
+     it throws away real engine knowledge — `setHearingLossGraph` works in any game with sound, and asking
+     three hundred games to each decide that is how five of six ended up with nothing.
+
+  **C — general catalogue, genre declares.**
+  ✅ It is the shape the codebase already proved with `ActionPreset`, applied where the same defect lives.
+  ✅ A genre answers once for its whole family, instead of each game answering for itself.
+  ✅ New accommodations enter as ADDITIONS rather than renamings, so `jumpEdge` stays `jumpEdge` and a board
+     game simply never declares it while declaring `pecas`, which the platformer never had.
+  ❌ It introduces a concept the codebase does not have yet — the GENRE — and something has to hold it.
+  ❌ And the catalogue has to be seeded honestly: classifying today's accommodations into general and
+     genre-bound is judgement work that nobody can do from the types alone.
+
+decision-outcome:
+  chosen-option:
+    link: "C — a general catalogue, and a genre declares its subset, its words, and its own additions"
+    justification: |
+      ===== 1. THE SHAPE, AND IT IS ONE THE CODEBASE ALREADY PROVED =====
+      The engine holds a CATALOGUE of accommodations, closed the way `Action` is closed. A genre declares a
+      partial map over it — which entries apply, and the word this genre uses for each — exactly as
+      `ActionPreset` is `Partial<Record<Action, ActionWord>>`.
+
+      An entry a genre does not declare is not mounted. Not hidden with a reason, not disabled: **absent**,
+      because there is nothing to explain to a child about a setting her game has no concept of.
+
+      ===== 2. A GENRE ADDS; IT DOES NOT RENAME =====
+      What a genre has and the catalogue does not, it declares as its OWN entry — «peças» for the board
+      games, and whatever the next genre brings. Nothing in the engine is renamed to accommodate it.
+
+      📌 This is the Dev's clause, in their words: «Não precisaria renomeá-los, mas fornecer uma lista de
+      "traduções" por gêneros assim como novas opções quando necessário.» So `jumpEdge`, `swapEdge` and
+      `specialEdge` keep their names on `Player`; a genre that does not jump simply never declares them, and
+      the platformer's translation is what turns `jumpEdge` into the word a child reads.
+
+      ===== 3. AND THE CATALOGUE IS WRITTEN BY STUDYING GENRES, NOT BY WAITING FOR THEM =====
+      The Dev asked for «contratos que ainda não existem mas são previsíveis ao se estudar os gêneros». The
+      catalogue is seeded from the genres of the 300-game plan rather than grown one defect at a time — which
+      is the difference between a vocabulary and a pile of exceptions.
+
+      ===== 4. THE FIRST CLASSIFICATION, AS FAR AS IT IS MEASURED TODAY =====
+      Stated as a starting point and not as the answer, because it is judgement and the study in §3 is what
+      settles it:
+
+        · **General** — hearing-loss simulation (`platform/audio.setHearingLossGraph`), low-vision and
+          colour-blindness simulation, typography, spoken menu index, narration, navigation sound. They apply
+          wherever there is sound or a screen, which is everywhere.
+        · **Genre-bound** — wheelchair mode (platform), Easy Mode's coins-on-the-ground (platform),
+          tap-to-move and the run latch (anything with sustained movement), piece sets (board games).
+
+      ⚠️ One-button mode is the honest hard case and is NOT classified here: it means «collapse this game's
+      actions onto one», which needs a game with more than one action and a rule for what collapses into
+      what. It goes into the study, not into a default.
+
+      ===== 5. WHAT THIS DOES NOT DECIDE =====
+      Where a genre's declaration LIVES — a field on `CreateGameOptions`, a genre module, or the template of
+      ADR-0068 §6 — and how the menu presents the two families. The second is ADR-0146.
+
+  consequences:
+    positive:
+      - "A control with no subject stops being possible by construction, instead of being a defect nobody can
+         detect"
+      - "A genre answers once for its family; three hundred games stop being three hundred special cases"
+      - "The engine keeps what it genuinely knows — sound, screen, typography — instead of devolving it"
+      - "New genres extend the catalogue instead of forcing renames, so `Player` stays as it is"
+    negative:
+      - "The codebase gains a concept it does not have: the GENRE, which something now has to hold and keep
+         honest"
+      - "Seeding the catalogue is judgement work that no type and no test can do, and a bad seed is a
+         vocabulary everyone inherits"
+      - "A game whose genre is declared wrong silently loses accommodations — a new failure mode, and one
+         whose symptom is absence"
+      - "It is a second partial-declaration contract beside `ActionPreset`; two of them is a pattern, three
+         would be a smell"
+
+  confirmation: |
+    ✅ BUILT (confirmed 2026-09-25 — see `confirmed-by`), in the form ADR-0153 gave it. The gates as they were named before the work, kept as history: The work is **issue #143** in
+    `the-inclusionist-engine`, and the study of §3 is the first half of it. The gates, named now:
+
+      1. An accommodation a genre does NOT declare is absent from the document — the case asserts the
+         ABSENCE, not merely that nothing threw.
+      2. An accommodation the genre declares carries the GENRE's word, and never an engine identifier — the
+         `labellerFrom` rule, applied to the catalogue.
+      3. A genre-specific entry that the catalogue does not contain still mounts, so an addition does not
+         need an engine release.
+      4. 🔴 Two genres in one page — the ADR-0142 arrangement — do not leak each other's accommodations. This
+         is the gate that a single-genre implementation passes by accident.
+
+more-information: |
+  📏 **The measurement that started this**, taken 2026-09-12 by classifying every ctx field of the two visual
+  panels by its would-be source: `settings-empathy` 11 of 15 from the engine, `settings-visual` 10 of 17. The
+  four world-facing fields of the empathy panel are all about visual SIMULATION (`renderVizGroup`,
+  `setPlayerViz`, `reflectVizButtons`, `reflectMotorEmpathy`); the three accommodations that are not visual —
+  hearing loss, one-button, wheelchair — are entirely the engine's **to write**. It was that last sentence
+  that the Dev corrected: being able to write it is not the same as it belonging there.
+
+  ⚠️ **AND THE CORRECTION GENERALISES BACKWARDS.** The same conflation is in work already committed:
+  `ui/settings-motor` mounts Easy Mode, tap-to-move and the run latch for any game, and all three are
+  platform vocabulary. The panel is not wired into `createGame` yet, so nothing has shipped — but the
+  classification of §4 has to reach it before it does.
+
+  📌 **The genre list is not invented here.** It comes from the 300-game catalogue of ADR-0058 and the
+  repository template of ADR-0068 §6; this record only says that the genre is the unit at which the question
+  is answered.

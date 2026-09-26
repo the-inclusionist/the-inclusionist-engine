@@ -1,0 +1,73 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0240
+      what: "the options of its erratum (length; red · pulsing · lock) as engine settings: none on the child's side; one hour, red at the end, always on. They belong to Bússola Escolar's adult menu."
+    - by: ADR-0239
+      what: "only where the clock sits: bottom centre, the digits with the pie to their right. Everything else stands."
+  supersedes-in-part: [ADR-0050]
+  errata:
+    - date: 2026-09-25
+      what: >-
+        THE OPEN QUESTION IS ANSWERED, and the default changes. The Dev, the same day: «Mude para 1 hora, a tela não
+        trava, o relógio fica vermelho para indicar que está havendo exagero no tempo de uso, por padrão (configurar o
+        tempo e o que faz - relógio vermelho, relógio vermelho e piscando de forma suave, tela trava - deve estar nas
+        opções).» So: the default session is 60 minutes, not 50; when it runs out the screen does NOT lock, the clock
+        turns red to show the time of use is being exceeded; and both the length and the behaviour at the end are
+        OPTIONS — red clock (default), red clock pulsing gently, or screen lock. This replaces ADR-0050 §4's lock as the
+        default; the lock survives only as a chosen option. The gentle pulse stays under WCAG 2.3.1 (far below three
+        flashes a second) and stops under reduced motion, where the clock stays plain red.
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim, told why ADR-0050 shows the adult's session limit («a limit that is not shown does not exist»): «Então ele deve ser um relógio do tipo gráfico de pizza contínuo, como o Time Timer, não com números (ou pelo menos não só com números). Deixe como padrão 50 minutos»"
+    - "The Dev, the same day, on where it sits: «Coloque o relógio à direita dos ícones de acessibilidade rápida» — the placement ADR-0168 and ADR-0175 already give it (top right)"
+    - "ADR-0050 §3 — a pie that empties plus a digital countdown in H:MM that turns to M:SS at five minutes, and a red slice for a scheduled break"
+    - "GAG — its only guideline on time is Motor/Advanced «Do not make precise timing essential to gameplay»; a session clock is not a gameplay timer"
+  informed: []
+
+title: The session clock is a Time Timer — a continuous pie, 50 minutes by default
+
+context-and-problem-statement: |
+  ADR-0050 shows the adult's session limit as a pie plus a digital countdown, and the digital readout carries the
+  warning (H:MM becomes M:SS at five minutes). Numbers are a reading task and a source of pressure; a child who cannot
+  read the time still sees how much of a disc is left. Nothing has been built (issue #94), and no session length exists
+  when no adult has configured one.
+
+decision-drivers:
+  - "A limit that is shown is fair; a limit shown as numbers asks the child to read a clock"
+  - "A default must exist, or the clock has nothing to show when no adult is logged in"
+
+considered-options:
+  - "A · ADR-0050 as written: pie plus H:MM countdown"
+  - "B · A Time Timer: a continuous pie that shrinks, numbers optional at most; 50 minutes by default"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ The warning lives in the numbers, which a non-reader cannot use. **B.** ✅ The amount left is seen, not read.
+  ✅ A default of 50 minutes gives every session a limit to show. ❌ A child who can read loses the exact minutes, unless
+  a numeric readout is offered beside the pie.
+
+decision-outcome:
+  chosen-option:
+    link: "B — a continuous Time Timer pie, 50 minutes by default, to the right of the quick bar"
+    justification: |
+      The Dev's decision. The clock is a disc that empties continuously, like the Time Timer; it may carry numbers but
+      never only numbers, and it does not change unit as a warning. The default session is 50 minutes, used whenever no
+      adult has set one in Bússola Escolar. It sits at the top right, to the right of the quick accessibility bar
+      (ADR-0168, ADR-0175). ADR-0050's other rules stand: the clock measures the session, never an activity, and the
+      adult's settings replace the default.
+
+  consequences:
+    positive:
+      - "Every session has a visible limit, readable without reading"
+    negative:
+      - "What happens when the default 50 minutes run out with no adult present is not settled here (ADR-0050 §4 locks the screen until an adult lifts the break)"
+
+  confirmation: |
+    ⏳ Not built. Debt: issue #94 — the Time Timer pie at the top right, the 50-minute default, and the adult's value
+    replacing it.
+
+more-information: |
+  ⏸ Open, for the Dev: at the end of a default session with no adult logged in, does the screen lock as ADR-0050 §4
+  says (and who lifts it), or does the pie only signal the end?

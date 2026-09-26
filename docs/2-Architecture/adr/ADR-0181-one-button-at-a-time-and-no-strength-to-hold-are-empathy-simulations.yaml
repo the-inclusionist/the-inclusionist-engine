@@ -1,0 +1,60 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/empathy-filter.node.test.js
+    - engine:tests/empathy-simulations-mounted.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #177 closed, `engine:caf2ce1`): both rows are in the empathy panel; the keyboard passes through them. ⚠️ The touch pad and the gamepad do not pass through the filter."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0076 — empathy simulations show what a disability costs, in both directions"
+    - "ADR-0151 — the empathy panel and its simulations"
+  informed: []
+
+title: «One button at a time» and «no strength to hold» are empathy simulations; toggle keys is the accessibility
+
+context-and-problem-statement: |
+  📏 Measured on 2026-09-13: `core/state.oneButton` («one button at a time»: a new key releases the held one) is read by
+  `input/keydown`, `input/gamepad` and the soccer game, and nothing writes it — its setter has no caller and no mounted panel
+  offers it. Asked whether it is the GAG's «play with one button», the Dev: «São duas coisas diferentes.» Playing with one
+  button is the accessibility the finger icon already gives, and its right name is «teclas de alternância» (toggle keys). «Um
+  botão por vez por outro lado é SIMULAÇÃO para o modo de empatia, isto é, trava-se o controle para nunca aceitar um segundo
+  botão quando o primeiro estiver pressionado para simular dificuldade motora. Outro modo de simulação sugerido é: "sem força
+  para segurar botão", que lê qualquer contato permanente do botão como um toque só.»
+
+decision-drivers:
+  - "D1 — A SIMULATION MAKES PLAY HARDER ON PURPOSE, to show a cost; an accommodation makes it possible. They never share a name"
+
+considered-options:
+  - "A — «one button at a time» stays an accommodation"
+  - "B — it becomes an empathy simulation, beside a second one, «no strength to hold»"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No move. ❌ It helps nobody: refusing a second key only takes an ability away.
+  **B.** ✅ Each switch is where its purpose is. ❌ The stored setting changes meaning.
+
+decision-outcome:
+  chosen-option:
+    link: "B — two empathy simulations"
+    justification: |
+      1. **«Um botão por vez» is an empathy simulation**: while one button is held, a second is never accepted.
+      2. **«Sem força para segurar botão» is a second simulation**: any sustained contact of a button reads as one tap.
+      3. **Both live in the empathy panel**, off by default, and follow ADR-0076 like the other simulations.
+      4. **The finger icon ☝️ is «teclas de alternância»** (toggle keys), the accessibility; it is not «play with one button».
+
+  consequences:
+    positive:
+      - "The stored-but-unwritable `oneButton` gets a place and a purpose"
+    negative:
+      - "The soccer game reads `oneButton` to choose an easier charge route; under a simulation that choice is backwards"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #177, closed). Gates: with «um botão por vez» on, a second key
+    held with the first is not accepted, and off it is; with «sem força para segurar» on, a key held for a second produces
+    one press and no hold; both rows are in the empathy panel and absent from the accommodation panels.
+
+more-information: |
+  The soccer's use of `oneButton` as an accessibility signal is the cartridge's to change once the meaning moves.

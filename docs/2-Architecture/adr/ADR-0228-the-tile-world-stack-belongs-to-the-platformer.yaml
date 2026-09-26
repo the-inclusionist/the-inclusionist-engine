@@ -1,0 +1,159 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: []
+  date: 2026-09-23
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-23: «Vamos fazer a F12, realoque o que for do platformer para o platformer.»"
+    - "The correction that produced it, the same day and in capitals: «ISSO É DO PLATAFORMER!!!! O QUE ISSO ESTÁ
+       FAZENDO NA ENGINE?! QUE TRABALHO FOI ESSE QUE VOCÊ FEZ SEPARANDO O PLATAFORMER DA ENGINE? NENHUM!?»"
+    - "The Dev's question that set the ORDER of the work: «game-platformer usa os módulos F12? Se sim remover vai
+       me dar dor de cabeça e eu preciso passá-los para game-platformer, que é o que você não fez.»"
+    - "ADR-0226 — its `more-information` names this as the thing it deliberately did NOT decide"
+    - "ADR-0111 — a cartridge composes its own drawing, which is why «not reached by the root» cannot be the test"
+    - "The memory `engine-nao-descreve-jogo`, from the FIRST time this correction was made: the platformer's
+       examples were deleted from the engine's hints as «regras para jogo que não existe»"
+  informed: []
+
+title: The tile-world stack belongs to the platformer, and it moves there before the engine deletes it
+
+context-and-problem-statement: |
+  📏 MEASURED ON 2026-09-23, following lazy `import()` as well as static ones — without that the count inflates,
+  because the neural voice, the reading models and the dictionaries are loaded LATE on purpose and are not
+  orphans: **of 205 modules, the engine's composition root reaches 144 and 61 do not, which is 4999 lines, 24% of
+  the code.** The `render/` + `core/` island inside that is 37 modules and 3089 lines.
+
+  🔴 AND TWO AUTOMATIC TRIAGES FAILED BEFORE A DEFENSIBLE ANSWER EXISTED, both in the way this repository has
+  recorded five times. The first matched substrings, so `cidade` matched inside «acessibilidade» and `senha`
+  inside «desenha», and the accessibility modules and the render PORT came back flagged as a platformer's
+  furniture. The second used word boundaries and STILL flagged them, because their comments explain themselves
+  with «a lava tile» or «a coin». A module's subject is not in its comments.
+
+  🎯 WHAT DECIDES IS WHAT A MODULE EXPORTS. `paintPigeon`, `paintCat`, `paintCar`, `CAR_PALETTES`, `paintBin`,
+  `paintPetBottle`, `paintGlassJar`, `GRAFFITI_COLORS`, `FISH_COLORS`, `PLAYER_CLIMB`, `PLAYER_HURT`,
+  `TYPE_GLYPH`, `TILE_NAME`, `COYOTE`, `MAP_HUB_ROWS`, `JUICE`, `getHitstopT` — pigeons, cars, recycling bins,
+  graffiti, fish, a climbing frame, coyote time. Against `HC_ROLE`, `REASON_KEY`, `CAA_SETS`, `makeCanvas`,
+  `createRng`, `counterLabel`, which are the engine's however unreachable they are from `createGame`.
+
+  🔴 AND THE COST OF GETTING THE ORDER WRONG IS MEASURED, because the Dev asked for it: **the platformer imports
+  22 of the 29 modules that leave**, and `app/js/main.ts` alone imports twenty of them while `core/collision`
+  appears in SIXTEEN of its files. Deleting first and relocating afterwards does not separate the platformer from
+  the engine — it breaks the platformer.
+
+decision-drivers:
+  - "The engine does not describe a game; this correction has now been made three times"
+  - "A module's subject is what it publishes, not what its comments use as examples"
+  - "Nothing is deleted from its old home before the new one has it and is green (ADR-0123 driver 5)"
+  - "The engine's own root reaching a module is NOT the test — a cartridge composes its own drawing (ADR-0111)"
+
+considered-options:
+  - "A · the stack stays, and the engine keeps shipping a tile world nobody but one game uses"
+  - "B · the engine deletes it, and the platformer picks the code out of git history afterwards"
+  - "C · the platformer receives it FIRST and stops importing it from the package; the engine deletes after"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "Costs nothing today, and a second tile-world game would find the stack already built"
+    bad:
+      - "🔴 It is the state that produced the correction three times, and 24% of the engine is not the engine"
+      - "Every ratchet the plan carries is inflated by it: 26 of R1's modules, 29 of R3's names, 26 of R2's"
+  B:
+    good:
+      - "One repository is touched, and the engine is clean in a single commit"
+    bad:
+      - "🔴 The platformer stops compiling the moment it bumps the engine — twenty imports in `main.ts` alone"
+      - "«Recover it from history» is a headache handed to someone else, which is what the Dev named"
+  C:
+    good:
+      - "The platformer never has a broken hour: it stops importing the paths BEFORE they stop existing"
+      - "The two changes are INDEPENDENT — the platformer's step works against the engine published today"
+      - "The engine's deletion becomes mechanical, because by then nothing in either repository reads them"
+    bad:
+      - "Two repositories are touched, in an order that has to be respected"
+      - "⚠️ The engine's tests for those modules move too, or coverage is lost without anything going red"
+
+decision-outcome:
+  chosen-option:
+    link: "C — the platformer receives the stack first, then the engine deletes it"
+    justification: |
+      **Twenty-nine modules leave, and they land before they are removed.** Four clauses.
+
+      1. **WHAT LEAVES IS WHAT DESCRIBES A GAME**, judged by what it publishes — **twenty-nine modules**:
+         `render/`{`draw`, `player-anim`, `textures`, `camera`, `minimap`, `weather`, `fx`, `parallax`,
+         `scene-parallax`, `scene-sky`, `scene-city`, `city-tex`, `city-tiles`, `recycling-tex`, `scenery-data`,
+         `set-scenery`, `world-tex`, `title-scene`, `sprite-fx`, `viewports`, `wheelchair-sprites`},
+         `core/`{`world`, `tiles`, `collision`, `run-state`, `letter-grid`, `password`, `layers`}, `ui/map-hub`.
+
+         🔴 **AND THE LAST ONE IS THERE BECAUSE THE DEV CAUGHT THIS AI KEEPING IT**: «Isso são sprites usados
+         somente pelo platformer, ficam por que?» The answer written here first — «a wheelchair sprite is drawn
+         by a game, but its SUBJECT is a wheelchair, and that is the engine's» — **confused the ACCOMMODATION
+         with the ART**. 📏 Measured after the question: `render/wheelchair-sprites` exports `drawCane`,
+         `drawRunCane`, `drawChair` and `caneColor`; it paints pixels onto a character; its only reader in the
+         engine is `render/draw`, which leaves; and the platformer names it only in comments. The engine's
+         concern with a wheelchair is the ACCOMMODATION — the stored state, the ramp in `core/collision`, the
+         row in the mobility panel — never the drawing of a chair on one game's character. 📌 The memory
+         `arte-e-dele-nao-entra-na-lista` already said whose the art is.
+
+      2. **WHAT STAYS IS THE ENGINE, EVEN WHERE THE ROOT NEVER REACHES IT.** Thirteen modules the leaving ones
+         still depend on keep being published and keep being imported from the package: `core/constants`,
+         `core/entity`, `core/state`, `core/rng`, `core/dom-query`, `platform/storage`, `render/canvas`,
+         `render/port`, `render/viz-axes`, `render/viz-modes`, `render/high-contrast`, `render/cvd-matrices`,
+         `render/low-vision-drawing`.
+
+         ⚠️ **AND ONE OF THE THIRTEEN IS A JUDGMENT RATHER THAN A MEASUREMENT, said so it can be overruled in one
+         word.** 📏 After the move, `core/rng` is read by NOTHING inside the engine — its three readers today are
+         `render/draw`, `render/fx` and `render/weather`, and all three leave. By the reader test alone it would
+         go; by the SUBJECT test it stays, because `createRng`/`randInt`/`shuffle` compute numbers and do not
+         describe anything. It stays, and becomes declared debt in the exports ledger (ADR-0170 §3) — which is
+         the honest place for a published name with no consumer, rather than a silent one.
+
+      3. **THE ORDER IS THE DECISION, and it is the Dev's question turned into a rule**: the platformer takes the
+         twenty-nine and their tests, rewires those imports to local paths, and goes green — against the engine
+         published TODAY, because it simply stops asking the package for them. Only then does the engine delete.
+         ⚠️ Forty-four engine test files touch the leaving modules; the ones that are ABOUT them travel, and the
+         ones that merely import one stop importing it.
+
+      4. ⚠️ **TWO OF THE TWENTY-NINE ARE DEAD IN BOTH REPOSITORIES, and that is said rather than hidden**:
+         `core/letter-grid` and `core/password` are imported by nothing in the engine and by nothing in the
+         platformer. They travel with their subject — a word puzzle is a game's — and whoever owns them can
+         delete them knowingly. Moving them silently would be the engine exporting its dead code as someone
+         else's problem.
+
+  consequences:
+    good:
+      - "The engine stops shipping a tile world: 28 modules and roughly 2400 lines leave"
+      - "Three of the plan's lists shrink at once — R1 by 26 modules, R3 by 29 names, R2 by 26 names"
+      - "The browser suite loses the test files that come with them, which is the real answer to the flake of
+         item 23: a race between 115 files in one origin is fought by having fewer files, not by locking them"
+    bad:
+      - "🔴 BREAKING: the package's `exports` are wildcards (`./render/*.js`, `./core/*.js`, `./ui/*.js`), so
+         every one of the 29 is a published entry point and removing it is a major"
+      - "⚠️ A second tile-world game would have to take the stack from the platformer rather than the engine —
+         which is the right place for it to be taken from, and is nonetheless a cost"
+      - "The supersession of coverage is silent unless the tests move WITH the modules; 44 test files are
+         involved, and the ones that stay have to stop importing what left"
+
+  confirmation: |
+    ⏸ NOT YET BUILT — written before the code, as ADR-0128 requires. Confirmed when all four are true:
+
+      · `game-platformer` holds the twenty-nine and their tests, imports NONE of them from the package, and is
+        green against the engine published today — proved BEFORE the engine removes anything;
+      · `app/js` no longer holds them, and `node scripts/code-health.mjs` counts 177 modules rather than 205;
+      · the engine's suite is green with no test importing a removed path — the gate
+        `every-name-a-test-imports-exists` is what makes that measurable rather than hopeful;
+      · `docs/6-DevOps-SRE/Breaking-Changes.md` names all twenty-nine, because the package published every one.
+
+more-information: |
+  ⚠️ WHAT THIS RECORD DOES NOT DECIDE, named so it is not mistaken for settled. 📏 Measured while checking the
+  Dev's objection: **six modules are read by NOTHING in `app/js` — not even by what leaves** —
+  `render/screen-pipeline`, `render/viz-setters`, `ui/debug-panel`, `ui/shell`, `ui/hud` and `ui/title`. They are
+  a different question from this record's: not «whose subject is this», but «why is this here at all». Two of
+  them look like the engine's on their face (`render/viz-setters` writes the colour-blind and contrast axes;
+  `ui/hud` exports `counterLabel`) and two look like a game's (`ui/shell` is a press-start screen, `ui/debug-panel`
+  probes a character). They need reading, not counting, and they are not among the twenty-nine.
+
+  📌 AND THE RELEASE THIS RIDES IS NOT DECIDED HERE EITHER. The Dev's words on 2026-09-23: «por que está falando
+  de próxima release?! Eu estou falando de terminar o plano! Depois de terminar o plano é que vou pensar em
+  próxima release.»

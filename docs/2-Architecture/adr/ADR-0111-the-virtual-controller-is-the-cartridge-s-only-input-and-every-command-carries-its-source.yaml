@@ -1,0 +1,232 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/engine-boundary.node.test.js
+    - engine:tests/the-keys-source-survives-the-door.node.test.js
+    - engine:tests/no-abstract-name-reaches-a-person.node.test.js
+    - engine:app/js/input/synthetic-source.ts
+    - engine:tests/virtual-controller.node.test.js
+  errata:
+    - date: 2026-09-09
+      what: >-
+        the confirmation opened with «NOT YET BUILT» and all four gates are built. MEASURED against the tree:
+        no cartridge imports `input/` (`tests/engine-boundary.node.test.js`); every command carries a source
+        and `undefined` is one of the values, with the stamp travelling ON THE EVENT
+        (`app/js/input/origem-sintetica.ts`, `tests/origem-da-tecla.node.test.js`); no `new KeyboardEvent`
+        exists without `carimbarOrigem`, asserted as an inventory at its FLOOR, so it now claims the whole
+        absence rather than reporting a throttle; and the word that reaches a person is the GAME's
+        (`tests/nome-abstrato-nao-chega-a-pessoa.node.test.js`), whose reach is declared and SMALLER than the
+        rule — eight of the fourteen positions, the verbs, because marking the six language words would lie.
+        A `confirmed-by` was added so the claim is opened by the validator instead of asserted in prose.
+        Errata and not supersession: nothing was decided differently — the record went on saying its work was
+        undone after it was done, which is the defect the debt census now counts.
+    - date: 2026-09-16
+      what: >-
+        ✅ THE OPEN POINT «how a cartridge asks about a command» (more-information), ANSWERED BY THE DEV, which
+        fills what this record left open (ADR-0057 §1): «a engine lida com o hardware e passa para o jogo o nome
+        virtual do botão, o jogo por sua vez devolve o nome do que é executado ao apertar cada botão (nome dos
+        comandos). Tanto a Engine quanto o jogo têm o mapa dos botões a serem usados, a engine leva o evento para
+        o jogo». So it is PUSH: the engine calls the cartridge with the position, whether it was pressed or
+        released, and the source; the cartridge's map is its `preset` (the position → the word of its command).
+        📏 Found by the Dev on the quiz demo the same day: the quiz read raw key codes (its arrows worked, the
+        scheme's W and S did not), and the eye control reached it by dispatching synthetic keys — both against
+        §1 and §4. Built in engine issue #197.
+    - date: 2026-09-16
+      what: >-
+        ✅ THE PUSH DELIVERY CONFIRMED, pushed (issue #197 closed, `engine:de2e77a`, `0cc20ac`): `input/virtual-controller` and
+        `CreateGameOptions.onCommand` are gated in `confirmed-by`; the quiz demo hears only `onCommand`. The Dev, on the quiz demo:
+        «controles funcionando corretamente».
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-08, stated in three sentences: «O controle virtual é tudo que o cartucho
+       recebe da engine, com um extra: além do comando ele diz a fonte (teclado, camera, microfone etc.). O
+       input é ligado a ele pela engine, e ele é o input do cartucho»"
+    - "ADR-0074 — the fourteen abstract positions and the rule that the GAME supplies the words. NOT superseded:
+       see §5 below, which explains why this record is additive"
+    - "ADR-0079 — a transport DECLARES SLOTS and the player assigns actions to them; reachability is per SET"
+    - "ADR-0085 — the set is fourteen, not nine"
+    - "ADR-0109 — the edge carries its origin. That was built as internal plumbing for latching; this record is
+       what makes it part of the contract"
+    - "ADR-0033 — input arrives as INTENT, never as meaning. Provenance is not meaning, which is why this does
+       not contradict it"
+    - "ADR-0010 pillar 2 (a11y-first) and pillar 8 (offline)"
+    - "issue #11 — the three unbuilt transports, and the WebGazer module that is none of them"
+  informed: []
+
+title: The virtual controller is the cartridge's ONLY input, and every command carries the SOURCE that produced it
+
+context-and-problem-statement: |
+  ADR-0074 decided the vocabulary of the virtual controller — fourteen ABSTRACT positions, named by the game,
+  with no abstract name ever reaching a child. ADR-0079 decided that a transport declares SLOTS and the player
+  assigns actions to them. What neither decided is two things the Dev stated on 2026-09-08:
+
+    1. the virtual controller is EVERYTHING a cartridge receives — it is the cartridge's input, full stop;
+    2. a command carries the SOURCE that produced it.
+
+  ⚠️ AND THE SECOND ONE HAS A MEASURED HISTORY, which is why it is worth a record rather than a comment. The
+  engine's input layer ERASES provenance at the door: `input/state.keys` is a `Set<string>` of key CODES, touch
+  writes into it, and `ui/webcam` dispatches SYNTHETIC `KeyboardEvent`s so it can reuse the keyboard pipeline.
+  Issue #114 §C sat blocked for two months on exactly that erasure, and ADR-0109 fixed it one layer down —
+  `origemDaTecla` beside `keys`, `origemDoEvento` on the event. That work was framed as plumbing for latching.
+  This record says it is not plumbing: it is the contract.
+
+  ⚠️ AND THE SYNTHETIC KEYBOARD EVENT IS THE DEFECT THIS MAKES UNNECESSARY, in the Dev's own words: «Webcam não
+  tem que despachar keyboardevent sintético, isso só serviria para engine não saber de onde vem o comando».
+  While a transport must disguise itself as a keyboard to be heard, every transport added later has to pick a
+  key to impersonate and the engine has to undo the disguise on the other side — work that compounds with each
+  of the three transports issue #11 still owes.
+
+decision-drivers:
+  - "A cartridge that reads `input/` directly is a cartridge that must be edited when a transport is added.
+     Three hundred of them makes that impossible, which is the same argument ADR-0074 made for the vocabulary."
+  - "⚠️ Provenance is ACCESSIBILITY, not telemetry. ADR-0109's rules are all of the form «latching follows the
+     device in use» — they are unanswerable without knowing which device produced this command."
+  - "A transport must be able to arrive without touching a single game."
+  - "What a game may NOT do has to be stated, or the boundary is a convention, and a convention is lost by game
+     three hundred."
+
+considered-options:
+  - "V1 — leave the boundary as it is: cartridges import `input/state`, `held()` and the key set directly"
+  - "V2 — the virtual controller is the only input surface, and a command is a bare action"
+  - "V3 — the virtual controller is the only input surface, and every command carries its source"
+
+pros-and-cons-of-the-options:
+  V1:
+    good: ["Nothing to migrate. It is what the platformer does today and it works."]
+    bad: ["Every new transport is an edit in every game that reads the layer beneath.",
+          "⚠️ It is also what makes the webcam impersonate a keyboard: with no seam of its own, a new transport
+           has to enter through an existing one."]
+  V2:
+    good: ["A clean single surface, and the smallest thing that could work."]
+    bad: ["⚠️ It re-creates the erasure at a HIGHER level, which is worse than where it is now: the origin would
+           be known inside `input/` and thrown away at the boundary, so the fix of ADR-0109 would stop at the
+           door of the thing that needs it.",
+          "Every ADR-0109 rule becomes unanswerable by a cartridge."]
+  V3:
+    good: ["The origin travels the whole way, so «latching follows the device in use» is answerable wherever it
+            is asked.",
+           "A transport arrives as a binding and no game changes — ADR-0074's promise, now with a surface to
+            keep it on.",
+           "The synthetic `KeyboardEvent` loses its reason to exist."]
+    bad: ["It is a breaking change for every cartridge that reads `input/` today, and the platformer is one.",
+          "A wider surface is a wider thing to keep stable across the 300 games."]
+
+decision-outcome:
+  chosen-option:
+    link: "V3 — one surface, and the command carries its source"
+    justification: |
+      ===== 1. THE VIRTUAL CONTROLLER IS THE CARTRIDGE'S INPUT =====
+      A cartridge receives commands from the virtual controller and reads nothing else. It does not import
+      `input/state`, does not call `held()`, does not see key codes, pad indices or touch points. The engine
+      wires every transport onto the controller; the cartridge only ever meets the controller.
+
+      ⚠️ THIS IS A BOUNDARY AND THEREFORE A REFUSAL, and the refusal is the useful half: a game MAY NOT reach
+      under it. Today `game-platformer` does — it reads `pl.toggleMove` and calls `held(pl, act)` — and that is
+      what makes it the migration this record creates rather than a game that happens to be old.
+
+      ===== 2. THE COMMAND CARRIES ITS SOURCE =====
+      Every command says which transport produced it: keyboard, gamepad, touch, eyes, face, gestures, speech.
+      The vocabulary is `Transporte` in `input/transporte-em-uso` (ADR-0109), and it is CLOSED — a new transport
+      decides its rules there rather than appearing as a string nobody handles.
+
+      ⚠️ AND «UNKNOWN» IS A VALID ANSWER, which ADR-0109 already paid for and this must not undo. `origemDe`
+      returns `undefined` and never a default, because a default `teclado` would make a TOUCH command read as
+      keyboard, latching would switch itself off, and nothing would say so. The contract inherits that: a
+      cartridge asking where a command came from may be told «not known», and the engine must not invent.
+
+      📌 THE SOURCE IS PROVENANCE, NOT MEANING, which is why this does not contradict ADR-0033. A cartridge
+      still receives INTENT — `action1`, which its own words name. What it now also receives is who produced
+      it, and that is a fact about the world rather than an interpretation of it.
+
+      ===== 3. WHAT THE CARTRIDGE OWES IN RETURN, AND IT IS ALREADY DECIDED =====
+      ADR-0074 §1: the game supplies the WORDS for the positions it uses — `action1` is *pular* in a platformer,
+      *confirmar* in a quiz, *colocar* on a board. The engine uses those words for the remap screen, the touch
+      labels and every screen-reader announcement, and binds whatever hardware exists onto the abstract
+      controller, starting from a generic per-hardware default (ADR-0013's wizard by controller model) and
+      re-bindable by the player (ADR-0079: the transport declares slots, the player assigns).
+
+      ⚠️ Unchanged and still the sharpest rule of ADR-0074: NO ABSTRACT NAME REACHES A PERSON. `action1` is an
+      engine word; a child who hears it has met a defect.
+
+      ===== 4. THE WEBCAM STOPS IMPERSONATING A KEYBOARD =====
+      `ui/webcam` dispatches a synthetic `KeyboardEvent` so its gaze can enter through `keydown`. Under this
+      contract it becomes a transport that binds onto the controller like any other, and the disguise goes.
+
+      📌 THE STAMP OF `a78816c` IS SCAFFOLDING AND IS NAMED AS SUCH. `carimbarOrigem(ev, 'olhos')` makes the
+      disguise HONEST — the event declares who sent it — and it was the right step while the disguise existed.
+      What retires it is this record built. ⚠️ What does NOT retire is the sieve beside it: «no `new
+      KeyboardEvent` without `carimbarOrigem`» stays, and its job changes from describing the migration to
+      preventing the disguise from being invented again by whoever adds transport number four.
+
+      ===== 5. WHY THIS RECORD SUPERSEDES NOTHING, SAID BECAUSE IT LOOKS LIKE IT SHOULD =====
+      ADR-0074 decides a VOCABULARY and this decides an ENVELOPE and a BOUNDARY. Nothing in ADR-0074 says a
+      command arrives bare; it simply never asked. Marking it superseded-in-part would make a healthy record
+      read as revoked, and the next reader would stop consulting the thing that still decides the vocabulary.
+
+      ⚠️ ADR-0057 exists for this distinction and it cuts both ways: an emendation in place is wrong when the
+      decision changed, and a supersession is wrong when it did not. The test — would the original author, with
+      today's facts, have written the same sentence? — is YES for every clause of ADR-0074. So this is additive,
+      and saying so costs one paragraph and saves a false signal.
+
+      ===== 6. THE ONE THING THIS RECORD REFUSES TO DECIDE =====
+      ⚠️ WHETHER THE CONTROLLER HAS AN ANALOG AXIS. All fourteen positions are discrete. But WebGazer returns a
+      continuous point, and MediaPipe blendshapes are continuous coefficients (a half-puffed cheek is 0.4) —
+      so a discrete-only controller throws that information away at the boundary, which is issue #105's defect
+      one floor up. `input/pointer-space` already exists as half of the foundation.
+
+      The choice is the Dev's, and it is consequential in both directions: an axis opens gaze-driven drawing
+      and lets facial control be proportional rather than a threshold; no axis is cheaper and closes #105 by
+      decision rather than by construction. ⚠️ Naming it here rather than resolving it, because a contract that
+      quietly assumes «discrete» would make the answer by omission — and the person who pays for that is the
+      child who can only move her face.
+
+  consequences:
+    positive:
+      - "A transport arrives as a binding, touching zero games — ADR-0074's promise finally has a surface."
+      - "ADR-0109's rules become answerable at the point where they are asked."
+      - "The synthetic `KeyboardEvent` loses its reason to exist, and with it the pattern where each new
+         transport must pick a key to impersonate."
+      - "A cartridge stops being able to read input the engine did not hand it, which is the only way the
+         boundary survives to game three hundred."
+    negative:
+      - "Breaking for every cartridge that reads `input/` today. `game-platformer` is one, and it is the
+         monolith of origin — this is a migration, not a rename."
+      - "The controller becomes a surface that must stay stable across 300 games, so widening it later costs
+         a major."
+      - "⚠️ Provenance can be wrong: a transport that reports the wrong source is worse than one that reports
+         none, because latching would follow a device nobody is using. `undefined` staying valid is the
+         mitigation, and it is not a complete one."
+    neutral:
+      - "The vocabulary, the words, the slots and the per-hardware defaults are all unchanged."
+      - "Whether the controller gains an axis is open, and this record is compatible with either answer."
+
+  confirmation: |
+    ⚠️ NOT YET BUILT. This is the contract; the surface is its issues. Written first so that the migration has
+    something to be measured against, exactly as ADR-0074 §5 did for the vocabulary.
+
+    The gates it owes:
+
+    · NO CARTRIDGE IMPORTS `input/` — a boundary sieve in the shape of `tests/engine-boundary.node.test.js`,
+      which already refuses `educational/` importing anything. ⚠️ It has to be an INVENTORY while the platformer
+      is unmigrated: a list that SHRINKS reports the true state, where a flat prohibition would be red for
+      months and get switched off.
+    · EVERY COMMAND CARRIES A SOURCE, and `undefined` is one of the values — a case that a command of unknown
+      origin is DELIVERED rather than dropped, because dropping it would make a third-party dispatcher's key
+      stop working.
+    · NO `new KeyboardEvent` WITHOUT `carimbarOrigem` — already built in
+      `tests/origem-da-tecla.node.test.js`, and its meaning is re-stated here: it now prevents the disguise
+      from being re-invented, rather than describing a migration in progress.
+    · THE WORDS THAT REACH A PERSON ARE THE GAME'S — a case that no abstract position name appears in any
+      screen-reader string or visible label. This is ADR-0074's sharpest rule and it has never had a gate.
+
+more-information: |
+  Supersedes nothing, deliberately — see §5.
+
+  Completes ADR-0074 (vocabulary), ADR-0079 (slots) and ADR-0109 (the edge carries its origin) into one
+  surface. Issue #11's three unbuilt transports are the first consumers of it, and the WebGazer module
+  measured there is the first thing it retires.
+
+  Deliberately NOT decided here: the analog axis (§6), how a cartridge asks about a command's source
+  (push, pull, or on the command object), and the migration order for `game-platformer`.

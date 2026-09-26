@@ -1,0 +1,201 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0155
+      what: >-
+        §1's «the quick bar is reached by the SELECT button» and §3's «ARASAAC and PCS … shown with the reason, not
+        hidden». START now carries the quick bar (the quick pause, with PAUSED) and SELECT opens this record's menus;
+        and the two pictogram systems are SKIPPED in the cycle. The six-item root, the seven-item submenu and every
+        removal stand.
+    - by: ADR-0185
+      what: >-
+        §2's removal of the voice row («quem escolhe a voz é o jogo»). The hearing panel lists the voices that speak
+        the child's language, and locks the speech rows with the reason when none does.
+  supersedes-in-part: [ADR-0147, ADR-0146, ADR-0149]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0147 — SUPERSEDED IN PART: «the pause root is NINE items». 📏 Nine do not fit the target screen —
+       measured, the `.pause-card` overflows 640×360 by 64 px — and the Dev cut the root to six. Its reading of
+       which items the ENGINE actions (`resume`, `help`, `print`, `quit`) stands for the ones that stay"
+    - "ADR-0146 — SUPERSEDED IN PART: its §3 name. «Configurações» becomes «Configurações de inclusão»; «Opções
+       do jogo» stays. The split itself — what travels with the child versus what belongs to this game — is
+       untouched, and this record leans on it for every removal below"
+    - "ADR-0149 — SUPERSEDED IN PART: the eleventh button stops being a typography cycle and becomes the
+       COMMUNICATION cycle, gaining ARASAAC and PCS, both disabled"
+    - "ADR-0095 and the header of `REGUA_DE_ALVO` — «uma tela mais baixa que 360 não compra o direito de
+       encolher mais — compra o direito de mostrar menos itens». This record is that sentence applied"
+    - "ADR-0044 §2 — the exit first, `quit` last, and seven is what the root can hold. 📏 Seven is also, as
+       measured on 2026-09-12, exactly what fits 640×360: 7 → 0 px of overflow, 8 → 24 px, 9 → 64 px"
+    - "ADR-0106 §5 — a control is mounted when its action works. It is why the disabled pictogram systems are
+       shown disabled with a reason, not hidden (ADR-0113 clause 3), and why no removal below leaves a dead row"
+    - "ADR-0028 and `LICENSES.md` §3 — ARASAAC is downloaded and never redistributed; PCS waits for a
+       negotiation. Both enter the cycle as disabled, which is the state they are in"
+    - "ADR-0145 — the catalogue is general and a genre declares its own. The wheelchair leaving empathy for the
+       platform genre, and Easy Mode leaving the motor panel for the game's options, are that record applied"
+    - "ADR-0115 — the latches. They leave the motor PANEL; the ☝️ quick-bar icon that toggles them stays, so no
+       child loses the accommodation"
+  informed: []
+  errata:
+    - date: 2026-09-13
+      what: "THE EMPATHY LIST, AS THE DEV NAMED IT. §2 item 2 read «blur, fog, tunnel, tunnel vision, central scotoma,
+             scattered scotomas», and asked whether «tunnel» and «tunnel vision» were two, the Dev listed the visual
+             simulations: «protano, deuterano, tritanopia, desfoque, névoa, visão de túnel, mancha central, manchas
+             dispersas e cegueira total» — one tunnel; the others: «perda auditiva (fracos abafados e agudos cortados), e
+             motora (um dedo / um botão por vez, dificuldade para segurar)». 📏 The engine's list is these nine, and its
+             hearing loss cuts the highs and muffles the weak sounds. Fills what the item left ambiguous (ADR-0057 §1)."
+    - date: 2026-09-12
+      what: "✅ THREE OF THE FOUR OPEN POINTS OF `more-information`, ANSWERED BY THE DEV the same day. Each was a
+             reading this record declined to guess, so filling it contradicts nothing it decided (ADR-0057 §1).
+             (1) TOUCH PAD SIZE — FOUR steps, not three, each aimed at one persona: small child (under 6), older
+             child (12), small adult, adult with large hands. Stepped with left/right like the other steppers.
+             (2) KEYBOARD FOR 3–4 PLAYERS — offered only when the game's preset names none of `leftShoulder`,
+             `leftTrigger`, `rightShoulder`, `rightTrigger`. The reason is the Dev's: in chess it lets four children
+             each play against a DIFFERENT computer opponent, «visto que o modo competitivo deve ser
+             desencorajado». Several seats is not several rivals.
+             (4) SONAR AND NARRATION — «Eu misturei sonar com narração, mas os botões devem ser separados. Erro
+             meu.» Two rows, as §2 item 3 already lists them: sonar toggle + volume, and TTS toggle + volume.
+             (3) WHAT SELECT SHOWS FOR A PRINT is answered too, but the answer MOVES the buttons, so it is not an
+             erratum: see ADR-0155."
+    - date: 2026-09-12
+      what: "✅ §2 ITEMS 3 AND 4 WERE SILENT ON FOUR ROWS THAT EXIST TODAY, and the Dev answered each. BLIND MODE
+             stays in hearing accessibility, WITHOUT its explanatory hint (the same «quem precisa sabe o que é» as
+             the sonar line). The SPOKEN INDEX stays: «Errei, não era pra tirar» — the dictated list left it out by
+             mistake. The MASTER VOLUME leaves: «Volume geral é o do computador». The `other` sound category
+             leaves: «O que esta categoria controla? Nada. Então pra que?» — a volume with nothing under it is a
+             dead control (ADR-0106 §5). ERRATUM under ADR-0057 §1: the list the record transcribed was incomplete,
+             and the decision — keep only what the child chooses — is what these four answers apply."
+    - date: 2026-09-12
+      what: "🔴 THE GENERAL SOUND COMES BACK, by the Dev the same day: «Ok, toggle + barra para som geral voltam.» The
+             erratum above had it leaving («Volume geral é o do computador»); it returns as the general sound switch and
+             volume at the top of the new Áudio panel (§2 item 4), not in hearing accessibility. The navigation master
+             volume stays out — it duplicated the sonar, guard and guide volumes. Built in `engine:07a1d0d`."
+
+title: The pause root is SIX items and fits 640×360 — and the settings keep only what the child chooses
+
+context-and-problem-statement: |
+  📏 **The number that forced the decision.** With ADR-0147's nine items the pause card overflows the target
+  screen (640×360) by 64 px; eight overflow by 24; seven fit exactly. The target-size ruler is already at its
+  floor (the `[Zero]` case of `pausa-44px`: «tela menor mostra menos itens, não alvos menores»), so there was no
+  room to find — only items to move. The work of phase 1b stopped there and was put back to the Dev.
+
+  🎯 **Their answer went further than the root.** They recomposed the root AND the settings submenu under one
+  test: an item stays where the CHILD chooses something that no other place already offers. What the quick
+  bar already reaches, what the game decides, and what the browser cannot do well, leave.
+
+decision-drivers:
+  - "D1 — THE ROOT MUST FIT THE TARGET SCREEN, and fitting is achieved by fewer items, never by smaller targets"
+  - "D2 — ONE PLACE PER CHOICE. A setting reachable from the quick bar and from a panel is two places to keep
+     in step, and the child has to learn both"
+  - "D3 — WHAT THE GAME DECIDES IS NOT A CHILD'S SETTING: the voice, the typography, the difficulty"
+  - "D4 — DO NOT OFFER WHAT THE PLATFORM CANNOT DELIVER: per-player audio output in a browser"
+
+considered-options:
+  - "A — keep nine and accept scrolling at 640×360"
+  - "B — two columns below a height (reopens the grid ADR-0044 item 1 closed)"
+  - "C — smaller targets (forbidden by ADR-0095)"
+  - "D — fewer items: move what has another door, and cut what is not the child's to choose"
+
+pros-and-cons-of-the-options: |
+  **A — scrolling.** ✅ Nothing moves. ❌ Items the child cannot see on the screen she has.
+  **B — two columns.** ✅ Everything visible. ❌ A two-dimensional grid, which the ring navigation was chosen to avoid.
+  **C — smaller targets.** ❌ Forbidden, and for the child with the least motor control.
+  **D — fewer items.** ✅ Fits, and every removal has a named destination. ❌ The SELECT button now carries the
+  quick bar and the print view, and a child who never learns SELECT does not find them from the root.
+
+decision-outcome:
+  chosen-option:
+    link: "D — six items in the root; the settings keep only what the child chooses and nothing else offers"
+    justification: |
+      ===== 1. THE ROOT — SIX ITEMS, in this order =====
+        1. **Voltar ao jogo** (was «Continuar»)
+        2. **Ajuda — Como jogar** (moves up, and gains «como jogar»)
+        3. **Número de jogadores**
+        4. **Configurações de inclusão** (gains «de inclusão»)
+        5. **Opções do jogo**
+        6. **Sair** — back to the PRESS START screen (ADR-0147 erratum)
+      🔴 **Leave the root:** «Acessibilidade» — the quick bar is reached by the **SELECT** button; and «Print (ver a
+      tela)» — in the Dev's words, «basta apertar SELECT que se tem a visão apropriada pra print».
+
+      ===== 2. «CONFIGURAÇÕES DE INCLUSÃO» — the submenu, seven items =====
+        1. **Voltar**
+        2. **Modo empatia** — toggles to simulate: one button at a time, hearing loss, deuteranopia, protanopia,
+           tritanopia, blur, fog, tunnel, tunnel vision, central scotoma, scattered scotomas, total blindness.
+           🔴 **The wheelchair leaves**: «vira modo especial de jogo de plataforma, pois não simula deficiência,
+           mas inclui» (ADR-0145).
+        3. **Acessibilidade auditiva** — cane taps (to hear the material and the room's echo); sonar toggle and
+           volume; ledge-guard toggle and volume; guide track / navigation sound toggle and volume; TTS toggle
+           and volume. 📌 No explanatory line saying «sem escurecer a tela, para quem só joga pelo som»: «é
+           redundante. Quem precisa sabe o que é.» 🔴 **Leave:** the motor, voice and voice-test rows — «quem
+           escolhe a voz é o jogo (cartucho), não o jogador» —, and per-player audio output — «navegadores não
+           são bons nisso».
+        4. **Áudio** — separate from hearing accessibility: toggle and volume for music, ambient sound (not
+           caused by the player), interaction effects (caused by the player), and earcons (sounds that do not
+           exist in the world but guide the player).
+        5. **Acessibilidade motora** — touch pad size, chosen with left/right among three sizes; map touch
+           buttons (+ open); map the controller (+ open); map the keyboard for 1 player; for 2 players; for 3–4
+           players (offered only if the game uses no shoulder/trigger positions); configure microphone control
+           (+ open); webcam gestures (+ open); webcam face (+ open); webcam eyes (+ open). 🔴 **Leave:** Easy
+           Mode — «dificuldade é opção do jogo, e nem sempre está ligada à acessibilidade motora» —, the move
+           latch and the run latch (the ☝️ quick-bar icon keeps them).
+        6. **Acessibilidade visual** — Okabe-Ito colour-blind-safe palette for menus and HUD (switched on
+           automatically with a protan/deutan/tritan correction, off with trichromatic vision, and switchable here
+           without the filter); items in the owner's colour; contrast enhancement stepped with left/right
+           (off → linear → mixed → quadratic), NOT a slider, with its explanation in the FOOTER (`CLAUDE.md` §4 —
+           today it is inside the row, and that is a defect to correct); foreground outline; background outline;
+           captions (on by default). 🔴 **Leave:** every high-contrast row and every colour-correction row —
+           already on the quick bar.
+        7. **Sensibilidade visual** — toggles: stop all animation; character movement; character breathing;
+           character antics; background parallax; scenery animation; item animation; scanlines; vignette; and
+           rounded corners stepped with left/right (off, small, large).
+      🔴 **Leave the submenu entirely:** «Comunicação» (see §3) and «Tipografia» — «quem escolhe a tipografia é o
+      jogo, o jogador escolhe suas fontes via o menu de acessibilidade rápida».
+
+      ===== 3. THE QUICK BAR'S CYCLE BECOMES «COMUNICAÇÃO» =====
+      The eleventh button (ADR-0149) is renamed from «leitura e tipografia» to the **communication cycle**, and
+      gains two positions: **ARASAAC** and **PCS**. «Não podemos usar nenhuma das duas por enquanto», so both are
+      **disabled** — shown with the reason, not hidden (ADR-0113 clause 3), because they are real options waiting
+      on a licence, not options that do not exist.
+
+      ===== 4. WHAT THIS DOES NOT DECIDE =====
+      Four readings are stated in `more-information` and left to the Dev rather than guessed: the touch sizes
+      against four hand profiles, the 3–4 player keyboard condition, what SELECT shows for a print, and the
+      sonar/narration relation.
+
+  consequences:
+    positive:
+      - "The root fits 640×360 with no scrolling"
+      - "Every choice has one place; the quick bar stops being duplicated inside a panel"
+      - "Settings a child could not really use — a voice the game did not pick, a browser audio routing that
+         does not work — stop being offered as if they worked"
+    negative:
+      - "SELECT becomes the only road to the quick bar and the print view from the pause; a child who does not
+         know SELECT does not discover them from the root"
+      - "A child can no longer pick a TTS voice; if a game picks badly for her, she has no remedy in the engine"
+      - "The typography panel leaves, so the 52-face roster (ADR-0150, ~3.5 MB of precache) is no longer
+         offered to children except through the cycle's positions; the rest serves games that choose a face"
+      - "Seven panel changes, a new Audio panel, a stepper widget used in three places, and two disabled cycle
+         positions — this is the largest single change to the menus since ADR-0044"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #148** in `the-inclusionist-engine`. The
+    gates, named now: the root has exactly the six items in this order at 640×360 with zero overflow; the
+    submenu has the seven; no removed row is in the document (asserting ABSENCE); ARASAAC and PCS are in the
+    cycle and `aria-disabled` with a reason; the contrast enhancement and rounded corners step with left/right
+    and keep their explanation in the footer.
+
+more-information: |
+  📏 **The overflow numbers** were measured on 2026-09-12 against the `.pause-card` at 640×360, with the work
+  of phase 1b stashed in the engine (`git stash@{0}`) — that stash implements NINE items and is superseded by
+  this record; it is kept only for the pieces that still apply (the third list of `PauseSub`, the `menu-nav`
+  «back» fix).
+
+  📌 **Four points the Dev's text leaves open, stated here so nobody builds a guess:**
+  1. The touch pad size is «três opções — pequeno, médio e grande», and the same sentence asks for a control
+     configured for **four** hands: small child (<6), older child (12), small adult, and adult with large hands.
+  2. «Mapear teclado para 3–4 jogadores — existente somente se o jogo não usa botões laterais (L1, L2, R1, R2)»:
+     the condition reads the game's preset (`leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger`).
+  3. «Print … basta apertar SELECT que se tem a visão apropriada pra print»: what exactly SELECT shows for a
+     print — the quick bar over the game, or the game with the menus gone — is not stated.
+  4. «toggle de sonar (narração?)» carries the Dev's own question mark.

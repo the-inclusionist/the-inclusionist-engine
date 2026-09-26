@@ -1,0 +1,94 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-07-05
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Adopt a Tier-2 lean subset of the SDD documentation schema (adopt / defer-but-home / reject)
+
+context-and-problem-statement: |
+  Two studies were provided: a fullstack SDD artifact schema (phases a-g: Discovery, Architecture, Sprint-Design,
+  Sprints, Refactoring, DevOps/SRE, Async) and an educational-software artifact catalog. We must decide WHICH of those
+  artifacts this project uses, and record WHY — otherwise the choice is improvised per artifact and re-litigated.
+  Constraints: the project is **Tier T2** (educational platform, LGPD/child-data, some T3-leaning concerns); it is a
+  **client-only PWA today** with the backend deferred; development is **AI-agent-driven** (which biases toward writing
+  more, not revising). Which subset, and how do we treat what we don't use now?
+
+decision-drivers:
+- Tier fit — T2 needs a real subset, not the full fullstack ceremony (K8s/IaC/observability) nor nothing.
+- Cut rule — a doc statement must be EITHER (a) reducible to a machine-verifiable checklist/test OR (b) a decision
+  record an auditor needs; else it is noise and is cut.
+- Anti-bloat via tiering — the antidote to LLM over-production is fewer artifacts + supersede-don't-append, not prose.
+- Don't build ceremony for infrastructure we don't have (no backend -> no OpenAPI/Pact/K8s/SLO yet).
+- Open-source — contributors need a discoverable map; a dropped artifact must be explicitly dropped, not missing.
+
+considered-options:
+- &full "Adopt the full fullstack SDD schema now"
+- &none "No formal schema — ad-hoc docs as needed"
+- &tiered "A Tier-2 lean subset, with three states: adopt-now / deferred-but-homed / rejected"
+
+pros-and-cons-of-the-options:
+  full:
+    cons:
+    - "Builds ceremony for infra we don't have (K8s, IaC, observability, message queues) -> dead docs that rot."
+    - "Maximizes the LLM-bloat failure mode."
+  none:
+    cons:
+    - "No coverage/traceability; a T2 education product with child data needs auditable requirements + decisions."
+  tiered:
+    description: |
+      Adopt only what a T2 client-PWA needs now; everything else is either a "deferred-but-homed" stub that records
+      where/when/how it activates (with a trigger), or an explicit rejection recorded here. Docs mirror the SDD phases,
+      numbered 1-Discovery .. 7-Async-Systems.
+    pros:
+    - &lean "Lean and auditable — every artifact is a live doc, a homed stub with a trigger, or a recorded rejection."
+    - &scale "Scales by activating stubs as the backend/telemetry land — no rework, no re-litigation."
+    - &map "One discoverable map (ARCHITECTURE.md) mirroring the SDD phases."
+    cons:
+    - &empty "Some stubs look empty. Mitigation: the stub IS the decision (where/when/how) — it passes the cut rule."
+
+decision-outcome:
+  chosen-option:
+    link: *tiered
+    justification: |
+      The tiered subset is the only option that fits T2, respects the cut rule, and resists LLM-bloat while still
+      giving contributors a complete, auditable map. Nothing is silently dropped: an unused artifact is either homed
+      with a trigger or recorded as rejected here.
+  consequences:
+    positive:
+    - *lean
+    - *scale
+    - *map
+    negative:
+    - *empty
+    neutral:
+    - "docs/ is organized by SDD phase, numbered 1..7; per-artifact detail lives in each phase folder, not here."
+  confirmation: |
+    Every SDD artifact appears in ARCHITECTURE.md as EITHER a live document, a deferred-but-homed stub with an
+    activation trigger, OR is listed rejected in the matrix below. A reviewer can point at any artifact and find its
+    state + reason. No artifact is missing without a recorded reason.
+
+more-information: |
+  Full per-artifact rationale lives in each phase folder's doc; the cut rule + two-layer requirements model are in
+  ../../CONTRIBUTING.md (which points here for the governing decision). Notable calls (summary matrix; NOW = adopted,
+  DEFER = homed stub + trigger, REJECT = recorded out):
+
+    Phase                 Artifact                         State    Why (short)
+    a Discovery           SRS(curriculum)+User-Stories      NOW     two-layer: BNCC-fixed vs negotiable
+                          NFR / Design / Event-Storming     NOW/DEF NFR+Design now; Event-Storming deferred (telemetry)
+    b Architecture        C4-L1 / ADR(YADR) / Feature-Flags NOW     L2 with backend; flags = JSON, no Unleash
+                          DFD / STRIDE                      DEFER   stubs until PII/backend
+                          CI-CD                             NOW     ci.yml exists
+                          K8s / Terraform / Platform/Canary DEFER   parked in backend-cloud-roadmap by stage
+                          Safety-Case/GSN                   REJECT  T3-only
+                          issues.yaml + FEAT-### matrix     REJECT  heavy ID/CI ceremony; Closes #N covers it lightly
+    c Sprint-Design       DBML / Test-Plan / Gherkin        NOW     corpus DB; test plan; activity acceptance (pt-BR)
+                          Migrations / OpenAPI / Pact        DEFER   at the backend (Pact justified by 30+ consumers)
+    d Sprints             TDD/Vitest / Conv.Commits         NOW     already practiced; Closes #N trace
+                          Frontend WC+Atomic+Storybook      NOW/DEF ADR-0002 (DOM activities); Shadow DOM REJECT (ARIA)
+    e Refactoring         DRY/SOLID + supersede (YADR)      NOW     via modularization ADR (arXiv:2409.15152)
+    f DevOps/SRE          axe-core / SAST-light             NOW     axe verifies NFR-WCAG; Dependabot/CodeQL
+                          SLO / k6 / DAST / Pentest         DEFER   at the backend / scheduled
+    g Async systems       message-pact/idempotency/DLQ/...  DEFER   no messaging yet; idempotency flagged for telemetry

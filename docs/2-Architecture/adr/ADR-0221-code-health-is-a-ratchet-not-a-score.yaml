@@ -1,0 +1,180 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0232
+      what: >-
+        The definition of fan-out: it counts VALUE imports only, because a type import is a dependence on a contract,
+        erased at build, and state now arrives by injection. And a seventh measure, `statefulEdges` (value imports into a
+        module that holds state), with the same ratchet. The other five measures, the exemptions and the co-change
+        criterion stand.
+  confirmed-by:
+    - engine:tests/code-health.node.test.js
+  date: 2026-09-22
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev, 2026-09-22: «nós analisamos o arquivo … e ele orientou a modularização deste projeto. Aparentemente problemas que foram corrigidos foram criados novamente. Estude este arquivo e complemente o plano atual com os passos que o projeto precisa ter para que nosso projeto atenda as boas práticas apontadas no artigo adaptadas ao nosso caso»"
+    - "Y. Denisov-Blanch, I. Ciobanu, S. Obstbaum, M. Kosinski, «Predicting Expert Evaluations in Software Code Reviews», arXiv:2409.15152 (2024) — the dimensions its model weighs: code structure, cohesion, complexity, coupling, dependencies, dependency injection, architectural patterns"
+    - "engine:CLAUDE.md §3 — the modularization's foundations already cite this paper by number"
+    - "ADR-0173 — modules depend downward through named layers, with no cycles; the gate is `tests/dependencies-point-downward.node.test.js`"
+    - "📏 The paper's own caution, and it is the most honest number in it: maintainability has ICC2,k = 0.52 among ten experts with 10+ years each, and r = 0.30 against the model. Coding time reaches 0.82 and implementation time 0.86; maintainability does not converge even among people"
+    - "📏 Measured 2026-09-22 with TypeScript's parser over 186 modules and 19 653 lines of code: `boot/create-game.ts` has 2185 lines (11% of the engine's code), 330 decision nodes and fan-out 77 — the next module imports 19; `ui/pause-icons.ts` 695 lines, 127 branches, depth 11; `ui/settings-audio.ts` 568 and 112; `input/gamepad.ts` depth 11"
+    - "📏 Measured the same day: `core/dom-query.ts` is 4 lines with fan-in 17 — the counter-example, and the shape the tree should copy"
+    - "📏 Measured 2026-09-22 while weighing a generated inventory for `ARCHITECTURE.md`: 205 modules were born or died in 30 days, in 156 of 1056 commits — a gate that fires on every new module fires on one commit in seven"
+  informed: []
+
+title: Code health is a ratchet, never a score
+
+context-and-problem-statement: |
+  The Dev read a paper back that guided this engine's modularization and said the problems it had cured have come back. The Dev is
+  right, and the cause is mechanical rather than a lapse of care.
+
+  📏 This engine gates the language (`portuguese-stays-out`), the DIRECTION of its dependencies (`dependencies-point-downward`,
+  ADR-0173), its public surface, its exports without a consumer, and the pointers its records make. **It gates nothing about
+  size, complexity, coupling or cohesion.** The layer gate asks which way an import points, never how many there are: a module
+  may import 77 things downward and pass green. What nothing measures comes back.
+
+  📏 And it has come back, measured with TypeScript's own parser: `boot/create-game.ts` is **2185 lines — 11% of all the
+  engine's code in one file — with 330 decision nodes and fan-out 77**, where the next module imports 19. Being the composition
+  root justifies a wide fan-out; it does not justify 330 branches, which are logic and not wiring.
+
+  ⚠️ The paper is not a catalogue of good practices, and treating it as one would be the first mistake. It is a model that
+  predicts expert judgement from a commit; the practices are implicit in what it WEIGHS — cohesion, complexity, coupling,
+  dependency injection. And it carries its own warning: **maintainability has ICC 0.52 between raters and r = 0.30 against the
+  model.** Ten experts with more than ten years each do not agree on how maintainable a commit is.
+
+decision-drivers:
+  - "D1 — IT MUST NOT BECOME A SCORE. The paper's own numbers say the judgement it would imitate does not converge; a number presented as quality would be obeyed more than it deserves"
+  - "D2 — IT MUST NOT FIRE ON EVERY COMMIT: a gate woken one commit in seven is a gate that gets switched off, and this repository has the measurement that says so"
+  - "D3 — THE CEILING COMES FROM THIS TREE, not from the literature: the paper prescribes no threshold, and borrowing one would dress it in an authority it never gave"
+  - "D4 — IT MUST CATCH THE RECURRENCE, which has two shapes: a module that gets worse, and a NEW module born already big"
+  - "D5 — IT MUST NOT PRETEND TO MEASURE WHAT IT CANNOT. Cohesion has no honest number for a tree of function modules"
+
+considered-options:
+  - "A — reproduce the paper's model: predict expert ratings per commit"
+  - "B — fixed thresholds from the literature (cyclomatic complexity < 10, files < 300 lines…)"
+  - "C — measure four dimensions, write a baseline, and ratchet it: nothing gets worse, a new module is born under a ceiling taken from the tree's own p90"
+  - "D — nothing: rely on review, as until now"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ It is what the paper actually built, and it reaches r = 0.82 on coding time. ❌ It needs ten experts and 4 900
+  judgements to calibrate, which we do not have — and the metric it predicts best (hours) changes no decision of ours. We do not
+  schedule by estimate, and the one it predicts worst is the one we would want.
+  **B.** ✅ Instant, and defensible-sounding. ❌ The paper prescribes no threshold, so any number would be ours wearing its
+  coat. And 📏 a literature ceiling fails a dozen modules on day one, which is how a gate gets disabled in the first hurry.
+  **C.** ✅ It is the shape this repository already trusts — `language-debt.json` and the debt of ADR-0173 both only shrink — and
+  it answers both shapes of the recurrence. ❌ It cannot say a module is GOOD, only that it did not get worse; and the baseline
+  freezes today's damage until someone pays it.
+  **D.** ❌ It is what produced the question. `create-game` grew to 2185 lines with every gate green.
+
+decision-outcome:
+  chosen-option:
+    link: "C — a measured baseline and a ratchet, with the ceiling taken from this tree"
+    justification: |
+      1. **Four measures, and each one is defined by what the parser can see, not by a name**: lines of code (comments
+         excluded), decision nodes (`if`, loops, `switch`, `catch`, ternary), maximum decision depth, and fan-out (distinct
+         relative imports). `fan-in` is recorded as INFORMATION and never limited — a module everybody uses is what
+         `core/dom-query.ts` is at 4 lines and fan-in 17, and that is the shape to copy, not to cap.
+      2. **🔴 COHESION IS NOT MEASURED, and saying so is part of the decision.** LCOM and its family assume classes with fields;
+         this tree is modules of functions, and a number that means nothing is worse than no number — it would be obeyed. What
+         stands in its place is the co-change table of `engine:docs/ARCHITECTURE.md` §3.3: files edited in the same commit are
+         the honest evidence of what belongs together, and a long row there is a hypothesis about missing abstraction.
+      3. **The ratchet, in the exact shape of `portuguese-stays-out`**: a per-module baseline in
+         `engine:docs/6-DevOps-SRE/code-health.json`; no module may get worse on any of the four; a module that is NEW is born
+         under a ceiling. ⚠️ The ceiling is the p90 of today's tree, written into the baseline file with the date it was taken —
+         it is a fact about this repository, and it moves only when someone re-measures and says so.
+      4. **Two exemptions, named with their reason, and no others**: `boot/create-game.ts` is exempt on FAN-OUT because wiring
+         everything is its job (ADR-0173) — and is NOT exempt on lines, branches or depth, which is exactly where its debt is;
+         and `i18n/pt|en|es.ts` are exempt entirely, because they are data, and 621 lines of sentences is not complexity.
+      5. **Nothing here is a score, and no commit is judged by it.** The gate answers one question — «did anything get worse?» —
+         and the answer is yes or no.
+      6. **The success criterion of paying a debt is not the number falling.** It is the co-change falling: when an abstraction
+         is adopted, the files it unifies stop changing together. That experiment is already written down in `ARCHITECTURE.md`
+         §3.4 with its criterion fixed before the answer exists.
+
+  consequences:
+    positive:
+      - "The recurrence the Dev named stops being invisible: a module that grows, or is born big, reddens the build"
+      - "The debt becomes a list with sizes instead of an impression — `create-game` 2185/330/77 first, then `pause-icons`, `settings-audio`, `gamepad`"
+      - "The paper stops being a citation in CLAUDE.md and becomes something the build checks"
+    negative:
+      - "A baseline freezes today's damage: until a debt is paid, the gate protects the bad number as carefully as a good one"
+      - "Four numbers cannot say a module is well designed; they can only say it did not get worse — and the thing they cannot see, cohesion, is the one the paper weighs most"
+      - "One more file to regenerate when a module is legitimately split, which is the cost of every ratchet this repository has"
+
+  confirmation: |
+    ✅ **BUILT on 2026-09-22, `engine:b98338d`**, and grown twice the same day — see the errata below, which are part of this
+    confirmation and not a footnote to it. `engine:tests/code-health.node.test.js` reads
+    `engine:docs/6-DevOps-SRE/code-health.json` and refuses a module that got worse on any measure, refuses a NEW module above
+    the ceiling, and refuses a baseline entry for a module that no longer exists. Every rule red by mutation before it counted.
+    🔴 And one mutation caught a defect this house already knew, this time at birth: `git ls-files` answers «what is already
+    stored» and the question is «what exists», so a new module was invisible until somebody indexed it — the same shape that let
+    six Portuguese identifiers through on 2026-09-21. The measurement now counts untracked files too (honouring `.gitignore`),
+    and a module born big reddens the minute it is born, which is when splitting it is still cheap.
+    📌 A second mutation survived and became a CASE instead of a patch: with the tree standing still nothing gets worse, so the
+    exemption is never exercised and deleting it stayed green. What it carries is an ASSERTION — the root is exempt from wiring,
+    not from debt — and a case now says it out loud.
+    📌 What this record does NOT claim: that the code is good. It claims it stopped getting worse, and that difference is the
+    whole reason the paper's ICC 0.52 is quoted above.
+
+more-information: |
+  The paper is `arXiv:2409.15152`, already cited by `engine:CLAUDE.md` §3 as the foundation of the modularization. What is taken
+  from it: the DIMENSIONS, and the caution. What is deliberately not taken: the model (a random forest calibrated on 4 900
+  expert judgements in Java) and the time questions Q1/Q2 (r = 0.82 and 0.86) — we have no raters to calibrate, and estimating
+  hours from a commit changes no decision here.
+  📌 The two debts this will have to face first are already named in `engine:docs/ARCHITECTURE.md` §3.4, measured rather than
+  supposed: there are two doors to the cartridge, and four of the nine settings panels use the panel kit.
+
+  ---
+
+  ## 🔴 ERRATUM of 2026-09-22 — the record says FOUR measures, and there are SIX
+
+  This is an erratum and not a supersession by the test of ADR-0057: the decision did not change — measure, write a baseline,
+  ratchet it, never score. What changed is the SET of measures, and each addition carries its own reason. Written here because
+  a record that says «four» while the build checks six is a record that stops being read.
+
+  **E1 · The fifth measure is what a module REACHES** (`globalReach`, `engine:4cc6b05`). 📏 Measured the same day: **24 of 188
+  modules reach a browser global** — `document`, `window`, `localStorage`, `navigator`, `performance` — without receiving it.
+  ⚠️ The layer gate can never see this, which is why the measure had to exist: `dependencies-point-downward` inspects IMPORTS,
+  and a module that imports nobody and touches `document` passes green. Its ceiling is **ZERO and not a p90**, for the reason
+  already written in driver D3's exception above: a new module that reaches a global is undoing a decision (ADR-0178,
+  ADR-0173), not sitting above an average. The 24 that already do are frozen by the ratchet — debt does not become a licence —
+  and the baseline records WHICH globals, not just how many, because a ratchet over a number says it got worse while that line
+  says what to pay. 🔴 And the finding was architectural: `core/i18n` reached `document`, `window` and `navigator`, and
+  `core/state` reached `window` — in the very layer ADR-0173 describes as «what the engine IS, WITHOUT a browser». That was
+  paid by splitting the module (`engine:2a5e1b7d`), not by an exemption.
+
+  **E2 · The sixth measure is the cyclomatic complexity of the WORST FUNCTION** (`worstFunction`, ceiling **10**), and it
+  NARROWS driver D3 rather than contradicting it. D3 said the ceiling comes from this tree because «the paper prescribes no
+  threshold, and borrowing one would dress it in an authority it never gave». That reasoning holds exactly where the
+  literature is silent — and for this measure it is not. 📌 The Dev asked for it in those words: «Por que teto de linha quando
+  a literatura dá definições melhores como uma responsabilidade por módulo?», then «Para esta engine eu colocaria um teto de
+  200 linhas, mas isso é arbitrário, precisamos de uma referência melhor», and they approved what came back with «Concordo».
+  🎯 The literature has no ceiling for a FILE; it has one for a FUNCTION: McCabe (1976) proposed 10, and NIST SP 500-235
+  (Watson & McCabe, 1996) codified it, admitting up to 15 when the reason is written down. So D3 reads, from today:
+  **the ceiling comes from this tree wherever the literature gives none, and from the source wherever it does** — and taking
+  a p90 of this tree for a measure that HAS a source would be the worse error, because it would draw the limit from the defect.
+  ⚠️ Per FUNCTION, and a nested function's branches do not count for the one around it: a factory returning an object of ten
+  methods is not complex for having them, and summing them would make every factory here look like its worst module.
+  📏 Measured before the rule existed: **2496 functions, 71 above 10 and 36 above 15, across 46 modules** — so it is a ratchet
+  like everything else. The worst three: `boot/create-game.createGame` **68**, `render/scene-sky.stepV3Decor` **57**,
+  `core/contract.conformanceProblems` **53**.
+
+  **E3 · WHEN THE ROOT'S DEBT IS PAID, which this record decided to charge without ever saying.** Point 4 of the outcome
+  exempts `boot/create-game.ts` from fan-out and refuses to exempt it from lines, branches and depth — correct, and silent
+  about the finish line. The composition-root literature gives it: a root is EXPECTED to be large, because wiring an object
+  graph costs statements; what it may not contain is behaviour (Seemann, *Dependency Injection Principles, Practices, and
+  Patterns*; Fowler, *Inversion of Control Containers and the Dependency Injection Pattern*). 🎯 Therefore **the criterion is
+  the BRANCHES tending to zero, not the lines** — wiring has no `if`. 📏 Today the root has **2095 lines, 309 decision nodes,
+  fan-out 80 and a worst function of 68**; it opened at 2185/330/77. Lines falling is a side effect; branches falling is the
+  payment.
+
+  **E4 · The closing criterion stopped being measured by hand** (`engine:scripts/co-change.mjs`, `engine:91025803`). Point 6
+  says a debt is paid when the files an abstraction unified stop changing together, and until now that was computed once per
+  question in a scratchpad — which is how a criterion quietly becomes whatever the person measuring wants. 📏 What it says
+  about the root over the last 300 commits: it changes in **118 of them (39%)**, and **51 of those 118 (43%) also touch a
+  dictionary**. That is the measured form of «the root changes because it writes the interface's sentences» — a sentence this
+  plan had been asserting without a number. ⚠️ And the script had to learn that a CUT is not measured like an ADOPTION: in a
+  group born from a split the «before» is always 0%, because a module that did not exist changed with nobody. The honest
+  question is whether the file that was SPLIT is dragged into fewer commits, and that line is now printed apart, with a
+  warning when the window is short.

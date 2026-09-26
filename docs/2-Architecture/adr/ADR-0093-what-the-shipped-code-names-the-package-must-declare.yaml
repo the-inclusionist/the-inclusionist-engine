@@ -1,0 +1,190 @@
+---
+metadata:
+  status: "accepted"
+  # ⚠️ WHAT CONFIRMS THIS RECORD TODAY, in a checked key — the `confirmation` down below is history and stays.
+  # It cites `tests/docs.node.test.ts`, which belongs to the CONSUMER's repository, and it says so itself («do lado dele»);
+  # the gate on THIS side, the one with the twelve assertions that were born red over `@mintplex-labs/piper-tts-web`,
+  # is `engine-package`. Without this key, the pointer a reader meets first points to another tree.
+  confirmed-by:
+    - engine:tests/engine-package.node.test.js
+  date: 2026-09-06
+  superseded-in-part:
+    - by: ADR-0094
+      what: "THE CHOICE OF FIELD, and only that: `dependencies` for `@mintplex-labs/piper-tts-web`, with the
+             paragraph of option D2 that rejected the port. The rejection rested on a measured price of `0.5 MB
+             and ZERO transitive dependencies`, and that number is WRONG — see the erratum in
+             `more-information`. With 135.4 MB in place of 0.5 MB, the argument inverts, and the neural engine
+             comes to arrive by a port. ⚠️ THE TWO-DIRECTION GATE, which is the other half of this record and the
+             more durable one, is NOT superseded: it stays, and it is what makes ADR-0094's decision checkable."
+  decision-makers: [Dev]
+  consulted:
+    - "The report of a REAL CONSUMER, verbatim: `Rolldown failed to resolve import
+       \"@mintplex-labs/piper-tts-web\" from \".../@the-inclusionist/engine/dist-pkg/platform/tts.js\" ...
+       So the published engine cannot be built against by anyone, not just this game`"
+    - "ADR-0072 §4 — the package build and the gate that pins it; this record adds the second sieve to the
+       same file, for the same reason (a sieve at the SOURCE, because a gate that only works after the build
+       fails OPEN)"
+    - "ADR-0022 — the pending migration to `sherpa-onnx-wasm`: today's supplier is DISCONTINUED, and that is
+       what makes the gate more important than the name"
+    - "ADR-0035 — `render/port`: the precedent of not naming a supplier, and the reason it does NOT transfer
+       here"
+    - "ADR-0010 pillar 2 — a11y-first, which is what decides between the port and the dependency"
+  informed: []
+
+title: What the SHIPPED code names, the package has to declare — and the gate looks in both directions
+
+context-and-problem-statement: |
+  `6.36.1` was published on 2026-09-06 and verified anonymously: public, AGPL-3.0-or-later, LICENSE present,
+  224 files emitted with zero SPDX missing. Every check this repository knew how to make passed.
+
+  ⚠️ AND NOBODY COULD COMPILE IT. The one who found out was a consumer installing from the registry:
+
+      Rolldown failed to resolve import "@mintplex-labs/piper-tts-web"
+      from ".../@the-inclusionist/engine/dist-pkg/platform/tts.js"
+
+  `platform/tts` is SHIPPED code — `tsconfig.pkg.json` reaches it, and `boot/create-game.ts:255` calls
+  `createTts`, so the package's `.` surface (the one a consumer imports as `createGame`) gets there. The
+  `package.json` declared `@mintplex-labs/piper-tts-web` in `devDependencies`, which npm **does not install
+  for whoever consumes**.
+
+  ⚠️ AND THE DEFECT WAS INVISIBLE FROM IN HERE, STRUCTURALLY. In this tree the package is present
+  (it is a devDependency of the tree itself), so `npm run build`, `tsc`, Vitest and even `npm pack` + `npm i` in
+  a clean project — the 26 checks of 05/09 — resolve everything. What failed only failed on the other side, and
+  the other side did not exist until someone left `file:`.
+
+  ⚠️ AND IT HID IN THE DYNAMIC FORM. The line is `import('@mintplex-labs/piper-tts-web')` inside a function, not
+  a `from` at the top of the file. Any sieve written for `from '...'` would stay green on top of it forever.
+
+decision-drivers:
+- "⚠️ Measured: of the 112 shipped modules, THREE third-party specifiers in all — `pixi.js` in `render/canvas`
+   and `render/minimap` (static), and `@mintplex-labs/piper-tts-web` in `platform/tts` (dynamic). Exactly ONE was
+   not declared, and it is exactly the one the consumer found."
+- "⚠️ The honest residue is ZERO, and that is what decides the shape of the gate: there is no legitimate debt to
+   tolerate, so a shrinking ceiling would be a lie — it is `[Zero]`."
+- "The supplier's price measured: 0.5 MB and ZERO transitive dependencies. The voice's 25.6 MB do not come from
+   npm — they are downloaded at runtime from HuggingFace and cached in OPFS."
+- "⚠️ The supplier is DISCONTINUED and ADR-0022 already marks the swap. Today's name is temporary; the hole it
+   opened is not."
+
+considered-options:
+- "D1 - move to `dependencies`"
+- "D2 - a PORT: `ctx.carregarPiper`, injected by the game, as `render/port` does with PixiJS"
+- "D3 - `optionalDependencies`"
+- "D4 - optional peer (`peerDependenciesMeta`)"
+
+pros-and-cons-of-the-options:
+  D1:
+    good:
+    - "Fixes the measured symptom: the specifier comes to resolve from inside the installed `dist-pkg`."
+    - "Neural narration goes on working BY DEFAULT, which is what pillar 2 asks of an accessibility feature."
+    - "The `import()` stays lazy: the package goes into a separate chunk and is only fetched if the child chooses
+       the neural engine. `dependencies` is `node_modules` weight, not bundle weight."
+    bad:
+    - "⚠️ The engine comes to depend, at run time, on a discontinued supplier. Mitigated by the gate, not by the
+       name: when `sherpa-onnx-wasm` comes in, the sieve forces the declaration to follow."
+  D2:
+    good:
+    - "The engine would name no supplier at all, and the precedent exists: ADR-0035 took PixiJS out of the whole
+       engine except two ports."
+    bad:
+    - "⚠️ REJECTED FOR THE REASON THE PRECEDENT EXISTS, and it does not transfer: `render/port` was born from the
+       danger of the SINGLETON — two copies of PixiJS are two renderers fighting over the same canvas. There is no
+       equivalent danger here."
+    - "⚠️ And the cost falls where it should not: neural narration would be off BY DEFAULT for every consumer who
+       did not know how to turn it on. An accessibility feature that only exists for whoever already knew it
+       existed is the opposite of pillar 2 — and at ~0.5 MB with no transitive dependencies, it is expensive in
+       a11y to save little."
+  D3:
+    bad:
+    - "⚠️ It is D1 with a random hole: npm installs `optionalDependencies` by default, but carries on when the
+       install fails. The build would pass almost always and fail sometimes, with the same message and no visible
+       cause. An intermittent failure is worse than an outright one."
+  D4:
+    bad:
+    - "Does not fix the measured symptom: an optional peer is NOT installed by npm, so the `Rolldown failed to
+       resolve` happens exactly the same."
+
+decision-outcome:
+  chosen-option:
+    link: "D1 for the name + a second sieve in `tests/engine-package.node.test.js` for the CLASS"
+    justification: |
+      ===== THE FIX IS ONE LINE; THE RECORD IS FOR THE OTHER HALF =====
+      Moving the package from `devDependencies` to `dependencies` closes the defect. If that were all, this record
+      would not exist.
+
+      ⚠️ WHAT FAILED WAS NOT THE WRONG SECTION OF `package.json`. It was that there was NOTHING relating what the
+      package NAMES to what the package DECLARES. ADR-0022 already promises to swap this supplier for another;
+      without the sieve, the swap reopens the same hole in silence, and once again only a stranger finds out.
+
+      ===== THE SIEVE LOOKS IN BOTH DIRECTIONS, AND THE SECOND IS THE ONE THAT PINS PIXIJS =====
+        · named and NOT declared → the published package does not compile (today's defect).
+        · declared and NOT named → the consumer installs what nobody imports; if it belongs only to this
+          repository's app, it is a `devDependency`.
+
+      ⚠️ THE SECOND DIRECTION IS THE ANSWER TO THE SMALLER FINDING OF THE SAME REPORT: the consumer observed that
+      `pixi.js@7.4.2` is installed even in a game that ABANDONED PixiJS, and verified that nothing bundles it. The
+      peer STAYS, and stays for a measured reason — `render/canvas` and `render/minimap` name it statically, and
+      ADR-0035's singleton danger is real, while making it optional would break the main rendering path by
+      default for whoever uses it. 12.3 MB in `node_modules` that do not travel in the bundle are a cost, not a
+      defect. ⚠️ But the reciprocity fixes the date on which that stops being true: on the day the two ports leave
+      the package, the gate goes RED and says the peer became dead weight.
+
+      ===== AND THE SIEVE IS AT THE SOURCE, FOR THE REASON THE FILE HAD ALREADY WRITTEN =====
+      The header of ADR-0072 §4's gate says that testing `dist-pkg/` would require the build to have run, and that
+      a gate depending on a step someone can forget **fails OPEN — the worst kind, because it looks green**. It
+      holds equally here, and that is why the second sieve lives in the same file, reads the same module list
+      coming from `tsconfig.pkg.json`, and reads `package.json` instead of copying names.
+
+  consequences:
+    positive:
+    - "The next version can be compiled by a consumer — which is the minimum for the first public version to be
+       volunteer recruitment (ADR-0070) and not a closed door."
+    - "ADR-0022's supplier swap is born already watched in both directions."
+    negative:
+    - "⚠️ `6.36.1` stays in the registry, broken and immutable. npmjs only undoes within 72 h, and undoing would
+       break whoever already installed; the fix is a new version, not an `unpublish`."
+    neutral:
+    - "`pixi.js` stays in `devDependencies` AND in `peerDependencies`, because this repository is also an APP
+       that compiles itself. `@mintplex-labs/piper-tts-web` does NOT need the duplication: npm installs the
+       package's own `dependencies`."
+  confirmation: |
+    The gate was born RED OVER THE REAL DEFECT, and not over a mutation — which is the strongest birth there is:
+    written before the fix, it pointed at `app/js/platform/tts.ts:83 — @mintplex-labs/piper-tts-web`, and the
+    other 11 assertions of the block passed, so the red did not come from a broken sieve.
+
+    Proved from the OUTSIDE, which is where the defect lived: `npm pack` → the tarball's manifest declares the
+    dependency; `npm i <tgz>` in a clean project → `node_modules/@mintplex-labs/piper-tts-web` exists; and
+    `import.meta.resolve('@mintplex-labs/piper-tts-web', <the installed dist-pkg/platform/tts.js>)` returns the
+    file, under the `import` condition — which is the one Rolldown uses.
+
+    ⚠️ And resolution by `require` FAILS, without that being a defect: the supplier's `exports` only publishes
+    `import` and `types`. It stays written because the first probe measured it, and the easy reading would be to
+    take the fix as incomplete.
+
+    Suites: 190 files / 3337 tests green in both projects; `tsc --noEmit` clean.
+
+more-information: |
+  ⚠️ ERRATUM (2026-09-06, the same day) — A WRONG NUMBER, and it is the number that held up the choice of field.
+  This record states, in option D1 and in the `comment:dependencies` that came out of it, that the supplier's price
+  was «0,5 MB e ZERO dependências transitivas». **IT IS FALSE.** The supplier's `dependencies` field was read,
+  which is empty, and NOT `peerDependencies` — the same field that caused the defect this record fixes.
+  `@mintplex-labs/piper-tts-web` declares `onnxruntime-web` as a NON-optional peer, which npm installs on its own:
+  **135.4 MB** in a clean consumer, not 0.5 MB.
+  It enters as an ERRATUM and not as a revocation because it fits ADR-0057's definition of erratum — a wrong number
+  —, and the DECISION the number held up is what was revoked, by ADR-0094. It stays written here so that this
+  record does not argue with a false number again in the next conversation, which is the pathology ADR-0057
+  exists to prevent.
+
+  ⚠️ THIS DEFECT IS THE ONLY ONE IN THE SERIES THAT CAME FROM OUTSIDE. Today's other three (the storage id could
+  not come from the declaration, `main.ts` could not enter the scope of `engine-boundary`, the readable layers
+  were six and not four) were internal measurements contradicting an internal proposal. Nobody here could measure
+  this one, because the property that failed is only observable from a place where this repository is not.
+
+  It is the strongest argument there is for ADR-0083 §2 (the game installs by TARBALL before there is a registry)
+  and for issue #113: a consumer that consumes via `file:` **is not a consumer** for the purposes of proof — it
+  reads this folder live, with all the devDependencies present.
+
+  ⚠️ And the process consequence for issue #113 stays: the consumer's repository today carries the package as ITS
+  OWN devDependency to be able to compile, with a test (`tests/docs.node.test.ts`, on its side) that goes RED the
+  moment the engine moves the package to `dependencies`. That is: the patch over there was built not to survive
+  its own reason. It will go red with this version, and that is the agreement playing out — not a regression.

@@ -1,0 +1,173 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-11
+  supersedes-in-part: [ADR-0117]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0117 — SUPERSEDED IN PART, and only the clause «A GAME IS A CARTRIDGE, NOT A PWA». Everything
+       that clause was arguing FOR stands untouched: Cache Storage is partitioned by origin, the platform
+       loads the accessibility stack once, and the cartridges in the precache are read from the manifest.
+       What falls is the absolute form of the sentence, not the reasoning under it"
+    - "ADR-0139 — the reason this is cheap. Because a cartridge never calls `createGame`, the thing that
+       calls it is free to differ per build, and one source can serve two shells"
+    - "ADR-0116 — a PWA is guaranteed offline AFTER the first day, and what is precached is precached at
+       install. The standalone build inherits that promise for itself"
+    - "ADR-0069 — in a PWA the ORIGIN is the application's identity. It is why §3 below has to name a line
+       rather than leave the two builds as equals"
+    - "ADR-0010 pillar 1 — weak Brazilian public-school hardware. It is the reason the standalone build
+       carrying its own engine is acceptable and the platform build carrying six is not"
+  informed: []
+
+title: A game is a standalone PWA AND a cartridge, from one source, and the standalone build is not a delivery route
+
+context-and-problem-statement: |
+  ADR-0117 wrote «A GAME IS A CARTRIDGE, NOT A PWA», and it was right about what it was arguing: one
+  origin, one service worker, one set of accessibility preferences that follows the child from game to
+  game, because Cache Storage is partitioned by origin.
+
+  Read absolutely, though, that sentence takes something away that nobody meant to remove. A game is
+  its own repository with its own licence and its own tests (ADR-0068 §1), and somebody working in that
+  repository alone — the person who wrote it, a reviewer, an accessibility audit, a demonstration to a
+  school — has no platform to run it in. Today they do: each of the six games builds an `index.html`
+  and runs. If the cartridge conversion takes that away, every game becomes undevelopable without a
+  platform that does not exist yet.
+
+  ⚠️ AND THE TWO SHAPES ARE NOT IN CONFLICT, which is what makes this a record rather than a
+  compromise. The Dev put it plainly on 2026-09-11: the games have to work as their own PWA, loading
+  the whole engine by themselves, for whoever wants to work with the game repository alone — and as a
+  cartridge inside the platform, which is the platform repository's main job.
+
+decision-drivers:
+  - "A game repository must be buildable, testable, auditable and demonstrable with no platform in
+     existence, or six repositories block on one"
+  - "The platform build must still deduplicate the engine, which is the whole of ADR-0117's arithmetic"
+  - "ADR-0069's warning survives: the origin is the application's identity, so two deployed origins are
+     two applications and a child would end up with two"
+  - "Whatever is decided has to come out of ONE source tree; two sources for one game rot apart"
+
+considered-options:
+  - "B1 — cartridge only. The standalone build is removed and a game is developed against the platform"
+  - "B2 — two artifacts from one source: an app build that bundles the engine and is a PWA, and a lib
+     build that externalises the engine and is a cartridge"
+  - "B3 — two repositories per game, one holding the app and one holding the cartridge"
+
+pros-and-cons-of-the-options:
+  B1:
+    good:
+      - "One build, one output, nothing to keep in step"
+      - "ADR-0117's sentence stays absolute and needs no record"
+    bad:
+      - "🔴 Six repositories become undevelopable until the platform exists, and the platform does not
+         exist: the manifest ADR-0068 §2 requires has no format yet"
+      - "An accessibility audit of one game would need the whole catalogue to run"
+    reason-it-is-not-chosen:
+      - "It makes the order of work impossible. ADR-0068 §6 requires ONE game to go end to end first, and
+         under B1 that game cannot be run until the thing it is proving is already built"
+  B2:
+    good:
+      - "A game repository keeps a working PWA and gains a cartridge, from the same files"
+      - "The app build is also the test harness and the demonstration, which is most of the ask"
+      - "The platform build still externalises the engine, so the deduplication ADR-0117 is about is
+         untouched"
+      - "It is the ordinary library-that-is-also-an-app shape, so npm and Vite already support it"
+    bad:
+      - "⚠️ Two build targets to keep honest. A change tested only in the app build can break the lib
+         build, and nothing notices until the platform installs it"
+      - "Five of the six games are not PWAs today, so the app half is new work in five repositories"
+  B3:
+    good:
+      - "Each artifact has a repository with one job"
+    bad:
+      - "🔴 Twelve repositories for six games, and two places to fix one bug"
+      - "It contradicts ADR-0068 §1, where a game IS a repository"
+
+decision-outcome:
+  chosen-option:
+    link: "B2 — two artifacts from one source, an app build and a lib build"
+    justification: |
+      ===== 1. THE TWO TARGETS =====
+      One source tree, two builds, switched by mode:
+
+        · APP (default) — entry `app/index.html`, which loads a standalone shell. The engine is BUNDLED.
+          `vite-plugin-pwa` is on. The output is a standalone PWA.
+        · LIB (published) — entry `src/index.ts`, the `Cartridge` of ADR-0139. The engine and the shared
+          render libraries are EXTERNAL. No HTML, no service worker.
+
+      ===== 2. THE SHELL IS THE ONLY DIFFERENCE, AND IT IS THIRTY LINES =====
+      ⚠️ THIS IS WHY THE RECORD IS CHEAP RATHER THAN CLEVER. ADR-0139 §2 put the `createGame` call
+      OUTSIDE the cartridge. So:
+
+        src/index.ts       the cartridge — exports `declaration` and `create(ctx)`. No side effects.
+        src/standalone.ts  the app shell — calls `createGame`, builds `ctx`, calls `create(ctx)`,
+                           runs the loop.
+        app/index.html     loads `standalone.ts`.
+
+      The platform is simply a different shell around the same factory, and nothing in the game knows
+      which one it got.
+
+      ===== 3. THE LINE: A DEVELOPMENT ROUTE, NEVER A DELIVERY ROUTE =====
+      ⚠️ AND THIS IS THE CLAUSE THAT SUPERSEDES ADR-0117 IN PART, so it is written as a limit and not as
+      a permission.
+
+      A standalone build that exists for whoever works on that repository is not a unit of installation
+      for anybody. A standalone build DEPLOYED FOR CHILDREN is one, and then every word of ADR-0117
+      applies exactly as written: the cache partitions by origin, the accessibility preferences stop
+      following the child between games, and the school network has more than one address to allow.
+
+      So: the standalone artifact is a **development, test, audit and demonstration** route. It is not
+      published to children, and a decision to publish one would be a new record, not an extension of
+      this one.
+
+      ===== 4. THE DEPENDENCIES ARE DECLARED TWICE, AND THAT IS NOT REDUNDANCY =====
+      The engine and the shared render libraries (`pixi.js`, `zdog`) go in BOTH `peerDependencies` and
+      `devDependencies`.
+
+      ⚠️ `peerDependencies` INSTALLS NOTHING — it is a requirement addressed to whoever consumes the
+      package, and it is what makes the platform install exactly one engine. Without a `devDependency`
+      beside it, a clean clone of the game repository has no engine and does not build. With both, the
+      consumer gets the requirement and the repository gets the copy.
+
+      📏 AND IT MAKES VERSION SKEW LOUD. Measured on 2026-09-11: five games ask for engine 8 and
+      `game-platformer` asks for `^7.0.1`. Declared as dependencies that quietly ships two engines;
+      declared as peers, the platform's install fails and names the conflict, which is what a game a
+      major version behind deserves.
+  consequences:
+    positive:
+      - "A game repository can be developed, tested, audited and demonstrated with no platform in
+         existence — which is what unblocks ADR-0068 §6's one-game-first order"
+      - "The platform build still ships one engine, one Pixi and one Zdog"
+      - "The five games that are not PWAs become PWAs, which also ends a false claim: `game-2048`'s
+         README line 5 promises «offline as a PWA» over a build with no service worker and no manifest"
+      - "Version skew stops being silent"
+    negative:
+      - "⚠️ Two build targets can drift. A gate that builds BOTH in CI is not optional; without it the
+         lib build breaks and nobody learns until the platform installs it"
+      - "The standalone build carries its own engine, so six standalone builds carry six engines. That is
+         correct and it is also a trap for anyone who measures the wrong artifact against pillar 1"
+      - "New work in five repositories to add the app-side PWA"
+    neutral:
+      - "`game-platformer`'s manifest needs fixing on the way through regardless: `scope: \"/\"` claims the
+         whole origin and `lang: \"en\"` is wrong for a product delivered in pt-BR"
+  confirmation: |
+    ⚠️ NOT BUILT YET, so this record carries no `confirmed-by`. The gates, named now:
+
+      1. CI builds BOTH targets for every game, and fails on either. This is the gate that keeps the
+         record true rather than aspirational.
+      2. The lib build's output contains no import of the engine's file contents — only a bare
+         `@the-inclusionist/engine` specifier.
+      3. The app build's output contains a service worker and a manifest.
+      4. A clean clone with `npm ci` builds both, which is what the `devDependencies` half is for.
+
+more-information: |
+  WHAT THIS RECORD DOES NOT DECIDE:
+
+    · Where a standalone build would be hosted if anyone wanted to put one somewhere. §3 says it is not
+      a delivery route to children; it says nothing about a staging address for a reviewer.
+    · Whether the app shell and the platform shell can share code. They probably can, and it is not worth
+      deciding before the second cartridge exists.
+
+  📌 AND A NOTE ON HOW THIS RECORD CAME ABOUT, because it is the kind of thing that repeats: the shape
+  above was first written in `the-inclusionist-site/docs/architecture.md`, where it bound six
+  repositories from inside one of them. ADR-0068 §5 exists to prevent exactly that, and the Dev caught
+  it. The document stays as the long reading; the decision lives here.

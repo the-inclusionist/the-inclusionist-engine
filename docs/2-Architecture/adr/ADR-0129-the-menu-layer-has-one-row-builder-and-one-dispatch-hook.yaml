@@ -1,0 +1,168 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: []
+  confirmed-by:
+    - engine:tests/mount-panel.browser.test.js
+    - engine:tests/panel-widgets.browser.test.js
+    - engine:tests/a-panel-re-explains.node.test.js
+  errata:
+    - date: 2026-09-25
+      what: >-
+        DECIDED, in part. The row builder is accepted and built: the Dev said «Sim, terminamos a adoção» on 2026-09-22,
+        and all nine panels build their rows with the kit (`ui/mount-panel` + `ui/panel-widgets`, the last one
+        8664619c). The single dispatch hook is NOT adopted. Asked on 2026-09-25 whether issue #62's fourth box (the
+        footer explanation guaranteed by construction instead of by a gate) was worth building, the Dev answered «Se
+        não precisamos de uma quarta caixa, feche.» — the explanation is already held by
+        `tests/a-panel-re-explains.node.test.js`, so the per-panel hooks stay and issues #135 and #62 close.
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "issue #115, which carried this as a proposal inside the tracker — «O que esta issue propõe DECIDIR»,
+       three numbered clauses. ADR-0126 says a decision does not live there, and ADR-0128 says the decision
+       half is written before the code. This record is that half, and it is `proposed` because the Dev has not
+       taken it"
+    - "ADR-0092 — the six layers of the interface. It fixed HOW MANY and WHICH; this is the FORM of the largest
+       of them, and 0092 warns that overriding the contract, the z-index scale or the action vocabulary would
+       be worse than having no abstraction at all"
+    - "ADR-0044 — the three zones of the screen: the explanation lives in the FOOTER, which is what `opt-hint`
+       plus `fillExplain` implement and what a row builder would emit by construction"
+    - "issue #106 — the census that found per-game values landing in attributes across thirteen modules; the
+       fourteen dispatch hooks below are the same fragmentation seen from the other side"
+  informed: []
+
+title: The menu layer has one row builder and one dispatch hook
+
+context-and-problem-statement: |
+  ADR-0092 fixed how many interface layers this engine has and which they are. The largest of them is the one
+  holding menus and dialogues, and it is largest in a concrete sense rather than a figurative one: it carries
+  most of the text a person ever reads in this product — 30 of the 37 markup sinks and 116 of the 192
+  screen-reader announcements, spread across 26 modules. Every settings panel, every dialogue and every list
+  of options builds its own HTML by hand.
+
+  Rather than design an abstraction and then try to fit the code into it, this proposal began by COUNTING what
+  those 26 modules actually emit (`scripts/medir-forma-do-menu.py`). The count found that a shared form
+  already exists, created by habit and written down nowhere. The class `ctrl-row` — the ROW — appears in eight
+  modules; `opt-hint`, the explanation that the shell moves to the footer, in five; the section title in four;
+  the button and the slider in three each. Against those, thirty classes appear in a single module and belong
+  to that panel rather than to any shared form. The real vocabulary is therefore SECTION → ROW → (LABEL +
+  CONTROL + HINT), with only four kinds of control: toggle, radio, slider and plain button.
+
+  The problem this measurement exposes has two faces. The first is click DISPATCH. There is a common
+  attribute, `data-act`, present in nine modules — but beside it live fourteen more, invented one per panel
+  (`data-acat`, `data-crt-tgl`, `data-rmc`, `data-rm`, `data-font`, `data-viz`, `data-caa`, `data-mp`,
+  `data-slot`, `data-avol`, `data-cen`, `data-fnot`, `data-tab-n`, `data-sub`), and each obliges its panel to
+  carry its own `querySelectorAll` and its own listener. It is one idea implemented fourteen times.
+
+  The second face is more serious, because it has already cost a real defect. An accessibility rule — «a panel
+  that re-renders must call `fillExplain` again» — depends today on somebody remembering it. Two panels did
+  not remember: `settings-visual` and `settings-empathy` let the explanation jump back inside the rows on the
+  first click, instead of staying in the footer where ADR-0044 puts it. It was repaired by hand, panel by
+  panel, in issue #109. A rule that survives only by memory is a rule that fails again.
+
+decision-drivers:
+  - "The form exists by habit and is written nowhere, so it drifts one panel at a time"
+  - "An a11y rule remembered by hand is an a11y rule that fails — it already did"
+  - "A per-layer guarantee is assertable once; thirty sinks are assertable thirty times"
+  - "Fourteen dispatch hooks is fourteen listeners for one idea"
+  - "Whatever is chosen must not override ADR-0092's contract, z-index scale or action vocabulary"
+
+considered-options:
+  - "A · one row builder returning NODES, plus one dispatch hook, with the per-layer guarantee asserted once"
+  - "B · leave the form implicit and add a sieve that checks each sink separately"
+  - "C · one dispatch hook only, leaving the row to each panel"
+  - "D · nothing — the habit is consistent enough"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "«Every menu row has an accessible label» becomes assertable ONCE instead of thirty times."
+      - "`fillExplain` stops being a thing to remember: the hint is emitted in the right place by construction."
+      - "📏 The builder is not invented — `winsDots` in `game/quiz.ts` already proves the node-returning shape ADR-0092 asks for."
+      - "Fourteen listeners collapse into one."
+    bad:
+      - "🔴 A shared builder is a place where one panel's exception becomes everyone's parameter — the drift ADR-0092 warns about."
+      - "Panels that do not fit the form have to be recognised as information about the form, not as panels to repair; that judgement is easy to get wrong under pressure."
+      - "It touches the layer holding most of the product's readable content, so a mistake is broad rather than deep."
+  B:
+    good:
+      - "No shared code, so no shared failure."
+    bad:
+      - "Thirty assertions that drift apart, which is today's situation written down."
+  C:
+    good:
+      - "Cheapest real improvement: one listener, no shared markup."
+    bad:
+      - "Leaves the a11y rule remembered by hand, which is the half that already failed."
+  D:
+    good:
+      - "Nothing to break."
+    bad:
+      - "🔴 The habit is not consistent: fourteen hooks and a rule that failed twice say so."
+
+decision-outcome:
+  chosen-option:
+    link: "⏳ NOT DECIDED — proposed. The recommendation is A, and the Dev has not taken it."
+    justification: |
+      This record is `proposed`, and that status is the reason it exists at all. The proposal was living
+      inside issue #115 under the heading «what this issue proposes to decide», which is a decision wearing a
+      ticket's clothes: a closed issue disappears, while a record is superseded and stays readable (ADR-0057).
+      Moving it here changes nothing about the argument and everything about whether it survives being
+      answered.
+
+      The recommendation is option A, and it answers both faces of the problem with the same piece. A single
+      function builds the row and returns DOM NODES rather than a string, emitting the label, the control, the
+      hint and the matching ARIA state TOGETHER — never as separate steps that a caller can perform partially.
+      Alongside it, one dispatch attribute replaces the fourteen; `data-act` plus a value is the obvious
+      candidate, since it is the only hook already present in nine modules.
+
+      What that buys is not tidiness, and the distinction matters because tidiness would not be worth the
+      risk. It is that the guarantee becomes PER LAYER, which is ADR-0092's whole point. Asserting «every menu
+      row carries an accessible label» becomes one assertion made once, instead of thirty assertions that
+      drift apart; and forgetting `fillExplain` stops being possible, because a row born from the builder
+      already has its hint in the right place. The shape is not invented either — `winsDots` in
+      `game/quiz.ts` already returns nodes this way, which is what ADR-0092 asks for.
+
+      What the proposal explicitly is NOT matters as much as what it is: it does not rewrite the thirty
+      markup sinks. Classes that exist in a single module stay that module's, and a panel that does not fit
+      the form is INFORMATION ABOUT THE FORM rather than a panel to repair. ADR-0092 already warns that
+      overriding the contract, the z-index scale or the action vocabulary would be worse than having no
+      abstraction at all, and a builder that grows a parameter for every exception is exactly how that
+      happens.
+
+  consequences:
+    good:
+      - "One assertion replaces thirty, at the layer where most of the readable content lives."
+      - "The `fillExplain` rule stops depending on memory."
+      - "New panels inherit the accessible shape instead of copying it."
+    bad:
+      - "🔴 A shared builder centralises the blast radius: a defect in it is a defect in every menu at once."
+      - "Migration is per-panel work with no visible product change, which is the kind that stalls half-done — and this repository has measured one of those already."
+      - "⚠️ If it is adopted and then bypassed by one panel «just this once», the guarantee silently stops being per-layer while still looking like it."
+
+  confirmation: |
+    ⏳ NOTHING IS OWED YET, because nothing is decided. Under ADR-0128 the confirmation is the SECOND tempo, and
+    writing gates for an undecided proposal would be prophecy about a decision that may not be taken.
+
+    When the Dev accepts, this section names the gates and the issue that builds them (ADR-0126), and the
+    shape of the first is already visible: **one case asserting that every row the builder emits carries an
+    accessible label and its ARIA state**, which is the assertion that exists to be made ONCE instead of
+    thirty times.
+
+more-information: |
+  This record supersedes nothing. It completes ADR-0092, which fixed how many layers there are and which they
+  are, and left the FORM of the largest one unstated.
+
+  It exists as a `proposed` record rather than as an issue for a reason this project has already paid to
+  learn. ADR-0126 puts decisions in records and ADR-0128 puts the decision half before the code, but the
+  concrete failure is simpler than either rule: issue #115 carried a full census and three clauses, and a
+  closed issue disappears. The measurement would have gone with it, and the next person to ask «what shape do
+  our menus have» would have had to count all over again.
+
+  ⚠️ A note on the writing, kept because the Dev raised it and it applies beyond this file: the first version
+  of this record was written in fragments — bullet stubs, arrows standing in for connectives, tables where an
+  argument belonged. It was dense without being clear, and a record that is hard to follow is a record that
+  gets skimmed and then re-decided. The prose here was rewritten to carry the reasoning in sentences.
+
+  Deliberately NOT decided here: whether the value of the single hook is a name or a namespaced action; and
+  which panel migrates first, which is sequencing rather than architecture.

@@ -1,0 +1,97 @@
+---
+metadata:
+  shape: bundle          # consolidation of the REGISTRO-DE-DECISOES; see README
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0075
+      what: "ONLY the exclusivity clause — `p.viz` holds ONE value, so contrast and correction are
+             MUTUALLY EXCLUSIVE, and they live in a single grouped control precisely so the exclusivity
+             is honest. The Dev refused the limitation itself: a person with a colour-vision deficiency
+             may also need a contrast level, and both have to be on at once. ⚠️ This record was NOT wrong
+             when written — it saw the exclusivity, refused to hide it, and chose the control that made it
+             visible instead of two controls that would have destroyed each other in silence. Its own
+             argument is what makes the split safe: with two FIELDS there is nothing to overwrite.
+             Everything else here governs: Direct Rendering over photographic filters, the three contrast
+             levels with 3:1 as the default, and the CB-safe palette applying only to non-scenery."
+  errata:
+    - date: 2026-08-24
+      what: "the colour-blindness CORRECTIONS (`fix-protan`, `fix-deuter`, `fix-tritan`) were listed in the
+             Empathy panel, whose subtitle is `sentir como é ter uma deficiência`, beside the buttons that
+             SIMULATE colour blindness — so the child who NEEDED the correction had to look for it in the menu
+             about pretending. ⚠️ The record classifies itself: `It was not a choice`. `render/viz-modes` gave
+             `sim-deuter` and `fix-deuter` the same `kind:filter`, and the panel sliced the catalogue by `kind`;
+             the catalogue now carries a `sim` field that answers what `kind` never could. A consequence of a
+             gap in the data model is not a decision, so this is an ERRATUM under ADR-0057 §1 and not a change
+             of mind. Applied 2026-08-24 (issue #60); DECLARED here 2026-09-04."
+  date: 2026-07-02
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Visual accessibility decisions (high-contrast, colour-blind, low-vision, TEA)
+
+context-and-problem-statement: |
+  The cohesive set of visual-accessibility decisions. Was REGISTRO §1 — a decision is an ADR (see ADR-0010).
+  Testable thresholds are in ../../1-Discovery/NFR.md; supporting studies in ../../research/ (RESEARCH-HIGH-CONTRAST,
+  RESEARCH-DALTONIZATION).
+
+decision-outcome:
+  justification: |
+    Adopt the decisions listed in more-information; each was validated against the pillars + the a11y research.
+
+more-information: |
+  AMENDED 2026-08-24 (Dev, issue #60) — THE COLOUR-BLINDNESS CORRECTIONS BELONG TO THIS MENU, NOT TO EMPATHY.
+
+  `fix-protan`, `fix-deuter` and `fix-tritan` daltonize the screen for a child who HAS the condition. They
+  had been listed in the Empathy panel — the menu whose subtitle is "sentir como é ter uma deficiência" —
+  next to the buttons that SIMULATE colour blindness for a child who does not have it. Two opposite
+  audiences in one list, and the child who needed the correction had to go looking for it in the menu about
+  pretending.
+
+  It was not a choice. `render/viz-modes` gave `sim-deuter` (simulate) and `fix-deuter` (correct) the same
+  `kind:'filter'`, and the empathy panel sliced the catalogue by `kind`. The catalogue now carries a `sim`
+  field that answers the question the `kind` never could, and both menus slice by it.
+
+  Consequence worth stating, because it is now visible where it used to be hidden: `p.viz` holds ONE value,
+  so contrast and correction are MUTUALLY EXCLUSIVE. They live in a single select — with the two options
+  grouped — precisely so that the exclusivity is honest. Two separate controls would have overwritten each
+  other in silence, and a child would have lost the correction by choosing a contrast level, with nothing
+  saying so.
+
+  Decisions (was REGISTRO §1):
+  - "**High-contrast = Direct Rendering** (outline + colour-blocking + receding background), NOT photographic filters
+    — CLAHE/VCEA/linear-quadratic posterize pixel art, don't separate roles, cost too much on target hardware; direct
+    rendering is the industry practice (PlayStation 1st-party, Saints Row 2022). [RESEARCH-HIGH-CONTRAST]"
+  - "**3 contrast levels: 3:1 (default) / 4.5:1 / 7:1** — 3:1 chosen (\"7:1 turns everything yellow/black/white,
+    unpleasant\"); anchored on WCAG 1.4.11 (3:1 non-text) and 1.4.6 (7:1 AAA text). [commit e1e1f56]
+    ⚠️ **AMENDED 2026-08-27 — THE MENU DOES NOT FOLLOW THAT DEFAULT.** The Dev: \"menus inicial e de pause deveriam ser
+    7:1 desde o início, para facilitar a vida das pessoas com deficiência, que precisam ajustar rapidamente os
+    controles para si.\" The reasoning that picked 3:1 is about the WORLD, where 7:1 flattens pixel art into
+    yellow/black/white — and it does not transfer to a text menu, which has no art to flatten. And the menu is
+    where a child goes to fix the contrast she cannot read with: leaving it at the level she is trying to escape
+    is a trap. So **menus are born at 7:1**, the three levels stay as they are FOR THE GAME, and 3:1 is a floor
+    and not a ceiling. Shipped in `a88db4a` and `001e95d` (the cursor border was the half that had been missed).
+    The scope is deliberate: this clause does NOT raise the world's default."
+  - "**Two configurable outlines** (None/Thin/Thick): foreground = character/items (WCAG 2.4.7); background = only
+    the outer perimeter of platform/water/lava (delimit navigable vs non-navigable, not every block). [commit
+    87aed33]"
+  - "**Colour-blocking by role**: hazard=orange, ladder/trampoline=cyan, water=blue, locked-gate=magenta,
+    structure=gray — role→distinct hue for first-glance function id (GAG/industry). [d235004/7c7a425/4677e85]"
+  - "**Colour-blind correction (fix-\\*)** = canonical matrices C = I + M_err·(I−Sim); Sim = Machado 2009 sev. 1.0;
+    M_err = Fidaner et al.; **simulation (sim-\\*)** also Machado 2009 (old \"colorjack\" were unsourced).
+    [RESEARCH-DALTONIZATION]"
+  - "**Brettel 1997 exact tritan deferred** (piecewise, not expressible in feColorMatrix) → Machado tritan as a
+    linear approximation. Filters applied in **sRGB on both paths** (solo SVG ≡ MP PIXI) — solo/MP consistency >
+    colorimetric exactness."
+  - "**🚥 button** with a diagnostic bicolour background per deficiency; **protan×deutan don't separate by colour**
+    (same red-green axis) — only tritan isolates cleanly (physical limit; best protan pair leaves deutan ~60%
+    contrast). [commit cf1b920]"
+  - "**TEA mode (🧩)** with 3 states: off=blue, calm=WHITE background, silent=yellow (signal on the background, not
+    the border — the border belongs to focus). [commit 89e51e2]"
+  - "**Low-vision = 5 simulations** (myopia/astigmatism, cataract, glaucoma, macular degeneration, diabetic
+    retinopathy) — empathy ≠ help (\"don't confuse blind MODE with blind-EMPATHY\"). [plan-accessibility]"
+  - "**CB-safe palette applies ONLY to non-scenery** (HUD/menus/items/game-elements) — for the colour-blind, trees
+    keep tree colours, grass keeps grass colours; but HUD/menus/items may switch to a CB-safe palette (Okabe-Ito).
+    Player option."
+  - "**UI minimum font = 16px at 640×360, scales WITH the canvas** (≥ 16, never ≤); HUD in high-def DOM, not
+    rasterized on the canvas. [commit 8e95257] · **Noto Color Emoji** in the font stack (cross-OS consistency)."

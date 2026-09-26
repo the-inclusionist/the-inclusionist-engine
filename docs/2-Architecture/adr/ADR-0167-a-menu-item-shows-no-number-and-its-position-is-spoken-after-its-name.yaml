@@ -1,0 +1,84 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/items-without-numbers.browser.test.js
+    - engine:tests/the-quiz-reads-its-options.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #161 closed, `engine:e3e53d3`): no pause item, panel row or quiz option shows a
+             number; the name under the bar has no «N de M»; the position is spoken after the name by one function, the
+             quiz's «Gato, 1 de 4»."
+  supersedes-in-part: [ADR-0158, ADR-0159]
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0158 — SUPERSEDED IN PART: items 1 and 2 (every item SHOWS its number) and item 3's spoken form «1 Gato,
+       2 Galinha». Item 4 stays: «Voltar» is item 1 and there is no «Fechar» at the end"
+    - "ADR-0159 — SUPERSEDED IN PART: rule 4's «every option with its number: 1 Gato, 2 Galinha…» and rule 5's «items are
+       numbered». Rule 1 — label, role, value, «N de M» at the END — is what this record generalises"
+    - "Xbox Accessibility Guidelines 106 — the enumeration is part of the NARRATION, spoken last: «Quality, drop down,
+       collapsed, High, 3 of 9». Nothing in XAG 106/112 or WCAG 2.2 asks for a visible item number"
+    - "`ui/item-announcement.anunciarItem` — the function that already builds «label, state, N de M»"
+  informed: []
+
+title: A menu item shows no number — its position is spoken after its name, by one function, in every menu
+
+context-and-problem-statement: |
+  The Dev, on 2026-09-13: «De acordo com o que foi estudado sobre UX para pessoas cegas, não é necessário um numeração
+  anterior sobre as opções, mas sim fazer com que o TTS leia "1 de 9", "2 de 9", "3 de 9", etc. Após ler cada item, para
+  situar a pessoa cega sobre a posição das opções, certo? Se for este o caso, retire a numeração antes de cada item, que
+  eu pedi. Retire também "1 de 9", "2 de 9", "3 de 9", etc. no fim do nome dos itens de acessibilidade rápida: isso deve
+  ser falado pelo TTS, não lido, e não só para os itens de acessibilidade rápida, mas para todo e qualquer item de menu,
+  o que faz com que uma única função que capture a posição de item e a totalidade de itens forneça a informação que deve
+  ser lida ao fim de cada nome de item.»
+
+  📏 Checked before writing, and the reasoning holds: XAG 106 puts the enumeration in the spoken string, last; ADR-0159
+  rule 1 already says so; and the visible number does no work in the engine — no number key selects an item (`Digit7`
+  and `Digit8` are L1 and R1). The engine draws numbers in three ways (CSS counters on the pause card and the quiz
+  options, `data-item-num` on panel rows) and writes «, 1 de 9» into the visible name under the quick bar.
+
+decision-drivers:
+  - "D1 — POSITION IS FOR WHOEVER LISTENS. A sighted child sees where an item is; a blind child needs it said, after the
+     name, so the name comes first"
+  - "D2 — ONE FUNCTION FOR EVERY MENU. Position and total captured and phrased in one place, so no menu says it differently
+     or forgets it"
+  - "D3 — WHAT IS SEEN CARRIES NO SPEECH-ONLY TEXT. «, 1 de 9» written under the bar is narration printed on the screen"
+
+considered-options:
+  - "A — keep ADR-0158: visible numbers, and «1 Gato» read aloud"
+  - "B — no visible number; «N de M» spoken after every item's name, by one function"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Already built. ❌ A prefix on every row that no input uses; the quick bar prints narration.
+  **B.** ✅ The screen shows names only; every menu speaks position the same way, after the name (XAG 106). ❌ The quiz's
+  spoken options change form, from «1 Gato» to «Gato, 1 de 4».
+
+decision-outcome:
+  chosen-option:
+    link: "B — position spoken after the name, never drawn"
+    justification: |
+      1. **No menu item the engine draws shows a position number** — the pause card and its submenus, the settings panel
+         rows, the quick bar, and a quiz's options.
+      2. **The visible name of a quick-bar icon is its name and state only**; «N de M» is not written under the bar.
+      3. **Every menu item, when reached, is spoken as its name (and role and state) followed by «N de M»**, from ONE
+         function that takes the item's position and the total — the quick bar, the pause card, the panels and the quiz
+         options alike. The enumeration can still be turned off (ADR-0044 item 3).
+      4. **A quiz reads its options after the statement in the same form**: «Gato, 1 de 4. Galinha, 2 de 4. …».
+      5. **Unchanged:** «Voltar» is item 1 of every menu and panel, with no «Fechar» at the end (ADR-0158 item 4).
+
+  consequences:
+    positive:
+      - "Rows and options are narrower by their prefix on 640×360"
+      - "One phrasing of position in every menu"
+    negative:
+      - "A sighted child who counted items by their printed number no longer has it"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #161, closed). Gates: no pause item, panel row, quiz option
+    or bar name renders a digit that is not part of its label; the bar's visible name has no «N de M»; reaching an item in
+    each kind of menu speaks «…, N de M» from the same function; the quiz reads «<option>, N de M» after the statement.
+
+more-information: |
+  ADR-0158's numbers were built in #152 (`engine:b1ee7dc`, `61d8775`, `d662f52`); this record takes them out and keeps
+  the spoken index those commits already tied to the same position.

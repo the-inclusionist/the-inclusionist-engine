@@ -1,0 +1,114 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0179
+      what: "ONLY on a window where the whole multiple gives under 2 CSS px per logical pixel (a fractional display scale at the 640×360 minimum): the scale is exactly 2 CSS px, whole in real pixels or not, and the 2× minimum is counted in CSS pixels"
+  errata:
+    - date: 2026-07-04
+      what: "corrects the first version of this ADR (v4.147.2), which was wrong — see more-information. This
+             note lived in a YAML comment on the status line, where no parser reads it and no index shows it."
+    - date: 2026-08-27
+      what: "the record kept only the HARD half of the Dev's ruler — that the factor is an integer in PHYSICAL
+             pixels — and left out three clauses the decision already had: a minimum of 640x360 in use
+             (`MIN_K = 2`), rises in INTEGER multiples, and the tolerance of losing up to five logical pixels
+             per side. They had to repeat them in anger (`eu expliquei a oito prompts atrás`), which is the
+             signature of a rule not written where people look. ERRATUM under ADR-0057 §1: the sentence failed
+             to carry properties the decision already had, and all three were MEASURED in `ui/layout.ts` before
+             being written, so none is intention presented as fact. Applied in the body 2026-08-27; DECLARED
+             here 2026-09-04."
+  date: 2026-07-04
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Lock canvas scale to integer REAL (physical) pixels, not CSS pixels
+
+context-and-problem-statement: |
+  Reported by the Dev across several rounds: "the canvas stretches by fractional amounts / the scanlines get uneven
+  spacing." The game is 320x180 logical pixel-art per screen. The question: what must the scale factor be an integer
+  multiple of — CSS pixels, or the screen's physical pixels? On a display at 125% (dpr 1.25) a 3x CSS canvas is
+  3.75 physical pixels per art pixel, which yields uneven pixels and scanlines.
+
+decision-drivers:
+- Art pixels must be uniform (each art pixel = an equal block of screen pixels).
+- CRT scanlines must be evenly spaced at any device-pixel-ratio.
+- Keep crop tolerance small (<= 5 logical px per side — Dev's requirement).
+
+considered-options:
+- &css-int "Integer multiple of CSS pixels"
+- &real-int "Integer multiple of REAL (physical) pixels (dpr in the formula)"
+
+pros-and-cons-of-the-options:
+  css-int:
+    description: |
+      Round the CSS scale factor to an integer; keep dpr out of the formula.
+    pros:
+    - "The CSS scale label is a clean integer (e.g. '3x')."
+    cons:
+    - &css-bad "At dpr != 1 (e.g. 125%), integer-CSS is fractional in real pixels -> uneven art pixels and scanlines."
+  real-int:
+    description: |
+      kDev = integer factor in PHYSICAL pixels:
+      kDev = max(round(2*dpr), floor(min(availW*dpr/(baseW-10), availH*dpr/(baseH-10)))).
+      Canvas CSS size = baseW*kDev/dpr x baseH*kDev/dpr; in REAL pixels = baseW*kDev x baseH*kDev (exact 320x180 multiple).
+      k = kDev/dpr is the logical/CSS factor and MAY be fractional when dpr != 1 — that is irrelevant, it is a browser abstraction.
+    pros:
+    - &real-good "Each art pixel occupies an integer number of REAL pixels -> uniform art AND regular scanline spacing at any dpr."
+    neutral:
+    - &real-neutral "The CSS scale number can be fractional; it is noise, not the target."
+
+decision-outcome:
+  chosen-option:
+    link: *real-int
+    justification: |
+      Only locking to integer REAL pixels guarantees both uniform art and evenly spaced scanlines. Integer-CSS does
+      not: at dpr 1.25 a 3x CSS canvas is 3.75 real px/art px. The target is the physical pixel; the CSS number is noise.
+      The -10 term keeps the <=5 logical-px crop tolerance.
+  consequences:
+    positive:
+    - *real-good
+    - "The DOM UI scales with the same factor (--ui-fs = 8*k, --tap = 22*k, set in layout()), so UI<->canvas ratio is constant."
+    neutral:
+    - *real-neutral
+    negative:
+    - "Where base*kDev doesn't fit exactly, crop is <=5 logical px/side by design (tolerance). Remove -10 to never crop."
+  confirmation: |
+    Manual: at dpr != 1, art pixels are uniform and scanlines evenly spaced. crtScanVars() period = kDev real px
+    (1 line per art pixel), line = 1 real px, anchored in physical pixels. Implemented in layout() and crtScanVars()
+    (currently game.js; moves into render/ modules during modularization).
+
+more-information: |
+  ===== AMENDMENT 2026-08-27 — THE WHOLE RULER, MEASURED IN THE CODE BEFORE IT WAS WRITTEN =====
+  This record kept only the hard half — the factor is an integer in PHYSICAL pixels, not CSS. The Dev's ruler has
+  three more clauses, and they had to repeat them in anger after an auto-resize broke them ("eu expliquei a oito
+  prompts atrás"). A rule that has to be repeated is a rule that is not written where people look. Measured in
+  `app/js/ui/layout.ts` before writing this, so none of it is intention presented as fact:
+
+    · **MINIMUM IN USE IS 640×360 PER VIEWPORT.** `MIN_K = 2`, and the floor is applied as
+      `Math.max(Math.round(MIN_K*dpr), …)`. The reason is on the line: 2×2 players = 1280×720 fits the government
+      Chromebook (1366×768). IMPLEMENTED. The base for the art stays 320×180; 640×360 is the smallest thing anyone
+      ever sees, which is why a DOM button declared 44 px is 44 CSS px and not 88 (ADR-0044 §6).
+    · **UP IN INTEGER MULTIPLES**, as space allows. IMPLEMENTED — `Math.floor` on the fitting factor.
+    · **TOLERATES LOSING ≤5 LOGICAL PX PER SIDE** when that lets the canvas grow one more step. IMPLEMENTED, and it
+      is the `-10` in the denominator: `base·kDev − avail·dpr ≤ 10·kDev ⇒ kDev ≤ avail·dpr/(base−10)`. The `10` is
+      the two sides. This is the clause most likely to be "cleaned up" by someone who reads the `-10` as a magic
+      number.
+
+  RECONCILES THE 44 px ARGUMENT, which looked like a contradiction and is not: `--tap` is declared as `22 * k`, so
+  the base drawing DOES carry 22 — the Dev was right about the token — and at the minimum k=2 it resolves to 44 CSS
+  px, which is what ADR-0044 measured. Both statements are true because they describe different ends of the same
+  multiplication.
+
+  ⚠️ ONE CLAUSE OF THE DEV'S IS RULE AND NOT YET FACT, said here rather than left to be discovered: **"os botões que se
+  espalhem" — the canvas has priority over the buttons.** Their words: "o canvas deve ocupar o maior espaço possível
+  sem que haja barra de rolagem, e no centro… você dá mais prioridade aos botões do que ao canvas do jogo". The
+  formula honours whatever `wrap.clientHeight` gives it; who wins the space before that is CSS, and this record does
+  NOT verify it. It is written as the rule it is, and the check is owed.
+
+  Lesson (the mistake not to repeat): the FIRST version of this ADR (v4.147.2) said "never put dpr in the formula;
+  lock to integer CSS." That was WRONG — it came from misreading the Dev's reaction to the "4.8x" CSS label, when the
+  real pixels drawn by kDev were already the integer multiple they wanted. Several rounds were spent "fixing" the wrong
+  problem (blur) while the real one (uneven spacing from non-integer real-pixel scale) persisted. The target is the
+  screen's REAL pixel; the CSS number is noise. Vector DOM fonts at fractional px are still crisp — the feared blur
+  does not exist.

@@ -1,0 +1,160 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-11
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0139 §4 — `ctx.rng` is named there as one of the three things a cartridge receives that the
+       `Engine` does not carry, with the note that it is not a convenience. This record is that note, with
+       the measurement behind it"
+    - "engine `docs/1-Discovery/User-Stories.md` — «As a game developer, I want the engine to carry no game
+       state, so that two games on one page do not collide», marked 🎮 «done on the engine's side; each game
+       owns its own round». 📏 The engine's side IS done; the games reached past it"
+    - "ADR-0084 — the shape of this record. A field read the wrong way went stale in silence, the patch had
+       already appeared twice before anyone named it, and the answer was one record for one field. Same here"
+    - "ADR-0068 §1 — a game is its own repository, so a rule that binds all six has to live in a record and
+       not in one of them"
+    - "ADR-0080 §2 — THE PARENT, and it decided the engine side of this before anyone measured the game
+       side: «a generator is created and owned by whoever needs a reproducible stream. The engine may offer
+       a default instance for convenience, and a game that wants determinism gets its own. ⚠️ Not only for
+       tidiness: today a shuffle shares a stream with the weather.» This record is that rule applied where a
+       cartridge can break it, with the import that breaks it named"
+  informed: []
+  errata:
+    - date: 2026-09-11
+      what: "the first version of this record cited ADR-0084, ADR-0139 and the engine's user stories, and
+             MISSED ADR-0080 §2, which had already decided the same rule from the engine's side. ERRATUM
+             under ADR-0057 §1 and not a supersession: the author with the missing fact would have written
+             the same decision — the measurement, the forbidden imports and the lint gate are unchanged —
+             but would have written it as the game-side application of an existing rule rather than as a
+             fresh finding. The citation is added; nothing else moves."
+
+title: A cartridge owns its random stream, because the shared one is module state
+
+context-and-problem-statement: |
+  `core/rng` in the engine exports two different things, and they look alike at the import site:
+
+    export const createRng: (semente?: number) => Rng;   // an independent stream
+    const _padrao = createRng(SEMENTE_PADRAO);           // module scope, shared
+    export const rnd, randInt, shuffle, reseed;          // all bound to _padrao
+
+  📏 MEASURED ON 2026-09-11: `game-whackwhack/app/js/boot/main.ts:23` imports `rnd` from that module,
+  and it is not alone among the six.
+
+  In a standalone build that is harmless — one game, one stream, nothing to collide with. Inside the
+  platform of ADR-0117 it is not. Two cartridges importing `rnd` draw from ONE stream, so each one's
+  draws depend on how much the other drew; and `reseed(s)` called by one repositions the other's
+  stream underneath it. A game that supports a seeded, reproducible run — the 15-puzzle takes
+  `?seed=` — stops being reproducible for a reason that is nowhere in its own code.
+
+  ⚠️ AND THE ENGINE ALREADY SOLVED THIS BEFORE ANYONE NEEDED IT. `createRng` exists, and its own
+  documentation says of the stream it returns: «Reposiciona ESTA corrente. Não alcança nenhuma outra.»
+  The defect is not in the engine and not in the user story it already satisfies — it is in the
+  shortest import.
+
+decision-drivers:
+  - "Two games on one page must not collide, which the engine's own user story already promises"
+  - "A defect that only appears when two cartridges run is a defect that will be found late and blamed
+     on the wrong module"
+  - "A rule that binds six repositories has to be enforceable by a gate, not by everyone remembering"
+  - "Reproducibility is a real feature here: a seeded run is how a teacher hands the same puzzle to a class"
+
+considered-options:
+  - "R1 — leave it. Ask cartridges to be careful with the shared stream"
+  - "R2 — the cartridge takes `ctx.rng`, and the four shared exports are forbidden inside a cartridge"
+  - "R3 — the engine stops exporting `rnd`, `randInt`, `shuffle` and `reseed` altogether"
+
+pros-and-cons-of-the-options:
+  R1:
+    good:
+      - "Nothing changes anywhere"
+    bad:
+      - "🔴 Carefulness is not a mechanism. The import is one word shorter than the correct one, and the
+         failure is invisible in every standalone build, which is where all the testing happens today"
+      - "The symptom — a seeded run that is not reproducible, or a shuffle that differs by which game was
+         opened first — points at the game, not at the import"
+  R2:
+    good:
+      - "One stream per cartridge, created by the shell, so the rule holds by construction"
+      - "It uses `createRng`, which already exists and already says it reaches no other stream"
+      - "It is gateable with a lint rule naming four imports, and a lint rule is a sentence"
+      - "The seed becomes the shell's to choose, which is where a per-run seed belongs anyway"
+    bad:
+      - "⚠️ Six repositories have an import to change, and the change is invisible in their own tests —
+         a standalone build passes either way, so only the lint catches a regression"
+  R3:
+    good:
+      - "The wrong door stops existing, which is stronger than forbidding it"
+    bad:
+      - "🔴 It is a breaking change to the engine's public surface, for consumers this project does not
+         know about, to solve a problem that belongs to consumers it does know about"
+      - "The engine's own game legitimately uses a default stream; removing it would cost that nothing
+         and gain nothing"
+
+decision-outcome:
+  chosen-option:
+    link: "R2 — the cartridge takes `ctx.rng`, and the shared exports are forbidden inside a cartridge"
+    justification: |
+      ===== 1. THE RULE =====
+      A cartridge draws randomness from `ctx.rng` and from nowhere else. It does not import `rnd`,
+      `randInt`, `shuffle` or `reseed` from `@the-inclusionist/engine/core/rng.js`.
+
+      The shell — either shell, standalone or platform — builds one `createRng(semente)` per cartridge
+      and hands it over in `ctx`, per ADR-0139 §4.
+
+      ===== 2. WHY THE RULE IS NEGATIVE AND NOT JUST POSITIVE =====
+      ⚠️ SAYING «USE `ctx.rng`» WOULD NOT BE ENOUGH, and that is the whole lesson of the measurement. A
+      cartridge that uses `ctx.rng` for most things and reaches for the imported `shuffle` once has the
+      full defect: the shared stream advances, and another cartridge's draws move. There is no partial
+      version of this. The forbidden list is the rule.
+
+      ===== 3. THE GATE =====
+      A lint rule that fails on those four named imports in a cartridge's source. It is cheap, it is
+      exact, and it is necessary precisely because the defect is invisible where the tests run: a
+      standalone build has one stream and passes either way.
+
+      📌 The gate belongs beside the other cross-repository gates a game already calls — the same
+      reusable workflow of ADR-0068 §4 — so that six repositories inherit it rather than copy it.
+
+      ===== 4. WHAT THE ENGINE IS NOT ASKED TO DO =====
+      Nothing. `createRng` is already correct, already documented, and already reaches no other stream.
+      The default stream stays exported for the engine's own game and for consumers outside this
+      project. ⚠️ THIS RECORD IS ABOUT WHAT A CARTRIDGE DOES, not about what the engine offers, and
+      keeping that line is what makes it a small record instead of a breaking change.
+  consequences:
+    positive:
+      - "Two cartridges on one page cannot move each other's draws, which is the user story the engine
+         already satisfied on its side"
+      - "A seeded run stays reproducible regardless of what else the child opened first"
+      - "The seed becomes a shell concern, which is where a per-run seed belongs"
+    negative:
+      - "⚠️ Six repositories have an import to change, and their own tests will not notice if it comes
+         back — the lint is load-bearing, not decorative"
+      - "A cartridge that wants shared randomness between two of its own subsystems has to pass `ctx.rng`
+         down rather than import it, which is more plumbing"
+    neutral:
+      - "The engine's public surface does not change"
+      - "`rngDecoracao`, the engine's decorative stream, is out of scope here: it is the engine's own, and
+         a cartridge has no business reading it either way"
+  confirmation: |
+    ⚠️ NOT BUILT YET, so no `confirmed-by`. The gates, named now:
+
+      1. A lint rule failing on `rnd`, `randInt`, `shuffle` or `reseed` imported from `core/rng` inside a
+         cartridge's source.
+      2. A test that mounts two cartridges, draws from each, and asserts that the sequence one sees does
+         not depend on how much the other drew.
+      3. A seeded run of the 15-puzzle produces the same board after another cartridge has been opened
+         and closed.
+
+    The first is written in `game-whackwhack`, which is the game going end to end first per ADR-0068 §6,
+    and which is also the game measured importing `rnd`.
+
+more-information: |
+  📌 WHY THIS IS ITS OWN RECORD AND NOT A CLAUSE OF ADR-0139. The project already has the shape: ADR-0084,
+  ADR-0087 and ADR-0089 each supersede ADR-0030 in part, one field at a time, because a measured defect
+  with its own gate earns its own number and can be superseded without dragging its neighbours. A rule
+  about randomness buried in a contract record would be found by nobody looking for it.
+
+  ⚠️ WHAT THIS RECORD DOES NOT DECIDE: who chooses the seed, and whether a seed is meant to survive across
+  shells — the same open question ADR-0139 leaves. What is decided is only that whatever the seed is, each
+  cartridge gets its own stream from it.

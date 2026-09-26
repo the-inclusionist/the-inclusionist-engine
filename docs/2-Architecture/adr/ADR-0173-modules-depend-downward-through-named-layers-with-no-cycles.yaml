@@ -1,0 +1,82 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/dependencies-point-downward.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed. The gate landed in `engine:2ee0d7c` with nine imports as named debt; all nine were paid the
+             same day (`engine:7d3f50e`, `2674264`, `d7e4131`, `bf4c831`, `371017d`, `61ed77f` — the last two by ADR-0174 and
+             ADR-0178) and the debt list is empty. Issue #167 closed."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "L. Constantine and E. Yourdon, «Structured Design» (1979) — coupling is the cost, cohesion the benefit"
+    - "D. Parnas (1972) — a module is judged by what it hides"
+    - "`engine:docs/5-Refactoring/plan-modularization.md` (2026-07-03) — «maximizar coesão, minimizar acoplamento e
+       complexidade»; a PLAN, never a record, and so never validated nor superseded"
+    - "ADR-0027 and ADR-0080 — the engine does not know a game; `engine-boundary` gates that one direction"
+    - "ADR-0170 — only what a cartridge needs is exported"
+  informed: []
+
+title: Modules depend downward through named layers, with no cycles — and the direction is gated
+
+context-and-problem-statement: |
+  The Dev, on 2026-09-13: «Não há ADR para esses dois pontos. O plano foi feito, mas o que garante que novos projetos não
+  vão ser escrito com acoplamento se não houver ADR?» — and, offered a record with a dependency-direction gate: «Sim».
+
+  📏 Measured on 2026-09-13 over `engine:app/js` (141 modules, 46 import nothing local): no module cycle; the imports
+  already run almost all one way — `boot` → `ui` → `input`/`render` → `platform` → `core` → the dictionaries — and NINE
+  engine imports run against it:
+    · `core/a11y-sr` → `ui/dom` (the `$` helper)
+    · `core/entity` → `render/viz-axes` (a type)
+    · `core/i18n` → `platform/storage` and `core/state` → `platform/storage` (persistence)
+    · `input/touch` → `render/minimap`
+    · `render/crt` → `ui/dom`; `render/viz-setters` → `ui/visual-axes-panel` and `ui/simulation-refusal`
+    · `ui/activities-menu` → `educational/activities-registry` (curriculum, which the engine should not reach)
+  Only the engine↔game direction is gated today (`engine-boundary`); nothing held the rest.
+
+decision-drivers:
+  - "D1 — A CHANGE STAYS WHERE IT IS MADE. A lower layer that imports an upper one makes every upper change a lower risk"
+  - "D2 — A RULE THAT A NEW MODULE CANNOT BREAK SILENTLY. A plan in a document is read once; a gate is read on every run"
+
+considered-options:
+  - "A — keep the plan as guidance"
+  - "B — a record with named layers, no cycles, a gate, and the present exceptions as a debt that only shrinks"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No work. ❌ Nine imports already run against the direction, and nothing said so.
+  **B.** ✅ A new import against the direction fails at once; the debt is visible and bounded. ❌ Nine edges to remove.
+
+decision-outcome:
+  chosen-option:
+    link: "B — downward through named layers, no cycles, gated"
+    justification: |
+      1. **The layers of the engine, bottom to top:** `i18n` (dictionaries, data) → `core` (rules, pure state) →
+         `platform` (the browser: storage, audio, speech) → `input` and `render` (peers) → `ui` → `boot` (the composition
+         root). A module imports from its own layer or a lower one. `input` and `render` do not import each other.
+      2. **`educational` is curriculum data outside the stack**: it imports nothing of the engine, and no engine layer
+         imports it — the platform that uses a curriculum does.
+      3. **No module cycle**, in any layer.
+      4. **The composition root is the only module that knows everything**; below it, a module receives what it needs
+         as parameters (`ctx`) rather than reaching up — the dependency injection the plan named.
+      5. **A consumer** (`consumer-quiz`, a cartridge) imports what the package exports, from any layer (ADR-0170).
+      6. **The nine imports measured on 2026-09-13 are a named debt with a ceiling**: the gate lists each one with its
+         reason, fails on any new import against the direction, and fails when a listed one is gone but still listed.
+      7. **Cohesion is judged in review, not gated**: a module does one thing and hides something (Parnas) — a fan-out or
+         a line count can point at a suspect, and does not decide.
+
+  consequences:
+    positive:
+      - "A new project on the engine meets the direction the first time it breaks it"
+      - "The present exceptions are visible, each with its way out"
+    negative:
+      - "Nine imports to move, each a small refactor (inject, or move the helper down)"
+
+  confirmation: |
+    `tests/direcao-das-dependencias.node.test.js` (issue #167, closed): no module cycle; no import from a lower layer to a
+    higher one outside the listed debt; the debt list has no entry that no longer exists. The debt list is empty.
+
+more-information: |
+  The plan stays the plan (`engine:docs/5-Refactoring/plan-modularization.md`); this record is the rule it argued for,
+  measured against the code as it is.

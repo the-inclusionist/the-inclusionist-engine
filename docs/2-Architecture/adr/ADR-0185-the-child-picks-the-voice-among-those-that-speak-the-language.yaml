@@ -1,0 +1,93 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0207
+      what: >-
+        the Piper voices in the voice list: only the browser's voices and Kokoro's remain.
+    - by: ADR-0198
+      what: >-
+        §2's Kokoro voices listed only where the model is cached and WebGPU runs. Every Kokoro voice of the
+        language is an option in any browser (WebGPU when its test synthesis speaks, else WASM), through the game's port.
+    - by: ADR-0186
+      what: >-
+        Kokoro as an AVAILABLE extra. Kokoro and Piper are both default engines; a Kokoro voice is still listed only
+        where it runs (§2 stands).
+  supersedes-in-part: [ADR-0151, ADR-0183]
+  confirmed-by:
+    - engine:tests/voice-per-language.node.test.js
+    - engine:tests/voice-choice.node.test.js
+    - engine:tests/voice-choice.browser.test.js
+    - engine:tests/a-language-with-no-voice.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED IN PART, pushed (issue #180 closed, `engine:9d0f5e5`): the list holds the Piper voices of the language, the choice is stored and speaks, and a language with no voice locks the four rows and the bar's button with the reason. ⚠️ No Kokoro voice is listed yet: that half is issue #181 (ADR-0186)."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "`kokoro-js` 1.2.1, `src/voices.js` (hexgrad/kokoro, read 2026-09-13) — 28 active voices, all `en-us` or `en-gb`; the
+       Spanish, Portuguese and other languages are commented out"
+    - "`@mintplex-labs/piper-tts-web` `VoiceId`, as pinned by the engine (`platform/tts`) — the four voices of ADR-0110:
+       `pt_BR-faber-medium`, `en_US-ryan-medium`, `en_US-amy-medium`, `es_MX-claude-high`"
+  informed: []
+
+title: The child picks the voice, among the voices that speak the language
+
+context-and-problem-statement: |
+  ADR-0151 took the voice row out of the hearing panel — «quem escolhe a voz é o jogo (cartucho), não o jogador». ADR-0183
+  brought voices back as «at least two to choose from», Kokoro fp32 among them, without saying where the choice lives, which
+  voices it lists, or what the panel does when no voice speaks the child's language. The Dev, 2026-09-13: «Em Acessibilidade
+  Auditiva, adicione a opção de escolher a voz via dropdown, e mostre somente as vozes disponíveis naquele idioma dentre as
+  quatro vozes Piper e as vozes do Kokoro fp32 que estiverem disponíveis. Se não houver voz disponível para a localização do
+  jogador, as opções de narração por voz, volume da narração, índice falado dos menus e escolha da voz devem ficar
+  desabilitados, assim com o botão "narração por voz" no menu de acessibilidade rápido.»
+
+  📏 Measured on 2026-09-13: per language, Piper gives Portuguese one voice, English two, Spanish one; `kokoro-js` gives
+  English 28 and Portuguese and Spanish none. «At least two» cannot hold in Portuguese or Spanish today.
+
+decision-drivers:
+  - "D1 — A CHOICE THAT SPEAKS ANOTHER LANGUAGE IS NOT A CHOICE: a voice reading Portuguese text with English phonemes is noise"
+  - "D2 — A ROW WITH NO SUBJECT IS LOCKED WITH ITS REASON, NOT HIDDEN (ADR-0106 §5, ADR-0113 clause 3, ADR-0161)"
+
+considered-options:
+  - "A — the game picks the voice (ADR-0151)"
+  - "B — a voice list in the hearing panel, filtered by the child's language; the speech rows locked when the list is empty"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to choose. ❌ A child a game picked badly for has no remedy.
+  **B.** ✅ The voice is the child's, and never one that cannot read her language. ❌ A list of one voice is shown as a choice
+  of one; a Kokoro voice is listed only where it can run.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the child picks among the voices that speak the language"
+    justification: |
+      1. **The hearing panel gains a «Voz» row, a drop-down list** (ADR-0130 errata: a list, since Kokoro English passes five).
+      2. **It lists only the voices of the child's language:** those of the four Piper voices, and the Kokoro fp32 voices that
+         are AVAILABLE — the model is in the verified cache and the device runs WebGPU; a Kokoro voice that cannot run is not
+         listed. A Piper voice is listed by its language alone: a game without the neural engine still narrates in the
+         browser's voice and says why (ADR-0094), as it does today.
+      3. **The choice is stored**; without one, the first voice of the language speaks.
+      4. **With no voice for the language, four rows are locked with the reason said** — «Narração por voz», «Volume da
+         narração», «Índice falado dos menus» and «Voz» — **and the «narração por voz» button of the quick bar is locked too.**
+         Locked, not hidden (D2).
+      5. Supersedes in part: ADR-0151's removal of the voice row («quem escolhe a voz é o jogo»); ADR-0183 §3's «at least
+         two voices», which becomes «the voices that speak the language».
+
+  consequences:
+    positive:
+      - "No child is offered a voice that cannot read her language"
+      - "A language without a voice says so, instead of offering switches that do nothing"
+    negative:
+      - "Portuguese and Spanish offer one voice each until a second one is packaged"
+      - "The Kokoro voices serve English only, and only on a device with WebGPU and the 326 MB model"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #180, closed). Gates: in Portuguese the list holds `pt_BR-faber-medium`
+    and no English voice; in English it holds the two Piper voices, and the Kokoro voices only when the model and WebGPU are
+    there; the choice is stored and speaks; with a language that has no voice, the four rows and the quick-bar button are
+    `aria-disabled` with the reason, never hidden.
+
+more-information: |
+  Kokoro's own model covers Portuguese and Spanish (`pf_dora`, `pm_alex`, `ef_dora`…); what lacks them is the browser
+  library's phonemizer. Adding them is work on that phonemizer, not a setting.

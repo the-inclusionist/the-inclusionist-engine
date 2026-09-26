@@ -1,0 +1,136 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: []
+  date: 2026-09-23
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-23, on being shown the three options for step 7d's last module: «(a)»,
+       chosen from «(a) obrigatórias · (b) opcionais com recuo ao global · (c) opcionais, ausência = não se
+       oferece»"
+    - "ADR-0221 — code health is a ratchet, and step 7d's ceiling for `globalReach` is ZERO rather than a p90:
+       a module that reaches a browser global undoes a decision, it does not sit above an average"
+    - "ADR-0224 — the precedent this record follows in both of its parts: ports a cartridge must answer are
+       OBLIGATORY «porque uma porta opcional é mais um campo que um jogo pode esquecer», and what only the
+       host knows arrives in a GROUPED field rather than in nine loose ones"
+    - "ADR-0178 — the host is injected; a module does not reach for the page it happens to be running in"
+    - "ADR-0172 — this grows a published interface, which is a one-way door, so it is a record"
+    - "ADR-0106 §5 — a control with no subject is not offered; it is NOT this record's mechanism, and the
+       difference is the whole reason option (c) was refused"
+  informed: []
+
+title: The audio panel receives the browser, and never reaches for it
+
+context-and-problem-statement: |
+  🎯 `ui/settings-audio` IS THE LAST MODULE OF STEP 7d, and it is the one the conversion to nodes could not
+  finish. 📏 Measured on 2026-09-23: `globalReach 3` — `document`, `window.speechSynthesis` and
+  `navigator.mediaDevices` — against a ceiling of ZERO. Every other panel reaches nothing; `ui/voice-settings`,
+  which was CUT OUT of this very file, measures 0 precisely because it receives the browser in four ports.
+
+  🔴 AND THE PLAN RECORDED THAT ONE OF THE THREE WAS ALREADY PAID, WHICH WAS FALSE. This AI wrote that «o
+  `document` pagou-se na conversão» and that only two capabilities remained. 📏 Measured by trying to pay it:
+  the `document` survives in a single line — `newOption: () => document.createElement('option')`, the port this
+  file hands down to `ui/voice-settings` — and there is no way to pay it without touching the contract, because
+  `SettingsAudioCtx` HAS NO ELEMENT FACTORY. The `ctx.criar` this AI believed was available belongs to a
+  different ctx, a `PanelShellCtx` in another function of the same file, and the compiler said so in three
+  seconds. So the question is not two ports but three, and all three are the same question.
+
+  📌 WHY REACHING IS A DEFECT AND NOT A STYLE. A module that reads `window.speechSynthesis` cannot be driven in
+  a test without a browser, cannot be mounted twice in one page against two different documents (ADR-0142), and
+  cannot be told by its host that this device has no voices — it finds out by asking a global that may not
+  exist. The same three facts are why `ui/voice-settings` was given ports at birth.
+
+decision-drivers:
+  - "A module receives its host; it does not reach for the page it happens to be in (ADR-0178)"
+  - "Step 7d's ceiling is zero, and dívida is not licence: the three are frozen by the ratchet, not excused"
+  - "An absent capability must be LOUD — this project's expensive defects are all silent absences"
+  - "A contract grows by SUBJECT, not by member: nine loose fields are nine things every host must learn"
+
+considered-options:
+  - "a · OBLIGATORY ports — whoever mounts the panel does not compile until they answer"
+  - "b · optional ports with a fallback to the global — nothing breaks, and nothing is paid"
+  - "c · optional ports whose ABSENCE means «this row is not offered»"
+
+pros-and-cons-of-the-options:
+  a:
+    good:
+      - "Absence is a COMPILER ERROR, which is the loudest a missing answer can be"
+      - "`globalReach` reaches zero honestly, and the module becomes drivable without a browser"
+      - "A host with nothing to list answers `() => []`, which is a legitimate answer and not a workaround"
+    bad:
+      - "🔴 BREAKING for anyone mounting this panel; it rides a major or it does not ride"
+      - "Two more subjects every host must learn about a panel it may only want to show"
+  b:
+    good:
+      - "Costs nobody anything today"
+    bad:
+      - "🔴 The debt STAYS: the default path — the one production uses — still reaches the global, so the
+         ratchet would be satisfied by a promise the running code does not keep"
+      - "It is declaring the debt while calling it paid, which this project has done once and had to correct"
+  c:
+    good:
+      - "`globalReach` reaches zero with no compile break"
+    bad:
+      - "🔴 A consumer who does not update SILENTLY LOSES the output row and the voice list. A field written as
+         absent is indistinguishable from a field forgotten, and this repository has paid for that twice —
+         a cartridge that seeded no seat in silence, and four named imports resolving to `undefined` with the
+         suite green"
+      - "It borrows the SHAPE of ADR-0106 §5 («a row with no subject is not offered») for a case that is not
+         it: there, the HOST answers that the subject does not exist; here, the host said nothing at all"
+
+decision-outcome:
+  chosen-option:
+    link: "a — the three capabilities become obligatory, grouped members of `SettingsAudioCtx`"
+    justification: |
+      **The panel receives the browser in three grouped ports, and reaches for nothing.** Three clauses.
+
+      1. **AN ELEMENT FACTORY, TYPED.** `SettingsAudioCtx` gains `criar`, which keeps the element type
+         (`<K extends keyof HTMLElementTagNameMap>`), because the sinks section needs a `<select>` that answers
+         `.value` and the voice list needs an `<option>`. 📌 `PanelShellCtx.criar` stays `string → HTMLElement`:
+         widening THAT is a one-way door on a shape nine panels share, and this file already carries a typed
+         maker over the same `ownerDocument` for exactly this reason.
+
+      2. **THE TWO CAPABILITIES ARRIVE GROUPED, BY SUBJECT.** `speech` (which voices exist, speak this sample,
+         tell me when the list changes) and `audioOutputs` (list the devices, unlock their labels). They are
+         grouped because ADR-0224 already settled the shape of this question: what only the host knows arrives
+         as one field per subject, not as five loose members a host has to learn one at a time.
+
+      3. **OBLIGATORY, AND A HOST WITH NOTHING TO SAY SAYS SO.** A device with no speech synthesis answers
+         `voices: () => []`, and the panel already knows what to do with an empty list — it says «this browser
+         cannot» in the child's language, which is a sentence the dictionary has had since ADR-0185. ⚠️ THE
+         DISTINCTION THAT MAKES THIS DIFFERENT FROM OPTION (c): an empty answer is the host SPEAKING, and an
+         absent port is the host SILENT. The first is information; the second is a bug that looks like a
+         feature.
+
+  consequences:
+    good:
+      - "Step 7d closes: no module in `app/js` reaches a browser global without receiving it"
+      - "The panel becomes drivable in the node project, which is where its pure half already lives"
+      - "Two hosts in one page can mount two panels against two documents without either winning"
+    bad:
+      - "🔴 BREAKING: `SettingsAudioCtx` gains three required members, and a host that mounts this panel stops
+         compiling until it answers them. The migration note carries the three shapes verbatim"
+      - "⚠️ The engine's own root has to supply them, which moves the reach from the panel to `createGame` —
+         and the root is NOT exempt from `globalReach`, only from fan-out (ADR-0221). Where the root gets them
+         is the page it was handed, which is the one module in the tree that legitimately knows the page"
+      - "A host that wants the panel and has no interest in audio devices still writes two lines"
+
+  confirmation: |
+    ⏸ NOT YET BUILT — the decision is written before the code, as ADR-0128 requires. Confirmed when:
+
+      · `node scripts/code-health.mjs` reports `globalReach 0` for `ui/settings-audio`, and the baseline in
+        `docs/6-DevOps-SRE/code-health.json` records the fall rather than an exemption;
+      · a case proves a host that answers `voices: () => []` gets the «this browser cannot» sentence and NOT an
+        empty control — which is the difference between an answer and a silence, and is the whole of clause 3;
+      · a case proves the panel mounts and reflects with NO browser global available, which is the property the
+        ports exist to buy and the one thing option (b) could never have shown.
+
+more-information: |
+  ⚠️ WHAT THIS RECORD DOES NOT DECIDE: whether `ui/voice-settings` keeps its own four ports or receives the
+  grouped `speech` field straight through. It is a refactor with no consumer-visible effect either way, and
+  deciding it here would be deciding it without measuring it.
+
+  📌 FILED IN `the-inclusionist-docs` AND NOT IN THE ENGINE, although ADR-0226 clause 4 says a CONTRACT record
+  is the engine's and the Dev confirmed that reading on 2026-09-23. The migration has not run, no engine-side
+  tree or validator exists yet, and starting one with a single record would split the numbering and the
+  supersession graph for no gain. This record moves with the others when the Dev sets the date.

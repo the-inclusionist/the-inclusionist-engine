@@ -1,0 +1,135 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/member-renames-leave-nothing-behind.node.test.js
+    - engine:tests/portuguese-stays-out.node.test.js
+    - engine:tests/public-surface-shrinks-by-declaration.node.test.js
+  errata:
+    - date: 2026-09-24
+      what: >-
+        §3 NAMED FOUR CLASSES OUT, AND THE WORK FOUND TWO MORE — both kept for a reason of the same family (renaming one side
+        breaks a handoff this record does not own). (1) A member that IS a markup attribute: `render/viz-axes-labels
+        buttonChoice` reads `eixo`/`valor` from a DOM `dataset`, i.e. the `data-eixo`/`data-valor` the visual-modes markup
+        writes and the panel queries. (2) A member that shares its shape with a type this phase does not touch:
+        `ui/hud-bands HudBar { segmentos, cor }` is the same shape as `educational/segment-bar Bar` on purpose (ADR-0168), and
+        `educational` stays in pt-BR (ADR-0032); the first run renamed it and it was renamed back through the language
+        service when the still-declared list showed `Bar` beside it. The debug console handle `window.__sonda` is kept as a
+        name typed by hand. Every exclusion and every per-file data key is written with its reason in
+        `engine:scripts/member-rename-map.json`, and the gate holds the exclusions as a set.
+  date: 2026-09-24
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev, 2026-09-22, asked whether the 310 public members measured in phase 2 enter: «Vamos renomear»"
+    - "the Dev, 2026-09-23: «por que está falando de próxima release?! Eu estou falando de terminar o plano!» — when this lands is not a recommendation of this record"
+    - "ADR-0219 — phase 2, the public NAMES, in one breaking release: one map, a printed table, one commit per layer, no aliases, nothing outside this repository touched. Its §6 left STORED KEYS out, because a key that changes name loses the child's setting"
+    - "ADR-0172 — contract and public surface are one-way doors and get a record"
+    - "📏 Measured 2026-09-24 with the language gate's own parser: 342 member declarations carry a Portuguese word — 301 in EXPORTED types (215 distinct names), 41 in types private to their file"
+    - "📏 Measured 2026-09-24: of the 134 distinct Portuguese locals and parameters left in the tree, 103 are blocked from the internal rename tool ONLY because the same name is a member somewhere — this phase is what unblocks them"
+    - "📏 Measured 2026-09-24: `nome` is a member of six unrelated types, `rotulo` of eight, `estado` of five"
+    - "📏 Measured 2026-09-24: `core/visual-state.VisualState { tema, correcao, simulacao }` is written whole, per player, by `store.setJSON(KEYS.visualP(i), v)` in `render/viz-setters`"
+  informed: []
+
+title: Published members speak English, renamed by type and not by name
+
+context-and-problem-statement: |
+  Phase 2 (ADR-0219) renamed every public NAME; zero of 1620 carries a Portuguese word. The MEMBERS of those names did not
+  move — `CreateGameOptions.acomodacoes`, `Declinios.semVozNeural`, `PauseIconsCtx.setTemaDoJogador`, the ctx fields a
+  cartridge fills — and the Dev decided on 2026-09-22 that they are renamed too. 📏 342 member declarations carry a
+  Portuguese word, 301 of them in exported types.
+
+  Two things the measurement found make this phase a different job from phase 2, and they are why it needs its own record:
+
+  1. **A member name is not unique.** A public name is one binding in one module, so phase 2 could rename by NAME from a
+     map. `nome` is a member of six unrelated types; one of them could mirror a foreign API, another could be the shape of
+     something stored. Renaming by name renames all six.
+  2. **A member can be the shape of something already on a child's machine.** `VisualState { tema, correcao, simulacao }` is
+     written whole, per player, into storage. A renamed field reads `undefined` from every value saved before the release,
+     and the child's visual setting is gone — the exact cost ADR-0219 §6 refused for stored keys, one level down.
+
+  And one thing makes it quieter than phase 2: a renamed export fails a consumer's import on the day of the bump; a renamed
+  member a cartridge WRITES in an object may not fail at all — the engine reads the new key, finds nothing, and uses its
+  default.
+
+decision-drivers:
+  - "D1 — A CHILD ALREADY PLAYING MUST NOT PAY (ADR-0219 D4): no stored setting may be lost"
+  - "D2 — A MEMBER IS RENAMED WHERE ITS TYPE IS USED, not wherever its spelling appears"
+  - "D3 — THE SILENT CASE MUST BE MADE LOUD: a key the engine no longer reads fails nothing by itself"
+  - "D4 — THE SAME SHAPE AS PHASE 2 wherever the reason is the same: one major, one map, a printed table, one commit per layer, no aliases, nothing outside this repository touched"
+
+considered-options:
+  - "A — the shape of phase 2, but each map entry is (declaring type, member) and the rename is done by TypeScript's language service, which follows a member into object literals, shorthand properties, destructuring and accesses through the type"
+  - "B — the phase-2 applier as it is: a map of names renamed across the tree"
+  - "C — keep the old member as a deprecated alias beside the new one for one major"
+  - "D — also rename the stored shape now, reading the old one and migrating it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ `nome` of type X moves and `nome` of type Y does not, because the tool asks the type checker, not the text. ✅ The
+  rename reaches every object literal the checker can type — which includes the tests, the first consumers in the tree. ❌ An
+  object the checker cannot type (plain JS, a value built as `any`) is not followed; that is what the gate below is for.
+  **B.** ✅ Already written and proven five times over. ❌ It renames by spelling: `nome` of six types at once, including any
+  that must not move. The tool would have to be told «except here» per occurrence, which is the map A builds anyway.
+  **C.** ✅ No consumer breaks on the bump. ❌ An alias on an INPUT (an options object a cartridge writes) is a second key
+  the engine must read and reconcile — two sources of truth for one setting — and ADR-0219 already refused aliases for the
+  reason that still holds: the seven consumers are this project's own repositories.
+  **D.** ✅ The last Portuguese fields disappear. ❌ It is a migration of data on children's machines, a different risk
+  with a different test (an old value in storage), and ADR-0219 §6 kept exactly this class out so it would not hide inside
+  a rename. It stays a separate decision.
+
+decision-outcome:
+  chosen-option:
+    link: "A — phase 2's shape, entries keyed by (type, member), renamed through the language service"
+    justification: |
+      1. **One major, one map, one printed table, one commit per layer**, as ADR-0219 §1–§4. The map is
+         `engine:scripts/member-rename-map.json`; the note's table is printed from it.
+      2. **An entry is (declaring type, member) → new name**, and the applier uses TypeScript's language service
+         (`findRenameLocations`) over `app/js` AND `tests/`. A private member (41 of them) goes through the same map and the
+         same tool; it simply has no consumer to warn.
+      3. **Out of this phase, each for a reason that is not convenience:**
+         · **the shape of a stored value** — today `VisualState.tema`, `.correcao`, `.simulacao`. Same rule as ADR-0219 §6;
+           renaming them is a migration and gets its own decision.
+         · **keys of stored data records** — the wizard's step names inside a saved pad map (`especial`) are DATA a machine
+           already holds, not names this code chooses.
+         · **i18n interpolation keys** (`{alvo}`) — they are written in three dictionaries, and the internal rename tool's
+           guard 2 already refuses them for the revert they cost on 2026-09-23.
+         · **members that mirror a foreign API** — they carry no Portuguese word; nothing to do.
+      4. **The silent case is made loud by a gate, not by review:** after each layer, an old member name from the map that
+         still appears as an identifier anywhere in `app/js` or `tests/` fails the build, and the excluded list above is
+         written in the gate with its reason. A TypeScript consumer gets the same protection for free on a fresh object
+         literal (an unknown property is an error); the release note says, in one line, that a consumer building options as
+         plain JS or through `any` must search for the old keys by the table.
+      5. **Nothing outside this repository is touched** (the Dev, 2026-09-21, ADR-0219 erratum).
+
+  consequences:
+    positive:
+      - "The engine's own debt loses the 342 member declarations, and 103 local and parameter names blocked only by a member become renamable by the internal tool"
+      - "A reader meets one language in a published type, fields included"
+      - "The tool that renames by type is also the one that can rename a SINGLE member later without touching its namesakes"
+    negative:
+      - "A second breaking release for every consumer that writes these fields"
+      - "Three Portuguese fields stay published until the stored-shape decision is taken"
+      - "A consumer that builds options without types learns of a renamed key only by reading the table"
+
+  confirmation: |
+    ✅ DONE on 2026-09-24, in six layers and ten engine commits (`b3f507d5` core · `4a0a2707` the gate's word list ·
+    `ee09d32b` platform · `6eaa27ce` the `--declared` list · `a62cc21f` input · `f092a152` render · `15a452a9` ui ·
+    `28f1499a` boot, which closes #206). 📏 **331 map entries; Portuguese member declarations 342 → 11, and the eleven are
+    exactly the exclusions**, held as a SET by the gate, not as a count. Every layer landed green on `tsc`, both suites and
+    `build:pkg`; ⚠️ the page `build` was run once, at the end, not per layer — it is green, and the built quiz boots with the
+    renamed contract (its `accommodations`, its bar, its pause card by the Menu button), checked with the service worker
+    killed. The notes' tables (CI–CN) are printed from the map.
+    🔴 What the work taught, and it is the part worth reading: the language service follows a member through its TYPE, and
+    FIVE shapes escaped it, each found by a different net — untyped objects in `.js` tests (the suites), a typed
+    OPTIONAL mirror (`ui/voice-settings`' view of the voice engine: `tsc` clean, the panel saw no voices — only a browser
+    test), a ctx built as a VARIABLE and passed later (`tsc`), a member written as a STRING (`Pick<…, 'x'>`, `'x' in o`),
+    and source-reading gates anchored on the old spelling. The gate of point 4 ended probed 10 of 10 (seven leftover forms
+    red, a union value and a `t()` params key green) and the end-state case 4 of 4. ⚠️ Its declared limit stands: a spelling
+    another type still declares is not policed — `tema`/`correcao` never will be, because the excluded `VisualState`
+    declares them — and there the suites are the net.
+    📌 NOT confirmed, by the Dev's decision (ADR-0219 erratum): that the seven games compile. They receive the tables.
+
+more-information: |
+  📌 WHY THE TESTS ARE IN THE TOOL'S REACH AND NOT ONLY `app/js`: they are the consumers this repository can see, and they
+  write the options objects a cartridge writes. A member renamed in the engine and not in a test is the silent case in
+  miniature — the test keeps passing its old key and the engine keeps using a default — and it is the one place where the
+  gate can make that loud before any game meets it.

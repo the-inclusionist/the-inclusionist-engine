@@ -1,0 +1,171 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0123]
+  superseded-in-part:
+    - by: ADR-0229
+      what: "§2 (the engine's documents come home) and the travel half of §4. The records STAY in the-inclusionist-docs, and only a game's own records move to that game. §1 (a game gets an ADR tree) and §3 (the validator runs in every repository and counts what it cannot open) stand untouched"
+  date: 2026-09-23
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-23, on being shown the three options: «(c) Uma árvore de ADR por
+       repositório de jogo […] Esta é a melhor escolha. E docs volta pra dentro do repositório da engine, ou
+       melhor, o que for da engine.»"
+    - "The Dev's observation that produced the question, the same day: «Estas decisões são do plataformer, não
+       da engine! Por isso penso que deve haver ADR para a engine e para cada cartucho de forma separada, não
+       tudo em um único repositório, ou pelo menos não tudo em uma mesma pasta.»"
+    - "ADR-0123 — SUPERSEDED IN PART: the CONCENTRATION dies; its other three clauses live on and are needed
+       more, not less (a confirmation carries its repository; what is not checked is counted and said; the
+       validator and the gates run in every repository)"
+    - "ADR-0068 §5 — already superseded in part by ADR-0123; this record settles the matter in the opposite
+       direction to both its text and ADR-0123's: a game repository DOES get an `adr/` tree"
+    - "ADR-0057 — a record changes by supersession, never by editing in place"
+    - "ADR-0067 §5 — a repository exists when a record declares its address"
+    - "The Dev's earlier correction of the same kind, recorded as the memory `engine-nao-descreve-jogo`:
+       the platformer's examples were deleted from the engine's hints as «regras para jogo que não existe»"
+  informed: []
+
+title: Every repository keeps the records about itself — and the engine's come home
+
+context-and-problem-statement: |
+  🔴 THE OBSERVATION CAME FROM A DEFECT REPORT THAT WAS ABOUT THE WRONG SUBJECT. This AI reported that
+  `render/player-anim` had twenty-four of twenty-eight decisions unheld by any test, and listed them as
+  promises the ENGINE makes to a child: reduced motion stilling the wall-cling frame, the neutral pose for a
+  child who plays seated, the flag that draws a blind child's cane. The Dev read the list and answered that
+  those are the platformer's decisions, not the engine's.
+
+  📏 MEASURED IN THE SAME TURN, and the number is larger than the example: **56 of the 205 modules in
+  `app/js` are not reached by the engine's own composition root, and 26 of them are `render/`** — `collision`,
+  `tiles`, `world`, `camera`, `minimap`, `parallax`, `scene-city`, `scene-sky`, `player-anim`, `weather`,
+  `city-tex`, `wheelchair-sprites` — plus `core/collision`, `core/tiles`, `core/world`, `core/letter-grid`,
+  `core/password`, `core/run-state`. That is the whole stack of a tile world.
+
+  ⚠️ THE MEASUREMENT MUST NOT PROVE MORE THAN IT DOES. «Not reached by `createGame`» is not «not the
+  engine's»: a cartridge composes its own drawing (ADR-0111), so `render/draw` sitting outside the root's
+  reach is the architecture working. What survives the caveat is sharper than reachability: `player-anim`
+  does not SERVE a cartridge, it DESCRIBES one — it hardcodes that the character clings to walls, climbs
+  ladders, swims and flies. A chess cartridge has none of those.
+
+  🎯 AND THE RECORDS INHERITED THE SAME CONFUSION. ADR-0123 concentrated every record of the project into one
+  tree so that a decision would have ONE place; the cost, invisible until now, is that a decision about one
+  game is filed in the same drawer as a decision about the engine, and nothing in the drawer says which is
+  which. A reader — including this AI, twice — then treats a game's rule as the engine's.
+
+  📌 THIS IS THE SECOND TIME THE DEV HAS MADE THIS CORRECTION. The first deleted the platformer's examples
+  from the engine's hint text, in their words «regras para jogo que não existe». A correction that has to be
+  made twice is a correction the structure is fighting.
+
+decision-drivers:
+  - "A decision about a game must be findable where that game is, and must not look like the engine's"
+  - "ADR-0068's own logic — a game is its own repository — carried to the records as well as the code"
+  - "A record must be checked where it lives, or it is a file (ADR-0053, ADR-0123 driver 2 — unchanged)"
+  - "The engine's documents belong beside the engine's gates, which is where they can be checked on a push"
+  - "Nothing may be deleted from the old home before the new one exists and is green (ADR-0123 driver 5)"
+
+considered-options:
+  - "A · one tree, plus a required `scope` field (`engine` / `cartridge:<name>` / `contract`) and a validator rule"
+  - "B · folders inside the same repository: `adr/engine/`, `adr/game-platformer/`"
+  - "C · one ADR tree per repository — each keeps the records about itself; the engine's return to the engine"
+  - "D · nothing changes; the reader works out whose a record is by reading it"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "Cheapest by far: nothing moves, so no link and no `confirmed-by` breaks"
+      - "A field can say `contract`, which a folder cannot: a decision about the BOUNDARY belongs to neither side"
+      - "Search stays in one place, and the supersession graph stays whole"
+    bad:
+      - "A game's records still live in a repository that game's contributors do not clone"
+      - "A field is easy to leave at its default, and a default is how the confusion came back"
+  B:
+    good:
+      - "Physical separation a reader cannot miss, without leaving the repository"
+    bad:
+      - "🔴 Moving records breaks pointers SILENTLY: renaming test files already broke NINE `confirmed-by`
+         paths in this project with the engine's suite fully green"
+      - "Keeps a game's records away from that game's contributors — B pays a migration and buys half of C"
+  C:
+    good:
+      - "A game's decisions live where its code, its gates and its contributors are"
+      - "The engine stops being the default home for decisions that are not about the engine"
+      - "It is ADR-0068's argument finished rather than half-applied"
+    bad:
+      - "🔴 Cross-repository references stop resolving on their own: the validator already needs `--repo`"
+      - "Every game repository has to grow a validator, a schema and a CI job"
+      - "⚠️ A decision about the CONTRACT spans two repositories and has to be given a home by fiat"
+  D:
+    good:
+      - "Costs nothing today"
+    bad:
+      - "It is the state that produced the defect, twice"
+
+decision-outcome:
+  chosen-option:
+    link: "C — one ADR tree per repository, and the engine's documents return to the engine"
+    justification: |
+      **Every repository keeps the records about itself.** Four clauses, and the fourth is the one this record
+      is least sure of and says so.
+
+      1. **A GAME REPOSITORY GETS AN `adr/` TREE**, which is the opposite of ADR-0068 §5's «no `adr/` folder
+         and never will» and of ADR-0123's concentration. The path is the one every record already uses —
+         `docs/2-Architecture/adr/` — so that a record which moves keeps the shape of its own links.
+
+      2. **THE ENGINE'S DOCUMENTS COME HOME**, in the Dev's words «docs volta pra dentro do repositório da
+         engine, ou melhor, o que for da engine». The correction inside their own sentence is the rule: not
+         all of `the-inclusionist-docs` returns — what is the ENGINE's returns. What belongs to no single
+         repository stays where it is, and that is what keeps `the-inclusionist-docs` alive rather than
+         emptied.
+
+      3. **WHAT ADR-0123 DECIDED ABOUT CHECKING SURVIVES INTACT, and matters more now**: a confirmation
+         carries its repository (`engine:app/js/x.ts`); what cannot be opened is COUNTED and SAID on every run,
+         because a sieve that checks nothing and prints «all sound» is the false report this project has
+         caught three times; and the validator and the gates run in every repository, which was already the
+         Dev's rule — «Cada repositório precisa ter seus validadores e gates para ADRs». Under one tree those
+         three clauses were a convenience. Under N trees they are the only thing holding the graph together.
+
+      4. ⚠️ **A CONTRACT RECORD IS THE ENGINE'S — AND THIS CLAUSE IS THIS AI'S READING OF THE DECISION, NOT
+         THE DEV'S WORDS.** ADR-0111 (what a cartridge receives), ADR-0216 (the engine offers the objects),
+         ADR-0221 (how the engine judges its own health) are about the BOUNDARY, and filing them under a game
+         would be wrong in every game at once. The engine defines the contract — it publishes
+         `CreateGameOptions`, and a cartridge conforms to it — so the contract is part of the engine's
+         surface and travels with the engine. 📌 If the Dev reads it otherwise, this clause changes by errata
+         and nothing else in the record moves.
+
+  consequences:
+    good:
+      - "A contributor to a game finds that game's decisions in the repository they cloned"
+      - "The engine's records sit beside the gates that confirm them, checkable on a push"
+      - "A decision about a game can no longer be mistaken for a decision about the engine — which is the
+         defect that produced this record"
+    bad:
+      - "🔴 A migration of roughly 220 records, each of which has to be triaged by SUBJECT and not by age"
+      - "Every `confirmed-by` that crosses a repository has to be re-qualified, and the validator must be run
+         with `--repo` for each side or it will report soundness it did not check"
+      - "Each game repository grows a validator, a schema and a CI job — copies that can drift, which is the
+         objection ADR-0123 clause 4 already answered: a gate that lives elsewhere does not run here"
+      - "⚠️ The supersession graph will span repositories, and no tool reads it whole today"
+
+  confirmation: |
+    ⏸ NOT YET BUILT — the decision is written before the code, as ADR-0128 requires, and the migration has not
+    begun. This record is confirmed when three things are true and not before:
+
+      · the engine repository holds its own `docs/2-Architecture/adr/` tree with a validator that runs in CI;
+      · the records that are about the platformer live in `game-platformer` with a validator that runs there;
+      · the validator reports, on every run and in every repository, how many `confirmed-by` paths it could
+        NOT open — the clause of ADR-0123 that this record keeps because it is what makes N trees honest.
+
+    📌 THE DEBT IS DECLARED IN THE MEANWHILE, as ADR-0126 requires: until the trees exist, every record still
+    lives in `the-inclusionist-docs`, and a reader cannot tell a game's decision from the engine's by where it
+    sits. The triage is the work, and it has no issue yet.
+
+more-information: |
+  ⚠️ WHAT THIS RECORD DOES NOT DECIDE, named so it is not mistaken for settled: whether the tile-world stack
+  itself — the 26 `render/` modules, `core/collision`, `core/tiles`, `core/world` — should stay in the engine
+  repository at all. That is a larger question than where records live, and the measurement above was taken
+  for it; it needs its own decision and its own record.
+
+  📌 And a note on order that this project has paid for before: the records move AFTER the trees and the
+  validators exist in their destinations, never before. ADR-0123's fifth driver said it in its own migration —
+  «nothing may be deleted from the old home before the new one exists and is green» — and the reason is
+  concrete here: a record moved to a repository with no validator leaves a place where it is checked on every
+  push and arrives somewhere it is a file.

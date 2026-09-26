@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/simulation-only-in-the-game.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (`engine:f04b55c`): with the pause card, a panel or the quick pause open nothing is simulated, and it returns in play; the bar and a `data-incl-menu` element are never simulated. Issue #182 stays open for the rows it still lists."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0076 — a simulation and the accommodation that would undo it never run together"
+    - "ADR-0170 — what the engine's page reads or writes that TypeScript does not see is public surface"
+    - "issue #82 — the menus live above the simulation and are the way out of it"
+  informed: []
+
+title: A disability simulation runs in the game, never in a menu
+
+context-and-problem-statement: |
+  The Dev, 2026-09-13, after the drawn simulations were laid over the world: «Simulação de deficiência não pode funcionar no
+  menu! Só no jogo! Senão fica impossível desabilitar em certos casos.»
+
+  📏 Measured the same day in `dist/quiz.html`: the simulation was a CSS filter on the declared world, and the quiz's world
+  is the whole region, with the pause card, the panels and the quick bar inside it. A filter reaches every descendant, and
+  clearing it on a child does not undo it: with simulated blindness the empathy panel — where it is turned off — was black.
+  The quiz's own «Menu» button, its touch door to the menus, was darkened with the game.
+
+decision-drivers:
+  - "D1 — THE WAY OUT OF A SIMULATION IS NEVER SIMULATED"
+
+considered-options:
+  - "A — the simulation on the world, menus cleared one by one (what ran, and what failed)"
+  - "B — the simulation only on the game: suspended while a menu is open, and never on an element that holds a menu"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One filter on one element. ❌ A world that holds the menus darkens them, and nothing can undo it from inside.
+  **B.** ✅ Every menu stays readable in every simulation. ❌ The engine must know which elements are menus — its own, and a
+  cartridge's door to them, which only the cartridge knows.
+
+decision-outcome:
+  chosen-option:
+    link: "B — only in the game"
+    justification: |
+      1. **Suspended while a menu is open** — the pause card, a settings panel, the quick pause — and back when the child
+         returns to play.
+      2. **Never on an element that holds a menu.** The filter goes on the parts of the world that hold none, down to the
+         world itself when it holds none (a canvas world); a drawn simulation sits under the quick bar.
+      3. **A cartridge marks its own door to the menus with `data-incl-menu`**, and a simulation never covers it. The engine
+         cannot tell which of a game's buttons opens the pause card. 📌 The attribute is the engine's choice while building
+         issue #182, not the Dev's words; it is public page surface (ADR-0170).
+      4. What HELPS — a colour correction, the contrast enhancement — is not a simulation and is not suspended.
+
+  consequences:
+    positive:
+      - "A child can always see the menu that turns the simulation off"
+    negative:
+      - "A cartridge whose menu door is not marked still has it darkened in play"
+      - "In a menu the simulation pauses, so it cannot be tried while looking at the menu that sets it"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #182, open for other items). Gates: in play the game is simulated and the quick bar
+    and a `data-incl-menu` element are not; with the pause card, a panel or the quick pause open nothing is simulated, and it
+    returns in play; a drawn simulation is hidden in a menu and sits under the quick bar.
+
+more-information: |
+  The drawn simulations (tunnel vision, central scotoma, scattered scotomas) entered the empathy panel in `engine:4627dde`,
+  over the quick bar and the pause card; this record is what took them back under the menus.

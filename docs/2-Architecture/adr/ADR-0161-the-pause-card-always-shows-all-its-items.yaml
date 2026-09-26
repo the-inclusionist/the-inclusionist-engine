@@ -1,0 +1,77 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/boot-create-game.browser.test.js
+    - engine:tests/pause-icons.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #155 closed): a game that declares nothing gets the six root items and the seven of
+             the submenu in order, an item without an action locked with its reason said (`engine:f13c8e4`, cursor on item 1
+             `ce38ed3`). The Visual and Empathy panels this record kept locked were built the same day (`engine:f16bb63`,
+             `b6037e4`) and are live."
+  supersedes-in-part: [ADR-0106]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0106 §5 — SUPERSEDED IN PART for the pause card: «an icon is mounted when its action works, and not before».
+       In the pause card an item with no action is now SHOWN and disabled with its reason, not hidden"
+    - "ADR-0113 clause 3 — `hidden` for «not offered», `aria-disabled` with a stated reason for «exists and is locked».
+       The pause card's items are all «exists»"
+    - "ADR-0151 — the six root items and the seven of the settings submenu, and their order"
+    - "ADR-0147 — «número de jogadores» stays in the menu «para manter o layout», and the instruction says the GAME
+       decides how many"
+  informed: []
+
+title: The pause card always shows all its items — an item with no action is disabled with its reason, never hidden
+
+context-and-problem-statement: |
+  The Dev opened the pause card in the quiz and found three items — «Back to the game», «Inclusion settings», «Quit the
+  game» — instead of the six ADR-0151 lists, and a settings submenu without «Modo empatia» and «Acessibilidade visual».
+  They listed both menus in full.
+
+  📏 Measured: the engine HIDES every item nothing acts on (`refrescarItensDaPausa`, ADR-0106 §5). In the quiz that is
+  «Ajuda» (no `preset`), «Número de jogadores» (the game does not act on it), «Opções do jogo» (the game declares none),
+  and in the submenu «Modo empatia» and «Acessibilidade visual» (the engine mounts neither panel yet).
+
+decision-drivers:
+  - "D1 — THE SAME MENU IN EVERY GAME. A child who learned where «Sair» is finds it in the same place in the next game;
+     a menu whose length changes per game moves every item below the first one that vanished"
+  - "D2 — A LOCKED ITEM SAYS WHY. Hidden, the child cannot know the option exists; disabled without a reason, she
+     thinks the game is broken"
+
+considered-options:
+  - "A — keep ADR-0106 §5 in the pause card: hide what has no action"
+  - "B — show every item; an item with no action is `aria-disabled` and says its reason when reached or activated"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No item that does nothing. ❌ The menu changes shape per game, and the child cannot know what exists.
+  **B.** ✅ One layout everywhere; the locked items explain themselves. ❌ A game may show several locked items.
+
+decision-outcome:
+  chosen-option:
+    link: "B — all items shown; no action means disabled with a reason"
+    justification: |
+      1. **The root always shows six items**, in this order: «Voltar ao jogo», «Ajuda — Como jogar», «Número de
+         jogadores», «Configurações de inclusão», «Opções do jogo», «Sair» (back to the PRESS START screen).
+      2. **«Configurações de inclusão» always shows seven**: «Voltar», «Modo empatia», «Acessibilidade auditiva»,
+         «Conforto auditivo» (renamed from «Áudio»), «Acessibilidade motora», «Acessibilidade visual», «Sensibilidade
+         visual».
+      3. **An item with no action is `aria-disabled`, not hidden**: the cursor still stops on it and its number counts;
+         reaching or activating it says the reason — for «Número de jogadores», that the game decides how many.
+
+  consequences:
+    positive:
+      - "The pause card has one shape in every game"
+      - "A child learns why an option is locked instead of not knowing it exists"
+    negative:
+      - "«Modo empatia» and «Acessibilidade visual» are locked until the engine mounts their panels — that work moves up"
+      - "Every locked item needs a reason written in the three languages"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #155, closed). Gates: in a game that declares nothing, the root shows
+    the six items in order and the submenu the seven; an item with no action is `aria-disabled`, not hidden, and
+    activating it announces its reason without acting; «Conforto auditivo» names the former «Áudio» panel.
+
+more-information: |
+  The locked items and their reasons were built in `engine:f13c8e4`; the Visual and Empathy panels that unlocked two of them in `engine:f16bb63` and `engine:b6037e4`.

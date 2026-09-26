@@ -1,0 +1,61 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/the-crt-under-each-visual-mode.browser.test.js
+  errata:
+    - date: 2026-09-25
+      what: >-
+        CONFIRMED (`engine:eebc2fb2`, note DL): the CRT receives two answers from the root, «the scanline yields?» and
+        «the vignette yields?», and the colour-vision modes stay listed once, beside their matrices. Found on the way and
+        fixed (`engine:fa265ab9`): under `createGame` the game's high-contrast theme never took the CRT away at all —
+        ADR-0047 held only for the filters — because the root handed the theme's writer to the bar without recording it.
+  supersedes-in-part: [ADR-0047]
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim, after testing the demo: «Modos de daltonismo estão tirando as scanlines sem necessidade.»"
+    - "ADR-0047 — SUPERSEDED IN PART: E1 «both yield to every visual accessibility mode, with no exception», for the SCANLINE under the colour-vision modes only. The vignette's yielding, and the scanline's yielding to every other visual mode, stand"
+    - "ADR-0047's context: the Dev on 2026-08-27, «Ceder fez muito bem ao jogo nos modos de acessibilidade» — said of the modes that raise contrast or reduce what the eye must resolve"
+  informed: []
+
+title: The scanlines stay under the colour-vision modes
+
+context-and-problem-statement: |
+  ADR-0047 made the decorative CRT yield to every visual accessibility mode with no exception. Its measured reason was
+  luminance: a vignette darkening the edges works against a mode that exists to raise contrast. The colour-vision modes —
+  the 🚥 correction for protanopia, deuteranopia and tritanopia, and their simulations — change hues, not contrast or
+  sharpness, and the Dev found the scanlines switched off under them for nothing.
+
+decision-drivers:
+  - "A decoration yields where it works against the mode, not merely because a mode is on"
+
+considered-options:
+  - "A · ADR-0047 as written: the scanline yields to every visual mode"
+  - "B · The scanline stays under the colour-vision modes; it yields to every other visual mode, and the vignette to all"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ Takes the look away from a child whose mode does not conflict with it. **B.** ✅ The scanline yields only where
+  it costs the child something. ❌ The rule becomes «every visual mode but these», one list to keep true.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the scanline stays under the colour-vision modes"
+    justification: |
+      The Dev's decision. Under a colour-vision correction or simulation, and no other visual mode, the scanline is drawn
+      as the stored CRT says. The vignette still yields to every visual mode, and the scanline still yields to high
+      contrast, low vision, blindness and every other visual mode, as ADR-0047 decided.
+
+  consequences:
+    positive:
+      - "A child using a colour-vision mode keeps the look"
+    negative:
+      - "The list of modes the scanline ignores must follow the colour-vision modes that exist"
+
+  confirmation: |
+    ✅ The gate in confirmed-by: each colour-vision correction and simulation keeps the scanline and drops the vignette; low
+    vision, blindness, the theme and the contrast enhancement drop both; 12 mutations red.
+
+more-information: |
+  Scope read from the Dev's words: «modos de daltonismo» covers the correction (`fix-*`) and the simulation of the same
+  deficiencies; it does not cover high contrast or low-vision simulations.

@@ -1,0 +1,246 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-11
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0117 — the cartridge, and the reason there is one origin. Its §1 and §2 are what make this
+       record necessary: if the platform loads the accessibility stack once, then something has to say
+       what a game hands over and what it gets back, and nothing did"
+    - "ADR-0118 — the platform is `the-inclusionist-site`, so this contract has a host to be a contract WITH"
+    - "ADR-0068 §2 and §3 — a game is a package the manifest selects. This record is what that package
+       must export for the selection to mean anything"
+    - "ADR-0068 §5 — architecture is decided in ONE place. This record exists because the shape below was
+       first written inside `the-inclusionist-site/docs/`, which binds six repositories from inside one of
+       them. The Dev caught it"
+    - "ADR-0084 — `topology` became a function because a value went stale in silence. §5 below is the same
+       argument applied to what the value-reading left behind, and that record is why the fix is already
+       half-built"
+    - "engine `docs/1-Discovery/User-Stories.md` — «As a game developer, I want the engine to carry no game
+       state, so that two games on one page do not collide», marked done on the engine's side and waiting
+       for a game. This record is the game side of it"
+  informed: []
+  errata:
+    - date: 2026-09-11
+      what: "`more-information` listed `declines` as undecided between the host's half and the game's, and
+             said the direction «has to be read from the implementation rather than guessed». It was read,
+             and it is the GAME's: `app/js/boot/create-game.ts` uses it twice as a statement a game makes
+             about itself — `declines.semVozNeural` at `:468` («declare `carregarVozNeural` … ou
+             `declines.semVozNeural`») and `declines.semAtorDePausa` at `:682`. Both are a cartridge saying
+             what it does not have, which is §1's own test for which half a field belongs to. ➡️ `declines`
+             belongs in `CartridgeHooks`. ERRATUM under ADR-0057 §1 and not a supersession: the record asked
+             for this reading and left the hole for its answer; the answer fills the hole and changes no
+             decision."
+    - date: 2026-09-11
+      what: "§1's ENUMERATION IS INCOMPLETE — it lists fifteen of the twenty fields `CreateGameOptions`
+             actually has. 📏 Counted in the source (`app/js/boot/create-game.ts:178-318`): the five missing
+             are `declines`, `getPauseActs`, `setPauseActor`, `setTemaDoJogador` and `setCorrecaoDoJogador`,
+             and the record's own test — «could a PAGE answer this without knowing which game runs?» — puts
+             ALL FIVE in the game's half. Each is a statement about this game: what it declines, what its
+             pause offers, who edits which seat, and whether it writes a theme or a colour-vision
+             correction. 📌 And the last two are corroborated by a filter this project already ships:
+             `iconesQueAccionam({ tema, correcao, seguraTeclas })` mounts the ⚫ and 🚥 icons only for a game
+             that supplies the writers — three game-owned answers, read together. ERRATUM under ADR-0057 §1
+             and not a supersession: the RULE is untouched and it is the rule that decides; what was wrong
+             was the list, which under-counted by a quarter. The corrected game's half is fifteen fields:
+             `declaration`, `isNavigable`, `comIndice`, `naBarraDe`, `navBar`, `players`, `setPhase`,
+             `sonarPlayers`, `isBlindMode`, `preset`, `declines`, `getPauseActs`, `setPauseActor`,
+             `setTemaDoJogador`, `setCorrecaoDoJogador`; the host's is five: `host`, `carregarVozNeural`,
+             `baixarPesados`, `aoProgredirPesados`, `disponibilidade`."
+
+title: A cartridge supplies HALF of CreateGameOptions and never calls createGame
+
+context-and-problem-statement: |
+  ADR-0117 decided that a game is a cartridge and the platform is the unit of installation, and
+  ADR-0118 named the repository that platform lives in. Neither says what a cartridge IS as an
+  artifact: what it exports, what it receives, and who calls what.
+
+  Without that, the obvious reading is the wrong one. Every one of the six games today is an
+  application that boots on import and calls `createGame` itself. Six cartridges each calling it
+  inside one platform would deduplicate the BYTES and multiply the RUNTIME: N accessibility bars, N
+  TTS instances, N keyboard runtimes competing for one document. That failure appears as broken
+  behaviour rather than as weight, which is the kind that gets found late.
+
+  ⚠️ AND THE SHAPE DOES NOT HAVE TO BE INVENTED. `createGame` already states, in
+  `CreateGameOptions`, exactly what a host must supply — and the list divides cleanly into what a
+  PAGE knows and what a GAME knows. The contract is that division, read off rather than designed.
+
+decision-drivers:
+  - "The accessibility stack is mounted once, per ADR-0117 §2, and a contract that lets a cartridge
+     mount its own defeats that record without contradicting it in writing"
+  - "Teardown has to be a fact rather than a promise: a game that leaves a node behind poisons the next"
+  - "Two games on one page must not collide — the engine's own user story, and the engine has already
+     done its half"
+  - "A contract derived from what `createGame` takes can be checked by the next person; an invented one
+     can only be trusted"
+
+considered-options:
+  - "C1 — each cartridge calls `createGame` for itself, and the platform mounts and unmounts whole games"
+  - "C2 — the shell calls `createGame` once; a cartridge SUPPLIES the game-owned half of its options and
+     receives the resulting `Engine`"
+  - "C3 — the engine grows a registry and games register themselves into it at import time"
+
+pros-and-cons-of-the-options:
+  C1:
+    good:
+      - "No new types. Every game keeps the boot it already has"
+      - "A game repository changes almost nothing"
+    bad:
+      - "🔴 It reintroduces exactly what ADR-0117 §2 removed: N accessibility bars, N TTS instances, N
+         keyboard runtimes, N pause cards, on one document"
+      - "⚠️ The measurement of 2026-09-08 already showed what happens when mounting the bar is each
+         game's job — five of six games had no accessibility bar at all. Handing the job back to six
+         games is handing it back to the arrangement that failed"
+  C2:
+    good:
+      - "One accessibility stack, one keyboard runtime, one pause card, by construction rather than by
+         everyone remembering"
+      - "The split is DERIVED: every field of `CreateGameOptions` lands on one side or the other by
+         asking whether a page could answer it"
+      - "The same source serves a standalone shell and the platform shell, which is what ADR-0140 needs"
+      - "`teardown()` has a boundary to be enforced against, because the shell owns the region"
+    bad:
+      - "⚠️ `createGame` reads `declaration` as a value and runs `conformanceProblems` on it once. With
+         one call and N cartridges the diagnostic describes whichever cartridge was mounted first, and
+         goes stale in silence. §5 says what carries that until the engine can do better"
+      - "Six repositories have to change their boot, and the largest of them is the hardest"
+  C3:
+    good:
+      - "A game could be added by importing it, with no platform code per game"
+    bad:
+      - "🔴 Registration at import time is module-level side effect, which is exactly what spec D14
+         forbids and what makes a game impossible to instantiate twice or to tear down"
+      - "The engine would have to know what a catalogue is, which is not its subject"
+
+decision-outcome:
+  chosen-option:
+    link: "C2 — the shell calls `createGame` once; a cartridge supplies the game-owned half"
+    justification: |
+      ===== 1. THE SPLIT, AND IT IS READ OFF RATHER THAN CHOSEN =====
+      Every field of `CreateGameOptions` answers to one of two owners, and the test is whether a PAGE
+      could answer it without knowing which game is running.
+
+      THE HOST'S HALF — the page and the device:
+        · `host` (the `EngineHost`: `doc`, `win`, `cvdHost`, `a11yBarHost`, `pauseHost`)
+        · `carregarVozNeural` · `baixarPesados` · `aoProgredirPesados` · `disponibilidade`
+
+      THE GAME'S HALF — every one a callback INTO the game or a statement ABOUT it:
+        · `declaration` · `isNavigable` · `comIndice` · `naBarraDe` · `navBar` · `players`
+        · `setPhase` · `sonarPlayers` · `isBlindMode` · `preset`
+
+      So a cartridge does not RECEIVE `CreateGameOptions`. It SUPPLIES half of one. The shell owns the
+      other half, merges the two, and calls `createGame`. What comes back — the `Engine` — is what the
+      cartridge consumes.
+
+      ===== 2. A CARTRIDGE NEVER CALLS `createGame` =====
+      ⚠️ AND THIS IS THE CLAUSE THE OTHERS HANG FROM. It is what keeps the accessibility stack single,
+      and it is also what makes ADR-0140 possible at all: because the caller is outside the cartridge,
+      the caller is free to be a standalone shell in one build and the platform in another, from one
+      source.
+
+      The types:
+
+        interface Cartridge {
+          readonly slug: string;                 // repository and package, per ADR-0082 §1
+          readonly declaration: GameDeclaration; // unchanged; the same value the engine already takes
+          readonly dicts: Readonly<Record<string, Dict>>;
+          readonly hooks: CartridgeHooks;        // the game-owned half, above
+          create(ctx: GameCtx): GameInstance;    // nothing runs until this is called
+        }
+
+        interface GameInstance {
+          update(dt: number): void;  // dt in FRAMES, not seconds
+          teardown(): void;
+        }
+
+      ===== 3. THE LOOP BELONGS TO THE SHELL =====
+      `startLoop(ticker, frame, maxDt?, { aoFalhar })` is called by the shell, never by a cartridge. Six
+      cartridges each opening their own frame callback is six loops competing for one frame, and the
+      error boundary spec D16 asks for lives in `aoFalhar` — a cartridge that throws must stop itself
+      and stay distinguishable from a broken engine.
+
+      ===== 4. WHAT `ctx` CARRIES THAT `Engine` DOES NOT =====
+      Three things, and each exists because leaving it out reintroduces a named defect.
+
+        · `engine` — exactly what `createGame` returned. One instance, however many cartridges exist.
+        · `region` — this cartridge's element. Without one, teardown is a promise; with one, anything
+          left outside it is a defect with an address.
+        · `rng` — this cartridge's own stream. ⚠️ NOT A CONVENIENCE: see ADR-0141, which is this clause
+          with the measurement behind it.
+        · `t` — translate, already scoped to the active locale.
+        · `params` — what the shell decided this cartridge may read from the address. In the platform
+          there is ONE address for every cartridge, so a game reading `location.search` directly reads
+          another game's parameters. The 15-puzzle takes `?seed=`, the pinball takes `?table=`.
+
+      ===== 5. THE DECLARATION DELEGATES, AND THE DIAGNOSTIC GOES STALE UNTIL THE ENGINE CAN HELP =====
+      ⚠️ With one `createGame` and N cartridges, the platform passes a declaration whose members forward
+      to the mounted cartridge. Most of the engine already reads it that way — `topology`, `targetsOf`,
+      `nameAt`, `roleAt`, `focusOf` are all called through closures — and ADR-0084 is the record that
+      made that true, for this exact reason.
+
+      📏 BUT NOT ALL OF IT. Measured against `dist-pkg/boot/create-game.js` on 2026-09-11, NINE reads
+      are eager and would describe the wrong cartridge after a swap: `conformanceProblems` (:99), the
+      `world()` check that feeds `problems` (:120), `seguraTeclas` as a VALUE (:230), the seat count
+      (:324), the keyboard and pad mapping registration (:392-399), the player list (:407), the action
+      vocabulary from `preset` (:518), the `alcance` report (:523), and the reach warning that creates
+      DOM (:526).
+
+      ⚠️ SO `engine.problems` AND `engine.alcance` ARE NOT TO BE TRUSTED IN PLATFORM MODE, and saying so
+      is the point of this clause. Until the engine offers a mount, the platform re-runs
+      `conformanceProblems` itself on each swap and surfaces the result; that is a duplicate of a
+      diagnostic the engine owns, and it is a debt, not a design. The engine-side fix is an issue
+      against `the-inclusionist-engine`, to be written from a study rather than from a guess.
+  consequences:
+    positive:
+      - "The accessibility bar, the pause card, the TTS and the keyboard runtime exist once, and no game
+         has to remember to mount them — which is the arrangement that failed in five of six games"
+      - "A cartridge can be instantiated, torn down and instantiated again, which is what makes a
+         catalogue of games on one page possible at all"
+      - "ADR-0140's two build targets become a consequence rather than a second mechanism"
+      - "The contract is checkable: anyone can re-derive the split by reading `CreateGameOptions`"
+    negative:
+      - "🔴 `engine.problems` and `engine.alcance` describe the first-mounted cartridge in platform mode
+         until the engine grows a mount. A stale diagnostic is worse than no diagnostic, and this record
+         ships with that debt open"
+      - "Six repositories change their boot. The platformer is the largest and is also still on engine 7"
+      - "The shell duplicates a conformance check the engine already owns"
+    neutral:
+      - "Deep imports of the engine's STATELESS utilities stay as they are — `core/a11y-sr`, `core/i18n`,
+         the `ui/pause-icons` constants. The line is exactly: anything holding module-level state comes
+         through `ctx`; anything stateless may be imported"
+  confirmation: |
+    ⚠️ NOTHING HERE IS BUILT YET, and this record carries no `confirmed-by` for that reason. The gates
+    that will confirm it, named now so they are not invented later:
+
+      1. A cartridge that is imported and never instantiated must do nothing observable — no DOM, no
+         listener, no registration. A test that imports and asserts an untouched document.
+      2. `grep` for `createGame` inside a cartridge's own source returns nothing.
+      3. Two cartridges mounted in sequence leave exactly one accessibility bar in the document.
+      4. `teardown()` followed by emptying `region` leaves no node the cartridge created.
+
+    The first cartridge to go end to end is `game-whackwhack`, per ADR-0068 §6, and these gates are
+    written there first.
+
+more-information: |
+  ⚠️ WHAT THIS RECORD DELIBERATELY DOES NOT DECIDE:
+
+    · The exact shape of `GameCtx` beyond the five members named in §4. `Dict` and `Translate` may or
+      may not be exported types of the engine today; that is a reading, not a decision.
+    · Whether `declines` is host-owned or game-owned. It reads as a statement about what a GAME does not
+      have, which would put it in `CartridgeHooks`, but `createGame` also returns a resolved `declines`.
+      The direction has to be read from the implementation.
+    · The seed policy — who chooses a cartridge's seed, and whether a run is reproducible across shells.
+    · The engine's mount API. That is an engine change and belongs to a record written from a study of
+      the nine eager reads, not to this one.
+
+  INSTANCES OF THIS RECORD, NOT RECORDS OF THEIR OWN — the same relation `the-soccer-address` has to
+  ADR-0082:
+
+    · `game-chess` ships three HTML entries (`index.html` 2.5D, `2d.html`, `3d.html`) and switches with
+      links. As a cartridge they become three BOARD VIEWS chosen at runtime, because a second HTML entry
+      inside a platform is a second URL, not a second bundle. The reasoning recorded beside those entries
+      survives — the flat board was split out so it would not carry a renderer it never draws — and
+      dynamic `import()` buys the same saving, with the Three.js view becoming a chunk nobody parses
+      unless they pick it.
+    · `game-pinball`'s table editor is planned as a second Vite entry, `app/editor.html`, for the same
+      stated reason and with the same answer.

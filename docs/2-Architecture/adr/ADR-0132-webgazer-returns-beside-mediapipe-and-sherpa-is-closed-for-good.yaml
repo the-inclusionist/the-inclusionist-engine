@@ -1,0 +1,182 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0214
+      what: >-
+        WebGazer's return. Eye control is MediaPipe's relative reading (ADR-0213) and needs no gaze point on the screen; WebGazer
+        leaves the engine. The closing of sherpa-onnx stands.
+    - by: ADR-0186
+      what: >-
+        «sherpa-onnx is closed, WITH KOKORO-MULTI-LANG» — Kokoro returns, through the browser runtime with WebGPU, and is a
+        default engine beside Piper. sherpa-onnx stays closed.
+  supersedes-in-part: [ADR-0124, ADR-0127]
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's two decisions of 2026-09-09, taken after being told what MediaPipe does and does not provide:
+       «Traga o WebGazer de volta. Vamos usar ambos.» and, about sherpa and Kokoro, «Deixe isso em ADR para
+       não voltar mais.»"
+    - "ADR-0124 — SUPERSEDED IN PART: its parenthesis «webgazer não». Everything else it decides stands, and
+       its central clause — the heavy runtimes are the engine's and arrive on install — is what makes this
+       record cheap to implement"
+    - "ADR-0127 — SUPERSEDED IN PART: the clause naming what would bring sherpa back. The runtime choice it
+       made is untouched; what falls is the door it left ajar"
+    - "issue #11 — «Webcam control (MediaPipe face + eyes) + voice command», the work this feeds"
+  informed: []
+
+title: WebGazer returns beside MediaPipe, and sherpa is closed for good
+
+context-and-problem-statement: |
+  Two questions were answered on the same day, and each was answered by a fact the Dev did not have when the
+  earlier record was written.
+
+  The first is about gaze. ADR-0124 chose MediaPipe and excluded WebGazer in a parenthesis, on the reasonable
+  assumption that one replaces the other. 🔴 MEASURED AFTERWARDS, IN THE PACKAGE'S OWN TYPINGS, THEY DO NOT
+  OVERLAP WHERE IT MATTERS. `@mediapipe/tasks-vision` exposes fifteen task classes, and gaze is not one of
+  them: what exists is `FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS` and its right-eye twin — connection sets over
+  landmarks the face model returns. So MediaPipe answers WHERE THE IRIS IS, while WebGazer answered WHERE THE
+  CHILD IS LOOKING ON THE SCREEN, which is a regression model with a calibration step. Told that, the Dev
+  answered: «Traga o WebGazer de volta. Vamos usar ambos.»
+
+  ⚠️ AND THAT IS NOT A RETREAT FROM ADR-0124 — IT IS THAT RECORD'S OWN ARGUMENT APPLIED HONESTLY. What made
+  WebGazer a defect there was never the vendor: it was that it is LAZY, fetched from a CDN when the child
+  turns eye control on, so the machine that never turned it on does not have it and a school with no network
+  gets silence. Under this record it arrives on INSTALL like everything else, and the defect is gone while the
+  capability stays.
+
+  The second question is about speech, and it is about closing rather than opening. ADR-0127 retired the
+  sherpa-onnx swap because its motive — that `@mintplex-labs/piper-tts-web` was discontinued — was measured
+  false. But it left a door ajar, listing what would bring sherpa back. The Dev closed it: «Deixe isso em ADR
+  para não voltar mais.» 📏 The cost of leaving it open is measured rather than theoretical: the sherpa
+  adoption sat accepted for two months while ZERO lines of it were written, and three records went on naming
+  a runtime the code did not use. An open door that nobody walks through still redirects everyone who reads
+  the map.
+
+decision-drivers:
+  - "A capability nobody can build from the pieces available is a capability the child does not get"
+  - "The defect in WebGazer was WHEN it loads, not who wrote it — and install-time delivery removes it"
+  - "A decision left ajar keeps directing work: three records named sherpa while the code ran piper"
+  - "Two vision libraries is a real cost, and it has to be paid for a reason that survives being written down"
+
+considered-options:
+  - "A · both — MediaPipe for landmarks, gestures and face; WebGazer for the gaze POINT. Sherpa closed"
+  - "B · MediaPipe only, and build the gaze regression ourselves on top of the iris landmarks"
+  - "C · WebGazer only, as before MediaPipe was chosen"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "The gaze point exists on day one instead of after a research project nobody has scheduled."
+      - "MediaPipe still brings what WebGazer never had: gestures, hands, pose, and blendshapes for a blink or dwell switch."
+      - "📏 WebGazer's actual defect disappears: 1.81 MB fetched at INSTALL rather than when the child first tries."
+      - "Closing sherpa stops three records from pointing at a runtime nobody is building."
+    bad:
+      - "🔴 TWO vision libraries running on school hardware, and pillar 1 is the constraint this project takes most seriously — nobody has measured them running together on a Positivo tablet."
+      - "Install grows again: ~11.7 MB of MediaPipe runtime plus its task models plus 1.81 MB of WebGazer."
+      - "⚠️ WebGazer is research code with no SRI on its own host; pinning and integrity are now OUR problem rather than a reason to avoid it."
+      - "Two sources of 'where is the user looking' can disagree, and nothing says which wins."
+  B:
+    good:
+      - "One library, one mental model, and the iris landmarks are more precise than WebGazer's regression."
+    bad:
+      - "🔴 The gaze estimation and its calibration are a research task with no owner and no schedule — the eye control would be WORSE than today until it lands."
+  C:
+    good:
+      - "Known quantity; it is what the code already does."
+    bad:
+      - "No gestures, no hands, no pose, no blendshapes — and issue #11 asks for face AND eyes."
+
+decision-outcome:
+  chosen-option:
+    link: "A — both, and sherpa closed"
+    justification: |
+      **The engine carries MediaPipe AND WebGazer, and both arrive on install.** MediaPipe provides face
+      landmarks including the iris, gestures, hands and pose; WebGazer provides the screen point, which no
+      MediaPipe task does. They are complementary rather than redundant, and the parenthesis in ADR-0124 that
+      excluded WebGazer falls.
+
+      ⚠️ WHAT DOES NOT FALL IS WHY ADR-0124 CALLED WEBGAZER A DEFECT. It was lazy: fetched when the child
+      turned eye control on, so a machine that never turned it on had nothing, and a school with no network
+      got silence with no error. Under this record it is prefetched with everything else, pinned, and the
+      lazy `<script src>` in `ui/webcam.ts` goes away. The vendor was never the problem.
+
+      **AND SHERPA-ONNX IS CLOSED, WITH KOKORO-MULTI-LANG.** ADR-0127 retired the swap and then listed what
+      would revive it; that list is withdrawn. The runtime is piper, and a future change of runtime is a NEW
+      decision made on new evidence — not the resumption of a plan from July whose stated motive was measured
+      false. 📌 The research document survives with a superseded header, because keeping a dead plan readable
+      is different from keeping it actionable.
+
+  responsibilities: |
+    ⚠️ WHO ANSWERS FOR WHAT, derived from what earlier records already demand of the product — and not invented
+    here. This section exists because, without it, the next person to wire one of these runtimes decides its scope
+    by convenience: wires whatever is closest to hand and the other is left with no owner.
+
+    **MEDIAPIPE — what the camera SEES, except the point on the screen.**
+    · **Face** (`FaceLandmarker`) — the «rosto» transport that ADR-0074 lists among the fourteen and that #11
+      asks for by name. It includes the IRIS landmarks, which are the raw material of gaze and not gaze itself.
+    · **Gestures** (`GestureRecognizer`) and **hands** (`HandLandmarker`) — the «gestos» transport of the same
+      records. It is what serves a child who cannot reach a keyboard or touch with precision.
+    · **Expression** (`FaceLandmarker` blendshapes) — this is where a BLINK or dwell switch comes from, which is
+      half of ADR-0104's «8 sectores, dwell» mode. The other half is the point on the screen.
+    · ⚠️ **Does NOT answer for**: where on the screen the child is looking, and nothing audio.
+
+    **WEBGAZER — the POINT on the screen, and only that.**
+    · Gaze regression and its calibration, which no `tasks-vision` task does. It is what turns
+      «o íris está aqui» into «ela está a olhar para ali», and it is what the gaze transport needs in order to
+      point. 📌 ADR-0112 demands that a pointer reached by gaze offer the SAME operations as one reached by the
+      mouse — that promise depends entirely on this piece.
+    · ⚠️ **Does NOT answer for**: face, gestures, hands, expression. It was by assuming it did that it looked
+      replaceable.
+
+    **PIPER — the voice that READS to the child.**
+    · Neural speech in ADR-0110's four guaranteed voices, in pillar 3's three languages. It is what serves blind
+      mode, narration and the product's screen reader (ADR-0065 §3: a cartridge «não tem de saber que existe»).
+    · ⚠️ **Does NOT answer for**: recognising speech. And **eSpeak / Web Speech remain the FALLBACK** — they speak
+      while the model downloads and when it fails, which is a clause of ADR-0110 and not a tolerated degradation.
+
+    🔴 **AND WHAT HAS NO OWNER AT ALL, said here so it is not discovered late: SPEECH RECOGNITION.** Issue #11
+    asks for «webcam + voice command», and there is no engine chosen, measured or recorded — not Whisper, not
+    Vosk, not the Web Speech API. It is the only assisted input of the fourteen transports without even a
+    supplier on the table, and nothing in this record resolves it.
+
+  consequences:
+    good:
+      - "Eye control gets a screen point on day one, and gestures, hands and pose arrive with it."
+      - "WebGazer stops being the engine's only network dependency at first USE — it becomes one more install-time download."
+      - "`tests/nada-vem-de-fora.node.test.js` can finally lose its one pillar-8 violation, which has been its open debt since it was written."
+      - "Three records stop pointing at sherpa, and the next reader of the TTS code does not have to re-derive why it is not there."
+    bad:
+      - "🔴 Two vision libraries on hardware chosen for being cheap, unmeasured together. If they cannot both run on a Positivo tablet, this record is what has to change."
+      - "⚠️ WebGazer is unmaintained research code, and adopting it deliberately means owning its integrity — pinning it and checking it are ours now."
+      - "Nothing states which source wins if MediaPipe's iris and WebGazer's point disagree, and they will."
+      - "Install day grows by roughly 25 MB of vision alone, on top of the voices."
+
+  confirmation: |
+    ⚠️ NOT YET BUILT. The catalogue entries and the wiring are **issue #11**; this record is the decision half
+    (ADR-0128).
+
+    The gates this owes:
+
+    · BOTH RUNTIMES ARE IN THE INSTALL CATALOGUE, with measured weights and pinned versions — and the
+      MediaPipe TASK MODELS with them. 🔴 Written explicitly because the first attempt at this catalogue added
+      the vision RUNTIME and no models, which is the `.onnx` without its `.onnx.json` one level up: 11.7 MB
+      that cannot do anything.
+    · NO LAZY FETCH SURVIVES IN `ui/webcam.ts` — the `<script src>` goes, and the entry for it LEAVES
+      `tests/nada-vem-de-fora.node.test.js`'s violation list in the same commit. An inventory that keeps a
+      paid debt reports a defect that no longer exists.
+    · THE WORD «sherpa» APPEARS IN NO PLACE THAT DIRECTS WORK. It may survive in superseded records and in the
+      research document under its superseded header; it may not survive in a comment that reads as a plan.
+    · ⚠️ AND THE ONE THIS RECORD CANNOT PAY: the two libraries measured RUNNING TOGETHER on the target
+      hardware. That is issue #8's battery, and until it runs this record's biggest risk is unmeasured.
+
+more-information: |
+  Supersedes ADR-0124 in part: the parenthesis «webgazer não». Its central decision — the heavy runtimes are
+  the engine's and arrive on install — is untouched and is what makes bringing WebGazer back cheap.
+
+  Supersedes ADR-0127 in part: the clause naming what would bring sherpa back. Its runtime choice, its
+  measurement of the false «discontinued» premise, and its Approach B inheritance all stand.
+
+  Deliberately NOT decided here: which source wins when the iris landmarks and the gaze point disagree; how
+  the calibration step is presented to a child; and whether WebGazer is vendored into our own assets rather
+  than pinned on its own host, which is a question about integrity that needs measuring rather than choosing.

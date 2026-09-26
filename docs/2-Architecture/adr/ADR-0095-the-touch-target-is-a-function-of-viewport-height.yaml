@@ -1,0 +1,157 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0163
+      what: "The ruler by viewport height (24 / 34 px under 720). The engine forces the resolution, and the floor is 22 × k — 44 px at 640×360"
+  # The ruler left the record for the stylesheet on 07/09 (issue #117): `layout()` writes `--alvo-min` and
+  # `.pm-btn` reads it. The gate also brings the SPACING this record names — and notes, with a number, that
+  # it cannot be failed by lowering the ruler, because the item's real height comes from the `padding` and the
+  # line height. What it guards is the `gap`, and that is written in the case instead of assumed.
+  confirmed-by:
+    - engine:app/js/ui/layout.ts
+    - engine:tests/pause-target-44px.browser.test.js
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0044]
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision, verbatim: `o tamanho mínimo deve ser AA no modo 360px de altura, 34px em 540px AAA a
+       partir de 720px de altura`"
+    - "ADR-0044 §6 — SUPERSEDED IN PART: it fixed 44 px as the SINGLE number for the pause card. The number
+       stays, and becomes the top step instead of the whole ruler"
+    - "`tests/pausa-44px.browser.test.js` — the gate that MEASURED the cost and wrote, in full, that the choice
+       between scrolling, shrinking spacing or hiding the header was the Dev's. This is the answer"
+    - "WCAG 2.2 · 2.5.8 Target Size (Minimum), level AA, 24×24 CSS px — the bottom step"
+    - "WCAG 2.2 · 2.5.5 Target Size (Enhanced), level AAA, 44×44 CSS px — the top step"
+    - "ADR-0010 pillar 1 (Brazilian public-school hardware) and pillar 2 (a11y-first); and the project's written
+       rule to MARK HONESTLY where only AA is possible, instead of selling AAA wholesale"
+  informed: []
+
+title: The touch target is a function of VIEWPORT HEIGHT — three steps, with the two standards at the ends
+
+context-and-problem-statement: |
+  ADR-0044 §6 took the pause card's items from 35.6 px to 44 px, and the gate that checks it measures the real
+  layout instead of reading the CSS. That gate got the number right and, in the same pass, WROTE DOWN A COST IT
+  DID NOT KNOW HOW TO RESOLVE, leaving the choice declared as the Dev's:
+
+      «a 640×360 o cartão tem 413px de conteúdo para 353 visíveis — os sete itens de 44px NÃO CABEM e a
+       lista rola. […] A escolha entre rolar, encolher espaçamentos ou esconder o cabeçalho é do Dev.»
+
+  ⚠️ RE-MEASURED TODAY, because the card has changed since that day: it is **391 px of content for 349 visible,
+  42 px of excess**, with seven items of 44 px. The cost is smaller than was written, and it still exists.
+
+  ⚠️ AND THE DEV ANSWERED WITH A FOURTH WAY OUT, WHICH WAS NOT ON THE LIST OF THREE: none of the options I offered
+  touched the TARGET, because I treated 44 as a constant. They treated it as a function of the screen.
+
+decision-drivers:
+- "⚠️ A large target that requires SCROLLING to be reached can cost more finger than a smaller target that is in
+   view. The old ruler optimised the size of the target and ignored the cost of reaching it."
+- "⚠️ The two ends are not numbers of taste: they are the two standards. 24 is 2.5.8 (AA) and 44 is 2.5.5 (AAA),
+   and a ruler that moves between them is sayable in conformance language instead of preference."
+- "The project already mandates MARKING HONESTLY where only AA is possible and never selling AAA wholesale. A
+   screen 360 px tall is the place where that rule has to be exercised, not quoted."
+- "⚠️ MEASURED that the decision solves the fit WITH MARGIN: at 360 the excess is 42 px and bringing the seven
+   items down from 44 to 24 would free 140. The ruler gives much more slack than the problem asks — which means
+   it is a FLOOR with room, and not a cut tight to the millimetre."
+
+considered-options:
+- "T1 - fixed 44 px, and the card scrolls (the state of ADR-0044 §6)"
+- "T2 - fixed 44 px, and hide items or the header on the small frame"
+- "T3 - the RULER: the target is a function of viewport height, three steps"
+
+pros-and-cons-of-the-options:
+  T1:
+    good:
+    - "The target never leaves the range of a child's hand (11–12.5 mm), which is the touch panel's physical
+       ruler."
+    bad:
+    - "⚠️ It pays the price in the wrong place: whoever uses a finger is exactly who has to scroll to reach the
+       item, and the scrolling shows up in no target-size measurement."
+  T2:
+    bad:
+    - "Hiding a menu item to fit is the trap ADR-0044 §2 itself exists to undo — it reordered the card because
+       `Continuar` was the 11th stop. Fewer visible items is the same disease."
+  T3:
+    good:
+    - "The target fits on every screen, and stays anchored to a standard at every step."
+    - "⚠️ It makes the commitment SAYABLE: `AA at 360, AAA from 720` is a conformance sentence that can be
+       audited, published and contested. `44 px always, and sometimes it scrolls` is not."
+    bad:
+    - "⚠️ AT 360 MILLIMETRES OF FINGER ARE LOST, and the number is written: at 96 px/in, 24 CSS px are 6.4 mm —
+       BELOW the 9.6 mm thumb target that this game's touch panel cites. It is not a theoretical cost."
+    - "A floor that changes with the screen is harder to keep in mind than a single number."
+
+decision-outcome:
+  chosen-option:
+    link: "T3 - the three-step ruler, decided by the Dev on 2026-09-06"
+    justification: |
+      ===== THE RULER =====
+          height ≥ 720   44 px   WCAG 2.2 · 2.5.5 (Enhanced) — AAA
+          height ≥ 540   34 px   the middle step
+          height <  540  24 px   WCAG 2.2 · 2.5.8 (Minimum)  — AA
+
+      ⚠️ IT IS A FLOOR, NOT A VALUE. Nothing forces the card to use 24 px at 360 — what it gives is the LICENCE to
+      go down to there when the fit asks for it. Since the fit asks for 42 px and the licence offers 140, there is
+      slack to pay the minimum necessary instead of the maximum allowed.
+
+      ⚠️ AND IT NEVER GOES BELOW 24. A screen shorter than 360 does not buy the right to shrink further; it buys the
+      right to show FEWER ITEMS. Below 24 is not «AA num aparelho pequeno», it is breaking the floor.
+
+      ===== WHERE IT LIVES =====
+      `alvoMinimoDeToque(alturaCss)` in `ui/layout`, which owns the scale — and not a constant repeated in the CSS
+      and in the test. The gate IMPORTS the function instead of copying the steps, because copying would be the
+      classic divergence: someone changes the step in the code and the gate stays green over the old step.
+
+      ===== WHAT MAKES UP FOR WHAT IS LOST =====
+      Where SIZE cannot protect the finger, SPACING becomes what protects — which is the way out that 2.5.8 itself
+      gives in its spacing exception (a smaller target meets the criterion if a 24 px circle fits without
+      overlap). This is DIRECTION, not measurement: nothing in the code checks it today, and it is the first thing
+      the implementation has to bring with a number.
+
+      ===== WHAT THIS RECORD DOES NOT DECIDE =====
+      ⚠️ WHETHER THE STEPS ARE STEPS OR A RAMP. The Dev's three points fall exactly on a straight line —
+      `24 + (height − 360)/18` gives 24, 34 and 44 at 360, 540 and 720 —, which may be intention or a pretty
+      coincidence. It stayed a STEP, which is what they wrote («em 540px», «a partir de 720px»); interpolating
+      would be deciding for them something they did not say. If the ramp is the intention, it is a one-line change.
+
+  consequences:
+    positive:
+    - "The pause card gains a licence to fit on the smallest frame in use without hiding an item or scrolling."
+    - "The conformance promise becomes an auditable sentence per screen range."
+    negative:
+    - "⚠️ At 360 the target may end up at 6.4 mm, below the touch panel's 9.6 mm thumb target. The gate keeps that
+       number in a case of its own, so that whoever wants to extend the 24 px to larger screens sees what they
+       would be spending."
+    - "⚠️ AND THE CODE DOES NOT FOLLOW THE RULER YET: `.pm-btn` has a LITERAL `min-height:44px` and does not even
+       read the `--tap` that `layout()` already writes. The ruler exists, is checked, and the implementation is
+       separate work."
+    neutral:
+    - "`layout()`'s `--tap` is still `22 × k` and rises with the canvas scale. It never falls below the ruler (the
+       `MIN_K = 2` floor gives 44), so the two coexist — the ruler is the floor, `--tap` is what the canvas chooses
+       above it."
+  confirmation: |
+    The ruler is checked in `tests/pausa-44px.browser.test.js`, against the REAL LAYOUT and not against the
+    declared CSS — the gate mounts the pause card with production markup at the three steps (360, 540, 720) and
+    measures with `getBoundingClientRect`.
+
+    THREE CHECKED MUTATIONS, applied by script to the file and restored from a copy:
+      · `.pm-btn` from `min-height:44px` to `20px` → fails in FOUR cases, including the three-step one, which is
+        the proof that the new gate measures layout and not a constant.
+      · the middle step from 540 to 500 → fails in `[Boundary] os degraus abrem NO número`.
+      · the top step from 44 to 24 → fails in THREE, including the one that guards the millimetres.
+
+    The excess of 42 px at 640×360 enters as a CEILING THAT ONLY SHRINKS, and not as an expected value: it stops it
+    from getting worse while the implementation does not arrive, and goes red if someone adds an eighth item to the
+    card without looking at the small frame.
+
+more-information: |
+  ⚠️ THIS RECORD IS BORN FROM A QUESTION A GATE LEFT IN WRITING, and that is the mechanism working: ADR-0044's gate
+  neither hid the cost it found nor solved it on its own — it named it, assigned the choice to whom it belonged,
+  and stayed green over what it knew how to prove. The decision arrived two days later, and the question was still
+  there, with the number beside it.
+
+  ⚠️ AND THE NUMBER HAD AGED: the gate said 413/353 and today's measurement is 391/349. A cost written in prose
+  rots; that is why it entered this time as a CHECKED CEILING instead of a comment.
+
+  The implementation — making `.pm-btn` read the ruler instead of the literal, and bringing the spacing with a
+  number — is separate work, with its own issue. The record gives the licence; it does not spend the licence.

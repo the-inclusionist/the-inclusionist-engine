@@ -1,0 +1,176 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0133
+      what: >-
+        the IDENTITY of the fourth heavy thing, and nothing else. This record names LCP art as one of four
+        things the platform delivers, and reasons throughout that «the quarantine boundary has to survive
+        delivery». ADR-0133 removes the quarantine by refusing share-alike, so the LCP does not enter under
+        either arm and the delivery path has no wall to survive. ⚠️ The other three items stand untouched —
+        the fonts, the neural voice and the vision runtime — and so does the measurement that produced this
+        record, that of four things the engine claims to offer, ONE was delivered. What changes is that the
+        fourth slot is now art the project does not yet have, rather than art it had chosen and not shipped.
+  supersedes-in-part: [ADR-0117]
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-09, verbatim: «https://github.com/OpenGameArt/LiberatedPixelCup deveria
+       ser fornecido pela engine para os cartuchos, não só as fontes, piper-tts e Google Media Pipe. Todas
+       estão sendo «oferecidas» pela engine?»"
+    - "ADR-0117 — SUPERSEDED IN PART: its list of what the platform loads once was «the fonts, the voices and
+       the cartridges». Art was missing from it, by omission rather than by decision"
+    - "ADR-0107 — COMPLETED, not superseded: it decided the LCP enters as third-party art under CC BY-SA 3.0,
+       in quarantine, and put «which resources enter and for which games» OUT of scope as art direction. It
+       never decided DELIVERY, which is what this record decides"
+    - "ADR-0094 — its measured argument is INTACT and is why this goes the platform's way: 135 MB in every
+       `npm ci` of three hundred repositories is not a cartridge's to pay, and neither is an art set"
+    - "ADR-0010 pillar 10 — all art is a third party's under the licence that third party chose"
+    - "issue #11 (MediaPipe) and issue #129 (the neural runtime) — the two other undelivered promises this
+       record's measurement exposed"
+  informed: []
+
+title: The engine provides the ART too — and all four heavy things travel the PLATFORM's way, not the package's
+
+context-and-problem-statement: |
+  🔴 THE DEV ASKED WHETHER THE ENGINE ACTUALLY OFFERS WHAT IT SAYS IT OFFERS, and the measurement is the
+  answer: of four heavy things the records promise, ONE is delivered.
+
+  📏 MEASURED IN THE TREE ON 2026-09-09:
+
+    · FONTS — ✅ real. `app/public/vendor` is in `package.json.files`, and a clean consumer with the published
+      `8.0.0-rc.1` resolves `@the-inclusionist/engine/assets/vendor/fonts/atkinson-400.woff2`.
+    · NEURAL VOICE — ⚠️ IT WORKS, AND IT IS NOT THE ENGINE'S. This one is a different state from the two
+      below and must not be read as a defect: the cartridge opens a door (`carregarVozNeural`) and the engine
+      uses it — `game-platformer/app/js/main.ts:587` declares it, `@mintplex-labs/piper-tts-web@1.0.5` is
+      installed there, and `boot/create-game.ts:364` passes it through. THREE of six games declare it
+      (platformer, 15-puzzle, 2048). That is ADR-0094 working as designed. What is undelivered is OWNERSHIP:
+      issue #91 measured the other three forgetting the line, and since `7212479` they at least say so out
+      loud. 📌 The first draft of this record grouped it with the two below under one red mark, and that was
+      wrong by grouping — «works, owned elsewhere» and «does not exist» are not the same state.
+    · MEDIAPIPE — 🔴 ZERO occurrences of `mediapipe` in `app/js`. Issue #11 says MediaPipe; `ui/webcam.ts:62`
+      fetches WEBGAZER from a CDN. The engine declares one thing and does another.
+    · LCP ART — 🔴 `art/lcp/` holds exactly two files: a `README.md` and a 40-byte `ATTRIBUTION.csv` that is
+      the header row alone. Zero art. And `art/` is not in `files`, so art arriving there would not travel.
+
+  ⚠️ AND THE OMISSION IS IN A RECORD OF THE SAME DAY. ADR-0117 decided that the platform loads «the fonts, the
+  voices and the cartridges» once. Art was simply not in the sentence — not refused, not deferred, absent. A
+  list that is missing an item reads as complete, which is the most expensive kind of gap.
+
+decision-drivers:
+  - "A cartridge author must not have to solve delivery four times — that is the ADR-0106 §2 defect at catalogue scale"
+  - "ADR-0094's measurement stands: what three hundred `npm ci` runs pay is what the package must not carry"
+  - "Pillar 10: art is a third party's, and its licence travels WITH it or the attribution is lost"
+  - "A promise the code does not keep argues against the record the next time someone reads it"
+
+considered-options:
+  - "A1 · Each cartridge fetches the art it wants, as it does for the neural voice today"
+  - "A2 · The art travels in the npm package, beside the fonts"
+  - "A3 · THE DEV'S ANSWER — the ENGINE provides it, delivered the way ADR-0117 already decided for the rest"
+
+pros-and-cons-of-the-options:
+  A1:
+    good:
+      - "A game that uses no art pays nothing, which is the whole of ADR-0094's argument."
+      - "It is the shape already built for the neural voice, so nothing new is needed."
+    bad:
+      - "🔴 Measured: that exact shape produced three silent games out of six (issue #91). Three hundred authors will not do better."
+      - "⚠️ Attribution is per RESOURCE under CC BY-SA 3.0. Three hundred cartridges each fetching art is three hundred attribution ledgers that drift."
+      - "Contradicts ADR-0065 §3's promise, extended: a cartridge should not have to know the delivery exists."
+  A2:
+    good:
+      - "Present offline with no mechanism at all, exactly like the fonts today."
+    bad:
+      - "🔴 An art set is not a font roster. Every `npm ci` in three hundred repositories pays it, and most never draw a sprite — the measurement ADR-0094 made and ADR-0114 honoured."
+      - "The package is the one place that must stay light, because it is the only one paid three hundred times."
+  A3:
+    good:
+      - "One delivery mechanism for the four heavy things, so a cartridge solves none of them."
+      - "The platform pays once per device, which is the arithmetic ADR-0117 established: Cache Storage is per ORIGIN."
+      - "The attribution ledger stays in ONE place, which is what CC BY-SA 3.0's per-resource requirement needs."
+      - "The npm package stays light — ADR-0094's argument honoured rather than argued with."
+    bad:
+      - "⚠️ The platform's first-day budget grows, and art is heavier than fonts. What enters the manifest becomes a real decision with a number."
+      - "The quarantine boundary has to survive delivery: mixing LCP with the author's own art in ONE resource would licence the author's work by share-alike."
+      - "🔴 None of it exists yet: no art in quarantine, no runtime, no MediaPipe. This is a record about four promises, three of them unbuilt."
+
+decision-outcome:
+  chosen-option:
+    link: "A3 — the engine provides all four, and they travel the platform's way"
+    justification: |
+      **THE ENGINE PROVIDES THE ART, AND THE LIST OF WHAT THE PLATFORM LOADS ONCE HAS FOUR ITEMS, NOT THREE:**
+      the FONTS, the NEURAL VOICE, the VISION RUNTIME, and the ART.
+
+      1. **A CARTRIDGE SOLVES NONE OF THEM.** Not the font, not the voice, not the camera, not the sprite
+         sheet. This is ADR-0065 §3's promise — «a cartridge does not have to know one exists» — generalised
+         from voices to everything heavy, because the measurement that justified it generalises too: three of
+         six games forgot ONE line, and there are three hundred games coming.
+      2. **THEY TRAVEL THE PLATFORM'S WAY, NOT THE PACKAGE'S.** ADR-0117 settled this and its arithmetic
+         carries over unchanged: Cache Storage is partitioned by ORIGIN, so one platform pays once and every
+         cartridge inside it is served from that cache. ⚠️ ADR-0094's refusal stands untouched — what must
+         stay light is the npm PACKAGE, and this puts nothing in it.
+      3. **THE FONTS ARE THE EXCEPTION THAT STAYS.** They already ship in the package (`app/public/vendor`),
+         they are small, and every game needs them before it draws a word. Nothing here moves them; the rule
+         is about what does not fit in a package, and a woff2 roster does.
+
+      📏 AND THE RECORD SAYS OUT LOUD WHERE EACH OF THE FOUR STANDS TODAY, so it cannot be read next month as
+      a description of the tree — and the three states are DIFFERENT, which is the distinction the first draft
+      of this record got wrong:
+        · FONTS — delivered, in the package, proved from outside;
+        · NEURAL VOICE — WORKING, through the cartridge's door, in three of six games. Only the OWNER moves;
+        · VISION RUNTIME and ART — absent. Zero `mediapipe` in `app/js`, zero art in quarantine.
+      What is decided here is WHERE they arrive from when they arrive, which is precisely the thing that was
+      being decided by accident, one subsystem at a time.
+
+      ⚠️ AND THE ART CARRIES A CONSTRAINT THE OTHER THREE DO NOT. A voice model and a WASM runtime are tools;
+      art is a WORK, with an author and a licence. ADR-0107's quarantine is what keeps the CC BY-SA 3.0
+      share-alike from reaching the author's own art through a derived resource, and delivery must not open a
+      path around it: what the platform serves is the quarantined set WITH its per-resource ledger, never a
+      merged pile.
+  consequences:
+    good:
+      - "One delivery mechanism for four heavy things — a cartridge author solves delivery zero times"
+      - "The attribution ledger lives in ONE place, which is what per-resource CC BY-SA 3.0 actually needs"
+      - "The npm package stays light: ADR-0094's measurement is honoured rather than re-argued a fourth time"
+      - "The gap between what the records promise and what the engine does is now written down and countable"
+    bad:
+      - "⚠️ The platform's first-day budget grows, and art is heavier than a font roster — what enters becomes a decision with a number"
+      - "🔴 Three of the four are still unbuilt, and this record does not build them"
+      - "A single platform origin now carries the art licence obligations for every cartridge it serves"
+      - "⚠️ `art/` is not in `files` today, and it must STAY out — the art goes to the platform, never to the package"
+  confirmation: |
+    ⚠️ WRITTEN AHEAD OF THREE OF ITS FOUR SUBJECTS, deliberately, so the code cannot answer the delivery
+    question one subsystem at a time — which is exactly how `ui/webcam.ts:62` got a hand-written CDN with no
+    policy behind it.
+
+    The gates it owes:
+
+    · NO ART TRAVELS IN THE NPM PACKAGE — an inventory sieve over what `npm pack` produces, in the shape of
+      `tests/vozes-fora-do-pacote.node.test.js`, extended to image extensions. ⚠️ It can be written TODAY and
+      it is the only one of these that can: the claim is a prohibition, and a prohibition needs no feature.
+    · THE FOUR ARE ONE LIST, NOT FOUR MECHANISMS — a sieve that there is a single place resolving where a
+      heavy resource comes from. Two mechanisms is how this project got a CDN in one file and a port in
+      another, with no policy in either.
+    · ⚠️ THE QUARANTINE SURVIVES DELIVERY — ADR-0107's gates already assert that an LCP resource may only
+      derive from another LCP resource; the delivery path must not create a second door around that. Asserted
+      over what the platform serves, not over the source tree.
+    · AND THE FLOOR THAT ONLY RISES: how many of the four are actually delivered. Today it is ONE — the fonts.
+      A record that says «the engine provides four» while the code provides one is the defect this record was
+      written to stop, and the number is what stops it.
+
+more-information: |
+  Supersedes ADR-0117 in part: its list of what the platform loads. «The fonts, the voices and the cartridges»
+  becomes «the fonts, the voices, the vision runtime, the ART and the cartridges». Everything else in that
+  record stands — the PWA is the platform, a game is a cartridge, and the arithmetic about Cache Storage being
+  per origin is what makes this affordable at all.
+
+  Completes ADR-0107 rather than superseding it: that record decided the LCP's LICENCE regime and its
+  quarantine, and put art direction out of scope. Delivery was neither — it was simply never asked.
+
+  ADR-0094 is untouched and is the reason for the shape: the package stays light.
+
+  Deliberately NOT decided here: which LCP resources enter (art direction, ADR-0107's exclusion, still the
+  author's and the Dev's); whether the platform precaches the art at install or accumulates it as a child
+  opens a cartridge that needs it (ADR-0116 permits either); how the 32×32 LCP grid meets the 320×180 canvas
+  of pillar 5, which ADR-0107 also left open; and whether the vision runtime is MediaPipe at all, which is
+  issue #11 and has been decided differently in the record and in the code for months.

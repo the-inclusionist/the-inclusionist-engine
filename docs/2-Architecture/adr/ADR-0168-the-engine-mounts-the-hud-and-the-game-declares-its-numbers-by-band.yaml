@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/hud-mounted-by-the-engine.browser.test.js
+  supersedes-in-part: [ADR-0059]
+  superseded-in-part:
+    - by: ADR-0239
+      what: "§2 and §3, where the clock and the learning bars sit, and driver D2 («the footer owns the bottom»): the HUD becomes one row at the bottom."
+    - by: ADR-0175
+      what: "ONLY the erratum of 2026-09-13 (super-power and objective counter below the quick bar): the mission goes under
+             the points on the left, the power under the clock on the right. Who mounts the HUD, the clock and the learning
+             bars stay"
+  date: 2026-09-13
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED IN PART, pushed (issue #162 closed; `engine:2e83917`, `a998e33`, `84360fc`): the engine mounts the
+             HUD from the numbers the game declares by band, and the learning bars sit centred in the footer under the
+             explanation. ⚠️ NOT BUILT: the clock — nothing in the engine keeps a session's duration, so there is no producer
+             to mount (issue #94). The placement of the round band changed by ADR-0175."
+    - date: 2026-09-13
+      what: "✅ POINT 5, THE OPEN ONE, ANSWERED BY THE DEV the same day. Asked how the clock and the round band share the top
+             right: «Não. Superpoder e contador de objetivo ficam ABAIXO da barra de acessibilidade rápida.» The top right
+             corner is the clock's alone; the round band (super-power, a round's objective counter) sits BELOW the quick
+             bar. ⚠️ Below the bar is also the room issue #160 reserves for the pointed icon's name and a light gap — where
+             exactly the round band starts is measured when built. Fills what point 5 left open (ADR-0057 §1)."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0059 — SUPERSEDED IN PART: who builds the HUD (each game did) and two addresses — the clock at the top CENTRE and
+       the learning bars at the bottom centre with nothing competing. The RULE (a number sits with what it is about) and
+       the identity and round bands stay"
+    - "ADR-0148 — the quick accessibility bar owns the top centre, and nothing is drawn over it"
+    - "ADR-0164 — the footer at the bottom: sound caption, button legend, explanation band"
+    - "study item C4 of `engine:docs/1-Discovery/study-adr-rules-the-engine-does-not-impose.md`"
+  informed: []
+
+title: The engine mounts the HUD, and the game declares its numbers by band
+
+context-and-problem-statement: |
+  Study item C4 asked whether the engine should impose ADR-0059's four bands. 📏 Measured on 2026-09-13: six sibling games,
+  six HUDs of their own (2048 a left column, chess, pinball, soccer and whack-whack their own, the platformer the engine's
+  `ui/hud`), none in the bands; and two of ADR-0059's addresses were taken by later records — the clock's top centre by
+  the quick bar (ADR-0148), the learning bars' bottom centre by the footer (ADR-0164).
+
+  The Dev, asked «a engine deve passar a montar o HUD, com o jogo declarando os números por faixa? Se sim, onde ficam o
+  relógio e as barras de aprendizagem»: «Sim, a engine deve passar a montar o HUD com o jogo declarando os números por
+  faixa. Relógio: canto superior direito, à direita da barra de acessibilidade rápida. Barra de aprendizagem: centralizado
+  no rodapé da tela, e por isso é tapada pela faixa de explicação quando ela se ativa (faixa de explicação é prioridade),
+  o que não é um problema.»
+
+decision-drivers:
+  - "D1 — A NUMBER IN THE SAME PLACE IN EVERY GAME. ADR-0059's reason: a child who cannot hold two places in their head
+     needs each number always where it was"
+  - "D2 — ONE OWNER PER ZONE. The bar owns the top centre, the footer the bottom; the HUD fits around them"
+
+considered-options:
+  - "A — each game keeps its own HUD, following ADR-0059 by discipline"
+  - "B — the engine mounts the HUD; the game declares its numbers by band"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No contract change. ❌ Measured: no game followed the bands.
+  **B.** ✅ The layout is the engine's, identical in every game. ❌ A contract field, and six HUDs to migrate.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine mounts the HUD, the game declares its numbers by band"
+    justification: |
+      1. **The engine mounts the HUD** in the game region; the game declares each number and the BAND it belongs to
+         (ADR-0059 §1: identity, session, round, learning), and the engine places it. The rule that gives a number its
+         band stays ADR-0059's.
+      2. **The clock is at the top RIGHT corner, to the right of the quick accessibility bar.**
+      3. **The learning bars are centred in the screen footer**, and the explanation band covers them while it is showing:
+         the explanation has priority, and the Dev says that is not a problem.
+      4. **Unchanged from ADR-0059:** identity top left (avatar, first name, the point count under it); round at the top
+         right; in multiplayer the HUD repeats inside each screen.
+      5. ⚠️ **Open, for the Dev:** the round band (super-power, a round's objective counter) was ADR-0059's top right, which
+         is now also the clock's corner — how the two share it is not decided here.
+
+  consequences:
+    positive:
+      - "Every game shows its numbers in the same places without re-deciding them"
+    negative:
+      - "A new contract field, and the six sibling games' HUDs migrate to it"
+      - "The learning bars are hidden while an explanation shows"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #162, closed). Gates: a game that declares numbers gets them
+    in their bands without drawing a HUD; the clock sits right of the quick bar and intersects it nowhere; the learning bars
+    sit centred in the footer and the explanation band covers them when shown.
+
+more-information: |
+  ADR-0059 stays the record of the RULE; this record owns who builds the HUD and the two addresses the later zones moved.

@@ -1,0 +1,113 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/a-disposed-root-stops-listening.browser.test.js
+    - engine:tests/boot-create-game.browser.test.js
+    - engine:tests/public-surface-shrinks-by-declaration.node.test.js
+  date: 2026-09-22
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev, 2026-09-21: «Ao acrescentar um caso ao boot-create-game.browser, você notou que o caso do cursor do cartão de pausa muda de resultado conforme quantas raízes os casos anteriores abriram. É preciso investigar a causa e tornar o caso independente da ordem»"
+    - "ADR-0142 — one composition root, several cartridges: `mount()` makes a cartridge current and `unmount()` releases it"
+    - "ADR-0111 and its erratum — the engine handles the hardware and hands the game a virtual command; every transport reaches the cartridge the same way"
+    - "ADR-0172 — a one-way door (contract, public surface) is a registro; an interface choice a commit undoes is a line in the interface log"
+    - "📏 Measured 2026-09-22 in the browser with the real engine: one ArrowDown moved the pause cursor ONE item with one root alive, TWO with a second root, THREE with a third"
+    - "📏 Measured 2026-09-22: `boot/create-game` installs about thirty listeners on the window, across seven modules, and nothing could remove any of them"
+  informed: []
+
+title: A root has an end of life, and it is not `unmount()`
+
+context-and-problem-statement: |
+  A case written days earlier changed its answer when a neighbour was added to the same file. It counts ArrowDown presses until
+  the cursor reaches a locked item of the pause card, and with one more `createGame` opened before it, the six presses ended
+  somewhere else. A case whose result depends on its neighbours does not measure what it says — and the Dev asked for the CAUSE,
+  not for the case to be patched.
+
+  📏 The cause, measured in the browser with the real engine before a line was written: **one ArrowDown moved the cursor one item
+  with one root alive, two with a second, three with a third.** `createGame` installs about thirty listeners on the window — the
+  scan interception, START, SELECT, `action4`, the resize, the language change, and the five that `ui/menu-nav.attach()` puts
+  there — and **nothing could ever take them off**. Removing the host element from the document silences nobody, and every query
+  a root makes is document-wide (`getPauseMenu` is `doc.querySelector('#vp-pause-0')`, `topVisibleOverlay` scans
+  `#game-region .overlay`), so a root that was finished went on navigating the pause card of whatever root came next.
+
+  ⚠️ And this is not only a test's problem. A page that swaps games — the very thing ADR-0142 exists for — leaks a root's
+  listeners for the life of the document, and the child pressing down once sees the cursor jump two.
+
+decision-drivers:
+  - "D1 — THE CHILD WHO SWAPS CARTRIDGES MUST KEEP HER KEYBOARD: whatever releases the listeners must not run on `unmount()`"
+  - "D2 — A MODULE THAT LEARNS TO LISTEN TOMORROW MUST BE COVERED WITHOUT BEING EDITED: the one that is forgotten is the one that leaks"
+  - "D3 — NOTHING ABOUT THE WINDOW MAY CHANGE FOR ANY OTHER CALLER: `getComputedStyle`, `requestAnimationFrame`, `matchMedia` and `innerWidth` answer exactly as before"
+  - "D4 — IT MUST BE VISIBLE IN THE CONTRACT: a root that can be ended is something a consumer has to be able to read, not a private habit of the engine"
+
+considered-options:
+  - "A — release the listeners in `unmount()`"
+  - "B — a `detach()` on each of the seven modules that listen, called by the root"
+  - "C — `stopImmediatePropagation()` in the menu navigation, so only the first root acts"
+  - "D — the root wraps the window ONCE in a scope that remembers, and gains a `dispose()` that releases it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One line, and the method already exists. ❌ It is the wrong method, and the cost falls on a child: `unmount()`
+  releases the CARTRIDGE (ADR-0142), so a `mount()` after it must find a root that still hears the keyboard. Taking the
+  listeners off there leaves whoever swaps games with no keyboard at all — a worse defect than the one being cured, and one
+  that nothing in the tree would have caught.
+  **B.** ✅ Explicit, and each module owns its own undo. ❌ Seven places to remember, and the eighth module — the one written
+  next month — is covered by nobody. A list of `detach()` calls cannot promise what it does not yet know about.
+  **C.** ❌ It reverses the harm instead of removing it: all these listeners sit on the same node in the same phase, so stopping
+  the siblings means THE FIRST ROOT EVER BUILT silences every other one. `stopPropagation()` alone does nothing here, which is
+  why the defect was invisible.
+  **D.** ✅ One seam covers every module the root builds, today and tomorrow, and the window is otherwise untouched. ❌ A proxy
+  is indirection, and indirection has to be justified in writing — which is what this record and the module's header are for.
+
+decision-outcome:
+  chosen-option:
+    link: "D — a listener scope, and `Engine.dispose()`"
+    justification: |
+      1. **`platform/listener-scope` wraps the window once.** Every listener installed through the wrapper is remembered, by
+         the root or by any module it builds, and `releaseAll()` takes all of them off together. Everything else about the
+         window is unchanged: a window with a memory, not a window with a smaller API.
+      2. **`Engine.dispose()` is the root's end**: it releases the current cartridge, like `unmount()`, and then stops the root
+         listening. A disposed root is not to be used again.
+      3. **`unmount()` does not change**, and the separation is the decision. A case presses a key after `unmount()` + `mount()`
+         and requires the cursor to move — it is the only case that catches the plausible wrong fix, and it exists for that.
+      4. **A page calls `dispose()` when it drops a root**, not between cartridges. The suite's `afterEach` does, which is what
+         makes the Dev's case independent of its neighbours.
+      5. **It is BREAKING and declared** (note AS): a required member entering an exported interface breaks whoever IMPLEMENTS
+         `Engine`, though not whoever merely receives what `createGame` returns.
+
+  consequences:
+    positive:
+      - "A page that swaps games stops leaking a root's ~30 window listeners for the life of the document"
+      - "A child who presses down once sees the cursor move once, however many roots the page has opened and finished with"
+      - "Any module the root builds is covered without being edited, today and the day a new one learns to listen"
+      - "A suite whose cases open roots stops teaching false results: a case's answer no longer depends on its neighbours"
+    negative:
+      - "The window the root hands around is a proxy, which is indirection — paid for by a header that says what it does and by the mutations that exercise both halves of it"
+      - "A required member entering `Engine` breaks whoever implements that type by hand, and that is why it carries a `BREAKING CHANGE` footer and note AS"
+      - "Nobody outside the engine calls `dispose()` yet: the leak is cured where the engine can cure it, and a consumer that drops a root on a living page has to learn the method exists"
+
+  confirmation: |
+    ✅ **DONE on 2026-09-22, `engine:6193f91`.** The gate is `tests/a-disposed-root-stops-listening.browser.test.js`: with a
+    disposed root before it, one ArrowDown moves the cursor exactly one item — with two disposed roots too — and after
+    `unmount()` + `mount()` the root still answers a key. 7 of 7 mutations red, and the fourth is the one that matters: moving
+    the release into the cartridge teardown is caught by exactly one case, the one about `unmount()`.
+    📏 And the Dev's own case is proved independent: with two extra root-opening cases inserted before it, the file is 61 of 61
+    green; with `releaseAll` made inert, that case — and only it — goes red.
+    🔴 What the work cost, and it is worth reading: a method reached through the proxy must be BOUND to the real window or the
+    browser answers «Illegal invocation», but `bind` returns a function with no `prototype` — and `platform/speech-recognition`
+    asks `'processLocally' in api.prototype` before it opens a microphone. Bound, that read is `in undefined` and the child who
+    reads aloud gets no microphone at all. The suite found it, not the author. A constructor never needs `this` from the
+    property access; a method always does, and `prototype` is the one thing that tells them apart.
+    ⚠️ **What is NOT confirmed:** that any of the seven games calls `dispose()`. None does, and none needs to today — a page
+    that drops its root by leaving the document loses the listeners with it. This matters the day a game swaps cartridges on a
+    living page, and it is the Dev's call when each repository gets there.
+
+more-information: |
+  The defect was found by a test that changed its answer when a neighbour was added — the Dev noticed it on 2026-09-21 and asked
+  for the cause rather than for the case to be patched, which is the reason this record exists at all. 📌 The shape of the cure
+  is the same one `ADR-0173` gives the dependency direction: state the rule once at the seam every module already passes
+  through, rather than in every module. 📏 The measurement that decided between the options is in the numbers above — one, two,
+  three items per press — because the count of steps IS the count of roots that were never ended.
+  ⚠️ Found in passing and not fixed here: `Engine.mount(declaration, hooks)` declares `hooks` optional and reads `hooks.preset`
+  without a guard, so `mount(declaration)` dies with a `TypeError` instead of the engine's own sentence. What it should do —
+  refuse with the sentence, or reuse the current cartridge's hooks — is a decision, not a repair.

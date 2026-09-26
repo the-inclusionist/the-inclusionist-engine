@@ -1,0 +1,60 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/speech-rate.node.test.js
+    - engine:tests/speech-rate.browser.test.js
+  errata:
+    - date: 2026-09-14
+      what: '✅ CONFIRMED, pushed (issue #179 closed, `engine:ed37200`): the list is 254…504 by 50 with 254 by default; a voice faster than the step plays at 1×; a value from the old steps reads as 254.'
+  supersedes-in-part: [ADR-0183]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0183 §1 — SUPERSEDED IN PART: «Speech rate: 150 to 500 words per minute in steps of 35». The rate stays stored and
+       mapped per engine by measuring the voice"
+    - "📏 Lab, 2026-09-14: `pt_BR-faber-medium` at length_scale 1 speaks 255 words a minute of speech (five game sentences, silent
+       ends trimmed; 234 counting them); `engine:c3a0097` built 150–500 by 35 with 150 by default, playing Faber at about 0.59×"
+  informed: []
+
+title: The voice's normal speed is the slowest, and the rate climbs by 50 to about 500
+
+context-and-problem-statement: |
+  ADR-0183 set the speech rate at 150 to 500 words a minute by 35. Built, its default of 150 slowed the Faber voice to about
+  0.59×. Told so, the Dev, 2026-09-14: «Nada disso, velocidade normal é a mínima (254?, e deve poder aumentar de 50 em 50 até
+  ~500ppm, isto é, 504ppm)».
+
+decision-drivers:
+  - "D1 — A VOICE IS NEVER SLOWED BELOW ITS OWN SPEED: a stretched voice is a worse voice, not a clearer one"
+
+considered-options:
+  - "A — 150 to 500 by 35 (ADR-0183 §1)"
+  - "B — the voice's normal speed as the minimum, 254, then up by 50 to 504"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Slower speech for a child who needs it. ❌ Slows a neural voice into a drawl.
+  **B.** ✅ Every step is the voice as recorded or faster. ❌ No slower-than-normal speech.
+
+decision-outcome:
+  chosen-option:
+    link: "B — normal is the minimum, then +50"
+    justification: |
+      1. **The steps are 254, 304, 354, 404, 454 and 504 words a minute**, stored; 254 is the default — the measured normal speed
+         of the Portuguese voice.
+      2. **No voice is played slower than it speaks**: the playback rate never goes under 1, so a voice faster than the chosen step
+         plays at its own speed.
+      3. Everything else ADR-0183 §1 decided stands: the rate is stored, and each engine measures its voice to map it.
+
+  consequences:
+    positive:
+      - "A voice at its own speed by default, and faster on request"
+    negative:
+      - "A child who needs speech slower than a voice's normal has no step for it"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #179, closed). Gates: the list is 254…504 by 50 with 254 by default; a voice measured
+    faster than the chosen step plays at 1×; a stored value from the old steps reads as 254.
+
+more-information: |
+  254 is the Faber voice measured without punctuation pauses in the lab; the steps are fixed numbers, and each voice is still
+  measured on its own utterances.

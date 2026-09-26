@@ -1,0 +1,113 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-22
+  decision-makers: [Dev]
+  supersedes-in-part: [ADR-0223]
+  consulted:
+    - "the Dev, 2026-09-22, answering the question the third erratum of ADR-0223 had left named and open — «o `createGame` deve passar a montar o gamepad, como já monta os outros seis transportes?»: «Sim»"
+    - "ADR-0223 and its errata — every transport presses `input/virtual-controller`; the gamepad was the one the root could not hand the door to, because the CARTRIDGE mounts it"
+    - "ADR-0216 — the engine offers objects and the cartridge declares what it wants; `Engine.controller` exists because of it"
+    - "ADR-0169 — the engine REFUSES a malformed contract, REPORTS what works only in part, and TOLERATES silently only an environment's capability"
+    - "ADR-0113 clause 3 — `hidden` for «not offered», `aria-disabled` with the reason for «exists and is locked»; the same distinction applied to a declaration: an ABSENCE is answered, never guessed"
+    - "📏 Measured 2026-09-22, reading `GamepadCtx` against what `boot/create-game` already holds: of its 25 members the root can answer 23 from what it already has; TWO are the cartridge's world and nothing in the engine knows them"
+    - "📏 Measured the same day: `CreateGameOptions` already carries this exact pattern — `naBarraDe?`, `navBar?`, `setPhase?`, `setPauseActor?`, `getPauseActs?` are all «what the engine needs and only the game knows», declared optional with an answered absence"
+  informed: []
+
+title: The engine mounts every transport, and a cartridge declares only what nothing in the engine can know
+
+context-and-problem-statement: |
+  ADR-0223 decided that every transport presses `input/virtual-controller`. Building it found the thing that record did
+  not know: 📏 `createGame` mounts the touch pad, the eyes, the face, the hands, the voice and the scan — and does NOT
+  mount the gamepad. The CARTRIDGE calls `initGamepad`, which the root's own comment says out loud one screen above.
+
+  🔴 **So the door could not reach it.** The virtual controller is a local of `createGame`, and the interim answer — two
+  REQUIRED members on `GamepadCtx`, plus `Engine.controller` published for the cartridge to pass — landed in
+  `engine:103843c` and works. But it leaves the engine in a shape it does not believe in anywhere else: the assembly of a
+  transport, which is engine work, done by six different games, each of which can get it wrong and one of which already
+  did (the root's own comment records that the pad map «não pode viver lá — seria mais um campo que um jogo pode
+  esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado»).
+
+  📌 And the same argument is already written down for the pad map, for the sonar, for the scene stack and for the panel
+  kit: infrastructure a game would otherwise build for the fifteenth time belongs to the engine.
+
+decision-drivers:
+  - "D1 — A TRANSPORT IS ENGINE WORK. The child's hardware is the engine's job (ADR-0111); a game that assembles one can forget a wire, and one forgotten wire is a child with no way to play"
+  - "D2 — WHAT ONLY THE GAME KNOWS, THE GAME DECLARES. The engine must not guess a cartridge's title screen, its demo or its modal — guessing is how a silent wrong answer gets in"
+  - "D3 — AN ABSENCE IS ANSWERED, NOT GUESSED (ADR-0113 clause 3, ADR-0169). A declaration a cartridge does not make has ONE defined meaning, written down, and the engine keeps working"
+  - "D4 — THE CONTRACT SURFACE IS A COST. Every field of `CreateGameOptions` is a thing a game must learn, and a one-way door once published (ADR-0172)"
+  - "D5 — THE ENGINE IS IMPROVED FIRST AND THE GAMES ADAPT (the Dev, 2026-09-22): «o compromisso dela é ser melhor e isso está acima de ser compatível»"
+
+considered-options:
+  - "A — `createGame` mounts the gamepad; what only the cartridge knows arrives in ONE optional grouped field, with each absence answered"
+  - "B — `createGame` mounts it; each cartridge answer is its own flat optional field of `CreateGameOptions`"
+  - "C — leave it as it landed: the cartridge mounts the pad and is handed the door through `GamepadCtx`"
+  - "D — `createGame` mounts it and REFUSES to start unless the cartridge declares everything the pad needs"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One field on the contract instead of nine, and it says something true: these answers belong together because
+  they are all «what the pad needs from the game». ✅ A cartridge that declares nothing still gets a working controller —
+  it plays, and the parts that depend on the game's world simply do not happen. ❌ It is a shape `CreateGameOptions` does
+  not use elsewhere, where the equivalents (`naBarraDe?`, `navBar?`) are flat.
+  **B.** ✅ Consistent with the fields already there. ❌ 📏 Nine new optional fields for one transport, on a contract whose
+  cost D4 names — and the next transport that needs the same treatment adds nine more.
+  **C.** ✅ Nothing to build. ❌ It keeps the assembly of engine infrastructure in six repositories, which is the thing
+  D1 refuses, and it is the answer the Dev was asked about and declined.
+  **D.** ✅ No silent wrong answers at all. ❌ It breaks every cartridge that has a controller and no title screen, for a
+  declaration that has a safe meaning — which is exactly what ADR-0169 calls refusing where it should report.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the engine mounts it; one optional grouped field carries what only the cartridge knows"
+    justification: |
+      1. **`createGame` mounts the gamepad**, unconditionally, the way it mounts the other five transports it owns. A
+         physical controller works because the child plugged one in, not because a cartridge remembered to ask.
+      2. **📏 The root answers 23 of the 25 `GamepadCtx` members from what it already holds** — the DOM query, the screen
+         reader, the overlays, the pause card and its navigation, the quick bar, the players, the seat edge, the touch
+         controls, the game's word for a position (`preset` + `labellerFrom`), and the door itself.
+      3. **What only the cartridge knows arrives in one optional field**, and every absence has ONE written meaning: no
+         title screen to navigate, no attract demo to end, no modal to feed, no seat to join or respawn, no waiting badge
+         to clear, and a world that is running whenever the pause card is not open.
+      4. **`GamepadCtx` keeps `press`/`release`**, because `initGamepad` stays published: a game with a transport of its
+         own still assembles one, and `Engine.controller` is still how it gets the door (ADR-0216). What changes is that
+         a game no longer HAS to.
+      5. **BREAKING**: a cartridge that calls `initGamepad` itself now mounts a second controller over the engine's.
+         It stops calling it and declares the two or three answers it actually has.
+
+  consequences:
+    positive:
+      - "A controller works in a cartridge that declares nothing, which is what «the engine handles the hardware» has meant since ADR-0111"
+      - "The pad's wiring is written once instead of once per game, and a game can no longer forget a wire in silence"
+      - "The six transports become assembled the same way, which is the precondition the `Transport` family interface of ADR-0221 step 7f was waiting for — not the same question as this one, but the one that could not be asked before it"
+    negative:
+      - "A new optional field on `CreateGameOptions`, which is a one-way door (ADR-0172) and a thing every game must now read about"
+      - "A cartridge with a title screen or an attract demo has to declare it, where before it wired the pad itself and never noticed it was declaring anything"
+      - "The engine now mounts a transport that reads the Gamepad API on every frame even where no cartridge asked for one — measured cost to be reported when it lands"
+
+  confirmation: |
+    ✅ **BUILT on 2026-09-22** — `engine:ebf83ec7`, migration note BP. 6 of 6 mutations red over nine new cases.
+    · **A cartridge that declares NOTHING still has a working controller**, held in a browser file of its own where a
+      press reaches `onCommand` with the source `gamepad` and the seat, the release follows it, and the edge the
+      physics reads is still raised — the door did not REPLACE it (item 4 of ADR-0223).
+    · **Every answered absence does the written thing**, and a declared answer wins over the table; a field a cartridge
+      writes as `undefined` is an absence and not a hole, which is the silent defect the table exists to prevent.
+    · **The loop only exists while a controller is connected** — pillar 1, measured as a case: after the last one
+      leaves, a press reaches nobody.
+    🔴 **And two of the cases exist because building found what reading would not**: the seat is the ENGINE's to seed
+    (a cartridge declares `{ ctrl }`, and the first version's cast to the pad's view was a lie — nothing ever took a
+    seat, in silence), and the answers table must be spread UNDER the declared ones with `undefined` stripped.
+    📏 Verified in the built `dist`, which is the point demonstrated where it can be seen: the demo quiz declares
+    nothing about controllers and never called `initGamepad`, and a d-pad press moved its cursor through `onCommand`.
+    The controller was simulated through `navigator.getGamepads`; ⏸ **a physical one is the Dev's run.**
+    📏 The closing number is the one ADR-0223 fixed and it is not readable yet: 36% co-change before the single door,
+    one commit after.
+  confirmed-by:
+    - engine:tests/the-engine-mounts-the-gamepad.browser.test.js
+    - engine:tests/gamepad.node.test.js
+
+more-information: |
+  📌 What this record does NOT decide: whether `initGamepad` should eventually stop being published. It stays, because a
+  game with a transport of its own is a real case and the door reaches it through `Engine.controller`.
+  ⚠️ And it supersedes in part the second erratum of ADR-0223, which made `GamepadCtx.press`/`release` the final shape.
+  They were the step that could land without this decision, and they did; they keep working, and they stop being the
+  only way in.

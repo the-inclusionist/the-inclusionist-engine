@@ -1,0 +1,131 @@
+---
+metadata:
+  status: "superseded"
+  superseded-by: ADR-0222
+  supersedes-in-part: []
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "issue #58, which carried this as a question inside the tracker — «se for intencional, vale escrever o
+       porquê; se não for, mover é barato agora». That is a decision waiting for the Dev, and ADR-0126 puts
+       decisions in records rather than in issues"
+    - "ADR-0028 — the eight menus as the Dev sees them. If the current placement is deliberate, this record is
+       where that reasoning belongs; if it is not, this record is where the move is decided"
+    - "ADR-0027 — the line between OPERATION and RULE. It is the criterion that makes the second half of this
+       more than a matter of taste: operation changes the motor cost of expressing an intent and is the
+       engine's; simulation is a different thing entirely"
+    - "issue #57 — the AAC menu, which adds a ninth surface. Moving controls is cheapest before it lands"
+  informed: []
+
+title: A control lives in the menu of the NEED it serves, not the channel it uses
+
+context-and-problem-statement: |
+  Mapping which panel owns which control — done so that a per-menu reset could be honest about its own scope —
+  turned up two placements that read oddly, and neither is a defect. They are information-architecture choices
+  that may well have been deliberate, which is exactly why they need a record rather than a commit.
+
+  📏 The map as it stands today, verified on 2026-09-09: the auditory panel holds blind mode, the cane divider
+  and the two text-to-speech controls; the motor panel holds easy mode, walk latching, touch configuration and
+  eye control; the empathy panel holds one-button, wheelchair mode and hearing loss; and the visual panel holds
+  the two outline controls plus CAPTIONS.
+
+  The first oddity is that captions sit in the VISUAL menu. Captions subtitle sounds, which makes them an
+  accommodation for DEAFNESS — and a deaf child, or the adult beside her, looks for them under «auditory
+  accessibility». The placement is defensible in the abstract, since a caption is text on a screen and
+  therefore visual. 🎯 But the menu is organised by the NEED of the person using it rather than by the output
+  channel, and the tree proves that itself: BLIND MODE is audio-only output and it lives in the auditory menu,
+  not the visual one. Applying the same criterion to captions moves them.
+
+  The second oddity is heavier. The empathy panel exists so that someone can SIMULATE a disability in order to
+  understand another person's experience. But one-button operation and wheelchair mode are not simulations —
+  they are real accommodations, used by children who need them. ⚠️ ADR-0027's line is what makes this more
+  than tidiness: OPERATION changes the motor cost of expressing an intent and belongs to the engine, while
+  simulation is a separate thing. Keeping the accommodations inside the simulation menu frames «I use a
+  wheelchair» as «I am going to pretend to use one», and it leaves the motor-accessibility panel without two
+  of its principal controls.
+
+decision-drivers:
+  - "The menu is organised by the need of the person using it, and the tree already applies that to blind mode"
+  - "Framing a real accommodation as a simulation is a cost paid by the person who needs it"
+  - "Moving a control changes where a child and an educator learned to look, so it is not free"
+  - "It is cheapest now, before the eight per-menu resets exist and before the AAC menu adds a ninth surface"
+
+considered-options:
+  - "A · move both — captions to the auditory menu, one-button and wheelchair to the motor menu"
+  - "B · move only the accommodations out of the simulation menu, and leave captions where they are"
+  - "C · keep both placements and WRITE DOWN why, so the next reader stops re-opening the question"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "One criterion governs every placement — the need served — and blind mode already follows it."
+      - "The motor panel recovers two of its principal controls."
+      - "«I use a wheelchair» stops being framed as «I am pretending to»."
+    bad:
+      - "🔴 A child or educator who learned where these live has to learn again, and the ones most affected are the ones who most depend on finding them."
+      - "Three moves at once is three chances to break a menu's navigation order."
+      - "⚠️ Nothing is written about how a person who already knows the old location finds the new one."
+  B:
+    good:
+      - "Fixes the framing problem, which is the half that costs someone something."
+      - "Half the churn, and captions are the more arguable of the two."
+    bad:
+      - "Leaves two criteria in force at once, which is how the inconsistency arose."
+  C:
+    good:
+      - "No churn, and the reasoning becomes readable instead of implicit."
+    bad:
+      - "🔴 It would have to explain why blind mode follows the need and captions follow the channel, and there may be no answer that survives being written down."
+
+decision-outcome:
+  chosen-option:
+    link: "⏳ NOT DECIDED — proposed. The recommendation is A, and the Dev has not taken it."
+    justification: |
+      This record is `proposed` because issue #58 asked a question of the Dev and never received an answer,
+      and a question that lives in a tracker disappears when somebody tidies it away.
+
+      The recommendation is A, for a reason that is internal rather than aesthetic: the tree already contains
+      the criterion. Blind mode produces only audio and lives in the auditory menu, so placement follows the
+      NEED and not the channel. Captions are the same shape seen from the other side, and they are placed by
+      the channel instead.
+
+      The second half is the one with a cost attached to a person. The empathy panel is where a sighted,
+      hearing, walking adult goes to feel what someone else feels, and putting real accommodations inside it
+      tells a child who uses a wheelchair that her way of moving is a costume. ADR-0027 already separates
+      operation from simulation; this is that line applied to where a control sits.
+
+      ⚠️ AND IF THE CURRENT PLACEMENT IS DELIBERATE, THIS RECORD IS STILL THE RIGHT ARTEFACT — option C is
+      written above with its own cost. ADR-0028 lists the eight menus as the Dev sees them, and if they see
+      them this way for a reason, the reason belongs here rather than being rediscovered by the next person
+      who maps the panels.
+
+  consequences:
+    good:
+      - "One criterion, applied everywhere, so a ninth menu inherits it instead of inventing its own."
+      - "The motor panel stops being missing two of its main controls."
+      - "The AAC menu (#57) arrives into a settled scheme rather than adding to an unsettled one."
+    bad:
+      - "🔴 Somebody who learned the old place has to find the new one, and no part of this says how she is told."
+      - "Three controls change menus at once, with the navigation order of both panels to re-verify."
+      - "⚠️ Captions genuinely are visual output, so the criterion has to be stated clearly enough that the next person does not read the move as an error."
+
+  confirmation: |
+    ⏳ NOTHING IS OWED YET, because nothing is decided (ADR-0128: the confirmation is the second tempo, and
+    gates for an undecided proposal are prophecy about a decision that may not be taken).
+
+    When the Dev answers, the shape of the first gate is already visible either way. If the controls move, a
+    case asserts WHICH PANEL each one is built into — the placement becomes a fact a sieve can hold, instead
+    of a habit. If they stay, the same case pins the current placement, and this record's reasoning is what it
+    cites, so the question stops being re-opened by everyone who maps the panels.
+
+more-information: |
+  This record supersedes nothing. It completes ADR-0028, which lists the eight menus without stating the rule
+  that decides what goes in each.
+
+  📌 It exists as a record rather than as issue #58 for the reason ADR-0126 gives: a decision closed in a
+  tracker disappears, while a record is superseded and stays readable. The map that produced the question was
+  measured work, and closing the issue would have taken it along.
+
+  Deliberately NOT decided here: how a person who learned the old location is told about the new one, which is
+  a question about change rather than about architecture; and whether the empathy panel should say in words
+  that it simulates rather than accommodates, which may make the boundary clearer than moving anything.

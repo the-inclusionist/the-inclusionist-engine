@@ -1,0 +1,69 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0028]
+  errata:
+    - date: 2026-09-25
+      what: >-
+        The Dev answered the same day. (1) «Sim, PCS» — the candidate is PCS, the symbol set, not the PECS method. (2)
+        WHAT THE MENU IS FOR, asked between symbols replacing text, exercises and a virtual keyboard: «Obvio que as duas,
+        pois eu quero o menu quando tivermos direito de usar a imagem! É um menu que fica desabilitado, e sem
+        explicação, somente "menu desabilitado" ou algo do tipo.» So the AAC menu exists for pictogram EXERCISES and a
+        pictogram KEYBOARD to build sentences, once a set is licensed; until then its door is DISABLED and says only
+        that it is disabled — no licence explanation, which replaces the «locked with the reason» wording of this
+        record's outcome. The upper-case letters switch does not wait for it: letter case already lives in the
+        quick bar's communication cycle (ADR-0151).
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim, on the stale set list in `ui/aac-sets.ts`: «Conserte: só usaremos ARASASC e PECS e se obtiermos alguma licença. Como não temos licença nenhuma, o oficial é que não usaremos nada.»"
+    - "ADR-0028 — the AAC menu and its tiers by licence; amended 2026-08-27 to keep Mulberry as the only bundled set"
+    - "📏 Measured 2026-09-25 (issue audit): `ui/aac-sets.ts` still offered Blissymbolics and Tawasol as bundled and Sclera, SymbolStix and Widgit as negotiating; every set is `available: false`, so no pictogram has ever been shown"
+  informed: []
+
+title: No pictogram set until one is licensed — only ARASAAC and PCS are candidates
+
+context-and-problem-statement: |
+  ADR-0028 sorted pictogram sets by licence and kept Mulberry as the bundled floor. None was ever built: every set in
+  the engine is unavailable, and the list in code still names sets the amended record had dropped. The Dev settles the
+  roster: the only candidates are ARASAAC and PCS, each only once a licence is obtained — and no licence exists today.
+
+decision-drivers:
+  - "A set the project may not use must not be presented as one it offers"
+  - "Only the two sets with real reach for the project's audience are worth the licensing effort"
+
+considered-options:
+  - "A · Keep ADR-0028's roster (Mulberry bundled, ARASAAC fetched, the rest negotiating)"
+  - "B · Only ARASAAC and PCS, each only once licensed; none today"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ It promises a bundled floor nobody has built, and lists sets the Dev has dropped.
+  **B.** ✅ The list says what is true: nothing is licensed, so nothing is offered. ❌ A child who reads symbols gets none
+  until a licence arrives — which is also true today under A.
+
+decision-outcome:
+  chosen-option:
+    link: "B — only ARASAAC and PCS, and only once licensed; officially none today"
+    justification: |
+      The Dev's decision. ADR-0028's persistence and reset rules stand; its roster and tiers are replaced. Mulberry,
+      Blissymbolics, Tawasol, Sclera, SymbolStix and Widgit leave the list. ARASAAC and PCS stay as the two candidates,
+      shown as unavailable with the reason (no licence) in the same way the pause card shows a locked item with its
+      reason (ADR-0161), and selectable only when a licence is recorded. ARASAAC's CC BY-NC-SA terms do not change
+      this: the project uses it only with a licence, not by asking the player to download it.
+      📌 «PECS» is read as **PCS**, the Picture Communication Symbols set (the one the code already names): PECS is the
+      Picture Exchange Communication System, a teaching method that uses symbols rather than a symbol set. To confirm
+      with the Dev.
+
+  consequences:
+    positive:
+      - "The AAC menu stops listing sets the project cannot use"
+    negative:
+      - "The AAC menu holds only the upper-case letters switch and two locked sets until a licence is obtained"
+
+  confirmation: |
+    ⏳ Not built yet. Debt: issue #57 — `ui/aac-sets.ts` reduced to ARASAAC and PCS, both unavailable with the licence
+    reason, with a gate that fails if a set without a recorded licence becomes selectable.
+
+more-information: |
+  The question of what the AAC menu is FOR (a symbol set that replaces written text, exercises, or a virtual keyboard)
+  is open and is not settled here; see issue #57.

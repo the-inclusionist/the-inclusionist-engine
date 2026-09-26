@@ -1,0 +1,215 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0158
+      what: >-
+        rule 1's position of «back»: it is the FIRST item of a menu, not the last, and a panel has no close button
+        after its rows. The cursor returning to the item that opened the menu stands.
+  supersedes-in-part: []
+  errata:
+    - date: 2026-09-09
+      what: >-
+        🔴 THIS RECORD OVER-COMMITTED, and the Dev caught it within the hour: «por que já registrou como ADR ao
+        invés de implementar primeiro e ver se dá certo?». They are right about two of the six rules, and the
+        reason ADR-0128 did not prevent it is that ADR-0128 splits the RECORD into decision-before and
+        confirmation-after without splitting the CONTENT. There are three kinds of thing here, not two.
+        A DECISION is a choice among alternatives with different consequences for a person, which no test
+        settles — it must be written before, or the code takes it by omission. A CONSTRAINT is something the
+        world or the tree already makes true, so writing it records a fact. A DESIGN HYPOTHESIS is a
+        specification whose RIGHTNESS is discovered by building it and watching somebody use it.
+        Rules 2, 4, 5 and 6 are constraints and stand as accepted: the hint in the footer has already failed
+        twice, a toggle is what an on/off control means, a menu outside the canvas is unreachable, and a fixed
+        width truncates a longer translation — that last is arithmetic rather than taste.
+        ⚠️ RULE 1 AND THE THRESHOLD IN RULE 3 ARE HYPOTHESES AND ARE HEREBY DEMOTED TO PROPOSED IN SUBSTANCE.
+        Whether stacked cards with cursor restoration serve a child better than today's model, and whether the
+        cut is at five options or at seven, are things issue #134 DISCOVERS. The record keeps them as the shape
+        to build first, not as settled architecture — and if the build says otherwise, what changes is this
+        paragraph and not a second record superseding the first.
+        📌 The cost of the mistake is concrete and is why it is worth writing down: `accepted` tells the next
+        reader the question is closed, so being wrong would have cost a supersession — a second record and a
+        back-pointer — where a hypothesis merely stops being one.
+    - date: 2026-09-12
+      what: >-
+        🔴 RULE 3 IS REVISED BY THE DEV, in the paragraph the erratum above reserved for exactly this. Reading a built
+        stepper — the label on the left, a separate «◀ small ▶» box on the right — they wrote: «Não faça essa coisa
+        estranha. Escreva "< Rounded corner: off >" e ao apertar para direita, "< Rounded corner: small >" e ao
+        apertar mais uma vez "< Rounded corner: large >". Este é o jeito certo de ciclar entre quantidade de opções
+        pequenas, e não por radio buttons agrupado como sugeri em ADR anterior. Acima de cinco itens deve ser
+        dropdown.» So rule 3 now reads: FIVE OR FEWER exclusive options are ONE CYCLE ROW whose whole text is
+        «◀ Label: value ▶», stepped with left/right and by the arrows; MORE THAN FIVE are a dropdown. No radio
+        group. The threshold — five — is the Dev's, and stops being a hypothesis; the gate in the confirmation reads
+        «five or fewer are cycle rows» instead of «radios».
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's specification of 2026-09-09, given as six numbered rules after they read ADR-0129 and asked what
+       the menu vocabulary actually meant. The rules are transcribed verbatim in the decision below"
+    - "ADR-0044 — the three zones of the screen: the explanation lives in the FOOTER. Their rule 2 restates it,
+       which matters because that rule has already failed twice in code"
+    - "ADR-0129 (proposed) — one row builder and one dispatch hook. This record does not decide it, but it
+       changes what the builder would have to emit: five control types rather than four"
+    - "ADR-0092 — the six interface layers; menus are the largest, and its warning against overriding the
+       contract or the z-index scale applies to the stacking below"
+    - "ADR-0028 — every menu persists its choice; rules 3 and 4 say which control expresses which kind of
+       choice, not whether it is saved"
+  informed: []
+
+title: Menus are stacked cards, and the back item returns the cursor to what opened it
+
+context-and-problem-statement: |
+  This engine has menus and they work, but nothing writes down how a menu is supposed to BEHAVE. ADR-0044
+  decided where the explanation goes, ADR-0028 decided that choices persist, and ADR-0092 decided that menus
+  are a layer — yet the navigation model, the choice of control per kind of option and the shape of the card
+  itself have never been stated. They were inherited panel by panel, which is why measuring them (ADR-0129)
+  found a vocabulary that exists by habit and a dispatch broken into fourteen.
+
+  The Dev supplied the missing half as six rules. Measuring the tree against them shows that two are already
+  true, two are half true, one is contradicted by the current stylesheet, and one is the substantial piece of
+  work.
+
+  Rule 2 — the description in the footer, never a tooltip and never beside the item — is ADR-0044 restated,
+  and restating it is not redundant: it is the rule that has already failed twice in code, when
+  `settings-visual` and `settings-empathy` let the prose jump back inside the rows on the first click.
+
+  Rule 4 — toggles for options that turn something on or off — describes what the code already does, with
+  `aria-pressed` carrying the state.
+
+  Rule 5 asks for a vertical scrollbar so a menu never leaves the canvas, and five panels already carry
+  `max-height: 72%; overflow-y: auto`. What is missing is the rule: the five that have it were given it one at
+  a time, and a sixth panel would not inherit it.
+
+  Rule 3 asks for radio buttons where exactly one option of a group may be chosen, and a dropdown when the
+  group has more than five. 🔴 That introduces a FIFTH control type to a layer ADR-0129 measured as having
+  four — and the type is already in the tree without a rule governing it: `<select>` elements exist in
+  `input/touch.ts` and `ui/settings-audio.ts`, each built by hand.
+
+  Rule 6 asks that the menu's width fit its widest item, and the stylesheet does the opposite. 📏 Measured:
+  `#tm-main` and five sibling panels are pinned at `width: 26em`, and `fit-content` and `max-content` appear
+  ZERO times in the whole stylesheet. A fixed width truncates a long label in a language that needs more room
+  than Portuguese, which is a translation defect that only appears after translation.
+
+  Rule 1 is the substantial one. It asks for menus that stack — each new menu drawn IN FRONT of the previous,
+  the way folders opened in new windows on Windows 95 — with a final «back» item that removes the front card
+  and returns the cursor to the item that opened it. The engine has the pieces (`pmback` exists as a back item
+  in the pause and activities menus) but not the model. ⚠️ Whether focus returns to the OPENING ITEM rather
+  than to the top of the restored menu was NOT verified while writing this record, and it is the clause that
+  matters most for a child navigating by keyboard or by screen reader.
+
+decision-drivers:
+  - "A menu's behaviour has never been written down, so each panel inherited a different half of it"
+  - "Focus that does not return to where it left strands a child who navigates without a mouse"
+  - "A rule that exists in five panels and nowhere in writing is a rule the sixth panel will not have"
+  - "A fixed width is a translation defect that only shows up after translation"
+  - "Control type should follow from the KIND of choice, not from what the panel's author reached for"
+
+considered-options:
+  - "A · adopt the six rules as the menu model, and let ADR-0129's builder be the thing that enforces them"
+  - "B · adopt the six rules as guidance, applied panel by panel as each is touched"
+  - "C · adopt only the rules that cost nothing today (2, 4, 5) and defer stacking, dropdowns and width"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "One place decides how a menu behaves, so the sixth panel inherits what the first five learned."
+      - "The rules that already failed in code (the footer) stop depending on memory."
+      - "Focus restoration becomes assertable once, which is the half a child actually feels."
+      - "It gives ADR-0129 a definite job: five control types, a stacking model and a width rule are a specification rather than a preference."
+    bad:
+      - "🔴 It couples this decision to a proposal that has not been accepted — if ADR-0129 is refused, the rules still hold but nothing enforces them."
+      - "Stacking is a real navigation change, and navigation is where a mistake strands somebody rather than merely looking wrong."
+      - "⚠️ The `<select>` for more than five options is the hardest to make accessible consistently across screen readers, and it is being adopted on ergonomics rather than on measurement."
+  B:
+    good:
+      - "No migration; each panel pays only when it is already being touched."
+    bad:
+      - "It is how the current state was produced: five panels scroll, one does not, and nobody decided that."
+  C:
+    good:
+      - "Cheapest, and the three deferred rules are the three with real cost."
+    bad:
+      - "🔴 It defers exactly the rule the Dev put first, and the one that decides whether a child can get back out of a submenu."
+
+decision-outcome:
+  chosen-option:
+    link: "A — the six rules are the menu model"
+    justification: |
+      The six rules are adopted as given, and they are transcribed here rather than paraphrased so that a
+      later reader argues with the Dev's words and not with this AI's summary of them.
+
+      1. A menu behaves like a popup or dropdown, but with each new menu drawn IN FRONT of the previous one,
+         the way folders opened in new windows on Windows 95. Some options open a new menu; the last option
+         of that new menu is «back», which erases the front card and places the CURSOR ON THE ITEM THAT
+         OPENED IT, in the menu underneath.
+      2. The description belongs in the FOOTER — never a tooltip, never beside the menu item.
+      3. Radio buttons are for groups where exactly one option may be chosen. Above five options, a dropdown
+         button instead.
+      4. Toggles are for options that turn something on or off.
+      5. A vertical scrollbar keeps the menu inside the canvas.
+      6. The menu's width fits its widest item.
+
+      Three of these change the tree rather than describe it. Rule 1 is a navigation model the engine has
+      pieces of but no statement of, and its second half — the cursor returning to the opening item — is what
+      separates a menu a child can leave from one she gets lost in. Rule 3 adds a fifth control type, which
+      ADR-0129's builder must therefore know how to emit, and it regularises two `<select>` elements that
+      already exist without a rule. Rule 6 reverses the current stylesheet, where six panels are pinned at
+      `26em` and nothing anywhere uses content-based width.
+
+      ⚠️ Rule 2 is deliberately kept even though ADR-0044 already decided it. It is the rule with a record of
+      failing — twice, in `settings-visual` and `settings-empathy` — and a rule that has failed is worth
+      stating in the place where the next person will look.
+
+      🔴 AND FOUR OF THESE SIX ARE SETTLED WHILE TWO ARE NOT, which the first version of this record failed to
+      distinguish. Rules 2, 4, 5 and 6 are CONSTRAINTS: they record something already true of the world or of
+      the tree, and no implementation can disagree with them. A fixed width truncates a longer translation
+      whether or not anyone likes the result; a menu outside the canvas cannot be reached.
+      Rule 1, and the number FIVE inside rule 3, are HYPOTHESES. Whether stacked cards with cursor restoration
+      serve a child better than today's model is something issue #134 finds out by building it and watching
+      somebody use it; whether the dropdown threshold is five or seven is the same kind of question. They are
+      recorded here as THE SHAPE TO BUILD FIRST rather than as settled architecture, so that revising them
+      costs a paragraph in this record instead of a supersession.
+
+  consequences:
+    good:
+      - "A menu behaves the same way everywhere, so a child learns the model once instead of per panel."
+      - "«Back» stops being a link to somewhere and becomes a return to WHERE SHE WAS."
+      - "Long labels survive translation, because width follows content instead of a number chosen in Portuguese."
+      - "The fifth control type stops being two hand-built `<select>` elements nobody governs."
+    bad:
+      - "🔴 Stacking cards means more than one menu alive at once, and focus, escape and the modal boundary all have to be right for each layer — this is where a defect strands somebody rather than looking wrong."
+      - "A `<select>` is the least consistent control across screen readers, so rule 3's dropdown needs its own verification rather than being assumed accessible because it is native."
+      - "Six panels have to lose a width they were designed around, and some will look worse before they look right."
+      - "⚠️ Nothing here says what happens when a submenu is opened from a row that scrolls out of view — restoring the cursor implies restoring the scroll position, which is not stated and will be discovered."
+
+  confirmation: |
+    ⚠️ NOT YET BUILT, and the debt is followable: **issue #134** carries the work, and the gates below are what
+    it has to produce. Written before the code (ADR-0128) so that the stacking model cannot be re-decided one
+    panel at a time, which is exactly how the current state was reached.
+
+    · THE BACK ITEM RETURNS THE CURSOR TO THE OPENING ITEM — a browser case, because it is focus in a real
+      document across two live cards. 🎯 This is the clause the whole record turns on, and it was NOT verified
+      before writing: the engine has `pmback` items, and whether focus lands on the opening row or on the top
+      of the restored menu is unmeasured.
+    · A GROUP OF MORE THAN FIVE EXCLUSIVE OPTIONS IS A DROPDOWN, and five or fewer are radios — asserted over
+      the built menus rather than promised, in the shape of the inventory sieves this repository already uses.
+    · NO MENU LEAVES THE CANVAS — assertable over the stylesheet as a rule rather than over five panels that
+      happen to have it.
+    · WIDTH FOLLOWS CONTENT — 📏 today `fit-content` and `max-content` appear ZERO times, so this gate is born
+      red and must not be written until the change lands; ADR-0128 makes that a debt with an issue rather than
+      a prophecy in the confirmation.
+    · AND THE FOOTER RULE GETS THE GATE IT NEVER HAD: a panel that re-renders keeps its hint in the footer.
+      It failed twice by memory, and memory is what a gate replaces.
+
+more-information: |
+  This record supersedes nothing. It completes ADR-0092, which said menus are a layer without saying how one
+  behaves, and it gives ADR-0129 a definite specification if that proposal is accepted — five control types, a
+  stacking model and a width rule are a job description rather than a preference.
+
+  ⚠️ It also creates a dependency worth naming: if ADR-0129 is refused, these rules still hold but nothing
+  enforces them, and they would be implemented panel by panel — which is the mechanism that produced the
+  inconsistency in the first place.
+
+  Deliberately NOT decided here: how deep the stack may go; whether the cards behind the front one stay
+  visible or are hidden; what happens to the scroll position of a menu whose opening row was scrolled out of
+  view; and whether the dropdown is a native `<select>` or a built control, which is an accessibility question
+  that needs measurement across screen readers rather than a preference.

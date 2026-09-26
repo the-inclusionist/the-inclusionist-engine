@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/vosk-vocabulary.node.test.js
+    - engine:tests/vosk-vocabulary.browser.test.js
+    - engine:tests/vosk-runtime.node.test.js
+    - engine:tests/voice-control.node.test.js
+    - engine:tests/voice-map.node.test.js
+    - engine:tests/a-name-said-activates-its-item.browser.test.js
+    - engine:tests/menu-nav.browser.test.js
+  errata:
+    - date: 2026-09-25
+      what: >-
+        §4 AND §5 BUILT (`engine:10a12351`, `engine:6353ba6a`). A locked item said by name goes through the same press
+        as any other transport and speaks its reason (ADR-0161); the only change is that locked items are no longer
+        left out of the names. A menu name with a word the model lacks is a line of `problems` naming the item and the
+        word — MEASURED how: the Vosk runtime cannot tell the page (the warning goes to the worker's console and no
+        event carries it), so the engine reads the model's vocabulary from the output symbol table of its `Gr.fst`
+        (pt: 99,105 words; «configurações» and «ação» present, «configuracoes», «acao» and «boreste» absent). The es
+        and en archives were not measured.
+    - date: 2026-09-25
+      what: >-
+        THE FIRST TWO confirmed-by ENTRIES PROVED ONLY THE GRAMMAR. Measured in an issue audit the same day: the voice path in
+        use (`ui/voice-control` with `input/voice-map`) put the open menu's names in the recogniser's word list, and hearing
+        one activated NOTHING; the only code that did what §2–§3 say was a command reader in `platform/speech-recognition`
+        that only its own test imported. Now built (`engine:81d7f1b4` and the three before it, note DI): the reader drives
+        the 👄 path, a heard name moves the cursor to its item and presses confirm through the virtual controller like any
+        other transport, the grammar is refreshed whenever a card or panel shows or hides (before, only when the «N of M»
+        setting changed, so no menu's names ever reached the recogniser), and names keep their accents, because the small
+        Vosk model has «configurações» and not «configuracoes». Still NOT built: a locked item said by name speaking its
+        reason, and a name with a word the model lacks reported in `problems`.
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0189 — microphone control listens with Vosk, the game's words as grammar"
+    - "ADR-0193 — Vosk runs without eval; the isolated test page; commands fire on the partial hypothesis (its erratum)"
+    - "ADR-0167 — the menu item's name is what is shown and spoken; no number"
+    - "📏 Lab, 2026-09-13: a Vosk small pt grammar built from the names of the pause card's six items and the settings submenu's
+       seven (23 distinct words) — Kaldi reported no word missing from the vocabulary; a control word (`xyzqkw`) in the same list
+       was reported missing"
+  informed: []
+
+title: In a menu, saying an item's name activates it
+
+context-and-problem-statement: |
+  The voice test drove the quiz with direction words — «acima», «abaixo», «confirmar», «voltar», «menu» — each turned into a key.
+  After trying it live, the Dev, 2026-09-13: «no menu, ao invés de navegar apenas falando abaixo, acima, confirma e voltar,
+  gostaria de dizer o que está escrito na opção para acioná-la, o que é bem mais intuitivo.»
+
+decision-drivers:
+  - "D1 — WHAT THE CHILD SEES IS WHAT THE CHILD SAYS: walking a list by «abaixo» asks for a count the item's name already answers"
+
+considered-options:
+  - "A — direction words only"
+  - "B — in a menu, the names of its items are also commands: saying one activates that item"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ A fixed grammar of a few words. ❌ Six «abaixo» to reach the sixth item.
+  **B.** ✅ One utterance per choice, in the menu's own words. ❌ The grammar changes with every menu and language; two names that
+  begin alike («Voltar», «Voltar ao jogo») must not fire on the shorter one early; a name with a word outside the model's
+  vocabulary cannot be said.
+
+decision-outcome:
+  chosen-option:
+    link: "B — an item's name activates it"
+    justification: |
+      1. **While a menu is open, the grammar holds the names of its items as shown, in the page's language**, beside the direction
+         words, which keep working.
+      2. **Saying a whole name activates that item**, as confirming it with the cursor on it would — the same action, the same
+         spoken feedback.
+      3. **On the partial hypothesis a name fires only when no other item's name continues it**; otherwise it waits for the end of
+         the utterance.
+      4. **A name with a word the model does not know is reported** (in `problems`, ADR-0169), and that item is reached by the
+         direction words.
+      5. A locked item (ADR-0161) said by name is not activated; its reason is spoken, as with the cursor.
+
+  consequences:
+    positive:
+      - "A choice is one utterance, and it is the word on the screen"
+    negative:
+      - "The recogniser's grammar is rebuilt when a menu opens, closes or changes language"
+
+  confirmation: |
+    ✅ All five gates are built (errata of 2026-09-25): saying an item's name activates it, in the pause card and the panels;
+    «Voltar» does not fire while «Voltar ao jogo» may still be said; the grammar follows the language; a locked item said by
+    name speaks its reason; a name with a word the model lacks is in `problems`. Unmeasured: the es and en models, and a
+    child's voice.
+
+more-information: |
+  Measured only for the pause card and the settings submenu in Portuguese, with the small model; the panels' rows, the other two
+  languages and a child's voice are unmeasured.

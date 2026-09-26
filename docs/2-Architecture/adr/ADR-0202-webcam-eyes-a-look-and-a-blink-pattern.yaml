@@ -1,0 +1,61 @@
+---
+metadata:
+  status: "superseded"
+  superseded-by: ADR-0210
+  supersedes-in-part: [ADR-0199]
+  superseded-in-part:
+    - by: ADR-0205
+      what: >-
+        §1's «look up and blink twice → up» and §2's «look up and blink slowly → confirm»: the look up is not a face candidate (the
+        Dev's test, «não detecta. Evitar o uso»); the eye commands wait for the Dev's default map.
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0199 §3–§4 — SUPERSEDED IN PART: «look up and blink → up; look down and blink → down; two quick blinks → confirm; one slow
+       blink → back; two quick blinks while looking down → menu», and its reading that one quick blink commands after the double's time"
+    - "ADR-0197 errata — one group at a time; a held command never repeats until rest"
+  informed: []
+
+title: Webcam eyes — a look and a blink pattern, every eye command
+
+context-and-problem-statement: |
+  ADR-0199 read «look up and blink» as one quick blink, decided after the time a second one could take, and asked the Dev. The Dev,
+  2026-09-14: «Não foi o que quis dizer mas é melhor. Uma piscada só não vale a pena. Vou mudar novamente: Olhar pra cima e piscar
+  duas vezes: cima; Olhar para baixo e piscar duas vezes: abaixo; Olhar para cima e piscar lento: confirma; Olhar para baixo e piscar
+  lento: voltar; Olhar para frente e piscar lento: menu. Isso deve funcionar melhor.»
+
+decision-drivers:
+  - "D1 — A SINGLE BLINK IS HOW PEOPLE BLINK: no eye command rests on one quick blink"
+  - "D2 — THE LOOK SAYS WHERE, THE BLINK SAYS WHAT: every command pairs a direction of the eyes with a deliberate pattern"
+
+considered-options:
+  - "A — ADR-0199's eye mappings"
+  - "B — the Dev's third mappings below"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Already built. ❌ «Up» and «down» rest on one quick blink, the involuntary kind.
+  **B.** ✅ Every eye command is a double or a slow blink, both deliberate; the five commands are told apart by the look.
+  ❌ A double blink looking ahead commands nothing; «confirm» is no longer a double blink.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's third mappings"
+    justification: |
+      1. **Look up and blink twice (quickly) → up. Look down and blink twice → down.**
+      2. **Look up and blink slowly → confirm. Look down and blink slowly → back. Look ahead and blink slowly → menu.**
+      3. One quick blink commands nothing; two quick blinks looking ahead command nothing.
+      4. The face (ADR-0199 §2) and the hands stand.
+
+  consequences:
+    positive:
+      - "No eye command can come from an ordinary blink"
+    negative:
+      - "The eyes have no «left» or «right»; «confirm» needs the eyes up during a slow blink"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #189** in `the-inclusionist-engine`. Gates: two quick blinks looking up → up, looking down → down,
+    looking ahead → nothing; a slow blink looking up → confirm, down → back, ahead → menu; one quick blink → nothing. With the
+    camera: the Dev's next run.
+
+more-information: |
+  The look is the one the eyes held before the lids closed: closing lids read as a look down (ADR-0199's construction).

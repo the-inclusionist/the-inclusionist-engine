@@ -1,0 +1,95 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/panel-shell.browser.test.js
+    - engine:tests/the-quiz-reads-its-options.browser.test.js
+    - engine:tests/labels-without-parentheses.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED IN PART, pushed (issue #152 closed; `engine:e2d3225`, `d662f52`, `5196de7`, `ab7ffa7`): «Voltar» is
+             the first control with no close button after the rows, the quiz reads its options after the statement, and
+             labels carry no parentheses. The visible numbers of items 1–3 were superseded by ADR-0167: nothing shows a
+             number, the position is spoken."
+  superseded-in-part:
+    - by: ADR-0167
+      what: "ONLY items 1–3's NUMBERS — no item shows a number, and «N de M» is spoken after the name (the quiz reads
+             «Gato, 1 de 4»); item 4, «Voltar» first with no «Fechar», stays"
+  supersedes-in-part: [ADR-0130]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0044 item 3 — the spoken index «6 de 10». It gives position to whoever LISTENS; this record gives it to
+       whoever LOOKS, and ties the two to the same number"
+    - "`CLAUDE.md` §4, the three zones — the bar in the header, the menu in the workspace, the explanation in the footer"
+    - "ADR-0148 — the accessibility bar is HUD and nothing is drawn over it"
+    - "ADR-0130 — SUPERSEDED IN PART: rule 1's «the last option of that new menu is «back»». ADR-0130's own erratum
+       demoted rule 1 to a hypothesis; the Dev settled it the other way — back is the FIRST item, as ADR-0044 §2
+       already put the exit first in the pause root"
+  informed: []
+
+title: Every menu item carries a number, «Voltar» is item 1 — and a quiz reads its options with their numbers
+
+context-and-problem-statement: |
+  Reading the quiz, the Dev wrote: «Todo item de menu precisa de um número: o platformer enumerou seus itens, faça o
+  mesmo, e verifique a ADR que trata disso.» And: «Ao abrir uma questão do quiz com TTS on ele fala o enunciado,
+  correto. Mas não fala as opções, que nem numeradas estão. O certo seria após falar o enunciado falar: "1 Gato,
+  2 Galinha, 3 Cavalo, 4 Peixe".»
+
+  And on a settings panel that ends in «Restore this menu to its defaults» and «Close»: «Não pode haver botão "close"
+  no final, mas sim o primeiro item deve ser o botão "voltar", e isso deveria estar na mesma ADR que trata que todos
+  os itens de um menu devem ser numerados.»
+
+  📏 Searched before writing: no record decides VISIBLE numbering. ADR-0044 item 3 decides the SPOKEN index, and the
+  engine's menus and the quiz options show no number.
+
+decision-drivers:
+  - "D1 — A NUMBER IS THE SAME HANDLE FOR THE EYE AND THE EAR. «Opção 3» only helps if 3 is written where the child looks"
+  - "D2 — A QUESTION IS NOT ANSWERABLE BY EAR UNTIL ITS OPTIONS ARE HEARD"
+
+considered-options:
+  - "A — keep numbers only in the spoken index"
+  - "B — every menu item shows its number, and quiz options are read after the statement, each with its number"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No change to layouts. ❌ The eye and the ear have no shared handle, and a quiz is silent after its question.
+  **B.** ✅ One number for both channels; a quiz is complete by ear. ❌ Every menu row gains a prefix, which costs width on
+  640×360.
+
+decision-outcome:
+  chosen-option:
+    link: "B — numbered items, and options read with their numbers"
+    justification: |
+      1. **Every item of a menu the engine draws shows its position number**, starting at 1 in reading order: the pause
+         card, its submenus, the rows of the settings panels, and a quiz's options.
+      2. **The number is the spoken index's number.** Where the index is spoken (ADR-0044 item 3), the same number is
+         the one written.
+      3. **A quiz reads its options after the statement**, each with its number and in order: «1 Gato, 2 Galinha,
+         3 Cavalo, 4 Peixe».
+      4. **«Voltar» is item 1 of every menu and every settings panel, and there is no «Fechar» at the end.** The way
+         out is where the cursor lands when the menu opens, like `resume` in the pause root (ADR-0044 §2); a close
+         button after the last row makes the child walk the whole panel to leave it. Every other item follows,
+         numbered from 2.
+
+  consequences:
+    positive:
+      - "A child who sees and a child who listens refer to the same option the same way"
+      - "A question is answerable by ear from the moment it opens"
+    negative:
+      - "Every row is wider by its number; the 640×360 fit of the pause card must be measured again"
+      - "Every settings panel changes its shell: the close button at the bottom goes, and «Voltar» becomes the first row"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #152, closed). Gates: every item of the pause root
+    and submenu shows 1..n in order; the quiz options show 1..n; with narration on, opening a question narrates the
+    statement and then «1 <option>, 2 <option>, …»; the pause card still fits 640×360; every engine panel has «Voltar» as
+    its first item and no close button after its rows.
+
+more-information: |
+  The same reading of the quiz found two defects that are not decisions, recorded here so they are not lost: the quiz
+  statement is drawn BEHIND the quick bar (ADR-0148 says below it), and the quiz's own «Visão» select and «Tipografia»
+  button sit where the explanation footer belongs (`CLAUDE.md` §4). Both are fixes in `consumer-quiz`.
+
+  And a third defect of the same kind, not a decision: labels carrying their explanation in parentheses — «Sons
+  ambiente (água, rua, trânsito, folhas, chuva)». A parenthesis is an explanation, and an explanation goes to the
+  footer (`CLAUDE.md` §4): the label keeps «Sons ambiente», the rest becomes the row's hint.

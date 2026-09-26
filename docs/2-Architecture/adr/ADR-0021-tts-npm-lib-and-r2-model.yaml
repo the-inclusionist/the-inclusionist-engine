@@ -1,0 +1,80 @@
+---
+metadata:
+  status: "superseded"
+  superseded-by: ADR-0022
+  errata:
+    - date: 2026-09-04
+      what: "the status read `superseded by ADR-0022` — prose where ADR-0057 requires an enum — and the REASON
+             lived in a YAML comment beside it, which no parser reads and no index shows. Both moved: the
+             pointer to `superseded-by`, the reason to more-information. @mintplex-labs was discontinued and
+             unstable and locked to two pt-BR voices, so the runtime became sherpa-onnx-wasm; the `no R2,
+             weights from Hugging Face, disclose` stance carries forward into ADR-0022 unchanged."
+  date: 2026-07-06
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Bundle the neural TTS lib via npm; keep the voice model on its upstream host (R2 rejected)
+
+context-and-problem-statement: |
+  The neural TTS (Piper pt-BR) shipped as "lazy-CDN": `import(jsDelivr URL)` for the lib, which pulls onnxruntime-web
+  (cdnjs), the espeak-ng phonemizer WASM (jsDelivr) and the VITS voice model (~tens of MB, HuggingFace), cached in OPFS.
+  Two issues: (1) Vite can't statically analyze the CDN dynamic import (build warning); (2) the Dev asked whether to
+  self-host the assets (offline/privacy/school-blocking). We evaluated moving the model to Cloudflare R2.
+
+decision-drivers:
+- Clean Vite build (no un-analyzable import).
+- "Offline (pillar) — but note: the model is fetched ONCE and cached in OPFS; Web Speech + eSpeak are the immediate
+  fallback."
+- Cost/complexity of self-hosting vs the actual benefit.
+- Reading the lib's real API before deciding (research-first).
+
+considered-options:
+- &cdn "Keep lazy-CDN import of the lib + @vite-ignore"
+- &npm "Lib as an npm dependency (Vite code-splits a local chunk); voice model + WASM stay on their upstream hosts (HF/cdnjs/jsDelivr), OPFS-cached"
+- &r2 "Also move the voice model + WASM to Cloudflare R2"
+
+pros-and-cons-of-the-options:
+  cdn:
+    cons:
+    - "Un-analyzable import → build warning; CDN dependency for the lib CODE."
+  npm:
+    pros:
+    - &nowarn "Dynamic import of the npm MODULE is Vite-analyzable → local code-split chunk, no CDN for the code, no warning."
+    - &simple "No new infra; the model download is one-time + OPFS-cached; Web Speech (native) + eSpeak (embedded) cover the first-use gap."
+  r2:
+    cons:
+    - &apilimit "The lib's API does NOT expose a model-host override (HF_BASE is a fixed const); only `wasmPaths` overrides the WASM. Moving the MODEL to R2 would need a Service-Worker host-rewrite or a lib fork — real cost."
+    - &nobenefit "Little benefit (Dev's call): first-use lazy-download + Web Speech fallback is imperceptible on decent internet; HF is not a less-trusted host than Cloudflare for privacy; blocking is handled by DISCLOSING that weights come from HF once and then run 100% locally. 60 MB is 60 MB on any host."
+
+decision-outcome:
+  chosen-option:
+    link: *npm
+    justification: |
+      Add @mintplex-labs/piper-tts-web as an npm dependency and dynamic-import the MODULE (`import('@mintplex-labs/
+      piper-tts-web')`) — Vite code-splits it into a local chunk on first TTS use (no CDN for the code, no warning). KEEP
+      the voice model on HuggingFace and the WASM on cdnjs/jsDelivr (their defaults), OPFS-cached. **R2 is rejected** (Dev):
+      the one-time lazy download is covered by the Web Speech (native, 0-download) + eSpeak NG (embedded) fallbacks; HF is
+      no worse than Cloudflare for privacy; school-blocking is handled by disclosure ("weights download once from HF, then
+      everything runs locally"). The lib API confirms only `wasmPaths` is overridable — the model host is hardcoded — so R2
+      for the model would cost a SW-rewrite or a fork for negligible gain.
+  consequences:
+    positive:
+    - *nowarn
+    - *simple
+    neutral:
+    - "First use of a neural voice fetches its model once from HF (fallback: Web Speech / eSpeak until then)."
+    - "The ENGINE choice (Piper vs Kokoro vs Kitten vs eSpeak vs Web Speech) is still being evaluated — see the TTS lab test page."
+    negative:
+    - "Still depends on HF/cdnjs being reachable for the FIRST fetch of a neural voice."
+
+  confirmation: |
+    Not applicable. This decision was superseded by ADR-0022 before anything confirmed it, so there is no verification
+    to report: the HuggingFace/OPFS model plan was replaced by the sherpa-onnx WASM runtime. The field is filled to say
+    that explicitly — an absent confirmation reads like an oversight, and this one is a decision that was overtaken.
+
+more-information: |
+  Supersedes the 'lazy-CDN' note in tts.ts / docs/plan-tts-phase-f5.md. Fallback chain confirmed: Piper/Kokoro/Kitten =
+  neural (download from HF, cached OPFS); eSpeak NG = embedded (no download); Web Speech = native API. eSpeak + Web Speech
+  are the always-available fallbacks. KittenTTS is English-only (no pt-BR/es). Engine comparison for pt/en/es is being
+  measured in the TTS lab page (fonemas · letras · sílabas · palavras · frases).

@@ -1,0 +1,146 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's proposal, verbatim: `que tal criarmos uma abstração para layers de tela e os elementos em
+       cada um? É provável que tenhamos só quatro camadas com leitura: a camada de ação, a camada de
+       atividade escolar, a camada de HUD do jogo e a camada de HUD do minigame. Todas as outras camadas são
+       para design gráfico`"
+    - "ADR-0020 — the `z-index` scale. It orders PAINTING; this is another axis, and the two live together today"
+    - "ADR-0030 — the declared contract: `nameAt`/`objectiveOf`/`targetsOf` ALREADY are the reading of the action layer"
+    - "ADR-0087 and issue #82 — `AlcanceDoFiltro` is `'mundo' | 'mundo-e-menus'`, which is a statement about
+       LAYERS written as a two-value enum"
+    - "ADR-0044 and ADR-0028 — the three zones of the screen and `every menu persists`: the menu a11y rules that
+       already exist, and that today have nowhere to declare themselves"
+    - "issue #106 — the census of the 37 markup sinks, which is half of this record's measurement"
+  informed: []
+
+title: The READABLE layers are six, and the biggest of them is the menus — measured, not designed
+
+context-and-problem-statement: |
+  The Dev proposed for the screen the same abstraction that CONTROLE_ENGINE is for input: instead of each element
+  being a case, declare the LAYERS and what lives in each one. And they ventured the number: probably four with
+  reading — action, school activity, game HUD, minigame HUD —, all the others being graphic design.
+
+  ⚠️ THE METHOD IS THE ONE THAT GAVE CONTROLE_ENGINE EXACTLY FOURTEEN POSITIONS: do not design the number, MEASURE
+  whether it closes. The two surfaces where readable content exists were counted — the 37 markup sinks of issue
+  #106's census, and the ~190 calls to `srSay`/`srAlert`/`narrate`.
+
+  THE NUMBER DOES NOT CLOSE, AND THE DIFFERENCE IS NOT ONE OF MARGIN:
+
+      inside the four:    7 markup sinks ·  76 announcements
+      OUTSIDE the four:  30 markup sinks · 116 announcements, in 26 modules
+
+  ⚠️ AND WHAT IS LEFT OVER IS NOT SCATTERED NOISE — IT GROUPS ITSELF. Almost all of it is MENUS AND DIALOGUES:
+  `activities-menu` (5 markup, 12 utterances), the seven `settings-*` panels, `pause-icons` (2 and 16), `map-hub`,
+  `menu-nav`, `shell`. It is the surface where this product's accessibility actually lives — and it is precisely
+  the one the proposal sends to «design gráfico».
+
+  A second group, smaller and different from both: the SYSTEM NOTICES — the reach card (#112) and the loop-crash
+  banner (ADR-0054). They are not menu and they are not HUD.
+
+decision-drivers:
+- "⚠️ Measured: 30 of the 37 sinks and 116 of the 192 announcements fall outside the four proposed layers."
+- "⚠️ And measured too that the Dev's intuition is right on the hardest point: the ACTION layer has ZERO markup and
+   38 announcements. Its reading already is the CONTRACT (`nameAt`/`objectiveOf`/`targetsOf`) — which means this
+   abstraction invents nothing for the world; it EXTENDS TO THE DOM what the contract already does for the canvas."
+- "The `MINIGAME HUD` is empty today: `winsDots` returns DATA since issue #106 and lives inside `game/quiz`. The
+   layer exists conceptually and has no home — which is information, not objection."
+- "What distinguishes the layers is not the position on screen: it is WHO THEY SPEAK FOR."
+
+considered-options:
+- "L1 - keep the four, and the rest is graphic design"
+- "L2 - SIX layers, with menus and system notices named"
+- "L3 - no abstraction; each sink goes on being a case"
+
+pros-and-cons-of-the-options:
+  L1:
+    good:
+    - "Fewer pieces, and the original proposal has the virtue of fitting in one sentence."
+    bad:
+    - "⚠️ REFUTED BY THE MEASUREMENT, and not by taste: it would send 30 of the 37 sinks and most of the product's
+       speech to «design gráfico». The menus are where ADR-0044, ADR-0028 and the explanation footer live —
+       calling them decoration would make the abstraction false on first use."
+  L2:
+    good:
+    - "It closes: the whole readable surface falls into one of the six, and what stays out is genuinely decoration
+       (parallax, weather, scanline, vignette, transition)."
+    - "⚠️ It gives a home to a rule that today is a two-value enum: `AlcanceDoFiltro` (`'mundo'` vs
+       `'mundo-e-menus'`) is a statement about LAYERS, and the rule of issue #82 — a simulation reaches the
+       world and NOT the menus, because the menu is the instrument for leaving it — becomes sayable instead of
+       encoded in two strings."
+    - "The accessibility guarantee stops being per POINT and becomes per LAYER: «tudo o que é legível
+       nesta camada chega ao leitor de tela» (everything readable in this layer reaches the screen reader) is
+       checkable at once, and a new sink has to declare where it lives."
+    bad:
+    - "Six is more than four, and an abstraction nobody can recite is not used."
+    - "Two of the six (minigame HUD, system notices) have very little content today."
+  L3:
+    bad:
+    - "It is the state that let 37 sinks pile up with no home, and that made issue #106 exist."
+
+decision-outcome:
+  chosen-option:
+    link: "L2 - six layers. ACCEPTED by the Dev on 2026-09-06, after seeing the measurement that changed their number
+           from four to six"
+    justification: |
+      ===== THE SIX, AND WHAT SEPARATES THEM =====
+      ⚠️ THE TEST IS NOT THE POSITION ON SCREEN, IT IS **WHO THE LAYER SPEAKS FOR**. Three subjects, six layers:
+
+      The GAME speaks:
+        1. ACTION — the world. Reading = the CONTRACT + the sonar. Zero DOM, and that is how it must stay.
+        2. SCHOOL ACTIVITY — the minigame on top of the game. DOM.
+        3. GAME HUD — what persists during the match (counter, power).
+        4. ACTIVITY HUD — the minigame's progress. Empty today.
+
+      The CHILD chooses:
+        5. MENUS AND DIALOGUES — the biggest of all, and where the a11y rules already exist (the three zones of
+           ADR-0044, the explanation footer, the «6 de 10» index, `every menu persists`).
+
+      The PROGRAM speaks of itself:
+        6. SYSTEM NOTICES — the reach card, the crash banner. Neither menu nor HUD.
+
+      ⚠️ AND THE SIXTH IS NOT LAZINESS IN CLASSIFYING: it has a RULE OF ITS OWN that the others do not have. A system
+      notice needs to survive an empathy simulation — a simulated blindness cannot erase the banner that says the
+      game died —, while layers 1 to 4 have to be reached by it. It is the same family as the rule of issue #82, and
+      it is what makes the two things distinct layers instead of styles.
+
+      ===== WHAT THIS RECORD DOES NOT DECIDE =====
+      The SHAPE of the node pattern. The measurement says how many layers and which; how each one declares its
+      elements is the next question, and it should be born from a second survey — what the 30 menu sinks have in
+      common — instead of being designed here.
+
+  consequences:
+    positive:
+    - "The accessibility promise becomes checkable per layer instead of per point."
+    - "`AlcanceDoFiltro` gains a true vocabulary, and the rule of #82 stops living in an enum."
+    negative:
+    - "⚠️ It is a NEW abstraction in a product that already has a contract, a z-index scale and an action
+       vocabulary. Overlapping any of them would be worse than not having it."
+    neutral:
+    - "The `z-index` scale (ADR-0020) is NOT replaced: it orders painting, this classifies reading. The two cross
+       but do not contain each other — the CRT scanline has a z-index and no readable layer at all."
+  confirmation: |
+    The measurement is in `scratchpad/camadas.py` and is repeatable: it counts the markup sinks and the
+    announcement calls per module, groups them by the declared layers and prints the RESIDUE. It is the residue
+    that decides the number.
+
+    ⚠️ IT WAS `proposed` UNTIL THE DEV SAW THE MEASUREMENT, and that stays written because it is the procedure and
+    not chance: a layer abstraction written before they knew the number had changed from four to six would be an
+    abstraction imposed by whoever measured, and not decided by whoever proposed it. They accepted the six on
+    2026-09-06.
+
+    ⚠️ AND THE CODE DOES NOT FOLLOW IT YET. What this record fixes is HOW MANY layers and WHICH; the SHAPE of the
+    node pattern depends on a second survey — what the 30 menu sinks have in common —, and designing the shape
+    before it would repeat the error this very measurement has just corrected.
+
+more-information: |
+  ⚠️ THIS RECORD EXISTS BECAUSE THE MEASUREMENT CONTRADICTED THE PROPOSAL, and it is the second time today that this
+  happens: the storage id could not come from the declaration (ADR-0088) and `main.ts` could not enter the scope of
+  `engine-boundary` as the plan said. In all three cases the intuition pointed in the right direction and at the
+  wrong number.
+
+  The suggested order still is: decide this BEFORE issue #111, because it moves the cartridge to another
+  repository — and it is much cheaper to say which layer each piece belongs to before the pieces separate.

@@ -1,0 +1,87 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0095]
+  confirmed-by:
+    - engine:tests/forced-resolution.browser.test.js
+    - engine:tests/pause-target-44px.browser.test.js
+    - engine:tests/text-grows-with-the-scale.browser.test.js
+    - engine:tests/no-text-under-16px.node.test.js
+    - engine:tests/font-size-floor.node.test.js
+    - engine:tests/below-the-floor.node.test.js
+    - engine:tests/quiz-below-the-bar.browser.test.js
+  date: 2026-09-12
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #156 closed): the region (`engine:337b16a`), the 44 px floor growing with the scale
+             (`6142618`, quiz `0972387`), text growing with the scale (`afdae7e`), no text under 16 px nor in rem (`2d3e24d`),
+             a cartridge that resizes the region (`2683f80`) or draws under the floor (`99d307e`) named in `problems`. Under
+             640×360 CSS the region stays cut, the Dev's answer recorded in ADR-0159's erratum on rule 11."
+    - date: 2026-09-12
+      what: "📌 MIS-RECORDED CONSEQUENCE. «On a window smaller than 640×360 the region does not shrink: the page scrolls (ADR-0001 already accepted this)» is false twice: the stylesheet carries the Dev's older rule «A página NUNCA rola (José)» (`body{overflow:hidden}`), and measured on 2026-09-12 in dist/quiz.html at 512×300 CSS (1024×600 at 200% zoom) the region is CUT — 64 px per side and 32 px top and bottom — with no scroll. At 683×384 (1366×768 at 200%) and 640×400 (1280×800 at 200%) it fits within ADR-0001's tolerance. What happens under 640×360 CSS is not decided: it is a question to the Dev (ADR-0159 rule 11 asks for no two-direction scrolling)."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0001 — the rule itself: 320×180 art, integer multiples of REAL pixels, at least 640×360, and a crop tolerance
+       of ≤5 logical px per side. It stands; what changes is WHO applies it"
+    - "ADR-0095 — SUPERSEDED IN PART: the target floor that went down to 24 and 34 px with the viewport HEIGHT. With the
+       resolution never under 640×360 there is no smaller screen to shrink for"
+    - "`docs/1-Discovery/study-adr-rules-the-engine-does-not-impose.md` (engine) — items A1–A5"
+  informed: []
+
+title: The engine forces the resolution on every cartridge — 640×360 or larger integer multiples of 320×180, and targets and text sized from there
+
+context-and-problem-statement: |
+  The Dev opened the quiz in a browser and wrote: «A resolução deveria ser no mínimo 640x360 ou múltiplos inteiros de
+  320x180 maiores que a resolução mínima, conforme há espaço na tela (veja na ADR sobre resolução como funciona a
+  tolerância quando a resolução fica próxima mas ainda não é a ideal). Só faz sentido botões de 42pxls a partir desta
+  resolução. Só faz sentido fonte de no mínimo tamanho 16 a partir desta resolução. A Engine deve forçar isso e guiar
+  esta construção, de modo que o cartucho não tenha alternativa que não seja construir o jogo sempre na resolução
+  correta.» And, the same day: «44px é o correto, eu errei quando disse 42px.»
+
+  📏 Measured (study items A1–A5): `createGame` never runs `ui/layout`, where ADR-0001 lives. The quiz renders at
+  569×395 — neither a multiple of 320×180 nor 640 wide; the height-based target floor is never written, and 18
+  stylesheet declarations go below 1em.
+
+decision-drivers:
+  - "D1 — ONE RESOLUTION RULE FOR EVERY GAME. Pixel art that is not an integer multiple is not pixel art, and a game
+     that decides its own size breaks every measurement the menus were built against"
+  - "D2 — THE CARTRIDGE HAS NO ALTERNATIVE. A rule a game can skip is advice"
+
+considered-options:
+  - "A — keep ADR-0001 as a module a game may run"
+  - "B — `createGame` applies ADR-0001 itself, sizes targets and text from the resulting scale, and refuses or reports
+     what departs from it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No change for existing games. ❌ Measured: the engine's own consumer does not run it.
+  **B.** ✅ Every game gets the same screen, and the menus the sizes they were measured at. ❌ A game that sized its own
+  region has to stop doing it.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine applies the resolution, and the cartridge cannot choose another"
+    justification: |
+      1. **`createGame` sizes the game region**: the largest integer multiple of 320×180 in REAL pixels that fits the
+         space, never under 640×360, with ADR-0001's tolerance of ≤5 logical px of crop per side. It re-applies on
+         resize and when the number of screens changes. The cartridge does not set the region's size.
+      2. **Touch targets are 44 px from that resolution up** (22 × k), growing with the scale; nothing in the engine's UI is
+         smaller. ADR-0095's lower steps (24 and 34 px) no longer apply, because no screen is smaller than 640×360.
+      3. **Text is at least 16 px from that resolution up**, growing with the scale.
+      4. **What departs is said**: a cartridge that sizes the region itself, or draws text or targets under the floor in
+         the region, is reported in `problems` by name — the ADR-0148 model.
+
+  consequences:
+    positive:
+      - "Every game is pixel-exact and every menu has the sizes it was measured at"
+    negative:
+      - "On a window smaller than 640×360 the region does not shrink: the page scrolls (ADR-0001 already accepted this)"
+      - "The 18 stylesheet declarations under 1em must each be raised or justified"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #156, closed), in a browser at several window sizes and device pixel ratios: the
+    region is an integer multiple of 320×180 in real pixels, never under 640×360, within the crop tolerance; no engine
+    target under 44 px; no computed font size under 16 px in engine UI; a cartridge that resizes the region, or draws text
+    or targets under the floor, is named in `problems`.
+
+more-information: |
+  The Dev first wrote 42 px and corrected it the same day to 44 px; the record carries the correction. Built so far: the region (`engine:337b16a`), the 44 px floor (`engine:6142618`) and the quiz options (`engine:0972387`).

@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0216
+      what: >-
+        §5, the PORT: the game no longer fills `carregarKokoro`. The engine loads the neural voice itself, lazily, and the
+        cartridge only declares that it speaks with one. The voice list, the marks and the device test stand.
+    - by: ADR-0207
+      what: >-
+        Piper first in Portuguese and Spanish and the 🪶 mark: Piper leaves the engine.
+  confirmed-by:
+    - engine:tests/kokoro.node.test.js
+    - engine:tests/kokoro-in-the-voice.browser.test.js
+    - engine:tests/the-quiz-declares-what-it-uses.node.test.js
+    - engine:tests/heavy.node.test.js
+  supersedes-in-part: [ADR-0185, ADR-0186]
+  errata:
+    - date: 2026-09-14
+      what: '✅ CONFIRMED, pushed (issue #181 closed, `engine:09b9492`, `1064e8c`, `2595bf2`, `2ed1bf7`, `f8fa77d`): the voice list, the marks, the WebGPU test synthesis and the port are gated; the model and voices are in the catalogue with sha256 and fetched only by a game with the port; the quiz demo fills the port and spoke «Narração ligada.» through Kokoro in `dist`. ⚠️ Not read: which device the engine kept on that machine.'
+    - date: 2026-09-21
+      what: '🔴 A GATE NAMED HERE NO LONGER EXISTS, and this line is the correction: `tests/kokoro-porta-do-quiz.node.test.js` measured the demo FILLING the port, and it left with the port in `engine:24cea10` (ADR-0216). What confirms the same promise today is `tests/quiz-declara-o-que-usa.node.test.js`: the demo asks for the voice in one line and names no loader. ⚠️ Found by the ADR validator with `--repo engine=…`, which is the only way it checks that a path exists — without the flag it says how many it did NOT check and passes.'
+    - date: 2026-09-14
+      what: "📌 THE ENGLISH FIRST VOICE, left open. The Dev: «Piper amy-medium.» In English `en_US-amy-medium` speaks first, then the other Piper voice, then Kokoro's (Heart and Bella marked)."
+    - date: 2026-09-14
+      what: "📌 WHERE IT IS TRIED. Asked about a real game filling the port to measure Kokoro in it, the Dev: «Não vamos fazer isso. Apenas teste neste quiz demo.» The engine's own quiz demo fills the Kokoro port and is where Kokoro is measured; and the model and voices enter the heavy-file catalogue with their sha256 («Faça»). Issue #181."
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0185 §2 — SUPERSEDED IN PART: a Kokoro voice listed only where the model is cached AND the device runs WebGPU"
+    - "ADR-0186 §4 — SUPERSEDED IN PART: the same condition («listed only where it runs — the model in the checked cache and WebGPU»)"
+    - "ADR-0094 — the engine names no neural provider; the game hands in how to load it"
+    - "ADR-0192 — the page is cross-origin isolated, so onnxruntime's WASM runs on threads"
+    - "📏 Lab, 2026-09-13/14: Kokoro fp32 pt-BR (`pf_dora`) and es (`ef_dora`) through espeak-ng phonemes speak intelligibly on WASM
+       (Whisper tiny heard 8/8 and 9/9 words); WebGPU on an AMD gcn-5 produced non-speech on onnxruntime-web 1.22-dev and 1.29.0;
+       WASM isolated with threads took 2.7 s for 3 s of speech on 16 cores"
+    - "The Dev, 2026-09-14, on Kokoro's quality: the best English voices are Heart and Bella; the Portuguese and Spanish ones (Dora,
+       Alex, Santa) are low quality"
+  informed: []
+
+title: Kokoro's voices are options in any browser, marked by quality, and come through the game's port
+
+context-and-problem-statement: |
+  ADR-0185 and ADR-0186 listed a Kokoro voice only where the model was cached and WebGPU ran. Measured, WebGPU can exist and still
+  produce noise, and WASM runs it everywhere, slower. Asked which voice speaks first, where Kokoro may run and how a game delivers it,
+  the Dev, 2026-09-14: for Portuguese and Spanish the Piper voice stays first and «todas as vozes do Kokoro ficam como opção, com a
+  diferença que enquanto as pipers são sinalizadas com a pena, as duas únicas vozes boas do kokoro (Heart e Bella) devem ser
+  sinalizadas com emoji de coração»; Kokoro «Roda em qualquer navegador»; and, on a port the game fills, with espeak-ng under
+  GPL-3.0: «Sim.» The Spanish Piper voice is `es_MX-claude-high` («Piper para espanhol seria claude-high, español mexico»).
+
+decision-drivers:
+  - "D1 — A VOICE LISTED IS A VOICE THAT SPEAKS: never one whose runtime produces noise on this device"
+  - "D2 — THE ENGINE NAMES NO PROVIDER (ADR-0094)"
+
+considered-options:
+  - "A — Kokoro listed only where WebGPU runs (ADR-0185 §2)"
+  - "B — every Kokoro voice of the language listed in any browser, through a port the game fills"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Fast wherever listed. ❌ Absent from most school devices, and listed where WebGPU exists but fails.
+  **B.** ✅ The voices wherever the game ships them. ❌ On WASM a sentence takes about as long to make as to say on a fast machine.
+
+decision-outcome:
+  chosen-option:
+    link: "B — options in any browser, through the game's port"
+    justification: |
+      1. **Every Kokoro voice of the page's language is listed as an option, in any browser**, beside the Piper voices.
+      2. **In Portuguese and Spanish the Piper voice stays first** (`pt_BR-faber-medium`, `es_MX-claude-high`); the Kokoro voices
+         follow as options.
+      3. **Piper voices carry the feather (🪶); Kokoro's Heart and Bella carry a heart (❤️)** — the two good Kokoro voices; the other
+         Kokoro voices carry no mark.
+      4. **Kokoro runs on WebGPU where a short test synthesis gives speech, and on WASM with threads otherwise**, so a device whose
+         WebGPU produces noise still speaks.
+      5. **The game delivers Kokoro through a port, as ADR-0094 does for Piper**: it hands the engine how to load the phonemizer
+         (espeak-ng), the runtime (onnxruntime) and the model and voices; the engine names none of them. espeak-ng is
+         GPL-3.0-or-later, compatible with the engine's AGPL, and enters LICENSES.md where it is bundled.
+
+  consequences:
+    positive:
+      - "A child on any device can pick a Kokoro voice, and knows the two good ones by the heart"
+    negative:
+      - "On WASM a sentence may take as long to make as to say; menu narration on a school laptop may lag"
+      - "A new optional contract field, and the phonemizer's GPL licence travels with a game that bundles it"
+      - "Which of an English child's voices speaks first is still not decided"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #181, closed). Gates: in Portuguese Faber first, then Kokoro's Portuguese voices; in English
+    Amy first, Heart and Bella with a heart and the Piper voices with the feather; WebGPU returning noise falls back to WASM;
+    without the port no Kokoro voice is listed and no Kokoro file is fetched; the quiz demo's port asks the delivery for its files.
+
+more-information: |
+  The Kokoro English order (Heart or a Piper voice first) is left open, as ADR-0186 left it.

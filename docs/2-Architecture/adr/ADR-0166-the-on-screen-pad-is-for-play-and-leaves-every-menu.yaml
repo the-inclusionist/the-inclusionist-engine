@@ -1,0 +1,76 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+    - engine:tests/quiz-below-the-bar.browser.test.js
+  supersedes-in-part: [ADR-0157, ADR-0162]
+  date: 2026-09-12
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #159 closed; `engine:5025be2`, `e7aa5ee`): a cartridge that does not ask for the pad
+             gets none; the pad hides in the card and panels and returns in play; the quick pause keeps it (the Dev's
+             answer); the quiz, without a pad, has a Menu button; «Controller size» shows only with a pad."
+    - date: 2026-09-12
+      what: "✅ THE OPEN POINT, ANSWERED BY THE DEV the same day, and the quiz's choice with it; both fill what this record left open (ADR-0057 §1). (1) QUICK PAUSE (START): the pad does NOT leave it — asked «o controle na tela também some nela?», the Dev: «Não.» Rule 2 covers the pause card and the panels, not the quick pause. (2) THE QUIZ asks for no on-screen pad («Sim»), and gets instead a MENU button of its own that opens the menus — «não faz sentido pausar um quiz»."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0157 — SUPERSEDED IN PART: §2 «a pad press drives the menus» and the #151 rule that the pad stays in view above
+       the menus. Menus are driven by click and touch like a web page; keyboard and gamepad keep driving them"
+    - "ADR-0162 — SUPERSEDED IN PART: whether a game has an on-screen pad at all is the cartridge's choice, not a
+       consequence of naming positions"
+    - "ADR-0164 — the footer and the explanation band, which the pad covered"
+  informed: []
+
+title: The on-screen pad is for play in the games that ask for it, and it leaves every menu
+
+context-and-problem-statement: |
+  The Dev: «Controle de tela é só para jogo que não funciona tão bem como via mouse e/ou touch (o cartucho decide), nunca
+  para menu. Ao acessar um menu (via SELECT por exemplo) o controle na tela deve desaparecer para que o usuário controle
+  com cliques ou toques como em uma página de internet. Teclados, controles de video-game, microfone e câmera continuam
+  funcionando: o que muda é só o controle na tela que passa a desaparecer para não atrapalhar a leitura dos menus e faixa
+  de explicação.»
+
+  📏 Measured (`engine:254864b`, #151): the pad stays in view and above the pause card and the panels, and its presses
+  become menu keys; `createGame` mounts it for any game with a `preset`.
+
+decision-drivers:
+  - "D1 — A MENU IS READ AND TOUCHED DIRECTLY. Its items are touch targets of their own (ADR-0163); a pad on top of them
+     hides the items and the explanation band"
+  - "D2 — THE CARTRIDGE KNOWS WHETHER TOUCH IS ENOUGH. A quiz is played by touching the answer; a platformer is not"
+
+considered-options:
+  - "A — keep #151: the pad in view over the menus, driving them"
+  - "B — the pad only in play, only for a cartridge that asks for it; every menu without it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One way to move for a touch child, in play and in menus. ❌ The pad covers the menu and its footer.
+  **B.** ✅ Menus read and are touched like a page. ❌ A cartridge that wants the pad has to say so.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the pad is for play, by the cartridge's choice, and leaves the menus"
+    justification: |
+      1. **The engine mounts the on-screen pad only for a cartridge that asks for it**, meant for games that do not play
+         well by mouse or touch. A cartridge that does not ask gets none.
+      2. **When a menu opens — the pause card (SELECT), a settings panel — the pad disappears**, and comes back when the
+         child returns to play. The menu is driven by clicks and touches on its own items.
+      3. **Keyboard, gamepad, microphone and camera keep driving the menus** exactly as before; only the on-screen pad
+         leaves.
+      4. ⚠️ **Open, for the Dev:** whether the quick pause (START) counts as a menu here — its bar is touched directly and
+         has its own «Voltar», so a touch child is not stranded if the pad leaves.
+
+  consequences:
+    positive:
+      - "Nothing covers a menu's items or its explanation band"
+    negative:
+      - "A touch child reaches the pause card from play through the pad's SELECT, or not at all in a cartridge without a
+         pad — the cartridge's choice carries that"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #159, closed). Gates: a cartridge that does not ask for the pad gets
+    none; with the pad, opening the pause card or a panel hides it and returning to play shows it; in a menu a touch on
+    an item activates it; a keyboard arrow still moves the cursor with the pad hidden.
+
+more-information: |
+  The Dev named keyboard, gamepad, microphone and camera as what keeps driving the menus; the rule removes only the on-screen pad.

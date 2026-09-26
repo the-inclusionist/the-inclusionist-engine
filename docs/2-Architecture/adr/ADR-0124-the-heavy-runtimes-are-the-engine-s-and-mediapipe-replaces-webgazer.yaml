@@ -1,0 +1,238 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0094, ADR-0114]
+  superseded-in-part:
+    - by: ADR-0132
+      what: >-
+        the parenthesis «webgazer não», and only it. Measured in the package's own typings after this record
+        was written: `@mediapipe/tasks-vision` exposes fifteen task classes and gaze is not among them — what
+        exists is `FACE_LANDMARKS_LEFT_IRIS` and its twin, connection sets over landmarks. MediaPipe answers
+        WHERE THE IRIS IS; WebGazer answered WHERE THE CHILD IS LOOKING, which is a regression with a
+        calibration step. Told that, the Dev chose both. ⚠️ And this record's own reasoning survives the
+        change: what made WebGazer a defect here was that it is LAZY, not who wrote it — under ADR-0132 it
+        arrives on INSTALL like everything else, and the defect goes while the capability stays.
+  date: 2026-09-09
+  confirmed-by:
+    - engine:app/js/platform/heavy-catalogue.ts
+    - engine:tests/heavy.node.test.js
+    - engine:tests/nothing-comes-from-outside.node.test.js
+  errata:
+    - date: 2026-09-09
+      what: >-
+        🔴 ONE OF THIS RECORD'S OWN ARGUMENTS DIED THE SAME DAY IT WAS WRITTEN, and it is recorded rather than
+        quietly dropped. Option D (everything into the precache manifest) was rejected as «arithmetically
+        impossible: 11.21 MB against a 2048 KiB budget that is already 82% spent», and the Dev removed that
+        budget hours later — «Por que tem que caber em 2MB? … Quero que retire este limite» — after measurement
+        showed the number was never theirs: it entered in `af35a7d`, co-authored by this AI, and lived in no
+        record. So option D is no longer impossible, and the choice of A has to stand on the reasons that never
+        depended on the ceiling: the npm-package objection (35 MB on every cartridge, ADR-0094's argument), the
+        241 MB of models that were never precache candidates, and — the strongest — that a precached runtime
+        must finish installing before the worker is ready, while a background download lets the child PLAY
+        while it arrives. ⚠️ The measurements themselves stand unchanged; what fell is a constraint, not a
+        fact. Re-opening D is a decision available to the Dev at any time, and this paragraph is what makes it
+        visible instead of buried under an argument that no longer holds.
+    - date: 2026-09-09
+      what: >-
+        the confirmation asked for a gate that ALREADY EXISTED. It read «a case has to hold the
+        surviving half» of ADR-0094; measured hours later, `tests/tts.node.test.js` holds it in four
+        cases. Errata and not supersession by the ADR-0057 test: the author, with the same facts that
+        day, would have written «already held by» — the record mis-stated a FACT about the tree, it did
+        not decide differently. What remains owed is PRECEDENCE, which cannot be asserted until the
+        engine owns a runtime for the cartridge's door to win over.
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-09, in one line: «piper-tts, mediapipe (webgazer não), e LPCP: devem
+       acompanhar a engine.» Three subsystems answered at once, and the parenthesis is the sharpest part —
+       WebGazer is named to be excluded"
+    - "issue #129 — «de onde vem um runtime pesado, para estar lá numa escola sem rede?». This record answers
+       the OWNER and the PROVIDER; it does not answer the origin that serves the bytes, because no deploy is
+       connected"
+    - "issue #11 — «Webcam control (MediaPipe face + eyes)»: the issue said MediaPipe and the code did
+       WebGazer. ADR-0119 measured the divergence; this record closes it in MediaPipe's favour"
+    - "ADR-0114 — the runtime travels with the PWA; only the models come from the network. REAFFIRMED, and
+       this record says what «travels with» can and cannot mean once the sizes are measured"
+    - "ADR-0094 — SUPERSEDED IN PART: its argument that 135 MB of WASM is not a cartridge's to pay is intact
+       and is exactly why the ENGINE pays it; what falls is the cartridge's door being the only path"
+    - "ADR-0116 — a pinned CDN is not forbidden; what is forbidden is depending on the network AFTER the
+       first day. It is the record that makes an install-time fetch legitimate"
+    - "ADR-0107 — the LCP art enters under CC BY-SA 3.0 in quarantine, with per-asset authorship"
+    - "ADR-0110 — the four neural voices come down on first load; `platform/pesados` is the mechanism this
+       record reuses instead of inventing a second one"
+  informed: []
+
+title: The heavy runtimes are the engine's, and MediaPipe replaces WebGazer
+
+context-and-problem-statement: |
+  📏 THE MEASUREMENT THAT SHAPES THIS RECORD, taken on 2026-09-09 before a line was written:
+
+  · `@mediapipe/tasks-vision@1.0.1` — **35.13 MB unpacked**, 14 files. The SIMD wasm alone is **11.21 MB**,
+    and a no-SIMD fallback is another 10.45 MB.
+  · `onnxruntime-web` — the runtime piper actually runs on — **10.73 MB** for one wasm.
+  · WebGazer, the thing being replaced — **1.81 MB**, fetched by `<script src>` from `webgazer.cs.brown.edu`
+    with no SRI and no `crossorigin`.
+  · The first-day precache budget — **2048 KiB**, of which 1687.6 KiB is already spent.
+
+  🎯 THOSE FOUR NUMBERS TOGETHER DECIDE WHAT «ACCOMPANY THE ENGINE» CANNOT MEAN, and saying so is most of
+  this record's work:
+
+  · **NOT the precache.** 11.21 MB does not fit in a 2 MB budget, and raising the budget is not available —
+    it is the first-day weight on a school link, decided in ADR-0010 pillar 1.
+  · **NOT the npm package.** Shipping 35 MB of WASM in `npm pack` makes EVERY cartridge pay for a subsystem
+    it may never use, which is precisely the argument ADR-0094 made and won. A quiz that never opens a
+    webcam would carry the vision runtime to a school tablet.
+
+  ⚠️ AND THE DEFECT BEING FIXED IS NOT «WHICH VENDOR», IT IS **WHEN**. WebGazer's real fault, measured and
+  written into `tests/nada-vem-de-fora.node.test.js`, is that it is **LAZY**: it fetches when the child turns
+  the eye-control on. The machine that never turned it on does not have it, so on the second day, offline, the
+  child who most depends on it gets nothing — no error, no explanation. Pillar 8 after the ADR-0116 errata is
+  «first day ONLINE, then OFFLINE-FIRST», and a lazy fetch fails the second half no matter who serves it.
+
+  🔴 AND ONE MEASUREMENT TAKEN WHILE THIS RECORD WAS BEING WRITTEN CHANGES WHAT THE SWAP COSTS. The Dev asked
+  whether `tasks-vision` contains face landmarker, iris tracking and gesture recognizer. Read from the
+  package's own `vision.d.ts` (130,544 chars, version 1.0.1), it exposes **15 task classes**, including
+  `FaceLandmarker`, `GestureRecognizer`, `HandLandmarker`, `PoseLandmarker` and `HolisticLandmarker`.
+
+  ⚠️ **BUT THERE IS NO IRIS TASK, AND THE DIFFERENCE IS NOT PEDANTIC.** What exists is
+  `FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS` / `..._RIGHT_IRIS` — connection sets over landmarks the face model
+  already returns. So MediaPipe gives **where the iris IS**; WebGazer gave **where the child is LOOKING on the
+  screen**, which is a regression model with a calibration step. 🎯 **The swap therefore does not port a
+  feature — it replaces a component with a lower-level one, and the gaze estimation on top is ours to build.**
+  Blendshapes are there (6 mentions in the typings) and give a blink/dwell switch cheaply, which is one of the
+  two things ADR-0104's «8 sectors, dwell» eye mode needs; the other is the screen point.
+
+  📌 THE THIRD ITEM IS NOT A RUNTIME AND IS HERE ANYWAY. The LCP art is not code; it is work under CC BY-SA
+  3.0 with per-asset authorship, quarantined by ADR-0107. It joins this record because it shares the one
+  property that matters here: the engine promises it, and today it does not travel.
+
+decision-drivers:
+  - "A subsystem the engine PROMISES must be delivered by the engine, not left for a cartridge to remember"
+  - "Nothing heavy may arrive lazily: what the child needs on day two must have arrived on day one"
+  - "The cartridge must not pay for a subsystem it never uses — ADR-0094's argument, kept"
+  - "One delivery mechanism, not three: three ways to fail offline is three ways nobody can see"
+  - "A provider named in an issue and contradicted by the code is a promise that decays"
+
+considered-options:
+  - "A · the engine owns the three, and they ride the SAME first-load download as the voices (`platform/pesados`)"
+  - "B · each runtime keeps its own arrival — MediaPipe lazy, piper by the cartridge's door, LCP by nothing"
+  - "C · everything into the npm package, so `npm install` brings it"
+  - "D · everything into the precache manifest"
+
+pros-and-cons-of-the-options:
+  A:
+    good:
+      - "One mechanism, already built and gated (`platform/pesados`, 10 cases, 6 mutations)."
+      - "Install-time, not first-use: the second day works offline, which is the whole of pillar 8."
+      - "The cartridge pays nothing and declares nothing — the engine's promise becomes the engine's delivery."
+      - "📏 The vision runtime stops being 1.81 MB of unpinned third-party JS with no SRI in a child's browser."
+    bad:
+      - "🔴 The bytes need an origin to be served from, and NO DEPLOY IS CONNECTED today. Until one is, the URL is a third party's."
+      - "Install day grows: ~22 MB of runtime on top of 241 MB of voices."
+      - "A device that installs and never opens a webcam still downloads 11.21 MB."
+  B:
+    good:
+      - "No work; it is today's shape."
+    bad:
+      - "It is the measured defect: ADR-0119 counted four promised subsystems and ONE delivered."
+      - "Three mechanisms, three silent offline failures, and the child who depends most gets the worst one."
+  C:
+    good:
+      - "`npm install` is the simplest possible arrival, and versions are pinned by the lockfile."
+    bad:
+      - "🔴 Every cartridge pays 35 MB for a subsystem it may never use — the exact thing ADR-0094 refused."
+      - "The engine gains a runtime dependency the boundary sieves exist to forbid."
+  D:
+    good:
+      - "Truly offline from the first load, with no second mechanism."
+    bad:
+      - "🔴 Arithmetically impossible: 11.21 MB against a 2048 KiB budget that is already 82% spent."
+
+decision-outcome:
+  chosen-option:
+    link: "A — the engine owns the three, delivered on install by the same mechanism as the voices"
+    justification: |
+      **The three heavy things are the ENGINE's, and they arrive on INSTALL.** Four clauses:
+
+      1. **THE VISION PROVIDER IS MEDIAPIPE. WEBGAZER IS OUT.** Issue #11 said MediaPipe and the code did
+         WebGazer; the Dev's parenthesis — «webgazer não» — settles it. The `ui/webcam.ts` `<script src>` to
+         `webgazer.cs.brown.edu` is removed, and with it the last hand-written CDN fetch in the engine and the
+         only entry left in `tests/nada-vem-de-fora.node.test.js` marked as a pillar-8 violation.
+      2. **THE PIPER RUNTIME IS THE ENGINE'S**, which is ADR-0114 reaffirmed and ADR-0094 superseded in part.
+         The cartridge's door (`carregarVozNeural`) STAYS — a game may still supply its own — but it stops
+         being the only way a voice can arrive, and a game that declares nothing is no longer silent.
+      3. **THE LCP ART IS THE ENGINE'S**, delivered under the ADR-0107 quarantine with its attribution ledger.
+         ⚠️ It is delivered when the quarantine has content; today `art/lcp/` holds a README and a 40-byte CSV
+         header, and this record does not pretend otherwise.
+      4. **DELIVERY IS `platform/pesados`, NOT A SECOND MECHANISM.** The three become catalogue entries beside
+         the eight voice files. They stop being `sem-fonte` with a written reason and become entries with a
+         URL — which is the whole point of the reason field: it names what is missing until it is not.
+
+      ⚠️ **WHAT THIS RECORD DELIBERATELY DOES NOT DECIDE, and it is the part that blocks the code:** the
+      ORIGIN that serves the bytes. «Accompany the engine» settles the OWNER and the PROVIDER; it cannot
+      settle where a file is fetched from while no deployment is connected to any repository (measured
+      2026-09-07, stated by the Dev). Until an origin exists, the entries name a pinned third-party URL —
+      which ADR-0116 permits and which is strictly better than today, because it is fetched on INSTALL and
+      not on first use. Vendoring to our own origin is the follow-up, and it is one line in the catalogue.
+
+      📌 **AND THE COST IS STATED RATHER THAN DISCOVERED IN A SCHOOL:** install day goes from ~241 MB to
+      ~263 MB. The Dev has already priced this class of trade once — «baixar ~200MB é o preço para deixar o
+      jogo inclusivo, e vale a pena» — but pillar 9 (thirty machines in one lab starting together) is
+      untouched by this record and gets worse by 22 MB per machine.
+
+  consequences:
+    good:
+      - "The engine delivers what it promises: ADR-0119's count of 1-of-4 becomes 4-of-4, with the LCP conditional on content."
+      - "The last lazy third-party fetch leaves the engine; `nada-vem-de-fora`'s inventory shrinks to declared install-time fetches."
+      - "A child who depends on eye control has the runtime on day two, offline, on a machine that never opened a webcam."
+      - "No cartridge declares anything, and no cartridge pays for what it does not use."
+    bad:
+      - "🔴 Install day grows ~22 MB, and pillar 9 gets worse by that amount per machine in a lab."
+      - "A device that never opens a webcam still pays 11.21 MB — the price of not being lazy."
+      - "Until a deploy exists the bytes come from a third party, so the SRI/pinning question is deferred, not answered."
+      - "WebGazer's removal is a behaviour change for anyone running the eye control today, and it needs the MediaPipe wiring built first."
+      - "🔴 MediaPipe returns iris LANDMARKS, not a gaze POINT. WebGazer estimated where the child was looking; that regression and its calibration step become work this project owns, and until it is built the eye control is worse, not better."
+
+  confirmation: |
+    ⚠️ NOT YET BUILT. This record is the decision; the catalogue entries and the wiring are its issue. Written
+    before the code so that the code cannot quietly keep WebGazer «just for now» — which is exactly how it got
+    there.
+
+    The gates this owes:
+
+    · THE VISION ENTRY HAS A URL AND A MEASURED WEIGHT, and it is MediaPipe. The `porQueNaoTemFonte` reason for
+      `visao:runtime` must be GONE, not edited — `tests/pesados.node.test.js` already asserts that a source-less
+      entry carries a reason longer than 40 characters, so the two states cannot be confused.
+    · NO `webgazer` STRING SURVIVES IN `app/js`, asserted as an inventory that must reach ZERO. ⚠️ And the
+      entry for it in `tests/nada-vem-de-fora.node.test.js` must LEAVE that list in the same commit: the file's
+      own mutation note says removing it is a green-by-good-news event, and an inventory that keeps a paid debt
+      reports a defect that no longer exists.
+    · THE VISION RUNTIME IS FETCHED ON INSTALL AND NOT ON FIRST USE — a case that fails if the fetch is reached
+      from the eye-control's enable path. This is the clause the whole record turns on, and it is the one a
+      future refactor is most likely to undo for a plausible-sounding reason («don't download what nobody uses»).
+    · THE CARTRIDGE'S DOOR STILL WORKS: a game that supplies `carregarVozNeural` keeps its own voice. ADR-0094's
+      argument is superseded in part, not deleted, and a case has to hold the surviving half.
+      ✅ **ALREADY PAID, AND THIS RECORD WAS WRONG TO ASK FOR IT** — measured hours after it was written, in
+      `tests/tts.node.test.js` («platform/tts — a porta da voz neural»), FOUR cases: without the door the child
+      is WARNED and narration continues in the browser voice; without the door narration does not fall silent;
+      with the door the neural path runs whole and the requested voice comes from `TTS_SOURCES`; and a door
+      that REJECTS does not bring the game down. ⚠️ It is the third time in two days that this project has
+      owed a gate that already existed — the pattern is the same each time: my summary of a record became the
+      premise instead of the record, and the tree was never asked.
+      ⬜ **WHAT IS GENUINELY NOT COVERED IS PRECEDENCE, and it cannot be today:** when clause 2 lands and the
+      engine owns a runtime of its own, something must assert that the CARTRIDGE's door still wins over it.
+      There is no engine runtime yet, so that case has nothing to stand on — and writing it now would be a
+      case that cannot fail.
+
+more-information: |
+  Supersedes ADR-0094 in part: the cartridge's door stops being the ONLY path for a neural voice, and the
+  same reasoning extends to the vision runtime. Its measurement — that 135 MB of WASM is not a cartridge's to
+  pay — is untouched and is the reason the engine pays it once.
+
+  Reaffirms ADR-0114 rather than superseding it: «the runtime travels with the PWA» was right, and this record
+  only measures what «travels with» can mean when one wasm is 11.21 MB and the precache budget is 2 MB.
+
+  Deliberately NOT decided here: the origin that serves the bytes (no deploy is connected); whether the
+  no-SIMD MediaPipe fallback is carried as well as the SIMD one, which is a compatibility question about
+  school hardware nobody has measured; how a lab of thirty machines avoids thirty downloads, which is pillar 9
+  and is now 22 MB worse; and which MediaPipe TASKS (face landmarker, gesture recognizer) are enabled, which
+  is issue #11's work and not this record's.

@@ -1,0 +1,106 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's specification, verbatim, the fourteen positions for two players: `direcional: awsd | up,
+       left, down, right · action 1: u | 8 · action 2: j | 5 · action 3: k | 6 · action 4: i | 9 · left
+       shoulder: 7 (alphanumeric) | / (numeric) · left trigger: y | 7 (numeric) · right shoulder: 8
+       (alphanumeric) | * (numeric) · right trigger: o | + (numeric) · start: h | 1 (numeric) · select: f |
+       0 (numeric)`"
+    - "ADR-0085 — the fourteen positions of CONTROLE_ENGINE; the PHYSICAL names are binding and live in the transport"
+    - "`input/default-bindings.ts` — the declared home of the tables, and the `KEYBOARD_SOLO` that already existed"
+    - "`input/keyboard.ts` — the LIVE `p2` scheme, which has EIGHT of the fourteen positions"
+    - "ADR-0074 §1 — the `start` debt, which was missing from the keyboard and `KEYBOARD_SOLO` closed"
+  informed: []
+
+title: The two-player keyboard is the SAME geometry twice — and the arrows change owner
+
+context-and-problem-statement: |
+  The Dev specified the two-player keyboard in the fourteen positions. Before recording it, it was checked against
+  what already exists, and the result has two halves:
+
+  ⚠️ THEIR PLAYER 1 IS EXACTLY THE `KEYBOARD_SOLO` THAT WAS ALREADY RECORDED — all fourteen, key by key. It is not a
+  new decision; it is the confirmation of one that was already written, which is information and not redundancy.
+
+  ⚠️ PLAYER 2 IS NEW, AND FILLS A MEASURED GAP: the live `p2` scheme in `input/keyboard.ts` has EIGHT of the fourteen
+  positions — four directionals and four actions. The two shoulders, the two triggers, `start` and `select` were
+  missing, for BOTH players. And the eight that are there match exactly the corresponding eight of the
+  specification, which says the Dev is completing their own scheme, not replacing it.
+
+decision-drivers:
+- "⚠️ Player 2's geometry is player 1's TRANSPOSED onto the numeric keypad, and that is the table's argument and
+   not an ornament: `U I / J K` and `8 9 / 5 6` have the same shape, the shoulders sit on the TOP row in both
+   (`7 8` · `/ *`) and the triggers at the ENDS of the action row (`Y … O` · `7 … +`). The pattern is taught once
+   and serves both sides of the table."
+- "⚠️ AND THAT EXTENDS THE 45° ROTATION that `default-bindings` already documented for the Xbox: if `U I / J K`
+   lands on the controller's diamond by turning an eighth of a turn, `8 9 / 5 6` lands the same way."
+- "⚠️ The Dev wrote «alphanumeric» and «numeric» IN FULL, and the scheme only closes because of that:
+   `Digit7` is player 1's L1 and `Numpad7` is player 2's L2. They are distinct keys in `KeyboardEvent.code` and
+   the SAME in `key` — one more reason for this project never to read `key`."
+
+considered-options:
+- "K1 - record the table as it came, and check each scheme the way any table is already checked"
+- "K2 - record it and reuse `KEYBOARD_SOLO` for player 1"
+
+pros-and-cons-of-the-options:
+  K1:
+    good:
+    - "It is what the Dev specified, and the cross gate catches the only point where the two schemes can collide."
+  K2:
+    bad:
+    - "⚠️ REFUTED BY ONE KEY: `KEYBOARD_SOLO` has the ARROWS as the second path of player 1's directional, and in
+       a pair the arrows are player 2's directional. Reusing the whole table would make the two characters walk
+       together — and it is a defect that produces no error anywhere, passes `bindingProblems` (each scheme is
+       sound ON ITS OWN) and only shows up playing as two."
+
+decision-outcome:
+  chosen-option:
+    link: "K1 - `KEYBOARD_DUO` in `input/default-bindings`, two schemes of fourteen, with a CROSS sieve"
+    justification: |
+      ===== WHAT CHANGES FROM SOLO TO PAIR IS ONE THING ONLY =====
+      The arrows leave player 1. All the rest of their scheme is `KEYBOARD_SOLO`, and one case of the gate asserts
+      that equality position by position — so that the pair does not turn, over time, into a second scheme nobody
+      decided.
+
+      ===== THE CROSS SIEVE IS OF A DIFFERENT FAMILY FROM THE DUPLICATE SIEVE =====
+      `bindingProblems` looks at ONE table and catches the same key in two actions. `conflitosEntreTabelas` looks at
+      TWO and catches the same key in two PLAYERS. The second had to exist because the first gives green over the
+      arrows defect: each scheme is flawless by itself.
+
+      ===== WHAT WAS LEFT OUT, SAID =====
+      `NumpadEnter` does NOT go into player 2. `ui/menu-nav` already uses it as CONFIRM in any menu (`KEY_YES`) and
+      `input/keydown` records, verbatim, that it does not pause. Giving it a third job would overlap two existing
+      decisions to save a key that is not missing.
+
+  consequences:
+    positive:
+    - "The fourteen positions come to exist for TWO players, and not eight."
+    - "The pattern is teachable once: the same hand shape on both sides of the table."
+    negative:
+    - "⚠️ Player 2 depends on the NUMERIC keypad, which many school laptops do not have. That is not a defect of
+       this table — it is exactly what issue #112's reach notice exists to say BEFORE starting, and ADR-0091's
+       ruler already knows how to count it."
+    neutral:
+    - "`Space` stays on player 1's `action2` and `Enter` on their `start`; neither collides with the numeric keypad."
+  confirmation: |
+    ⚠️ THERE ARE TWO KEYBOARD TABLES IN THE TREE, AND THIS RECORD DOES NOT UNITE THEM: `input/keyboard.ts` has the
+    LIVE `p2` scheme with eight positions, and `input/default-bindings.ts` has the new `KEYBOARD_DUO` with
+    fourteen. The eight coincide, which makes the divergence benign TODAY and not tomorrow. The union is separate
+    work, with its own issue — and it is written here so it does not pass as carelessness.
+
+    The gate is `tests/default-bindings.node.test.js`, and the case that matters was born red under a confirmed
+    mutation: giving `ArrowUp` back to player 1 fails in THREE cases, including the cross sieve. The sieve also
+    has a case of its own that passes it a table with the arrow repeated and demands that it name BOTH owners —
+    otherwise it could be returning an empty list for not looking.
+
+more-information: |
+  ⚠️ THIS RECORD EXISTS BECAUSE A SPECIFICATION IN THE CHAT IS A LOST DECISION — it is the sentence that
+  `default-bindings.ts` itself already carried in its header, written when the first half of this pattern arrived.
+  The second half arrived today and had the same fate.
+
+  And it is worth recording what the CHECK yielded, beyond the record: the specification matched key by key what
+  was already written for player 1, and completed — instead of contradicting — the eight positions that
+  `keyboard.ts` already had for player 2. The last time a pattern like this arrived, the symmetry exposed an `I`
+  assigned twice. This time there was nothing to expose.

@@ -1,0 +1,81 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/bar-caption-and-footer.browser.test.js
+    - engine:tests/the-panel-footer-is-the-screens.browser.test.js
+  date: 2026-09-12
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #157 closed; `engine:5034980`, `d8f2426`, `1f4b863`): the footer spans the region at
+             its bottom edge over a dark band with at most two lines, the panels' explanation lives there, and the button
+             legend sits above it — in the SELECT card too, where at 640×360 it covers 19 px of submenu item 7 (the Dev
+             analyses)."
+    - date: 2026-09-12
+      what: "📌 THE BUTTON LEGEND ON THE PAUSE CARD (SELECT), measured to cover the card's last 44 px items at 640×360, is built as rule 3 says: the Dev, asked what gives, «Nada por enquanto. Primeiro implemente, depois eu analiso.»"
+  decision-makers: [Dev]
+  consulted:
+    - "`CLAUDE.md` §4 — the three zones: the explanation lives in the FOOTER"
+    - "ADR-0159 rules 6 and 8 — the explanation in the footer, and text contrast of 4.5:1"
+  informed: []
+
+title: The footer is at most two lines, at the very bottom of the screen, over a darkened band
+
+context-and-problem-statement: |
+  The Dev, on the quiz with the quick bar's explanation showing: «O rodapé deve ocupar no máximo duas linhas de texto e
+  estar na parte mais baixa da tela (canvas), na frente de uma faixa escurecida para ter contraste.»
+
+  📏 Seen on their screenshot: the explanation of the colour-correction icon took three lines, sat above the pad's height
+  in the middle of the screen, and was drawn over the quiz's third option with outlined letters and no background.
+
+  Later the same day, on three screenshots of the platformer, they set the footer apart from what is right and wrong in
+  each: (1) a settings panel's explanation — «duas linhas, fundo escurecido» right, but «está ajustado ao menu, não ao
+  canvas»; (2) the button legend under the title menu — two lines right, but «usa só o centro da tela ao invés de usar de
+  um lado ao outro da tela», and «no caso de uso da barra de explicação para botões, não precisa escurecer com uma
+  faixa, apenas atrás dos nomes está de bom tamanho», and «explicação de botões deve aparecer em toda tela de pausa
+  (START), com a função dos botões sendo alteradas na tela de menu (SELECT)»; (3) the demo message and the sound
+  caption — translucent dark background and two lines right, but «descrição da sonoplastia deveria estar acima e a
+  legenda explicativa embaixo, e a faixa da explicação deveria ir de um lado a outro da tela».
+
+decision-drivers:
+  - "D1 — THE FOOTER NEVER COVERS THE WORKSPACE. It is a zone of its own (`CLAUDE.md` §4)"
+  - "D2 — IT IS READABLE OVER ANYTHING. Outlined letters over a busy picture are not a contrast guarantee"
+
+considered-options:
+  - "A — keep the footer where each screen puts it, with outlined letters"
+  - "B — one footer rule: bottom of the screen, a dark band behind it, two lines at most"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No change. ❌ It covers the game and reads only where the picture happens to be dark.
+  **B.** ✅ Always readable and always in the same place. ❌ Long explanations have to be written to fit two lines.
+
+decision-outcome:
+  chosen-option:
+    link: "B — two lines, bottom, dark band"
+    justification: |
+      1. **Every footer sits at the lowest edge of the game region (the canvas), from one side to the other** — never
+         fitted to a menu or card, never only the centre. That includes a settings panel's explanation.
+      2. **An EXPLANATION** (what an icon or option does, the reason of a locked item) **stands on a translucent dark band**
+         that runs the full width and gives its text at least 4.5:1 (ADR-0159 rule 8).
+      3. **The BUTTON LEGEND** (which button does what) **runs the full width with no band**: a dark background only
+         behind each name. It shows on every quick pause (START), and on the menus (SELECT) it shows the buttons'
+         functions THERE.
+      4. **Order, top to bottom**: the sound caption above, the explanation below it, at the lowest edge.
+      5. **At most two lines of text** per footer. A longer text is cut to fit and is written again to fit; it never grows
+         upwards into the workspace.
+
+  consequences:
+    positive:
+      - "The footer never covers the quiz options or the game"
+    negative:
+      - "Explanations written for more room (some run three lines at 640×360) must be shortened"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #157, closed). Gates, on the real stylesheet at 640×360: the footer's
+    bottom edge is the region's bottom edge and it spans the region's full width, for the screen footer and a panel's
+    explanation alike; an explanation has a dark band, the button legend has none and a dark background behind each name;
+    the button legend shows on the quick pause and changes on the menus; a caption sits above the explanation; each is at
+    most two lines; nothing intersects the workspace rows it would have covered.
+
+more-information: |
+  First cut in `engine:5034980`, before the Dev's three platformer screenshots; rules 1 and 3–4 came from them and are what issue #157 still owes.

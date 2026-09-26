@@ -1,0 +1,80 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0210
+      what: >-
+        The hand, face and eye mappings to navigation positions. The Dev's default map puts face and hands on the whole controller;
+        no eye reading commands. The readers' rules (one group at a time, the hold, the wait, the return to rest) stand.
+    - by: ADR-0199
+      what: >-
+        §3's «tilt up and down → up and down; open the mouth → confirm» and §4's «look up → up; look down → down». Open mouth → down, pucker → confirm, a tilt down commands nothing; the eyes command up and down with a look and a blink.
+  errata:
+    - date: 2026-09-14
+      what: "📌 ONE GROUP AT A TIME, left open. The Dev, after the first camera run, where the lab read every group at once and a moving hand's shape fired its static command: «a câmera lê três configurações diferentes […] e o que é de uma não deve ser lido quando se está configurado para ler o que é de outra configuração». The camera reads ONE of four groups, chosen: (1) moving hand gestures (§2), (2) face and eyes (§3 and §4), (3) eyes only (§4), (4) static hand gestures (§1). What belongs to another group is not read. Issue #189."
+    - date: 2026-09-14
+      what: "📌 A HELD SIGNAL, left open (§5 said only the cool-down). The Dev: «prefiro nunca repetir, a não ser após voltar ao repouso». A command never repeats while its gesture, pose or look is held: the reader fires again only after returning to rest — the hand's shape released or still, the head back within its thresholds, the eyes back to the middle. Issue #189."
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "`engine:docs/1-Discovery/study-webcam-control.md` (2026-09-13) — MediaPipe Gesture Recognizer (seven canned gestures),
+       Face Landmarker (52 blendshapes and the head's transformation matrix), WebGazer; a recognised signal goes to a POSITION"
+    - "ADR-0074, ADR-0113 — a transport raises a position's edge; the latches are the law for every transport"
+    - "ADR-0109 — a synthetic press declares its origin"
+    - "ADR-0124, ADR-0132 — MediaPipe and WebGazer are heavy files of the delivery"
+  informed: []
+
+title: The webcam controls a game by hand gestures, face and eyes — the first mappings
+
+context-and-problem-statement: |
+  Issue #182 lists webcam control by gestures, face and eyes, and the study left the first mappings to the Dev. Shown suggestions,
+  the Dev, 2026-09-14, gave the mappings to start with, for three transports, and a construction note for the moving gestures
+  (track the index tip against the previous frame with a minimum distance; a composed shape-plus-speed gesture from the wrist's
+  vertical speed; three fingers from tips above their middle joints; a cool-down after each command; thresholds measured against
+  the palm's size, not fixed pixels).
+
+decision-drivers:
+  - "D1 — WHAT A CHILD'S BODY CAN DO BECOMES A POSITION, never a key (study recommendation 1)"
+  - "D2 — NO GESTURE FIRES TWICE FOR ONE INTENT: a cool-down after every command"
+
+considered-options:
+  - "A — the study's suggestions (four static gestures; head and mouth; dwell on menus; blinks left out)"
+  - "B — the Dev's mappings below"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Fewer signals to learn. ❌ Not the mappings the Dev chose.
+  **B.** ✅ Up/down and confirm/back/menu reachable from each transport. ❌ Blinks are read (the study had left them out as
+  involuntary); no left/right from the hands or the eyes.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's mappings"
+    justification: |
+      1. **Static hand gestures**: closed fist → confirm; open palm → menu; pointing up → up; thumb down → down; thumb up → up;
+         victory → back; «I love you» → menu.
+      2. **Moving hand gestures** (hand landmarks): index moving up → up; index moving down → down; open hand down quickly → confirm;
+         closed hand down quickly → cancel (back); three fingers → menu. Movement is measured from frame to frame against the palm's
+         size, past a minimum distance.
+      3. **Face and head**: turn the head left and right → left and right; tilt up and down → up and down; open the mouth →
+         confirm; smile → menu; raise the brows → back.
+      4. **Eyes**: look up → up; look down → down; two quick blinks → confirm; one slow blink → back; two quick blinks while
+         looking down → menu.
+      5. **Every command is followed by a cool-down** (about 0.5 s) before the same transport can command again.
+      6. «Confirm» is the game's confirming position, «back» its going-back position and «menu» the one that opens the menus
+         (ADR-0155): each maps to a POSITION, so the game's own words and the child's remapping still rule.
+
+  consequences:
+    positive:
+      - "A child can move through a game and its menus with a hand, a face or the eyes"
+    negative:
+      - "Reading blinks can command on an involuntary blink; the slow and double patterns and the cool-down are what guard it"
+      - "Two static gestures command «up» and two «menu»; the hands and the eyes have no left and right"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #189** in `the-inclusionist-engine`. Gates: each mapping recognised from recorded landmarks and
+    blendshapes raises its position once, then waits its cool-down; a moving threshold scales with the palm; a single normal blink
+    commands nothing; with a camera, measured on the developer's face and hands, each mapping written with its result.
+
+more-information: |
+  Measuring with a camera needs the MediaPipe runtime and models the catalogue already names, downloaded with the Dev's
+  permission, and the developer's camera. A child's hands and face are not the developer's: the thresholds are a first reading.

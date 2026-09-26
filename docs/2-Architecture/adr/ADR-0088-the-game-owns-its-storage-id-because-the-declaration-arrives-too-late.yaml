@@ -1,0 +1,153 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0027]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0080 §1 — the finding this record decides: `JOGO_ID` is a constant in `platform/storage.ts`, and
+       two games in one browser profile collide on every key of the round scope"
+    - "ADR-0027 passo 7 — SUPERSEDED IN PART: the two scopes stay exactly as they were; what changes is WHO
+       names the game half"
+    - "ADR-0084 and ADR-0087 — the other two findings of ADR-0080 that became declared fields. This one is the
+       exception, and the exception is the point of the record"
+    - "issue #108 — whose own text proposes `the prefix comes from the declaration`, which measurement refuted"
+    - "issue #111 — the cartridge leaves for its own repository, and takes this constant with it"
+  informed: []
+
+title: The game owns its storage id, because the declaration arrives after the keys have already been read
+
+context-and-problem-statement: |
+  `platform/storage.ts` held `JOGO_ID = 'inclusionist'` and `kJogo(nome)` built `incl.<JOGO_ID>.<nome>` from
+  it. ADR-0080's test is one question — WOULD A SECOND GAME WANT A DIFFERENT VALUE HERE? — and this field
+  answered yes at a cost that is measurable in a child's progress: two games in the same browser profile both
+  wrote `incl.inclusionist.activity`, `…quizlevel`, `…cenario`, `…tabsel`, `…fracnot` and every `attract_*`
+  recording. The second game opened silently overwrote the first, with no error anywhere.
+
+  ⚠️ THE OBVIOUS FIX IS THE ONE THE ISSUE ITSELF PROPOSES, AND IT DOES NOT WORK. `GameDeclaration` gains an
+  id, `createGame` hands it to storage. Two measurements refute it, and both were taken before choosing:
+
+  · `game/state.ts` READS STORAGE AT IMPORT. `quizLevel`, `cenario` and `activity` are born already restored,
+    and an ES module body runs before any function call in any other module. An id arriving from the
+    declaration arrives AFTER those three keys have been resolved — against an unset id, and in silence.
+    `platform/storage.ts` already says so in a comment, about a different mechanism, for the same reason.
+
+  · ⚠️ `main.ts` NEVER CALLS `createGame` AT ALL. The only consumer of the composition root is
+    `consumer-quiz/main-quiz.ts`. So the declaration channel does not even REACH the platformer — which is
+    precisely the game that has old keys to preserve, and the only reason the migration is delicate.
+
+decision-drivers:
+- "⚠️ Measured: 12 uses of round-scoped keys, of which 8 are in `game/` and 4 in `ui/activities-menu.ts` —
+   and the four engine ones read inside `initActivitiesMenu(ctx)`, not at import. The engine has no ordering
+   problem; only the cartridge does."
+- "ADR-0080 forbids the ENGINE from holding what varies per game. It does not forbid a game from knowing
+   itself — and a game that cannot name itself cannot have a save file."
+- "A child who already played must not be renamed out of her own progress: the existing key names have to come
+   out verbatim."
+- "issue #111 moves the cartridge out. Whatever holds the id should leave with it rather than be migrated
+   twice."
+
+considered-options:
+- "S1 - the id is a field of `GameDeclaration`, resolved by `createGame`"
+- "S2 - the id is the GAME's own leaf constant, and `kJogo(jogo, nome)` becomes pure"
+- "S3 - a module-level mutable id in storage, set at boot before anything reads"
+- "S4 - the id is read from the document (`<html data-game>`), at storage import time"
+
+pros-and-cons-of-the-options:
+  S1:
+    good:
+    - "Symmetric with ADR-0084 and ADR-0087: the other two findings of ADR-0080 became declared fields, and a
+       reader would expect the third to follow."
+    bad:
+    - "⚠️ REFUTED BY MEASUREMENT, and recorded at length because it is what anyone reads in the issue and tries
+       first: it arrives after `game/state`'s import-time reads, and it never reaches `main.ts`, which does not
+       call `createGame`. It would resolve three keys against nothing with the whole suite still green."
+    - "Rescuing it means deferring the import-time reads — a real change, in the cartridge, in the same commit
+       that renames the keys. If it broke, nobody could tell which half broke."
+  S2:
+    good:
+    - "No ordering problem at all: a constant of the game is available the instant any module of the game is
+       evaluated, which is the only guarantee that serves here."
+    - "⚠️ The engine ends up holding NOTHING, which is stronger than holding a field: `kJogo` becomes a pure
+       function of two arguments and there is no game id anywhere in engine code to go stale."
+    - "It leaves with the cartridge in #111, at no cost, because it is a leaf that imports nothing."
+    bad:
+    - "The engine's own two round keys (`tabsel`, `fracnot`) still need an id, so `ActivitiesMenuCtx` grows a
+       field. Acceptable: that ctx is already the injection point for everything the menu cannot know."
+    - "Asymmetric with the two sibling records, and the asymmetry needs this document to not read as an
+       oversight."
+  S3:
+    bad:
+    - "Same ordering defect as S1 and less honest about it: module-level mutable state that must be written
+       before an import that has already happened. It would work by accident, until an import order changed."
+  S4:
+    good:
+    - "Dissolves the ordering problem entirely — the HTML is parsed before any module body runs."
+    bad:
+    - "Puts a DOM read inside a leaf persistence module, and makes the id invisible to the node project, where
+       there is no document. The game would declare itself in a place no test can typecheck."
+
+decision-outcome:
+  chosen-option:
+    link: "S2 - the game's own leaf constant, and `kJogo(jogo, nome)` pure"
+    justification: |
+      ===== 1. WHAT MOVED =====
+      `JOGO_ID` is deleted from the engine. `kJogo(jogo, nome)` takes the id. `app/js/game/save-id.ts` holds
+      `export const JOGO = 'inclusionist'` — one line, a leaf, importing nothing, so that the id and the state
+      it names cannot form a cycle the bundler would resolve with an `undefined` halfway through.
+
+      ===== 2. THE DISTINCTION MOVED FROM THE COMMENT INTO THE TYPE =====
+      ⚠️ This is the part that is worth more than the fix. The two scopes of ADR-0027 were enforced by a
+      comment and by one test reading a hand-written list. Now:
+
+        child's key   →  a STRING     (`incl_modocego`) — it has nowhere to receive an id
+        round's key   →  a FUNCTION   (`KEYS.activity(jogo)`) — without the id it does not compile
+
+      Both mistakes die at once: prefixing a child's preference by accident, and forgetting to scope a round
+      key. Neither was reachable by review before, and the second one is exactly the defect being fixed here.
+
+      ===== 3. WHY THE ASYMMETRY WITH ADR-0084 AND ADR-0087 IS CORRECT =====
+      Those two are things the engine ASKS THE GAME DURING PLAY — the shape of the space, which element is the
+      world — so a function on the declaration is the right channel, and being re-evaluated is a feature. This
+      one is read ONCE, at import, before there is an engine to ask. A declaration is a conversation; a save
+      file's name is an identity, and identity has to exist before the conversation starts.
+
+  consequences:
+    positive:
+    - "Two games in one browser profile no longer share a single key. Asserted, not assumed."
+    - "The platformer's key names come out VERBATIM, so nothing is renamed under a child who already played."
+    - "`platform/storage.ts` now contains no game vocabulary of any kind."
+    negative:
+    - "⚠️ BREAKING for any caller of `kJogo` outside this repository — it gained a first argument.
+       `game-15puzzle` and `game-chess` are the ones to check, and neither is here."
+    - "One more field in `ActivitiesMenuCtx`, which is already large."
+    neutral:
+    - "The legacy keys (`incl_activity` and the other four) are NOT scoped and never will be: they predate the
+       scope, and their whole job is to be found where they already are."
+    - "⚠️ `KEYS` still holds three prefix conventions (`incl_*`, `incl.<jogo>.*`, `inclusionist.*`) and two
+       `Legacy` keys that do not go through `getComLegado`. Untouched here, and noted so it is not mistaken
+       for something this record settled."
+  confirmation: |
+    `tests/storage-escopos.node.test.js`, born failing under three confirmed mutations: `kJogo` ignoring the id
+    it is handed, one round key hardcoding a game, and a child's key becoming scoped.
+
+    · Two ids produce DISJOINT key sets — the defect in one line. The second id is neutral (`jogo-b`), because
+      the property is "any two games"; naming a real one made the `engine-boundary` ceiling gate reject the
+      fixture, correctly.
+    · The platformer's six existing names come out verbatim.
+    · Child's keys are strings, round's keys are functions — the shape distinction, asserted.
+    · `store.JOGO_ID` is `undefined`: the engine does not hold a game id again.
+
+    And the prerequisite gate landed first, in its own commit: `tests/storage-legado.node.test.js` covers
+    `getComLegado`/`getJSONComLegado`, which had NO tests and are what carries the old value across the rename.
+
+more-information: |
+  This closes finding §1 of ADR-0080 and the first half of issue #108. Findings §2 and §4 were closed by
+  ADR-0084 and ADR-0087. §3 — the grid metric, and space beyond two dimensions — is the one still open, and it
+  is the Dev's: they rejected the options offered and asked for a measure the ENGINE chooses and performs,
+  working at any orientation in the plane and in space, with the narration in geographic terms.
+
+  ⚠️ ONE THING THIS RECORD DOES NOT DO: it does not give the engine a way to KNOW which game is running. Only
+  the two keys of `ui/activities-menu` receive an id, and they receive it from the game that built the ctx.
+  If something else in the engine ever needs the id, that is a different question and it may well be answered
+  by S1 — by then, whatever needs it will not be running at import time.

@@ -1,0 +1,72 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #154 closed, `engine:7981f6c`): the pad draws exactly the buttons the game names —
+             its name on the face — and SELECT and START stay; the quiz declares its positions."
+  superseded-in-part:
+    - by: ADR-0166
+      what: "Whether a game has an on-screen pad at all — the cartridge asks for it"
+    - by: ADR-0165
+      what: "The reading of «names» — a button appears when the cartridge gives it a FUNCTION, and its face shows its own name"
+  supersedes-in-part: [ADR-0157]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0157 — SUPERSEDED IN PART: §1 «the pad always draws the four directions and the four action buttons». §2
+       (a pad press drives the menus) and §3 (in play it holds the key) stand"
+    - "ADR-0160 — its open point, «shoulders always, or only when the preset names them», is answered here, for every
+       button and not only the shoulders"
+    - "ADR-0156 — the cartridge chooses its contracts; the engine does not guess them"
+  informed: []
+
+title: A virtual pad button appears only when the game names it — directions, actions and shoulders alike
+
+context-and-problem-statement: |
+  Asked whether L1, L2, R1 and R2 appear in every game or only when the game's `preset` names them, the Dev answered:
+  «Vale para todos os botões: somente aparecem se o jogo os nomeia.»
+
+  📏 Measured today (`input/touch.montarControleDeToque`, since ADR-0157): the four directions and four action buttons
+  are drawn in every game, named or not, with the controller's face label on the unnamed ones; no shoulder is drawn.
+
+decision-drivers:
+  - "D1 — THE GAME DECLARES ITS CONTRACT. A button on screen is a promise that it does something; the game is the one
+     that knows which buttons it has"
+
+considered-options:
+  - "A — keep ADR-0157's minimum for directions and actions, and draw shoulders only when named"
+  - "B — every button, of every kind, only when the game names it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Every game can be navigated by touch without declaring anything. ❌ Buttons that do nothing in play, and a
+  different rule for shoulders than for the rest.
+  **B.** ✅ One rule; no button that does nothing. ❌ A game that names no direction cannot move through the menus by
+  touch — it has to declare the positions its menus need.
+
+decision-outcome:
+  chosen-option:
+    link: "B — a button appears only when the game names it"
+    justification: |
+      1. **The pad draws a direction, an action button or a shoulder only when the game's `preset` names it.** The
+         positions of ADR-0160 hold for the ones drawn.
+      2. **SELECT and START stay unconditional**: they are the doors of the pause (ADR-0155), which is not declinable.
+      3. **A pad press still drives an open menu** with whatever named buttons exist (ADR-0157 §2).
+
+  consequences:
+    positive:
+      - "No button on screen without an action in the game"
+    negative:
+      - "⚠️ A game with no named direction cannot move through the menus by touch. The engine's own consumer, the quiz,
+         names none today and must declare the positions it uses (directions, confirm, back)"
+      - "The face-label fallback for unnamed buttons goes with the minimum"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #154, closed). Gates: a preset naming two actions draws those two
+    buttons and no other; a named shoulder is drawn in its ADR-0160 corner and an unnamed one is not; SELECT and START
+    are drawn in a game with no preset; the quiz declares its positions and its menus are navigable by touch.
+
+more-information: |
+  Built in `engine:7981f6c` and `engine:757392a`. What a button SAYS was later separated from whether it appears (ADR-0165), and whether a game has a pad at all (ADR-0166).

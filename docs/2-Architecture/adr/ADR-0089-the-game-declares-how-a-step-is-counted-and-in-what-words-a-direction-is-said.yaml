@@ -1,0 +1,164 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0030]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0080 §3 — the finding this record decides: the grid metric is fixed to king moves, and a sliding
+       puzzle under-reports by up to 2x"
+    - "ADR-0084 — `topology` became a FUNCTION. It stays one; what changes here is what it returns"
+    - "ADR-0030 — SUPERSEDED IN PART: the CONTENT of one declared field, and the count of what it carries"
+    - "ADR-0085 — why the vertical axis of SPACE needed words of its own: `up`/`down` are already ACTIONS"
+    - "issue #108 — the third of its four items; §1, §2 and §4 were closed by ADR-0088, 0084 and 0087"
+    - "issue #7 — the field test with children, which is what the clock frame still owes"
+  informed: []
+
+title: The game declares HOW A STEP IS COUNTED and IN WHAT WORDS a direction is said
+
+context-and-problem-statement: |
+  `core/contract.distance()` counted king moves on every grid, with the reason written beside it: *"numa
+  grade, a diagonal custa um passo, e é assim que quem joga conta"*. True where the diagonal is legal.
+
+  ⚠️ FALSE IN A SLIDING PUZZLE, where nothing moves diagonally. A tile two right and two down is 2 by
+  Chebyshev and FOUR moves away. `game-15puzzle` measured it: the sonar under-reported by up to 2x.
+
+  ⚠️ AND UNDER-REPORTING DISTANCE TO SOMEBODY WHO CANNOT SEE THE SCREEN IS NOT IMPRECISION. It is saying
+  «close» about something far, and the child believes it — she has nothing else to go on. `grid` was never one
+  thing, and the contract said it was.
+
+  A second thing was wrong one layer up, and it had been sitting in plain sight. `core/contract` declares a
+  compass (`Heading`, eight positions) and `platform/audio-sonar.ts:176` DID NOT USE IT — it recomputed the
+  side from raw `x` with a dead zone of ±4 and said `left`/`right`/`ahead`.
+
+  ⚠️ THREE WORDS WHERE THE CONTRACT HAS EIGHT, AND MIXING FRAMES: *left/right* is relative to the SCREEN,
+  *ahead* is relative to the BODY. A blind child hearing both in one sentence cannot know which origin each
+  one speaks from. And the dead zone erased what she needed most: everything above or below her came out as
+  «ahead», because the arithmetic looked at `x` and never at `y`.
+
+decision-drivers:
+- "⚠️ Measured in `game-15puzzle`: Chebyshev under-reports orthogonal-only movement by up to 2x."
+- "The Dev rejected the options first offered and asked for a measure the ENGINE chooses and performs, working
+   at any orientation in the plane and in space, with the narration in geographic terms."
+- "⚠️ AND THE DEV CORRECTED THE FRAME MID-DECISION, which is what makes it right: the clock is NOT an accessibility
+   preference of the child. It is the reference frame of a 2D SIDE VIEW, where north and south mean nothing —
+   and it is NOT for top-down. `«A ideia do relógio é para localização em jogos de plataforma 2D, quando norte
+   e sul não fazem sentido»`, and then: `«E não jogos top-down»`."
+- "Publishing is next, and both changes are breaking. Two contract shocks on two dates, for the same two
+   games, is worse than one."
+
+considered-options:
+- "O1 - dimension, granularity and MOVEMENT RULE declared; the metric follows (L1/L-inf/L2)"
+- "O4 - geographic narration: the engine computes the bearing and speaks it in the declared frame"
+- "Keep Chebyshev and document the limitation"
+- "Let each game pass its own distance function"
+
+pros-and-cons-of-the-options:
+  O1:
+    good:
+    - "Answers the question the finding asks — what does ONE STEP mean here — instead of picking a different
+       fixed default, which would be wrong for the next genre instead of this one."
+    - "⚠️ Makes the dimension live in ONE place: `size.length`. The alternative scatters `depth !== undefined`
+       across every consumer, and a forgotten check is an axis silently ignored."
+    bad:
+    - "Breaking: `cols`/`rows` and `width`/`height` are gone, and both external games declare them."
+  O4:
+    good:
+    - "Uses a compass the contract already had and nobody read — the cheapest kind of fix, and the one that
+       shows the declaration was right and the consumer was behind."
+    - "The frame is a property of the SPACE, so a board and a platformer each get words that mean something."
+    bad:
+    - "⚠️ THE CLOCK PRESUPPOSES READING AN ANALOGUE CLOCK, in an audience that includes children still
+       learning to read. Not a reason to refuse it — a reason the SPOKEN label owes a field test (issue #7)
+       before anyone calls it good."
+  "Keep Chebyshev and document":
+    bad:
+    - "Documents a wrong number instead of fixing it, inside the one subsystem whose entire job is to tell a
+       child who cannot see where something is."
+  "Per-game distance function":
+    bad:
+    - "Hands the game a function where a DESCRIPTION belongs. The engine then cannot reason about the space at
+       all — no bearing, no thresholds, no narration — and every game reimplements the same three metrics."
+
+decision-outcome:
+  chosen-option:
+    link: "O1 + O4 together, with the frame corrected to the Dev's"
+    justification: |
+      ===== 1. THE MEASURE =====
+      `MoveRule` is `orthogonal` (L¹) · `diagonal` (L∞/Chebyshev) · `free` (L²), declared by grid AND by
+      continuous, and MANDATORY. A default would let forgetting pass as choosing, and the price of forgetting
+      is the sonar sending a blind child the wrong way with confidence.
+
+      `size` replaces `cols`/`rows` and `width`/`height`: a vector whose LENGTH is the dimension, capped at 2
+      or 3 by conformance.
+
+      ⚠️ ONE DELIBERATE ASYMMETRY, recorded rather than left to be noticed. The EXTENT is a vector; the POINT
+      (`Spot`) keeps NAMED axes and gains `z?`. `alvo.at.x` says what it is, `alvo.at[0]` makes you remember —
+      and `Spot` is read in code constantly while `size` is read by two functions. The 2-or-3 cap is what
+      closes the asymmetry: there is no `size` that `Spot` cannot represent.
+
+      ===== 2. THE NARRATION =====
+      `bearing(topology, from, to)` is new and pure. It is NOT `Focus.heading`: that one is where the child is
+      FACING, this one is where the TARGET is. The sonar needed the second and was computing it by hand.
+
+        compass   n · ne · e · se · s · sw · w · nw   + zenith · nadir
+        clock     «at 2 o'clock», twelve positions where the rose has eight
+
+      ⚠️ `zenith`/`nadir` EXIST BECAUSE `up`/`down` ALREADY MEAN SOMETHING ELSE — they are control ACTIONS in
+      `core/actions` (ADR-0085). While the world was flat the ambiguity cost nothing; in three dimensions it
+      would cost the worst kind of defect, the one that reads correctly and does something else.
+
+      ⚠️ TWO AXES WITH OPPOSITE CONVENTIONS, and silence about it would have been the defect. `y` grows DOWN —
+      it is the screen coordinate, inherited from the canvas and from all existing code, not chosen here. `z`
+      grows UP — that one IS chosen, because nothing forces it and «zenith» can only mean where a child would
+      look by raising her head.
+
+      ===== 3. TWELVE HOURS, TWO KEYS, AND WHY THE SECOND IS NOT OPTIONAL =====
+      The hour is a parameter, so twelve positions are one dictionary key. But the SINGULAR has its own,
+      because «às 1 horas» is not Portuguese and «a las 1» is not Spanish. In English the two forms coincide,
+      and coinciding is not a reason not to have it.
+
+  consequences:
+    positive:
+    - "A sliding puzzle's sonar reports MOVES. The 15-puzzle's measured 2x error is gone."
+    - "Above and below stop being «ahead». That was the information a blind child most needed, erased by a
+       dead zone that looked at `x` and never at `y`."
+    - "Three dimensions are expressible before a 3D renderer exists, so the contract does not have to break
+       again when zdog or Three arrives."
+    negative:
+    - "⚠️ BREAKING, and the fourth contract change in one day: `game-15puzzle` and `game-chess` both declare
+       `cols`/`rows` and neither is in this repository. This is the last one before publish, deliberately."
+    - "Every fixture that builds a topology grew three fields."
+    neutral:
+    - "`hotspots` is untouched: a list has no space, so no metric and no bearing. `bearing` returns `none`."
+    - "Stereo PANNING still comes from `x`, and correctly: panning is about which ear, which IS a screen fact.
+       What changed is the WORD, not the sound."
+  confirmation: |
+    `tests/contract-rumo.node.test.js` (new, 25 cases) and the metric cases in `tests/contract.node.test.js`,
+    born failing under EIGHT confirmed mutations: the rose losing the y-flip (north becomes south), the clock
+    measured counter-clockwise, zenith and nadir swapped, the third axis read in a 2D topology, hour 12 coming
+    back as 0, the grid becoming Chebyshev again, the continuous space returning pixels, and the dimension
+    taken from the point instead of the declaration.
+
+    `tests/audio-sonar.node.test.js` gates the wiring under four more: the frame hardcoded instead of coming
+    from the game, the two points swapped, the same-place case inventing a direction, and the singular hour
+    deleted.
+
+    ⚠️ AND THE LAST OF THOSE SURVIVED THE FIRST DRAFT, which is worth recording: nothing exercised HOUR 1. A
+    key covering eleven of twelve hours hides the twelfth, and the case only exists if somebody deliberately
+    picks a target ~30 degrees from the top. Without it a screen reader would read an ungrammatical sentence
+    on every 1-o'clock sonar, forever, with the suite green.
+
+    ⚠️ WHAT NO GATE CONFIRMS: that the spoken phrase actually helps. The clock frame assumes reading an
+    analogue clock, in an audience that includes children still learning to read. That is issue #7's field
+    test, and it is the condition on calling this good — not on shipping it.
+
+more-information: |
+  This closes the last of the four findings of ADR-0080 and the last open item of issue #108. §1 went to
+  ADR-0088 (the storage id), §2 to ADR-0084 (`topology` is a function), §4 to ADR-0087 (the declared world).
+
+  ⚠️ AND ONE THING IS DELIBERATELY NOT DECIDED HERE: what a game does when its frame and its topology
+  disagree with a player's need — a top-down game played by a child who thinks in clock positions, or the
+  reverse. The frame is a property of the SPACE by the Dev's correction, and making it a preference of the
+  LISTENER is a different question that ADR-0079's «the guarantee is the LIST» family already knows how to
+  ask. It is not answered by this record.

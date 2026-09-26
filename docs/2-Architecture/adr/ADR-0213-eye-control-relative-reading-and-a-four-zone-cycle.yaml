@@ -1,0 +1,124 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/face-signals.node.test.js
+    - engine:tests/gaze-relative.node.test.js
+    - engine:tests/gaze-cycle.node.test.js
+    - engine:tests/gaze-overlay.node.test.js
+    - engine:tests/gaze-overlay.browser.test.js
+    - engine:tests/eye-control.browser.test.js
+    - engine:tests/vision.node.test.js
+    - engine:tests/vision-loop.node.test.js
+  supersedes-in-part: [ADR-0210, ADR-0212]
+  superseded-in-part:
+    - by: ADR-0215
+      what: >-
+        §7, the eyes' toggle. The eyes are one position of the single camera icon, drawing the eye lines and the regions' outlines, never
+        hatched; the hatching of §6 leaves with it. The reading and the cycle stand.
+  errata:
+    - date: 2026-09-16
+      what: "the north face button's letter. The Dev had written «X» for it, and the other three follow the Xbox letters, whose north
+             button is «Y»; asked, the Dev: «Eu errei, siga o padrão do XBox». ERRATUM: north is «Y» and a triangle. Applied in the body."
+    - date: 2026-09-16
+      what: "✅ CONFIRMED, pushed (issues #194 and #196 closed; `engine:a9bec44` to `bde4814`, `de2e77a`): the reading, the cycle, the
+             drawing and the camera runtime are gated in `confirmed-by`, each red by mutation. On the Dev's own camera, in the quiz demo:
+             «Modo olhos funcionando corretamente, controles funcionando corretamente». §7's three toggle states were built and are
+             superseded the same day by ADR-0215 (issue #199)."
+  date: 2026-09-16
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0210 and its erratum — the default camera map; §2 left eye control, as its own modality, disabled until an acceptable map"
+    - "ADR-0212 — the camera-control toggles; the eyes' cycle had a gaze dot and eight sectors"
+    - "ADR-0211 — camera and speech controls latch every button by default"
+    - "ADR-0197 erratum — one camera group at a time"
+    - "ADR-0109 — the toggle follows the device in use; a synthetic key is stamped with the transport that produced it"
+    - "ADR-0177 — heavy files are served by the delivery from the game's own origin"
+    - "📏 The Dev's eye lab, 2026-09-15/16 (page `olhar-zonas`, MediaPipe Face Landmarker, Logitech Brio 500): a gaze POINT on the screen
+       did not hold — the ready-made eye scores saturate where the eye sits far off centre (they followed 12–22% of the rotation the geometry
+       needed looking right and down), and eight sectors, a calibrated classifier and a geometric fit all failed; four zones read by how far the
+       eye moved from its own rest did hold"
+    - "📏 The same lab's last rounds (thresholds 4/7.5, 5/10, 6/12): every item detected and rated «ok», the wrong commands almost all one
+       step off inside the right zone, and «Nenhuma posição» measured with the page alive (46–49 frames per second) gave zero false commands"
+  informed: []
+
+title: Eye control — a relative reading of four zones and a cycle of twelve commands and START
+
+context-and-problem-statement: |
+  Eye control was left disabled by ADR-0210 until the Dev reached an acceptable map. The lab reached one on 2026-09-16 and the Dev asked for
+  it in the engine: «Implemente na engine» · «É pra implementar o que criamos nos labs». The control is being built for children with ALS:
+  «Este controle está sendo desenvolvido para crianças com ELA. Preciso de ao menos quatro direções e quatro botões.» The shape of it is the
+  Dev's: «olhar para cima: altera a cada segundo entre cima, 4, R1 … fechar os dois olhos: start»; «pra que calibração se vamos usar o
+  movimento de olhar na direção oposta e depois na certa?»; «olhar para a direção contrária e depois para a correta, mantendo-se na correta
+  pelo tempo necessário»; «só permita começar após detectar que os olhos ficaram direcionados para o meio da tela sem mexer pela quantidade
+  de segundos necessária (enquanto houver ruído, continue com o pedido)»; «Mude o tempo do START para 2 s»; «4 na vertical e 8 na
+  horizontal». The presentation was specified by the Dev on the same day, and the eyes' toggle: «há três estados para o toggle de jogar
+  com os olhos: off, somente contornos + olhos, contornos + hashuras + olhos».
+
+decision-drivers:
+  - "D1 — ONLY THE EYES: the child may move nothing else, so nothing the reading needs can come from the head, the hands or the voice"
+  - "D2 — NO POINT ON THE SCREEN: the reading that held is a direction away from the eye's own rest, not a place the eye looks at"
+  - "D3 — NO CALIBRATION STEP: the rest measures itself, and the threshold is the person's own tremor"
+  - "D4 — A LOOK THAT WANDERS COMMANDS NOTHING: a command is a movement from the opposite side, held, and released"
+  - "D5 — THE PERSON SEES WHAT THE READING SEES, where the eyes already are"
+
+considered-options:
+  - "A — keep eye control disabled (ADR-0210 §2)"
+  - "B — a gaze point on the screen with dwell targets (ADR-0208, the geometric model, the calibrated classifier)"
+  - "C — a relative reading of four zones and a cycle in time, as the lab settled"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing unreliable reaches a child. ❌ A child whose only movement is the eyes has no way to play.
+  **B.** ✅ Any number of targets, anywhere. ❌ Measured not to hold on this stack: saturation, calibration that drifts with every head
+  movement, regions 3.6° apart against 8.8° of scatter.
+  **C.** ✅ Held in the lab with zero false commands in a valid «Nenhuma posição». ❌ Twelve commands cost time (a shoulder is about 4 s
+  away), and the defaults were measured on one face and one camera.
+
+decision-outcome:
+  chosen-option:
+    link: "C — a relative reading of four zones and a cycle in time"
+    justification: |
+      1. **The signal.** The Face Landmarker's eye scores of the RIGHT eye and the head pose, read every frame. No gaze point, no calibration.
+      2. **The rest.** Measured by itself, and only from 3 s during which the gaze stayed CONTINUOUSLY still: while the eyes move, the stretch
+         restarts and the screen keeps asking the person to look at the middle; no command exists before the rest is detected.
+      3. **The four zones.** The zone is the axis the gaze moved further along, measured in tremors of the rest, with its own threshold per
+         axis — **4 tremors vertically and 8 sideways** by default (the horizontal moves about twice as much). A zone is left below a lower exit
+         threshold, and is not taken by the other axis unless that axis clearly wins. A gaze parked, still, for longer than the cycle
+         re-centres the rest onto itself, dropping whatever was held without commanding.
+      4. **The command is a movement.** A zone arms only when the gaze arrived from the OPPOSITE zone; the visit that did not arm is the
+         preparation, and a command spends it. After a command, a short dead time lets no visit prepare the next one. A frame that cannot be
+         read freezes the cycle — it is never read as the gaze leaving.
+      5. **The cycle.** Held in an armed zone, the preview walks cancel → the direction → a face button → a shoulder, one step a second after
+         the settling time, and **goes round again**; the command is pressed when the gaze leaves the zone. North: cancel, up, 4, R1. East:
+         cancel, right, 3, R2. South: cancel, down, 2, L2. West: cancel, left, 1, L1. **START** is both eyes closed for **2 s**.
+      6. **The presentation**, over the game, never the camera image: five regions — the four at the edges and the middle — each **hatched**,
+         with writing at **16 px on a 720×360 picture**, in proportion. The middle says to look at it while the rest is measured. A look that
+         prepares says where to go: north «Desça!», east «Pra Esquerda!», south «Suba!», west «Pra Direita!». An armed look shows «Carregando...»,
+         then the Lucide arrow of its direction, then the face button as a letter and a shape each inside a circle (north «Y» and a triangle,
+         east «B» and a circle, south «A» and an X, west «X» and a square), then the shoulder inside a square — and again. Every text is in
+         pt/en/es.
+      7. **The eyes' toggle** has three states: off · the regions' outlines + the eyes · outlines + hatching + the eyes. «The eyes» are the eyes
+         and brows highlighted with MediaPipe's own lines. The gaze dot of ADR-0212 goes: a relative reading has no point to draw.
+      8. **Delivery**: each command reaches the game as a key pressed and released on the player's own scheme, stamped with the transport
+         `olhos` (ADR-0109); the latch of ADR-0211 and the one-camera-group rule of ADR-0197 apply unchanged.
+
+  consequences:
+    positive:
+      - "A child who moves only the eyes reaches the whole controller: four directions, four buttons, four shoulders and START"
+      - "No calibration screen and nothing kept about the child's face: the rest is measured each time the control starts"
+    negative:
+      - "Commands are slow — about 1.8 s for a direction and 3.8 s for a shoulder — and a game that needs quick input is not served by it"
+      - "The defaults (4/8 tremors, START 2 s) come from one person's face and camera; other faces and cameras may need other values"
+      - "The overlay shows the shape of the child's eyes and brows on a screen others may see"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #194, the eye control, and #196, the camera runtime, both closed). Gates, each red by mutation before it
+    counts: no zone before the rest is detected, and a moving gaze never becomes a rest; per-axis thresholds; a zone arms only from the
+    opposite one; the dead time; an unreadable frame freezes; the cycle repeats and leaving commands what the preview shows; START after 2 s;
+    each region shows exactly what item 6 says; the toggle's three states draw exactly their layers and never the camera image.
+
+more-information: |
+  The lab modules this is built from (scratchpad `vosk/`): `relativo.js` 40 cases, `ciclo.js` 47, `apresentacao.js` 12, `sinais.js` 9, the
+  synthetic face `rosto-falso.js` 11, each with its mutation plan. The plan of the work is «Plano · Câmera na engine». The face buttons'
+  letters are the Xbox ones on every side (see the erratum).
+  WebGazer is not used by this control; its removal (ADR-0132) is a separate decision.

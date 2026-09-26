@@ -1,0 +1,84 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/piper-left-the-engine.node.test.js
+    - engine:docs/notices/2026-09-14-piper-voices-withdrawn.md
+  supersedes: [ADR-0127]
+  errata:
+    - date: 2026-09-16
+      what: '✅ CONFIRMED, pushed (issue #193 closed, `engine:913051b`, `9b75371`): the gate reads the tree for Piper, its voices and its
+             phonemizer; the public notice is in the repository. Measured on dist/ built 2026-09-16: no Piper, Faber, Amy, Ryan or phonemizer
+             file, and no bundle names `piper-tts-web` or `piper_phonemize`.'
+  supersedes-in-part: [ADR-0065, ADR-0110, ADR-0184, ADR-0185, ADR-0186, ADR-0198]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0127 — SUPERSEDED: «The neural TTS runtime is piper»"
+    - "ADR-0065, ADR-0110 — SUPERSEDED IN PART: the Piper voices the engine owned and guaranteed"
+    - "ADR-0184 — SUPERSEDED IN PART: the game's bundle runs the Piper runtime"
+    - "ADR-0185, ADR-0186, ADR-0198 — SUPERSEDED IN PART: Piper voices in the voice list, Piper as a default, Piper first in pt and es,
+       the 🪶 mark"
+    - "ADR-0200 — Web Speech first; the neural voice is the fallback. Unchanged"
+    - "ADR-0203 errata (2026-09-14) — the lessac-derived voices are not hosted"
+    - "📏 Model cards read 2026-09-14 (`huggingface.co/rhasspy/piper-voices`): `pt_BR-faber-medium`, `en_US-amy-medium` and
+       `en_US-ryan-medium` are «Finetuned from U.S. English lessac voice»; lessac is trained on the Blizzard 2013 dataset (CSTR,
+       University of Edinburgh), licensed for research purposes only, not to be distributed, excluding «the development ... of voice
+       synthesis or speech recognition products or services». `es_MX-claude-high`: dataset Apache-2.0, training «See URL» — its
+       starting checkpoint is not stated on its cards"
+    - "📏 piper.ttstool.com (2026-09-14): its bundle fetches voices from `huggingface.co/rhasspy/piper-voices/resolve/main/` at the
+       user's request — the publisher offers the voices on Hugging Face only, no CDN of its own"
+  informed: []
+
+title: Piper leaves the engine — Kokoro is the only neural voice, and the project says why in public
+
+context-and-problem-statement: |
+  Reading licences to mirror third-party models, the lessac chain behind three of the four Piper voices the engine delivers came to
+  light: the delivery (ADR-0177) had been copying Faber, Amy and Ryan into every build. The Dev, 2026-09-14: «Isso não deveria
+  acontecer.» And the decision: «Creio que o melhor que temos a fazer é divulgar que tomamos conhecimento da incompatibilidade dos
+  modelos piper Faber, Amy e Ryan (Claude não?) tomamos a decisão de trabalhar apenas com Kokoro e não mais com Piper.»
+
+decision-drivers:
+  - "D1 — A LICENCE WE CANNOT SHOW IS A LICENCE WE DO NOT HAVE: a voice whose base checkpoint's data forbids distribution does not ship"
+  - "D2 — SAY IT IN THE OPEN: builds already carried those files; the people who use the engine learn it from the project"
+  - "D3 — ONE NEURAL VOICE FAMILY WHOSE LICENCE READS CLEAN: Kokoro-82M, Apache-2.0 weights trained on permissive audio"
+
+considered-options:
+  - "A — keep Piper, stop packaging the three voices and fetch them from Hugging Face on first use"
+  - "B — keep only the Piper voices whose lineage reads clean"
+  - "C — Piper leaves; Kokoro is the only neural voice; a public notice"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The voices stay. ❌ The licence question is unanswered, only moved to the child's device; the school's address goes to a
+  third party at play time, against ADR-0177.
+  **B.** ✅ Keeps the runtime. ❌ The one voice left (Claude, Spanish) has no stated starting checkpoint; Portuguese and English lose
+  their Piper voice anyway.
+  **C.** ✅ No voice of unknown lineage anywhere in the engine or its builds. ❌ Kokoro's Portuguese and Spanish voices were judged
+  low quality by the Dev; its model is 327 MB; a game without the Kokoro port has only the browser's voice.
+
+decision-outcome:
+  chosen-option:
+    link: "C — Piper leaves the engine"
+    justification: |
+      1. **No Piper in the engine**: no Piper runtime, no Piper voice, no Piper phonemizer — not in the voice list, the heavy-file
+         catalogue, the delivery, the precache nor the content security policy. Claude (es_MX) leaves with them.
+      2. **The neural voice is Kokoro**, through the game's port (ADR-0198); the browser's voice stays first (ADR-0200).
+      3. **A public notice** in the engine repository: which voices, what their cards say, what the Blizzard 2013 licence says, that
+         earlier builds packaged them, and that the engine no longer uses Piper.
+
+  consequences:
+    positive:
+      - "The engine and its builds carry no voice whose training data forbids distribution"
+    negative:
+      - "BREAKING for games: the Piper voice ids, the Piper runtime import and the phonemizer files are gone; a game that imported
+         `piper-tts-web` for the engine drops it"
+      - "Portuguese and Spanish neural speech is Kokoro's, judged low quality by the Dev; without the Kokoro port only Web Speech speaks"
+      - "Earlier builds keep the files they copied; the notice says so, the project cannot recall them"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #193 in `the-inclusionist-engine`, closed). Gates: no source, test, catalogue entry, dependency or header in
+    the engine names Piper, its voices or its phonemizer (a gate reads the tree); a built delivery contains no Piper file; the notice
+    is in the repository.
+
+more-information: |
+  Credits keep the history of what was used and why it left (`engine:docs/CREDITS.md`).

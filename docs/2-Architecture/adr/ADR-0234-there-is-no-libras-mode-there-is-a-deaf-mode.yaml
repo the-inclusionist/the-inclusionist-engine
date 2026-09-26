@@ -1,0 +1,246 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/the-sonar-reads-the-screen.browser.test.js
+    - engine:tests/libras-avatar.browser.test.js
+    - engine:tests/libras-glosses.node.test.js
+  supersedes-in-part: [ADR-0051]
+  errata:
+    - date: 2026-09-26
+      what: >-
+        PHASE B4 — THE FREE PLAYER IS APPROVED. Asked for the last phase of route B — «a sua rodada com o avatar novo e a
+        aceitação por pessoas surdas que sinalizam» — the Dev answered «Aprovado!». Route B is the interpreter, route A is
+        gone, and the four phases of route B are closed. The same day the Dev chose that a spelled word's letters chain
+        with the hand held up between them (`interface-log`, 2026-09-26), which changes the player's timing and not this
+        decision.
+    - date: 2026-09-26
+      what: >-
+        PHASE B3 LANDED — THE FREE PLAYER IS THE INTERPRETER, AND ROUTE A LEFT (engine `a3827e63`, Breaking-Changes note
+        DO). `createGame`, when the host lends no interpreter, builds the free Libras player (`ui/libras-avatar-player`:
+        LAViD-UFPB's GPL-3.0 signs exported to a three.js avatar); where the delivery carries no avatar it answers exactly
+        as `NO_INTERPRETER` does. `inclusionist-heavy --libras` delivers the glosses beside the avatar
+        (`libras/avatar/glosses.json`), the avatar and its 655 clips (pinned in `scripts/libras-avatar.json`) and
+        `libras/offline-avatar.json`. Left the engine and the delivery: the VLibras Unity player and its closed runtime;
+        the delivery-time `eval` rewrite this record allowed as a declared, temporary exception, with its CSP shim and
+        page; LAViD's Unity sign bundles (`scripts/libras-signs.json`, `libras/signs/`); route A's delivery list; and
+        `--libras-avatar`, which no release ever carried. At gloss time «has a sign» is the avatar's clip set, and the
+        engine's glosses came out byte-identical to route A's. The policy is unchanged — `script-src 'self'
+        'wasm-unsafe-eval'`, `connect-src 'self'`, never `unsafe-eval` — and the exception is gone. Measured on a served
+        delivery: the plain quiz in deaf mode signs with the avatar online (416 ms to the avatar) and, after one online
+        start, offline (341 ms); zero CSP violations; no request to anything of route A; nothing of Libras with deaf mode
+        off; the files a device keeps with deaf mode on went from 1,321 to 681, and the delivery is 35.9 MB smaller.
+        Still open: B4 (the Dev's round and acceptance by deaf signers), letter timing and chaining (a question to the
+        Dev), the avatar's upload to the project's mirror (until then `--libras` needs a local `--base`), and route A's
+        files already kept by a test browser, which nothing now deletes.
+    - date: 2026-09-25
+      what: >-
+        Ç IS SPELLED AS Ç — the rule «a word with no sign is spelled as it is written» stripped every mark, the cedilla
+        included, so «caça» was fingerspelled C-A-C-A; but Ç is not an accented C, it is a letter of the Libras manual
+        alphabet with its own handshape and movement. Measured on route A before changing anything: handed «CAÇA», which
+        has no bundle, the VLibras player spells C-A-Ç-A from a clip of its own (its caption marks the Ç, the hand makes
+        the C and moves, «Ç» alone plays ~7.9 s against ~3.5 s for «C»), logs no missing clip where «Ã» logs «Clip Ã não
+        foi encontrado em GERAL», and asks `libras/signs/` for no Ç bundle; route B carries a Ç clip since the manual
+        alphabet was exported (engine `eb2eeda0`). So the rule reads: in capitals, an accented vowel as its base letter
+        (Ã → A, É → E), and Ç as Ç — one rule for both routes (`spelledWord` in `scripts/libras-glosses.mjs`,
+        `provisionalGloss` in `ui/libras-glosses`, held in agreement by `tests/libras-glosses.node.test.js`). On the
+        engine's delivery, 12 of 598 glossed texts change. Engine `fcff09a2`.
+    - date: 2026-09-25
+      what: >-
+        ROUTE B SIGNS OFFLINE AFTER ONE ONLINE START (phase B3, offline half; route A stays the default). Measured before:
+        with a delivery built `--libras --libras-avatar`, deaf mode on and the free player lent, one online start kept
+        route A's listed files and nothing of route B — no avatar, no clip, no three.js chunk (627,596 bytes, left out of
+        the precache by the three.js erratum) — and offline the page with the free player did not open. Now route B is
+        kept by route A's mechanism, as a SECOND delivery list: `inclusionist-heavy --libras-avatar`, run after the
+        build, finds the one `assets/libras-avatar-stage-<hash>.js` (none or two stops it) and writes
+        `libras/offline-avatar.json` naming the manifest, `avatar.glb`, the clips and that chunk with their sha256; each
+        delivery step writes its own list, so a delivery keeps exactly what its steps carried. The list may name only
+        `libras/avatar/` and that chunk's name start — never the rest of `assets/`, which is the precache's. A device asks
+        for it only while deaf mode is on, checks every file by sha256 and never stores a mismatch; the service worker's
+        Libras route (never writing) also answers `libras/avatar/*` and the chunk by name, and the player asks each clip at
+        the address the list keeps (`PRIMEIRO&ORDINAL` was never found offline before). The rule is «what the delivery
+        carries, deaf mode keeps»: a delivery with both players makes a device keep both (≈49 MB); this ends when phase B3
+        takes the Unity player out of the delivery. Measured after (engine `c0274626`…`cd200afa`): offline, the
+        free player's canvas appeared and signed in 0.57–0.86 s with every player request answered by the service worker;
+        a tampered clip was not kept and the other 633 were; with deaf mode off nothing was requested; a delivery without
+        `--libras-avatar` keeps route A as before, with one quiet 404 report for the missing list per deaf-mode start.
+    - date: 2026-09-25
+      what: >-
+        ROUTE A SIGNS OFFLINE AFTER ONE ONLINE START WITH DEAF MODE ON (pillar 8). Measured before: the page RAN the
+        patched framework, which no catalogue entry named, so nothing on the device checked its bytes; and the player's
+        page, glosses and 632 signs went to the network on every start with no service-worker route, so offline the
+        interpreter never loaded. Now: (1) a catalogue entry may carry `madeFrom` — made by the DELIVERY from the entry it
+        names, never downloaded by the build, its `sha256` still the pin a device checks — and the patched framework is
+        one, so the delivery step and the device check against the same hash; (2) a delivery built with `--libras`
+        writes `libras/offline.json`, listing each page, glosses and sign file with its sha256, and the catalogue
+        declares it (`DELIVERY_LISTS`) with the only folders it may name — a list naming anything else is refused whole;
+        (3) at boot, only while deaf mode is on, `downloadHeavy` stores each listed file under its own address when its
+        sha256 matches, and a later boot refetches only what changed; (4) the service worker answers `libras/player/*`
+        and `libras/signs/*` from that checked cache, never writing, and goes to the page's own origin on a miss. The
+        list comes from the page's origin, so it is exactly as trusted as the page; the signs' hashes in it come from the
+        pins in `scripts/libras-signs.json`. Measured after (engine `ad0af039`, `15a33a9b` and the two before them):
+        offline, the player loaded and signed 3 of 3 tokens, one never played online; a tampered sign was not stored and
+        the other 637 files were; with deaf mode off nothing of it was requested. Still true: a child who turns deaf mode
+        on mid-session and goes offline before another online start has nothing kept, and signs a later delivery drops
+        stay in the device's cache.
+    - date: 2026-09-25
+      what: >-
+        ROUTE B'S PLAYER RUNS ON three.js, AND HOW IT ENTERS THE PACKAGE. The Dev authorised the download («Sim, pode
+        baixar»): `three` 0.186.1, MIT, from the npm registry. It enters as a runtime `dependency` pinned to that exact
+        version, and it is reached ONLY through a dynamic `import()` from the route B player when deaf mode first signs,
+        so a game's bundler emits it as a separate chunk and a child who never turns deaf mode on downloads none of it;
+        the cost for a game's developer is ~20 MB in `node_modules`, never in the delivery. Rejected: serving a prebuilt
+        `three.module.js` as a heavy file, as the ONNX runtime is — that fits a wasm runtime a bundler cannot split, while
+        three.js is plain modules the bundler tree-shakes to what the player uses. The avatar (`avatar.glb`) and the 632
+        clips exported in phase B1 are heavy files with a sha256, like the route A signs; the clips keep the GPL-3.0 of
+        their `.blend` sources.
+    - date: 2026-09-25
+      what: >-
+        A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN. The rule-based translator returns lemmas in Libras word order, so a
+        word with no sign in the dictionary would be fingerspelled as its lemma («entrou» as E-N-T-R-A-R). Asked, the Dev:
+        «Soletra-se a palavra escrita». So the glosses keep, for every token with no sign, the word as written on the
+        screen, and that is what the player spells — the child sees spelled what she reads, and written Portuguese stays
+        beside Libras (Lei 10.436 art. 4). The Dev also authorised downloading the signs the engine's glosses use (632 of
+        the GPL dictionary, ~16.8 MB estimated) and placed the interpreter at the bottom right; it appears when the sonar
+        calls it and leaves the screen when it finishes signing, the player staying loaded behind so it returns at once.
+    - date: 2026-09-25
+      what: >-
+        THE SONAR READS THE SCREEN — built (`engine:c8b18e83`, note DM) after the Dev tested the demo: «O sonar não
+        está lendo o que aparece na tela: a tela só é lida ao carregar.» The deaf-mode work had wired the interpreter
+        to the NAVIGATION sonar's sentence, and the screen was read once, by the narration. Now a press reads the text
+        on screen at that moment — the question and its options, the new ones after answering, the card or panel in
+        front when one is open — spoken, or captioned and handed to the interpreter in deaf mode; the spatial tone is
+        unchanged. Never read: hidden or `inert` content and the engine's own chrome; the session clock is left out
+        and the game's own HUD numbers are read. A canvas world, which the engine cannot read, keeps the navigation
+        sentence and gets a line in `problems`. With a menu open, R1 reads the menu in front (the Dev: «Tecla padrão
+        para o sonar deve ser R1»). The Libras player itself is route A, still being built.
+    - date: 2026-09-25
+      what: >-
+        ROUTE A NOW, ROUTE B NEXT. Told what route A needs (a patch to the Unity framework's JavaScript, the kind ruled out for
+        Vosk) and what it shares with B, the Dev asked «Não seria vantajoso seguir pela rota A e depois B para o VLibras.», and
+        then: «Então coloque no plano a rota A seguida pela B.» So A is built now, with the patch as a DECLARED, TEMPORARY
+        exception to «nunca unsafe-eval nem remendo»: it holds only until B replaces the player, it never adds
+        `unsafe-eval` to the policy, and the patch is a build step that checks the input's sha256, so an upstream change
+        fails loudly instead of being patched blind. What A builds and B keeps: the build-time glosses, the delivery of the
+        used signs, the interpreter port, the tests. What B throws away: only the Unity wrapper and the patch. B is the next
+        item after A, with its own end state, so the temporary does not become permanent.
+    - date: 2026-09-25
+      what: >-
+        ROUTE A MEASURED, and the measurement meets a rule the Dev already gave. With the player served from the page's own
+        origin under the delivery's exact headers (COOP, COEP, CSP unchanged): as published it does NOT run — the Unity
+        loader injects its framework as a `blob:` script (refused by `script-src`), and the player talks to the page
+        through Unity 2018's `Application.ExternalCall`, which calls `eval` (three `EvalError`s). It runs with zero CSP
+        violations only after two changes of ours: a shim that loads the framework from a same-origin file, and a build
+        step that replaces the single `eval(str)` inside Unity's framework JavaScript with a parser of the plain calls it
+        sends (`CounterGloss(1, 2);`). Everything else answered yes: signs fetched from a same-origin `setBaseUrl`
+        («CASA ESCOLA» signed, seen in frames read back from its canvas), a word with no sign fingerspelled with letters
+        built into the player (no letter bundles needed), 256 MiB fixed wasm heap, ~3.6 s to load on localhost. So «a
+        black box that cannot be patched» above was wrong at the glue level: its JavaScript can be edited as text, its
+        wasm cannot. And editing it is the «remendo» the Dev ruled out for Vosk («nunca unsafe-eval nem remendo»), so
+        route A as measured needs the Dev's word before it is built.
+    - date: 2026-09-25
+      what: >-
+        THE OFFLINE ROUTE IS CHOSEN, and it replaces the hosted widget. A study of VLibras's own repositories the same
+        day (GitHub `spbgovbr-vlibras`, LAViD's GitLab) measured three facts: under the delivery's COEP `require-corp`
+        the hosted widget's avatar never loads (its iframe document sends no COEP header); the hosted widget also
+        reaches jsDelivr, Wiktionary and PostHog, which receives the page's host and path on load with no consent
+        check; and the sign dictionary (23,397 signs, GPL-3.0) and the translator (`vlibras-translator`, LGPL-3.0) are
+        published, while the avatar player exists only as a closed Unity 2018 WebGL build (~20.2 MB, WebGL 1, 256 MB
+        heap). Of the three routes put to the Dev — (A) serve that player from the delivery's own origin, (B) rebuild
+        a free player from the GPL `.blend` sources in three.js, (C) the hosted widget patched with `credentialless`
+        — the Dev chose A: «Quantos subagentes para fazer B em 15 minutos? Correção: A em 15 minutos.», then «Agora
+        que eu tomei as decisões, adeque o plano.» So: the player is served from the delivery's own origin and driven
+        through its documented `postMessage` API; the text the engine and a game show is glossed at BUILD time with
+        the rule-based `vlibras-translator` (never the neural model, which declares no licence), so a game's own text
+        is glossed at that game's delivery; only the signs those glosses use, plus the manual alphabet and the digits,
+        ship as heavy files with a sha256; and the hosted widget, with every third-party host it reaches, is dropped.
+        The exception to the own-origin policy recorded below no longer exists, and pillar 8 holds for signing again.
+        What A carries, named so it is not forgotten: a proprietary binary (the Unity runtime) in an AGPL delivery,
+        with no corresponding source and redistribution terms not determined; a black box that cannot be patched; and
+        a 256 MB heap on low-end school machines. B remains the fully free destination. Not yet measured, and each can
+        stop A: whether the player runs under the delivery's CSP without `unsafe-eval` (unlike Vosk it cannot be
+        recompiled), whether it fetches signs from a same-origin base URL, and what it does with a word that has no
+        sign.
+    - date: 2026-09-25
+      what: >-
+        «zlibras» was VLibras — the Dev confirmed it: «Sim, VLibras, desculpe o engano novamente.» And the exception is
+        bounded: «Única exceção deve ser o VLibras. Mas verifique os repositórios do github deste projeto e se há a
+        possibilidade de fazer um port que funcione offline.» So VLibras is the ONLY third-party host the delivery may
+        reach, and whether an offline port can be built from VLibras's own public repositories is studied before the
+        exception is treated as permanent.
+    - date: 2026-09-25
+      what: >-
+        THE ONLINE DEPENDENCY IS ACCEPTED FOR NOW, by the Dev the same day, asked what the problem is with VLibras not
+        working offline: «Não funciona sem internet, mas qual o problema de não funcionar (por enquanto)? Vamos terminar o
+        trabalho mesmo com este "problema", ok?». So the interpreter is built on the VLibras widget served by
+        vlibras.gov.br, as a NAMED EXCEPTION to two rules, for this feature only: the delivery's own-origin policy
+        (ADR-0177, the Content-Security-Policy of #170) admits vlibras.gov.br for what the widget loads, and pillar 8
+        (offline after the first day) does not hold for the interpreter. What still holds offline, and must: every sound
+        keeps its caption and the text stays written (Lei 10.436 art. 4), so a deaf child offline loses the signing and
+        nothing else, and the engine says so in `problems` and to the child instead of showing a dead interpreter.
+        A self-hosted or on-device signer replaces the widget when one exists; the exception is written so it can be
+        removed without reopening the design.
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim: «O sonar, ao ser apertado com texto na tela faz com que o texto seja lido. Se a opção de interprete tiver ligada, o intêrprete aparece na frente da tela e \"lê\" o que está na tela. [...] não é fila de mensagens nem 'só a última', mas sim \"sonar do que está na tela\", e se houver sons de interface, ele é lido, caso contrário, escrito. A verdade é que não existe modo libras, mas modo pessoa surda: sons ganham legenda e o sonar chama o intérprete.»"
+    - "The Dev, same day: «Não haverá motor zdog, é pra usar zlibras.» — read as VLibras (ADR-0051 §3); no project named «zlibras» was found. To confirm"
+    - "ADR-0051 — two activation levels (interpreter on demand while audio plays; Libras as first language by tap-the-icon-then-the-text) and VLibras first"
+    - "Lei 10.436/2002 — recognises Libras as a legal means of communication and expression; art. 4, sole paragraph: Libras does not replace written Portuguese"
+    - "GAG, Hearing: «Provide signing» (Advanced). WCAG 2.2 1.2.6 Sign Language (Prerecorded), AAA — for audio in synchronised media"
+    - "📏 VLibras Widget documentation (vlibras.gov.br/doc/widget): integration loads `https://vlibras.gov.br/app/vlibras-plugin.js`; the documentation does not say whether translation runs on the device or on its servers, nor whether it works offline"
+  informed: []
+
+title: There is no Libras mode, there is a deaf mode — sounds get captions, and the sonar calls the interpreter
+
+context-and-problem-statement: |
+  ADR-0051 designed Libras in two levels: an interpreter that appears on its own while audio plays, and a first-language
+  level where the player taps the Libras icon and then the written thing. Neither was built, and issue #59 left open
+  how overlapping messages queue. The Dev reframes the feature by its user: the person is deaf, and what she needs is
+  every sound made visible and the screen's content available in her language on demand.
+
+decision-drivers:
+  - "Name the mode by the person it serves, not by the tool"
+  - "Libras is a language (Lei 10.436/2002); written Portuguese stays beside it (art. 4)"
+  - "The sonar already reads what is on screen on demand; one gesture should serve both the blind and the deaf child"
+
+considered-options:
+  - "A · ADR-0051 as written: interpreter appears while audio plays, plus tap-icon-then-text"
+  - "B · Deaf mode: every sound gets a caption; the sonar, with the interpreter on, has the interpreter sign what is on screen"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ An interpreter that appears on every sound buries the activity; it also needed a queue policy nobody could
+  choose well. **B.** ✅ The deaf child asks, with the same button the blind child uses, for what is on screen; sounds are
+  never lost because they are captioned. ✅ No queue: the interpreter signs what the screen holds when asked.
+  ❌ Libras then depends on the sonar being reachable, which the quick bar and the action map already guarantee.
+
+decision-outcome:
+  chosen-option:
+    link: "B — a deaf mode: captions for sounds, and the sonar calls the interpreter over the screen's content"
+    justification: |
+      The Dev's decision. Deaf mode turns on two things together: (1) every interface sound is captioned (the caption
+      host exists, ADR-0164 regra 4); (2) the sonar, pressed with text on screen, has the interpreter appear in front of
+      the screen and sign that text, where the blind child hears it read. Written Portuguese is never removed (Lei
+      10.436 art. 4). This replaces ADR-0051's level one (appear while audio plays) and its tap-icon-then-text gesture;
+      ADR-0051's choice of VLibras and the retirement of the zdog engine stand.
+      📌 Adequacy, as measured: GAG asks to «provide signing» (Advanced) and this does; WCAG 1.2.6 concerns audio in
+      synchronised media, which the engine has none of, and captions cover the audio the engine does have.
+      ⚠️ What still blocks the build is not the design: the documented VLibras integration loads a script from
+      vlibras.gov.br, a third-party host, against the delivery's own-origin policy and the offline pillar; whether its
+      translation runs on the device is undocumented and must be measured before choosing how to ship it.
+
+  consequences:
+    positive:
+      - "One gesture — the sonar — serves the blind and the deaf child"
+      - "No message queue to design"
+    negative:
+      - "The interpreter depends on a tool whose offline behaviour is unmeasured"
+
+  confirmation: |
+    ✅ In part (errata of 2026-09-25): deaf mode captions every interface sound, and the sonar reads the screen's text and,
+    in deaf mode, hands it to the interpreter port (`confirmed-by`). 📋 Still owed under issue #59: the Libras player behind
+    that port — route A now, route B after it — and the build-time glosses.
+
+more-information: |
+  Automatic Portuguese-to-Libras avatars are criticised by deaf organisations as less faithful than a human interpreter;
+  this record chooses the tool that exists under a free licence and keeps the written text beside it.

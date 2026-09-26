@@ -1,0 +1,73 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-14
+      what: '📌 THE SECOND TEST PROTOCOL. The Dev, 2026-09-14: «Recrie os dois testes mas desta vez com barra para que eu passe para o próximo e três avaliações: ok, cansativo, não me detecta e não consegui. O app é que deve detectar se consegui fazer ou não quando a barra enche até a marca, minha avaliação é sobre a realização.» No timed tries: for each candidate the Dev moves freely; a bar per reading fills and the APP detects the candidate when the bar reaches its mark and holds (face: a rise of 0.3 from the calibrated rest held 300 ms; hands: the gesture recognised for 300 ms); the space bar passes to the next; the Dev rates the doing with four ratings — ok, cansativo, não me detecta, não consegui (the message says three and lists four; four are offered). Recorded per candidate: detected or not, time to the first detection, how many detections, the peak level, the rating. The first protocol''s crosstalk figures are not recorded again (ADR-0205 and ADR-0206 errata).'
+    - date: 2026-09-14
+      what: '📌 THE SPEECH MODALITY''S DEFAULT VOCABULARY, in three languages, and the face buttons by position. The Dev, 2026-09-14, after checking the terms against what games use (racing R2 accelerate / L2 brake, shooters L2 aim / R2 fire): Português — «acima, abaixo, esquerda e direita - direcionais; start; select; ação - botão 1; confirma/pega/ativar/pulo - botão 2; voltar/solta/cancelar/especial - botão 3; lista/troca - botão 4; bombordo - L1; mira/freia - L2; estibordo/boreste - R1; gatilho/acelera - R2». Español — «Arriba, abajo, izquierda y derecha para los controles direccionales; start; select; Acción - botón 1; Confirma/Recoger/Activar/Saltar - botón 2; Volver/Soltar/Cancelar/Especial - botón 3; Inventario/Lista/cambiar - botón 4; Babor - L1; Apuntar/Frenar - L2; Estribor - R1; Disparar/Acelerar - R2». English — «Up, down, left, and right for directional controls; Start; select; Action - button 1; Confirm/grab/pick up/activate/jump - button 2; Back/drop/cancel/special - button 3; Inventory/swap - button 4; Port - L1; Aim/Brake - L2; Starboard - R1; Trigger/Accelerate - R2». A position answers to any of its words; L1 and R1 are the ship''s sides, the Dev''s adaptation. The buttons, confirmed by the Dev («Esta é a associação correta»): xinput · Xbox · PlayStation · Nintendo — 1 X · square · Y (west); 2 A · cross · B (south); 3 B · circle · A (east); 4 Y · triangle · X (north) — by position, the same arrangement as Unity Input System''s default actions (Attack west, Jump and Submit south, Cancel east, Interact north). 📏 Measured against the Vosk small grammars (their Gr.fst symbol tables): every word is in the vocabulary except «boreste» (pt) — under Vosk small pt, R1 answers only to «estibordo»; Web Speech on the device has no closed vocabulary. The words are tested in the bar protocol before the map is recorded.'
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0197, ADR-0199, ADR-0202 — the camera's first mappings, to navigation positions (up, down, left, right, confirm, back,
+       menu); they stand until the Dev's default map replaces them"
+    - "ADR-0193, ADR-0194, ADR-0200 — voice commands: Web Speech on the device first, Vosk small as the fallback"
+    - "ADR-0155, ADR-0162 — the positions: directions, START, SELECT, actions 1–4, L1/L2/R1/R2"
+    - "📏 The Dev's camera runs, 2026-09-14: the seven canned gestures (Closed_Fist, Open_Palm, Pointing_Up, Thumb_Down, Thumb_Up,
+       Victory, ILoveYou) all work well"
+    - "cvzone (evaluated 2026-09-14): a Python library over OpenCV and MediaPipe's Python API — it does not run in the browser; its
+       `fingersUp()` compares each fingertip with its middle joint (the thumb by x), the landmark geometry `input/camera-gestures` uses"
+  informed: []
+
+title: Five modalities map the whole controller — every candidate tested first
+
+context-and-problem-statement: |
+  The camera mappings so far drive menu navigation. The Dev, 2026-09-14: «Vamos fazer melhor e mapear o controle completo nas cinco
+  modalidades: Câmera: gestos estáticos; Câmera: gestos dinâmicos; Câmera: rosto (Face Landmarker); Câmera: olhos (Face Landmarker);
+  Fala. O controle consiste em quatro direções, start, select, quatro botões de ação e quatro botões laterais (L1, L2, R1, R2). Para
+  mapeá-lo, primeiro eu preciso testar todas as possibilidades do MediaPipe. Face Mesh: nosso primeiro alvo de teste, é preciso
+  descrever quais das 52 expressões funcionam bem sem deixar o usuário com fadiga.» And the hand gestures to test: the index pointing
+  in four directions, a pinch, three fingers, four fingers without the thumb, two fingers pointing in four directions, «cachorro»
+  (middle and ring pinched to the thumb, index and little extended), zero (all fingers closing a circle on the thumb), half heart,
+  Korean heart; beside the canned ones. «Primeiro vamos ver quais destes gestos e expressões funcionam bem para controle. O que
+  funcionar irá para mapeamento de controle e eu criarei um mapa padrão.»
+
+decision-drivers:
+  - "D1 — A CHILD PLAYS A WHOLE GAME, not only its menus: every position needs a way in, by any modality"
+  - "D2 — MEASURED BEFORE MAPPED: a candidate enters the map only after it activates reliably, stays apart from the others and does
+     not tire"
+  - "D3 — THE MAP IS THE DEV'S: the tests describe; the Dev chooses the default"
+
+considered-options:
+  - "A — extend the current navigation mappings position by position"
+  - "B — test every candidate of every modality, then the Dev makes the default map"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Quick. ❌ Maps guessed signals; the eyes' first mapping already failed on a real face.
+  **B.** ✅ The map rests on measurements of activation, crosstalk and fatigue. ❌ A test round per modality before any new reader.
+
+decision-outcome:
+  chosen-option:
+    link: "B — test first, then the Dev's default map"
+    justification: |
+      1. **The controller**: four directions, START, SELECT, buttons 1–4, L1, L2 (trigger), R1, R2 (trigger).
+      2. **Five modalities**: static hand gestures, moving hand gestures, face, eyes, speech.
+      3. **Face first**: a guided test of MediaPipe's blendshapes on the Dev's face — for each, how reliably it rises above the calibrated
+         rest, which other blendshapes rise with it, and how tiring it is — described in a results table.
+      4. **Hands**: the canned gestures are measured as working. The Dev's gesture list is tested with a finger-state classifier written
+         in JavaScript, porting cvzone's `fingersUp` logic (cvzone itself is Python and cannot run in the browser), plus pinch and circle
+         distances measured in palm sizes.
+      5. **The Dev makes the default map** from what works; the map is recorded, then the readers are built.
+
+  consequences:
+    positive:
+      - "Every position of the controller can be reached without hands, voice or eyes alone"
+    negative:
+      - "The current navigation mappings are provisional until the default map"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine`. Gates: a results table per modality from the Dev's test runs
+    (activation, crosstalk, fatigue); the Dev's default map recorded; each mapping recognised from recorded frames raises its position.
+
+more-information: |
+  MediaPipe Face Landmarker gives 52 blendshape scores (`_neutral` and 51 expressions); the Dev's list names them by region.

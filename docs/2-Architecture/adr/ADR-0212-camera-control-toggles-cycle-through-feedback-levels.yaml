@@ -1,0 +1,75 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0213
+      what: >-
+        §1, the eyes' cycle. It has three states — off · the regions' outlines + the eyes · outlines + hatching + the eyes — and no gaze
+        dot, since the relative reading has no point on the screen. The hand-gesture and face cycles stand.
+    - by: ADR-0215
+      what: >-
+        §1–§3 and §6, one toggle per mode. One camera icon cycles off · hands · face · eyes, every playing position draws its lines (no
+        «on» without them), and the choice is one key. §4 and §5 stand.
+  date: 2026-09-15
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0197 erratum — one camera group at a time"
+    - "ADR-0210 and its erratum — the face and hand maps; eye control as its own modality stayed disabled"
+    - "ADR-0211 — the camera and speech modes latch every button by default"
+    - "📏 The Dev's eye-control lab runs, 2026-09-15: registering the eight directions again and again did not converge (one direction came
+       out as three different readings), while a dot showing where the eyes were read let the Dev learn the regions the computer calls the
+       diagonals: «Compensa mais ter uma bolinha fantasma no jogo para mostrar como seus olhos estão sendo detectados do que calibrar de novo
+       e de novo (mostrar a malha com opacidade 20-50%, junto com a bolinha que atua como o cursor do olhar, sobre a tela de jogo)»"
+    - "📏 MediaPipe's Face Landmarker ships the eyes, irises, brows and lips as separate connection sets; the lab draws them apart over the
+       video or alone, at a layer opacity"
+  informed: []
+
+title: The camera-control toggles cycle through feedback levels — eyes, hand gestures, faces
+
+context-and-problem-statement: |
+  After the eye lab, the Dev, 2026-09-15, set each camera toggle to cycle through what it shows over the game: «O toggle para jogar pelo
+  olhar passa a ter quatro possibilidades: off; ligado + bolinha; ligado + bolinha + setores; ligado + bolinha + setores + olho e
+  sobrancelha (e não rosto). O de jogar com gestos: off; ligado; ligado + linhas das mãos. E o de jogar com expressões faciais (caretas):
+  off; ligado; ligado + olhos e sobrancelha + bocas.»
+
+decision-drivers:
+  - "D1 — THE PLAYER LEARNS THE COMPUTER'S READING by seeing it, which works where repeated calibration did not"
+  - "D2 — WHO NEEDS LESS ON THE SCREEN GETS LESS: every level beyond «on» is a choice in the same toggle"
+  - "D3 — SHOW ONLY WHAT THE MODE READS: the eyes and brows for the gaze, the eyes, brows and mouth for faces, the hands for gestures"
+
+considered-options:
+  - "A — a toggle on/off per mode and a separate setting for the overlay"
+  - "B — one cycle per mode whose positions add feedback layers"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Each choice apart. ❌ Two places to find what one wish means («play with my eyes, and show me where they go»).
+  **B.** ✅ One control per mode, in the order a player needs them. ❌ A player who wants sectors without the dot has no position for it.
+
+decision-outcome:
+  chosen-option:
+    link: "B — one cycle per mode"
+    justification: |
+      1. **Eyes** (gaze control): off · on + the gaze dot · on + dot + the eight sectors · on + dot + sectors + the eyes and brows lines
+         (not the whole face).
+      2. **Hand gestures:** off · on · on + the hands' lines.
+      3. **Faces** (expressions): off · on · on + the eyes, brows and mouth lines.
+      4. **Over the game:** the dot is the gaze cursor; lines are drawn over the game screen at 20–50% opacity, as a layer (overlapping lines
+         do not add up), never the camera image.
+      5. **One camera group at a time** stands (ADR-0197): turning one mode on turns the others off.
+      6. Each position is the player's setting, kept on the device.
+
+  consequences:
+    positive:
+      - "A player can see how the camera reads them while playing and adjust without a calibration step"
+    negative:
+      - "The eye mode needs the gaze dot and sectors drawn over any game; the lines' colours and the dot must not be read as game objects"
+      - "The overlay shows the shape of the child's face or hands on the screen others may see"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #191** (the readers and the quick-bar icons for the camera modes) and **#194** (eye control). Gates: each
+    icon cycles its positions in order and keeps the choice; each position draws exactly its layers over the game; turning one camera mode on
+    turns the others off; no position draws the camera image.
+
+more-information: |
+  The lab pages (`mapa-barra.html`, `olhar-barra.html`) let the Dev pick «olhos, sobrancelhas e boca», «olhos e sobrancelhas» or the whole
+  face, set the opacity, and hide the video to see the lines alone.

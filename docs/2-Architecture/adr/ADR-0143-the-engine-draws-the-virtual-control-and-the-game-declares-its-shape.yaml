@@ -1,0 +1,223 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/a-pad-with-nowhere-to-mount.browser.test.js
+    - engine:tests/the-touch-pad-follows-the-declaration.browser.test.js
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+  errata:
+    - date: 2026-09-25
+      what: >-
+        CONFIRMED. The engine mounts, wires and hides the virtual control from the declaration (plan phase 4,
+        `engine:2567148` and after), and the last gate — a host with nowhere to mount the pad says so in `problems`
+        and mounts nothing — landed with issue #141 (`engine:0a2f6905`). The shape follows ADR-0157, ADR-0162 and
+        ADR-0165 where they superseded §2–§3.
+  superseded-in-part:
+    - by: ADR-0165
+      what: "ONLY §2, «each button carries the game's word» — the face shows the button's name, the word is its function in the legend"
+    - by: ADR-0157
+      what: >-
+        §2 «the shape comes from `preset`, and from nothing else» and §3 «a game with no `preset` gets no pad». The pad
+        now always has the four directions and four action buttons, and its presses drive the menus; the engine still
+        draws it and still gives each named position the game's word.
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0106 §1 — the Dev's standing rule about the pause menu and the accessibility icons being OFFERED
+       BY THE ENGINE. This record extends the same sentence to the virtual control, in their words on
+       2026-09-11: «Além dos menus, o controle virtual também deve ser oferecido pela engine»"
+    - "ADR-0106 §5 — «no stage may ship a dead button». It is what forbids the obvious reading of this
+       record: a fixed d-pad mounted into a game that has no directions is nine dead buttons, not a gift"
+    - "ADR-0074 §6 — 📏 IT SAYS THE PAD IS ALREADY BUILT, and that is half true. Measured 2026-09-12:
+       `input/touch.ts` is 415 lines of real work — the millimetre anchored in the device (WCAG 2.5.5), the
+       hand classification, nine remappable slots with persistence, the gesture-to-meaning logic — and it
+       reaches TWENTY-SIX ids while creating ZERO. What was missing was never the logic"
+    - "ADR-0085 — `ActionPreset`: the game names the positions it uses, with its own word for each. It is
+       the material this record draws the pad FROM, and it already exists"
+    - "ADR-0113 — the four assisted transports, where the latch is what makes the input work at all. A pad
+       shape derived from declared actions has to keep answering that, which is why the rule below says the
+       arbitration does not move"
+    - "ADR-0122 — «not offered, not declinable», for the pause card. This record does NOT extend that clause
+       to the pad, and the rule below says why: a control surface that no declared action feeds is not a gift"
+  informed: []
+
+title: The engine DRAWS the virtual control, and the game declares its SHAPE
+
+context-and-problem-statement: |
+  The Dev asked for it in one sentence on 2026-09-11, straight after the panels: «Além dos menus, o controle
+  virtual também deve ser oferecido pela engine». Nothing in the record set decides who draws it, so the
+  sentence has no home and the work has no gate.
+
+  🔴 **AND THE SILENCE IS TOTAL WHERE IT MATTERS MOST.** 📏 Measured 2026-09-12 in this engine:
+
+    · `input/touch.ts` — 415 lines — reaches **26 ids** and creates **none**.
+    · `input/touch-bindings.ts` — 552 lines — reaches four more, and creates none.
+    · `touch-bindings.ts:506` is `const tc = ctx.$('#touch-controls'); if (!tc) return;`, with the comment
+      «sem os botões no documento, não há o que amarrar (guarda do IIFE original)». **Nothing reaches
+      `problems`.** A game without that markup gets no pad, no error, and no line telling anyone why.
+
+  ⚠️ **AND THE ENGINE'S OWN SECOND CONSUMER ALREADY REFUSED IT, IN WRITING.** `consumer-quiz/main-quiz.ts`
+  item 14 — written before this record existed, and it is the strongest argument in it:
+
+      «O PAD — uma cruz direcional e quatro botões chamados `jump`, `run`, `especial`, `swap`, mais DOZE ids
+       fixos de markup que o consumidor teria de reproduzir. Um quiz quer dois alvos grandes ("próxima" e
+       "confirmar"), não um direcional de plataforma. Não liguei o `initTouch`: reproduzir doze ids para um
+       conjunto de controles que o quiz não quer seria o mesmo tipo de mentira do sonar.»
+
+  🎯 So the naive reading of the Dev's sentence — the engine mounts THE pad, the one the platformer has — is
+  refused by a consumer that already exists. The question this record has to answer is not «does the engine
+  mount it» but **«mount WHAT»**.
+
+  📌 And the cut is not new. It was made for the remapping screen on 2026-09-06, and `SettingsControlsCtx`
+  still carries the reason: «a tela de remapeamento mostrava as OITO linhas de uma tabela deste ficheiro —
+  quer dizer, a engine decidia que todo jogo tem exatamente pular, correr, trocar e especial. Um quiz
+  mostraria quatro linhas para ações que não existem nele, e uma criança tentaria remapear um botão que não
+  faz nada.» The same sentence, with «remapear» swapped for «tocar», is this record's problem.
+
+decision-drivers:
+  - "D1 — A CHILD WHO ONLY HAS A TOUCHSCREEN. On a school tablet with no keyboard, the pad is not a
+     convenience: it is the only way in. Five of six games in the local catalogue ship without one."
+  - "D2 — A GAME MUST NOT HAVE TO REPRODUCE TWELVE IDS TO BE PLAYABLE BY TOUCH. That is the finding-6 shape
+     of defect one level out: an undeclared markup contract whose failure mode is silence."
+  - "D3 — AND A GAME MUST NOT RECEIVE CONTROLS IT HAS NO ACTIONS FOR. ADR-0106 §5 is explicit that a
+     surface offering a path and then refusing it is worse than an absent one."
+  - "D4 — THE ERGONOMICS ARE ALREADY THE ENGINE'S AND MUST NOT BE RE-DECIDED PER GAME. The real millimetre,
+     the WCAG 2.5.5 target size, the hand classification and the nine remappable slots are built and
+     measured; a game that draws its own buttons loses all four without knowing it did."
+
+considered-options:
+  - "A — The engine mounts the platformer's pad: a cross plus `jump`/`run`/`especial`/`swap`."
+  - "B — The engine mounts nothing and keeps reporting the absence, as it did before ADR-0106."
+  - "C — The engine DRAWS the control from the game's declared `preset`, and the game says only WHERE."
+
+pros-and-cons-of-the-options: |
+  **A — the platformer's pad, for everyone.**
+  ✅ It is the shortest path, and it is what the Dev's sentence sounds like at first reading.
+  ❌ It ships dead buttons by construction. A quiz that declares `confirm` and `next` would receive a
+     directional cross and four action buttons, none of which its declaration feeds — nine controls that
+     announce themselves to a screen reader and do nothing. That is ADR-0106 §5 violated by the very record
+     that cites it.
+  ❌ And the objection is not hypothetical: the engine's own second consumer wrote it down and acted on it.
+
+  **B — keep reporting the absence.**
+  ✅ Honest, and cheap.
+  ❌ It is the state ADR-0106 already judged and rejected for the accessibility bar, in the same words:
+     «reportar não é oferecer — cinco jogos continuam sem barra até alguém agir na linha». A child on a
+     tablet cannot act on a line in `problems`.
+
+  **C — the engine draws it from `preset`.**
+  ✅ The material already exists and is already the game's: `ActionPreset` is partial on purpose — «um jogo
+     declara SÓ as posições que usa» — and `presetActions` returns them in the canonical order, with the
+     game's own word for each through `labellerFrom`.
+  ✅ It satisfies §5 by construction rather than by care: a control exists exactly when an action feeds it.
+     A quiz that declares two actions gets two large targets; the platformer gets its cross and its four
+     buttons, because that is what it declares.
+  ✅ The ergonomics stay in one place. Every game inherits the real millimetre, the target size and the nine
+     remappable slots without asking.
+  ❌ It is more work than A, and the pad's geometry stops being a fixed template — the cross has to be
+     derived from which of `up`/`down`/`left`/`right` the game actually declares.
+  ❌ A game that declares no `preset` gets no pad. That is the right answer and it must be SAID, not
+     silently done — which is what the `problems` line in the rule below is for.
+
+decision-outcome:
+  chosen-option:
+    link: "C — the engine DRAWS the control from the game's declared `preset`, and the game says only WHERE"
+    justification: |
+      The engine draws the virtual control; the game declares its SHAPE by declaring its actions, and its
+      PLACE by `host.touchHost`.
+
+      ===== 1. THE ENGINE MOUNTS THE MARKUP =====
+      `createGame` builds the control surface and calls `initTouch` and `initTouchBindings`. No consumer
+      reproduces an id. This is ADR-0106 §1 applied to the fourth surface, after the icon bar, the pause card
+      and the settings panels.
+
+      ===== 2. THE SHAPE COMES FROM `preset`, AND FROM NOTHING ELSE =====
+      A control is mounted for a declared action and for no other. The directional part is mounted for
+      whichever of `up`/`down`/`left`/`right` the game declares; the action buttons are one per remaining
+      declared action, carrying the game's own word, which is what `labellerFrom` already returns.
+
+      📌 The engine never invents a name: an action the game leaves unnamed is not drawn, by the same rule
+      `labellerFrom` already states for the control assistant — «devolver `action7` seria pôr um nome
+      abstrato à frente de uma criança».
+
+      ===== 3. A GAME WITH NO `preset` GETS NO PAD =====
+      There is nothing to draw. This is §5 of ADR-0106, and it is the one place where this record does NOT
+      follow ADR-0122's «not offered, not declinable»: the pause card exists for every game because every
+      game can be paused, and a control surface fed by no declared action is not in that category.
+
+      ===== 4. AND THE SILENCE ENDS EITHER WAY =====
+      Today `touch-bindings.ts:506` returns without a word. Both absences become a line in `problems` naming
+      the way out: no host for the control («declare `host.touchHost` or have a `#game-region` that accepts
+      children»), and no `preset` («declare the positions this game uses, with the word for each, and the
+      touch control appears»).
+
+      ===== 5. WHAT DOES NOT MOVE =====
+      The millimetre-real geometry, the WCAG 2.5.5 target size, the hand classification, the nine remappable
+      slots with their persistence, the gesture-to-meaning logic and the arbitration with keyboard and
+      gamepad are already built and already the engine's. This record adds the markup and two calls; it
+      re-decides none of them.
+
+      ===== 6. THE PAD'S CONFIGURATION PANEL IS THE NINTH PANEL =====
+      `input/touch.ts` reaches `#touchcfg` and twenty-two `pad-*` ids. It is a settings panel in everything
+      but the count, and it enters by the same door as the other eight — `ui/panel-shell` for the frame,
+      `ui/panel-widgets` for the rows — rather than growing a second way of building a panel.
+
+  consequences:
+    positive:
+      - "A child whose only device is a touchscreen can play any game that declares its actions, without
+         that game's author having reproduced twelve ids"
+      - "No game receives a control it has no action for, so ADR-0106 §5 holds by construction rather than
+         by whoever remembers it"
+      - "The real millimetre, the WCAG 2.5.5 target size and the nine remappable slots reach every game at
+         once, instead of being re-decided — or lost — per game"
+      - "The silence at `touch-bindings.ts:506` ends: an absent host and an absent `preset` each become a
+         line naming the way out"
+    negative:
+      - "The pad stops being a fixed template, and the directional cross is the hard part: a game declaring
+         only `left` and `right` must not get a cross with two dead arms"
+      - "A game that declares no `preset` gets no touch control at all. That is the correct answer, and it
+         will read as a regression to anyone who expected ADR-0122's «not declinable» to extend here"
+      - "`input/touch.ts` reaches 26 ids; this record makes the engine responsible for creating all of them,
+         which is markup the engine did not own yesterday"
+
+  confirmation: |
+    ✅ BUILT (confirmed 2026-09-25 — see `confirmed-by`). The gates as they were named before the work, kept as history: The work is **issue #141** in
+    `the-inclusionist-engine`. The gates, named now so the record and the work cannot drift:
+
+      1. A minimal document plus `createGame` with a TWO-action `preset` mounts two controls, not nine.
+      2. The same document with the platformer's preset mounts the directional part and its action buttons,
+         each carrying the game's own word.
+      3. `preset` absent mounts nothing AND leaves a line in `problems` naming the way out — the case
+         asserts the ABSENCE of the markup as well as the presence of the line.
+      4. A host that cannot take children leaves its own line, and the boot survives it.
+
+    📌 Gate 3 is the one that matters most, and it is the one a careless implementation passes by accident:
+    today the pad is also absent, and also silent. Asserting only the absence would keep passing with
+    nothing built.
+
+more-information: |
+  ⚠️ **NOT YET BUILT — and this confirmation says so instead of predicting.** ADR-0128 is the rule: the
+  DECISION is complete on the day it is written; the confirmation is a promise until a gate exists. The work
+  is **issue #141** in `the-inclusionist-engine`, and there is no `confirmed-by` until the gate lands, at
+  which point an erratum says what changed.
+
+  📏 **The measurements this record rests on**, all taken 2026-09-12 in the engine at `9848bde`:
+    · `input/touch.ts` — 415 lines, reaches 26 ids, creates 0.
+    · `input/touch-bindings.ts` — 552 lines, reaches `#touch-controls`, `#touch-cross`, `#touch-stick` and
+      `#touch-start`, creates 0; `:506` gives up on the first of those without a word.
+    · `app/css/style.css` — `--z-touch-controls:25000`, `.touch`, `.touch-pad`, `.touch-btn` with
+      `min-width: var(--tap)`, and `padPxPerMm` anchored to WCAG 2.5.5. The CSS is complete.
+    · `consumer-quiz/main-quiz.ts:120-127` — the refusal, in the second consumer's own words.
+
+  📌 **What the four gates will have to assert** — they are the issue's checklist, written here so the record
+  and the work cannot drift:
+    1. a minimal document plus `createGame` with a two-action `preset` mounts TWO controls, not nine;
+    2. the same document with the platformer's preset mounts the cross and the four buttons;
+    3. `preset` absent mounts nothing AND leaves a line in `problems` naming the way out;
+    4. a host that cannot take children leaves its own line, and the boot survives it.
+
+  ⚠️ **The riskiest part is the one that looks safest:** the cross. It is a single widget in the CSS and in
+  `touch-bindings`, and «mount it for whichever directions are declared» is not obviously expressible in a
+  four-way cross — a game that declares only `left` and `right` should not get a cross with two dead arms.
+  Whether that becomes a two-way variant or a different widget is a question the work will answer; this
+  record fixes the RULE, not the widget.

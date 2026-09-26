@@ -1,0 +1,188 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0221]
+  confirmed-by:
+    - engine:tests/code-health.node.test.js
+  errata:
+    - date: 2026-09-25
+      what: >-
+        D3 ENDS, AND WITH IT THE WHOLE RECORD'S PROGRAMME (`engine:cf39cb6f`, note DN): the words a game declares are keys of
+        its own dictionary, resolved by the root's translator at every drawing, and `core/i18n` keeps no module-level state.
+        The set of stateful modules outside the root is EMPTY (36 at D1 -> 0). A key a game's dictionaries lack is a line in
+        `problems` and never reaches the screen raw; a word passed in the old shape is refused at boot.
+    - date: 2026-09-24
+      what: >-
+        PHASE D1 LANDED (engine commit a0ef7512): `fanOut` counts value imports only (474 -> 357 over 181 modules),
+        `globalReach` sees `globalThis`, animation frames, `caches`, `Worker`, `WebAssembly`, `AudioContext`,
+        `location`, speech synthesis and `crypto` with shadowing resolved per scope (26 modules reach a global, 40
+        reaches), and the seventh measure `statefulEdges` holds a stateful set written BY NAME in the baseline: 37
+        modules, 107 value edges into them outside the root (`core/i18n` 42, `core/state` 14, `platform/storage`
+        14). Its ceiling is 0 for a new module and an existing one must not worsen; 17 mutations red, one control
+        green. Known limits, measured and written: `ui/fonts` counts as stateful although its table is only filled at
+        import, and a constant another module mutates is not seen. D2-D4 still owe their end states (issue #207).
+    - date: 2026-09-24
+      what: >-
+        PHASE D2b LANDED (engine 45f5545e and the seven before it): value edges into `platform/storage` outside the
+        root 12 -> 0, `platform/storage` left the stateful set (37 -> 36), and with every browser test file on its own
+        storage the browser suite passed 20 sequential full runs, 1277/1277 each — F9's end state. And one case point 1
+        did not spell out, settled here because only one answer is consistent with it: `core/loop.startLoop` is called
+        by the GAME, not the root, and reads the game speed from `core/state` on every frame. The speed arrives as a
+        REQUIRED port on the loop's options (`speed: () => number`, a game passes `engine.gameSpeed`). A registration
+        the root fills (the `registerCrashNotice` shape) was rejected: it is module state D4 exists to remove, and a
+        second root would overwrite the first root's reader (D3). An optional port defaulting to 1 was rejected by the
+        ADR-0224/0227 precedent: a game that forgets it would silently drop the child's speed setting. Breaking for the
+        five games that call `startLoop`, with a migration note.
+    - date: 2026-09-24
+      what: >-
+        PHASE D2 COMPLETE (engine 717945d6): value edges into `core/state` outside the root 7 -> 0, and into all
+        stateful modules 98 -> 79. And the four shapes phase D3 needs, each settled by text this record already holds.
+        Measured first: 42 value edges into `core/i18n` outside the root, all use `t`, four use more. (1) A module
+        receives what it uses: a bare `t` where `t` is all it calls, the translator only where it reads or sets the
+        locale (D1: needs readable from the signature). (2) A stateless helper that calls `t` takes `t` as a
+        parameter and stays a function, markup builders included; a factory is point 1's shape for a module that
+        HOLDS state, and a helper holds none. (3) The LANGUAGE is per page and a game's DICTIONARY is per root. This
+        record's own reading says a page genuinely has one language, and `<html lang>` is one attribute: two roots in
+        two languages would tell a screen reader one of them wrongly. A dictionary is the game's, and one resolving
+        in another root is the leak D3 names. Games register their dictionaries through the root, not before it. (4)
+        A module hears a language change through the translator's `onChange`, which returns a release and reaches
+        modules through the root's disposing door, as `stateOn` does, so an ended root stops re-rendering (ADR-0220).
+        The window event stays as the page-level signal to the host.
+    - date: 2026-09-25
+      what: >-
+        PHASES D3 AND D4 LANDED, save one step (engine 667e85fd and the commits before it). D3: value edges into
+        `core/i18n` outside the root 42 -> 0, the game dictionary per root through `CreateGameOptions.dictionaries`,
+        the demo quiz translating through `Engine.t`. D4, in six parallel batches and a final sweep: stateful modules
+        36 -> 1, value edges into them outside the root 38 -> 0, global reach outside the root 23 modules -> 0, and the
+        root's own reach 1 -> 0; games reach the root's services through additive handles (`Engine.settings`,
+        `say`/`alert`, `libras`, `input`, `keyboardConfig`, `audio`, `crt`, `lq`), each breaking change with its
+        migration note (CU-DE). Two readings the phases settled without a new decision: a port a host may lack is
+        REQUIRED and may carry `undefined`, answered inside the module, because a `??` in the root is a branch and
+        the root must not grow in branches (ADR-0221); and the worker literal stays in the root over a local taken
+        from the host, so the bundler still sees it and the root reaches nothing. The ONE module left stateful is
+        `core/i18n`: its module-level `t`/`registerDict` wait on the Dev's choice of how a game translates the words it
+        declares before `createGame` exists (words frozen in the boot language were MEASURED: a preset built with `t`
+        in Portuguese still read «Acima» after `setLocale('en')`). Also open for the Dev: whether the root mirrors every
+        announcement into Libras (today's behaviour is kept; the mirror is one line).
+    - date: 2026-09-25
+      what: >-
+        THE LAST STEP OF D3 IS SETTLED BY TWO DECISIONS THE DEV HAD ALREADY MADE, so it is not put to him as a new
+        choice. The words a game declares (action labels, accommodation words, its option rows, its how-to-play
+        slides) become KEYS of the game's own dictionary — registered through `CreateGameOptions.dictionaries` — and
+        the root's translator resolves them each time it draws them. Why this and not late-binding getters or a
+        translator the game builds: ADR-0216 records the Dev's rule that the game asks and never needs to know how the
+        engine does it («O jogo não deve precisar saber como isso funciona»), and ADR-0225 records that changing the
+        language changes everything at once («todo o hud, menus, explicações, mensagens, textos […] deve ser
+        alterado imediatamente»). Getters meet the second rule only where each game remembers to wrap each word, and
+        one forgotten wrap freezes a word silently, as measured («Acima» after `setLocale('en')`); a translator built
+        by the game puts two translators in one page that may disagree on the language. Keys meet both rules by
+        construction. It changes the contract (BREAKING, with a migration note), and with it `core/i18n`'s
+        module-level `t`/`registerDict` leave, so no stateful module remains outside the root. Announced to the Dev
+        on 2026-09-25 with the way to override it. The Libras mirror of every announcement is no longer open: ADR-0234
+        took signing off announcements and gave it to the sonar.
+  date: 2026-09-24
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-24, asked whether code health's fan-out should count `import type`: «É pra desacoplar tudo. Crie uma estratégia pra isso. Sem acoplamento esta pergunta ainda faz sentido?»"
+    - "The Dev, 2026-09-24, asked whether the `platform` layer's browser globals need mandatory ports or an exemption: «O certo não seria usarmos dependency injection?»"
+    - "The Dev, 2026-09-23, on the browser suite's instability (F9): «Isso pede refatoramento, era pra essa engine ser extremamente simples, e ela está complexa demais.» — measured that day: 115 browser test files share one origin, 19 leave the same stored key behind and 17 start with it inherited; the red is a race on `localStorage`"
+    - "ADR-0173 — the layers and the direction of imports; it checks WHICH WAY an import points, never WHAT it brings"
+    - "ADR-0221 — code health is a ratchet: six measures, the ceiling binds new modules, an existing one must not worsen, and success is co-change falling. Its fan-out is «distinct relative imports», type-only imports included"
+    - "ADR-0227 and ADR-0224 — the precedent: `ui/settings-audio` went from three globals reached to zero through MANDATORY ports, because an optional port is one more field a game can forget"
+    - "ADR-0142 — a page may hold two roots; module-level state is shared between them by construction"
+    - "📏 Measured 2026-09-24 with TypeScript's parser over 173 modules (the dictionaries, `educational` and the demo quiz excluded): 350 value import edges and 116 type-only ones. 28 modules hold state — a module-level `let`, a module-level Map/Set that code mutates, or a browser global reached. Outside the root, 92 value edges point INTO those 28 and 177 into stateless modules. Three targets carry 68 of the 92: `core/i18n` 41, `platform/storage` 14, `core/state` 13"
+    - "📏 Measured 2026-09-24: `scripts/code-health.mjs` counts a type-only import in fan-out exactly like a value import; declaring the `SwitchableControl` family interface cost four modules one fan-out each (ADR-0221 baseline rewritten for it)"
+    - "📏 The pattern already exists in the tree, one module at a time: `ui/voice-settings` receives four browser ports, `platform/locale-host` receives the document and the window, `platform/listener-scope` wraps the window once in the root"
+  informed: []
+
+title: State and the browser arrive by injection from the composition root
+
+context-and-problem-statement: |
+  The engine is layered (ADR-0173) and measured (ADR-0221), and it is still coupled where it matters: 92 imports outside
+  the root bring a module that HOLDS STATE — the translator's current dictionary, the storage, the state store, an audio
+  context, a canvas. Such an import is not a dependence on what a function computes; it is a dependence on WHICH
+  instance exists, and there is only one per page. It is why two roots on one page share a pad's previous frame, and why
+  the browser suite races: 115 files write the same `localStorage`.
+
+  The Dev asked for a strategy that decouples everything, and asked two things of it: whether fan-out should count type
+  imports once there is no coupling to count, and whether the `platform` layer's globals should simply be injected.
+
+decision-drivers:
+  - "D1 — WHAT HAS STATE OR AN EFFECT IS PASSED, NOT REACHED: a module's needs are readable from its signature"
+  - "D2 — A CONTRACT IS THE DEPENDENCE WE WANT: a type is erased at build and is exactly what injection depends on"
+  - "D3 — TWO ROOTS SHARE NOTHING (ADR-0142): module-level state is shared by construction"
+  - "D4 — A TEST BUILDS WHAT IT NEEDS: storage a test constructs cannot race with another file's"
+  - "D5 — A FINITE LIST UNDER A RATCHET: every phase has an end state, and the measure lists edges by name"
+
+considered-options:
+  - "A — Dependency injection from the composition root: stateful modules become factories, the root is the only module that touches browser globals or constructs state, everything else receives; fan-out counts value imports only; a seventh measure counts value edges into stateful modules"
+  - "B — Mandatory ports in the `platform` layer only; the layers above keep importing the translator, the storage and the state store"
+  - "C — Exempt the `platform` layer from global reach (it IS the browser) and keep the singletons"
+  - "D — A service locator: one container every module asks for what it needs"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One rule answers both questions. ✅ Two roots and two test files stop sharing anything. ✅ The pattern is
+  already in the tree and proven (ADR-0227). ❌ Every published function that reads a singleton changes shape: many
+  breaking notes. ❌ The root gains wiring lines (it is exempt from fan-out, not from branches).
+  **B.** ✅ Fewer changes. ❌ The 68 edges into the translator, storage and state store are above `platform` and do not
+  move; the browser suite keeps racing, because the state store still reads the one shared storage.
+  **C.** ✅ No work. ❌ The largest coupling of the tree stays, named as policy.
+  **D.** ✅ Fewer signatures change. ❌ A locator is a global under another name: every module depends on the container
+  and hides what it takes from it, and two roots still share it unless it is built per root — which is injection with a
+  lookup added.
+
+decision-outcome:
+  chosen-option:
+    link: "A — state and the browser arrive by injection from the composition root"
+    justification: |
+      1. **The rule.** Outside `boot/create-game`, a module imports BY VALUE only what holds no state and reaches no
+         global: pure functions, constants, tables. The translator, the storage, the state store, audio, speech, canvas,
+         the loop — anything with state or an effect — arrives as a parameter (the module's ctx or deps), built once by
+         the root. Types are imported freely: they are the contracts the parameters are declared by.
+      2. **The root is the only module that touches `window`, `document`, `navigator`, `localStorage` or
+         `performance`.** A `platform` adapter is a FACTORY that receives the browser object it wraps —
+         `createStorage(backend)`, not a module that reads `localStorage`. This answers the second question: yes,
+         injection — and «mandatory ports» and «injection» were the same decision seen from its two ends: the port is
+         the interface, the injection is who fills it. `platform` needs no exemption, because the adapter receives the
+         global instead of reaching it.
+      3. **Fan-out counts value imports only** (ADR-0221 superseded in part, its definition of fan-out). This answers the
+         first question: once state arrives by parameter, a type import is a dependence on a contract, erased at build,
+         and it is what point 1 asks a module to depend on — counting it punished the `SwitchableControl` interface for
+         existing. The question survives only as «how many contracts does a module know», which is interface breadth and
+         not coupling; it is not measured. The baseline is re-measured in the same commit, and the commit says it is the
+         measure changing, not a payment.
+      4. **A seventh measure, `statefulEdges`**: value imports into a stateful module. Ceiling 0 for a new module; an
+         existing one must not worsen; the root is exempt (constructing state is its job). The stateful set is written in
+         the baseline BY NAME, so a misclassification is visible in a diff and reviewed, never trusted.
+      5. **The order, each phase with its end state**, largest cost to a child first:
+         · **measure** — script, baseline and gate in the repository; the gate red by mutation; the 92 edges listed.
+         · **storage and state store** — built by the root, 27 edges → 0; the browser suite run 20 times (F9's end state).
+         · **translator** — passed in, 41 edges → 0.
+         · **every remaining stateful module becomes a factory** — stateful modules outside the root → 0, global reach
+           outside the root → 0.
+      6. **Zero coupling is not the aim, and is not possible.** Contracts and pure vocabulary stay shared, and they should:
+         they are the stable side, and depending toward stability is the direction that costs nothing to change.
+      7. **Nothing outside this repository is touched**; every published shape that changes carries a migration note.
+
+  consequences:
+    positive:
+      - "Two roots on one page share nothing, and two test files share nothing — the race behind F9 loses its cause"
+      - "What a module needs is its signature; a test builds exactly that"
+      - "One module knows the browser, and it is the one whose job is wiring"
+      - "The coupling measure stops punishing the contracts it asks for"
+    negative:
+      - "A series of breaking releases: every published function that reads a singleton changes shape"
+      - "The root grows in wiring lines; it must not grow in branches (ADR-0221's criterion for the root)"
+      - "Ctx types grow members — the price of dependencies being visible"
+
+  confirmation: |
+    ✅ D1 BUILT (engine a0ef7512, see the erratum): the measure and its gate are `confirmed-by`. The other phases are
+    still debt in issue #207, one checkbox each, and each closes on its own measured end state: D2 storage and state
+    store (27 edges -> 0, then 20 runs of the browser suite), D3 the translator (42 -> 0), D4 every remaining stateful
+    module a factory.
+
+more-information: |
+  📌 Why the translator is not first despite carrying the most edges: storage and the state store are what two test files
+  race on, and the Dev reframed that instability as the cost of a design that is too complex (F9). The translator's state
+  is the page's language, which one page genuinely has one of; passing it in is for readable signatures and tests, not to
+  stop a race.

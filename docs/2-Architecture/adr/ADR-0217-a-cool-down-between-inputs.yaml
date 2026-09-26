@@ -1,0 +1,82 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/input-cooldown.node.test.js
+    - engine:tests/no-need-to-hold.browser.test.js
+    - engine:tests/input-boundary.node.test.js
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+  date: 2026-09-21
+  decision-makers: [Dev]
+  consulted:
+    - "Game Accessibility Guidelines, Advanced/Motor — «Include a cool-down period (post acceptance delay) of 0.5 seconds between inputs»"
+    - "ADR-0181 — the two motor EMPATHY simulations («um botão por vez», «sem força para segurar»): they make play harder on purpose and are never accommodations"
+    - "ADR-0211 — sticky keys are the default on camera and speech; the Dev, 2026-09-21, asked for them as an option on keyboard and touch"
+    - "ADR-0106 §5 — an option that changes nothing teaches a child that the setting she depends on is broken"
+    - "📏 Measured 2026-09-21: `inputCooldown` has been an id of the accommodation catalogue since `engine:59dc3e0` and has NEVER had code. Nothing reads it, nothing writes it, and no child has ever been able to ask for it."
+  informed: []
+
+title: A cool-down between inputs, chosen by the child
+
+context-and-problem-statement: |
+  A tremor, a spasm or a hand that bounces off a key sends the same press twice. The game hears two, and the child who could
+  not avoid the second one loses the turn, the letter or the life.
+
+  The engine already carries the OPPOSITE of this — `ADR-0181`'s two simulations, which make play harder so an adult can feel
+  what a motor disability costs — and it carries the accommodation that helps a hand which cannot HOLD (`input/latch`, the
+  sticky keys). What it does not carry is the one for a hand that cannot press ONCE: the GAG's cool-down, listed in the plan's
+  phase 6 and named in the catalogue as `inputCooldown` since the catalogue was written, with no code behind it.
+
+decision-drivers:
+  - "D1 — IT IS AN ACCOMMODATION, NOT A SIMULATION: it must not live in the module whose header says a simulation is never an accommodation"
+  - "D2 — IT CANNOT MAKE A GAME UNPLAYABLE FOR WHOEVER DID NOT ASK FOR IT: off by default, and a choice"
+  - "D3 — WHAT IT REFUSES MUST BE THE ACCIDENT AND NOT THE PLAY: holding a direction, letting a key go, and a key that repeats while held are not second inputs"
+
+considered-options:
+  - "A — a fixed 0.5 s, always on for every game"
+  - "B — off by default, a choice of 0.5 s, with the rule applying only to a press that STARTS"
+  - "C — leave it declared and unbuilt, as it has been"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to find, nothing to configure. ❌ A child with no tremor loses half a second between every two presses, which
+  in a game of rhythm or reaction is the game. The GAG lists it Advanced precisely because it is for whoever needs it.
+  **B.** ✅ The child who needs it finds it beside «Não precisa segurar», under a name she can read; everybody else never meets
+  it. ❌ One more stored key, and a rule in the path of every key of every game — so it has to be pure and measured.
+  **C.** ❌ The catalogue says the engine has it. It does not, and an id with no code is a promise to a school that nobody kept.
+
+decision-outcome:
+  chosen-option:
+    link: "B — off by default, a choice, and only over a press that starts"
+    justification: |
+      1. **`input/input-cooldown`, a pure module of its own.** Not in `input/motor-simulation`: that file's first paragraph draws
+         the line between hindering on purpose and helping, and a rule that helps would blur it for whoever reads either one.
+      2. **What it refuses.** After a game key is ACCEPTED, a press of a key that is not already held is refused while the
+         cool-down runs. What it never refuses: a release (a child who lets go must be heard, or the character walks on); the
+         auto-repeat of a key she is holding; and a press once the time has passed.
+      3. **Off by default, 0.5 s when on** — the GAG's own number, with the row offering only «desligado» and «0,5 s» until
+         somebody measures a second value on a real hand.
+      4. **Stored per child, in the engine's space**: `incl_input_cooldown`, read at boot like every other `incl_*`.
+      5. **Offered in the motor panel**, under a name a child reads, beside the sticky keys — and hidden in a game that holds no
+         key at all, for the same reason the sticky row is (ADR-0106 §5).
+
+  consequences:
+    positive:
+      - "A child whose hand bounces stops losing turns she did not play"
+      - "The `inputCooldown` id of the catalogue stops being a promise with nothing behind it"
+    negative:
+      - "One more rule in the path of every key: it is pure, and the root applies it in the same capture pass as the simulations"
+      - "A child who turns it on and plays something that needs two fast presses will find it in her way — which is why it is off by default and one row away"
+
+  confirmation: |
+    The gates in `confirmed-by`, 9 of 9 red by mutation: a press that BEGINS inside the window is refused and a release is not; a key
+    held that repeats is not refused; the same press once the window has passed is accepted; the window counts from the last ACCEPTED
+    press, so ten presses in a tremor do not push it ten times; nothing is refused while the setting is off; the row sits beside the
+    sticky-keys one and the choice survives to the next day in `incl_input_cooldown`.
+    📌 One of the nine was measured EQUIVALENT — a `ms <= 0` guard that changed nothing — and was deleted rather than kept with a case
+    written around it; another was red for the wrong reason (it named an undeclared variable, so it failed to compile) and was rewritten
+    as code that compiles. Issue #182 carries the panel row it sits in.
+
+more-information: |
+  The measurement that prompted this: `inputCooldown` entered `core/accommodations` with the other 53 ids and, alone among the
+  motor ones, never got a reader or a writer. The plan's phase 6 had it as «regra de entrada, mora em `input/`», which is where
+  it goes.

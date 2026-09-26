@@ -1,0 +1,48 @@
+---
+metadata:
+  shape: bundle          # consolidation of the REGISTRO-DE-DECISOES; see README
+  status: "accepted"
+  errata:
+    - date: 2026-09-14
+      what: '📌 NO YES/NO SWAP ON ANY PAD. The touch line said «only Sony/Nintendo flip yes/no culturally». The Dev, 2026-09-14, confirming the association by position: xinput · Xbox · PlayStation · Nintendo — 1 X · square · Y (west); 2 A · cross · B (south); 3 B · circle · A (east); 4 Y · triangle · X (north): «Esta é a associação correta. Corrija onde houver mal entendido.» Yes/confirm is button 2 (south) and no/back is button 3 (east) on every design, PlayStation and Nintendo included. The engine''s reading already worked this way (`input/gamepad` reads yes from action 2 and no from action 3, and `input/devices` labels the buttons by index); three comments, one test example and this line said otherwise, corrected in `engine:ab2656d`.'
+  date: 2026-07-02
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: Motor & input accessibility decisions (touch, gamepad, keyboard, easy mode, wheelchair)
+
+context-and-problem-statement: |
+  The motor-accessibility + input decisions. Was REGISTRO §3. Related: virtual-button sizing in physical mm is also
+  in ../../research/ and the reference memory.
+
+decision-outcome:
+  justification: |
+    One-input-at-a-time is the core motor principle (GAG). Sizes anchored to ergonomics, not WCAG px, because virtual
+    held buttons are not the same as touch/click targets.
+
+more-information: |
+  Decisions (was REGISTRO §3):
+  - "**Virtual buttons sized in physical mm** (anchor: iPhone 16 filling the screen), NOT WCAG px — WCAG applies to
+    touch/click, not simulated held buttons. Child ranges smaller only on the hand-fit axis. ⚠️ ESTUDO PENDENTE:
+    consolidate the mm/ergonomics research (currently only in chat) into a doc, with the tendinitis/fatigue warnings."
+  - "**Touch = 4 diamond bubbles** (Gamepad API 0=jump/yes bottom, 1=special/no right, 2=interact left, 3=swap top) +
+    START pill; Generic/MS/Sony/Nintendo layouts via gamepad.id; only Sony/Nintendo flip yes/no culturally."
+  - "**Keyboard: UJIK preserved** (small hands, DOS heritage); Space=jump (a11y); Ctrl/Shift only in Easy mode; NEVER
+    Win/Alt/AltGr. Per-player schemes (1–4) SEPARATE; conflict blocked; keyboard is always fallback with a pad
+    plugged."
+  - "**Easy mode**: gravity ×2/3, jump ×8/7, collect hitbox +4px (shown), coins on the ground, no hazards, edge
+    protection (fall only with ↓), soft fixed bounce, every jump button also interacts (GAG: avoid precise timing)."
+  - "**Toggle-move**: hold = 2/3 speed, tap = continuous 1/3, jump doesn't interrupt walking (single-switch OK)."
+  - "**Wheelchair empathy**: one-button-at-a-time; no jump; 45° ramps with collision + yellow strip; elevators with a
+    glass cabin + auto-ride; lava/trampoline→ground; legs still (seated); only fly/super-run; items on the ground.
+    (route audit → issue #18.)"
+  - "**Gamepad (physical 8BitDo test)**: 1st pad = Player 1 (keyboard stays fallback); joining a running match does
+    NOT restart the round (new player enters from spawn with THEIR items). [418b62d/7d7aff3]"
+  - "**Mapping wizard by controller model** (gamepad.id): buttons by index, analog by threshold, DirectInput D-pad as
+    a POV hat; opens AUTOMATICALLY (pausing all) when an unmapped non-standard pad acts; always inside the canvas.
+    [7d7aff3/59714f7/aaf162d/7d686ef]"
+  - "**Analog deadzone = first HALF of the travel** (active > 0.5); stick vs hat classified by BEHAVIOUR (continuous
+    vs constant), never by magnitude — nothing requires full deflection (finger-strain ergonomics). [7d686ef]"
+  - "**Canonical power-up icons**: 👟 super-run/cane · 🕷️ climb · 🎈 fly (jetpack) · 🐇 super-jump · 🦘 ultra-jump; TTS
+    says \"Fly\" (not \"Wings\"). Webcam & voice input specs → issues #17/#16."

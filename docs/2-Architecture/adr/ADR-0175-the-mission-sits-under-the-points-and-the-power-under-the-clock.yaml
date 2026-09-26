@@ -1,0 +1,76 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/hud-mounted-by-the-engine.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #162 closed, `engine:bf828a9`): points and mission in the left column, the power in
+             the right column under where the clock goes, neither column reaching the quick bar; the bands `mission` and
+             `power` replace `round`. The clock itself is issue #94."
+  supersedes-in-part: [ADR-0168]
+  superseded-in-part:
+    - by: ADR-0239
+      what: "§1, §2, §3 and §4: the power goes above the score in the bottom row, the learning bars bottom left, and the mission to the top centre under the quick bar (errata of ADR-0239), where the bar's momentary legend may cover it."
+    - by: ADR-0238
+      what: "§1, where the points sit: they move beside the clock at the top right, as five digits with leading
+              zeros. The mission keeps the top-left column; §2–§5 stand."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0168 — SUPERSEDED IN PART: only its erratum of 2026-09-13 (super-power and objective counter BELOW the quick bar).
+       Who mounts the HUD, the clock at the top right and the learning bars in the footer stay"
+    - "ADR-0059 §1 — the rule: a number sits with what it is about"
+    - "a demo page with the engine's stylesheet and the markup `ui/hud-bands` writes, shown to the Dev on 2026-09-13"
+  informed: []
+
+title: The mission sits under the points, and the power under the clock
+
+context-and-problem-statement: |
+  Built after ADR-0168's erratum, the HUD put the round band — a round's objective counter and the super-power — centred
+  under the quick bar. Shown the demo page, the Dev answered with an image: «O mais adequado para missão, relógio e poderes
+  seria o que está em anexo.» In it, the top left reads «Pontos: 12» and under it «3 de 10 moedas»; the top right reads the
+  clock «05:30», large, and under it «Superpoder: 1». Of the learning bars: «estão bem posicionadas e num tamanho bom,
+  aprovo.»
+
+decision-drivers:
+  - "D1 — TWO COLUMNS BESIDE THE BAR, NOTHING UNDER IT: the space under the quick bar is the game's, and the HUD fits in the
+     corners the bar leaves"
+  - "D2 — A NUMBER NEXT TO ITS NEIGHBOUR IN MEANING: the mission is the child's progress, beside the points; the power is
+     timed play, beside the clock"
+
+considered-options:
+  - "A — the round band centred under the quick bar (ADR-0168's erratum)"
+  - "B — the mission under the points on the left, the power under the clock on the right (the Dev's image)"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One band for the round. ❌ It takes room under the bar that the game needs, and the Dev chose otherwise.
+  **B.** ✅ The top of the game region stays the game's below the bar's own room. ❌ The round splits into two bands a game
+  must name: mission and power.
+
+decision-outcome:
+  chosen-option:
+    link: "B — mission under the points, power under the clock"
+    justification: |
+      1. **Left column, top left:** the identity numbers (the points), and under them the MISSION (a round's objective
+         counter).
+      2. **Right column, top right:** the CLOCK (ADR-0168 §2, built by issue #94), and under it the POWER (the super-power).
+         Until the clock exists, the power is the column's first line.
+      3. **Nothing of the HUD sits under the quick bar**; both columns are narrowed so they never reach it, and the room the
+         game leaves free at the top counts whichever column reaches lower.
+      4. **The learning bars stay** centred in the footer, at the size built — approved.
+      5. A game declares `mission` and `power` for what ADR-0168's first cut called `round`; that name was never published.
+
+  consequences:
+    positive:
+      - "The HUD takes only the corners beside the bar"
+    negative:
+      - "A game declares two bands where it declared one"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #162, closed). Gates: the mission sits under the
+    points on the left, the power top right, neither column reaches the quick bar, and the game's room holds both.
+
+more-information: |
+  The image the Dev sent shows the clock large and bold in the top right corner; its drawing is issue #94's, this record only
+  gives it its column.

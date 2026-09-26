@@ -1,0 +1,53 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0236]
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim: «Relógio não estará em nenhuma configuração no momento e as opções para trvar e destravar também não. Seu funcionamento será com relógio de uma hora e só, sem possibilidade de ativá-lo ou não. Motivo: isso é do menu do professor/pai, acessível somente pelo bússola escolar e não pelo aluno.»"
+    - "ADR-0236 — SUPERSEDED IN PART: its erratum's «both the length and the behaviour at the end are OPTIONS» (red · red pulsing · screen lock) as settings of the engine. The Time Timer pie, the hour, and red at the end stand"
+    - "ADR-0050 — the adult's session limit; the adult's surface is not the child's"
+    - "📏 Built the same day and never pushed: `sessionMinutes` and `sessionEnding` in the settings store (`incl_session_minutes`, `incl_session_ending`), with no menu line, and the pulse and lock endings (engine `bf489607`, note DJ)"
+  informed: []
+
+title: The session clock has no settings on the child's side — one hour, red at the end, always on
+
+context-and-problem-statement: |
+  ADR-0236's erratum made the length and the ending (red, red pulsing, screen lock) options, and the build stored them as
+  engine settings with no menu line yet, leaving open where they would live and who lifts a lock. The Dev answered: these
+  belong to the teacher's or parent's menu, reachable only through Bússola Escolar and never by the student.
+
+decision-drivers:
+  - "What limits the child's session is the adult's to set, on the adult's surface"
+  - "A setting with no surface is a hook with no consumer"
+
+considered-options:
+  - "A · Keep the options as engine settings, awaiting a menu"
+  - "B · No settings: the engine runs one hour, red at the end, always on; the options come with Bússola Escolar's adult menu"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ Stored settings with no surface, on the child's device, for a decision that is not the child's. **B.** ✅ Nothing
+  the student can reach changes the limit. ❌ No length other than an hour until Bússola Escolar exists.
+
+decision-outcome:
+  chosen-option:
+    link: "B — one hour, red at the end, always on; no setting on the child's side"
+    justification: |
+      The Dev's decision. The clock is always shown and always measures one hour; at the end it turns red. There is no
+      setting to turn it off, to change the length, or to make it pulse or lock, and nothing about it is stored on the
+      device. The pulse and the lock endings leave the engine with the stored settings (never pushed); they return, if
+      they return, as Bússola Escolar's adult menu decides, through its own record.
+
+  consequences:
+    positive:
+      - "The student cannot change their own limit"
+    negative:
+      - "An hour for everyone until the adult's menu exists"
+
+  confirmation: |
+    ⏳ Not built. Debt: issue #94 — the stored length and ending, their setters and keys, and the pulse and lock endings
+    removed; the clock reads a fixed hour and turns red.
+
+more-information: |
+  Bússola Escolar is the backend the Dev names for adult-side settings (see ADR-0235 on multiplayer waiting for it too).

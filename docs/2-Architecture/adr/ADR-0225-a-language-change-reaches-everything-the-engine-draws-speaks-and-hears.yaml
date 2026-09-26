@@ -1,0 +1,141 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-26
+      what: >-
+        THE READING MODELS COME IN THE THREE LANGUAGES TOO, AND EVERY DEVICE KEEPS THE THREE. Asked whether a device
+        should download only the language the child plays in (~850 MiB for the three), the Dev: «Negativo, baixar os
+        três. Toda criança vai experimentar as três línguas imediatamente.» So, for a game that declares reading, the
+        delivery carries the pt, en and es reading models unless its `--reading` list narrows it, and the start asks for
+        the model of every language the page can switch to, the child's first — the same rule the command models follow
+        (this record's erratum of 2026-09-25). Where reading lives was confirmed the same day (ADR-0216 erratum).
+    - date: 2026-09-25
+      what: >-
+        THE DELIVERY'S HALF, decided. The heavy files were chosen at boot for the boot language, so a school using two
+        languages had to build the delivery twice (`--commands`/`--reading` per language), and a language change mid-game
+        could meet a model the delivery never carried. Asked whether it stays so or the delivery carries the three languages
+        by default, the Dev: «A entrega leva as três línguas.» So the delivery carries pt, en and es by default. For the voice
+        commands that is ~108 MiB (31–39 MiB per language). For reading aloud it would be ~850 MiB (pt 378, en 162, es 310),
+        and that half waits on the Dev's answer about where reading belongs, asked the same day.
+        ✅ BUILT for the commands (`engine:fa9be434`): no flag carries every language the catalogue has a model for, `--commands` narrows it, `--commands none` carries none; the first-load download asks for all three, the child's own language first. Measured: +116,455,039 bytes on a delivery (111.1 MiB).
+  date: 2026-09-22
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev, 2026-09-22: «quando mudar a localização, todo o hud, menus, explicações, mensagens, textos, audio e reconhecimento de fala deve ser alterado imediatamente. Os únicos textos que não são alterados são os de disciplinas de um idioma (e isso inclui textos, enunciados, exercícios, explicações, respostas, exemplos etc.)»"
+    - "the Dev, same day, correcting the parenthetical of their own sentence when it was measured against the frontier already written: «Tens razão. O enunciado sempre traduz.»"
+    - "engine:CLAUDE.md §A FRONTEIRA (the Dev, 2026-08-24) — the interface's language is the child's official language; the statement ALWAYS translates, and in a language discipline the single exception is the linguistic CONTENT, because it IS the subject matter"
+    - "ADR-0031 and study item C6 (engine:46dbf37) — a language changed mid-game reaches what the engine DREW: the icon bar, the card, the button legend, the PAUSED word and the pad"
+    - "ADR-0194 — saying the name of a menu item activates it, so the recogniser's grammar follows the open menu"
+    - "📏 Measured 2026-09-22 by reading every path: the drawing follows, the SPEAKING follows, the READING follows — and the COMMAND RECOGNITION does not"
+    - "📏 Measured the same day: the heavy files are chosen at boot (`heavyAtBoot({ reading: bcp47(), commands: bcp47() })`), so the model of a language chosen LATER may never have reached the delivery"
+  informed: []
+
+title: A language change reaches everything the engine draws, speaks and hears — at once
+
+context-and-problem-statement: |
+  ADR-0031 and study item C6 made a mid-game language change reach what the engine DREW. 📏 Measured on 2026-09-22,
+  that is where it stopped, and the Dev named the rest: the audio and the speech recognition have to change too, and
+  immediately.
+
+  📏 **What follows today, measured by reading each path rather than assumed:**
+  · the `[data-i18n]` markup, through `applyDom`; the icon bar, the legend, the PAUSED word, the pad and the touch
+    wiring, through the root's `i18n:change` listener; an open panel, which redraws itself (`ui/mount-panel`);
+  · **the SPEAKING follows** — `platform/tts` reads `bcp47()` when it lists voices and again when it speaks, and the
+    voice in use is «the stored choice when it speaks the language, else the language's first voice, else none», so a
+    Portuguese voice does not survive a switch to English;
+  · **the READING follows** — `platform/reading` reads the language at every `listen()`, and the root closes the
+    previous thread and opens the new language's.
+
+  🔴 **What does NOT follow is the command recognition** — the 👄. `ui/voice-control` chooses the model
+  (`loadRuntime({ language })`) and the vocabulary (`createVoiceCommands(language)`) when it STARTS, and never again;
+  the grammar is only rebuilt when a menu opens or closes. ⚠️ That makes the defect worse than stopping: after a
+  switch, the NEW language's words are fed to the OLD language's model, and a closed grammar pushes everything to the
+  nearest candidate — measured in the lab on 2026-09-14, where «configurações de inclusão» came back as «quatro».
+
+  ⚠️ **And there is a second half that is DELIVERY and not code**: the heavy files are picked at boot for the boot
+  language. A child who switches to Spanish may be asking for a model that never reached `heavy/` — 31–39 MiB for
+  commands, up to 378 MiB for reading.
+
+decision-drivers:
+  - "D1 — THE INTERFACE'S LANGUAGE IS THE CHILD'S LANGUAGE (CLAUDE.md §A FRONTEIRA). A surface left in the old one is a surface she cannot read, and the ones she cannot read are the ones that were supposed to help her"
+  - "D2 — IMMEDIATELY, not on the next open. A panel that only speaks the new language after being closed and reopened teaches a child that the setting did not work"
+  - "D3 — HEARING IS A SURFACE TOO. A recogniser listening in the old language is worse than one that stopped: a closed grammar answers with the nearest word, so it acts on something she did not say"
+  - "D4 — THE STATEMENT ALWAYS TRANSLATES (the Dev, correcting their own sentence). The exception is the linguistic CONTENT and nothing else, because the content IS the subject matter"
+  - "D5 — WHAT THE DEVICE DOES NOT HAVE IS SAID, NOT GUESSED (ADR-0169): a language whose model never reached the delivery is a line in `problems`, not silence"
+
+considered-options:
+  - "A — every surface follows the language, including audio and recognition; the exception is the linguistic content of a language discipline, and only that"
+  - "B — the drawing follows and the audio and recognition are rebuilt on the next open"
+  - "C — a language change asks the page to reload"
+  - "D — the exception grows to cover the statements, exercises, explanations and answers of a language discipline"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One rule, and it is the one already written: the interface speaks the child's language. ✅ It also makes the
+  recognition defect impossible to reach, because the model and the vocabulary stop being chosen once. ❌ It costs the
+  restart of a listening recogniser, and it forces the delivery question to be answered instead of postponed.
+  **B.** ✅ Cheapest. ❌ It is the defect described above wearing a schedule: between the switch and the next open, the
+  microphone is listening in the wrong language and acting on the nearest word.
+  **C.** ✅ Simple and total. ❌ A reload loses the game, and it makes a language change cost more than the child's
+  patience — this engine's own icon bar switches language in one click, on purpose.
+  **D.** ❌ Rejected by the Dev, correcting their own first sentence: «Tens razão. O enunciado sempre traduz.» It would
+  leave a Portuguese activity opened in Spanish entirely in Portuguese, including the instruction that tells the child
+  what to do — and the instruction is not the subject matter.
+
+decision-outcome:
+  chosen-option:
+    link: "A — everything the engine draws, speaks and hears follows the language, at once"
+    justification: |
+      1. **The drawing, the speaking and the hearing all follow a language change, immediately.** The first two already
+         do; the third is the work this record opens.
+      2. **The recogniser stops choosing its language once.** The model and the vocabulary are re-chosen when the
+         language changes, the same way the reading thread already is, and the grammar with them.
+      3. **A language whose model is not in the delivery is SAID** (ADR-0169), never a microphone that listens and
+         answers with the nearest word in another language.
+      4. **The only text that does not change is the linguistic CONTENT of a language discipline** — the word to
+         assemble, the letter, the syllable, the spelling, the Braille cell. ⚠️ The statement, the exercise's
+         instruction, the explanation and the feedback all translate: the frame lives in the key and the content
+         crosses through `{param}`, which is the rule `CLAUDE.md` already states and which the Dev confirmed here.
+      5. **Mathematics is not a language discipline** and translates whole, operators and spoken numbers included —
+         restated because this record is where someone will come looking for it.
+
+  consequences:
+    positive:
+      - "A child who switches language stops finding surfaces in the old one, which is what the pillar of three languages was for"
+      - "The recogniser can no longer act on a word she did not say because it was still listening in another language"
+      - "The delivery question — which heavy models a school's copy carries — is answered where the child meets it, instead of at boot for one language"
+    negative:
+      - "A listening recogniser has to be restarted on a language change, and on a school machine that costs the model being opened again"
+      - "A cartridge that drew its own text and never listened to `i18n:change` will be found by this, which is the point and still a break"
+      - "The delivery grows for a school that wants two languages, and that cost is the Dev's to accept per install (`--commands`, `--reading`)"
+
+  confirmation: |
+    ✅ **BUILT on 2026-09-22** — `engine:573d9a65`, migration note BQ. `VoiceControl.languageChanged()` re-chooses the
+    model, the vocabulary and the grammar; the root calls it on `i18n:change`. 5 of 5 mutations red.
+    · **While it is LISTENING**, a change opens the new language's model and stops the old recogniser, and the grammar
+      that reaches the microphone is the new language's — the half that made the defect worse than stopping.
+    · **While it is OFF**, nothing happens and the next start reads the new language: a change must not open a
+      microphone nobody asked for.
+    · **A language whose model is not in the delivery** becomes a line in `problems` and the 👄 goes back to off.
+    · **A change WHILE IT IS STARTING** replaces the start in flight instead of racing it — the start in flight is in
+      the OLD language.
+    🔴 **And the fifth mutation is the one worth recording, because it survived the first round**: the ROOT no longer
+    telling the control passed with the whole suite green. ⚠️ The case that holds it READS THE SOURCE, and says why: the
+    👄 is only mounted where there is a microphone to ask for, and in a test boot it is never ON at the moment of the
+    change — the model is not in the delivery, so it fails to start and switches itself off.
+    📏 The two that already followed were measured BEFORE the work, precisely so this could not quietly lose them, and
+    they still do: `tts` reads the language per utterance and per voice list, `reading` reads it per `listen()`.
+    ⏸ **What is NOT built**: the delivery half. The heavy files are still chosen at boot for the boot language, so a
+    school that wants two languages passes `--commands`/`--reading` twice; what changed is that the gap is now SAID
+    instead of being a microphone listening in the wrong language.
+  confirmed-by:
+    - engine:tests/voice-control.node.test.js
+    - engine:tests/boot-create-game.node.test.js
+
+more-information: |
+  📌 What this record does NOT decide: whether a cartridge's own drawn text is the engine's problem. It is not — the
+  engine cannot repaint what it did not draw. What it can do is dispatch the change, which it already does
+  (`i18n:change`), and say in `problems` when a cartridge registered a dictionary with holes (`dictionaryGaps`).
+  ⚠️ And the first sentence of the request listed «enunciados, exercícios, explicações, respostas, exemplos» inside the
+  exception. It is recorded here as it was said, and so is the correction, because a record that quietly tidies what
+  was asked is a record nobody can check later.

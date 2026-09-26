@@ -1,0 +1,125 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/switch-scan.node.test.js
+    - engine:tests/pause-icons.node.test.js
+    - engine:tests/no-need-to-hold.browser.test.js
+    - engine:tests/boot-create-game.browser.test.js
+  supersedes-in-part:
+    - ADR-0211
+  errata:
+    - date: 2026-09-21
+      what: >-
+        ✅ THE SKIP IS THE DEV'S NOW, not an inference of mine. Shown that the ☝️ offers two positions in the quiz demo — which
+        holds no key, so «no holding needed» has nothing to hold — and asked whether the three should appear everywhere anyway:
+        «Fica o salto». What driver D3 argued from ADR-0155 and ADR-0106 §5 is confirmed as a decision.
+    - date: 2026-09-21
+      what: >-
+        🔴 THE ROW LEFT THE MOTOR PANEL on the day it arrived: «Tire a linha de acessibilidade motora». Item 6 of the decision
+        above put the same three positions in a row beside the cool-down; the Dev chose the icon as the only surface of this
+        setting. ⚠️ With the row went the one place that SAID why the latch is locked on a device that sends one command at a
+        time — which stays honest only because the cycle no longer OFFERS what is locked (see the erratum below).
+    - date: 2026-09-21
+      what: >-
+        📌 A SECOND THING TAKES A POSITION AWAY, and the decision above named only the first. A device that sends one command at
+        a time — the eyes, the face, gestures, speech — always latches and cannot be asked not to (ADR-0113 clause 3), so
+        `standard` is unreachable there and the cycle offers «no holding needed» and «one button only». 🔴 Until this was built,
+        that case GREYED THE WHOLE ICON OUT, which with three positions would have taken the one-button scan away from the child
+        playing with her eyes — the likeliest of all to need it. The lock is the latch's, not the scan's; the reason it is
+        locked is still read on the motor panel's row.
+  date: 2026-09-21
+  decision-makers: [Dev]
+  consulted:
+    - "Game Accessibility Guidelines, Advanced/Motor — «Support more than one input device» and single-switch play; scanning is the standard switch-access technique (AAC), where the machine offers each option in turn and one press takes the highlighted one"
+    - "ADR-0211 — sticky keys are the DEFAULT on camera and speech, and an option on keyboard and touch"
+    - "ADR-0181 — «um botão por vez» and «sem força para segurar» are motor EMPATHY simulations, never accommodations"
+    - "ADR-0111 and its erratum — the virtual controller is the whole vocabulary a cartridge sees, and the engine owns the hardware"
+    - "ADR-0213 — the gaze control's cycle: a preview steps through the commands of a zone and leaving it commands the one shown"
+    - "ADR-0155 / ADR-0130 erratum — a cycle never stops on a position that is not a position"
+    - "📏 Measured 2026-09-21: ☝️ is a two-state toggle over the per-player `toggleMove`, and it is NOT MOUNTED AT ALL in a game that holds no key — the quiz demo has no ☝️. Scanning has a subject in every game, including that one."
+  informed: []
+
+title: One accessibility icon cycles standard control, sticky keys and one button only
+
+context-and-problem-statement: |
+  Two accommodations answer two different questions, and the engine had a name for only one of them.
+
+  **Sticky keys** (`input/latch`, ADR-0211) answer *how long a press lasts*: the child taps instead of holding, and the engine
+  keeps the action pressed until she taps again. She still has to REACH every position — she needs the whole controller, just
+  never two of it at once.
+
+  **One button only** answers *how many inputs exist in the world*. A child with one reliable movement — a switch by the cheek,
+  a puff, one key she can hit — cannot reach fourteen positions at all. The standard answer is SCANNING: the machine offers the
+  positions one at a time, in a loop, and the single press takes the one being shown. The controller stops being fourteen
+  places and becomes one place plus time.
+
+  The engine already scans: `ADR-0213`'s gaze cycle steps «cancel → up → 4 → R1» inside a zone and commands what the preview
+  shows. What it has never had is that cycle driven by a switch, or a way for a child to ask for it.
+
+decision-drivers:
+  - "D1 — THE CHILD FINDS IT WHERE SHE ALREADY LOOKS: one icon on the quick bar, not a third one to hunt for"
+  - "D2 — THE THREE ARE MUTUALLY EXCLUSIVE: standard, sticky and scanning are three ways of reading the same presses, and two of them at once would be a controller nobody can predict"
+  - "D3 — A POSITION WITH NO SUBJECT IS NOT A POSITION: a game that holds no key has nothing for sticky keys to do"
+  - "D4 — SCANNING MUST NOT SILENCE THE TRANSPORTS THAT ALREADY WORK: sticky keys stay the default on camera and speech (ADR-0211), which is a different surface"
+
+considered-options:
+  - "A — a new icon for one-button play, beside ☝️"
+  - "B — ☝️ cycles the three: standard · sticky keys · one button only"
+  - "C — a row in the motor panel only, with no icon"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Each icon says one thing. ❌ A fourth camera-sized icon on a bar already measured at 483 px on the minimum screen,
+  and two icons that cannot both be on — which is the shape that made the three camera icons become one (ADR-0215).
+  **B.** ✅ The three exclusive readings of a press sit in one place, in the order of how much they change; the child who does
+  not need them never leaves the first position. ❌ The icon has to say WHICH of the three it is in, in a word a child reads.
+  **C.** ❌ It is the accommodation of the child least able to navigate, put behind three menu levels she would have to reach
+  with the very input she does not have.
+
+decision-outcome:
+  chosen-option:
+    link: "B — ☝️ cycles standard control, sticky keys, one button only"
+    justification: |
+      1. **The Dev, 2026-09-21: «vamos ciclar entre controle padrão > teclas de aderência > jogar com um botão só, ícone de
+         acessibilidade: ☝️».** Three positions in that order, on the icon that already carries the holding accommodation.
+      2. **The icon is mounted wherever there is a controller**, not only where the game holds a key. ⚠️ This is a change: ☝️ is
+         mounted today only for a game whose `seguraTeclas()` is true, and scanning has a subject in every game. Where the game
+         holds no key the cycle has TWO positions — standard and one button — because a cycle never stops on a position that
+         does nothing (ADR-0155).
+      3. **What scanning offers, in order:** first **cancel** — a press that lands by accident must be able to mean nothing —
+         then the positions the GAME declared in its `preset`, then the doors the engine itself opens (the menu and, where the
+         game has one, the pause). The list is the same vocabulary the help screen and the pad already read, so a quiz offers
+         five things and not fourteen.
+      4. **What selects is ANY input.** With one button only on, every key, every touch on the game region and every press a
+         camera or speech transport sends collapses into «take the one shown». A child who has one switch has it wired to
+         whatever her device already sends; the engine does not ask which.
+      5. **The step is 1 second, with 0.8, 1.5 and 2 offered** — the gaze cycle's own numbers, which the Dev ran for a day. The
+         cycle repeats; nothing happens without a press.
+      6. **Kept on the device as one position**, the way the camera icon keeps its four (`incl_*`), and the motor panel's row
+         shows the same three positions rather than a second switch writing the same thing.
+      7. **ADR-0211 stands where it was decided**: sticky keys remain the DEFAULT inside the camera and speech transports. This
+         cycle governs the keyboard and the touch, which is what ADR-0211 left as an option.
+
+  consequences:
+    positive:
+      - "A child with one switch can reach the whole controller, and reach it from the bar she already uses"
+      - "The two accommodations stop being confused with each other: one is about holding, the other about how many inputs exist"
+      - "The quiz demo — and every game that holds no key — gets a ☝️ it never had"
+    negative:
+      - "Scanning makes every command cost up to a full pass of the list: it suits a game of turns, and needs the game speed (ADR-0180) beside it in anything timed"
+      - "A third reading of every press is a third thing that can be wrong; each position has to be gated separately"
+      - "The icon's label has to name the position in one readable word, in three languages"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #201**. The gates, each red by mutation before it counts: the icon cycles the three positions in order and keeps
+    the choice; in a game that holds no key it cycles two and never stops on sticky; the three are exclusive, so entering one
+    leaves the others off; with one button only on, a press takes the position the preview shows and the first position of every
+    pass is «cancel»; the scanned list is the game's declared positions plus the engine's own doors, and never a position the
+    game did not declare; nothing is scanned or taken before the child turns it on; the camera and speech transports keep their
+    sticky default whatever this icon says.
+
+more-information: |
+  The scanning loop is not new code from nothing: `input/gaze-cycle` already steps a list, puts «cancel» first, repeats, and
+  commands on a signal. What this decision adds is a second driver for it — a switch instead of a gaze leaving a zone — and the
+  list to step, which is the game's own `preset`.
+  The name the child reads is an interface choice and goes to `interface-log.md` with the wording, not here.

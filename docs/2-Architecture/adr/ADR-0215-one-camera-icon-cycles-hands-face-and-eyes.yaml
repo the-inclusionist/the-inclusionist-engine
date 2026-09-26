@@ -1,0 +1,76 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/camera-on-the-bar.node.test.js
+    - engine:tests/camera-control.node.test.js
+    - engine:tests/quick-bar-in-the-hud.node.test.js
+    - engine:tests/pause-icons.browser.test.js
+    - engine:tests/hand-control.browser.test.js
+    - engine:tests/gaze-overlay.browser.test.js
+  supersedes-in-part:
+    - ADR-0212
+    - ADR-0213
+  date: 2026-09-16
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0212 — one cycle per camera mode (eyes, hand gestures, faces), each with an «on» position and a «lines» position"
+    - "ADR-0213 §7 — the eyes' toggle: off · outlines + the eyes · outlines + hatching + the eyes"
+    - "ADR-0197 erratum — one camera group at a time"
+    - "📏 engine:2a69e03 and the F12 wiring, 2026-09-16: 👀, 🧑 and 🤟 as three icons made the quick bar 483 px wide at 640×360 and put it
+       14 px over the quiz's Menu button; with every icon the bar measured 632 px"
+  informed: []
+
+title: One camera icon on the quick bar cycles off, hands, face and eyes
+
+context-and-problem-statement: |
+  ADR-0212 gave each camera mode its own toggle and ADR-0213 gave the eyes three states. Wiring the third one (the hands) made the quick bar
+  collide with the quiz's Menu button at the smallest screen. The Dev, 2026-09-16: «Menu deve ser o primeiro ícone. A distância entre os
+  ícones deve ser zero. Vamos de um ícone só que alterna entre a) off, b) linhas das mãos, c) face + lábio d) olhos + retângulos (sem
+  hachuras).»
+
+decision-drivers:
+  - "D1 — THE BAR FITS THE SMALLEST SCREEN with every icon a game offers"
+  - "D2 — ONE CAMERA MODE AT A TIME is already the rule (ADR-0197): three icons offered three choices where only one can hold"
+  - "D3 — A MODE SHOWS WHAT IT READS as soon as it is on, so the player learns the reading without a second press"
+
+considered-options:
+  - "A — one icon per mode, each with on and lines positions (ADR-0212, ADR-0213)"
+  - "B — one camera icon whose positions are the modes, each drawing its lines"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ A player can play a mode with nothing drawn. ❌ Three icons for one choice; the bar overflows the smallest screen.
+  **B.** ✅ One icon, one choice, the rule of ADR-0197 by construction. ❌ No position plays a mode without its lines, and none hatches the
+  eye regions.
+
+decision-outcome:
+  chosen-option:
+    link: "B — one camera icon"
+    justification: |
+      1. **One camera icon** (📷) cycles, in this order: **off** · **hands** (playing by hand gestures, with the hands' lines) · **face**
+         (playing with facial expressions, with the face's lines and the lips) · **eyes** (playing with the gaze, with the eye lines and the
+         regions' outlines, never hatched).
+      2. **Every position that plays draws its lines**; there is no «on» without them. This supersedes the «on» positions of ADR-0212 §2 and
+         §3 and the hatched state of ADR-0213 §7.
+      3. The position is the player's setting, kept on the device as one key (`incl_camera_control`). The per-mode keys of ADR-0212/0213
+         (`incl_eye_control`, `incl_face_control`) leave without a migration: no release carried them.
+      4. The icon is offered where there is a camera to ask for; the rest of ADR-0212 (lines over the game, never the camera image) and of
+         ADR-0213 (the relative reading and the cycle) stands.
+
+  consequences:
+    positive:
+      - "Choosing a camera mode is one icon, and turning one on cannot leave another on"
+    negative:
+      - "A player who wants a mode with nothing drawn over the game has no position for it"
+      - "The eyes' faint hatching, which marked the regions nobody looks at, is gone; the outlines alone mark them"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #199), each red by mutation before it counted — 13 of 13 on the camera icon, 7 of 7 on the bar:
+    the icon cycles its four positions in order and keeps the choice in `incl_camera_control`; each position starts ONLY its mode, so
+    turning one on turns the others off; every position that plays draws its lines; the eyes position draws no hatching; no 👀 or 🧑
+    icon remains; Menu is the bar's first icon and the icons touch.
+    📌 Run by the Dev with the camera on 2026-09-17: «Já fiz e está tudo ok» (face and hands) and «Já joguei com rosto e ganhei».
+
+more-information: |
+  The same message placed Menu as the bar's first icon and set the gap between icons to zero; those are interface choices, logged in
+  `interface-log.md` (2026-09-16).

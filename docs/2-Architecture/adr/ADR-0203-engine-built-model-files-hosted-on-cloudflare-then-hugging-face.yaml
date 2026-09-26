@@ -1,0 +1,78 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-26
+      what: >-
+        eSpeak NG IS COMPILED BY THE PROJECT, from a pinned commit. The phonemizer the neural voice needs
+        (`espeak-ng.wasm`, GPL-3.0-or-later) came from the npm package `espeak-ng@1.0.2`, which does not say which
+        eSpeak NG commit it was built from — the binary reports «1.52-dev» — so no delivery could name the Corresponding
+        Source the GPL requires beside a conveyed binary. Of the four ways out put to the Dev (the source in every
+        delivery, the source on the mirror, compiling it here, asking the package's author), the first two stay blocked
+        without the revision and the last has no guarantee; the Dev: «Minha escolha é a c, compilar nós mesmos o
+        .wasm.» So the engine builds the phonemizer from a pinned eSpeak NG commit, reproducibly (the recipe in the
+        engine's `scripts/models/`, as the Vosk runtime's is), pins the output by sha256 in the heavy catalogue, and the
+        Corresponding Source is that commit plus the recipe. The download of the toolchain and the source was authorised
+        with the choice. Issue #192.
+    - date: 2026-09-14
+      what: '📌 THE LESSAC-DERIVED VOICES ARE NOT HOSTED. The Dev, on Faber, Amy and Ryan: «Não vamos hospedar.» The project puts no copy of `pt_BR-faber-medium`, `en_US-amy-medium` or `en_US-ryan-medium` on its Cloudflare nor on Hugging Face. ⚠️ The delivery of ADR-0177 copies each catalogued voice into `dist/pesados/` and serves it from the game''s own origin — a copy the project serves, whichever host carries the game; how the three voices still reach a device is the Dev''s open question (a CDN, or packaged in the PWA). Issue #192.'
+    - date: 2026-09-14
+      what: '📌 THIRD-PARTY MODEL FILES ARE MIRRORED TOO, WHEN THEIR LICENCE ALLOWS IT. The Dev, asked whether to mirror the third-party models on Cloudflare: «Sim, se for legal sim». Licences read upstream on 2026-09-14: Kokoro-82M weights Apache-2.0 (training data includes CC BY 3.0/4.0 audio, credited); Whisper tiny/base/small Apache-2.0 (openai), their onnx-community exports carry no licence field of their own; Moonshine base MIT (UsefulSensors, onnx-community); MediaPipe tasks-vision Apache-2.0 and the blendshape model card Apache License 2.0; `@diffusionstudio/piper-wasm` MIT, its `piper_phonemize.data` is eSpeak NG data (GPL-3.0: the corresponding source goes beside it); WebGazer GPL-3.0-or-later (source beside it). Each mirrored folder carries its licence and NOTICE, like the files the project builds. 🔴 NOT MIRRORED: the Piper voices fine-tuned from the U.S. English lessac voice — `pt_BR-faber-medium`, `en_US-amy-medium`, `en_US-ryan-medium` (their MODEL_CARDs: «Finetuned from U.S. English lessac voice»). Lessac is trained on the Blizzard 2013 dataset, whose licence limits use to «Research Purposes», forbids distributing the materials and excludes «the development ... of voice synthesis or speech recognition products or services». Whether a fine-tuned voice is bound by it is not settled here; «se for legal» is not met, so they are not mirrored until the Dev decides (issue #192). Ryan''s own dataset is CC BY-NC-SA 4.0; the Dev: «nosso projeto não tem fins lucrativos» — its non-commercial clause is met (ShareAlike: a mirror keeps the same licence), the lessac question is the one that remains.'
+    - date: 2026-09-14
+      what: '📌 WHERE THE RECIPES LIVE, read wrong in §3 and §5. The Dev: «O passo a passo é para registrar na engine! A Engine precisa ter seu próprio Docs explicando o passo a passo para refazer a engine do zero.» Each artefact''s rebuild steps and scripts live in the engine repository (`engine:docs/6-DevOps-SRE/models.md`, `engine:scripts/models/`); `the-inclusionist-lfs` holds only the files to upload, their licences and `SHA256SUMS`, with a README pointing to the engine''s document.'
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0177 — heavy files are carried in the delivery, fetched by the BUILD from an upstream address with their sha256"
+    - "ADR-0193 erratum (2026-09-14) — Vosk compiled here with `-sDYNAMIC_EXECUTION=0`: its worker and wasm have no upstream address"
+    - "ADR-0201 erratum (2026-09-14) — the Spanish streaming Moonshine exported to ONNX here: no upstream address either"
+  informed: []
+
+title: Model files the project builds are hosted on its Cloudflare, then on Hugging Face
+
+context-and-problem-statement: |
+  The heavy-file catalogue needs an upstream address and a sha256 for every file (ADR-0177). The Vosk worker and wasm compiled here,
+  the Vosk models repacked as `tar.gz`, and the Spanish Moonshine exported to ONNX exist only on the developer's machine. Asked where
+  to publish them, the Dev, 2026-09-14: «Na CloudFlare, como parte do projeto Inclusionista por enquanto. Após futura permissão da
+  prefeitura, no Hugging Face. Importante: documente o passo a passo para criação desta versão do modelo para quando formos levá-los
+  ao Hugging Face. Documente o passo a passo sobre como usarmos cada modelo no repositório principal da engine. Organize eles na pasta
+  C:\Users\candi\Claude\the-inclusionist-lfs para facilitar subirmos aos locais corretos.»
+
+decision-drivers:
+  - "D1 — A FILE THE CATALOGUE NAMES HAS AN ADDRESS: built here is no excuse for a missing one"
+  - "D2 — THE PUBLIC MODEL HUB WAITS FOR PERMISSION: until the city allows it, the files stay under the project's own hosting"
+  - "D3 — REBUILDABLE BY SOMEONE ELSE: every file ships with the steps that made it"
+
+considered-options:
+  - "A — publish on Hugging Face now"
+  - "B — the project's Cloudflare now, Hugging Face after the city's permission"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Where models are usually found. ❌ A public publication before the permission the Dev waits for.
+  **B.** ✅ The catalogue gets addresses now, under the project's name. ❌ The addresses change once, when the files move.
+
+decision-outcome:
+  chosen-option:
+    link: "B — Cloudflare now, Hugging Face later"
+    justification: |
+      1. **The files the project builds are hosted on its Cloudflare** as part of The Inclusionist, and the heavy-file catalogue names
+         those addresses with each file's sha256.
+      2. **After the city's permission they move to Hugging Face**; the catalogue's addresses change then, the sha256 stay.
+      3. **Every artefact carries its recipe**: the step-by-step that rebuilds that exact version, written for the move to Hugging Face
+         (in the engine repository — see the erratum).
+      4. **The engine repository documents how each model is used** (`engine:docs/6-DevOps-SRE/models.md`).
+      5. **They are staged in `the-inclusionist-lfs`**, one folder per artefact laid out as its future Hugging Face repository, with
+         `SHA256SUMS`. The Dev uploads them: publishing is the Dev's.
+
+  consequences:
+    positive:
+      - "The rebuilt Vosk and the Spanish Moonshine can enter the catalogue"
+    negative:
+      - "One change of addresses when the files move to Hugging Face"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issues #184 and #185** in `the-inclusionist-engine`. Gates: every catalogue entry of a project-built file
+    has an address and a sha256 matching the staged `SHA256SUMS`; each staged folder has a recipe that rebuilt its file.
+
+more-information: |
+  The staging folder is outside the repositories: the files are too large for git and are not code.

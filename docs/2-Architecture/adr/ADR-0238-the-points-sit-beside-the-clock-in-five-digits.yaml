@@ -1,0 +1,56 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0239
+      what: "only the corner: the score sits between the centre and the right of the bottom row. Five digits, clamped, spoken as a number, stand."
+  supersedes-in-part: [ADR-0175]
+  date: 2026-09-25
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-25, verbatim, asked whether the points counter of issue #93 stays: «Ao lado do relógio, 5 dígitos com zero a esquerda.»"
+    - "ADR-0175 §1 — SUPERSEDED IN PART: the points (the `identity` band) in the top-left column. Its §2–§5 stand: the mission's column, the power under the clock, nothing under the quick bar, the learning bars in the footer"
+    - "ADR-0236 — the session clock is a Time Timer at the top right, to the right of the quick bar"
+    - "ADR-0049 — points as a flat record of behaviour, never a celebration loop"
+  informed: []
+
+title: The points sit beside the clock, in five digits with leading zeros
+
+context-and-problem-statement: |
+  ADR-0175 put the points at the top left and the clock at the top right. Asked whether the points counter stays at all
+  (issue #93, rewards), the Dev answered that it stays, and where and how: beside the clock, as five digits with leading
+  zeros.
+
+decision-drivers:
+  - "The counter stays: the Dev's answer"
+  - "A fixed width: five digits never change the counter's size as the number grows, so the corner does not move"
+
+considered-options:
+  - "A · ADR-0175 as built: the points top left, as a plain number"
+  - "B · Beside the clock, five digits with leading zeros"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ Not what the Dev chose. **B.** ✅ The two numbers the adult and the child glance at share one corner. ✅ A fixed
+  width. ❌ A score above 99999 does not fit; the counter then stays at 99999 rather than growing a sixth digit.
+
+decision-outcome:
+  chosen-option:
+    link: "B — beside the clock, five digits with leading zeros"
+    justification: |
+      The Dev's decision. The `identity` band's points are drawn in the top-right corner beside the session clock, as five
+      digits with leading zeros (12 is «00012»), clamped at 99999. The mission keeps the top-left column; the power stays
+      under the clock. The accessible name reads the number as a number («12 points»), never the zeros. Which side of the
+      clock, and the spacing, are interface choices the Dev sees in the running app (interface-log).
+
+  consequences:
+    positive:
+      - "The counter stays, with a width that never moves the corner"
+    negative:
+      - "A score above 99999 is shown as 99999"
+
+  confirmation: |
+    ⏳ Not built. Debt: issue #94, built together with the clock — the counter beside it, five digits, clamped, spoken as a
+    number.
+
+more-information: |
+  Issue #93 was closed with the engine's share of rewards done; this record keeps the counter and gives it its place.

@@ -1,0 +1,72 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/no-decline-is-dead.node.test.js
+    - engine:tests/public-surface-shrinks-by-declaration.node.test.js
+  date: 2026-09-24
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-24, verbatim, asked whether the engine should start reading `Declinios.noPadAssistant` or the field should leave the type: «Sai do tipo.»"
+    - "ADR-0122 — the accessibility the engine offers is «not offered, not declinable»: the pause and the quick bar are in every game because they are the engine's responsibility. The same rule, one field later"
+    - "ADR-0106 §2 — «declining is a choice; not having is an omission»: a decline must change something, or it is a lie a consumer believes"
+    - "ADR-0151 §2 and issue #182 — the engine mounts its own controller-mapping wizard (`#padwiz`, «Mapear controle») in the mobility panel"
+    - "📏 Measured 2026-09-24: `noPadAssistant` is declared in `boot/create-game.ts` and by the demo quiz, recorded in the public-shape snapshot, and read by NO code in the engine; `tests/declinio-morto.node.test.js` carried it as the one dead decline, with the written choice «either the root reads it, or the field leaves the type»"
+    - "📏 Measured 2026-09-24 in the seven games, as information: five declare it under its old name `semAssistenteDePad` (`game-2048`, `game-chess` and two of its spikes, `game-soccer`, `game-whackwhack`, `pixi-15-puzzle`); `game-soccer`'s `mundoRodando` comment says the wizard path is unreachable because the game declines it"
+  informed: []
+
+title: The pad assistant cannot be declined — `Declinios.noPadAssistant` leaves the contract
+
+context-and-problem-statement: |
+  `Declinios` is where a game says what it does NOT have, and ADR-0106 §2 makes that meaningful only while declining
+  changes something. `noPadAssistant` changes nothing: the root mounts the controller-mapping wizard whatever the game
+  declares. A game that declares it believes it decided something, and it did not — and one game has already written
+  that belief into its own code, reasoning that a path is unreachable because of a decline that never took effect.
+
+  The field can become true in two ways: the engine reads it (a game that declines gets no wizard and no «Mapear
+  controle» row), or it leaves the type.
+
+decision-drivers:
+  - "ADR-0122: the accessibility the engine offers is not declinable by a game"
+  - "A child with an adapted or donated controller needs the wizard in EVERY game, and cannot opt a game back in"
+  - "A field that promises what does not happen is worse than no field"
+  - "Better over compatible: the Dev's standing criterion for this engine"
+
+considered-options:
+  - "A · The engine reads it: a declining game gets no wizard and no mapping row"
+  - "B · The field leaves the type (breaking, with a migration note)"
+  - "C · Keep it, deprecated, with a `problems` line saying it is ignored"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The five games that declare it get what they wrote. ❌ It makes the controller mapping declinable, against
+  ADR-0122, and the cost lands on exactly the child who needs it: a controller that is not standard only works once mapped.
+  **B.** ✅ Every decline left in the type changes something. ✅ Behaviour does not change for anyone — the field was
+  already ignored. ❌ A TypeScript cartridge that declares it stops compiling on that line the day it bumps.
+  **C.** ✅ Nobody breaks. ❌ It keeps the lie and adds a warning a game cannot act on except by deleting the line, which is
+  what B asks for directly.
+
+decision-outcome:
+  chosen-option:
+    link: "B — `Declinios.noPadAssistant` leaves the type"
+    justification: |
+      A contradicts ADR-0122. C keeps a lie with a warning attached. B removes the lie: a game in TypeScript that still
+      declares it gets an excess-property error on that exact line the day it bumps; one in JavaScript loses nothing,
+      because the field never did anything. The dead-decline inventory empties, and its exit case is what forces the
+      entry out. Migration note CQ says what to delete and what the five games believed.
+
+  consequences:
+    positive:
+      - "Every decline left in `Declinios` changes something the engine does"
+      - "The controller-mapping wizard is in every game, as the rest of the accessibility the engine offers"
+    negative:
+      - "Breaking for a TypeScript cartridge that declares it: one line to delete, named in the migration note"
+
+  confirmation: |
+    ✅ Built on 2026-09-24. `engine:tests/no-decline-is-dead.node.test.js` — the dead-decline inventory is empty and
+    `noPadAssistant` is asserted ABSENT from `Declinios`; putting the field back makes both the absence case and the
+    inventory case fail (probed). `engine:tests/public-surface-shrinks-by-declaration.node.test.js` — the public-shape snapshot no longer
+    lists it; restoring the old snapshot fails the gate (probed).
+
+more-information: |
+  📌 The demo quiz, the only consumer in the engine's tree, declared it too; it now declares only `noPauseActor`, and its
+  comment says why the wizard is not in the list.

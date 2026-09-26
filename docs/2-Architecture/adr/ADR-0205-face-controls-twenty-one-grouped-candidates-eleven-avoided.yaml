@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-14
+      what: '📌 SEVENTEEN CANDIDATES. The Dev, 2026-09-14, agreeing with the 21 and the 11 avoided, then: «Bico e olhar para baixo não podem ser considerados: resultam em colisões demais» — kiss (mouthPucker) and look down (eyeLookDown L/R) leave the candidates. «Piscar e apertar os olhos devem ser considerados a mesma coisa» — read per eye, since each eye''s blink and squint were judged apart: close-or-squint left (eyeBlinkLeft + eyeSquintLeft) and close-or-squint right (eyeBlinkRight + eyeSquintRight), two candidates instead of four. The sideways look stays under test: «É possível que exista algum mal entendido em olhar de lado, e se não houver, acredito que o problema é que olhos humanos não param de se mexer e ao voltar da lateral para o centro, eles apontam para o outro lado antes, várias vezes até se recalibrarem. Vamos testar melhor isso.» The retest asks for a look to each side, shows both crossed pairs (both blendshapes of a pair must rise together), records which pair rises first and every time the other pair reaches its mark within 1.5 s of the first falling back (a rebound).'
+    - date: 2026-09-14
+      what: '📌 THE COLLISION FIGURES ARE NOT A MEASURE. The Dev, 2026-09-14, on the hands test (ADR-0206 erratum): during each try the Dev also explores other positions to see whether the reading holds, and the verdict rests on the reading being right when the movement is made. The face test counted peaks over the same whole «faça» window, open to the same exploring, so the collisions listed in the negative consequences are not evidence that two candidates collide. The Dev''s verdict per candidate stands.'
+  supersedes-in-part: [ADR-0202]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0204 §3 — face first: every blendshape tested for activation, crosstalk and fatigue before the Dev's default map"
+    - "ADR-0202 §1–§2 — SUPERSEDED IN PART: «look up and blink twice → up», «look up and blink slowly → confirm» — the look up is not a
+       candidate"
+    - "ADR-0199 §2 — the face's navigation mappings; they already read smile left+right and the three brow raises as one, as below"
+    - "📏 The Dev's guided face test (lab `rosto-teste`, 2026-09-14): a first run 12:57–13:24 and a retest 13:26–13:53, three tries per
+       blendshape, rise above the calibrated rest, other blendshapes peaking during each try, an effort rating"
+  informed: []
+
+title: Face controls — twenty-one grouped candidates, eleven avoided
+
+context-and-problem-statement: |
+  ADR-0204 asked which of MediaPipe's 51 expressions work for control without tiring. The Dev ran the guided test twice and gave the
+  verdict per blendshape, 2026-09-14. Movements the face makes as one are one candidate: «browDownLeft e Right: Funciona bem quando faço
+  junto, franzindo as sobrancelhas. Os dois precisam fazer a mesma coisa»; «browInnerUp, browOuterUpLeft e browOuterUpRight: Funciona
+  bem quando levanto as sobrancelhas. Os três precisam fazer a mesma coisa»; «mouthSmileLeft + Right + mouthUpperUpLeft + Right:
+  sorriso funciona para os quatro, configurar todos para a mesma ação»; «mouthRollUpper + Lower: morder um lábio com o outro funciona
+  para ambos muito bem. Usar ambos com a mesma ação». The eyes' sideways look is a pair across both eyes: «Esquerdo eyeLookInLeft +
+  direito eyeLookOutRight: funcionam bem quando faço juntos». And some are not candidates: «eyeLookUpLeft + eyeLookUpRight: não
+  detecta. Evitar o uso.»
+
+decision-drivers:
+  - "D1 — ONE MOVEMENT, ONE CANDIDATE: blendshapes a face raises together count as one signal, never as rival actions"
+  - "D2 — WHAT THE DEV'S FACE COULD NOT RAISE IS NOT OFFERED: an expression that fails the test does not enter the map"
+  - "D3 — THE MAP IS STILL THE DEV'S (ADR-0204 §5): this record lists the candidates and what collides, it maps nothing"
+
+considered-options:
+  - "A — each of the 51 blendshapes as its own candidate"
+  - "B — the Dev's verdict: grouped candidates, the rest avoided"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The most positions. ❌ Left and right halves of one movement rise together (smile left+right 0.94–0.97, the three brow
+  raises 0.79–0.94 in the retest): mapped apart, one smile fires two actions.
+  **B.** ✅ Every candidate is a movement the Dev made on purpose and the camera read. ❌ Fewer candidates; some still collide (below).
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's grouped candidates"
+    justification: |
+      1. **Candidates (21)**, each one action, with the blendshapes it reads:
+         - brows down (frown) — browDownLeft + browDownRight
+         - brows up — browInnerUp + browOuterUpLeft + browOuterUpRight
+         - blink left — eyeBlinkLeft · blink right — eyeBlinkRight
+         - look down — eyeLookDownLeft + eyeLookDownRight
+         - sideways look A — eyeLookInLeft + eyeLookOutRight · sideways look B — eyeLookInRight + eyeLookOutLeft
+         - squint left — eyeSquintLeft · squint right — eyeSquintRight
+         - jaw left — jawLeft · jaw right — jawRight (the lower lip pushed by the tongue; «funciona bem, mas é cansativo»)
+         - jaw open — jawOpen («pouco é suficiente»)
+         - mouth closed, jaw open — mouthClose · «O» — mouthFunnel · kiss — mouthPucker
+         - mouth left — mouthLeft · mouth right — mouthRight
+         - smile — mouthSmileLeft + mouthSmileRight + mouthUpperUpLeft + mouthUpperUpRight
+         - lips rolled in — mouthRollUpper + mouthRollLower
+         - lips pressed (biting) — mouthPressLeft + mouthPressRight
+         - teeth shown — mouthLowerDownLeft + mouthLowerDownRight
+      2. **Avoided (11)**: look up (eyeLookUp L/R), eyes wide (eyeWide L/R), cheekPuff, cheekSquintLeft, cheekSquintRight, nose sneer
+         (noseSneer L/R), jawForward, frown of the mouth (mouthFrown L/R), dimples (mouthDimple L/R), tongue sideways (mouthStretch L/R:
+         «funciona. Evitar.»), shrug (mouthShrug Upper/Lower).
+      3. A grouped candidate rises when **any** of its blendshapes rises from rest, as the face reader already does for smile and brows.
+      4. **The look up leaves the eye commands** of ADR-0202 (up, confirm); the eyes' commands wait for the Dev's default map.
+
+  consequences:
+    positive:
+      - "21 candidates for 14 controller positions; no half of one movement can fire a second action"
+    negative:
+      - "📏 Collisions in the retest (another candidate peaking ≥ 0.5 while one was made): funnel → kiss 0.98; mouth closed → kiss 0.97;
+         mouth right → kiss 0.94, mouth left → kiss 0.72; lips pressed → lips rolled 0.96, rolled → pressed 0.74; blink ↔ squint
+         0.52–0.68; look down → blink 0.66, squint 0.65, brows down 0.62; sideways look A → B 0.75. Two colliding candidates on two
+         actions need a reader that tells them apart (the strongest rise, or one wins by order) — or the map keeps them on one action"
+      - "⚠️ The peaks cover the whole «do it» window, the start of the movement included; which frames rise together was not recorded"
+      - "Teeth shown was not in the retest: in the first run mouthLowerDownLeft was rated «não consigo»; the verdict «funciona bem ao
+         mostrar os dentes» came after, unmeasured"
+      - "Jaw left and right tire; the sideways look's direction (A or B is the child's right) is read by the lab before a reader uses it"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine`. Gates: the face reader rises a grouped candidate from any of its
+    blendshapes and never from an avoided one; with the Dev's default map, each mapped candidate raises its position from recorded
+    frames and a colliding pair on two actions resolves to the made one.
+
+more-information: |
+  Candidate names are movements, not blendshape names, so the map and the child's help speak of a smile, not of `mouthUpperUpLeft`.
+  Scripts (lab, local): `analisar-rosto.py` per blendshape, `colisoes-rosto.py` the collisions between the candidates above.

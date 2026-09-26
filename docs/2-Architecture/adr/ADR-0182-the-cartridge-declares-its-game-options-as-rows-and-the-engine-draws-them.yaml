@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-13
+  confirmed-by:
+    - engine:tests/game-options.node.test.js
+    - engine:tests/game-options.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #178 closed, `engine:16e6bda`): declared rows get the door and are drawn in the cartridge's words; none keeps the door locked with its reason (ADR-0161, the erratum below); a malformed row refuses the boot."
+    - date: 2026-09-13
+      what: "§2 AND THE CONFIRMATION CITED A SUPERSEDED RULE. «The door appears only when the cartridge declared at least one
+             row (ADR-0146 §2)» — but ADR-0161 had already made the card show its six root items always, an item with nothing
+             behind it locked with its reason. The door is LIVE when the cartridge declares at least one row; with none it stays
+             on the card, locked, and says «Este jogo não tem opções próprias». The gate reads «a cartridge declaring none gets
+             the door locked with its reason». Found while building issue #178."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0146 — «opções do jogo» opens what this game declared; the record did not fix the declaration's form"
+    - "ADR-0151 — difficulty is a game option"
+    - "ADR-0158, ADR-0159, ADR-0167 — the menu rules the engine's panels keep"
+  informed: []
+
+title: The cartridge declares its game options as rows, and the engine draws them
+
+context-and-problem-statement: |
+  📏 Measured on 2026-09-13: `initPauseIcons` accepts a list for «Opções do jogo», and `createGame` never passes it, so the door
+  is never shown in any cartridge; the four games with a difficulty (chess, whack, soccer, pinball) draw their own panels,
+  outside the menu rules. Asked whether the cartridge declares rows the engine draws, the Dev: «Sim, para manter a identidade
+  visual. O cartucho pode sim criar suas próprias opções, mas somente em casos especiais em que o menu padrão não atende suas
+  necessidades.»
+
+decision-drivers:
+  - "D1 — ONE VISUAL IDENTITY for every menu a child opens"
+  - "D2 — THE MENU RULES HOLD FOR FREE: «Voltar» first, position spoken, explanation in the footer"
+
+considered-options:
+  - "A — the cartridge draws its own panel and the engine only opens the door"
+  - "B — the cartridge declares rows; the engine draws them, and a cartridge draws its own only when the rows cannot say it"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No new contract. ❌ Every game re-implements the menu rules, and none measured does all of them.
+  **B.** ✅ Identity and rules by construction. ❌ The games with their own panels migrate.
+
+decision-outcome:
+  chosen-option:
+    link: "B — declared rows, drawn by the engine"
+    justification: |
+      1. **The cartridge declares its game options as rows**: a label and hint in its own words, a kind (steps, list or
+         switch), how to read the value and how to write it.
+      2. **The engine draws them in «Opções do jogo»** with the widgets of its own panels, and the door appears only when the
+         cartridge declared at least one row (ADR-0146 §2).
+      3. **A cartridge draws its own options only in special cases**, where the declared rows cannot express what it needs.
+
+  consequences:
+    positive:
+      - "Difficulty and every game setting reach the child through the same menu"
+    negative:
+      - "Chess, whack, soccer and pinball move their settings into declared rows to gain the door"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #178, closed). Gates: a cartridge declaring two rows gets the
+    door and both rows, in its words, with «Voltar» first; a cartridge declaring none gets no door; changing a row calls the
+    cartridge's writer and reading it shows the cartridge's value; a malformed row refuses the boot.
+
+more-information: |
+  «Special cases» is left to judgement by the Dev's words; the rows are the default a review asks to be departed from.

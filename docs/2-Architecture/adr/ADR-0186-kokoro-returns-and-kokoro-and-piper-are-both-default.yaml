@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/kokoro.node.test.js
+    - engine:tests/kokoro-in-the-voice.browser.test.js
+  errata:
+    - date: 2026-09-14
+      what: '✅ CONFIRMED IN PART, pushed (issue #181 closed): Kokoro is back beside Piper, its model and voices in the catalogue with sha256, and a Kokoro voice picked speaks through the Kokoro runtime. The listing condition (model cached and WebGPU) was superseded by ADR-0198 and is not built.'
+  superseded-in-part:
+    - by: ADR-0207
+      what: >-
+        Piper as a default beside Kokoro: Kokoro is the only neural voice.
+    - by: ADR-0200
+      what: >-
+        «Kokoro and Piper are both default». Where the browser offers a Web Speech voice for the language it speaks first; Piper and Kokoro are the fallback.
+    - by: ADR-0198
+      what: >-
+        §4's «listed only where it runs — the model in the checked cache and WebGPU». Listed in any browser, the
+        Piper voice first in Portuguese and Spanish, Heart and Bella marked with a heart.
+  supersedes-in-part: [ADR-0132, ADR-0110, ADR-0185]
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0132 — SUPERSEDED IN PART: «sherpa-onnx is closed, with Kokoro-multi-lang». The sherpa runtime stays closed;
+       what falls is Kokoro going with it"
+    - "ADR-0110 — SUPERSEDED IN PART: the engine guarantees four PIPER voices; it now guarantees Kokoro's beside them"
+    - "Hugging Face `onnx-community/Kokoro-82M-v1.0-ONNX`, read through its API on 2026-09-13 — `onnx/model.onnx` (fp32)
+       325 532 232 bytes, sha256 8fbea51ea711f2af382e88c833d9e288c6dc82ce5e98421ea61c058ce21a34cb; 55 voice files in
+       `voices/`, 28 725 248 bytes, among them `pf_dora`, `pm_alex`, `pm_santa` (Portuguese) and `ef_dora`, `em_alex`,
+       `em_santa` (Spanish). 📏 The fp32 model downloaded the same day with the Dev's permission: 325 532 232 bytes and the
+       same sha256, measured on the file"
+    - "`kokoro-js` 1.2.1 `src/voices.js` — 28 voices active, all English; the others are commented out"
+  informed: []
+
+title: Kokoro returns, and Kokoro and Piper are both default
+
+context-and-problem-statement: |
+  ADR-0132 closed sherpa-onnx «for good, with Kokoro-multi-lang» («Deixe isso em ADR para não voltar mais»), and ADR-0110
+  made the engine's guaranteed voices four Piper voices. ADR-0183 then asked for Kokoro fp32 with WebGPU and all its voices,
+  and ADR-0185 listed Kokoro voices only «where they can run». Told that Kokoro fp32 could be downloaded, the Dev, 2026-09-13:
+  «Sim, e conserte a ADR que impedia de usá-lo. Kokoro volta como padrão», and then: «como padrão junto com Piper: ambos são
+  padrão.»
+
+  The Dev had tested both engines outside the lab — «testei piper por https://piper.ttstool.com/ e kokoro por
+  https://voice-generator.pages.dev/ e tudo funcionou perfeitamente» — and had given up on Kokoro because of how the lab ran it.
+
+decision-drivers:
+  - "D1 — THE BEST VOICE A DEVICE CAN RUN IS OFFERED BY DEFAULT, not left behind a closed record"
+
+considered-options:
+  - "A — keep Kokoro closed (ADR-0132)"
+  - "B — Kokoro returns, and Kokoro and Piper are both default engines"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One neural engine to maintain. ❌ The voice the Dev rated best is out of reach.
+  **B.** ✅ Two engines, both ready without a choice. ❌ A delivery grows by 325.5 MB of model and 28.7 MB of voices, and a
+  second runtime joins the page.
+
+decision-outcome:
+  chosen-option:
+    link: "B — Kokoro and Piper both default"
+    justification: |
+      1. **Kokoro returns.** Its route is the browser runtime with WebGPU (ADR-0183: fp32, all its voices), not sherpa-onnx,
+         which stays closed.
+      2. **Kokoro and Piper are both default**: both ship with the engine's heavy files (ADR-0177), fetched and checked by
+         the build, and both voice sets are in the voice list of their language without the child or the game choosing an
+         engine first (ADR-0185).
+      3. **The engine guarantees Kokoro's voices beside the four Piper voices** (superseding ADR-0110's four-voice guarantee).
+      4. **A Kokoro voice is listed only where it runs** — the model in the checked cache and WebGPU on the device (ADR-0185
+         §2 stands).
+      5. Supersedes in part ADR-0132 (Kokoro closed with sherpa), ADR-0110 (Piper only guaranteed), ADR-0185 (which listed
+         Kokoro as available rather than default).
+
+  consequences:
+    positive:
+      - "The Kokoro voices are ready wherever a device runs WebGPU"
+    negative:
+      - "Every delivery carries 325.5 MB of Kokoro model and 28.7 MB of voices on top of the Piper voices"
+      - "`kokoro-js` 1.2.1 speaks English only: the model has Portuguese and Spanish voices, and reaching them in the browser
+         is work on the phonemizer — until then a Portuguese or Spanish child has the Piper voice"
+      - "Which of an English child's voices speaks first, Kokoro's or Piper's, is not decided here"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #181, closed), IN PART: the Kokoro model and voices are in the heavy-file catalogue with
+    their sha256, and a Kokoro voice picked speaks through the Kokoro runtime. The listing only with WebGPU and the model cached was
+    superseded by ADR-0198 (listed in any browser, through the game's port).
+
+more-information: |
+  Why the lab failed where the public pages did not (measured on 2026-09-13, reported to the Dev): the lab ran Kokoro through
+  sherpa-onnx on the CPU (about 2.5 s of computing per second of speech; four threads gave 2.2), and its fast WebGPU route
+  was `kokoro-js`, English only; the engine's service worker registered no runtime route at all until `engine:e56554a`.

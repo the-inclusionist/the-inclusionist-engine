@@ -1,0 +1,71 @@
+---
+metadata:
+  status: "accepted"
+  errata:
+    - date: 2026-09-14
+      what: '📌 THE COLLISIONS ARE NOT A MEASURE. The Dev, on how the test was run: «Eu olho, vejo se detecta, depois mexo a mão em posições diferentes para ver se a detecção é a mesma. Se eu coloco ok é porque está tudo certo, isto é, quando eu fiz a posição correta a detecção foi correta.» The frames of other gestures counted during each try come from those deliberate other positions; the collision figures in the negative consequences (Open_Palm → four fingers, I Love You → «cachorro», index up → Pointing_Up) say nothing about a gesture misreading while it is held, and nothing about the map. «Ok» means the gesture read correctly whenever it was made. Only the half heart read on Thumb_Down stands, as the Dev saw it. A collision is measured, if needed, by a protocol that records only frames held in the gesture.'
+    - date: 2026-09-14
+      what: '📌 THE HALF HEART LEAVES THE CANDIDATES — FOURTEEN. Asked whether the half heart stays among the hand candidates, the Dev, 2026-09-14: «Não.» In the bar protocol (ADR-0204 erratum) the Dev rated doing it «cansativo» in the first run (detected at 11 s) and «não consegui» in the next two (13 s with the Holistic Landmarker; not detected, given up at 5.7 s with the Gesture Recognizer): the rating is about making the gesture, so it is the gesture that costs, not its reading. The other fourteen stand: index up, index left, three fingers, four fingers, two fingers up, two fingers down, two fingers left, «cachorro», zero, I Love You, Thumb_Up, Thumb_Down, Open_Palm, Closed_Fist.'
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0204 §4 — the Dev's hand gestures tested with a finger-state classifier ported from cvzone's `fingersUp`, beside MediaPipe's
+       canned gestures, before the Dev's default map"
+    - "ADR-0205 — the face's candidates, the same shape of record"
+    - "📏 The Dev's guided hands test (lab `maos-teste`, 2026-09-14 13:54–14:07): three tries per gesture, share of frames recognised,
+       firm for 300 ms, what else was recognised while holding it, an effort rating"
+  informed: []
+
+title: Hand controls — fifteen candidates, six left out
+
+context-and-problem-statement: |
+  The Dev ran the hands test and gave the verdict per gesture, 2026-09-14. Ok: the index up and left; three fingers; four fingers; two
+  fingers up, down and left; «cachorro»; zero; I Love You; Thumb_Up; Thumb_Down; Open_Palm; Closed_Fist. Left out: «Indicador apontando
+  para baixo: não usar, conflito com thumb-down e coração coreano»; «indicador para direita: desconfortável»; «pinça: não funciona»;
+  «dois dedos direita: desconfortável»; «coração coreano: detectável, mas evitar»; «Victory: é repetido, tirar da lista». And a fix:
+  «meio coração: não é detectado no formato correto (quatro dedos abertos), mas sim no thumb_down (quatro dedos fechados). Consertar.»
+
+decision-drivers:
+  - "D1 — COMFORT IS A GATE: a gesture that reads well but is uncomfortable to hold is not offered to a child"
+  - "D2 — ONE SHAPE, ONE CANDIDATE: a canned gesture that repeats a custom one (Victory = two fingers up) is one candidate"
+  - "D3 — THE MAP IS STILL THE DEV'S (ADR-0204 §5)"
+
+considered-options:
+  - "A — every gesture of the list as a candidate"
+  - "B — the Dev's verdict"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The most positions. ❌ Index down fires Thumb_Down (323 frames in its three tries); two uncomfortable directions; a pinch
+  never read; Victory and two fingers up are the same hand.
+  **B.** ✅ Every candidate read well and did not tire the Dev. ❌ No «right» with one or two fingers; the half heart waits for its fix.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's verdict"
+    justification: |
+      1. **Candidates (15)**: index up · index left · three fingers · four fingers · two fingers up · two fingers down · two fingers
+         left · «cachorro» · zero · half heart (after its fix, §3) · I Love You · Thumb_Up · Thumb_Down · Open_Palm · Closed_Fist.
+      2. **Left out (6)**: index down (conflicts with Thumb_Down and the Korean heart) · index right (uncomfortable) · pinch (does not
+         work) · two fingers right (uncomfortable) · Korean heart (avoid) · Victory (repeats two fingers up).
+      3. **Half heart is the four fingers OPEN and curved together with the thumb away** — never the closed hand of Thumb_Down.
+
+  consequences:
+    positive:
+      - "15 candidates for 14 controller positions from one hand, without the directions the Dev found uncomfortable"
+    negative:
+      - "📏 Collisions while holding a candidate (frames of another gesture across the three tries): Open_Palm → four fingers 360 (the
+         thumb read as folded); I Love You → «cachorro» 58 (I Love You recognised in 43% of frames); Thumb_Down → half heart 362 (the
+         defect §3 fixes); index up → Pointing_Up 121 (a canned gesture outside the list that repeats index up, as Victory did)"
+      - "⚠️ The frames counted while «relaxe» (110–287 per gesture) show the hand stayed up between tries; they measure no false firing"
+      - "The half heart's fix is measured on synthetic hands only; the Dev's hand retests it"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine`. Gates: a closed hand with the thumb out is never a half heart, curved
+    open fingers with the thumb away are; with the Dev's default map, each mapped candidate raises its position from recorded frames
+    and a colliding pair on two actions resolves to the made one.
+
+more-information: |
+  The half heart's fix (lab classifier): every fingertip beyond its knuckle from the wrist by 15% (open) and a mean finger curvature —
+  base-to-tip over the three bones, in depth too — below 0.93 (not straight). Before the fix a synthetic closed hand with the thumb out
+  read as a half heart; after, it does not, and curved hands at 30° and 40° per joint do. The lab logs each try's median curvature, so
+  the Dev's retest (`maos-teste.html?gestos=meio-coracao,Thumb_Down,Open_Palm,quatro-dedos`) calibrates the threshold.

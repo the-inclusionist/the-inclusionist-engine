@@ -1,0 +1,71 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #158 closed, `engine:32a1348`): the button's face is its name and its accessible name
+             is «name, function»; the game's word goes to the legend."
+  supersedes-in-part: [ADR-0143, ADR-0162]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0143 — SUPERSEDED IN PART: §2 «each button carries the game's word». The word is the button's FUNCTION, and it
+       leaves the face of the button"
+    - "ADR-0162 — SUPERSEDED IN PART: «a button appears only when the game NAMES it» reads «only when the cartridge gives
+       it a function». What appears and when stands; what the button says changes"
+    - "ADR-0160 — the positions and their names (1 4 / 2 3, L1 L2 R1 R2, SELECT, START)"
+    - "ADR-0164 rule 3 — the button legend, which is where a button's function is written"
+  informed: []
+
+title: A button has a name and the cartridge gives it a function — the face shows the name, never the function
+
+context-and-problem-statement: |
+  The Dev, on the quiz: «Botões tem nome e função, e você está confundindo um com o outro. Botões 2 e 3 devem continuar
+  sendo 2 e 3, confirm e back não são seus nomes, mas suas funções atribuídas pelo cartucho.»
+
+  📏 Measured in `dist/quiz.html` on 2026-09-12: the virtual pad draws two action buttons whose face and accessible name
+  are «Confirm» and «Back» — the quiz's `preset` labels — where the positions are action 2 and action 3.
+
+decision-drivers:
+  - "D1 — ONE BUTTON, ONE NAME, IN EVERY GAME. A child who learns «2» in one game finds «2» in the next; the function
+     changes from game to game, the name does not"
+  - "D2 — THE FUNCTION IS THE CARTRIDGE'S. The engine does not rename a button after what one game does with it"
+
+considered-options:
+  - "A — keep the game's word on the face (ADR-0143 §2)"
+  - "B — the face shows the button's name; the function is said beside it, in the legend"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The child reads what the button does without a legend. ❌ The same button has a different name in every game,
+  and a physical controller's «2» is «Confirm» on screen.
+  **B.** ✅ The pad on screen and the physical controller say the same thing. ❌ What a button does has to be read in the
+  legend or heard.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the name on the button, the function in the legend"
+    justification: |
+      1. **A button's NAME is its position's name** — 1, 2, 3, 4, L1, L2, R1, R2, SELECT, START and the four directions —
+         and it is the same in every game. The face of a virtual pad button shows only that name.
+      2. **A button's FUNCTION is what the cartridge assigns** (its `preset` label). It is written in the button legend
+         (ADR-0164 rule 3) as «name: function», and in the help screen.
+      3. **A button appears only when the cartridge gives it a function** (ADR-0162, reread); SELECT and START stay
+         unconditional.
+      4. 📌 Decision taken with it, to be overruled by the Dev: **the accessible name is the name followed by the
+         function** («2, Confirm»), because a child who does not see the legend must still hear what the button does.
+
+  consequences:
+    positive:
+      - "The on-screen pad and a physical controller use the same names"
+    negative:
+      - "A child who reads but does not open the legend sees «2» and not what it does"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #158, closed). Gates: a preset labelling action 2 «Confirm» draws a
+    button whose face text is «2» and never the label; its accessible name holds both; the legend reads «2: Confirm»; a
+    position with no function is not drawn.
+
+more-information: |
+  The four directions keep their direction names; SELECT and START keep theirs. Nothing here changes which positions a cartridge may give a function to (ADR-0160).

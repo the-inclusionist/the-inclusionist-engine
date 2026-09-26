@@ -1,0 +1,237 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0151
+      what: >-
+        the NINE-item root. Nine overflow the 640×360 target by 64 px (measured), and the Dev cut the root to
+        six: «Acessibilidade» goes to the SELECT button, «Print» goes with it, and «Ajuda — Como jogar» moves
+        up. The engine actioning its own items (resume, help, quit) stands.
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0044 §2 — «a pausa tem sete itens e a ORDEM é a decisão». That record cut the root from twelve to
+       seven because `resume` had been the eleventh stop. This one takes it to NINE, by the same criterion it
+       used: the exit stays first, `quit` stays last, and what grows is the middle"
+    - "ADR-0146 — «opções gerais» and «opções do jogo». Its §1–§3 stand and are the reason two of the nine
+       exist. 🔴 Its §4 — «the remapping panel lives in opções gerais» — is REVOKED here by the Dev"
+    - "ADR-0106 §5 — «um ícone é montado quando a acção dele funciona». The rule that made seven of the nine
+       invisible, and the rule this record has to coexist with rather than bend"
+    - "ADR-0113 cláusula 3 — `hidden` for «not offered», `aria-disabled` WITH THE REASON for «exists and is
+       locked». It is what lets «número de jogadores» stay in a one-player game without becoming a dead button"
+    - "ADR-0085 — `ActionPreset`: for each position the game's own `label` and a `hint`. It is the material the
+       help item is built from, and this record is the first reader `hint` has ever had"
+    - "ADR-0144 — the engine opens the pause. Until 2026-09-12 nothing did, which is why a root list where
+       seven of nine items are invisible had never been seen by anyone"
+  informed: []
+  errata:
+    - date: 2026-09-12
+      what: "§5 left `quit` deliberately undecided — «what LEAVING means with no host is a question whose wrong
+             answer loses a child's progress». ✅ **The Dev answered it the same day: «Voltar à tela de press
+             start».** So `quit` is `setPhase('title')` and not a reload, not `history.back()`, and not a menu
+             that may not exist: the child goes back to where she pressed start, which is a place the project
+             already has a name and a phase for. 📌 That makes `quit` the engine's like the other eight, and
+             removes the one exception §5 carved out — with one honest edge left: `ui/shell`, the phase
+             machine that used to DRAW that screen, is deliberately not mounted by `createGame`
+             (`create-game.ts:325-336`), so the engine asks for the phase and a game without the hook stays
+             where it is. Same shape as `setPhase('paused')` in ADR-0144 §2, and it is why the gate for this
+             has to assert the CALL and not the pixels."
+    - date: 2026-09-12
+      what: "⚠️ The typography question this record left open in `more-information` is ANSWERED, and the answer
+             is reading (a): no typography item on the HUD bar. 📌 But not by leaving the bar alone — the Dev
+             asked for an ELEVENTH button there that cycles five typography presets. That is **ADR-0149**, and
+             it is why this record's open question closes without work landing here."
+
+title: The pause root is NINE items, and the engine actions the ones that are hers
+
+context-and-problem-statement: |
+  🔴 **MEASURED 2026-09-12 in `dist/quiz.html`, with the service worker killed, the first time anybody could
+  actually open the card** (ADR-0144 landed the same day). The root list renders like this:
+
+  | item | state |
+  |---|---|
+  | `resume` | alive — and only since ADR-0144's erratum, hours earlier |
+  | `acessibilidade` | alive |
+  | `addplayer` | **hidden** |
+  | `options` | alive |
+  | `ajuda` | **hidden** |
+  | `print` | **hidden** |
+  | `quit` | **hidden** |
+
+  📏 **Four of seven invisible, and the cause is one line.** `itensQueAccionam` keeps an item only when
+  `ITENS_DA_ENGINE` contains it or the GAME supplied an action — and `ITENS_DA_ENGINE` is
+  `{options, pmback, acessibilidade}`. So a game that only calls `createGame` gets a pause menu of three
+  items, two of which are doors. That is ADR-0106 §5 working exactly as written, over a table the engine
+  never filled.
+
+  ⚠️ **AND THE RULE IS NOT THE PROBLEM — THE EMPTY TABLE IS.** §5 exists so a child never meets a control that
+  does nothing. It was never meant to say «the engine offers a pause and then most of it is missing». ADR-0122
+  says the pause is not declinable; a card with three items honours the letter of that and not the sentence.
+
+  🎯 **The Dev read the mounted card and dictated the whole composition**, on 2026-09-12. Their words, and each
+  one changes something that is written down somewhere:
+
+    · «Ao invés de "adicionar jogador", coloque no menu de pausa "número de jogadores", com uma flecha para a
+      direita ou a esquerda e instrução que é o jogo que determina quantos (esta opção deve estar neste menu
+      para manter o layout)»
+    · «A opção "ajuda" deve existir e mostrar botões e significados»
+    · «A opção controle deve aparecer neste primeiro nível do menu de pausa»
+    · «As opções "print" e "sair do jogo" também devem estar presentes no menu de pausa»
+
+  ⚠️ **The third one revokes ADR-0146 §4**, which put the remapping panel inside «opções gerais» — and it did
+  so five hours earlier, with the argument that nesting it under «motora» would put it three levels deep.
+  Putting it at the root is that same argument taken one step further, by the person the argument was for.
+
+decision-drivers:
+  - "D1 — A MENU OF THREE ITEMS IS NOT THE PAUSE ADR-0122 PROMISED. «Not offered, not declinable» is false
+     while seven of nine items are hidden in every game that does not fill a table it was never told about."
+  - "D2 — §5 PROTECTS THE CHILD FROM DEAD BUTTONS, NOT THE ENGINE FROM WORK. Where the engine CAN action an
+     item, hiding it is not restraint — it is the engine declining on the game's behalf."
+  - "D3 — DEPTH COSTS MORE THAN WIDTH FOR WHOEVER CANNOT SEE. A root that is one stop longer costs one sweep
+     step; a panel one level deeper costs a door, a list, and a way back, every single time."
+  - "D4 — AND THE ENGINE MUST NOT PROMISE WHAT ONLY THE GAME KNOWS. Leaving the game, and how many seats it
+     has, are the game's facts. The engine can offer the CONTROL without owning the ANSWER."
+
+considered-options:
+  - "A — leave the root at seven and let each game fill the table."
+  - "B — the root is nine, and the engine actions every item it can action itself."
+  - "C — the root is nine, and the engine actions all nine, inventing answers for `quit` and the seat count."
+  - "D — move the invisible items into «opções gerais» to keep the root short."
+
+pros-and-cons-of-the-options: |
+  **A — leave it at seven, the game fills the table.**
+  ✅ No record changes; ADR-0044 §2 stays untouched.
+  ❌ It is the arrangement ADR-0139 measured as having failed in five games of six, applied to the menu the
+     child meets most. 📏 And it is already measured failing: the quiz fills none of it.
+
+  **B — nine, engine actions what is hers.**
+  ✅ Every item the engine can honestly action becomes visible in all three hundred games, with no line for a
+     consumer to remember.
+  ✅ §5 is kept rather than bent: what stays hidden stays hidden for a reason that can be said out loud.
+  ❌ The root grows by two, and ADR-0044 §2 treats that list as a decision — so the cost falls on exactly the
+     child that record was protecting.
+
+  **C — nine, and the engine answers everything.**
+  ✅ Nothing is ever hidden; the layout never moves between games.
+  ❌ The engine would have to decide what LEAVING means with no host — reload? history? a menu that may not
+     exist? — and a wrong answer there loses a child's game. Inventing an answer to a question only the game
+     can answer is the failure mode ADR-0111 already names about words.
+
+  **D — push them down into «opções gerais».**
+  ✅ The root stays short.
+  ❌ It puts «leave the game» and «help» behind a door, which is the opposite of what they are for, and it
+     re-creates the depth problem ADR-0146 §4 had just argued against for remapping.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the root is NINE, and the engine actions the items that are hers"
+    justification: |
+      ===== 1. THE NINE, IN ORDER =====
+      `resume` · `acessibilidade` · **«número de jogadores»** · **«opções gerais»** · **«opções do jogo»** ·
+      **`controles`** · `ajuda` · `print` · `quit`.
+
+      ⚠️ Nine is a second change to ADR-0044 §2, and it is argued rather than assumed — by that record's own
+      criterion. §2 cut twelve to seven because `resume` was the ELEVENTH stop for a child sweeping the list
+      without seeing. `resume` is still first and `quit` is still last; what grows is the middle, and the ring
+      (item 1) means `quit` is one step UP from `resume` no matter how long the middle gets.
+
+      ===== 2. `controles` LIVES AT THE ROOT — ADR-0146 §4 IS REVOKED =====
+      The Dev's words: «A opção controle deve aparecer neste primeiro nível do menu de pausa». ADR-0146 §4 had
+      placed it inside «opções gerais», arguing that nesting it under «motora» would put it three levels deep
+      for the child who cannot reach a key, the one who plays with one hand and the one with a foreign
+      keyboard. This is that argument finished: for those children, remapping is not an option among options —
+      it is the thing that makes the game playable at all, and it belongs where they meet it first.
+
+      📌 And it is the ONE of the nine that may legitimately be missing: with no `preset` there is no position
+      to remap, so it is not in the engine's always-on set and its absence goes to `problems`.
+
+      ===== 3. «NÚMERO DE JOGADORES» — AND WHY A LOCKED ROW IS NOT A DEAD BUTTON =====
+      `addplayer` becomes a STEPPER: «número de jogadores», with ⯇ and ⯈, and an instruction that says the
+      GAME determines how many. The Dev asked for it to stay «para manter o layout» — even in a one-player
+      game, where it cannot move.
+
+      ⚠️ That looks like it collides with ADR-0106 §5, and it does not, because ADR-0113 clause 3 already
+      separates the two cases: `hidden` means «not offered», `aria-disabled` WITH THE REASON means «exists and
+      is locked». A stepper that says «this game is for one player» is not a control that does nothing — it is
+      a control that ANSWERS. What §5 forbids is the silent one.
+
+      ===== 4. `ajuda` SHOWS THE BUTTONS AND WHAT THEY MEAN =====
+      Built, not authored: `ActionPreset` (ADR-0085) already carries the game's own `label` and `hint` per
+      position, and `keyboard.kbFor(i)` carries the key THAT child put there. Help is that table drawn —
+      position → her key → the game's word → the sentence that explains it.
+
+      📌 This gives `hint` its first reader. It has been a declared, tested, documented field that nothing
+      ever displayed — the same shape of debt as `tick` and `presetProblems`.
+
+      ⚠️ With no `preset`, help has nothing to say and is NOT mounted: a help screen listing `action2` is worse
+      than no help at all, which is ADR-0074 in one line.
+
+      ===== 5. `print` IS THE ENGINE'S; `quit` IS STILL THE GAME'S, AND THAT IS SAID OUT LOUD =====
+      `print` — «ver a tela» — the engine can do alone, and does.
+
+      🔴 `quit` is NOT decided here, and pretending otherwise would be the failure mode of option C. What
+      «leave the game» means with no host — reload, history, a menu that may not exist — is a question whose
+      wrong answer loses a child's progress. Until a record answers it, `quit` is actioned by the game, and
+      its absence in a game that supplies nothing is the one case where §5's «prefer the absence» is right.
+
+      ===== 6. WHAT DOES NOT MOVE =====
+      The split of ADR-0146 §1–§3 — «opções gerais» beside «opções do jogo», the second mounted only when the
+      game declared something of its own, and the two names not sharing a spoken prefix. `resume` first and
+      `quit` last. The contents of the panels, which is ADR-0145's classification and not this record's.
+
+  consequences:
+    positive:
+      - "A pause card with nine live items in every game, instead of three, with no line for a consumer to
+         remember and no contract field added"
+      - "The child who needs to remap meets it at the first level, which is what ADR-0146 §4's own argument
+         was heading towards"
+      - "`hint` gets its first reader, and the help screen is generated from what the game already declares —
+         so a game that adds an action gets it in help without an engine release"
+      - "«Not declinable» becomes true of the pause's CONTENTS and not only of its existence"
+    negative:
+      - "The root goes from seven to nine — two more stops before `quit` for whoever sweeps it without seeing,
+         which is movement in the direction ADR-0044 §2 fought"
+      - "A locked «número de jogadores» is a row that a child meets and cannot use. It answers rather than
+         staying silent, but it is still a stop on the sweep"
+      - "`quit` stays hidden in a game that supplies nothing, so the list LENGTH still varies between games —
+         the layout the Dev wants to keep steady is steady in eight of nine places, not nine"
+      - "The engine now actions items whose behaviour a game may want to override, and every one of them is a
+         place where the engine's answer and the game's could diverge"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #144** in `the-inclusionist-engine`
+    (the same issue as ADR-0146, whose scope this record widens). The gates, named now:
+
+      1. The root is the NINE of §1, in order, `resume` first and `quit` last — the ADR-0044 §2 case, extended
+         a second time rather than replaced.
+      2. 🔴 In a game that supplies NOTHING beyond `createGame`, eight of the nine are live. The case asserts
+         each one is present AND not `hidden` — counting nine items would pass with all of them dead.
+      3. 🔴 `controles` with no `preset`: NOT mounted, and the line said in `problems`. Asserting the absence,
+         not merely that nothing threw.
+      4. 🔴 A one-player game: «número de jogadores» is PRESENT, `aria-disabled`, and carries a reason a screen
+         reader reads. The pair that fails both ways — hidden fails it, and enabled-but-inert fails it.
+      5. The help table shows the REMAPPED key and never an engine identifier; a position the game does not
+         declare is ABSENT from it.
+      6. `quit` with no game action: absent, and said — the one case where §5's silence is the right answer.
+
+more-information: |
+  📏 **The measurement this record rests on**, taken 2026-09-12 on `dist/quiz.html` with the service worker
+  killed, reading the DOM rather than a screenshot:
+
+    · root: `resume`, `acessibilidade`, `addplayer`(hidden), `options`, `ajuda`(hidden), `print`(hidden),
+      `quit`(hidden)
+    · options submenu: `pmback`, `caa`, `empatia`(hidden), `audio`, `motora`(hidden), `tipo`,
+      `visual`(hidden), `anim`
+    · `ITENS_DA_ENGINE` = `{options, pmback, acessibilidade}` — `engine:app/js/ui/pause-icons.ts:398`
+    · `PM_BTNS` — `engine:app/js/ui/activities-menu.ts:188`
+
+  ⚠️ **One thing the Dev said is NOT decided here, because it has two readings and they cost differently.**
+  «Tipografia deve estar somente em opções gerais, não aparecendo durante o jogo.» The first half is already
+  ADR-0145's classification — typography is universal, so it is general. The second half reads either as «no
+  typography icon on the HUD bar» (a restriction, no work, and the reading the surrounding points favour,
+  since they are all about the bar) or as «the general options are reachable only from the title screen» —
+  which would be a large decision and would contradict the stopping criterion of the current plan. It waits
+  for their word rather than being guessed at.
+
+  📌 **And the accessibility bar is a separate subject**, recorded next door: which icons it mounts and the
+  fact that a game must not draw over it.

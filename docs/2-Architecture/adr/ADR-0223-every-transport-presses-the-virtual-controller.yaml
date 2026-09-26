@@ -1,0 +1,187 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0224
+      what: "ONLY who ASSEMBLES the gamepad, and with it the shape of the door reaching it. The second erratum below made `GamepadCtx.press`/`release` the final answer, because the cartridge mounts that transport; the Dev then decided that `createGame` mounts it, like the other five. The decision of this record — every transport presses the virtual controller — is unchanged, and `press`/`release` keep working for a cartridge that assembles a transport of its own"
+  date: 2026-09-22
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev, 2026-09-22, deciding it in one word after the measurement was laid out: «Sim, unifique.»"
+    - "the Dev, same day, on what the criterion is and is not: «Está realmente estressante você cuidar de outros repositórios ao invés de melhorar a engine para DEPOIS os jogos que usam a engine se adaptarem à NOVA engine. Preste atenção: NOVA, não é a antiga consertada, mas sim uma nova» — and, narrowing it: «Não significa que ela não deva ser compatível com a antiga, mas sim que o compromisso dela é ser melhor e isso está acima de ser compatível»"
+    - "ADR-0111 and its erratum of 2026-09-16 — the engine handles the hardware and hands the game the virtual button's name; `input/virtual-controller` exists to be the ONLY door"
+    - "ADR-0109 — every press carries the transport that produced it; erasing the source is the defect that record exists to close"
+    - "engine:docs/ARCHITECTURE.md §3.4 — «There are two doors to the cartridge… Whether to unify is a decision, not a cleanup»"
+    - "📏 Measured 2026-09-22 by reading every path and confirmed with a browser probe: a cartridge that listens only to `onCommand` hears the KEYBOARD (the root's window listener) and the EYES, FACE, HANDS, VOICE and SCAN (the virtual controller) — and hears NOTHING from the TOUCH pad or the GAMEPAD"
+    - "📏 Measured the same day: `input/touch-bindings` writes KEYS (`markKey`/`releaseKey`) and the window listener excludes the source `toque` explicitly; `input/gamepad` raises EDGES on the player (`playerEdge`) and passes through neither door"
+    - "📏 Measured the same day — the two doors disagree in three places: with a menu open the controller delivers nothing while the listener still delivers the `keyup`; the controller keeps a `held` map so a release is only delivered for a press the game heard, and the listener has no memory; and the listener delivers for a synthetic event nobody signed (`sourceOfEvent` answers `undefined`, which is not in its exclusion list)"
+    - "📏 Measured the same day: `keydown`, `gamepad` and `touch-bindings` change together in 40–53% of the commits that touch them — the co-change that a shared door should collapse (ADR-0221 step 7e)"
+  informed: []
+  errata:
+    - date: 2026-09-22
+      what: >-
+        ✅ **«SIM» — `createGame` COMES TO MOUNT THE GAMEPAD**, decided by the Dev the same day, answering the question the
+        erratum below had left named and open. The gamepad stops being the only transport mounted from outside: the root
+        mounts all six.
+        🎯 This SUPERSEDES the part of the erratum below that made `GamepadCtx.press`/`release` the final form — they were
+        the intermediate step that landed in `engine:103843c`, and they hold until the mounting changes owner. What does
+        NOT change is `Engine.controller`: it stays published, because its reason is ADR-0216
+        («a engine oferece o objeto de controle») and not the mounting of the pad — a cartridge that mounts a transport
+        of its own still needs the door.
+        📏 The size of the work, measured before starting: `GamepadCtx` has 27 members and the root already knows how to
+        answer nineteen. The EIGHT that only a cartridge knows — `modalInput`, `hasModal`, `joinPlayer`, `respawnPlayer`,
+        `clearWaitingBadge`, `rotuloDaAcao`, `getPlayers`, `spriteBase` — are the decision inside the decision: each one
+        becomes a field declared by the cartridge, a declared absence, or goes. ⏸ That split is written when the work
+        starts, and it is what ADR-0221's step 7f was waiting to be able to read.
+        ⚠️ And an imprecision of mine, corrected here because it was written in a record: I said this was
+        «a mesma pergunta» as the `Transport` family interface. It is not. The family asks WHAT the six transports share — and
+        that can only be declared after all of them press the same door, which is what these three commits did. This
+        question is WHERE a transport is mounted. They are neighbours, not the same.
+    - date: 2026-09-22
+      what: >-
+        🔴 THE GAMEPAD IS NOT MOUNTED BY THE ENGINE, AND THIS RECORD DID NOT KNOW IT. Item 1 of the outcome says
+        `input/gamepad` presses the controller «instead of raising edges», written as if the two transports were symmetric.
+        📏 Measured while building the touch half: `createGame` mounts the touch pad, the eyes, the face, the hands, the
+        voice and the scan — and does NOT call `initGamepad`. The CARTRIDGE calls it, which the root's own comment already
+        said («quem chama `initGamepad` é o cartucho»). So the root cannot hand the gamepad a door it owns privately: the
+        controller is a local of `createGame`. The decision does not change — it is the same door — but the path to it does,
+        and nobody had counted this.
+        🎯 **And the answer is already decided, in the Dev's words, in ADR-0216: «Assim como a engine oferece o OBJETO DE
+        CONTROLE, ela deve oferecer objetos de leitura e TTS.»** The engine offers objects; the cartridge asks. So
+        `Engine.controller` is published beside `keyboard`, `nav`, `overlays`, `sonar` and `scenes`, and `GamepadCtx` gains
+        `press`/`release` as REQUIRED members — required, because an optional door is a field a game can forget, and
+        forgetting it returns the silence this record exists to end. ⚠️ Publishing it is a one-way door, which is why it is
+        written here before the code (ADR-0128).
+        📌 What this errata deliberately does NOT decide: whether `createGame` should mount the gamepad itself, the way it
+        mounts every other transport. That is a bigger question — 27 of `GamepadCtx`'s members, eight of which only a
+        cartridge can answer (`modalInput`, `hasModal`, `joinPlayer`, `respawnPlayer`, `clearWaitingBadge`, `rotuloDaAcao`,
+        `getPlayers`, `spriteBase`) — and it is the same question the `Transport` family interface of ADR-0221 step 7f is
+        waiting on. It is named here so it stops being invisible.
+        📏 Also measured, and out of scope here: the gamepad reads EIGHT positions (four directions and four actions) plus
+        start and pause. The shoulders and triggers a cartridge can declare are not read by this transport at all, so «every
+        position reaches the cartridge» is true of the six that press this door and not yet of the pad.
+    - date: 2026-09-22
+      what: >-
+        ✅ THE TOUCH HALF LANDED (`engine:a1e4d3e0`, migration note BM). Three things the outcome did not spell out came out
+        of building it, and they are facts rather than changes of mind.
+        (1) **`VirtualController.press` had to start ANSWERING** whether the press reached play. Item 4 says edges «stop
+        being the gamepad's only output» and become «a consequence of a press»; the consequence a transport actually needs is
+        knowing whether there WAS a press, because the pad asked its own `emMenu()` first — a second answer to a question
+        the controller had just answered, and two answers to one question is how the two doors came to disagree.
+        (2) **The touch door takes no seat.** A first draft carried `player?` through it; a mutation fixing it to 0 survived,
+        because nothing could exercise it. Multiplayer is on separate screens (pillar 7), so a device with a pad has one
+        finger and one seat.
+        (3) **A position with no key bound reaching the cartridge** — listed under option A as a virtue — turned out to be a
+        behaviour CHANGE on the touch path, where it used to be silence. It is in note BM.
+
+title: Every transport presses the virtual controller — the engine has ONE door to the cartridge
+
+context-and-problem-statement: |
+  ADR-0111 and its erratum decided that the engine handles the hardware and hands the game the virtual button's name, and
+  that `input/virtual-controller` is the single place where that happens. 📏 Measured on 2026-09-22, it is not: there are two
+  doors, and two transports that use neither.
+
+  🔴 **A cartridge that listens only to `onCommand` does not respond to a finger or to a controller.** The touch pad writes
+  KEYS — its own module says the on-screen button «finge ser o teclado» — and the root's window listener excludes the source
+  `toque` explicitly, with a comment claiming «those come as commands already», which is true of the eyes and false of the
+  thumb. The gamepad raises EDGES on the player object and passes through neither door. A cartridge written BEFORE the
+  erratum reads keys and works with both; the demo quiz, written after it, listens only to commands — and a child on a
+  tablet gets nothing.
+
+  ⚠️ **And the two doors disagree with each other**, which is the second cost of having two. With a menu open the controller
+  delivers nothing and the listener still delivers the `keyup`. The controller keeps a `held` map precisely so that «a game
+  must never be left believing a button is still down»; the listener has no memory, so a press swallowed by a menu followed
+  by a release hands the cartridge a release with no press. And the listener delivers for a synthetic event nobody signed.
+
+  📌 The co-change says the same thing without being asked: `keydown`, `gamepad` and `touch-bindings` change together in
+  40–53% of the commits that touch them.
+
+decision-drivers:
+  - "D1 — THE CARTRIDGE HAS ONE INPUT. That is ADR-0111, and today it is a promise the engine does not keep for two of its six transports"
+  - "D2 — A RULE WRITTEN TWICE DIVERGES, and these two already have: three measured disagreements, each of which is a defect on one side"
+  - "D3 — THE ENGINE IS IMPROVED FIRST AND THE GAMES ADAPT. The Dev's words: «o compromisso dela é ser melhor e isso está acima de ser compatível». What a cartridge reads today is not a constraint on this decision"
+  - "D4 — THE SOURCE SURVIVES (ADR-0109): a command must still say which transport produced it, or the erasure that record closed comes back through the new door"
+  - "D5 — WHAT IS HELD MUST STILL BE HELD: games that ask what key is down keep asking, so pressing the controller keeps holding the child's key underneath"
+
+considered-options:
+  - "A — every transport presses `input/virtual-controller`; the window listener stops delivering, and becomes what it always was: the keyboard's driver"
+  - "B — unify the other way: the controller synthesises stamped key events, and the window listener is the single door"
+  - "C — leave two doors and make them agree, case by case"
+  - "D — leave it: a cartridge that wants the finger reads keys"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One implementation of one decision, and it is the one ADR-0111 already chose; the `held` map, the menu rule and
+  the source stamp start applying to all six transports at once. ✅ It is also the only option where a position the child's
+  scheme gives NO key still reaches the game — the map belongs to the cartridge, not to the keyboard. ❌ Breaking for a
+  cartridge that reads edges (the platformer's physics reads `playerEdge`), and for anything that watched keys to learn what
+  the pad did.
+  **B.** ✅ Smaller diff: touch and gamepad already produce key-shaped input. ❌ It makes the KEYBOARD the engine's model of
+  input, which is what ADR-0111 decided against: a position with no key bound becomes unreachable, and every transport has
+  to invent a key to speak. ❌ And the synthetic-event path is the one with no `held` memory.
+  **C.** ❌ Two implementations that agree today diverge tomorrow; this is the third time these two have been found
+  disagreeing. It also keeps the 40–53% co-change, which is the measurement that says the duplication is real.
+  **D.** ❌ It leaves the engine unable to answer «why does my game not respond to touch?» with anything but «read keys
+  instead», which contradicts the contract it publishes.
+
+decision-outcome:
+  chosen-option:
+    link: "A — every transport presses the virtual controller"
+    justification: |
+      1. **`input/touch-bindings` and `input/gamepad` press and release `input/virtual-controller`**, with their sources
+         (`toque`, `gamepad`), instead of writing keys and raising edges. What the controller already does then applies to
+         them: a menu takes the position as its key, play holds the child's key AND delivers the command, and the release is
+         delivered for every press the game heard.
+      2. **The root's window listener stops delivering commands.** It goes back to being the keyboard's driver: it resolves
+         the action and presses the same controller. After this there is one `deliver`, called from one place.
+      3. **The `held` map, the menu rule and the source stamp become universal.** ⚠️ The three measured disagreements are
+         resolved by the controller's answer in all three cases, because it is the one with the memory: no delivery with a
+         menu open, a release only for a delivered press, and no delivery for an event nobody signed.
+      4. **Edges keep being raised** — `playerEdge` is how the physics of a cartridge learns a button was tapped — but they
+         stop being the gamepad's only output. Raising them becomes a consequence of a press, in one place, for every
+         transport, instead of a thing one transport does on its own.
+      5. **BREAKING, and the note says what to change**: a cartridge that learned about the pad or the controller by
+         watching keys or edges now receives `onCommand`, the same way it already receives the eyes and the voice.
+
+  consequences:
+    positive:
+      - "A cartridge written against `onCommand` responds to all six transports, which is what ADR-0111 promised"
+      - "One implementation of the menu rule, of the held-key memory and of the source stamp, instead of two that have already been measured disagreeing three times"
+      - "The 40–53% co-change of `keydown`, `gamepad` and `touch-bindings` becomes the criterion that tells us whether this worked (ADR-0221 step 7e), and it is recorded BEFORE the work"
+    negative:
+      - "Breaking for cartridges that read keys or edges to learn what the pad did — they adapt to the new version, which is the engine's compromise being better before being compatible"
+      - "The touch pad stops being able to claim it «is» the keyboard, and any behaviour that depended on that identity has to be found and named"
+      - "The gamepad's path becomes longer: a button now resolves to a position, the position to a key, and the key to the state — three hops where there was one"
+
+  confirmation: |
+    ✅ **BUILT on 2026-09-22, in three commits, one per half** — `engine:a1e4d3e0` (touch, note BM), `engine:103843c`
+    (gamepad, note BN) and `engine:04b61db6` (keyboard, note BO). After the third, `deliver` is called from ONE place.
+    What holds it, each red by mutation before it counted (21 mutations over the three):
+    · **a press reaches `onCommand` with its source** — the touch and the gamepad through their own doubles
+      (`touch-bindings`, `gamepad`), the keyboard and the control object end to end at boot
+      (`virtual-controller-at-boot`), where a press through `motor.controller` also finds the child's key held
+      underneath, which is driver D5;
+    · **a release is delivered only for a press the game heard, with a menu opening in between** — the case that was
+      one of the three measured disagreements, now on the keyboard path where the second door used to deliver it;
+    · **a position with no key bound still reaches the cartridge** — on the touch path, where it used to be silence.
+    🔴 **And three of the cases exist because a mutation survived first**, each naming a hole rather than a remedy: the
+    controller's ANSWER being read at all (two sides of one hole — the controller lying, and the pad ignoring it), the
+    root wiring the release, and an unsigned key inventing `teclado` as its producer instead of erasing the old one.
+    📏 **The closing criterion is fixed and NOT yet readable, which is the honest state.** `node scripts/co-change.mjs
+    --group transports` now draws its line at `04b61db6`, where the door became single, and reads **36% before** (22 of
+    61 commits). The «after» has one commit. ⚠️ And the first readings will be pessimistic by construction: the three
+    commits of the unification touch several of these files at once, which is precisely what the abstraction exists to
+    stop happening afterwards.
+  confirmed-by:
+    - engine:tests/virtual-controller.node.test.js
+    - engine:tests/touch-bindings.node.test.js
+    - engine:tests/touch-bindings.browser.test.js
+    - engine:tests/gamepad.node.test.js
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+
+more-information: |
+  📌 What this record does NOT decide: whether the cartridge keeps receiving keys at all. It does — `holdKey` stays, because
+  a game that asks what is held must keep getting an answer, and that is driver D5. What changes is that the key is no longer
+  how a transport TALKS to the cartridge; it is a side effect of a press, written in one place.
+  ⚠️ And the comment in `boot/create-game` that excludes `toque` from the window listener — «those come as commands already,
+  or went to a menu» — was true of the eyes when it was written and became false when touch joined the list. It is the
+  smaller lesson of this record: a comment that justifies a list ages with the list.

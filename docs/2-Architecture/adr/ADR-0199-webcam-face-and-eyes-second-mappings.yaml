@@ -1,0 +1,69 @@
+---
+metadata:
+  status: "superseded"
+  superseded-by: ADR-0210
+  superseded-in-part:
+    - by: ADR-0202
+      what: >-
+        §3 and §4's eye mappings, and the reading that one quick blink commands. Look up or down and blink twice → up or down; look up,
+        down or ahead and blink slowly → confirm, back or menu; one quick blink commands nothing.
+  supersedes-in-part: [ADR-0197]
+  date: 2026-09-14
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0197 §3 — SUPERSEDED IN PART: «tilt up and down → up and down; open the mouth → confirm»"
+    - "ADR-0197 §4 — SUPERSEDED IN PART: «look up → up; look down → down»"
+    - "ADR-0197 errata — the camera reads one group at a time; a held command never repeats until rest"
+    - "📏 The Dev's camera run, 2026-09-14 (Chrome, `camera.html` with the four group buttons, engine `f5547d9`): the Dev's reading —
+       static hand gestures «funcionam muito bem e muito rapidamente»; moving hand gestures «todos funcionam muito bem»; facial
+       expressions «funcionam muito bem»; looking up and looking down «não funcionam bem»"
+  informed: []
+
+title: Webcam face and eyes — the second mappings, after the first camera run
+
+context-and-problem-statement: |
+  The Dev ran the four groups of ADR-0197 on the camera. Hands and face worked; the eyes' plain look up and look down did not. The
+  Dev, 2026-09-14: «Expressões faciais: funcionam muito bem. Mas eu faço as seguintes trocas: em vez de inclinar a cabeça para
+  baixo para descer, abrir a boca. Em vez de abrir a boca para confirmar, fazer bico. Olhos: olhar pra cima e olhar pra baixo não
+  funcionam bem. Troco por olhar para cima e piscar e olhar para baixo e piscar. Vejamos se funciona.»
+
+decision-drivers:
+  - "D1 — WHAT THE CAMERA RUN SHOWED: keep what worked, change what did not"
+  - "D2 — A GAZE ALONE IS NOT A COMMAND: people look around; a look confirmed by a blink is"
+
+considered-options:
+  - "A — keep ADR-0197's face and eye mappings and tune the thresholds"
+  - "B — the Dev's second mappings below"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to relearn. ❌ The plain gaze failed on the Dev's face; a threshold does not make a glance intentional.
+  **B.** ✅ Every eye command carries a blink, which a glance does not; the face keeps «down» without tilting away from the screen.
+  ❌ A tilt down commands nothing any more; «down» by the eyes waits for the time a second blink could take.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's second mappings"
+    justification: |
+      1. **Hands** (ADR-0197 §1–§2) stand as they are.
+      2. **Face and head**: turn left and right → left and right; tilt up → up; **open the mouth → down**; **pucker (a kiss) →
+         confirm**; smile → menu; raise the brows → back. Tilting the head down commands nothing.
+      3. **Eyes**: **look up and blink → up**; **look down and blink → down**; two quick blinks → confirm; one slow blink → back;
+         two quick blinks while looking down → menu. A plain look up or down commands nothing.
+      4. 📌 Read so, and asked of the Dev: one quick blink while looking up or down commands once the time for a second quick blink
+         has passed (the double decides first); two quick blinks while looking up confirm.
+
+  consequences:
+    positive:
+      - "A glance at the screen's edge no longer moves a menu"
+      - "The face says «down» while the eyes stay on the screen"
+    negative:
+      - "An eye «up» or «down» arrives about 0.7 s after the blink, the time a double blink is given"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #189** in `the-inclusionist-engine`. Gates: open mouth → down and pucker → confirm; a tilt down
+    commands nothing; one quick blink looking up → up and looking down → down, after the double's time; a plain look commands
+    nothing; two quick blinks looking down still → menu. With the camera: the Dev's next run, each mapping written with its result.
+
+more-information: |
+  MediaPipe's `mouthPucker` blendshape reads the pucker; in the Dev's first run it rose to 0.38 at rest on one sample, which the
+  rest-relative reading (ADR-0197 errata, `engine:c966797`) absorbs once the face is calibrated.

@@ -1,0 +1,85 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/speech-rate.node.test.js
+    - engine:tests/caption-rate.browser.test.js
+    - engine:tests/voice-choice.node.test.js
+    - engine:tests/kokoro.node.test.js
+  errata:
+    - date: 2026-09-14
+      what: '✅ CONFIRMED IN PART, pushed (issue #179 closed): the speech rate is stored and applied per utterance, the caption rate 125/145/175 is stored and a caption at 125 stays longer, the voice list offers the language''s voices and Kokoro is in the catalogue with sha256. The rate steps are ADR-0196''s (254…504 by 50), not §1''s; the speech volume row existed and has no gate of its own here.'
+  superseded-in-part:
+    - by: ADR-0196
+      what: >-
+        §1's «150 to 500 words per minute in steps of 35». The steps are 254 to 504 by 50, the voice's normal speed the
+        minimum; the rate stays stored and measured per voice.
+    - by: ADR-0185
+      what: >-
+        §3's «at least two voices to choose from». The list holds the voices that speak the child's language, which
+        today is one in Portuguese and one in Spanish.
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "W3C UAAG 2.0 Reference (Working Draft, 2014-09-25), mobile — the user sets the speech rate, volume and pitch of the
+       synthesiser; the player does not force a rate"
+    - "C. Jensema, «Viewer reaction to different television captioning speeds», American Annals of the Deaf, 1998 — 578
+       viewers; «comfortable» at about 145 words per minute, trouble from about 170"
+    - "D. Burnham et al., Journal of Deaf Studies and Deaf Education, 2008 — deaf children understood more at 90 and 120 than
+       at 180 words per minute; 120 suggested as the slowest rate for children's television"
+    - "DCMP Captioning Key — lower-level educational media at no more than 130 words per minute"
+    - "BBC subtitle guidelines — 160–180 words per minute for adults, 120–140 for children's programmes (a guideline range)"
+  informed: []
+
+title: The child sets the pace of speech and of captions
+
+context-and-problem-statement: |
+  The sound caption stays 500 ms a word (120 words per minute), fixed (`engine:2bd2826`), and the neural voice speaks at the
+  provider's rate with no control. Asked whether early readers get a slower caption preference, the Dev answered for speech —
+  «Deve ir de 150-500WPM aumentando de 35 em 35», with volume, and at least two voices: «Adicione Kokoro fp32 (326MB), usando
+  WebGPU via navegador, todas as vozes» — and for captions: «125 WPM (leitor iniciante), 145WPM (confortável na década de 90
+  segundo pesquisa), 175WPM (confortável hoje segundo pesquisa). Revise as pesquisas, por favor.»
+
+  📏 Research reviewed on 2026-09-13: 145 is Jensema's measured comfortable rate (1998); 125 sits between Burnham's 120 for
+  children and the DCMP's 130 for lower-level media; no recent study was found that measures 175 as comfortable — it is inside
+  the BBC's adult guideline range and just past Jensema's 170, where trouble began.
+
+decision-drivers:
+  - "D1 — THE PLAYER DOES NOT FORCE A PACE (UAAG 2.0): the child sets how fast words are spoken and shown"
+
+considered-options:
+  - "A — fixed rates chosen by the engine"
+  - "B — the child's settings for speech rate, volume and voice, and for caption rate"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing to configure. ❌ Forces a pace, against UAAG 2.0.
+  **B.** ✅ The pace is the child's. ❌ A voice model of 326 MB joins the heavy files of a delivery.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the child's settings"
+    justification: |
+      1. **Speech rate: 150 to 500 words per minute in steps of 35** (150, 185, … 500), stored; each engine maps it to its own
+         rate control.
+      2. **Speech volume**, stored, separate from the game's sound.
+      3. **Voice: at least two to choose from; Kokoro fp32 (326 MB) joins, run with WebGPU in the browser, all its voices.**
+         It is a heavy file of the delivery (ADR-0177), fetched and checked by the build.
+      4. **Caption rate: 125 (early reader), 145 (comfortable, Jensema 1998) and 175 words per minute**, stored; a caption stays
+         its words at the chosen rate, never under the 2600 ms floor.
+
+  consequences:
+    positive:
+      - "Speech and captions follow the child's pace"
+    negative:
+      - "A delivery with neural voices grows by 326 MB"
+      - "WebGPU is not on every school device; where it is missing the Kokoro voices cannot run and the child hears why"
+      - "175 is not a measured comfortable rate; it is kept because the Dev chose it, and the record says so"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #179, closed), IN PART: the speech rate is stored and applied (steps by ADR-0196, not
+    150…500 by 35); a caption at 125 words per minute stays longer than at 175; the voice list offers the language's voices; the
+    Kokoro file is in the catalogue with its sha256. ⚠️ The speech volume (`#tts-vol`, older than this record) has no gate here.
+
+more-information: |
+  The Web Speech API's `rate` is a multiplier, not words per minute: the mapping needs each voice's words per minute at rate 1,
+  measured, not assumed. Cloud speech stays the primary route; the local engines are the offline fallback.

@@ -1,0 +1,246 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-05
+  superseded-in-part:
+    - by: ADR-0079
+      what: "§3, and ONLY the reachability question it asked — `can every action the GAME uses be reached by
+             THIS transport?`, with a shortfall refusing the game. A transport DECLARES SLOTS and the player
+             assigns actions to them; one control method never removes another, so a method that demands
+             skill (a mouse) is an option and not an exclusion. The guarantee moves from per-transport to
+             per-SET: at least one AVAILABLE transport carries this game's action set. The nine transports,
+             the two families and the built/backlog/no-foundation labels are untouched."
+    - by: ADR-0077
+      what: "§1, and ONLY the fourth verb: `action1-mod` becomes `action4`, and the modifier reasoning
+             attached to it is withdrawn — it was meaning in a vocabulary written to have none, and it
+             described one genre out of three hundred. Whether an action is HELD or LATCHED moves to the
+             control options, per action, which reaches every action of every game instead of one verb of
+             one genre. Everything else here governs: the nine positions, the game supplying the words, no
+             abstract name reaching a person, the nine transports, `start` on two transports of nine, the
+             pointer not existing, and §4 refusing to collapse the keyboard schemes."
+    - by: ADR-0085
+      what: "§1, and ONLY the SIZE of the set: nine becomes FOURTEEN. `action5`..`action8` and `select` join
+             it, on the Dev's statement of 2026-09-06 that more elaborate games need them. THIS RECORD
+             ANTICIPATED IT AND SAID SO IN ITS OWN CONS — `nine actions is a CEILING that a genre may want
+             to exceed, and the record has to say what happens`. ADR-0085 is what happens. Everything else
+             in §1 governs, and is in fact what decided the NAMES: positions and not meanings, the game
+             supplying the words, and no abstract name reaching a person — which is why the request's own
+             vocabulary (`L1`, `L2`, `R1`, `R2`) became a gamepad BINDING and not an action name."
+    - by: ADR-0086
+      what: "§1, and ONLY the PLATFORMER PRESET — the sentence `what today is jump is action1; run is
+             action1-mod; swap is action2; especial is action3`. The Dev corrected three of the four on
+             2026-09-06: run is `action1`, jump is `action2`, especial is `action3` (unchanged), swap is
+             `action4`. ⚠️ AND THE CORRECTION IS THE CONSERVATIVE READING, WHICH IS THE OPPOSITE OF HOW IT
+             LOOKS: measured against `input/keyboard.ts:36-37` and `input/gamepad.ts:111`, the corrected
+             preset moves ZERO of four verbs off the key and button a child uses today, and the mapping
+             written here would have moved THREE. Everything else in §1 governs — positions not meanings,
+             the game supplying the words, no abstract name reaching a person. ADR-0085's clause about the
+             SIZE of the set is separate and also still in force."
+    - by: ADR-0112
+      what: "§2, and ONLY the sentence that transports 8 and 9 «are therefore not partially built: they have
+             no foundation». That was true when written — `input/` had keyboard, gamepad and touch and no
+             pointer at all — and ADR-0112 is the foundation: a POINTER as a declared capability beside the
+             fourteen, bound from mouse, touch, stick or gaze, with the Dev's clause that on a keyboard the
+             continuous signal IS the mouse. ⚠️ The fourteen positions stay DISCRETE and untouched, which is
+             the point of the shape chosen: every accessibility mechanism defined over them — remapping,
+             one-button, latching, reach — keeps working without answering a second question. What decided it
+             was measurement rather than taste: category 19 of 35 in the catalogue («Desenho / Criativo») is
+             impossible without continuous input, in full, and magnitude on the fourteen would not have
+             unblocked it, because drawing is POSITION and not magnitude. Everything else in §2 governs — the
+             nine transports, the two families, and the built/backlog/no-foundation labels for the rest."
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0033 — `input arrives as INTENT, never as meaning`. This record is that sentence taken to the
+       vocabulary itself: the engine's action NAMES were still meaning, and platformer meaning at that"
+    - "ADR-0030 — the engine is cut along a DECLARED CONTRACT, with genre packages as ready-made PRESETS. The
+       action set is part of that contract; the platformer names become one preset's naming"
+    - "ADR-0013 — the touch/gamepad/keyboard decisions in force: 4 diamond bubbles + START pill, UJIK
+       preserved, Space = jump, never Win/Alt/AltGr, per-player schemes SEPARATE, mapping wizard by controller
+       model. All of it survives as BINDING; none of it is the vocabulary"
+    - "ADR-0060 — what the interaction button does and what only running does. It is the platformer preset's
+       reading of action 1 and its modifier, and it is untouched"
+    - "ADR-0010 pillars 1 (school hardware) and 2 (a11y: WCAG 2.2 + GAG — one-button, remappable controls)"
+    - "issue #11 — webcam control (MediaPipe face + eyes) + voice command: three of the nine transports are
+       already backlog and not invention"
+  informed: []
+
+title: The engine owns NINE ABSTRACT actions, and NINE transports bind to them — the game names them, the child chooses how to reach them
+
+context-and-problem-statement: |
+  The engine has eight actions today and their names are `up, left, down, right, run, jump, swap, especial`.
+  Four of those are directions and four are a PLATFORMER's vocabulary.
+
+  ⚠️ THAT WAS FINE FOR ONE GAME AND IS FALSE FOR THREE HUNDRED. ADR-0068 puts one repository per game and
+  ADR-0030 says genre packages are presets of a declared contract. A quiz has no jump. A board game has no
+  run. A drawing activity has neither, and needs a pointer that the engine does not have at all. Every one of
+  those games would either bend its meaning into `jump` or invent its own input path beside the engine's —
+  and the second is how an engine stops being one.
+
+  ⚠️ AND ADR-0033 ALREADY DECIDED THE PRINCIPLE, one layer below: *input arrives as INTENT, never as meaning*.
+  It was applied to the modal/keydown boundary and never to the action names, which are the most visible place
+  meaning leaks in.
+
+  The Dev has now stated the shape, and it is two lists rather than one: the ACTIONS a game needs, and the
+  TRANSPORTS a child may use to reach them.
+
+decision-drivers:
+  - "A game of a different genre must be able to use the engine without renaming its own verbs into a
+     platformer's."
+  - "⚠️ Pillar 2 is not satisfied by having many input devices; it is satisfied when the SAME action is
+     reachable by whichever transport the child can operate. That only works if the action exists
+     independently of any device."
+  - "A transport added later must not touch the games. Speech, face and eyes are backlog (#11), and they must
+     land as bindings, not as edits across three hundred repositories."
+  - "What does not exist has to be named as not existing, or the contract reads as implemented."
+
+considered-options:
+  - "A1 — keep the eight platformer actions and let other genres reinterpret them"
+  - "A2 — nine ABSTRACT engine actions, named by the game, with a registry of transports that bind to them"
+  - "A3 — each genre package declares its own action set"
+  - "A4 — no engine action set at all: every game reads devices directly"
+
+pros-and-cons-of-the-options:
+  A1:
+    good: ["Nothing changes. Every existing binding, test and saved keymap keeps working.",
+           "The names are concrete, which makes the platformer's own code easy to read."]
+    bad: ["⚠️ `jump` in a quiz is a lie that reaches the CHILD: the remap screen, the touch labels and the
+           screen-reader announcements all say a word that has nothing to do with what she is doing.",
+          "A genre with no analogue for one of the four verbs has an action it cannot name and cannot remove.",
+          "It pushes every non-platformer to build input beside the engine, which is the failure ADR-0035
+           exists to prevent one level up."]
+  A2:
+    good: ["The engine owns POSITIONS in a contract; the game owns the WORDS, which is exactly ADR-0030's
+            preset shape and ADR-0033's intent rule.",
+           "A new transport binds once, centrally, and every game gains it without knowing.",
+           "One place to ask the accessibility question — `is every action reachable by this transport?` — so
+            the pillar becomes checkable rather than aspirational."]
+    bad: ["⚠️ Abstract names are worse to read in the platformer's own code: `action1` where `jump` used to be.
+           The preset has to carry the naming or the engine's own game gets harder to work on.",
+          "The rename reaches saved keymaps, the remap UI, the touch labels, the gamepad wizard and the tests.",
+          "Nine actions is a CEILING that a genre may want to exceed, and the record has to say what happens
+           then instead of leaving it to the first person who hits it."]
+  A3:
+    good: ["Every genre gets exactly the verbs it needs, with no ceiling."]
+    bad: ["A transport would have to be re-bound per genre, so speech or eye control would be built N times.",
+          "It moves the accessibility guarantee out of one place and into every package — which is where
+           guarantees go to die."]
+  A4:
+    good: ["Maximum freedom per game; no contract to maintain."]
+    bad: ["⚠️ It is the end of the engine as an accessibility argument: nothing could promise that a child who
+           can only blink can play any of the three hundred.",
+          "Already refused in substance by ADR-0027 and ADR-0030."]
+
+decision-outcome:
+  chosen-option:
+    link: "A2 — nine abstract actions in the engine, nine transports bound to them, the game supplies the words"
+    justification: |
+      ===== 1. THE NINE ACTIONS =====
+      The engine knows these and nothing else:
+
+        `up` · `down` · `left` · `right`
+        `action1` · `action1-mod` (a modifier ON action 1) · `action2` · `action3`
+        `start`
+
+      ⚠️ AND THE FOUR VERBS ARE POSITIONS, NOT MEANINGS. What today is `jump` is `action1`; `run` is
+      `action1-mod`; `swap` is `action2`; `especial` is `action3`. The platformer preset supplies those words,
+      and every other genre supplies its own — a quiz's `action1` is CONFIRM, a board game's is PLACE.
+      ⚠️ The word the CHILD reads and hears — in the remap screen, on the touch bubble, in the announcement —
+      is always the game's word, never `action1`. An abstract name that reaches a person is a defect.
+
+      ⚠️ AND `action1-mod` IS A MODIFIER BY DESIGN, which is ADR-0060 restated in the vocabulary: only the
+      thing that requires HOLDING becomes a latch, and it modifies action 1 instead of being a fifth verb.
+
+      ⚠️ AND `start` IS NOT NEW, IT IS HALF-BUILT. `input/gamepad.ts` already carries `_start` and `_pause`,
+      and ADR-0013 already put a START pill on the touch layout — but `start` is absent from the KEYBOARD
+      schemes, so today it exists on two transports out of nine. Naming it here is what makes that gap
+      visible.
+
+      ===== 2. THE NINE TRANSPORTS, IN TWO FAMILIES =====
+      A transport binds physical input to the nine actions. Which ones a game offers depends on its shape.
+
+      **VIDEOGAME-SHAPED** — the six that reach all nine actions:
+        1. **gamepad** — built (`input/gamepad.ts`, wizard by controller model, ADR-0013).
+        2. **keyboard schemes** — built (`input/keyboard.ts`), per player count. ⚠️ See §4.
+        3. **speech recogniser** — NOT built (#11).
+        4. **facial movement** — NOT built (#11).
+        5. **vertical eye movement + blink** — NOT built (#11).
+        6. **on-screen touch controller** — built (`input/touch.ts`, 9 slots, buttons sized in real mm).
+
+      **NOT VIDEOGAME-SHAPED** — three more, for games that are not driven like a console:
+        7. **touch only** — no simulated controller; the game surface itself is the control.
+        8. **full alphanumeric keyboard + mouse** — typing IS the input, so the letters cannot be bound to
+           actions.
+        9. **half keyboard (WASD, E, R, Shift, Space…) + mouse** — the hand stays on the left, the mouse aims.
+
+      ⚠️ AND THE MOUSE DOES NOT EXIST IN THIS ENGINE. Transports 8 and 9 need a POINTER — position, buttons,
+      wheel — and `input/` has keyboard, gamepad and touch and no pointer at all. Two of the nine transports
+      are therefore not partially built: they have no foundation. Said here because a list that mixes
+      `built`, `backlog` and `not conceived` without labels reads as a plan.
+
+      ===== 3. WHAT A TRANSPORT MUST SATISFY, AND THE ONE QUESTION THAT MAKES IT A GATE =====
+      For each transport the engine offers, the question is: **can every action the GAME actually uses be
+      reached by it?** Not "does the device work" — reachability of the game's own action set.
+
+      A transport that cannot reach an action the game requires must say so BEFORE the child starts, in the
+      selection screen, and not fail silently in the middle. ⚠️ This is where transports 7–9 differ in kind
+      rather than in degree: touch-only and keyboard+mouse are chosen because the GAME is that shape, so a
+      game must declare which family it belongs to.
+
+      ===== 4. THE ONE THING THIS RECORD REFUSES TO DECIDE =====
+      ⚠️ The Dev's statement said keyboard schemes come in **three** configurations — 1, 2, and 3–4 players.
+      The code has **four** (`solo`, `p2`, `p3`, `p4`), and ADR-0013 says in as many words that per-player
+      schemes are SEPARATE; `input/keyboard.ts` carries `p3` with the comment *"modo 3 jogadores (independente
+      do 4)"*, and `loadKB` still MIGRATES an older `p34` format that had them joined — that is, they were
+      once merged and were deliberately split.
+
+      Collapsing them back would supersede ADR-0013 in part and undo a migration that was already paid for.
+      It is not done here. The three-vs-four question is the Dev's, and the record names it rather than
+      resolving it by reading their sentence as a decision they did not make.
+
+      ===== 5. WHAT THIS RECORD IS NOT =====
+      It is the CONTRACT, not the implementation. It does not rename a single symbol today. The rename of
+      `jump/run/swap/especial` reaches saved keymaps, the remap screen, the touch labels, the gamepad wizard
+      and the tests, and it is work with a migration — it gets its own issues, and the contract exists first
+      so that work has something to be measured against.
+
+  consequences:
+    positive:
+      - "A game of any genre can use the engine without bending its verbs into a platformer's."
+      - "A new transport — speech, face, eyes, pointer — binds in ONE place and every game gains it."
+      - "Pillar 2 becomes checkable: for each transport, is every action the game uses reachable?"
+      - "Two real gaps stop being invisible: `start` exists on two transports of nine, and the pointer does
+         not exist at all."
+    negative:
+      - "⚠️ THE RENAME IS EXPENSIVE AND TOUCHES A SAVED FORMAT. `inclusionist.kbcontrols.v3` holds the old
+         action names in every child's browser; a rename needs a migration or every remap ever saved is lost."
+      - "`action1` reads worse than `jump` in the platformer's own code, and the preset has to carry the
+         naming or the engine's first game becomes harder to read."
+      - "Nine actions is a ceiling. A genre that needs a tenth has to come back to this record."
+      - "Three of the nine transports are backlog and two have no foundation; the contract will describe more
+         than exists for a long time."
+    neutral:
+      - "Every binding decision in ADR-0013 survives unchanged — bubbles, pill, UJIK, Space, the wizard. They
+         were never the vocabulary."
+
+  confirmation: |
+    · The engine's action type lists exactly the nine, and no engine module mentions `jump`, `run`, `swap` or
+      `especial` — those words live in the platformer preset and in the dictionaries.
+    · No abstract name (`action1`, `action1-mod`) ever reaches a rendered label, an aria-label or a spoken
+      announcement. Checkable by grepping the i18n dictionaries for the abstract names: zero hits.
+    · For each transport a game offers, a test asserts that every action that game declares is reachable
+      through it.
+    · A saved `inclusionist.kbcontrols.v3` from before the rename still loads, with the same keys bound to the
+      same in-game verbs.
+
+    ⚠️ NONE OF THESE PASSES TODAY, because nothing has been renamed yet. They are the definition of done for
+    the work this record authorises, not a claim about the present.
+
+more-information: |
+  This record supersedes nothing. It adds a layer that did not exist — an abstract action vocabulary and a
+  transport registry — above bindings that were already decided. ADR-0013, ADR-0033, ADR-0044 and ADR-0060
+  all keep governing what they governed; what changes is that their concrete verbs are understood as the
+  PLATFORMER PRESET's words rather than the engine's.
+
+  ⚠️ AND THE THREE-VERSUS-FOUR KEYBOARD SCHEMES IS OPEN ON PURPOSE (§4). It is a question about ADR-0013, it
+  has a migration behind it, and one sentence in conversation is not enough to undo a split that was made
+  deliberately.

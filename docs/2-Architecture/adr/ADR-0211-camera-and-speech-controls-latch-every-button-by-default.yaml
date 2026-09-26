@@ -1,0 +1,68 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0033]
+  superseded-in-part:
+    - by: ADR-0218
+      what: >-
+        The SURFACE of the option on keyboard and touch: turning the latch on or off is now one position of the ☝️ icon's cycle,
+        which also holds «one button only». What this record decided stands where it decided it — the latch is still the DEFAULT
+        inside the camera and speech transports, and that default is not governed by the icon.
+  date: 2026-09-15
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0033 — holding is the exception (default mode, keyboard or gamepad); every other input mode gets the latch, written in advance
+       for face, eyes and voice, but «NOT generalised beyond this»: the running button, not every held button"
+    - "ADR-0204 — five modalities map the whole controller: static and moving hand gestures, face, eyes, speech"
+    - "ADR-0210 and its erratum — the face map, where holding a position means holding an expression or a look turned away from the
+       game"
+  informed: []
+
+title: Hand gestures, face, eyes and speech latch every button by default — the player may turn it off
+
+context-and-problem-statement: |
+  Asked what holding a button costs when the eyes are the controller (the look must stay on a sector, away from the game), the Dev,
+  2026-09-15: «Jogar por gesto, rostos, olhos e fala implica em uso de teclas de aderência por padrão, desabilitando somente caso o
+  usuário assim desejar.» ADR-0033 had already given face, eyes and voice the latch, but only for the running button, and did not name
+  the hand gestures.
+
+decision-drivers:
+  - "D1 — A CHILD CANNOT HOLD A FACE, A LOOK, A HAND OR A WORD for as long as a game holds a button, and holding them takes the eyes or the
+     voice away from the game"
+  - "D2 — THE DEFAULT SERVES WHO CANNOT HOLD; the player who can may choose to hold"
+
+considered-options:
+  - "A — keep ADR-0033's scope: the running button latches in those modes"
+  - "B — every held button latches in hand-gesture, face, eye and speech control, by default, with a setting to turn it off"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Fewer changes to a game's feel. ❌ Every other held button (aim, accelerate, charge) asks the child to hold an expression or a
+  look for as long as the game wants.
+  **B.** ✅ No position has to be sustained; a command is a press, the next press of the same position releases it. ❌ A game whose
+  mechanic is analogue pressure or timed holds plays differently; the setting is the way back.
+
+decision-outcome:
+  chosen-option:
+    link: "B — latch every button by default in those modes; the player can turn it off"
+    justification: |
+      1. **Where:** static and moving hand gestures, face, eyes and speech (ADR-0204's five modalities). The default mode with keyboard or
+         gamepad keeps holding (ADR-0033).
+      2. **What:** a position that reaches its command presses its button and leaves it pressed; the same position again releases it.
+      3. **Off by choice:** a setting per player turns the latch off, and then a held expression, look, hand or word holds the button for as
+         long as it lasts (ADR-0210's held readings).
+      4. ADR-0033's companion clause stands: a function displaced by a latch moves to an idle button, and the spoken instruction names the
+         button that works.
+
+  consequences:
+    positive:
+      - "No player of these modes has to sustain a position to keep a button down"
+    negative:
+      - "A held-to-toggle pair per button in every game input path of these modes; the setting is new stored state"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine` (the readers built from the default map). Gates: in each of the five
+    modes a position pressed once keeps its button down until pressed again; with the setting off the button follows the position; the
+    default keyboard/gamepad mode still holds.
+
+more-information: |
+  The lab tests still measure a held reading (ADR-0210), which is what the setting-off path uses.

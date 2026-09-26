@@ -1,0 +1,237 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0176
+      what: "ONLY what is packaged: its erratum of 2026-09-13 («Engine empacota tudo por enquanto») packages every active family of the typographic catalogue — the Guides this record kept out and every Playwrite beyond its fifteen (engine:192f777). The fallback by the coloniser's language stands"
+  confirmed-by:
+    - engine:app/public/vendor/fonts.css
+    - engine:app/js/ui/fonts.ts
+    - engine:tests/what-fonts-the-package-carries.node.test.js
+    - engine:tests/settings-typo.node.test.js
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0108 — «EIGHT Playwrite faces ship and the rest arrive on demand». 🔴 Its P3 is REVOKED here by the
+       Dev: the seven new faces are PACKAGED, not fetched. Its R2 (the Ronde option naming its three) stands,
+       and so does the licence rule that keeps the Ronde out"
+    - "ADR-0149 — the eleventh quick-bar button. 🔴 Its §5 said the country face falls back to Playwrite US
+       Modern; that is superseded here. Its §4, which opened the calligraphic role, is NARROWED here"
+    - "ADR-0012 and its emenda (issue #87) — «the hand a child is taught is NATIONAL, not linguistic». That
+       sentence is the reason this record exists, and it survives intact: what it never said is what happens
+       when the nation has no hand of its own"
+    - "LICENSES.md §3 — a licence is checked BEFORE a file is packaged. It is why Clash Display is absent"
+    - "ADR-0010 pilar 8 — offline-first. It is the argument the Dev used to package rather than fetch, and it
+       is also what makes the size number worth writing down"
+  informed: []
+  errata:
+    - date: 2026-09-12
+      what: "🔴 «Clash Display … enters the day the licence is read» — THE LICENCE HAS BEEN READ, AND IT REFUSES.
+             On its Fontshare page the family is «Closed Source / ITF Free Font License»; the licence (version
+             2.0, 17 Aug 2026) was read in full. Its §02 forbids making the file available to anyone else through a repository, an application,
+             a platform or a public server, and forbids offering it as a selectable font to third-party users,
+             even where they cannot extract it. The engine is an AGPL public repository and a library for three
+             hundred games by others, so both clauses apply. And its definition of a derivative work includes
+             converting the format, which the `.woff2` we package would already be. So the condition this record
+             set resolves to NO: what was a wait becomes a refusal with a reason, and a gate now holds it
+             (`engine:tests/what-fonts-the-package-carries.node.test.js`). ⚠️ Only a separate written licence from Indian
+             Type Foundry (FFL §09) could lift it. ERRATUM under ADR-0057 §1: nothing decided changes; the record
+             stated a condition, and the condition has been checked."
+    - date: 2026-09-12
+      what: "📌 AND THE SLOT STAYS EMPTY, by the Dev: «Vamos ficar sem ela». No other face replaces Clash Display in the
+             roster; the fifteen faces this record packaged are the whole of that request."
+    - date: 2026-09-12
+      what: "🔴 THE ERRATUM ABOVE WAS WRONG IN ITS FRAMING, and the Dev said so: «POR QUE VAGA?! VAGA DO QUE E PRA
+             QUE? Eu só pedi para deixar uma fonte na coleção, quem escolhe se usa ou não é o programador do
+             cartucho». There is no slot. The roster is a COLLECTION that a cartridge's programmer chooses from, and
+             no face in it replaces any other. What stands is only the fact: Clash Display is NOT in the collection,
+             and cannot be, because ITF FFL §02 forbids exactly the act the collection exists for — offering the face
+             as a selectable font to third parties, which a cartridge's programmer is. 📌 A cartridge may still bring
+             Clash Display itself, under a licence its authors obtain from Indian Type Foundry; the engine's rule
+             that a game can bring its own font (§2, the Guides) already covers that. ERRATUM under ADR-0057 §1: the
+             decision is unchanged, and the sentence that described it as an empty slot is withdrawn."
+
+title: The cursive hand follows the country — and where there is none, the fallback is the coloniser's
+
+context-and-problem-statement: |
+  🎯 **ADR-0149 §5 had to answer «which cursive face?» and answered it thinly.** Playwrite has one hand per
+  country; the engine's locale is a LANGUAGE (`pt` | `en` | `es`). That record read the region out of the
+  BCP-47 tag — `pt-BR` → Playwrite BR — and, for a tag with no region or a country with no face, fell back to
+  **Playwrite US Modern**, because that is what the Dev had said.
+
+  🔴 **They changed it the next day, and the new rule is better for the reason that makes it uncomfortable:**
+  «o fallback deve ser do colonizador quando o país não tem seu próprio playwrite, isto é, Playwrite Espana
+  para países que falam espanhol, Playwrite Portugal para os países que falam Português, e playwrite england
+  joined para países que falam inglês».
+
+  📌 **It follows from ADR-0012's own sentence rather than contradicting it.** That record says the hand is
+  NATIONAL and not linguistic. What it never said is what to do for the nations with no face — and the honest
+  answer is not «whatever the United States teaches», it is the hand the country's own schooling descends
+  from. For a child in Angola or Bolivia, that is a true statement about how she was taught to write; US
+  Modern was an arbitrary default wearing a country's name.
+
+  ⚠️ **And a second half of their instruction reaches further than the fallback:** «Para países com mais de um
+  playwrite, deve aparecer ambas». 📏 MEASURED against the Google catalogue before writing this, because the
+  literal reading would have been wrong: **fourteen countries have a `Playwrite XX Guides`** — and it is not a
+  second hand. It is the SAME hand with the handwriting rules drawn through it. Asked directly, the Dev
+  confirmed: only a second SCRIPT counts, and the engine does not use Guides at all.
+
+  🔴 **THE PACKAGING QUESTION WAS A DECISION OF THE DEV'S THAT HAD TO BE PUT BACK TO THEM.** ADR-0108 §P3, from
+  2026-09-08, is verbatim: «nada de empacotar: estas são baixadas conforme necessário», with eight named
+  exceptions — and it asserts the rule NO FACE IS OFFERED WITHOUT A WAY TO OBTAIN IT, precisely to force
+  whoever wants a ninth to build the arrival first. 📏 The seven new faces measure **430 KB**. Two gates went
+  red when they were first added, which is the gates working.
+
+  ✅ Their answer: «estas fontes devem ser baixadas no primeiro dia para fazer parte do PWA. Se valer a pena
+  empacotar em vez de baixar, vamos empacotar». And on the framing: «a palavra "pagar" é desproporcional pela
+  quantidade tão baixa de dados».
+
+decision-drivers:
+  - "D1 — A FALLBACK THAT NAMES A COUNTRY SHOULD BE TRUE ABOUT THE CHILD. «Playwrite US Modern» for a child in
+     Angola is a hand nobody taught her; Portugal's is the one her schooling descends from."
+  - "D2 — THREE FALLBACKS COVER EVERY COUNTRY THE ROSTER ADMITS. The language bound of ADR-0012 is English,
+     Portuguese and Spanish, so three faces close the gap completely — which is why they are the cheapest
+     thing to package and the most valuable."
+  - "D3 — OFFLINE ON THE FIRST DAY IS A PILLAR, AND A FETCH-ON-DEMAND FACE IS A FACE A SCHOOL WITHOUT NETWORK
+     NEVER GETS. The mechanism ADR-0108 waited for was never built; the bytes are here now."
+  - "D4 — AND A LICENCE IS NOT A DETAIL. A face whose redistribution terms are unchecked cannot be packaged,
+     however much it is wanted — the rule that already keeps the Ronde out."
+
+considered-options:
+  - "F1 — keep ADR-0149 §5: fall back to Playwrite US Modern."
+  - "F2 — fall back to the coloniser's hand, by language."
+  - "P1 — keep ADR-0108 §P3: package nothing new, build the download first."
+  - "P2 — package only the three language fallbacks (~152 KB)."
+  - "P3 — package all seven (~430 KB)."
+
+pros-and-cons-of-the-options: |
+  **F1 — US Modern as the fallback.**
+  ✅ Already written, already packaged, zero new bytes.
+  ❌ It tells a child in Angola that her hand is American. It is a default dressed as a country.
+
+  **F2 — the coloniser's hand.**
+  ✅ True about how the child was taught, and three faces close the gap for the whole roster.
+  ❌ It names colonisation in a product for children, and somebody will find that uncomfortable. ⚠️ That
+     discomfort is about history and not about the rule: the alternative is not a neutral hand, it is a
+     DIFFERENT coloniser's hand chosen at random.
+
+  **P1 — build the download first.**
+  ✅ It is what ADR-0108 asks, and it unblocks every future face at once.
+  ❌ The mechanism has not been built since 2026-09-08, and until it is, a school with no network gets nothing.
+
+  **P2 — the three fallbacks only.**
+  ✅ ~152 KB, and it covers every country with no face of its own.
+  ❌ It still leaves Cuba and Peru — asked for by name — arriving by a download that does not exist.
+
+  **P3 — all seven.**
+  ✅ Every face the rule can produce works offline from the first day.
+  ❌ ~430 KB in the bundle, and it revokes a decision whose stated cost was exactly this.
+
+decision-outcome:
+  chosen-option:
+    link: "F2 and P3 — the fallback is the coloniser's hand, and all seven faces are packaged"
+    justification: |
+      ===== 1. THE HAND FOLLOWS THE COUNTRY; THE FALLBACK FOLLOWS THE LANGUAGE =====
+      The region of the BCP-47 tag picks the face (`pt-BR` → Playwrite BR, `es-MX` → Playwrite MX). Where the
+      country has none, the language decides: Spanish → **Playwrite ES**, Portuguese → **Playwrite PT**,
+      English → **Playwrite GB J**.
+
+      📌 Three faces close the gap completely, because ADR-0012 already bounds the roster to those three
+      languages. That is what makes this both the truer rule and the cheaper one.
+
+      ===== 2. WHERE A COUNTRY TEACHES TWO HANDS, BOTH APPEAR =====
+      The cycle gains a sixth position there: `US Trad` then `US Modern`, `GB J` then `GB S`, `ES` then
+      `ES Deco`. The order is the Dev's — the traditional hand first.
+
+      ⚠️ **A SECOND HAND MEANS A SECOND SCRIPT, NEVER THE «GUIDES».** 📏 Fourteen countries have a
+      `Playwrite XX Guides`, and it is the same hand with the handwriting rules drawn through it — in an
+      interface, ruled lines behind every word. **The engine does not use them**; a game that wants them
+      brings its own font. This was asked and answered rather than inferred.
+
+      ===== 3. THE SEVEN ARE PACKAGED — ADR-0108 §P3 IS REVOKED =====
+      «Estas fontes devem ser baixadas no primeiro dia para fazer parte do PWA» (Dev). 📏 The bundle grows by
+      430 KB for these, and the full change of the day takes the precache from 1922 KiB to **3512 KiB**.
+
+      ⚠️ What is NOT revoked is the rule under ADR-0108: NO FACE IS OFFERED WITHOUT A WAY TO OBTAIN IT. This
+      record satisfies it by packaging rather than by exempting itself from it. A sixteenth Playwrite still
+      needs either a place in the bundle or a download that exists — and the prefix gate still catches it.
+
+      ===== 4. THE CALLIGRAPHIC EXCEPTION IS NARROWED TO THE PLAYWRITE =====
+      ADR-0149 §4 turned `caligrafica` from «never in the UI» into «never by default». 🔴 That was wider than
+      it needed to be, and the Dev narrowed it: **only the Playwrite of the child's country and its fallbacks**
+      may reach the interface. Pinyon Script, UnifrakturMaguntia and Fondamento stay out — they are
+      decorative, not the hand anybody is taught, and ADR-0012's objection applies to them undiminished.
+
+      ===== 5. FIFTEEN TEXT FACES JOIN THE ROSTER, AND ONE DOES NOT =====
+      Roboto Flex, Ubuntu, Noto Sans, Space Grotesk, Sora, Plus Jakarta Sans, Merriweather, Lora, Spectral,
+      Domine, Bitter, Playfair Display, DM Serif Display, Fraunces, Bodoni Moda. Seven more the Dev named were
+      already in the roster.
+
+      🔴 **Clash Display is refused, for now and with a reason that can be lifted.** It is not on Google Fonts
+      — it is Fontshare's (Indian Type Foundry) — and `LICENSES.md` §3 requires the licence checked before a
+      file is packaged. It is the test the three Ronde faces failed. It enters the day the licence is read.
+
+      ⚠️ **And four of the fifteen carry a warning in the catalogue rather than being filed quietly with the
+      reading faces.** Playfair Display, DM Serif Display, Fraunces and Bodoni Moda are HIGH CONTRAST — thick
+      stems beside hairlines — which is exactly what Atkinson Hyperlegible was drawn not to be, and at small
+      sizes the hairlines vanish first for whoever sees least. They stay because offering is not applying: the
+      default is unchanged, and a child who picks one is choosing. What would be a defect is the engine
+      adopting one on its own, or a game setting one as the body face of a long prompt.
+
+  consequences:
+    positive:
+      - "A child in a country with no Playwrite of its own gets a hand her schooling actually descends from,
+         instead of an American default wearing a country's name"
+      - "Three faces close the fallback gap for the entire language-bounded roster"
+      - "Every face the rule can produce works offline from the first day, which is what pilar 8 asks and what
+         ADR-0108's on-demand mechanism never delivered because it was never built"
+      - "The roster gains fifteen text faces, and the four risky ones carry their risk in writing"
+    negative:
+      - "🔴 The precache goes from 1922 KiB to 3512 KiB. The first load roughly doubles, and it is a school on
+         3G that pays that once"
+      - "A decision of the Dev's from four days earlier is revoked, and ADR-0108 now reads as history in the
+         part that mattered most to it"
+      - "Naming colonisation in a rule inside a children's product is uncomfortable, and it should be — the
+         alternative was a different coloniser's hand picked at random"
+      - "Clash Display was asked for and is not delivered, which is a promise deferred rather than kept"
+
+  confirmation: |
+    ✅ BUILT on 2026-09-12, `engine:d6af366` — the faces, the catalogue and both gates. The RULE (which face
+    for which country) is NOT built: it belongs to the quick-bar cycle, **issue #146**, and this record is what
+    that work will read.
+
+    What exists and is gated today:
+      1. `engine:tests/what-fonts-the-package-carries.node.test.js` — the packaged Playwrite are the eight of ADR-0108
+         PLUS the seven named here, and the two layers are listed separately so neither loses its reason. The
+         check asks by PREFIX, so a sixteenth — `Guides` included — fails without being named.
+      2. `engine:tests/settings-typo.node.test.js` — the eighteen calligraphic keys, written out, so a face
+         that gains or loses the role without anyone noticing fails.
+      3. The catalogue↔`@font-face`↔file chain, in the two directions that were already gated.
+
+    🌐 Measured in the browser on `dist/quiz.html`: 52 families in the sheet, 15 Playwrite, and all 22 new
+    faces rendering at a width distinct from the fallback.
+
+    ⚠️ Still to gate, when the cycle lands (#146): the region→face mapping, the three language fallbacks, and
+    the six-position cycle for a country that teaches two hands. Each needs its own case, and the fallback
+    needs the one that is easiest to forget — a tag with NO region at all.
+
+more-information: |
+  📏 **Measurements this record rests on**, all 2026-09-12:
+
+    · The Playwrite catalogue, probed family by family: AR, BR, CA, CL, CO, CU, MX, PE, PT, VN and IN each
+      have a `Guides`; ES has `Deco` AND `Guides`; GB has `J` and `S`; US has `Trad` and `Modern`.
+    · `Playwrite PT` static = 42 KB, variable (100–400) = 70 KB. The eight already packaged are variable, so
+      the seven new ones are too.
+    · Precache before / after the day's work: 65 entries / 1922 KiB → 106 / 3512 KiB.
+    · `Clash Display` on `fonts.googleapis.com`: **400**. It is not a Google Fonts family.
+
+  ⚠️ **The thing this record is most likely to be wrong about is the size.** 3.5 MB of precache on a first
+  load is a real wait for a school on a shared 3G line, and the faces are the bulk of it. 📌 One saving is
+  measured and not taken here, because it is a separate decision: the Playwrite are packaged as VARIABLE
+  (100–400) to match the existing eight, and nothing in the engine uses the weight axis of a handwriting face.
+  The static instance is ~40% smaller — about 175 KB across the fifteen.
+
+  📌 **And a trap worth leaving written for whoever adds the next face:** asking `fonts.googleapis.com` for a
+  family WITHOUT a weight range returns the static instance. A file that silently loses its variable axis
+  fails nothing — the browser synthesises a fake bold and the page looks approximately right. It happened once
+  during this work and was caught only by comparing byte counts.

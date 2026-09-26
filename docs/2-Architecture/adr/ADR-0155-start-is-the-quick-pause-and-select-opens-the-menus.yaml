@@ -1,0 +1,111 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0144, ADR-0151]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0144 — SUPERSEDED IN PART: «the `start` action reveals the pause card». `start` still belongs to the
+       engine and a cartridge still may not take it (§4); what it OPENS changes. Its errata (the engine offers the
+       exit, Escape closes) stand for the card, which is now reached by `select`"
+    - "ADR-0151 — SUPERSEDED IN PART: §1 «the quick bar is reached by the SELECT button», and §3 «ARASAAC and PCS
+       are shown disabled with the reason». The six-item root, the seven-item submenu and every removal stand"
+    - "ADR-0086 — `select` is a SYSTEM position kept for «what belongs to the session». Opening the pause menus is
+       that"
+    - "ADR-0044 item 7 — START is the bar's second exit. It stays exactly that: START enters the quick pause and
+       START leaves it"
+    - "`CLAUDE.md` §4, the three zones — the bar in the header, menus in the workspace, captions in the footer. The
+       quick pause draws no menu in the workspace, only the word PAUSED"
+    - "ADR-0113 clause 3 — `hidden` for «not offered», `aria-disabled` with a reason for «exists and is locked». A
+       cycle position is neither a row nor a control on its own: skipping it is how a cycle says «not offered»"
+  informed: []
+  errata:
+    - date: 2026-09-12
+      what: >-
+        ✅ THE OPEN ALTERNATIVE IS ANSWERED — «Ambos» (Dev). The menus have TWO doors: SELECT, as §2 says, AND
+        `action4` from the quick pause, announced by a legend in the footer of the frozen screen: «Ação 2: confirmar
+        · Ação 3: voltar · Ação 4: menu · START: voltar ao jogo» (localised). The legend is also what makes SELECT's
+        cost in `consequences` smaller: the frozen screen now says how to reach the menus.
+    - date: 2026-09-12
+      what: >-
+        📌 HOW PAUSED IS DRAWN, by the Dev: only the word, in WHITE, with a BLACK OUTLINE ON THE LETTERS — «Borda nas
+        letras, não numa caixa» —, no box and no border around it. The first build drew a dark rounded box; that
+        is withdrawn. The outline is also what keeps the word legible over a light scene.
+
+title: START is the quick pause — the bar over the frozen game, and PAUSED — and SELECT opens the menus
+
+context-and-problem-statement: |
+  ADR-0151 moved «Acessibilidade» and «Print» out of the pause root and onto SELECT. The engine built that door
+  (`engine:c296c84`: SELECT enters and leaves the quick bar), and four readings stayed open. Answering the one
+  about what SELECT shows for a print, the Dev first described it — «Select pausa tudo mas permitindo acesso e
+  regulagem do menu de acessibilidade rápida. Por pausar tudo sem desenhar nada na tela, ele faz o mesmo que o
+  print … agora ele deve escrever: PAUSADO» — and then moved it:
+
+  **«A barra sobre o jogo mais a palavra PAUSED no centro da tela. No entanto, esta deve passar a ser a opção do
+  botão START, e o botão SELECT deve trazer à tona os diversos menus.»**
+
+  🎯 The move puts the accessibility adjustments behind the button every child already knows, and the menus a
+  child visits less — number of players, settings, quit — behind the system button.
+
+decision-drivers:
+  - "D1 — THE MOST URGENT THING MID-GAME IS AN ACCOMMODATION, NOT A MENU. A child who suddenly cannot see or hear
+     the game needs the bar, and START is the button she will try first"
+  - "D2 — A FROZEN GAME WITH NO SIGN LOOKS CRASHED. The quick pause writes PAUSED where the eye already is"
+  - "D3 — ONE PAUSE, TWO DEPTHS. The quick pause and the menu tree both stop the world; they differ in how much
+     they draw over it"
+
+considered-options:
+  - "A — keep ADR-0151: START opens the menu card, SELECT enters the bar"
+  - "B — START is the quick pause (bar + PAUSED); SELECT opens the menu card"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The console convention (START = menu). ❌ The accommodations sit behind the button fewer children know.
+  **B.** ✅ Accommodations one known button away, and the print view is simply the quick pause. ❌ It departs from
+  the convention, and the menus — quit included — sit behind SELECT, which a child has to learn.
+
+decision-outcome:
+  chosen-option:
+    link: "B — START is the quick pause; SELECT opens the menus"
+    justification: |
+      ===== 1. START — THE QUICK PAUSE =====
+      The game stops (the engine asks `setPhase('paused')`, as ADR-0144 §2 did for the card), the quick bar takes
+      the directional, and the word **PAUSED** — localised — is drawn at the centre of the screen. No menu card is
+      drawn. START again returns to the game. 📌 This IS the print view: the bar over the frozen game, and PAUSED.
+
+      ===== 2. SELECT — THE MENU TREE =====
+      SELECT opens the six-item pause card of ADR-0151 §1, with its submenus. Closing it is unchanged: «Voltar ao
+      jogo» or Escape.
+
+      ===== 3. ARASAAC AND PCS ARE SKIPPED IN THE COMMUNICATION CYCLE =====
+      «Pular.» The cycle does not stop on them and does not announce them. They come back into the cycle the day
+      their licence allows; until then a position that cannot be chosen is not offered.
+
+      ===== 4. `start` AND `select` BOTH BELONG TO THE ENGINE =====
+      A cartridge may not take either in its `preset` — ADR-0144 §4 for `start`, extended to `select` by the same
+      argument: the pause is not declinable (ADR-0122), and both are now doors to it.
+
+  consequences:
+    positive:
+      - "The accessibility adjustments are one known button away, in any game, paused"
+      - "Print needs no item and no mode: it is the quick pause"
+      - "No cycle stop the child cannot choose"
+    negative:
+      - "🔴 Quitting, the number of players and the inclusion settings move behind SELECT. A child who never learns
+         SELECT does not find them — the same cost ADR-0151 recorded for the bar, now on the menus"
+      - "The touch pad draws only a START pill today, so a touch-only child has no SELECT until the pad draws one"
+      - "A cartridge loses `select` as well as `start`"
+      - "`engine:tests/the-two-doors-of-the-pause.browser.test.js` (twelve cases) describes the old door and is rewritten"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET — the work is **issue #148** in `the-inclusionist-engine`. Gates, named now: START freezes the
+    game (the phase is asked), reveals no card, puts the directional on the bar and shows PAUSED in the three
+    languages; START again resumes and hides PAUSED; SELECT reveals the card; a panel open refuses both; the cycle
+    never lands on ARASAAC or PCS (asserting absence over a full turn of the cycle); a cartridge declaring `select`
+    is refused at `createGame` and at `mount()`.
+
+more-information: |
+  ⚠️ **One point the Dev left as an alternative, stated so nobody builds a guess.** In the same message: «Ou deixar
+  no rodapé da tela congelada com acesso ao menu de acessibilidade rápida a legenda: ação 2: confirma; ação 3:
+  voltar, ação 4: menu. START voltar ao jogo.» — that is, the frozen screen's footer carries a key legend and the
+  menus open by `action4` instead of by SELECT. Until they pick, the engine builds §1 and §2, which both readings
+  share except for the door to the menus.

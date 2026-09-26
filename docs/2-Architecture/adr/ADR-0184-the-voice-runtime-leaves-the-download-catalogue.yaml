@@ -1,0 +1,59 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0207
+      what: >-
+        the Piper runtime run from the game's bundle: Piper leaves the engine.
+  supersedes-in-part: [ADR-0127]
+  confirmed-by:
+    - engine:tests/heavy.node.test.js
+    - engine:tests/no-hand-written-cdn.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (`engine:35dea11`): no catalogue entry names the voice runtime; the models and the phonemizer remain. Issue #173 stays open for its own last item (huggingface.co in `connect-src`)."
+  date: 2026-09-13
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0127 — piper is the voice runtime; «Precisa ser carregado com a engine» put its files in the download catalogue"
+    - "ADR-0177 — heavy files are packaged with the delivery"
+  informed: []
+
+title: The voice runtime leaves the download catalogue; the game's bundle is what runs
+
+context-and-problem-statement: |
+  📏 Measured on 2026-09-13: the catalogue downloads `@mintplex-labs/piper-tts-web` 1.0.5 and `onnxruntime-web` 1.20.1 from
+  jsDelivr (five entries, 11.8 MB), and nothing reads them: the games bundle the provider and onnxruntime 1.29.0, and since
+  `engine:c708d3b` onnxruntime runs the wasm the game bundled. Told this, the Dev: «Se o que roda é o que o jogo empacota, tire
+  estas entradas.»
+
+decision-drivers:
+  - "D1 — NOTHING DOWNLOADED WITHOUT A READER: 11.8 MB of a school's link for files no code opens"
+
+considered-options:
+  - "A — keep the entries"
+  - "B — remove them; the voice models and the phonemizer stay"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ None. ❌ A download nothing reads, pinned to versions nothing runs.
+  **B.** ✅ The catalogue is what runs. ❌ None measured.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the five runtime entries leave"
+    justification: |
+      1. **The five `voz:runtime*` entries leave the download catalogue.** What runs is the game's bundle.
+      2. **The voice models and the phonemizer stay**: the provider asks for them, and the delivery carries them (ADR-0177).
+
+  consequences:
+    positive:
+      - "A delivery with neural voices is 11.8 MB lighter"
+    negative:
+      - "None measured"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #173, open for other items). Gates: no catalogue entry names `piper-tts-web` or
+    `onnxruntime-web`; the voice models and the phonemizer entries remain.
+
+more-information: |
+  ADR-0127's choice of piper stands; only where its runtime comes from changes.

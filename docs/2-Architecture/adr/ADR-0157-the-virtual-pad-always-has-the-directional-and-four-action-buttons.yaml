@@ -1,0 +1,84 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/virtual-controller-at-boot.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED IN PART, pushed (issue #151 closed, `engine:254864b`): a press on the pad reaches an open menu as
+             the key of its action. Two promises changed by later records: the minimum pad (the directional and four actions
+             always) was undone by ADR-0162, which draws only the buttons the game names, and the pad over the menus by
+             ADR-0166, which hides it in the card and panels."
+  superseded-in-part:
+    - by: ADR-0166
+      what: "ONLY §2 and the #151 rule that the pad stays over the menus — menus are touched directly and the pad leaves them"
+    - by: ADR-0162
+      what: "ONLY §1, the minimum pad — a button appears only when the game gives it a function"
+  supersedes-in-part: [ADR-0143]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0143 — SUPERSEDED IN PART: §2 «the shape comes from `preset`, and from nothing else» and §3 «a game with no
+       `preset` gets no pad». The engine still draws the pad and still gives each button the game's word where the game
+       has one; what changes is the MINIMUM"
+    - "ADR-0155 — START is the quick pause and SELECT opens the menus, and the quick pause's footer names action 2
+       (confirm), action 3 (back) and action 4 (menu). A pad without those buttons cannot do what its own legend says"
+    - "ADR-0106 §5 — no dead button. The tension is stated in `consequences` rather than hidden"
+  informed: []
+
+title: The virtual pad always has the directional and four action buttons — and pressing them moves the menus
+
+context-and-problem-statement: |
+  The Dev opened the quiz on a touch screen and could not move through any menu. Their reading: «Temo que você não está
+  considerando os botões direcionais do controle virtual nem os quatro botões de ação mínimo, motivo pelo qual o
+  controle de toque só mostra start e select, certo?»
+
+  📏 Measured, and it is right twice. (1) ADR-0143 §2–§3 draw the pad only from the game's `preset`; the quiz declares
+  none, so the pad has only START and SELECT. (2) Even with a directional drawn, a pad press marks a HELD KEY
+  (`input/state.marcarTecla`) and dispatches no keyboard event, while the menu navigation (`ui/menu-nav`) listens to
+  keyboard events — so a pad press never reaches a menu.
+
+decision-drivers:
+  - "D1 — A TOUCH-ONLY CHILD MUST REACH EVERY MENU. The pause, the quick bar and the settings are navigated with the
+     directions, confirm and back; a pad without them strands her in the first menu she opens"
+  - "D2 — THE LEGEND MUST BE TRUE. The quick pause says action 2 confirms, 3 goes back and 4 opens the menu"
+
+considered-options:
+  - "A — keep ADR-0143: the pad is exactly the preset"
+  - "B — a minimum pad (directional + four action buttons) in every game, and pad presses drive the menus"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No button a game does not use. ❌ A game with a small or absent preset cannot be navigated by touch at all.
+  **B.** ✅ Every menu is reachable by touch in every game. ❌ In play, a game that uses fewer than four actions has
+  buttons that do nothing until a menu opens.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the directional and four action buttons, always; the pad drives the menus"
+    justification: |
+      1. **The pad always draws the four directions and the four action buttons**, plus SELECT and START (ADR-0155).
+         Positions the game names carry the game's word (ADR-0143 §2 stands for the words); the others carry the
+         controller's own face label, so no identifier reaches the child (ADR-0074).
+      2. **A pad press drives the menus**: while a menu, a panel or the quick bar has the directions, the pad's
+         directions, action 2 and action 3 move, confirm and go back exactly as the keyboard does; action 4 opens the
+         menus from the quick pause.
+      3. **In play, the pad keeps doing what it did**: it holds the child's key for the game.
+
+  consequences:
+    positive:
+      - "Every menu the engine mounts is reachable on a keyboardless tablet"
+      - "The quick pause legend describes buttons that exist"
+    negative:
+      - "⚠️ In play, a game using fewer than four actions shows action buttons with no effect there — the cost ADR-0106 §5
+         names, accepted because the same buttons are the menus' confirm, back and menu"
+      - "The pad takes more of the screen in small games"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #151, closed). Gates: a game with no preset gets
+    the directional and four action buttons; a named position shows the game's word, an unnamed one the face label and
+    never an id; with the pause card open, a pad direction moves the cursor and action 2 activates the item; action 3
+    goes back; in play a pad press still holds the key.
+
+more-information: |
+  The face label of an unnamed button comes from the pad design the child chose (`generic`, `microsoft`, `sony`,
+  `nintendo`) — the same set the pad already paints — so a child with a physical controller sees the letter she knows.

@@ -1,0 +1,107 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/accommodations.node.test.js
+    - engine:tests/boot-create-game.node.test.js
+    - engine:tests/accommodation-subjects.node.test.js
+    - engine:tests/rows-follow-the-answer.browser.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED IN PART, pushed (issue #149 closed): a cartridge without the answer, or with one key missing, is
+             refused at boot (`engine:aa6f724`, `bae1ef1`); the fifteen contract-keyed accommodations are derived
+             (`22e1170`); what the cartridge says does not apply is absent from the document and does not leak into the next
+             cartridge; what applies carries the game's word (`160508a`). ⚠️ NOT BUILT, and not owed: the genre pre-fill. The
+             answer is complete and mandatory, and ADR-0156 made the genre a classification a cartridge may declare, so there
+             is nothing for a genre to fill."
+  superseded-in-part:
+    - by: ADR-0156
+      what: >-
+        WHICH genre list. «The pinned Wikipedia taxonomy» becomes the Dev's written transcription of it: casino
+        refused, horror discouraged, and the by-purpose and sandbox / open world sections out. Genre stays optional
+        and the cartridge still answers its accommodations.
+  supersedes-in-part: [ADR-0145]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0145 — SUPERSEDED IN PART: §1's «a GENRE declares a partial map» as the unit that answers. The general
+       catalogue, and «what has no subject is absent», stand. What changes is WHO answers: the cartridge, always;
+       the genre, optionally"
+    - "The accommodation study (`engine:docs/1-Discovery/study-accommodations-by-genre.md` §0.1–§0.2) and
+       `engine:app/js/core/accommodations.ts` — three families: 23 GENERAL, 15 CONTRACT_KEYED, 16 GAME_KEYED. A
+       genre answers only 5 of the 16; the other 10 hang on the avatar, the text, the pieces, timing precision
+       and repeated input"
+    - "`engine:scripts/lib/taxonomy.mjs` — the genre vocabulary is the Wikipedia list pinned at revision
+       1367745358, not the catalogue's categories"
+    - "ADR-0152 — the 300 games are not the MVP, so a mandatory field is weighed against the real consumers"
+    - "The `holdsAtOnce` rubric (`core/contract.ts`) — a field with no safe default whose absence fails silently
+       is MANDATORY. It is why the cartridge's answer is"
+  informed: []
+
+title: Genre is optional — the cartridge answers its accommodations, and it has to
+
+context-and-problem-statement: |
+  Phase 2c had to decide where a game says which accommodations have a subject in it. The plan said
+  `GameDeclaration.genero`, mandatory. 📏 The study then measured that a genre answers **5 of the 16**
+  accommodations the engine cannot derive — the rest hang on things no genre says. Three options went to the
+  Dev: A (mandatory genre), B (an optional field where the game names its own), C (five new mandatory fields).
+
+  🎯 **Their answer, in three sentences:**
+  1. «NÃO vamos fazer os 300 jogos» (recorded as ADR-0152).
+  2. «Gênero não é obrigatório, mas dificilmente um jogo não tem gênero, levando em consideração a lista que
+     realmente vale, ou seja, a da Wikipedia.»
+  3. «Gênero não precisa responder todas as acomodações, mas sim o cartucho, obrigatoriamente.»
+
+decision-drivers:
+  - "D1 — A CONTROL WITH NO SUBJECT IS INVISIBLE TO EVERY GATE (ADR-0145 D1), so the answer cannot be optional:
+     a silent absence would mount a wheelchair in chess, or hide one from a platformer"
+  - "D2 — A GENRE IS REAL AND USEFUL BUT INCOMPLETE: it answers some accommodations and cannot answer the others"
+  - "D3 — THE CARTRIDGE IS THE ONLY PARTY THAT KNOWS all its answers"
+
+considered-options:
+  - "A — genre mandatory, and the engine derives accommodations from it"
+  - "B — an optional declaration: the game names what it has, absence means none"
+  - "C — five new mandatory axis fields on the contract"
+  - "D — genre optional; the CARTRIDGE answers its accommodations, mandatorily"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ One word per game. ❌ Leaves 10 of 16 unanswered.
+  **B.** ✅ No break. ❌ Silence answers, and silence here decides for the child.
+  **C.** ✅ Complete. ❌ Five axes the game declares to let the engine infer what the game could simply say.
+  **D.** ✅ Complete and direct; the genre still helps without being required. ❌ A mandatory field: every existing
+  cartridge has to add it.
+
+decision-outcome:
+  chosen-option:
+    link: "D — genre optional; the cartridge answers, mandatorily"
+    justification: |
+      1. **The cartridge answers its accommodations, and the answer is mandatory.** A missing answer is a
+         malformed declaration and the boot refuses it — the rubric of `holdsAtOnce`, not a line in `problems`.
+      2. **What the cartridge must answer is the GAME_KEYED family** (16 today). GENERAL ones are mounted always,
+         and CONTRACT_KEYED ones are derived from what the contract already asks — those need no second answer,
+         and asking twice would let the two answers disagree. ⚠️ This scope is my reading of «o cartucho
+         [responde], obrigatoriamente» read together with the study; the Dev's sentence does not name the family.
+      3. **Genre is optional**, a value of the pinned Wikipedia taxonomy. Where present it can pre-fill the answers
+         it knows; the cartridge's answer wins where they differ.
+      4. **The categories of the catalogue that have no single genre get one by the Dev's decision**, game by game
+         (they asked to see them with options). That is data for the taxonomy, not a change to this rule.
+
+  consequences:
+    positive:
+      - "No accommodation is decided by silence"
+      - "A genre helps without having to be complete"
+    negative:
+      - "Every existing cartridge (the local game repositories) must add the declaration: a contract break, with a
+         BREAKING CHANGE and a migration note when built"
+      - "The shape of the answer (per entry: applies or not, plus the game's word) is decided in the build, and
+         `AccommodationPreset` — partial by design — has to grow a way to say «does not apply»"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #149, closed). The gates, named now: a cartridge without the answer is REFUSED at boot; a GAME_KEYED entry the
+    cartridge says does not apply is ABSENT from the document; one it says applies carries its word; a genre
+    pre-fill is overridden by the cartridge's answer; two cartridges in one page do not leak answers (ADR-0142).
+
+more-information: |
+  📌 The genre the Dev called «a lista que realmente vale» is pinned in `engine:scripts/lib/taxonomy.mjs`. Three
+  catalogue categories have no single genre there — Multiplayer Local (10 games), Experimental / Art (8) and
+  Hybrids (15) — and the options for each game went to the Dev on 2026-09-12.

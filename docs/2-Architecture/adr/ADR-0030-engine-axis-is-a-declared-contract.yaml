@@ -1,0 +1,210 @@
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0083
+      what: "the `confirmation` clause only — the one naming `app/js/consumer-quiz` as the instrument
+             that `already exists and must keep working`. MEASURED 2026-09-06: it imports by RELATIVE
+             PATH (`../core/i18n.js`), never by package name, so it proves the MODULE cut and nothing
+             about the package surface — and the package surface is what broke when the engine was
+             first packaged. The module cut is still gated at every commit, by a FIXTURE that is not a
+             game; the package surface is gated by a contract test each game runs. The seven declared
+             fields, the genre presets and the batch order all stand."
+    - by: ADR-0084
+      what: "the SHAPE of one declared field, and one sentence about the others. This record calls
+             `topology` one of the two CONSTANT fields of the declaration; it is a FUNCTION from
+             2026-09-06, and `tick` is now the only constant. MEASURED: `game-15puzzle` has three board
+             sizes chosen while the game runs, and had to write `get topology()` to fit the value shape —
+             a getter that type-checks by coincidence rather than by contract, leaving a caching consumer
+             silently stale. The SEVEN FIELDS THEMSELVES STAND, and so does everything else here: what
+             changes is how one of them is handed over, not what it is or how many there are."
+    - by: ADR-0089
+      what: "the CONTENT of `Topology`, and one sentence about the metric. This record shipped `grid` as ONE
+             thing with ONE metric — Chebyshev, with the reason written beside it (`numa grade, a diagonal
+             custa um passo`). MEASURED in `game-15puzzle`: nothing moves diagonally in a sliding puzzle, so
+             the sonar under-reported by up to 2x, and under-reporting distance to a child who cannot see the
+             screen is not imprecision — it is saying `close` about something far, to somebody with nothing
+             else to go on. `move` (L1/L-inf/L2) and `frame` (compass/clock) are now DECLARED, and
+             `cols`/`rows`/`width`/`height` became `size`, a vector whose length is the dimension. ⚠️ THE
+             THREE FORMS THEMSELVES STAND — grid, continuous, hotspots still cover the ADR-0027 catalogue, and
+             `hotspots` is untouched. What changes is that a grid now says HOW ONE WALKS ON IT."
+    - by: ADR-0087
+      what: "the COUNT of declared fields: SEVEN becomes EIGHT. `world()` joins them, and unlike the
+             ADR-0084 change this one does add a field rather than reshape an existing one. ⚠️ THE REASON IS
+             A DEFECT THIS RECORD COULD NOT HAVE FORESEEN, because it only appears with a second game: the
+             engine implemented «the world» as the PixiJS canvas, so in a game whose visible content is DOM
+             a blindness simulation blacked out a canvas nobody was looking at and left the content legible
+             — the simulation inverted, telling an adult they had felt something they had not. MEASURED and
+             refuting the obvious fix: `#dom-layer` sits INSIDE `#game-region` in this engine's markup and
+             is absent from the 15-puzzle's, so no single default serves both. Everything else here
+             governs, the other seven fields included."
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0027 (the boundary and the seven declared fields), the 14 findings of consumer-quiz,
+              the import-graph measurement of 2026-08-25, ADR-0010 pillars 1/2/3]
+  informed: []
+
+title: The engine is cut along a DECLARED CONTRACT, with genre packages as ready-made presets of it
+
+context-and-problem-statement: |
+  ADR-0027 stopped at a question it could not answer from the code alone: along which axis does this base
+  split into "engine" and "game"? It named the seven fields a game would have to declare for accessibility to
+  stay free in any genre, and it asked for a second consumer — a game that is NOT a platformer — as the
+  instrument that would answer it. That consumer exists (`app/js/consumer-quiz`), and it answered.
+
+  THE MEASUREMENT. Three subsystems split when the quiz tried to use them, and the three splits fall in the
+  same place:
+
+    · VISUAL — the DOM/CSS half travels (colour-blindness filters, typography); the half that repaints TILE
+      textures does not.
+    · AUDIO NAVIGATION — `sonar`/`panFor` travel; `caneProbe`/`waterNav` do not.
+    · TOUCH — `padPxPerMm` and the real-millimetre hand sizing travel; the twelve-id d-pad does not.
+
+  If the axis were GENRE, those three would fall in different places: a top-down HAS tiles, HAS a d-pad, HAS a
+  navigable topology. They fall in the same place, and the line is not the genre. It is WHAT THE GAME DECLARES
+  versus WHAT THE ENGINE ASSUMES.
+
+  The import graph agrees and narrows it further. Of 89 engine modules, only four dragged `game/` at all; two
+  of those were freed by injecting what they actually used (the shape ids, the player box), leaving two. The
+  coupling was never spread across the base — it was concentrated, and it was always the same kind: a module
+  guessing at the game instead of being told.
+
+decision-drivers:
+  - "The differentiator is not genre coverage. A generic 2D engine exists by the dozen; one where
+     ACCESSIBILITY comes free in ANY genre does not. That is the product (ADR-0027)."
+  - "35 games. Anything the engine assumes is something 35 games must match, or silently break."
+  - "A cost paid per GAME is paid 35 times; a cost paid per GENRE is paid a handful of times."
+  - "The Dev's own instinct — a library per genre — is right about genres mattering, and the measurement says
+     they are not where the engine breaks."
+
+considered-options:
+  - "A1 — split by genre: engine-core + engine-platform + engine-topdown + engine-racing"
+  - "A2 — split by subsystem: keep render/input/ui/platform as the packages"
+  - "A3 — split by declared contract: the seven fields are the only interface; no genre layer"
+  - "A4 — declared contract + genre presets: the contract is the only interface the engine knows, and each
+     genre package is a ready-made IMPLEMENTATION of it"
+
+pros-and-cons-of-the-options:
+  by-genre:
+    good: ["Each package has an obvious owner; matches how Phaser/Godot teach."]
+    bad: ["Does not resolve any of the three measured splits — it regroups them.",
+          "Only one genre exists today, so three of four batches would be born empty and speculative.",
+          "`roleOf` would move to engine-platform and STILL be a fixed tile table: the second platformer with
+           different numbering breaks exactly as before."]
+  by-subsystem:
+    good: ["Zero cost — it is what the folders already are."]
+    bad: ["It is the design that PRODUCED the three findings. `render/high-contrast` and `input/touch` are each
+           two modules under one name; a folder boundary never said so."]
+  declared-contract:
+    good: ["The only axis where the three measured splits fall on one line.",
+           "`roleOf` stops existing: the role comes from field 2. The sonar stops demanding tileAt/BOX/getCoins:
+            it asks for topology (field 1) and target (field 5).",
+           "Pillar 2 becomes architecture instead of 35 reimplementations."]
+    bad: ["A 200-line quiz must declare seven fields before its first button works. A fixed tax kills small
+           games, and the catalogue is meant to hold many."]
+  contract-plus-presets:
+    good: ["Pays the seven-field tax once per GENRE instead of once per game.",
+           "The genre package stops being a layer of the engine and becomes a preset — which is TESTABLE: a
+            preset either satisfies the seven fields or it does not.",
+           "Keeps what the Dev's instinct gets right: genre packages exist and carry real value."]
+    bad: ["Two things to maintain, and a standing temptation for the preset to grow into a parallel engine.",
+          "Needs a gate: no engine module may import from `genre-*`."]
+
+decision-outcome:
+  chosen-option:
+    link: "A4 — declared contract, with genre packages as ready-made presets of it"
+    justification: |
+      A4 is A3 — the only axis the measurement supports — with the remedy for A3's one real defect. The contract
+      is what the engine knows; the preset is what saves a small game from paying for it.
+
+      The distinction that makes this more than naming: a genre package under A1 is a LAYER, and layers accrete.
+      A genre package under A4 is an IMPLEMENTATION OF AN INTERFACE, and interfaces can be checked. `genre-platform`
+      declares continuous topology with a tile grid, `facing`, and the clock owning the tick; `genre-quiz`
+      declares an ordered hotspot list and the player owning the tick. Both satisfy the same seven fields, and
+      that is the whole point — the accessibility stack never learns which one it is talking to.
+
+  consequences:
+    good:
+      - "Item 19's batches stop being speculative: the leaf-first order already measured (levels of 30, 24, 21,
+         13 and a tail of one) is the move order, and only two modules still drag `game/`."
+      - "The a11y stack gets ONE thing to read instead of a per-genre special case, which is what makes
+         'accessibility free in any genre' a claim the code can keep."
+      - "A second platformer with different tile numbering stops being a silent breakage."
+    bad:
+      - "The seven fields have to be designed as a real interface before the first preset can be written. That
+         work does not exist yet and is not small."
+      - "`platform/audio-nav`, `render/scene-sky`, `render/scene-city` and `platform/audio-ambient` receive
+         `tileAt` by injection today and compare raw tile numbers. Under A4 they must receive the SEMANTICS
+         instead, and the shape of that delivery is now this ADR's job to specify, not a guess."
+      - "`render/draw` still imports `game/powerups` and `game/coin-spawning`. Those two are the 'does draw
+         draw a platform world' question, and A4 answers it: draw receives declared entities."
+
+  confirmation: |
+    The instrument already exists and must keep working: `app/js/consumer-quiz` may import from
+    `core/ input/ render/ platform/ ui/ audio/` and NEVER from `game/`, and
+    `tests/engine-boundary.node.test.js` holds that as a debt list that can only shrink — modules, vocabulary,
+    and test fixtures alike.
+
+    The batch order is held by `tests/lotes-passo5.node.test.js`: the engine graph must stay ACYCLIC, every
+    module must land in a batch, and no module may depend on another in the SAME batch. A cycle would not make
+    step 5 harder — it would make leaf-first impossible.
+
+    What is NOT yet confirmed, and must be before the first preset ships: that the seven fields, written as a
+    real interface, are sufficient for BOTH `genre-platform` and `genre-quiz` without either one needing a
+    field the other cannot supply. Until two presets exist, "the contract is enough" is a claim, not a result.
+
+more-information: |
+  Resolves the open axis question of ADR-0027 (steps 5 to 7). The five gaps of step 7 are decided in the same
+  session and recorded here for the three that are architectural:
+
+    · TILEMAP — T3: a cell becomes a record (tile, role, name), which IS field 2 of the contract; Tiled (T4)
+      is the AUTHORING format, not a runtime one. The groundwork landed first: `TILE_TYPES` gained a public
+      type and named questions (`ehPerigo`, `ehAgua`, `ehEscada`, `ehTrampolim`, `ehPortao`, `ehChave`,
+      `ehSecreto`), taking raw tile-number reads from 72 across 16 files to 50 across 10. What remains is
+      either legitimately per-tile (stone bounces, a coin floats in lit air) or belongs to the injected
+      modules above.
+    · SCENES — C3: a real scene stack (push/pop, each scene owning update/draw/input). It is what item 23
+      needs, and C1 (widening the phase union) is recorded as a NON-option: it fixes nothing, because a second
+      game stays bound to our enum.
+    · CAMERA — M2: a camera object with target, deadzone, clamp and shake, genre-agnostic. M1 (extracting the
+      arithmetic out of `render/draw`) shipped first and is the common prefix M2 builds on.
+
+  The SPRITE ATLAS (X2, packed at build time by a Vite plugin) is a build decision, not an architectural one,
+  and lives in the GitLab issue. It was chosen against this author's recommendation of X1, and the
+  recommendation is now WITHDRAWN — recorded here rather than deleted, because a future reader deserves to
+  know the argument was tried and why it failed.
+
+  X1 rested on two legs and both broke. It measured BYTES (66.8 KB of sprites, one player sprite drawn at a
+  time) and concluded batching bought nothing — but the atlas buys REQUESTS, and this repo already had that
+  measurement written down: `render/sprites.ts` records 55 requests for 38 distinct
+  files at boot, and says in as many words that the cost is LATENCY on a school network with a cold cache,
+  invisible from a developer machine. Pillar 1 is school hardware; the argument against X2 was made in the
+  one unit that pillar does not care about. The second leg was that PNGs are transitional because ADR-0010
+  aims at procedural art — and the Dev's prediction is that PNG stays in use for a long while yet, which
+  makes "transitional" a word doing work it has not earned.
+
+  The measurement that follows from the Dev's premise, and that X1 never looked for: of 77 sprite PNGs, 38
+  are `_hc` high-contrast variants that NOTHING loads — high contrast is done by recolouring the colour
+  frame in real time (`main.js`: "sem silhuetas _hc"). They ship into `dist/` and the PWA precaches them by
+  glob. A build-time packer only packs what is referenced, so X2 removes them by construction rather than by
+  somebody remembering. Tracked as its own issue, since deleting dead assets should not hide inside a
+  build-pipeline change.
+
+  AND THE BYTE ARGUMENT WAS WRONG IN THE OTHER DIRECTION TOO — measured 2026-08-25, once the packer existed
+  and could be run on the real art. The 39 colour frames pack into a 256×207 atlas of 25.4 KB plus a 1.6 KB
+  manifest, against 56.4 KB as 39 separate files: TWENTY-NINE KB LESS, a 52% reduction. One zlib stream over
+  all frames compresses far better than 39 tiny streams, each carrying its own header and starting its
+  dictionary from nothing.
+
+  So X2 wins on both axes, and X1 lost on the axis it chose to fight on. The lesson is not about atlases: I
+  argued from a plausible model of what an atlas does instead of running one. The correction of the
+  correction is filed here for the same reason as the original — so a future reader does not re-derive it.
+
+  THE CURRICULUM (ADR-0004's pedagogy layer): the activities catalogue belongs to the EdSP PLATFORM, with
+  each game pulling the activities that suit it — and the EdSP platform does not exist yet. This ADR fixed
+  only that `game/activities-registry` is NOT where it belongs. **ADR-0032 carried it out**: the catalogue
+  moved to `app/js/educational/`, shaped like its destination rather than like its old folder, and the
+  engine-to-game import debt fell from two modules to one.
+
+  Relates to: ADR-0027 (the boundary, the seven fields, the console filter); ADR-0004 (Discovery is software,
+  pedagogy is `educational/`); ADR-0024/0025 (multi-repo and versioned shared packages — the packaging that
+  step 21 will use); ADR-0010 pillars 1 (school hardware), 2 (accessibility) and 3 (i18n).

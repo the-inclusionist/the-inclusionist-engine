@@ -1,0 +1,190 @@
+---
+metadata:
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0151
+      what: >-
+        the §3 name. «Configurações» becomes «Configurações de inclusão»; «Opções do jogo» stays, and the split
+        between what travels with the child and what belongs to the game is untouched.
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0145 — the accommodation catalogue is general and a genre declares its own. This record is the
+       consequence the Dev drew from it in the same breath: «LOGO, no menu, deve ter um ícone opções do jogo,
+       se diferenciando do opções atual que deve passar a se chamar opções gerais»"
+    - "ADR-0044 §2 — «a pausa tem sete itens e a ORDEM é a decisão», `resume` first and `quit` last, with the
+       seven settings panels moved down into a submenu. This record adds the EIGHTH root item, which is the
+       first change to that list since it was decided, and says why the count moves"
+    - "ADR-0131 — «um controle mora no menu da NECESSIDADE que serve», `proposed` since 2026-09-09 (issue
+       #136). This record decides the part of it that blocks work: where the remapping panel lives"
+    - "ADR-0106 §5 — «um ícone é montado quando a acção dele funciona». The new root item obeys it: a game
+       with nothing of its own does not get a door to an empty room, which is the rule `raizQueAcciona`
+       already enforces for `options`"
+    - "ADR-0122 — «não oferecido, não declinável». What stays non-declinable is the GENERAL half; the game
+       half exists exactly when the game has something to put in it"
+  informed: []
+  errata:
+    - date: 2026-09-12
+      what: "✅ **§3 IS SATISFIED, and by better words than the ones this record was written around.** §3
+             required the distinguishing word to come FIRST so the two doors do not share a spoken prefix —
+             and «opções gerais» / «opções do jogo», the words in §1, fail it: a child navigating by ear hears
+             «opções…» twice and only breaks the tie on the second word. 📏 That was measured against the
+             record when the work started, and put to the Dev. Their answer renames BOTH: **«Configurações» /
+             «Settings»** for the general half, **«Opções» / «Options»** for what belongs to the game — «ou
+             seja, opinável». 🎯 The two no longer share a syllable, and the distinction stops being
+             positional and becomes semantic: what is CONFIGURED is the child's own, carried between games;
+             what is an OPTION is this game's, and open to opinion. §1's wording is superseded by these two
+             names; everything else in §1–§3 stands."
+    - date: 2026-09-12
+      what: "🔴 **§4 IS REVOKED — the remapping panel goes to the ROOT, not into «opções gerais».** The Dev,
+             hours after this record was accepted and with the mounted card in front of them: «A opção controle
+             deve aparecer neste primeiro nível do menu de pausa». The reasoning of §4 is not contradicted, it
+             is finished: §4 argued that nesting remapping under «motora» would put it three levels deep for
+             the child who cannot reach a key, the one who plays with one hand and the one with a foreign
+             keyboard — and for those children remapping is not an option among options, it is what makes the
+             game playable at all. 📌 The new home, the rest of the root list (which goes from eight to NINE)
+             and the rule that keeps `controles` out of the engine's always-on set are in **ADR-0147**.
+             ⚠️ This is a SUPERSESSION of one clause, recorded as an erratum pointer rather than as
+             `superseded-by`, because §1–§3 and §5 of this record STAND: the two doors, the general half being
+             non-declinable, the game half mounted only when the game has something of its own, and the two
+             names not sharing a spoken prefix. Marking the whole record superseded would take those with it.
+             The precedent for an erratum used as a pointer is ADR-0021's own."
+
+title: The pause options split into «opções gerais» and «opções do jogo»
+
+context-and-problem-statement: |
+  ADR-0145 decided that an accommodation belongs to a GENRE rather than to every game, because a wheelchair
+  toggle in a chess game is a control with no subject. That answers what may be mounted. It leaves open a
+  question a child meets before any of it: **where does she look?**
+
+  📏 Measured today, the pause card is seven root items (`resume`, `acessibilidade`, `addplayer`, `options`,
+  `ajuda`, `print`, `quit`) with `options` opening a submenu of eight (`pmback` plus the seven settings
+  panels). Everything a game might adjust would land in that one submenu, next to typography and narration.
+
+  🔴 **AND THAT MIXES TWO THINGS A CHILD LEARNS DIFFERENTLY.** Typography, narration, sound and contrast are
+  the SAME in every game she opens — she learns them once and carries them. Piece sets, wheelchair mode,
+  difficulty: those are this game's, and she has to learn them again each time. Putting them in one list
+  teaches her that neither is reliable.
+
+  📌 The Dev's examples are the argument: «modo empatia cadeira de rodas só pode aparecer no gênero
+  plataforma […] assim como peças diferentes é algo que somente existe em jogos de tabuleiro (xadrez, damas,
+  gamão)». A menu that cannot tell those from «Tipografia» is a menu that has given up on the distinction.
+
+  ⚠️ **AND A SECOND QUESTION HAS BEEN BLOCKED ON THE SAME SPOT.** The remapping panel — the cheapest of the
+  eight to mount, one extra node beyond what the shell builds — has no home: it never had an overlay of its
+  own (its header records that the open/close was «o toggle de `hidden` do `#options`»), and there is no
+  `controles` item in `PM_OPTIONS_BTNS`. It has been waiting on ADR-0131 since 2026-09-09.
+
+decision-drivers:
+  - "D1 — WHAT SHE CARRIES BETWEEN GAMES AND WHAT SHE DOES NOT ARE DIFFERENT KINDS OF THING. A child who
+     found her font once should find it in the same place in the next three hundred games."
+  - "D2 — AND WHAT IS THIS GAME'S MUST BE FINDABLE WITHOUT SEARCHING THE GENERAL LIST. A board game's piece
+     sets buried under «opções» beside «Narração» is a setting nobody finds twice."
+  - "D3 — DEPTH COSTS MORE THAN LENGTH FOR THE PEOPLE THIS MENU EXISTS FOR. Each level is a decision and a
+     way back; a longer list is one sweep."
+  - "D4 — AND THE ROOT LIST IS A DECISION, NOT AN ARRANGEMENT (ADR-0044 §2). Adding to it has to be argued,
+     not done."
+
+considered-options:
+  - "A — One submenu, as today: everything under `options`, general and game-specific together."
+  - "B — A second ROOT item: `options` becomes «opções gerais» and a new «opções do jogo» sits beside it."
+  - "C — A section inside the existing submenu: one list, with a heading separating the two families."
+
+pros-and-cons-of-the-options: |
+  **A — leave one submenu.**
+  ✅ No change to a list that was argued once and settled.
+  ❌ It is the state that produced the question. The child cannot tell what travels with her from what does
+     not, and a board game's piece sets sit next to narration as if they were the same kind of choice.
+
+  **B — a second root item.**
+  ✅ The distinction is visible before she enters anything, which is where it is useful.
+  ✅ Depth stays at two for both families, so nothing gets further away.
+  ✅ ADR-0106 §5 already gives the absence rule for free: a game with nothing of its own does not get the
+     item, exactly as `raizQueAcciona` already drops `options` when the submenu would be empty.
+  ❌ The root list goes from seven to eight, and ADR-0044 §2 treats that list as a decision.
+  ❌ Two doors named «options» need names a child tells apart by sound and not only by sight.
+
+  **C — a section inside the submenu.**
+  ✅ The root list is untouched.
+  ❌ A heading inside a menu is exactly the «manual» shape the Dev rejected for panels («o menu virou um
+     manual»), and a screen reader announces the heading as one more stop.
+  ❌ And it hides the distinction behind a door, which is the one place it does not help.
+
+decision-outcome:
+  chosen-option:
+    link: "B — `options` becomes «opções gerais», and a new root item «opções do jogo» sits beside it"
+    justification: |
+      ===== 1. TWO DOORS, AND THE ROOT LIST BECOMES EIGHT =====
+      `options` is renamed «opções gerais» and keeps the engine's panels. A new root item, «opções do jogo»,
+      opens what THIS game — through its genre and its own additions (ADR-0145) — declared.
+
+      ⚠️ The root list moving from seven to eight is a change to ADR-0044 §2, and it is argued rather than
+      assumed: §2's reasoning is about ORDER and about the cost of a long sweep before the exit. The exit
+      stays first and `quit` stays last; what grows is the middle, where the sweep is cheapest.
+
+      ===== 2. THE GENERAL DOOR IS NOT DECLINABLE; THE GAME DOOR IS NOT MOUNTED WHEN EMPTY =====
+      «Opções gerais» exists in every game, by ADR-0122. «Opções do jogo» is mounted only when the game
+      declared something of its own — which is ADR-0106 §5, and the machinery already exists: `raizQueAcciona`
+      drops `options` when its submenu would be empty, «uma porta para uma sala vazia».
+
+      ===== 3. AND THE NAMES HAVE TO BE TOLD APART BY EAR =====
+      Two doors whose names share a word are two doors a screen reader reads almost the same. The words are
+      the Dev's — «opções gerais» and «opções do jogo» — and what this record requires of the work is that the
+      distinguishing word come FIRST where the language allows it, so the two do not share a prefix when
+      spoken.
+
+      ===== 4. THE REMAPPING PANEL LIVES IN «OPÇÕES GERAIS», WITH ITS OWN ITEM =====
+      This settles the part of ADR-0131 that blocks work. Remapping is not a sub-need of motor accessibility:
+      it serves the child who cannot reach a key, the one who plays with one hand, the one with a foreign
+      keyboard and the one who simply wants another key. Nesting it under «motora» would put it three levels
+      deep for all of them.
+
+      📌 And it is general rather than game: the keys are the same object in every game (`KeyScheme`,
+      ADR-0086), even though the ACTIONS shown are the game's.
+
+      ===== 5. WHAT THIS DOES NOT DECIDE =====
+      The rest of ADR-0131 — whether captions and accommodations move between panels — stays open. And this
+      record does not say which panels are general: that is ADR-0145's classification.
+
+  consequences:
+    positive:
+      - "A child can tell, before entering anything, what she carries between games and what she does not"
+      - "A genre's own settings get a findable home instead of being buried among the engine's"
+      - "The remapping panel stops being blocked, and it is the cheapest of the eight to mount"
+      - "A game with nothing of its own shows no extra door, by machinery that already exists"
+    negative:
+      - "The pause root list goes from seven to eight — the first change to a list ADR-0044 §2 settled, and
+         one more stop before `quit` for whoever sweeps it"
+      - "Two items whose names share a word, which is a real cost for whoever navigates by ear and the reason
+         §3 constrains the wording"
+      - "Every consumer that learned «options opens the settings» meets a renamed item"
+      - "It commits the project to the general/game classification being RIGHT: a panel filed on the wrong
+         side is now findable in the wrong place, where before it was merely in a long list"
+
+  confirmation: |
+    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #144** in
+    `the-inclusionist-engine`. The gates, named now:
+
+      1. The root list is the eight items of this record, in order, with `resume` first and `quit` last —
+         the ADR-0044 §2 case, extended rather than replaced.
+      2. A game that declares nothing of its own does NOT get «opções do jogo» — the case asserts the
+         ABSENCE of the item, not only the presence of the other.
+      3. A game that declares something DOES get it, and the item opens a list with that something in it.
+      4. The remapping panel has its own item under «opções gerais», and it opens.
+      5. 🔴 The two items' accessible names do not share a spoken prefix. This is the §3 gate and it is the
+         one no visual check catches.
+
+more-information: |
+  📌 **This record exists because the Dev drew the consequence themselves**, in the same message that corrected
+  the accommodation classification: the menu split is not an inference from ADR-0145, it is the clause they
+  attached to it with «logo».
+
+  ⚠️ **The cost this record is most likely to be wrong about is the eighth item.** ADR-0044 §2 cut the root
+  from twelve to seven precisely because `resume` had been the eleventh stop, and a child who pauses and
+  cannot see «varria dez alternadores e um cabeçalho antes de achar Continuar». Going back up is movement in
+  the direction that record fought, even by one. What makes it defensible is that the new item sits in the
+  middle rather than before the exit — but if the list grows again, this is the record to re-read first.
+
+  📏 **And the remapping panel's cost was measured**: beyond the shell's own ids it needs exactly ONE extra
+  node, `#ctrl-players`. It is the cheapest of the eight and has been blocked by a question about WHERE, not
+  about work.

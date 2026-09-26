@@ -1,0 +1,104 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - engine:tests/genres.node.test.js
+    - engine:tests/boot-create-game.node.test.js
+  errata:
+    - date: 2026-09-13
+      what: "✅ CONFIRMED, pushed (issue #149 closed, `engine:5f0fd96`): `core/genres` holds exactly §1 in the Dev's order and
+             spelling and nothing from §4; `createGame` and `mount` refuse Casino game with the reason and any name outside
+             the list; Horror game boots and `problems` carries its «avoid» mark and why."
+  supersedes-in-part: [ADR-0153]
+  date: 2026-09-12
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0153 — SUPERSEDED IN PART: «genre is optional … the pinned Wikipedia taxonomy». Optional stays, and so does
+       the cartridge answering its own accommodations; what changes is WHICH list, now written out below with what the
+       engine refuses and what it discourages"
+    - "ADR-0152 — the 300-game catalogue is not the MVP. 🔴 Genres are not assigned to catalogue games: the Dev refused
+       exactly that on 2026-09-12 («POR QUE VOCÊ ESTÁ INSISTINDO NA LISTA DOS 300 AO INVÉS DE USAR A WIKIPEDIA?!»),
+       and the commit that did it (`engine:b586393`) was reverted"
+    - "https://en.wikipedia.org/wiki/List_of_video_game_genres — the source; the list below is the Dev's own
+       transcription of it, with their marks"
+  informed: []
+
+title: The engine's genre list is Wikipedia's — without casino, avoiding horror, and without the by-purpose and sandbox sections
+
+context-and-problem-statement: |
+  ADR-0153 made genre optional and pointed at the Wikipedia list without writing it down. Meanwhile the accommodation
+  study kept keying by the shelves of the 300-game catalogue, and I went as far as giving genres to catalogue games one
+  by one. The Dev stopped that and wrote the list the engine uses, with three marks of their own:
+  «Casino game (PROIBIDO NA NOSSA ENGINE)», «Horror game (EVITAR, DIFÍCIL FAZER FUNCIONAR PARA CRIANÇAS)», and, above
+  «Video game genres by purpose», «IMPORTANTE: DAQUI PRA FRENTE NÃO ENTRAM NA NOSSA ENGINE». And on who decides: «antes
+  deixar o desenvolvedor do cartucho escolher seus contratos do que tentar adivinhar o que pode ser feito: isso é
+  overengineering.»
+
+decision-drivers:
+  - "D1 — ONE LIST, WRITTEN DOWN, THAT A CARTRIDGE CHOOSES FROM. No list derived from a production backlog"
+  - "D2 — A CHILDREN'S PLATFORM REFUSES GAMBLING, and says so in the list rather than in a review"
+  - "D3 — THE CARTRIDGE'S AUTHOR CHOOSES; the engine does not guess genres for games"
+
+considered-options:
+  - "A — keep ADR-0153 pointing at the page, and map genres through the catalogue study"
+  - "B — the Dev's transcription is the engine's list, with casino refused, horror discouraged, and the by-purpose and sandbox sections out"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ The page changes, the study's shelves are not genres, and it invited guessing genres for games nobody builds.
+  **B.** ✅ A fixed vocabulary a cartridge picks from, with the platform's limits in it. ❌ Educational, serious and
+  art games — which this project makes — have no «by purpose» genre to declare; they declare the genre of their play.
+
+decision-outcome:
+  chosen-option:
+    link: "B — the Dev's list is the engine's genre list"
+    justification: |
+      ===== 1. THE LIST =====
+      **Action** — Platform games · Shooter games (First-person shooters · Hero shooters · Light gun shooters · Shoot 'em
+      ups) · Fighting games · Beat 'em up games · Stealth games · Survival games · Rhythm games · Battle royale games.
+      **Action-adventure** — Survival horror · Metroidvania.
+      **Adventure** — Text adventures · Graphic adventures · Visual novels · Interactive movie.
+      **Puzzle** — Breakout clone game · Logical game (Physics game · Programming game · Puzzle-platform game) · Hidden
+      object game · Reveal the picture game · Tile-matching game · Traditional puzzle game.
+      **Role-playing** — Action RPG · CRPG · MMORPG · Roguelikes · Tactical RPG · Sandbox RPG · First-person party-based
+      RPG · Monster-taming.
+      **Simulation** — Construction and management simulation · Life simulation · Vehicle simulation.
+      **Strategy** — 4X game · Artillery game · Auto battler (Auto chess) · MOBA · RTS · RTT · Tower defense · TBS · TBT ·
+      Wargame · Grand strategy wargame.
+      **Sports** — Racing · Sports game.
+      **MMO**.
+      **Other notable genres** — Board game or card game · Casino game · Digital collectible card game · Digital
+      therapeutic video game · Gacha game · Horror game · Idle game · Party game · Photography game · Social deduction
+      game · Trivia game · Typing game.
+
+      ===== 2. CASINO GAME IS PROHIBITED =====
+      «PROIBIDO NA NOSSA ENGINE». A cartridge that declares it is refused.
+
+      ===== 3. HORROR GAME IS TO BE AVOIDED =====
+      «EVITAR, DIFÍCIL FAZER FUNCIONAR PARA CRIANÇAS». It stays in the list — avoiding is not prohibiting — and the list
+      carries the mark and the reason, so the author reads it at the moment of choosing.
+
+      ===== 4. BY PURPOSE AND SANDBOX / OPEN WORLD DO NOT ENTER =====
+      Advergame, Art game, Casual game, Christian game, Educational game, Esports, Exergame, Personalized game, Serious
+      game, Live Interactive Game, Sandbox, Creative and Open world are not genres a cartridge can declare in this engine.
+
+      ===== 5. THE CARTRIDGE CHOOSES; NOBODY ASSIGNS =====
+      Genre stays optional (ADR-0153). The engine does not assign genres to catalogue games or to any game.
+
+  consequences:
+    positive:
+      - "One written vocabulary, the same for every cartridge"
+      - "Gambling is refused by the platform, not left to taste"
+    negative:
+      - "An educational game cannot say «educational» as its genre; it says what it plays like"
+      - "The accommodation study keyed genres by the old sections, including casino, horror, art and sandbox; it is
+         history now, and its genre-keyed measurements do not describe this list"
+
+  confirmation: |
+    The gates in `confirmed-by` (issue #149, closed). Gates, named now: the list in
+    the engine is exactly §1 and nothing from §4; a cartridge declaring Casino game is refused with the reason; Horror
+    game is accepted and carries its «avoid» mark; an unknown or §4 genre is refused as not in the list.
+
+more-information: |
+  The Dev's transcription drops some Wikipedia subsections the revision pinned earlier listed by number (for example
+  «Survival horror» sits under Action-adventure, as they wrote it). The transcription is the decision; the page is its
+  source, not its authority.
