@@ -72,6 +72,34 @@ const abrir = (extra = {}) => {
   return motor;
 };
 
+/** The real window, with `own` answering first; every other method bound to the window, as the root's own scope does. */
+const hostWith = (own) => new Proxy(window, {
+  get(target, prop) {
+    if (Object.hasOwn(own, prop)) return own[prop];
+    const v = Reflect.get(target, prop);
+    return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(target) : v;
+  },
+});
+
+/*
+ * 🔴 THE VOICES ARE THE CASE'S, NEVER THE MACHINE'S (ADR-0185 §4). With no voice for the language, the engine LOCKS the speech
+ * rows of the hearing panel and the bar's 🗣, with the reason said — the decided behaviour, gated by
+ * `a-language-with-no-voice`. So a case that clicks one of them measures the host's speech engine unless it lends one.
+ * 📏 Measured on 2026-09-26: headless Chromium on Windows lists Microsoft Maria and Daniel (pt-BR), a moment after load; on
+ * GitHub's Linux runner it lists NONE (CI run 36248801374), and two cases here went red there and green here. Reproduced
+ * locally by emptying `getVoices()` alone: the same two cases, the same two messages; `--lang=en-US` alone left them green.
+ * A plain object and not the real `speechSynthesis`: nothing speaks aloud, and nothing waits for a late voice list.
+ */
+class HostUtterance { constructor(text) { this.text = text; this.lang = ''; this.voice = null; this.volume = 0; this.rate = 0; } }
+const hostSpeaking = (voices) => hostWith({
+  speechSynthesis: { cancel() {}, speak() {}, getVoices: () => voices, onvoiceschanged: null },
+  SpeechSynthesisUtterance: HostUtterance,
+});
+/** A host with a voice for the suite's language (pt-BR). */
+const withVoice = () => ({ doc: document, win: hostSpeaking([{ name: 'Luciana', lang: 'pt-BR' }]) });
+/** A host whose speech engine lists no voice at all — GitHub's Linux runner, and a school machine without one. */
+const withoutVoice = () => ({ doc: document, win: hostSpeaking([]) });
+
 describe('createGame num documento de verdade', () => {
   let raiz;
 
@@ -1310,7 +1338,8 @@ describe('createGame num documento de verdade', () => {
     it('🎯 [Right] o painel AUDITIVO abre com os seus controles, cada um com a tag certa', () => {
       // The biggest panel: nodes it reached and never created. What is measured here is the whole path — pause item,
       // engine table, `open()`, `renderAudio()` — and that the tag survived it.
-      const motor = abrir();
+      // WITH a voice: the spoken index clicked below is a speech row, locked where no voice speaks (see `withVoice`).
+      const motor = abrir({ host: withVoice() });
       motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]');
       expect(item, 'o item de acessibilidade auditiva nem foi montado').not.toBeNull();
@@ -1408,7 +1437,8 @@ describe('createGame num documento de verdade', () => {
       //
       // 📌 Without it, the child turns narration on with the 🗣 icon and the panel goes on saying it is off — the family of
       // a control lying about its state.
-      const motor = abrir();
+      // WITH a voice: the 🗣 is locked where no voice speaks, and then there is nothing to refresh (see `withVoice`).
+      const motor = abrir({ host: withVoice() });
       motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
       const botao = document.querySelector('#opt-tts');
@@ -1421,6 +1451,51 @@ describe('createGame num documento de verdade', () => {
 
       expect(document.querySelector('#opt-tts').getAttribute('aria-pressed'),
         'o ícone mudou o estado e o painel continua a anunciar o anterior').not.toBe(antes);
+    });
+
+    /** What the two screen-reader regions hold once the next frame has written them (`core/a11y-sr` writes a frame late). */
+    const saidAfterAFrame = async () => {
+      await new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); });
+      return document.querySelector('#sr-status').textContent + ' | ' + document.querySelector('#sr-alert').textContent;
+    };
+    /**
+     * Lets the panel's own opening line («Acessibilidade auditiva. Voltar, botão, 1 de 8») land, then empties both regions.
+     * 📏 Without the wait a click in the SAME frame as the opening is refused, said, and then covered by that line one frame
+     * later — measured, and not what a child meets: nobody presses within a frame of the panel appearing.
+     */
+    const clearSaid = async () => {
+      await saidAfterAFrame();
+      for (const id of ['#sr-status', '#sr-alert']) document.querySelector(id).textContent = '';
+    };
+
+    it('🔴 [Boundary] with NO voice on the device, the spoken index refuses the click and says why (ADR-0185 §4)', async () => {
+      // The other side of `withVoice`: the runner's condition, set by the case. The row stays in the panel, locked; the
+      // click changes nothing — not the button, not the store — and the child hears the reason instead of silence.
+      const motor = abrir({ host: withoutVoice() });
+      motor.pause.show(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+      const indice = document.querySelector('#opt-menuindex');
+      expect(indice.getAttribute('aria-disabled'), 'no voice, and the spoken index is not locked').toBe('true');
+      const antes = indice.getAttribute('aria-pressed');
+      const noStore = motor.settings.menuIndexOn;
+      await clearSaid();
+      indice.click();
+      expect(indice.getAttribute('aria-pressed'), 'a locked row answered the click').toBe(antes);
+      expect(motor.settings.menuIndexOn, 'a locked row wrote the store').toBe(noStore);
+      expect(await saidAfterAFrame(), 'the refusal was silent').toContain(motor.t('audio.semVoz'));
+    });
+
+    it('🔴 [Boundary] with NO voice on the device, the 🗣 refuses, says why, and the panel keeps the truth (ADR-0185 §4)', async () => {
+      const motor = abrir({ host: withoutVoice() });
+      motor.pause.show(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+      const antes = document.querySelector('#opt-tts').getAttribute('aria-pressed');
+      const ligada = motor.audio.audioCat.tts.on;
+      await clearSaid();
+      document.querySelector('#title-icons [data-pi="tts"]').click();
+      expect(motor.audio.audioCat.tts.on, 'the 🗣 turned narration on with no voice to narrate').toBe(ligada);
+      expect(document.querySelector('#opt-tts').getAttribute('aria-pressed'), 'the panel moved with a refused press').toBe(antes);
+      expect(await saidAfterAFrame(), 'the refusal was silent').toContain(motor.t('audio.semVoz'));
     });
 
     it('🔴 [Boundary] hospedeiro FORA de `#game-region` vira linha em `problems`, e não silêncio', () => {
@@ -1970,15 +2045,6 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
     localStorage.removeItem('incl_modocego'); // the guide case turns blind mode on, and it persists
   });
 
-  /** The real window, with `own` answering first; every other method bound to the window, as the root's own scope does. */
-  const hostWith = (own) => new Proxy(window, {
-    get(target, prop) {
-      if (Object.hasOwn(own, prop)) return own[prop];
-      const v = Reflect.get(target, prop);
-      return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(target) : v;
-    },
-  });
-
   it('🔴 [Right] no audio context at boot; the child\'s first gesture makes one from the HOST\'s maker, and it runs', async () => {
     const made = [];
     class HostAudioContext extends window.AudioContext { constructor() { super(); made.push(this); } }
@@ -2143,3 +2209,11 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 //      on there: the failure arrives after the click, which is what the old comment had assumed away
 //   A4 the panel's camera row announcing the mode                                    🔴 «the panel's camera row»
 //   A5–A8 the «off» line dropped from each of the four surfaces                      🔴 «switching OFF … is still said on both surfaces»
+// ---- the voices are the case's, not the machine's (2026-09-26, CI run 36248801374; scripted, each alone, restored from a copy
+//      and checked by sha256 — 8 of 8 red; the file green on Windows with voices, on the runner's emulation and with no synthesis) ----
+//   N1 the spoken index wired to nothing (`ui/voice-settings`)           🔴 «o painel AUDITIVO abre…», only with its lent voice
+//   N2 `reflectTtsPanelEnabled: false` — the monolith's dead guard       🔴 «ligar o TTS pelo ÍCONE…»
+//   N3 the speech rows never locked · N5 a locked row refusing silently  🔴 «with NO voice…, the spoken index refuses…»
+//   N4 the bar's 🗣 never locked · N6 the locked 🗣 refusing silently     🔴 «with NO voice…, the 🗣 refuses…»
+//   N7 the root reading the PAGE's `speechSynthesis` instead of the host's: on Windows (voices) the two voiceless cases go red,
+//      on the runner's emulation (none) the two voiced ones do — each side depends on the host its case lends, and nothing else
