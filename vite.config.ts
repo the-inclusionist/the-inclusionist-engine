@@ -164,6 +164,11 @@ export default defineConfig({
         // 2026-09-13: the models' `CacheOnly` route let a request reach Hugging Face). A cartridge that builds its own
         // single-page shell sets its own fallback. Gate: `tests/service-worker-registers-its-routes.node.test.js`.
         navigateFallback: null,
+        // THE DEMO'S OWN QUERY IS NOT ANOTHER PAGE: `quiz.html?libras=avatar` lends the free Libras player (ADR-0234, route B), and
+        // the precache matches a navigation by its whole address — so the page it is precached under, `quiz.html`, was never
+        // found for it, and offline it did not open (📏 measured 2026-09-25: `ERR_INTERNET_DISCONNECTED`). `libras` is ignored
+        // when matching, beside Workbox's own two defaults, which setting this replaces and so are written again.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^libras$/],
       },
       // The PWA is OFF in dev (the default) — no service worker or cache getting in the HMR's way; test with `npm run build` + `preview`.
     }),

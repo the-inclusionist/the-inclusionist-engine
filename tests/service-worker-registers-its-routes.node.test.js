@@ -34,7 +34,34 @@ describe('the service worker\'s navigation fallback', () => {
   });
 });
 
+/**
+ * 🔴 THE QUIZ OPENED WITH `?libras=avatar` OPENS OFFLINE (ADR-0234, route B, phase B3). 📏 Measured on a served delivery
+ * (2026-09-25): with the free player's files all kept, the offline navigation to `quiz.html?libras=avatar` failed with
+ * `ERR_INTERNET_DISCONNECTED` — the precache matches the whole address, and only `quiz.html` is precached.
+ */
+describe('the precache finds the page under the demo\'s own query', () => {
+  const source = CONFIG_LIMPA.match(/ignoreURLParametersMatching:\s*(\[[^\n]*\]),/)?.[1];
+  // the configuration's own text, evaluated as the plugin serializes it — never input from anywhere else
+  const ignored = source ? new Function(`return ${source};`)() : []; // eslint-disable-line no-new-func
+  const ignores = (name) => ignored.some((r) => r.test(name));
+
+  it('🔴 [Right] `libras` is ignored when a navigation is matched, and Workbox\'s own defaults still are', () => {
+    expect(source, 'no `ignoreURLParametersMatching`: `quiz.html?libras=avatar` is never found in the precache').toBeTruthy();
+    for (const name of ['libras', 'utm_source', 'utm_campaign', 'fbclid']) expect(ignores(name), name).toBe(true);
+  });
+
+  it('📌 [Boundary] nothing else is: a query that changes the answer — the list\'s `sha256` — still reaches the network', () => {
+    for (const name of ['sha256', 'libras-avatar', 'librasx', 'lang', 'v']) expect(ignores(name), name).toBe(false);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 //   S1 `navigateFallback` removed (the plugin's index.html)   🔴 [Right]
 //   S2 `navigateFallback: 'index.html'`                        🔴 [Right]
 //   S3 the input emptied                                        🔴 [Zero]
+//   (2026-09-25, the demo's query, ADR-0234 phase B3: scripted, restored from a copy and checked by hash — 5 of 5 red)
+//   Q1 `libras` not ignored                                      🔴 [Right]
+//   Q2 the setting removed (Workbox's defaults only)               🔴 [Right]
+//   Q3 Workbox's defaults dropped by the setting                   🔴 [Right]
+//   Q4 `libras` not anchored at its end                           🔴 [Boundary]
+//   Q5 every query ignored                                         🔴 [Boundary]
