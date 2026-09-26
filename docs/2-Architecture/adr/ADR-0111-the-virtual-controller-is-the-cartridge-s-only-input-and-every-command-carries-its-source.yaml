@@ -13,7 +13,18 @@ metadata:
     - app/js/input/synthetic-source.ts
     - tests/virtual-controller.node.test.js
     - tests/start-and-select-from-every-transport.browser.test.js
+    - tests/a-key-typed-into-a-field-is-not-start-or-select.browser.test.js
   errata:
+    - date: 2026-09-26
+      what: >-
+        ✅ A KEY TYPED INTO A FIELD IS NOT START OR SELECT EITHER. The rule «a key typed into an editable field is the field's»
+        (below) was built into the delivery only, and the system positions never pass through the delivery: the engine's own
+        START and SELECT listeners asked whether the key pressed the engine's focused control, never whether it was typed into a
+        field. 📏 Measured with real keys: Enter typed into a text input, a textarea or a contenteditable — in the game region or
+        on the page around it — opened the quick pause and the field lost the Enter; «half» paused on the `h` and opened the menus
+        on the `f`. Those listeners now ask `input/key-default.keyTypedIntoField` first — START on the way in and out, SELECT, and
+        `action4` in the quick pause — and a field keeps Enter and every character. On a button, or with no focus, START and
+        SELECT are unchanged.
     - date: 2026-09-26
       what: >-
         🔴 «WITH A MENU OPEN THEY ARE STILL THE MENU'S KEY», in the first erratum below, is no longer true, and it was the cause of a

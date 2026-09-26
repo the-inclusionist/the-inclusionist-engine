@@ -34,6 +34,19 @@ const EDITABLE = 'input, textarea, select';
 export const BUTTON_ACTIVATION_KEYS: ReadonlySet<string> = new Set(['Space', 'Enter', 'NumpadEnter']);
 
 /**
+ * Whether a key pressed with the focus on `target` is being typed into a field — input, textarea, select or contenteditable, in
+ * the game region or anywhere on the page. Then every key is the field's: Enter and every character.
+ *
+ * 📌 ASKED BY THE ENGINE'S SYSTEM KEYS TOO, and not only by the delivery. START and SELECT never reach play, so they never pass
+ * through `keyGoesToGame`: their own listeners (`boot/create-game`) ask this. 📏 Before they did, Enter typed into a text field
+ * opened the quick pause, and «half» typed into one paused on the `h` and opened the menus on the `f`.
+ */
+export function keyTypedIntoField(target: KeyTargetLike | null): boolean {
+  if (!target || typeof target.closest !== 'function') return false;
+  return !!target.isContentEditable || !!target.closest(EDITABLE);
+}
+
+/**
  * Whether the key `code` presses the engine's own control that has the focus (`ownControls`, a selector): Space or Enter on it.
  *
  * 📌 ASKED BY THE QUICK PAUSE TOO, and not only by the delivery. `Enter` is `start`, and START in play opens the quick pause — so
@@ -51,6 +64,5 @@ export function keyPressesOwnControl(code: string, target: KeyTargetLike | null,
  */
 export function keyGoesToGame(code: string, target: KeyTargetLike | null, ownControls: string): boolean {
   if (!target || typeof target.closest !== 'function') return true; // no element had the focus: nothing else to go to
-  if (target.isContentEditable || target.closest(EDITABLE)) return false;
-  return !keyPressesOwnControl(code, target, ownControls);
+  return !keyTypedIntoField(target) && !keyPressesOwnControl(code, target, ownControls);
 }

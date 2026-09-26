@@ -4,7 +4,7 @@
 // `a-delivered-key-does-not-also-click.browser.test.js`; this pins the branches a browser case cannot reach, such as a target
 // with no `closest`.
 import { describe, it, expect } from 'vitest';
-import { keyGoesToGame, keyPressesOwnControl, BUTTON_ACTIVATION_KEYS } from '../app/js/input/key-default.js';
+import { keyGoesToGame, keyPressesOwnControl, keyTypedIntoField, BUTTON_ACTIVATION_KEYS } from '../app/js/input/key-default.js';
 
 const OWN = '.pi-btn';
 /** A target that matches the selectors it is told to. */
@@ -56,5 +56,24 @@ describe('keyPressesOwnControl', () => {
     expect(keyPressesOwnControl('Enter', alvo(['input']), OWN)).toBe(false);
     expect(keyPressesOwnControl('Enter', null, OWN)).toBe(false);
     expect(keyPressesOwnControl('Enter', {}, OWN)).toBe(false);
+  });
+});
+
+// The question START's, SELECT's and the quick pause's `action4` listeners ask first: is this key being typed into a field?
+describe('keyTypedIntoField', () => {
+  it('🔴 [Right] input, textarea, select and contenteditable are fields', () => {
+    for (const tag of ['input', 'textarea', 'select']) expect(keyTypedIntoField(alvo([tag])), tag).toBe(true);
+    expect(keyTypedIntoField(alvo([], { isContentEditable: true })), 'contenteditable').toBe(true);
+  });
+
+  it("🔴 [Boundary] a button — the game's or the engine's own — is not a field", () => {
+    expect(keyTypedIntoField(alvo(['.game-option']))).toBe(false);
+    expect(keyTypedIntoField(alvo([OWN]))).toBe(false);
+  });
+
+  it('🔴 [Boundary] no element had the focus (a target with no `closest`): no field', () => {
+    expect(keyTypedIntoField(null)).toBe(false);
+    expect(keyTypedIntoField({})).toBe(false);
+    expect(keyTypedIntoField({ isContentEditable: true })).toBe(false);
   });
 });

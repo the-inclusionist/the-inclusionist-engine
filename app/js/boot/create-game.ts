@@ -116,7 +116,7 @@ import { mountPanel } from '../ui/mount-panel.js';
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
-import { keyGoesToGame, keyPressesOwnControl } from '../input/key-default.js';
+import { keyGoesToGame, keyPressesOwnControl, keyTypedIntoField } from '../input/key-default.js';
 import { createSwitchScan, playScanList, SWITCH_SCAN_DEFAULTS, type SwitchScan } from '../input/switch-scan.js';
 import { menuScanFor, menuStepKeys, type MenuCursor, type MenuStep } from '../ui/menu-intent.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
@@ -3098,6 +3098,9 @@ export function createGame(o: CreateGameOptions): Engine {
   function toggleQuickPauseByStart(e: KeyboardEvent): void {
     const seat = seatOfPosition(e.code, 'start');
     if (seat === null) return;
+    // GUARD 0 — THE KEY WAS TYPED INTO A FIELD. A text field owns Enter and every character, so `Enter` or `H` typed there is
+    // the field's and not START, on the way in and out alike (ADR-0111 erratum of 2026-09-26). Left undecided, so it types.
+    if (keyTypedIntoField(e.target as Element | null)) return;
     // GUARD 3 — THE KEY PRESSES THE ENGINE'S FOCUSED CONTROL. `Enter` is «start», and a focused button is activated by Enter as
     // well as Space: on ☰ it is ☰'s press, not the pause (ADR-0111 erratum of 2026-09-26, one key one action). Left undecided
     // here, so the browser clicks it. Only on the way IN: on the quick pause's own bar the leave keeps its meaning.
@@ -3133,7 +3136,8 @@ export function createGame(o: CreateGameOptions): Engine {
   }
   function openMenusBySelect(e: KeyboardEvent): void {
     const seat = seatOfPosition(e.code, 'select');
-    if (seat === null) return;
+    // `F` typed into a field is a letter, not SELECT (ADR-0111 erratum of 2026-09-26): the field owns every character.
+    if (seat === null || keyTypedIntoField(e.target as Element | null)) return;
     if (openSeatMenus(seat)) e.preventDefault();
   }
   win.addEventListener('keydown', openMenusBySelect);
@@ -3146,7 +3150,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function openMenusByAction4(e: KeyboardEvent): void {
     const seat = seatOfPosition(e.code, 'action4');
     if (seat === null || !inQuickPause.has(seat)) return;
-    if (overlays.topVisibleOverlay()) return;
+    if (overlays.topVisibleOverlay() || keyTypedIntoField(e.target as Element | null)) return; // a letter typed into a field
     leaveQuickPause(seat, 'cartao');
     pauseControls.show(seat);
     e.preventDefault();
