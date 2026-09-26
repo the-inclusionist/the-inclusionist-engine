@@ -115,6 +115,7 @@ import { mountPanel } from '../ui/mount-panel.js';
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
+import { cancelsKeyDefault } from '../input/key-default.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
@@ -829,6 +830,12 @@ const REQUIRED_MARKUP: readonly string[] = ['#game-region', '#sr-status', '#sr-a
  * bar, and its own sentence can say WHAT is lost, which is what makes it useful to whoever reads it first.
  */
 const A11Y_BAR_SELECTOR = '#title-icons';
+
+/**
+ * The engine's own controls that stay pressable by key IN PLAY: the accessibility bar's icons, in `#title-icons` and in the
+ * HUD. A key the engine delivered to the game keeps its default on them (`input/key-default`, ADR-0111 erratum of 2026-09-26).
+ */
+const ENGINE_CONTROLS_IN_PLAY = '.pi-btn';
 
 /**
  * THE GAME'S HALF of `CreateGameOptions` — the fields ADR-0139 §1 says a cartridge SUPPLIES, apart from the ones that
@@ -4075,6 +4082,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    *
    * 📌 And it does not ask whether a menu is open. That question has ONE answer, the controller's; what makes it true
    * for the keyboard is `keyToMenu` above, which does not redispatch a key that is already in the world.
+   *
+   * 🔴 A KEY THE GAME HEARD IS SPENT (ADR-0111 erratum of 2026-09-26): its browser default is cancelled, or Space on a focused
+   * button was the game's `action2` AND the button's click. What keeps its default is `input/key-default`'s to say.
    */
   for (const kind of ['keydown', 'keyup'] as const) {
     win.addEventListener(kind, (e: KeyboardEvent) => {
@@ -4087,8 +4097,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       if (seat < 0) return;
       const action = keyboard.actionOf(e.code, seat) as Action | null;
       if (!action) return;
-      if (kind === 'keydown') virtualController.press(action, source, seat);
-      else virtualController.release(action, source, seat);
+      if (kind === 'keyup') { virtualController.release(action, source, seat); return; }
+      const delivered = virtualController.press(action, source, seat);
+      if (cancelsKeyDefault(delivered, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY)) e.preventDefault();
     }, true);
   }
   /*

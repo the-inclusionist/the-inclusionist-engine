@@ -772,6 +772,12 @@
     ],
     "type CooldownDecision": "'accept' | 'refuse'"
   },
+  "input/key-default.ts": {
+    "interface KeyTargetLike": [
+      "closest?",
+      "isContentEditable?"
+    ]
+  },
   "input/keyboard-runtime.ts": {
     "interface KeyboardRuntimeCtx": [
       "getKB",

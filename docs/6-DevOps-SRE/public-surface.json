@@ -399,6 +399,10 @@
     "InputCooldown",
     "createInputCooldown"
   ],
+  "input/key-default.ts": [
+    "KeyTargetLike",
+    "cancelsKeyDefault"
+  ],
   "input/keyboard-runtime.ts": [
     "ControlsState",
     "KeyboardConfig",
