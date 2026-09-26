@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-26
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-26, verbatim, on the voice that reads a game's words: «Exato, este é o problema. Em português tem-se a disciplina de inglês prevista na BNCC, o enunciado pode estar em português e por dentro a atividade em inglês precisará de leitura com voz em inglês.»"
+    - "The Dev, 2026-09-26, verbatim, asking for the demo quiz to cover «português, arte, educação física, língua inglesa, língua espanhola, matemática, ciências, geografia, história e ensino religioso» — the first cartridge whose questions mix a frame in the interface's language with content in another"
+    - "CLAUDE.md, «A FRONTEIRA» (the Dev, 2026-08-24): the statement always translates; in a language discipline the LINGUISTIC CONTENT does not, because it is the subject"
+    - "WCAG 2.2 success criterion 3.1.2 Language of Parts (AA): the human language of each passage can be programmatically determined — https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts.html"
+    - "ADR-0185 — the voice list offers only the voices of the interface's language, and the speech rows lock when there is none"
+    - "ADR-0200 — the browser's voice speaks first; the neural voice is the fallback"
+  informed: []
+
+title: A spoken text carries its language — the frame in the interface's voice, the content in a voice of its own language
+
+context-and-problem-statement: |
+  The engine speaks in one language at a time: the page's. `platform/tts.narrate(text)` reads the interface language at
+  every utterance and picks a voice of it, and `platform/speech.gameSay`, the port a game uses to read its own words, forces
+  pt-BR whatever the page says. Neither can read an English word in a Portuguese activity with an English voice.
+
+  The Dev named the case: an English lesson for a Brazilian child has its statement in Portuguese and its content in
+  English, and the content must be read by an English voice. Read by a Portuguese voice it teaches the wrong sounds, which
+  in a language discipline is the subject itself. The same holds the other way: a Portuguese literacy word inside an
+  English interface must keep a Portuguese voice.
+
+  Two defects of the same rule were measured on the way. After a language switch, narration kept the voice object of the
+  language it had before, so English narration came out of the pt-BR voice. And `gameSay`'s forced pt-BR was never a
+  decision: it was the monolith's behaviour, carried over.
+
+decision-drivers:
+  - "A language discipline's content is the subject; a voice of another language reads it wrong"
+  - "The frame follows the interface (CLAUDE.md, «A FRONTEIRA»): only the content keeps its own language"
+  - "WCAG 3.1.2: a passage's language is declared, so a screen reader switches voice by itself"
+  - "A wrong voice is worse than no voice: silence is noticed, a wrong accent is learned"
+
+considered-options:
+  - "A · One language per utterance, the interface's (today)"
+  - "B · A language per spoken PART: the game hands the parts in order, each with its language; absent means the interface's"
+  - "C · Detect the language of each word automatically"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ Cannot read the content of a language discipline, which is the Dev's case.
+  **B.** ✅ The game already knows what is frame and what is content (it keeps the frame in keys and the content in
+  `{params}`), so saying it costs one field. ✅ Matches WCAG 3.1.2, which asks the page for the same fact. ❌ A game has to
+  split a sentence that mixes both.
+  **C.** ❌ Unreliable on single words — «pé», «me», «no» exist in more than one language — and a guess would read the
+  content wrong exactly where it matters.
+
+decision-outcome:
+  chosen-option:
+    link: "B — each spoken part carries its language"
+    justification: |
+      §1 · A GAME SPEAKS IN PARTS. `Engine.tts.narrate` takes a text, spoken in the interface's language as today, or a list
+      of parts `{ text, language? }` spoken in order. A part without a language is frame and uses the interface's voice; a
+      part with a BCP-47 language is content and uses a voice of that language.
+
+      §2 · THE VOICE OF A LANGUAGE. The child's chosen voice when it speaks that language; else the first voice whose tag is
+      exactly that language (pt-BR before pt-PT for a pt-BR part); else the first voice of the same primary language.
+      Browser voices come first and the neural voices after, as ADR-0200 decided. No voice of another language ever reads
+      a part.
+
+      §3 · NO VOICE FOR IT, NO WRONG VOICE. When the device has no voice for a part's language, the part is not spoken.
+      The engine says so once per language, in the interface's language and voice, and writes a line to `problems` naming
+      the language and the fix (a voice to install on the device). The text stays on screen.
+
+      §4 · `gameSay` TAKES THE LANGUAGE, REQUIRED. `platform/speech.gameSay(voice, text, language)`: the forced pt-BR goes.
+      Required, because an optional language would default to one, and that default is the defect this record removes.
+      BREAKING, with a note for the one consumer (the platformer passes `'pt-BR'` for its literacy words).
+
+      §5 · NARRATION FOLLOWS THE LANGUAGE OF NOW. A language switch drops the voice object of the old language; the next
+      utterance picks by §2 again.
+
+      §6 · THE PAGE DECLARES IT TOO. Where a game draws content in another language, the element carries `lang`, so a
+      screen reader switches voice without the engine (WCAG 3.1.2). The engine's own widgets that show a game's content
+      pass the language through.
+
+  consequences:
+    positive:
+      - "An English or Spanish activity inside a Portuguese interface is read correctly, and a Portuguese literacy word inside an English one"
+      - "The missing voice is said and written, instead of heard in the wrong accent"
+    negative:
+      - "`gameSay` breaks: the platformer adds one argument when it moves to this version"
+      - "A game that mixes frame and content in one sentence must split it into parts"
+
+  confirmation: |
+    Debt until the gates land (issue to be opened with the implementation): parts spoken in order with their own voices; a
+    part with no voice for its language is not spoken and becomes one `problems` line; `gameSay` without a language does
+    not compile; narration after a language switch uses the new language's voice.
+
+more-information: |
+  Speech recognition is not touched here: what the child says is heard in the language the game asks for, already.

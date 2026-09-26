@@ -1,0 +1,63 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-26
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-26, verbatim, on the demo quiz: «Tela inicial para escolher a habilidade via sigla da BNCC (explicação no rodapé).»"
+    - "CLAUDE.md §4 (the Dev, 2026-08-25): a menu line carries the short label, and its explanation lives in the FOOTER"
+    - "ADR-0164 — the footer: at most two lines, at the bottom, on a dark band"
+    - "ADR-0232 D3 — a game's words reach the engine as keys when DECLARED once, and as text when said at run time (`say`, `alert`)"
+  informed: []
+
+title: A game explains the item under its own cursor in the engine's footer
+
+context-and-problem-statement: |
+  The footer is the engine's. The quick bar, the pause card and the panels write the explanation of the item under the
+  cursor there, and nothing else does. A game's OWN screen — the demo quiz's new start screen, where the child picks a BNCC
+  skill by its code — has items that need the same explanation, and the Engine handle has no way in: the root's
+  `writeInFooter` is private. A game that drew its own footer would put a second explanation band on screen, against the
+  three zones of CLAUDE.md §4.
+
+decision-drivers:
+  - "One footer: an explanation has one place, whoever's item it is"
+  - "The engine's own explanations must not be lost under the game's, nor erase it"
+
+considered-options:
+  - "A · The game draws its own footer line"
+  - "B · `Engine.explain(text | null)`: the game's explanation becomes the footer's resting text"
+  - "C · The game opens its screen as an engine panel, whose footer already exists"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ Two footers. **B.** ✅ One footer, one line of contract. ❌ A new member on the published Engine handle.
+  **C.** ❌ A start screen is the game's screen, not a dialog over it; the panel's card, title and «Voltar» would
+  wrap the game's first screen in a menu.
+
+decision-outcome:
+  chosen-option:
+    link: "B — `Engine.explain(text | null)`"
+    justification: |
+      §1 · THE GAME'S EXPLANATION IS THE FOOTER'S RESTING TEXT. `explain(text)` shows it; `explain(null)` clears it. Text,
+      already in the child's language, as `say` takes: it is said at run time, and the game calls it again when its cursor
+      moves or the language changes.
+
+      §2 · THE ENGINE'S OWN ITEMS TAKE THE FOOTER WHILE THEY ARE POINTED, AND GIVE IT BACK. An icon of the quick bar, an item
+      of the pause card or a panel row shows its own explanation while the cursor is on it; when it leaves, the footer
+      returns to the game's text, not to empty.
+
+      §3 · THE FOOTER'S RULES ARE THE ENGINE'S. Two lines at most (ADR-0164); a longer text is clamped there, and the game
+      says it whole through narration, which is where a child who cannot read the footer gets it anyway.
+
+  consequences:
+    positive:
+      - "A game's own menu follows the same design rule as the engine's, with no second footer"
+    negative:
+      - "One more member on the Engine handle"
+      - "A game that forgets `explain(null)` when it leaves its screen leaves the text over the play"
+
+  confirmation: |
+    Debt until the gate lands (issue to be opened with the implementation): `explain` shows the text; a quick-bar icon
+    pointed and left gives the footer back to it; `explain(null)` empties it.
+
+more-information: |
+  The demo quiz's start screen is the first consumer: each BNCC code is an item, and its official text is the explanation.
