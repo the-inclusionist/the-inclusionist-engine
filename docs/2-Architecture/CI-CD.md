@@ -73,6 +73,11 @@ And outside `gate`:
     is a gate whose verdict nobody can reproduce. gitleaks scans the **whole history** (`fetch-depth: 0`),
     because a secret committed and then deleted is still in the history, and it is the history that becomes
     public. See `../6-DevOps-SRE/Security-Pipeline.md`.
+    📌 gitleaks reads **`.gitleaks.toml`** at the root: every default rule (`useDefault = true`), plus an
+    allowance per false positive that names the file, the rule and the reason. The first one is the SHA-256
+    digest of Kokoro's public `tokenizer.json`, which `generic-api-key` read as a key because the constant's
+    name contains «TOKEN»; it kept the job red from 2026-09-14 on. A finding is allowed there, never by
+    loosening a rule.
 
 ⚠️ **And neither of them is `continue-on-error`.** On GitLab both carried `allow_failure: true` and had been
 **red since they were added** — they died on an `npm: not found` inherited from a `default:` block, and the grey

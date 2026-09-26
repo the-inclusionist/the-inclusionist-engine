@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# gitleaks configuration for the `secrets` job of `.github/workflows/ci.yml`, which runs
+# `gitleaks detect --source .` and so reads this file from the repository root.
+#
+# ⚠️ `useDefault = true` KEEPS EVERY DEFAULT RULE. Without it a config file REPLACES the default rules, and the gate
+# would check only what is written here — nothing.
+
+[extend]
+useDefault = true
+
+# 📌 ONE FALSE POSITIVE, NAMED BY FILE AND BY SHAPE — not a rule switched off.
+# `generic-api-key` fires on `SHA256_DO_TOKENIZADOR_KOKORO = '77a02c8e…'` (commit 2595bf2f, 2026-09-14): the identifier
+# contains «TOKEN» (as in TOKENIZer) and the value is 64 hex digits, whose entropy clears the rule's floor. The value is
+# the SHA-256 DIGEST of Kokoro's public `tokenizer.json` on Hugging Face, which the heavy-file catalogue checks the
+# download against (ADR-0177) — a checksum of a public file, published so anyone can verify it, and not a credential.
+# That finding turned the `secrets` job red on every push from 2026-09-14 on («leaks found: 1»).
+# The allowance covers only a SHA-256 constant assigned a 64-hex literal, only in `app/js/platform/kokoro.ts`, and only
+# for `generic-api-key`: a real key in that file, or a digest-shaped value anywhere else, is still a finding.
+[[allowlists]]
+description = "SHA-256 digests of Kokoro's public model files in platform/kokoro are checksums, not secrets"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^app/js/platform/kokoro\.ts$''']
+regexTarget = "line"
+regexes = ['''(?i)\b\w*sha256\w*\s*=\s*'[0-9a-f]{64}';''']

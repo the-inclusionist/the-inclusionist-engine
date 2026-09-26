@@ -29,6 +29,7 @@ the-inclusionist-engine/      # published as the npm package @the-inclusionist/e
 ├── tests/                    # Vitest: *.node.test.{js,ts} (logic) + *.browser.test.js (render/DOM) + fixtures/ (§3.5)
 ├── .github/workflows/        # ci.yml — the engine's gates · game-ci.yml — the workflow the GAMES call
 ├── vite.config.ts  tsconfig.json  tsconfig.pkg.json  package.json  .release-it.json  .node-version
+├── .gitleaks.toml            # the `secrets` job's config: every default rule, plus each false positive named by file and reason
 ├── README.md  LICENSE  CHANGELOG.md
 └── CLAUDE.md                 # AI operating rules (entry index for the agent)
 ```
