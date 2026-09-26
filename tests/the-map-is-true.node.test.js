@@ -51,7 +51,7 @@ describe('o mapa não nomeia o que não existe', () => {
     /*
      * ⚠️ WHAT IS LEFT OUT, and each line has a reason that is not convenience:
      *   · `node_modules/**` and package addresses (`@the-inclusionist/engine/…`) are not files of this tree;
-     *   · a path of the RECORDS repository (`docs/2-Architecture/adr/…`) lives on the other side — the map may name it;
+     *   · the records tree (`docs/2-Architecture/adr/…`) is here again since ADR-0242, and is checked like any path;
      *   · `app/js/game/**` is NOT here on purpose: that folder left with the cartridge, and that is precisely what the
      *     sieve caught.
      */

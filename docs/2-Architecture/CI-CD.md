@@ -48,15 +48,16 @@ And outside `gate`:
    `index.html` (it left with the cartridge, #111), and the readiness probe hits the same page the gate audits.
 8. **ADR** — the records' validator. A gate that did not exist on GitLab: the index promised
    machine-readable records and nothing checked, and five of twenty-six did not parse.
-   🔴 **And since 2026-09-09 (ADR-0123) the TREE does not live here**: the job checks out
-   `the-inclusionist-docs` and runs **that repository's** `scripts/validate-adr.py` with `--repo engine=.`, which
-   is the part that **only this side can do** — open the `confirmed-by` paths marked `engine:`. In the records'
-   repository they are only counted, and the validator says how many on every run. A second step runs
-   `tests/records-pointing-at-dead-gates.node.test.js` and `tests/the-validator-does-not-drift.node.test.js` with
-   `ADR_TREE_REQUIRED=1`: no record may point at a gate that does not exist, and this repository's own copy of
-   `scripts/validate-adr.py` must not drift from the records' copy.
-   ⚠️ **Without the `DOCS_READ_TOKEN` secret the job is DORMANT**: it announces that it fetched nothing and
-   checked nothing, and it **does not fail**. It is the shape of `check:annual-report` — a dormant gate is a
+   🔴 **The engine's tree lives here again (ADR-0242)**, so the job validates `docs/2-Architecture/adr/` on every
+   push with no token, and runs the validator's own test, the tempo sieve and the debt census. What crosses into
+   `the-inclusionist-docs` — index rows and supersession pointers — is counted and said. With the
+   `DOCS_READ_TOKEN` secret it also checks that repository out and: opens what crosses; validates the project-wide
+   records there with `--repo engine=.`, the part **only this side can do** (open the `confirmed-by` paths marked
+   `engine:`); and runs `tests/the-validator-does-not-drift.node.test.js` with `DOCS_ROOT_REQUIRED=1`, so the five
+   files of the records kit cannot drift between the two repositories. The prose sieve over dead gates
+   (`tests/records-pointing-at-dead-gates.node.test.js`) runs in the `gate` job's suite, since its tree is local.
+   ⚠️ **Without the `DOCS_READ_TOKEN` secret the cross-repository steps are DORMANT**: they announce that they
+   fetched nothing, and they **do not fail**. It is the shape of `check:annual-report` — a dormant gate is a
    notice, not a pass — and the reason is the one in `ci.yml`'s own header: a `main` that is red for an
    administrative reason teaches people not to read red. A workflow's `GITHUB_TOKEN` does not reach another
    private repository (measured in run `34352635399`, `Not Found`).

@@ -46,12 +46,13 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Sinalize antes de executar** incoerências/erros. **Anuncie decisões não triviais:** `Decisão: X porque Y. Para
   sobrepor, diga Z.` **"ok/tudo ok" ≠ carta branca** → proponho e confirmo a próxima escolha, não sigo sozinho.
 - **Decisão confirmada ganha lar durável NO MESMO TURNO** — não deixar como prosa no chat. Se for arquitetural →
-  um **ADR (YADR)** no repositório `the-inclusionist-docs`, em `docs/2-Architecture/adr/`, + entrada no índice — a
-  árvore saiu daqui no ADR-0123; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
+  um **ADR (YADR)** em `docs/2-Architecture/adr/` DESTE repositório, + entrada no índice — os registos da engine
+  voltaram para casa no ADR-0242; o que é do projeto inteiro (pilares, organização, licenças, governança) vai para o
+  `the-inclusionist-docs`, e cada índice tem linha para todos; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
   📌 **PORTA DE MÃO ÚNICA × MÃO DUPLA (ADR-0172, 2026-09-13):** contrato, superfície pública, chaves guardadas, pacotes,
   licenças e privacidade → **registro**. Escolha de interface que um commit desfaz (layout, ordem, texto, espaçamento) →
-  **entrada datada** em `the-inclusionist-docs:docs/2-Architecture/interface-log.md`, no mesmo turno.
+  **entrada datada** em `docs/2-Architecture/interface-log.md` (voltou com os registos, ADR-0242), no mesmo turno.
   🎯 **NA DÚVIDA, A PERGUNTA DECIDE (ADR-0209, 2026-09-14): «o que quebra se desfizermos isto na semana que vem?»** Um jogo, uma
   chave guardada, uma dependência ou licença, a privacidade da criança, uma entrega → registro. Nada fora do laboratório ou da
   interface → `interface-log` ou comentário na issue. **Experimento e veredito de teste NUNCA viram registro** (plano de teste,
@@ -104,7 +105,7 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   ⚠️ **E a regra velha nasceu sem discussão:** entrou em `51bbe07` (05/07), escrita por uma IA como passageira
   num commit sobre a convenção de preview, e o texto original nomeava **duas** superfícies («GitHub Project
   *The Inclusionist Roadmap* + Issues») — o quadro perdeu-se na migração e ninguém o repôs.
-  **As quatro casas:** decisão → **registo** (`the-inclusionist-docs`) · fase → **`ROADMAP.md`** · campo →
+  **As quatro casas:** decisão → **registo** (`docs/2-Architecture/adr/`; o do projeto inteiro, `the-inclusionist-docs`) · fase → **`ROADMAP.md`** · campo →
   **`Test-Plan.md`** · **e o trabalho que um registo DEVE continua a ser issue** — é essa quarta que impede a
   regra de apagar informação.
   🎯 **O teste é mecânico: o corpo da issue tem de ser MAIS CURTO do que a mensagem do commit que a fecha.**

@@ -76,9 +76,11 @@ docs/
 │   └── plan-city-scenery.md   #   city level design
 ├── 2-Architecture/            # system architecture & decisions
 │   ├── C4-Context.md          #   C4 Level 1 (L2 with backend)
-│   ├── ADR.md                 #   🔴 the records MOVED (ADR-0123): they live in `the-inclusionist-docs`.
-│   │                          #   This file says where, and what stayed here — the `adr` CI job, which is
-│   │                          #   the only one that can OPEN the `engine:` confirmations (`--repo engine=.`)
+│   ├── adr/                   #   🔴 the ENGINE's records (YADR) + README.md, the index — home again (ADR-0242);
+│   │                          #   the whole project's stay in `the-inclusionist-docs`, and each index keeps a row for all
+│   ├── ADR.md                 #   where the records live, how a citation crosses a repository, and the `adr` CI job
+│   ├── interface-log.md       #   the two-way doors of the engine's interface, dated entries (ADR-0172)
+│   ├── record-ownership-triage.md # whose each record is — the reading behind ADR-0242
 │   ├── Feature-Flags.md · DFD.md · STRIDE.md · CI-CD.md
 │   ├── K8s-Manifests.md       #   note: when K8s becomes worth it (deferred)
 │   ├── learning-interop.md    #   xAPI/Caliper/LTI/AfA… e-learning standards (deferred) — ADR-0004

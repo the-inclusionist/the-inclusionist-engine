@@ -64,7 +64,7 @@ npm test           # Vitest tests (node + browser via Playwright); npm run test:
   | job | what it blocks |
   |---|---|
   | `gate` | `npm audit --omit=dev`, typecheck, Vitest (node + browser), build, precache budget |
-  | `adr` | the records' validator — eight checks, among them the bidirectional supersession pointer. The records live in `the-inclusionist-docs`, so the job is dormant (a warning, not a pass) until the `DOCS_READ_TOKEN` secret exists |
+  | `adr` | the records' validator — eight checks, among them the bidirectional supersession pointer. The engine's records live here, in `docs/2-Architecture/adr/` (ADR-0242), and are checked on every push; what crosses into `the-inclusionist-docs` is opened only with the `DOCS_READ_TOKEN` secret, and until it exists those steps are a warning, not a pass |
   | `a11y` | axe against the **served** app, not against the source |
   | `dco` | `Signed-off-by` on every PR (ADR-0078); the maintainer's pushes are left out |
   | `secrets` | **gitleaks** over the WHOLE history (`fetch-depth: 0`), with `--redact` |

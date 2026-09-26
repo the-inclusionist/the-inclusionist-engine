@@ -21,10 +21,10 @@
 - **Documentation is actionable:** a doc change becomes a **test** (that verifies it), a **task** (a GitHub issue), or
   an **ADR** (that decides it). With very few exceptions, a doc that transforms into none of these earns its keep only
   as a map/index. Ask "what does this become?" and create it.
-  🔴 **AND AN ADR IS NOT WRITTEN IN THIS REPOSITORY ANY MORE** (2026-09-09, ADR-0123): the records live in
-  [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs), one tree for the whole
-  project, with the validator beside them. What stays here is the GATE that opens the confirmations naming
-  this repository — see [`docs/2-Architecture/ADR.md`](2-Architecture/ADR.md).
+  🔴 **AN ADR ABOUT THE ENGINE IS WRITTEN HERE**, in [`docs/2-Architecture/adr/`](2-Architecture/adr/README.md), with
+  its row in the index (ADR-0242, 2026-09-26). A decision that belongs to the whole project — pillars, organisation,
+  licences, governance — goes to [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs).
+  How to tell the two apart, and how a citation crosses: [`docs/2-Architecture/ADR.md`](2-Architecture/ADR.md).
 - The **map of where everything lives** is [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — **the first doc to open**
   for any task, to find what to read/change. Any structure/name/convention change is reflected there the same commit.
   The AI agent's operating rules are in [`CLAUDE.md`](../CLAUDE.md).
@@ -84,7 +84,7 @@ reasonably expects it to end up free. Here it does not, and finding that out aft
 Tier **T2** (educational platform, LGPD/child-data). We adopt a **lean subset** of a fullstack SDD schema — each
 artifact is either **adopted now**, a **deferred-but-homed stub** (records where/when/how it activates), or an
 **explicit rejection**. The governing decision, with the full adopt/defer/reject matrix and rationale, is
-**[ADR-0003](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0003-tiered-sdd-documentation-subset.yaml)** — read it before adding or
+**[ADR-0003](2-Architecture/adr/ADR-0003-tiered-sdd-documentation-subset.yaml)** — read it before adding or
 dropping a doc type.
 
 **Cut rule:** every statement in a doc is **either** (a) reducible to a machine-verifiable checklist/test
@@ -116,7 +116,7 @@ So we **split by layer**:
 > **Layer boundary (Dev's rule):** `1-Discovery/` is **software/engine only**; all pedagogical content — activities,
 > learning objectives, curriculum, pedagogical fundamentals — lives in `docs/educational/`. Which educational
 > artifacts we adopt/defer/reject is recorded in
-> [ADR-0004](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml).
+> [ADR-0004](2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml).
 
 The curriculum layer *is* the SRS of learning software, in the domain-native form. Curriculum Map + Learning
 Objectives are recognized instructional-design artifacts, structured/traceable/auditable — which matters for
