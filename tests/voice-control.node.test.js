@@ -52,6 +52,7 @@ function bench(over = {}) {
     // the root's menu navigation (`ui/menu-nav.pointAt`): records where the cursor was put, and finds the item only by the
     // exact name the menu showed
     pointAt: (name) => { log.pointed.push(name); return deps.menuWords().includes(name); },
+    oneButtonOnly: () => false,
     say: (s) => log.said.push(s),
     alert: (s) => log.alerted.push(s),
     report: (s) => log.reported.push(s),
@@ -232,6 +233,38 @@ describe('ui/voice-control — a name heard activates its item', () => {
     b.hear('configurações de inclusão');
     expect(b.log.pointed).toEqual([]);
     expect(b.log.pressed).toEqual([]);
+  });
+
+  /*
+   * 🔴 ONE BUTTON ONLY: A WORD HEARD IS ONE PRESS AND NOTHING ELSE (ADR-0218 §4, ADR-0111 errata). The controller takes every
+   * press as «take the one shown», so a name that was ALSO pointed at was two actions — measured on the root in
+   * `a-name-said-under-one-button-is-one-take.browser.test.js`. Here: what reaches the outside for each kind of word.
+   */
+  it('🔴 [Right] with one button only on, a name heard points at NOTHING and is one press, stamped `fala`', async () => {
+    const b = await withMenu({ oneButtonOnly: () => true });
+    b.hear('configurações de inclusão');
+    expect(b.log.pointed, 'the name moved the cursor under one button: one utterance, two actions').toEqual([]);
+    expect(b.log.pressed, 'the name was not one press of the switch').toEqual([['action2', 'fala']]);
+    b.tick();
+    expect(b.log.released).toEqual([['action2', 'fala']]);
+  });
+
+  it('🔴 [Right] with one button only on, a direction word is its one press too, and points at nothing', async () => {
+    const b = await withMenu({ oneButtonOnly: () => true });
+    b.hear('abaixo');
+    expect(b.log.pressed).toEqual([['down', 'fala']]);
+    expect(b.log.pointed).toEqual([]);
+  });
+
+  it('⚠️ [Boundary] the switch is asked per word, not once at start — turning one button on mid-play takes effect at once', async () => {
+    let one = false;
+    const b = await withMenu({ oneButtonOnly: () => one });
+    b.hear('configurações de inclusão');
+    b.endOfSentence('configurações de inclusão');
+    one = true;
+    b.hear('voltar ao jogo');
+    expect(b.log.pointed, 'the second name, said under one button, was pointed at').toEqual(['Configurações de inclusão']);
+    expect(b.log.pressed).toEqual([['action2', 'fala'], ['action2', 'fala']]);
   });
 
   it('📌 [Boundary] a one-letter name stays out of the grammar — in a closed grammar every short noise lands on it', async () => {
@@ -645,3 +678,12 @@ describe('the language changed', () => {
 //                                                                              fails AFTER it was turned off; never reaches the caller
 //   R2 `loadVoskRuntime` HANGS on a rejected import instead of rejecting      🔴 REJECTS through the real loader — and only it: the case
 //                                                                              before it injects a loader that throws by itself
+// One button only: a word heard is one press (2026-09-26, ADR-0218 §4; the root's half in
+// `a-name-said-under-one-button-is-one-take.browser.test.js`, with the script and the browser counts):
+//   V1 `obey` never asks the switch                                          🔴 a name heard points at NOTHING; asked per word
+//   V3 under one button a name is left alone (only command words count)      🔴 the same two
+//   V4 under one button the name is still pointed at before its press        🔴 the same two
+//   V5 the switch read once, when the control is made                        🔴 asked per word
+//   V6 under one button a name presses another position than confirm         🔴 a name heard points at NOTHING; asked per word
+//   V8 with one button off a name is never pointed at                        🔴 a whole name …; «voltar» waits; a name whose item is
+//                                                                              gone; asked per word

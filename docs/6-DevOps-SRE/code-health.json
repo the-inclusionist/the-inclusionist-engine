@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2312,
+      "codeLines": 2313,
       "decisionNodes": 296,
       "maxDepth": 4,
       "fanOut": 97,
@@ -1988,9 +1988,9 @@
       "fanIn": 2
     },
     "ui/voice-control.ts": {
-      "codeLines": 163,
-      "decisionNodes": 21,
-      "maxDepth": 3,
+      "codeLines": 165,
+      "decisionNodes": 23,
+      "maxDepth": 4,
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 7,

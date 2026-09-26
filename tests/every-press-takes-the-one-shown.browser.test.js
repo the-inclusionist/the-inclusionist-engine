@@ -237,7 +237,8 @@ describe('with one-button scanning ON, a press from any transport takes the item
     let ouvir = null; let fim = null;
     const voz = createVoiceControl({
       t: translate, base: location.href, language: () => 'pt-BR', controller: motor.controller,
-      menuWords: () => [], pointAt: () => false, say: () => {}, alert: () => {}, report: () => {}, turnOff: () => {},
+      menuWords: () => [], pointAt: () => false, oneButtonOnly: () => estado.switchScan,
+      say: () => {}, alert: () => {}, report: () => {}, turnOff: () => {},
       after: (fn) => { pulsos.push(fn); },
       hasFile: async () => true, loadBundle: async () => ({ createModel: async () => ({}) }), getUserMedia: async () => ({ getTracks: () => [] }),
       createContext: () => ({}), loadRuntime: async () => ({ ok: true, model: {} }),

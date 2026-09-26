@@ -16,6 +16,8 @@
 // continues it («voltar» / «voltar ao jogo»), which waits for the end of the utterance (§3). A LOCKED item's name is heard
 // too and takes the same path: the confirm reaches the item's own press, which says its reason and does nothing (§5, ADR-0161).
 // A name with a word the loaded model lacks cannot be heard at all, and is a line of `problems` (§4).
+// ⚠️ EXCEPT WITH ONE BUTTON ONLY ON (ADR-0218 §4): then every word heard, a name included, is the child's switch and nothing more
+// — one press, which the controller takes as «take the one shown», and no cursor put anywhere first.
 //
 // ⚠️ A SPOKEN COMMAND IS A TAP, NOT A HOLD. The word arrives, the position is pressed and let go — and the latch (ADR-0211,
 // always on for speech) is what keeps a direction held afterwards. That division is the whole reason the latch is forced there:
@@ -48,6 +50,11 @@ export interface VoiceControlDeps {
    * what makes a name heard reach its item. `false` when that item is no longer there; then nothing is confirmed.
    */
   readonly pointAt: (name: string) => boolean;
+  /**
+   * ONE BUTTON ONLY is on (ADR-0218 §4): whatever the child says is her switch, one press the controller takes as «take the one
+   * shown» — so a name heard is not a place and nothing is pointed at. REQUIRED: without it a name is a cursor move AND a take.
+   */
+  readonly oneButtonOnly: () => boolean;
   readonly say: (text: string) => void;
   readonly alert: (text: string) => void;
   readonly report: (line: string) => void;
@@ -136,9 +143,16 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     d.after(() => d.controller.release(action, 'fala'), VOICE_PULSE_MS);
   };
 
+  /*
+   * 🔴 ONE WORD HEARD IS ONE ACTION (ADR-0111 errata, ADR-0218 §4). With one button only on, the controller takes every press as
+   * «take the one shown», so a word may do nothing BESIDES its press: asked here, first, for every word — a position, a name, any
+   * kind a later reader adds. 📏 Before, a name was still pointed at: with the chip on «próximo» the cursor jumped to the named
+   * item and then stepped on from it; on «cancelar» the press meant nothing and the cursor had moved anyway.
+   */
   const obey = (heard: readonly VoiceCommand[] | undefined): void => {
     for (const c of heard ?? []) {
-      if (c.kind === 'position') command(c.action);
+      if (d.oneButtonOnly()) command(c.kind === 'position' ? c.action : MENU_CONFIRM);
+      else if (c.kind === 'position') command(c.action);
       else if (d.pointAt(c.name)) command(MENU_CONFIRM);
     }
   };

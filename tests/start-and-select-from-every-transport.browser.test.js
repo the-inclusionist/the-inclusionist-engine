@@ -298,7 +298,8 @@ describe('the gesture a child makes, through its transport, reaches the pause', 
     let ouvir = null; let fim = null;
     const voz = createVoiceControl({
       t: translate, base: location.href, language: () => 'pt-BR', controller: motor.controller,
-      menuWords: () => [], pointAt: () => false, say: () => {}, alert: () => {}, report: () => {}, turnOff: () => {},
+      menuWords: () => [], pointAt: () => false, oneButtonOnly: () => false,
+      say: () => {}, alert: () => {}, report: () => {}, turnOff: () => {},
       after: (fn) => { pulsos.push(fn); },
       hasFile: async () => true, loadBundle: async () => ({ createModel: async () => ({}) }), getUserMedia: async () => ({ getTracks: () => [] }),
       createContext: () => ({}), loadRuntime: async () => ({ ok: true, model: {} }),

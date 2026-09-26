@@ -4375,6 +4375,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     voiceControl = createVoiceControl({
       t: translator.t, base: doc.baseURI, language: () => bcp47(), controller: virtualController,
       menuWords: () => nav.itemNames(0), pointAt: (name) => nav.pointAt(name, 0),
+      // with one button only on, a word heard is the switch and nothing else: a name is not pointed at (ADR-0218 §4)
+      oneButtonOnly: () => state.switchScan,
       say: srSay, alert: srAlert,
       report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },
