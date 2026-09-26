@@ -4,8 +4,9 @@
 //
 // A text of six lines shown two at a time, words per line [7, 8, 6, 9, 5, 4]:
 //   · the first view waits for its words: 15 × 480 = 7200 ms at 125;
-//   · gliding, each new line stays for its own words (line 2: 6 × 480 = 2880 …), and the last view — lines 4 and 5 — as long
-//     as it takes to read: 9 × 480 = 4320 ms;
+//   · gliding (the ADR's erratum of 2026-09-26: continuous, at one speed, not a line at a time), the text travels until line 4
+//     tops the view — its last two lines in view — in the time the words BELOW the first view take: 6 + 9 + 5 + 4 = 24 words,
+//     11 520 ms; then the last view is held as long as it takes to read: 9 × 480 = 4320 ms;
 //   · with reduced motion, pages of two: lines 2–3 held for 15 words, lines 4–5 for their 9.
 //
 // MUTATIONS CHECKED — at the end of the file.
@@ -24,35 +25,28 @@ describe('when a long footer explanation moves', () => {
     }
   });
 
-  it('🔴 [Right] gliding: the first view waits for its words, then a line at a time, the last view held to be read', () => {
+  it('🔴 [Right] gliding: a wait for the first view, ONE travel for the words below it, a hold for the last view', () => {
     expect(footerScrollPlan(SIX, 2, 125, false)).toEqual({
       mode: 'glide',
-      steps: [
-        { line: 0, holdMs: 7200 }, // lines 0–1: 15 words
-        { line: 1, holdMs: 2880 }, // line 2 arrives: 6 words
-        { line: 2, holdMs: 4320 }, // line 3: 9
-        { line: 3, holdMs: 2400 }, // line 4: 5
-        { line: 4, holdMs: 4320 }, // lines 4–5, the end: 9
-      ],
+      waitMs: 7200, // lines 0–1: 15 words
+      travelMs: 11520, // lines 2–5: 24 words — the text passes in the time they take
+      holdMs: 4320, // lines 4–5, the last view: 9 words
+      toLine: 4, // the line on top when the last line is in view
     });
   });
 
-  it('🔴 [Right] the last line arrives when the words before it are read — 16 800 ms at 125, 14 483 at 145, 12 000 at 175', () => {
-    const lastArrives = (ppm) => {
-      const { steps } = footerScrollPlan(SIX, 2, ppm, false);
-      return steps.slice(0, -1).reduce((t, s) => t + s.holdMs, 0);
-    };
-    // 7 + 8 + 6 + 9 + 5 = 35 words before line 5 shows, at 60 000 / ppm each (each hold rounded to the millisecond:
-    // 35 × 413.79 = 14 482.8 and 35 × 342.86 = 12 000 — four roundings land on 14 483 and 12 000)
-    expect(lastArrives(125)).toBe(16800);
-    expect(lastArrives(145)).toBe(14483);
-    expect(lastArrives(175)).toBe(12000);
+  it('🔴 [Right] the pace is the child\'s caption rate — 480, 413.8 and 342.9 ms a word at 125, 145 and 175', () => {
+    // 15, 24 and 9 words, each total rounded to the millisecond once
+    expect(footerScrollPlan(SIX, 2, 145, false)).toEqual({ mode: 'glide', waitMs: 6207, travelMs: 9931, holdMs: 3724, toLine: 4 });
+    expect(footerScrollPlan(SIX, 2, 175, false)).toEqual({ mode: 'glide', waitMs: 5143, travelMs: 8229, holdMs: 3086, toLine: 4 });
   });
 
-  it('🔴 [Right] the pace is the child\'s caption rate: 480, 414 and 343 ms a word', () => {
-    expect(footerScrollPlan(SIX, 2, 125, false).steps[0].holdMs).toBe(7200); // 15 × 480
-    expect(footerScrollPlan(SIX, 2, 145, false).steps[0].holdMs).toBe(6207); // 15 × 413.8
-    expect(footerScrollPlan(SIX, 2, 175, false).steps[0].holdMs).toBe(5143); // 15 × 342.9
+  it('🔴 [Right] the last line is in view when all the words are read — 18 720 ms at 125, 16 138 at 145, 13 372 at 175', () => {
+    const lastInView = (ppm) => { const p = footerScrollPlan(SIX, 2, ppm, false); return p.waitMs + p.travelMs; };
+    // 39 words, at 60 000 / ppm each (two roundings: 6207 + 9931 and 5143 + 8229)
+    expect(lastInView(125)).toBe(18720);
+    expect(lastInView(145)).toBe(16138);
+    expect(lastInView(175)).toBe(13372);
   });
 
   it('📌 [Boundary] a rate that is not one of the three reads as the slowest — a typo never makes the text rush', () => {
@@ -75,10 +69,11 @@ describe('when a long footer explanation moves', () => {
     ]);
   });
 
-  it('🔴 [Right] one line on show (the legend shares the footer): a line at a time, pages of one', () => {
-    const glide = footerScrollPlan([3, 4, 5], 1, 125, false).steps;
-    expect(glide).toEqual([{ line: 0, holdMs: 1440 }, { line: 1, holdMs: 1920 }, { line: 2, holdMs: 2400 }]);
-    expect(footerScrollPlan([3, 4, 5], 1, 125, true).steps.map((s) => s.line)).toEqual([0, 1, 2]);
+  it('🔴 [Right] one line on show (the legend shares the footer): the glide runs to the last line, pages are of one', () => {
+    expect(footerScrollPlan([3, 4, 5], 1, 125, false)).toEqual({ mode: 'glide', waitMs: 1440, travelMs: 4320, holdMs: 2400, toLine: 2 });
+    expect(footerScrollPlan([3, 4, 5], 1, 125, true).steps).toEqual([
+      { line: 0, holdMs: 1440 }, { line: 1, holdMs: 1920 }, { line: 2, holdMs: 2400 },
+    ]);
   });
 });
 
@@ -96,5 +91,5 @@ describe('the lines, read from where each word stands', () => {
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-// (2026-09-26; `scratchpad/footer-scroll/mutate.mjs`, counting each target first) — listed with the browser file's, in
+// (2026-09-26; `scratchpad/footer-glide/mutate.mjs`, counting each target first) — listed with the browser file's, in
 // `tests/a-long-explanation-scrolls.browser.test.js`.

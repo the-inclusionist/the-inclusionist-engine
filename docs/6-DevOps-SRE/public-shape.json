@@ -2382,14 +2382,22 @@
       "holdMs",
       "line"
     ],
-    "interface FooterScrollPlan": [
+    "interface FooterGlidePlan": [
+      "holdMs",
+      "mode",
+      "toLine",
+      "travelMs",
+      "waitMs"
+    ],
+    "interface FooterPagesPlan": [
       "mode",
       "steps"
     ],
     "interface FooterLines": [
       "starts",
       "words"
-    ]
+    ],
+    "type FooterScrollPlan": "FooterGlidePlan | FooterPagesPlan"
   },
   "ui/game-options.ts": {
     "interface GameOptionValue": [

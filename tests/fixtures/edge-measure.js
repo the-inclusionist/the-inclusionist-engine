@@ -35,9 +35,11 @@ function measured(region) {
     if (!n.textContent.trim() || bar?.contains(el) || el.closest('.sr-only') || !shown(el)) continue;
     const range = region.ownerDocument.createRange();
     range.selectNodeContents(n);
+    // a gliding footer's words stand in its `.footer-scroll-text` block (ADR-0245): named by the footer they belong to
+    const owner = el.classList.contains('footer-scroll-text') ? el.parentElement : el;
     for (const line of range.getClientRects()) {
       const x = line.width > 0 ? clipped(region, el, line) : null;
-      if (x) out.push([`«${n.textContent.trim().slice(0, 32)}» (${el.tagName.toLowerCase()}.${el.className})`, x]);
+      if (x) out.push([`«${n.textContent.trim().slice(0, 32)}» (${owner.tagName.toLowerCase()}.${owner.className})`, x]);
     }
   }
   // the HUD's chips wherever a caller mounts them — in the row, or on the region itself

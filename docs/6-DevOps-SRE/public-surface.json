@@ -1280,7 +1280,9 @@
     "watchFooterScroll"
   ],
   "ui/footer-scroll.ts": [
+    "FooterGlidePlan",
     "FooterLines",
+    "FooterPagesPlan",
     "FooterScrollPlan",
     "FooterScrollStep",
     "footerScrollPlan",

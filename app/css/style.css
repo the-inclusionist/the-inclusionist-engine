@@ -737,15 +737,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* two or more lines of the footer showing at once: one line each, so the footer does not climb into the workspace */
 .rodape-da-tela:has(> :not([hidden]) ~ :not([hidden])) > *{--footer-lines:1}
 .pausa-legenda[hidden],.barra-explicacao[hidden],.legenda-de-som[hidden]{display:none}
-/* ADR-0245: AN EXPLANATION LONGER THAN ITS LINES SCROLLS INSIDE THEM. `ui/footer-scroll-driver` marks it `data-scroll` and moves
-   it by `scrollTop`. The box stays the clamped one to the pixel: a block of exactly its lines (`1lh` each, no clamp and so no
-   ellipsis), with the 4 px over the words as a transparent BORDER instead of padding — a padding scrolls with the text and would
-   show a slice of the next line. `smooth` is the glide; reduced motion turns pages, so nothing slides. Pointer events come
-   back to the band while it moves, so a pointer over it can hold it (WCAG 2.2.2). */
+/* ADR-0245: AN EXPLANATION LONGER THAN ITS LINES MOVES INSIDE THEM. `ui/footer-scroll-driver` marks it `data-scroll`: a glide
+   translates the words' `.footer-scroll-text` block (a Web Animation, sub-pixel — a transform needs a block, an inline span
+   ignores it), reduced motion turns pages by `scrollTop`, at once. The box stays the clamped one to the pixel: a block of
+   exactly its lines (`1lh` each, no clamp and so no ellipsis), with the 4 px over the words as a transparent BORDER instead of
+   padding — the view clips at the padding box, and a padding would show a slice of the next line. Pointer events come back to
+   the band while it moves, so a pointer over it can hold it (WCAG 2.2.2). */
 .barra-explicacao[data-scroll],#game-region .opt-explain[data-scroll]{display:block;-webkit-line-clamp:none;box-sizing:content-box;
-  height:calc(var(--footer-lines,2) * 1lh);padding-top:0;border-top:4px solid transparent;scroll-behavior:smooth;pointer-events:auto}
-.barra-explicacao[data-scroll="pages"],#game-region .opt-explain[data-scroll="pages"]{scroll-behavior:auto}
-@media (prefers-reduced-motion: reduce){ .barra-explicacao[data-scroll],#game-region .opt-explain[data-scroll]{scroll-behavior:auto} }
+  height:calc(var(--footer-lines,2) * 1lh);padding-top:0;border-top:4px solid transparent;pointer-events:auto}
+.barra-explicacao[data-scroll] > .footer-scroll-text,#game-region .opt-explain[data-scroll] > .footer-scroll-text{display:block}
 /* A PANEL WEARS THE PAUSE CARD (interface log, 2026-09-13). The Dev: the settings submenu «mantém a mesma altura e identidade
    visual», and every panel it opens had «outra identidade visual, com alturas menores, título maior e cores diferentes».
    So a panel in the region takes `.screen-pause .pause-card` as it is: the whole height, the same dark card and gold border,
