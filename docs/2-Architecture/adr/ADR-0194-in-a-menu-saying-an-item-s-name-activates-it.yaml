@@ -10,6 +10,15 @@ metadata:
     - tests/a-name-said-activates-its-item.browser.test.js
     - tests/menu-nav.browser.test.js
   errata:
+    - date: 2026-09-26
+      what: >-
+        UNDER ONE BUTTON ONLY, A NAME IS A PRESS AND NOT A POINTER. §2 («saying a name activates that item») has one
+        exception: while one-button scanning is on (ADR-0218 §4, «what selects is ANY input»), a word heard — a name
+        included — is a single press that takes the step the scan shows, and the cursor is not moved to the named item
+        first. Measured before (engine, the real root, the voice control's fakes): on «cancelar» a name moved the cursor
+        to its item; on «próximo» the cursor ended one step past the named item; on «confirmar» the named item was
+        activated instead of the one under the cursor. With one-button mode off, §2 holds unchanged. Engine `66b35c6d`
+        (note DR); ADR-0218's erratum of the same day gives the tests.
     - date: 2026-09-25
       what: >-
         §4 AND §5 BUILT (`engine:10a12351`, `engine:6353ba6a`). A locked item said by name goes through the same press

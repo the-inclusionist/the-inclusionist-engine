@@ -3995,6 +3995,21 @@ shown (engine `07568574` the sideways step, `5f3e3732` any input).
 | `ui/menu-nav.MenuNavApi` | gains `underCursor(player)`: `'item'`, `'list'` or `'value'`, the kind of control a sideways step would reach — what the scan asks before it offers «increase» and «decrease» | a hand-built double adds `underCursor`; answering `'item'` keeps the old pass |
 | `ui/menu-intent.MenuStep` = `'next' \| 'previous' \| 'confirm' \| 'back'` | adds `'increase' \| 'decrease'` (the right and left keys' intents, `menuStepKeys`) | an exhaustive `switch` over `MenuStep` handles the two new members |
 
+## DR · ADR-0218 §4 and ADR-0194: under one button only, a word heard is one press
+
+**Who is affected:** a consumer of v10.0.0 that builds `ui/voice-control.createVoiceControl` itself. 📏 No sibling repository
+does (`git grep` over the checkouts beside the engine, 2026-09-26); a game that lets `createGame` build the voice control needs
+nothing.
+
+📌 **Why:** with one-button scanning on, saying a menu item's name did two things — it moved the cursor to the item (ADR-0194
+§2) and its confirm then collapsed into «take the one shown» (ADR-0218 §4) —, so one utterance could take a step the child
+never saw. Now the control asks whether one button only is on before anything else: a position word presses its position,
+a name presses confirm, nothing moves the cursor first, and the scan takes that one press (engine `66b35c6d`).
+
+| was | is | migration |
+|---|---|---|
+| `ui/voice-control.VoiceControlDeps` | gains `oneButtonOnly(): boolean`, REQUIRED — asked at every word, never cached | pass a function that answers whether one-button scanning is on; `() => false` keeps ADR-0194 exactly as before |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.

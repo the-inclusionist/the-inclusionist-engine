@@ -28,8 +28,8 @@ metadata:
         step the scan shows like any other word. With one button only off ADR-0194 is unchanged. 📌 Why the name collapses into
         the take rather than being left alone (only a command word counting): measured by mutation, a name left alone moved
         nothing on «próximo» — a press lost — and §4 is «the engine does not ask which»: a child whose one reliable utterance is
-        an item's name would have a switch that works on some words only. Engine, branch `eb61e4b6` (the fix),
-        `4e394dc8` (the note in Breaking-Changes, section E).
+        an item's name would have a switch that works on some words only. Engine, branch `66b35c6d` (the fix),
+        `333b22af` (the note in Breaking-Changes, section E).
     - date: 2026-09-26
       what: >-
         ✅ THE TWO PARTS LEFT PARTIAL ARE BUILT: THE SIDEWAYS STEP, AND §4 FOR EVERY INPUT. 📏 Measured before: on a panel's slider
