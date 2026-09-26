@@ -35,7 +35,7 @@ function tamanhos() {
 }
 
 const TODOS = tamanhos();
-const nomear = (l) => l.map((a) => `line ~${a.linha}: ${a.texto}`);
+const nomear = (l) => l.map((a) => `line ~${a.linha}: ${a.text}`);
 
 describe('text is never under 16 px and always follows the scale (ADR-0163 rule 3)', () => {
   it('⚠️ [Cross-check] the reading finds sizes in all three forms — or every case below would pass on nothing', () => {
