@@ -268,9 +268,9 @@ jobs:
           GITLEAKS_VERSION: 8.30.1
         run: |
           # ⚠️ `--retry`: the download failed with `curl: (35) Connection reset by peer` on a documentation-only commit, and
-# a gate that goes red over the network is a gate that teaches people to ignore red — the exact defect this file
-# was written not to have. `--retry-all-errors` because a reset is not an HTTP code, and without it `--retry`
-# does not catch it.
+          # a gate that goes red over the network is a gate that teaches people to ignore red — the exact defect this file
+          # was written not to have. `--retry-all-errors` because a reset is not an HTTP code, and without it `--retry`
+          # does not catch it.
           curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o gitleaks.tar.gz \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz gitleaks
