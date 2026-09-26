@@ -81,6 +81,11 @@ NAO_CONFERIDOS = {}
 # records that stayed here, and the index here points at the ones that went there.
 REPOS_CONHECIDOS = {"engine", "docs", "game-platformer"}
 MOVIDOS_NAO_CONFERIDOS = {}
+# 🔴 A SUPERSESSION PAIR CAN CROSS A REPOSITORY (ADR-0242): the engine's records went home and the project-wide ones
+# stayed in `docs`, and nine pairs had one half on each side — ADR-0051 supersedes part of ADR-0010, ADR-0123 part of
+# ADR-0068. The other half is read from the tree `--repo` declares and checked like a local one; when only an index
+# row knows where it lives, the pair is COUNTED and SAID, by the same rule as a `confirmed-by` in another repository.
+PARES_NAO_CONFERIDOS = {}
 
 # ADR-0057 says how a record CHANGES. `confirmed-by` says something else, which was missing: whether it was BUILT.
 #
@@ -289,8 +294,34 @@ def other_trees(folder):
         index = os.path.join(tree, "README.md")
         if os.path.exists(index):
             with open(index, encoding="utf-8") as fh:
-                for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\]", fh.read()):
-                    found.setdefault(mt.group(1), repo)
+                # A row whose link names another repository answers for THAT repository, not for the one whose
+                # index holds it: the pair checks below say where to look, and the tree that knows is the right name.
+                for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\](?:\(([a-z][a-z0-9-]*):)?", fh.read()):
+                    found.setdefault(mt.group(1), mt.group(2) or repo)
+    return found
+
+
+def other_metadata(folder):
+    """The metadata of every record in another DECLARED tree, for the supersession pairs that cross a repository.
+
+    The same trees `other_trees` reads and no others. A record there that does not parse is left to that tree's own
+    run, which names it with its line and column.
+    """
+    here = os.path.abspath(folder) if folder else ""
+    found = {}
+    for repo, root in sorted(RAIZES.items()):
+        tree = os.path.join(root, "docs", "2-Architecture", "adr")
+        if os.path.abspath(tree) == here or not os.path.isdir(tree):
+            continue
+        for path in sorted(glob.glob(os.path.join(tree, "ADR-*.yaml"))):
+            name = number(path)
+            if not name or name in found:
+                continue
+            try:
+                doc = yaml.safe_load(open(path, encoding="utf-8")) or {}
+            except yaml.YAMLError:
+                continue
+            found[name] = (repo, doc.get("metadata") or {})
     return found
 
 
@@ -332,30 +363,59 @@ def pointer_problems(files):
     def note(path, text):
         problems.setdefault(path, []).append(text)
 
+    far = other_metadata(folder)
+
+    def other_half(target):
+        """Where the other half of a pair lives: `("", metadata)` in this tree, `(repo, metadata)` in a declared
+        tree, `(repo, None)` when only an index row knows the repository, and `(None, None)` when nothing does."""
+        if target in meta:
+            return "", meta[target][1]
+        if target in far:
+            return far[target]
+        repo = moved[target][0] if target in moved else elsewhere.get(target)
+        return (repo, None) if repo else (None, None)
+
+    def there(repo):
+        return f" (in `{repo}:`)" if repo else ""
+
+    def uncounted(repo):
+        PARES_NAO_CONFERIDOS[repo] = PARES_NAO_CONFERIDOS.get(repo, 0) + 1
+
     for name, (path, m) in meta.items():
         target = m.get("superseded-by")
         if target:
-            if target not in meta:
+            repo, other = other_half(target)
+            if repo is None:
                 note(path, f"`superseded-by: {target}` names a record that does not exist")
-            elif name not in (meta[target][1].get("supersedes") or []):
-                note(path, f"`superseded-by: {target}`, but {target} does not list {name} in `supersedes`")
+            elif other is None:
+                uncounted(repo)
+            elif name not in (other.get("supersedes") or []):
+                note(path, f"`superseded-by: {target}`, but {target}{there(repo)} does not list {name} in `supersedes`")
         for replaced in m.get("supersedes") or []:
-            if replaced not in meta:
+            repo, other = other_half(replaced)
+            if repo is None:
                 note(path, f"`supersedes` names {replaced}, which does not exist")
-            elif meta[replaced][1].get("superseded-by") != name:
-                note(path, f"`supersedes: {replaced}`, but {replaced} does not point back with `superseded-by: {name}`")
+            elif other is None:
+                uncounted(repo)
+            elif other.get("superseded-by") != name:
+                note(path, f"`supersedes: {replaced}`, but {replaced}{there(repo)} does not point back with "
+                           f"`superseded-by: {name}`")
 
         # Partial supersession is a pair too, and it is the EASIER one to leave half-done:
         # nothing about the old record's status changes, so a missing mirror is invisible.
         for entry in m.get("superseded-in-part") or []:
             by = entry.get("by") if isinstance(entry, dict) else entry
-            if by not in meta:
+            repo, other = other_half(by)
+            if repo is None:
                 note(path, f"`superseded-in-part` names {by}, which does not exist")
-            elif name not in (meta[by][1].get("supersedes-in-part") or []):
-                note(path, f"`superseded-in-part: {by}`, but {by} does not list {name} in `supersedes-in-part`")
+            elif other is not None and name not in (other.get("supersedes-in-part") or []):
+                note(path, f"`superseded-in-part: {by}`, but {by}{there(repo)} does not list {name} in "
+                           "`supersedes-in-part`")
             elif isinstance(entry, dict) and not entry.get("what"):
                 note(path, f"`superseded-in-part: {by}` does not say WHAT part — the reader cannot tell which "
                            "clauses still govern (ADR-0057)")
+            if repo and other is None:
+                uncounted(repo)
         # A reference to a record that does not exist is worse than none: it reads as answered.
         # Found by accident in ADR-0010, which sent the reader to ADR-0052 for the Libras levels
         # decided in ADR-0051 — one digit, and the reader arrives at `professionals author activities`.
@@ -370,12 +430,15 @@ def pointer_problems(files):
                        f"(declared: {declared}) — a record in another repository is found by declaring it")
 
         for replaced in m.get("supersedes-in-part") or []:
-            if replaced not in meta:
+            repo, other = other_half(replaced)
+            if repo is None:
                 note(path, f"`supersedes-in-part` names {replaced}, which does not exist")
+            elif other is None:
+                uncounted(repo)
             else:
-                back = meta[replaced][1].get("superseded-in-part") or []
+                back = other.get("superseded-in-part") or []
                 if not any((e.get("by") if isinstance(e, dict) else e) == name for e in back):
-                    note(path, f"`supersedes-in-part: {replaced}`, but {replaced} does not point back")
+                    note(path, f"`supersedes-in-part: {replaced}`, but {replaced}{there(repo)} does not point back")
 
     # 🔴 THE INDEX IS THE DOOR, AND IT DRAINS IN SILENCE. Measured on 2026-09-09: 133 records on disk and 126
     # rows in `README.md` — the last seven never got in, one at a time, without anything saying so.
@@ -460,6 +523,9 @@ def main():
               f"— pass `--repo {repo}=<path>` to check them")
     for repo in sorted(MOVIDOS_NAO_CONFERIDOS):
         print(f"⚠️  {MOVIDOS_NAO_CONFERIDOS[repo]} index rows moved to `{repo}` NOT checked "
+              f"— pass `--repo {repo}=<path>` to check them")
+    for repo in sorted(PARES_NAO_CONFERIDOS):
+        print(f"⚠️  {PARES_NAO_CONFERIDOS[repo]} supersession pointers into `{repo}` NOT checked "
               f"— pass `--repo {repo}=<path>` to check them")
     return 1 if failed or index_failed else 0
 
