@@ -10,12 +10,12 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
-        CONFIRMED (`engine:f64c0c42` §5, `engine:5821f453` §1 and §2, `engine:ac57f820` §3, `engine:410d37f4` §4, note DS;
+        CONFIRMED (`engine:6353acb7` §5, `engine:8c803f5b` §1 and §2, `engine:b7111d32` §3, `engine:f59b39a3` §4, note DS;
         branch `speech-language`). §2 was read as the ORDER of the list the exact tag and then the language are looked for in —
         the browser's voices first, the neural after — so a neural voice of the exact tag is chosen over a browser voice that only
         shares the language, for a part and for the interface alike. §4 replaced `ptbrVoice`'s ladder with §2: with no pt-BR
         voice, the first Portuguese voice (pt-PT included) now reads a pt-BR word; a device that lists no voice yet is still asked
-        by the tag alone. Found on the way and fixed (`engine:464debd7`, `engine:a8351884`, ADR-0185 §4): the page's system-voice
+        by the tag alone. Found on the way and fixed (`engine:9324d8fa`, `engine:5857de37`, ADR-0185 §4): the page's system-voice
         list fell back to every voice when none spoke the language, and the «test voice» button stayed usable when the speech
         rows locked. §6 needed nothing in the engine: no engine widget draws a game's content with a language of its own —
         `core/contract.Speakable` carries none —, so the engine has no `lang` to pass through yet.
