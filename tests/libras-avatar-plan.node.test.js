@@ -24,19 +24,25 @@ describe('ui/libras-avatar-plan — the clips a gloss is signed with', () => {
 
   it('🔴 [Right] a token with no clip is FINGERSPELLED as written — capitals, accents stripped, one clip per letter or digit', () => {
     expect(planSigns('MOÃ 2026', carried).steps).toEqual([
-      { clip: 'M', spells: 'MOÃ' }, { clip: 'O', spells: 'MOÃ' }, { clip: 'A', spells: 'MOÃ' },
-      { clip: '2', spells: '2026' }, { clip: '0', spells: '2026' }, { clip: '2', spells: '2026' }, { clip: '6', spells: '2026' },
+      { clip: 'M', spells: 'MOÃ', word: 0 }, { clip: 'O', spells: 'MOÃ', word: 0 }, { clip: 'A', spells: 'MOÃ', word: 0 },
+      { clip: '2', spells: '2026', word: 1 }, { clip: '0', spells: '2026', word: 1 }, { clip: '2', spells: '2026', word: 1 },
+      { clip: '6', spells: '2026', word: 1 },
     ]);
   });
 
   it('🔴 [Right] ROUTE B — «CAÇA» and «ESPAÇO» with no clip of their own are spelled with the Ç clip; an accented vowel with its base', () => {
     const letters = new Set(['A', 'C', 'Ç', 'E', 'O', 'P', 'S']);
-    const spells = (word, clips) => [...clips].map((clip) => ({ clip, spells: word }));
+    const spells = (word, clips, at = 0) => [...clips].map((clip) => ({ clip, spells: word, word: at }));
     expect(planSigns('CAÇA ESPAÇO', (n) => letters.has(n)), 'Ç was spelled with the C clip').toEqual({
-      steps: [...spells('CAÇA', 'CAÇA'), ...spells('ESPAÇO', 'ESPAÇO')], unsigned: [],
+      steps: [...spells('CAÇA', 'CAÇA'), ...spells('ESPAÇO', 'ESPAÇO', 1)], unsigned: [],
     });
     expect(planSigns('PÃO', (n) => letters.has(n)).steps, 'an accented vowel was asked for a clip of its own')
       .toEqual(spells('PÃO', 'PAO'));
+  });
+
+  it('🔴 [Right] each spelled letter says WHICH word it spells, by its place in the gloss — the same word twice is two words', () => {
+    expect(planSigns('DADO GATO DADO', (n) => n === 'GATO' || n.length === 1).steps.map((s) => s.word ?? '-').join(''))
+      .toBe('0000-2222');
   });
 
   it('🎯 [Right] a word with a letter the avatar lacks is left out WHOLE and listed — spelling only its O would show another word', () => {
@@ -77,6 +83,18 @@ describe('ui/libras-avatar-plan — the delivery\'s manifest', () => {
     expect(m.avatar).toBe('avatar.glb');
     expect(m.clips.get('GATO')).toEqual({ file: 'clips/GATO.json', duration: 2.4, from: 0 });
     expect(playedLength(m.clips.get('FALA'))).toBeCloseTo(2, 9);
+  });
+
+  it('🔴 [Right] reads where a letter is held up; a `held` outside the played window, reversed or malformed is dropped, the clip kept', () => {
+    const clip = (held) => ({ file: 'clips/P.json', duration: 1.6, held });
+    const m = avatarManifestOf({ format: 1, avatar: 'a.glb', clips: {
+      P: clip([0.47, 1.13]), E: clip([0, 1.6]), PAST: clip([0.4, 1.7]), BACK: clip([1.1, 0.4]), NEG: clip([-0.1, 1]), ONE: clip([0.4]),
+      TEXT: clip('0.4,1.1'), NONE: clip(undefined) } });
+    expect(m.clips.get('P').held).toEqual([0.47, 1.13]);
+    expect(m.clips.get('E').held, 'a still letter\'s whole clip was refused').toEqual([0, 1.6]);
+    for (const name of ['PAST', 'BACK', 'NEG', 'ONE', 'TEXT', 'NONE']) {
+      expect(m.clips.get(name), name).toEqual({ file: 'clips/P.json', duration: 1.6, from: 0 });
+    }
   });
 
   it('[Interface] the manifest is where the delivery writes it, beside route A\'s folders under `libras/`', () => {
@@ -163,6 +181,82 @@ describe('ui/libras-avatar-plan — the clock: in order, cross-faded, and «stop
   });
 });
 
+/**
+ * 🔴 A SPELLED WORD IS SIGNED WITH THE HAND HELD UP BETWEEN ITS LETTERS (the Dev, interface log 2026-09-26). FAKE letters, each
+ * 1.6 s: the hand up at `held[0]` and starting down at `held[1]`; E still, held for its whole clip, as the export's E is. A sign
+ * given a window is still a sign: only letters of one spelled word are chained.
+ */
+describe('ui/libras-avatar-plan — a spelled word\'s letters chained, the hand held up between them', () => {
+  const HELD = { M: [0.5, 1.1], E: [0, 1.6], U: [0.4, 1.2], P: [0.5, 1.1], O: [0.4, 1.2], A: [0.4, 1.2], GATO: [0.5, 1.5] };
+  const length = (clip) => ({ GATO: 2, CAVALO: 2.5 })[clip] ?? 1.6;
+  const held = (clip) => HELD[clip];
+  const spell = (word, at) => [...word].map((clip) => ({ clip, spells: word, word: at }));
+  const chained = (steps, heldOf = held) => {
+    const seq = createSignSequencer(length, CROSS_FADE_S, heldOf);
+    return run(seq, seq.play(steps), 1 / 480);
+  };
+  const at = (log) => log.map((s) => [s.clip, +s.t.toFixed(2), +s.at.toFixed(2), +s.fade.toFixed(3)]);
+
+  it('🔴 [Right] «MEU»: each letter after the first starts where its hand is up, each before the last hands over where it starts down', () => {
+    const { log, end } = chained(spell('MEU', 0));
+    // M plays 0–1.1 (its down), E 0–1.6 (still: all of it), U from 0.4 (its up) to its end; each overlap 0.3 s
+    expect(at(log)).toEqual([['M', 0, 0, 0], ['E', 0.8, 0, 0.3], ['U', 2.1, 0.4, 0.3]]);
+    expect(end, 'the word took as long as three whole letters').toBeCloseTo(3.3, 2);
+  });
+
+  it('🔴 [Right] the FIRST letter keeps its rise and the LAST its fall: the word starts at the first clip\'s start and ends at the last one\'s end', () => {
+    const { log, end } = chained(spell('POP', 0));
+    expect(log[0], 'the first letter lost its rise').toMatchObject({ clip: 'P', at: 0 });
+    expect(end - log[2].t + log[2].at, 'the last letter did not play to its end').toBeCloseTo(length('P'), 2);
+    expect(log[2].at, 'the last letter rose again from the arms-down pose').toBeCloseTo(0.5, 2);
+  });
+
+  it('🎯 [Right] a still letter in the middle (E, held from its first frame to its last) is held for its whole clip, and the chain passes through it', () => {
+    const { log } = chained(spell('MEU', 0));
+    const e = log[1];
+    expect(e.at, 'E did not start at its first frame').toBeCloseTo(0, 2); // less than one 1/480 s tick late
+    // E hands over at its own end, less the overlap: it is held its whole 1.6 s
+    expect(log[2].t - e.t).toBeCloseTo(1.6 - 0.3, 2);
+    expect(log[2].at, 'the letter after E rose from the arms-down pose').toBeCloseTo(0.4, 2);
+  });
+
+  it('🔴 [Boundary] a word of ONE letter is unchanged: its whole clip, in a sentence or alone', () => {
+    const alone = chained(spell('A', 0));
+    expect(at(alone.log)).toEqual([['A', 0, 0, 0]]);
+    expect(alone.end).toBeCloseTo(1.6, 2);
+    const between = chained([{ clip: 'GATO' }, ...spell('A', 1), { clip: 'CAVALO' }]);
+    expect(at(between.log)).toEqual([['GATO', 0, 0, 0], ['A', 1.7, 0, 0.3], ['CAVALO', 3, 0, 0.3]]);
+  });
+
+  it('🔴 [Right] a SIGN keeps its whole clip — even one given a window — and the word beside it keeps its rise and its fall', () => {
+    const { log, end } = chained([{ clip: 'GATO' }, ...spell('PO', 1), { clip: 'CAVALO' }]);
+    expect(at(log)).toEqual([['GATO', 0, 0, 0], ['P', 1.7, 0, 0.3], ['O', 2.5, 0.4, 0.3], ['CAVALO', 3.4, 0, 0.3]]);
+    expect(end).toBeCloseTo(3.4 + 2.5, 2);
+    // two signs side by side, both given a window, are not a word: each plays whole
+    const twice = chained([{ clip: 'GATO' }, { clip: 'GATO' }]);
+    expect(at(twice.log), 'two signs were chained as if they spelled a word').toEqual([['GATO', 0, 0, 0], ['GATO', 1.7, 0, 0.3]]);
+    expect(twice.end).toBeCloseTo(3.7, 2);
+  });
+
+  it('🎯 [Right] two spelled words side by side are two words: the hand comes down between them, even when they are the same word', () => {
+    const { log } = chained([...spell('PO', 0), ...spell('PO', 1)]);
+    expect(at(log)).toEqual([['P', 0, 0, 0], ['O', 0.8, 0.4, 0.3], ['P', 1.7, 0, 0.3], ['O', 2.5, 0.4, 0.3]]);
+  });
+
+  it('🎯 [Boundary] the overlap never exceeds half of what either letter PLAYS: a short held window is not swallowed', () => {
+    // D's hand is up for only 0.2 s: the overlaps on either side of it are 0.1 s, not the whole-clip 0.3
+    const { log } = chained(spell('MDU', 0), (clip) => (clip === 'D' ? [0.7, 0.9] : HELD[clip]));
+    expect(at(log)).toEqual([['M', 0, 0, 0], ['D', 1, 0.7, 0.1], ['U', 1.1, 0.4, 0.1]]);
+  });
+
+  it('[Boundary] a letter the manifest gives no window plays whole, and the letters beside it keep their rise and fall toward it', () => {
+    const { log } = chained(spell('MEU', 0), (clip) => (clip === 'U' ? undefined : HELD[clip]));
+    expect(at(log)).toEqual([['M', 0, 0, 0], ['E', 0.8, 0, 0.3], ['U', 2.1, 0, 0.3]]);
+    const none = chained(spell('MEU', 0), () => undefined);
+    expect(none.end, 'with no windows the word is not its three whole clips').toBeCloseTo(3 * 1.6 - 2 * 0.3, 2);
+  });
+});
+
 describe('ui/libras-avatar-plan — the clip, before three.js reads it', () => {
   const clip = {
     name: 'FALA', duration: 48.8, tracks: [
@@ -226,3 +320,15 @@ describe('ui/libras-avatar-plan — the clip, before three.js reads it', () => {
 // (2026-09-25, Ç spelled as written; scripted on `ui/libras-glosses`, restored from a copy and checked by sha256 — both red)
 //   P16 the spelling rule strips Ç's cedilla                             🔴 «ROUTE B — CAÇA and ESPAÇO»
 //   P17 the spelling rule keeps every mark                               🔴 «ROUTE B — CAÇA and ESPAÇO» · «FINGERSPELLED as written»
+// (2026-09-26, a spelled word's letters chained; scripted, CRLF normalised, each pattern required exactly once, the module restored
+// from a copy and checked by sha256 — all 13 red, with this file and `libras-avatar-delivery.node.test.js`)
+//   C1 chaining ignores which word a letter spells                       🔴 «two spelled words side by side»
+//   C2 a chained letter starts at its first frame · C4 the first letter loses its rise   🔴 «MEU» · «FIRST letter» and 5 more
+//   C3 a chained letter plays to its end · C5 the last letter loses its fall             🔴 «MEU» · «LAST its fall» and 3–4 more
+//   C6 two signs chained like letters                                    🔴 «a SIGN keeps its whole clip»
+//   C7 a still letter (up at 0) taken for no window                      🔴 «a still letter in the middle» and 3 more
+//   C8 a letter chained to a neighbour with no window                    🔴 «a letter the manifest gives no window»
+//   C9 the manifest drops `held` · C10 it trusts one past the window     🔴 «reads where a letter is held up»
+//   C11 the overlap measured on the whole clips                          🔴 «a short held window is not swallowed»
+//   C12 the next letter started at its `up` without the clock's seconds  🔴 «a clip starts where the clock is»
+//   C13 planSigns forgets which word a letter spells                     🔴 «which word it spells» and 4 more

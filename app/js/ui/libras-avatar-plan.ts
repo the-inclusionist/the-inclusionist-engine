@@ -18,6 +18,15 @@
 // through the avatar's rest. 📏 13 of the 655 do not: the letter E holds its raised handshape from its first frame to its last,
 // NÃO_OUVIR keeps the right arm at the avatar's rest, and eleven (CASA and SIM among them) rest their hands lower. The last one
 // plays to its end and its final pose is held: that moment is the player's «stopped».
+//
+// 📌 A SPELLED WORD IS SIGNED WITH THE HAND HELD UP BETWEEN ITS LETTERS (the Dev, interface log 2026-09-26). Each letter's and
+// digit's clip rises from the arms-down pose, holds its handshape and falls back; the delivery's manifest says where it is held
+// (`ClipWindow.held`, measured on the clip: `scripts/libras-export.mjs` `heldWindow`). Inside one spelled word, a letter after the
+// first starts where its hand is up, and a letter before the last hands over where its hand starts down — the cross-fade joins
+// two held handshapes — so the hand rises at the first letter and comes down only after the last. E, still from its first frame
+// to its last, is held for its whole clip and the chain passes through it. A sign keeps its whole clip, a word of one letter is
+// unchanged, and a letter the manifest gives no window plays whole. 📏 On a served delivery «PÕE» went from 4.37 s to 2.86 s and
+// «TRIÂNGULO» from 12.60 s to 5.35 s.
 
 import { provisionalGloss } from './libras-glosses.js';
 
@@ -45,6 +54,11 @@ export interface ClipWindow {
    * before the sign (46.8 s at 30 fps), which the delivery's pins name, so the player plays from the sign and not from the stray.
    */
   readonly from: number;
+  /**
+   * Where the hand is held up, `[up, down]` in seconds of the played window — only for the clips a word is spelled with (a letter
+   * or a digit): a chained letter starts at `up` and hands over at `down`. E's is its whole clip. Absent, the clip plays whole.
+   */
+  readonly held?: readonly [number, number];
 }
 
 /** The delivery's manifest, read: the avatar's file and the clips by name. */
@@ -59,27 +73,45 @@ const isWindow = (w: unknown): w is ClipWindow => {
     && (c.from === undefined || (typeof c.from === 'number' && c.from >= 0 && c.from < c.duration));
 };
 
+/** A `held` inside the played window, up before down; anything else is no window, and the clip plays whole. */
+const heldIn = (held: unknown, length: number): readonly [number, number] | undefined => {
+  if (!Array.isArray(held) || held.length !== 2) return undefined;
+  const [up, down] = held as unknown[];
+  return typeof up === 'number' && typeof down === 'number' && up >= 0 && down > up && down <= length ? [up, down] : undefined;
+};
+
 /**
  * The manifest the delivery wrote, or `null` for anything else — no file, a fallback page, another format: a delivery that did
- * not ship the avatar. A clip entry of the wrong shape is left out, not trusted.
+ * not ship the avatar. A clip entry of the wrong shape is left out, not trusted; a `held` of the wrong shape is dropped.
  */
 export function avatarManifestOf(data: unknown): AvatarManifest | null {
   const m = data as { format?: unknown; avatar?: unknown; clips?: unknown } | null;
   if (!m || m.format !== 1 || typeof m.avatar !== 'string' || !m.avatar || typeof m.clips !== 'object' || m.clips === null) return null;
   const clips = new Map<string, ClipWindow>();
   for (const [name, w] of Object.entries(m.clips as Record<string, unknown>)) {
-    if (isWindow(w)) clips.set(name, { file: w.file, duration: w.duration, from: w.from ?? 0 });
+    if (isWindow(w)) clips.set(name, windowRead(w));
   }
   return { avatar: m.avatar, clips };
+}
+
+/** A clip entry of the right shape, as the player keeps it: `from` defaulted, `held` only when it is inside the window. */
+function windowRead(w: ClipWindow): ClipWindow {
+  const from = w.from ?? 0;
+  const held = heldIn(w.held, w.duration - from);
+  return { file: w.file, duration: w.duration, from, ...(held ? { held } : {}) };
 }
 
 /** How long a clip plays: its window, from `from` to its end. */
 export const playedLength = (w: ClipWindow): number => w.duration - w.from;
 
-/** One clip to play: a sign, or a letter of a word being fingerspelled (`spells`, the word). */
+/**
+ * One clip to play: a sign, or a letter of a word being fingerspelled (`spells`, the word; `word`, its place in the gloss — two
+ * letters are of one word, and chained, only when both are the same).
+ */
 export interface SignStep {
   readonly clip: string;
   readonly spells?: string;
+  readonly word?: number;
 }
 
 /** A word the avatar could not sign: no clip of its own, and letters it has no clip for. */
@@ -104,15 +136,15 @@ const NOT_A_SIGN = /^\[.*\]$|^\{.*\}$/u;
 export function planSigns(gloss: string, carried: (name: string) => boolean): SignPlan {
   const steps: SignStep[] = [];
   const unsigned: UnsignedWord[] = [];
-  for (const token of gloss.split(/\s+/u)) {
-    if (!token || NOT_A_SIGN.test(token)) continue;
-    if (carried(token)) { steps.push({ clip: token }); continue; }
+  gloss.split(/\s+/u).forEach((token, word) => {
+    if (!token || NOT_A_SIGN.test(token)) return;
+    if (carried(token)) { steps.push({ clip: token }); return; }
     const letters = [...provisionalGloss(token).replace(/\s+/gu, '')];
-    if (!letters.length) continue;
+    if (!letters.length) return;
     const missing = [...new Set(letters.filter((c) => !carried(c)))];
-    if (missing.length) { unsigned.push({ word: token, missing }); continue; }
-    for (const c of letters) steps.push({ clip: c, spells: token });
-  }
+    if (missing.length) { unsigned.push({ word: token, missing }); return; }
+    for (const c of letters) steps.push({ clip: c, spells: token, word });
+  });
   return { steps, unsigned };
 }
 
@@ -158,32 +190,59 @@ export interface SignSequencer {
   readonly stop: () => void;
 }
 
+/** Where the hand is held up in a clip (`ClipWindow.held`), or `undefined` for a clip that has no such window. */
+type HeldOf = (clip: string) => readonly [number, number] | undefined;
+
+/** The stretch of each step's window that is played: `[start, end]` in seconds of it. */
+type Span = readonly [number, number];
+
 /**
- * The queue's clock. `lengthOf` is a clip's played length (`playedLength`). Two neighbours overlap by `fade`, never by more than
- * half of either; the first clip of a queue fades in only when a pose is already on the stage (a queue that replaced another,
- * or the one held since the last), and appears at once otherwise.
+ * WHAT OF EACH CLIP IS PLAYED: all of it, except inside a spelled word, where two neighbouring letters are CHAINED — the first
+ * ends where its hand starts down, the next starts where its hand is up (`held`). Two steps are chained only when they spell the
+ * same word (`word`) and both have a window; so the first letter keeps its rise, the last its fall, a word of one letter and a
+ * sign are whole.
  */
-export function createSignSequencer(lengthOf: (clip: string) => number, fade = CROSS_FADE_S): SignSequencer {
+function playedSpans(steps: readonly SignStep[], lengthOf: (clip: string) => number, heldOf: HeldOf): Span[] {
+  const oneWord = (a: SignStep, b: SignStep): boolean => a.spells !== undefined && a.word !== undefined
+    && b.word === a.word && b.spells === a.spells;
+  const chained = steps.map((s, i) => {
+    const next = steps[i + 1];
+    return !!next && oneWord(s, next) && !!heldOf(s.clip) && !!heldOf(next.clip);
+  });
+  return steps.map((s, i) => [
+    i > 0 && chained[i - 1] ? heldOf(s.clip)![0] : 0,
+    chained[i] ? heldOf(s.clip)![1] : lengthOf(s.clip),
+  ]);
+}
+
+/**
+ * The queue's clock. `lengthOf` is a clip's played length (`playedLength`), `heldOf` where a letter's hand is held up
+ * (`playedSpans`: a spelled word's letters are chained through it; none, and every clip plays whole). Two neighbours overlap by
+ * `fade`, never by more than half of the stretch either plays; the first clip of a queue fades in only when a pose is already on
+ * the stage (a queue that replaced another, or the one held since the last), and appears at once otherwise.
+ */
+export function createSignSequencer(lengthOf: (clip: string) => number, fade = CROSS_FADE_S,
+  heldOf: (clip: string) => readonly [number, number] | undefined = () => undefined): SignSequencer {
   let queue: readonly SignStep[] = [];
+  let spans: readonly Span[] = [];
   /** The step on the stage now; -1 when none is playing. */
   let index = -1;
-  /** Seconds into the current step's window. */
+  /** Seconds into the current step's stretch. */
   let elapsed = 0;
   /** Whether a pose is on the stage: after the first clip, the last frame of the last one is held. */
   let shown = false;
 
-  const overlapAfter = (i: number): number => (i + 1 < queue.length
-    ? Math.min(fade, lengthOf(queue[i]!.clip) / 2, lengthOf(queue[i + 1]!.clip) / 2)
-    : 0);
+  const lengthAt = (i: number): number => spans[i]![1] - spans[i]![0];
+  const overlapAfter = (i: number): number => (i + 1 < queue.length ? Math.min(fade, lengthAt(i) / 2, lengthAt(i + 1) / 2) : 0);
 
   return {
     play: (steps) => {
       queue = steps;
+      spans = playedSpans(steps, lengthOf, heldOf);
       elapsed = 0;
       index = steps.length ? 0 : -1;
       if (!steps.length) return [];
-      const first = steps[0]!.clip;
-      const start = { clip: first, fade: shown ? Math.min(fade, lengthOf(first) / 2) : 0, at: 0 };
+      const start = { clip: steps[0]!.clip, fade: shown ? Math.min(fade, lengthAt(0) / 2) : 0, at: spans[0]![0] };
       shown = true;
       return [start];
     },
@@ -192,18 +251,19 @@ export function createSignSequencer(lengthOf: (clip: string) => number, fade = C
       if (index < 0) return { starts, finished: false };
       elapsed += Math.max(0, dt);
       for (;;) {
-        const length = lengthOf(queue[index]!.clip);
+        const length = lengthAt(index);
         if (index + 1 < queue.length) {
           const handOver = length - overlapAfter(index);
           if (elapsed < handOver) break;
           elapsed -= handOver;
           index += 1;
-          starts.push({ clip: queue[index]!.clip, fade: overlapAfter(index - 1), at: elapsed });
+          starts.push({ clip: queue[index]!.clip, fade: overlapAfter(index - 1), at: spans[index]![0] + elapsed });
           continue;
         }
         if (elapsed < length) break;
         index = -1;
         queue = [];
+        spans = [];
         return { starts, finished: true };
       }
       return { starts, finished: false };
@@ -211,6 +271,7 @@ export function createSignSequencer(lengthOf: (clip: string) => number, fade = C
     stop: () => {
       index = -1;
       queue = [];
+      spans = [];
       elapsed = 0;
     },
   };

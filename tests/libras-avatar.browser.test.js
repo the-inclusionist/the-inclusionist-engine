@@ -24,13 +24,17 @@ const made = [];
 /** An interpreter over the tiny delivery, its stage spied on: every clip it started, in order, and the stage itself. */
 async function interpreter({ delivery = {}, ...extra } = {}) {
   const served = await tinyDelivery(BASE, delivery);
-  const spy = { started: [], stage: null };
+  const spy = { started: [], starts: [], stage: null };
   const it = createLibrasAvatarInterpreter({
     doc: document, win: window, fetch: served.fetch, base: BASE, title: () => TITLE, leaveAfterMs: LEAVE,
     loadStage: async (canvas, avatar) => {
       const stage = await createAvatarStage({ canvas, avatar });
       spy.stage = stage;
-      return { ...stage, start: (name, fade, at) => { spy.started.push(name); stage.start(name, fade, at); } };
+      return { ...stage, start: (name, fade, at) => {
+        spy.started.push(name);
+        spy.starts.push({ name, fade, at, t: performance.now() });
+        stage.start(name, fade, at);
+      } };
     },
     ...extra,
   });
@@ -71,6 +75,33 @@ describe('ui/libras-avatar-player — the port, by the Dev\'s rules', () => {
     spy.started.length = 0;
     expect(await vl.sign('gato 21')).toEqual({ signed: true });
     expect(spy.started, 'the number was not fingerspelled digit by digit, in order').toEqual(['GATO', '2', '1']);
+  });
+
+  /**
+   * 🔴 A SPELLED WORD IS SIGNED WITH THE HAND HELD UP BETWEEN ITS LETTERS (the Dev, interface log 2026-09-26). «OPA» has no sign:
+   * O, P and A are spelled, each letter a 0.6 s clip whose hand is up from 0.2 s to 0.4 s (A still, up its whole clip), as the
+   * manifest says. What is held is what was DRAWN: from O's hand up to the word's end, the hand never goes back toward its rest —
+   * signed whole, O's fall and P's rise cross at 2.6, a third of the way down.
+   */
+  it('🔴 [Right] a fingerspelled word is CHAINED: each letter after the first starts where its hand is up, and the hand stays up to the end', async () => {
+    const { it: vl, spy } = await interpreter();
+    const hand = [];
+    let sampling = true;
+    const sample = () => { if (!sampling) return; const h = spy.stage?.scene.getObjectByName('Hand'); if (h) hand.push([performance.now(), h.position.y]); requestAnimationFrame(sample); };
+    requestAnimationFrame(sample);
+    expect(await vl.sign('opa')).toEqual({ signed: true });
+    sampling = false;
+    expect(spy.starts.map((s) => s.name)).toEqual(['O', 'P', 'A']);
+    expect(spy.starts[0].at, 'the first letter lost its rise').toBe(0);
+    expect(spy.starts[1].at, 'P rose again from the arms-down pose').toBeGreaterThanOrEqual(0.2);
+    expect(spy.starts[2].at, 'the still A did not start at its first frame').toBeLessThan(0.1);
+    const from = spy.starts[0].t + 250;
+    const to = spy.starts[2].t + 450;
+    const between = hand.filter(([t]) => t > from && t < to).map(([, y]) => y);
+    expect(between.length, 'no frame was drawn while the word was signed').toBeGreaterThan(5);
+    expect(Math.min(...between), 'the hand went down between two letters of one word').toBeGreaterThan(2.9);
+    // and it still leaves the screen after it stopped
+    await until(() => { expect(avatar().hidden).toBe(true); });
   });
 
   it('🔴 [Right] the request resolves when the LAST clip reached its end — not when the first did', async () => {
@@ -215,3 +246,8 @@ describe('ui/libras-avatar-stage — what the export hands over, answered', () =
 // (2026-09-26, phase B3; scripted the same way, the module restored from a copy and checked by sha256 — 2 of 2 red)
 //   P1 the not-shipped answer its own text again, not `NO_INTERPRETER`'s  🔴 «answers EXACTLY as `NO_INTERPRETER` does»
 //   P3 the glosses read at route A's old place (`libras/player/`)         🔴 «IN ORDER» (the gloss never found, the text spelled)
+// (2026-09-26, a spelled word's letters chained; scripted, CRLF normalised, each pattern required exactly once, the module restored
+// from a copy and checked by sha256 — 4 of 4 red)
+//   C14 the player lends the sequencer no windows                          🔴 «a fingerspelled word is CHAINED»
+//   C15 the player chains from a fixed window, not the manifest's          🔴 «a fingerspelled word is CHAINED»
+//   B1 again, leaving after 4 s · B3 again, a late press not cancelling   🔴 «five seconds after» · «CANCELS the leaving» — both still hold

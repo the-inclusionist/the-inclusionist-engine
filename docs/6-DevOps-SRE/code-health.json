@@ -1548,12 +1548,12 @@
       "fanIn": 1
     },
     "ui/libras-avatar-plan.ts": {
-      "codeLines": 126,
-      "decisionNodes": 21,
+      "codeLines": 155,
+      "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 2,
       "globalReach": 0,
-      "worstFunction": 10,
+      "worstFunction": 9,
       "statefulEdges": 0,
       "fanIn": 2
     },

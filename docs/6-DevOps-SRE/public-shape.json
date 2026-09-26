@@ -2513,7 +2513,8 @@
     "interface ClipWindow": [
       "duration",
       "file",
-      "from"
+      "from",
+      "held?"
     ],
     "interface AvatarManifest": [
       "avatar",
@@ -2521,7 +2522,8 @@
     ],
     "interface SignStep": [
       "clip",
-      "spells?"
+      "spells?",
+      "word?"
     ],
     "interface UnsignedWord": [
       "missing",

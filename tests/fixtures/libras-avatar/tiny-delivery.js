@@ -99,7 +99,16 @@ export const smile = (name, duration) => ({
   name, duration, tracks: [{ name: 'Head.morphTargetInfluences[Smile]', type: 'number', times: [0, duration], values: [0, 1] }],
 });
 
-/** The clips the tiny delivery carries: four signs, two digits, a smile — each a fraction of a second. */
+/**
+ * A letter as the export makes one: `Hand` up from its rest to `to` in 0.2 s, held there to 0.4 s, back to rest by 0.6 s — or,
+ * `still`, held at `to` from its first frame to its last, as the export's E is.
+ */
+export const letter = (name, to, still = false) => ({
+  name, duration: 0.6, tracks: [{ name: 'Hand.position', type: 'vector', times: [0, 0.2, 0.4, 0.6],
+    values: [0, still ? to : HAND_REST_Y, 0, 0, to, 0, 0, to, 0, 0, still ? to : HAND_REST_Y, 0] }],
+});
+
+/** The clips the tiny delivery carries: four signs, two digits, three letters, a smile — each a fraction of a second. */
 export const CLIPS = {
   GATO: raise('GATO', 0.4, 2),
   GALINHA: raise('GALINHA', 0.4, 2.5),
@@ -107,8 +116,13 @@ export const CLIPS = {
   PEIXE: raise('PEIXE', 0.4, 3.5),
   1: raise('1', 0.3, 1.5),
   2: raise('2', 0.3, 1.6),
+  P: letter('P', 3),
+  A: letter('A', 3.4, true),
+  O: letter('O', 3.2),
   SORRIR: smile('SORRIR', 0.4),
 };
+/** Where each letter's hand is held up, as the delivery's manifest says (`scripts/libras-avatar.mjs`): the still A, its whole clip. */
+export const HELD = { P: [0.2, 0.4], A: [0, 0.6], O: [0.2, 0.4] };
 
 /**
  * The delivery as a `fetch`: the manifest, the avatar, the clips and the glosses under `base`, and what was asked. `drop` names
@@ -118,7 +132,7 @@ export async function tinyDelivery(base, { drop = [], glosses = [] } = {}) {
   const avatar = await tinyAvatar();
   const files = new Map([
     ['libras/avatar/manifest.json', JSON.stringify({ format: 1, avatar: 'avatar.glb', clips: Object.fromEntries(
-      Object.entries(CLIPS).map(([n, c]) => [n, { file: `clips/${n}.json`, duration: c.duration }])) })],
+      Object.entries(CLIPS).map(([n, c]) => [n, { file: `clips/${n}.json`, duration: c.duration, ...(HELD[n] ? { held: HELD[n] } : {}) }])) })],
     ['libras/avatar/avatar.glb', avatar],
     ...Object.entries(CLIPS).map(([n, c]) => [`libras/avatar/clips/${encodeURIComponent(n)}.json`, JSON.stringify(c)]),
     ['libras/avatar/glosses.json', JSON.stringify({ format: 1, made: 'test', glosses })],

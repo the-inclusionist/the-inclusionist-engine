@@ -18,7 +18,7 @@ import { LIBRAS_GLOSSES_FILE } from '../app/js/ui/libras-glosses.js';
 import { DELIVERY_LISTS, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
 import { COMMIT, MANUAL_ALPHABET, PINS as SOURCE_PINS } from '../scripts/libras-export.mjs';
 import {
-  avatarManifestOf, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, planSigns, playedLength,
+  avatarManifestOf, createSignSequencer, CROSS_FADE_S, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, planSigns, playedLength,
 } from '../app/js/ui/libras-avatar-plan.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex');
@@ -257,11 +257,11 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
     const carried = (name) => name in pins.clips;
     // the quiz's first question, as the delivery's glosses hand it over (PÕE has no sign; the build wrote it as the child reads it)
     expect(planSigns('QUAL ANIMAL POE OVO TER BICO [INTERROGAÇÃO]', carried)).toEqual({
-      steps: ['QUAL', 'ANIMAL', 'P', 'O', 'E', 'OVO', 'TER', 'BICO'].map((clip) => (clip.length === 1 ? { clip, spells: 'POE' } : { clip })),
+      steps: ['QUAL', 'ANIMAL', 'P', 'O', 'E', 'OVO', 'TER', 'BICO'].map((clip) => (clip.length === 1 ? { clip, spells: 'POE', word: 2 } : { clip })),
       unsigned: [],
     });
     // «CRT», of the visual sensitivity panel: none of its letters was carried before the manual alphabet
-    expect(planSigns('ESTÉTICA CRT', carried).steps.slice(-3)).toEqual([{ clip: 'C', spells: 'CRT' }, { clip: 'R', spells: 'CRT' }, { clip: 'T', spells: 'CRT' }]);
+    expect(planSigns('ESTÉTICA CRT', carried).steps.slice(-3)).toEqual(['C', 'R', 'T'].map((clip) => ({ clip, spells: 'CRT', word: 1 })));
     // no word of Portuguese letters is left out any more: every letter, accented or not, reaches a clip
     expect(planSigns('ÁGUA JÁ ÇÃO XÍCARA WEB KIWI ÊXITO ÔNIBUS ÜBER', carried).unsigned).toEqual([]);
     // «CAÇA» has no sign: its Ç is the delivery's own Ç clip, not a C
@@ -313,11 +313,30 @@ describe('scripts/libras-avatar — where each letter and digit is held up', () 
     }
   });
 
-  it('🔴 [Right] the delivered manifest carries each window', () => {
+  it('🔴 [Right] the delivered manifest carries each window, and the player reads every one of them', () => {
     const { clips } = deliveredManifest(pins);
     expect(clips.P.held, 'the window did not reach the delivery').toEqual(pins.clips.P.held);
     expect(clips.E.held).toEqual([0, pins.clips.E.duration]);
     expect(clips.GATO.held).toBeUndefined();
+    const read = avatarManifestOf(deliveredManifest(pins));
+    expect(spelled.filter((n) => !read.clips.get(n).held), 'the player dropped these windows').toEqual([]);
+    expect(read.clips.get('E').held).toEqual([0, pins.clips.E.duration]);
+  });
+
+  it('🎯 [Right] with the delivery\'s own windows, the quiz\'s spelled words take a fraction of their whole clips: «PÕE» 4.33 → 2.85 s, «TRIÂNGULO» 12.57 → 5.32 s', () => {
+    const m = avatarManifestOf(deliveredManifest(pins));
+    const seconds = (gloss, chain) => {
+      const seq = createSignSequencer((c) => playedLength(m.clips.get(c)), CROSS_FADE_S, chain ? (c) => m.clips.get(c)?.held : undefined);
+      seq.play(planSigns(gloss, (n) => m.clips.has(n)).steps);
+      for (let t = 1; t < 60_000; t++) if (seq.tick(1 / 1000).finished) return t / 1000;
+      return Infinity;
+    };
+    expect(seconds('POE', false)).toBeCloseTo(4.33, 1);
+    expect(seconds('POE', true)).toBeCloseTo(2.85, 1);
+    expect(seconds('TRIANGULO', false)).toBeCloseTo(12.57, 1);
+    expect(seconds('TRIANGULO', true)).toBeCloseTo(5.32, 1);
+    // the question around «PÕE»: only the spelled word is shortened, the signs keep their clips
+    expect(seconds('QUAL ANIMAL POE OVO TER BICO', false) - seconds('QUAL ANIMAL POE OVO TER BICO', true)).toBeCloseTo(4.33 - 2.85, 1);
   });
 
   it('🔴 [Right] regenerating the pins measures the spelled clips of the export folder, and only them', async () => {
@@ -374,3 +393,11 @@ function jsonGlb(json) {
 // (2026-09-25, Ç spelled as written; scripted the same way, the file restored from a copy and checked by sha256 — both red)
 //   D10 the spelling rule strips Ç's cedilla (`ui/libras-glosses`)        🔴 «spelled whole» («CAÇA» C-A-Ç-A)
 //   D11 the pins without Ç's clip (D7 again)                              🔴 «the 655 clips» · «spelled whole» and 2 more
+// (2026-09-26, where each letter is held up; scripted, CRLF normalised, each pattern required exactly once, the file restored from a
+// copy and checked by sha256 — all 6 red)
+//   H1 the regenerated pins without `held`                                🔴 «regenerated from an export's manifest»
+//   H2 the delivered manifest without `held`                              🔴 «the delivered manifest carries each window» · «the quiz's spelled words»
+//   H3 every clip of the export measured, signs too                       🔴 «measures the spelled clips … and only them»
+//   H4 the digits not spelled clips                                       🔴 «every letter … and every digit carries its window» and 1 more
+//   H5 E's window in the pins that of a rising letter (`libras-avatar.json`)  🔴 «E is still» and 2 more
+//   H6 P's window gone from the pins                                      🔴 «every letter … carries its window» and 3 more

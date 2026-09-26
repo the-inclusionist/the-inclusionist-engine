@@ -15,7 +15,8 @@
 // reason (`ui/libras-avatar-load`).
 //
 // WHAT IS ITS OWN: the player is this engine's code, so «stopped» is not a message to wait for — it is the moment the last clip
-// reaches its end (`ui/libras-avatar-plan`'s sequencer), its final pose held. And a word it can neither sign nor fingerspell is
+// reaches its end (`ui/libras-avatar-plan`'s sequencer), its final pose held; a fingerspelled word is signed with the hand held
+// up between its letters (the sequencer's chaining, the Dev's rule of 2026-09-26). And a word it can neither sign nor fingerspell is
 // left out and SAID: the request still signs the rest, and what it left out comes back in `unsigned`, which deaf mode reports
 // in `problems` (ADR-0169: what works in part is reported).
 //
@@ -98,10 +99,11 @@ export function createLibrasAvatarInterpreter(ports: LibrasAvatarPorts): Interpr
   let frameId: number | null = null;
   let lastFrame: number | null = null;
 
+  // a spelled word's letters are chained through where each is held up, which the delivery measured (`ClipWindow.held`)
   const sequencer = createSignSequencer((clip) => {
     const w = manifest?.clips.get(clip);
     return w ? playedLength(w) : 0;
-  });
+  }, undefined, (clip) => manifest?.clips.get(clip)?.held);
 
   const signedWith = (leftOut: string | undefined): SignResult => (leftOut ? { signed: true, unsigned: leftOut } : { signed: true });
   const answerPlaying = (r: SignResult): void => { const answer = playing; playing = null; answer?.(r); };
