@@ -54,6 +54,14 @@ describe('three.js is reached only by the free player\'s dynamic import (ADR-023
     expect(ignores, 'the precache takes every chunk, three.js\'s included').toContain(`'**/${stageName}-*.js'`);
   });
 
+  it('🔴 [Right] and its MIT notice travels with it: the build keeps the `@license` comments the minifier would strip', () => {
+    // 📏 measured on the build of 2026-09-25: without this, the stage's chunk carried three.js with zero `@license` comments —
+    // the MIT licence's one condition is that its notice goes with every copy; with it, the chunk keeps three.js's two
+    const config = sourceText(fileURLToPath(new URL('../vite.config.ts', import.meta.url)));
+    expect(config, 'the build strips the licence comments, and three.js ships without its notice')
+      .toMatch(/comments:\s*\{\s*legal:\s*true\s*\}/);
+  });
+
   it('⚠️ [Interface] and the sweep is alive: it reads the tree, the pages included, and sees both forms', () => {
     expect(sources().length).toBeGreaterThan(100);
     expect(sources().map(rel)).toContain('quiz.html');
@@ -68,4 +76,5 @@ describe('three.js is reached only by the free player\'s dynamic import (ADR-023
 //   T1 the player importing the stage statically                         🔴 «nothing loads the stage but a dynamic import»
 //   T2 another module naming three.js                                    🔴 «exactly one module names three.js»
 //   T3 the precache taking the stage's chunk                             🔴 «no install downloads it either»
+//   T4 the build's `comments: { legal: true }` removed                   🔴 «its MIT notice travels with it»
 // And in `tests/engine-package.node.test.js`: E1 three.js declared as `^0.186.1` 🔴 «FIXA na versão exacta».

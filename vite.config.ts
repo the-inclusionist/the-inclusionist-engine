@@ -181,6 +181,10 @@ export default defineConfig({
 // measures nothing.
       input: { quiz: 'app/quiz.html' }, // ⚠️ `main` left with the cartridge (#111): the engine has no app of its own
       output: {
+        // The MIT and similar licences travel with the code they cover: a bundled library's `@license` comment stays in its
+        // chunk (three.js: two in the free Libras player's chunk). Without this line the minifier strips them and the delivery
+        // carries the code without the notice its licence requires. Gate: `tests/three-arrives-late.node.test.js`.
+        comments: { legal: true },
         codeSplitting: {
           groups: [
             { name: 'pixi', test: /node_modules[\\/](@pixi|pixi\.js)[\\/]/ },

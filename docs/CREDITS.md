@@ -269,11 +269,11 @@ that module, at the first sign in deaf mode; a bundler cuts it into a chunk of i
 worker does not precache.
 
 - **Licence:** **MIT** («Copyright © 2010-2026 three.js authors», the package's `LICENSE`). The npm package names it as a
-  dependency, so a consumer's `node_modules/three` carries that `LICENSE`. ⚠️ **The built chunk does not carry the notice:** 📏
-  the minified `assets/libras-avatar-stage-<hash>.js` of this repository's build holds no `@license` comment (three.js's own
-  header is stripped, as every bundled package's is in this build) — so a delivery that ships the chunk owes the MIT notice
-  beside it, and does not yet give it. Named here, not solved: the fix is a build setting that keeps legal comments
-  (`output.comments.legal`) or a notices file the build writes, and either changes every chunk of the build.
+  dependency, so a consumer's `node_modules/three` carries that `LICENSE`. The built chunk carries the notice too: the build
+  keeps legal comments (`comments: { legal: true }` in `vite.config.ts`), and 📏 the minified
+  `assets/libras-avatar-stage-<hash>.js` holds three.js's two `@license` headers (it held none before the setting; gate
+  `tests/three-arrives-late.node.test.js`). A game that bundles the engine with its own build keeps the notice only if its
+  bundler keeps legal comments too.
 - **Types:** not `@types/three` (not authorised); `app/js/ui/three-subset.d.ts` declares the few classes the stage uses, written
   here from three.js's documentation.
 - **Changed by this project:** nothing.
