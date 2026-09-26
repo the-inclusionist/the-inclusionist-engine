@@ -190,6 +190,11 @@ const FORA_DO_PRECACHE = [
     porque: 'the Workbox runtime, loaded by `importScripts` from inside the SW scope, not fetched by the page',
   },
   {
+    padrao: /^assets\/libras-avatar-stage-[A-Za-z0-9_-]+\.js$/,
+    porque: 'three.js for the free Libras player (ADR-0234 errata): only a child in deaf mode may download it, so no install '
+      + 'takes it; keeping it for offline days is the deaf-mode download\'s job, like the route A player (route B, phase B3)',
+  },
+  {
     padrao: /^_headers$/,
     porque: 'a host deploy directive (Cloudflare Pages) read by the SERVER — the browser never requests it',
   },
