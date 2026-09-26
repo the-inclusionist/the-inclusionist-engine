@@ -34,6 +34,29 @@ export const SWITCH_SCAN_DEFAULTS = { stepMs: 1000, pulseMs: 400 } as const;
 // 📌 The four steps a child chooses from (0.8, 1, 1.5, 2 s) live with the ROW that offers them, and are not exported here ahead
 // of it: a list nobody reads is the hook with no consumer this repository refuses, and the gate said so before this comment did.
 
+/**
+ * THE ENGINE'S OWN DOORS, and whether each has something behind it (ADR-0218 §3). A door with nothing behind it is not offered:
+ * a cycle never stops on a position that does nothing (ADR-0155).
+ */
+export interface ScanDoors {
+  /** The card SELECT opens is mounted. */
+  readonly menus: boolean;
+  /** The quick pause START opens has its bar — the menu the scan steps there, and «back» is how it is left. */
+  readonly quickPause: boolean;
+}
+
+/**
+ * What the scan offers IN PLAY after «cancel»: the game's named positions, then the doors in the order ADR-0218 §3 names them —
+ * the menus (SELECT), then the quick pause (START). Taking a door presses it on the virtual controller, which hands it to the
+ * engine as its keys are.
+ */
+export function playScanList(game: readonly Action[], doors: ScanDoors): readonly Action[] {
+  const list: Action[] = [...game];
+  if (doors.menus) list.push('select');
+  if (doors.quickPause) list.push('start');
+  return list;
+}
+
 export interface ScanFrame {
   /** Her switch went down on this frame. Whatever sends it — a key, a touch, a gesture, a word. */
   readonly press?: boolean;

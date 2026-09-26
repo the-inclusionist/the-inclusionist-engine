@@ -10,7 +10,8 @@
 // list is built from the named ones — because a scan that stopped on a word nobody wrote would cost the child a full pass.
 
 //
-// 📌 AND THE WORDS THAT ARE THE ENGINE'S ARE THE ENGINE'S: «take nothing», and inside a menu that menu's own steps (ADR-0218
+// 📌 AND THE WORDS THAT ARE THE ENGINE'S ARE THE ENGINE'S: «take nothing», its two doors — which no game may name, since no game
+// may declare START or SELECT (ADR-0155 §4) —, and inside a menu that menu's own steps (ADR-0218
 // erratum of 2026-09-26) — a game named «up» for its character, and in a menu the chip must say «next», not «Pular».
 
 import type { Action } from '../core/actions.js';
@@ -20,6 +21,7 @@ import { SCAN_CANCEL } from '../input/switch-scan.js';
 /** The ENGINE's words, by dictionary key — the wording is an interface choice (interface log 2026-09-26). */
 const ENGINE_WORDS: ReadonlyMap<string, string> = new Map([
   [SCAN_CANCEL, 'scan.nothing'],
+  ['select', 'scan.door.menus'], ['start', 'scan.door.pause'],
   ['next', 'scan.menu.next'], ['confirm', 'scan.menu.confirm'], ['back', 'scan.menu.back'], ['previous', 'scan.menu.previous'],
 ]);
 

@@ -117,7 +117,7 @@ import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
 import { keyGoesToGame, keyPressesOwnControl } from '../input/key-default.js';
-import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan } from '../input/switch-scan.js';
+import { createSwitchScan, playScanList, SWITCH_SCAN_DEFAULTS, type SwitchScan } from '../input/switch-scan.js';
 import { MENU_SCAN, menuStepKeys, type MenuStep } from '../ui/menu-intent.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
@@ -4061,7 +4061,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   /*
    * THE SCAN ITSELF (ADR-0218): the list is the positions this cartridge declared AND NAMED, because the chip says the game's
    * own words and a position nobody named would cost the child a pass of silence (ADR-0074). It is rebuilt every time the scan
-   * starts, so a `mount()` of another cartridge scans ITS positions and not the ones that booted first (ADR-0142).
+   * starts, so a `mount()` of another cartridge scans ITS positions and not the ones that booted first (ADR-0142). After them come
+   * the engine's own doors, «menu» (SELECT) and «pausar» (START), each only where it has something behind it (ADR-0218 §3).
    *
    * 🔴 AND INSIDE A MENU THE LIST IS THAT MENU'S STEPS (ADR-0218 erratum of 2026-09-26). The switch's key is stopped before any
    * listener, so no menu ever saw it: 📏 a child who opened the quick pause by scanning was left in it, every press doing nothing.
@@ -4081,7 +4082,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     if (menuWithDpad()) return { inMenu: true, pass: createSwitchScan(MENU_SCAN) };
     const words = actionWords();
     const names = labellerFrom(words);
-    return { inMenu: false, pass: createSwitchScan(presetActions(words).filter((a) => !!names(a))) };
+    // the ENGINE'S DOORS after the game's words (ADR-0218 §3): the card where it is mounted, the quick pause where it has its bar
+    const doors = { menus: pauseUsable, quickPause: barUsable };
+    return { inMenu: false, pass: createSwitchScan(playScanList(presetActions(words).filter((a) => !!names(a)), doors)) };
   };
   const scanWord = (item: string): string => scanItemText(item, labellerFrom(actionWords()), t);
   // A word of a different length is a different amount of room to keep free, so the band is measured again — and only then.

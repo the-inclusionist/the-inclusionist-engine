@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2277,
+      "codeLines": 2278,
       "decisionNodes": 289,
       "maxDepth": 4,
       "fanOut": 97,
@@ -408,7 +408,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 654,
+      "codeLines": 656,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 654,
+      "codeLines": 656,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -428,7 +428,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 654,
+      "codeLines": 656,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -698,8 +698,8 @@
       "fanIn": 1
     },
     "input/switch-scan.ts": {
-      "codeLines": 38,
-      "decisionNodes": 4,
+      "codeLines": 48,
+      "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
@@ -1748,7 +1748,7 @@
       "fanIn": 1
     },
     "ui/scan-overlay.ts": {
-      "codeLines": 36,
+      "codeLines": 37,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,

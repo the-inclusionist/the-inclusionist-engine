@@ -180,6 +180,9 @@ const es: Record<string, string> = {
   'scan.menu.confirm': 'confirmar',
   'scan.menu.back': 'volver',
   'scan.menu.previous': 'anterior',
+  // ...and the engine's two doors, offered in play after the game's own words (ADR-0218 §3).
+  'scan.door.menus': 'menú',
+  'scan.door.pause': 'pausar',
   'input.scan': 'un botón solo',
   'icon.contrast': 'Alto contraste',
   'icon.cvd': 'Corrección de daltonismo',

@@ -538,12 +538,14 @@
   "input/switch-scan.ts": [
     "SCAN_CANCEL",
     "SWITCH_SCAN_DEFAULTS",
+    "ScanDoors",
     "ScanFrame",
     "ScanItem",
     "ScanOutput",
     "SwitchScan",
     "SwitchScanOptions",
-    "createSwitchScan"
+    "createSwitchScan",
+    "playScanList"
   ],
   "input/synthetic-source.ts": [
     "KeyEventLike",

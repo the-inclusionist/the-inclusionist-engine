@@ -179,6 +179,9 @@ const en: Record<string, string> = {
   'scan.menu.confirm': 'confirm',
   'scan.menu.back': 'back',
   'scan.menu.previous': 'previous',
+  // ...and the engine's two doors, offered in play after the game's own words (ADR-0218 §3).
+  'scan.door.menus': 'menu',
+  'scan.door.pause': 'pause',
   'input.scan': 'one button only',
   'icon.contrast': 'High contrast',
   'icon.cvd': 'Colour-blindness correction',

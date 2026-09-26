@@ -120,13 +120,15 @@ describe('with one button only, every press takes what is showing', () => {
   it('🔴 [Zero] a position the game declared but never NAMED is not offered at all', async () => {
     estado.setSwitchScanValue(true);
     const vistos = new Set();
-    for (let i = 0; i <= 4; i++) {
+    for (let i = 0; i <= 6; i++) {
       await new Promise((r) => setTimeout(r, i === 0 ? 30 : PASSO));
       vistos.add(chip().textContent);
     }
-    // 📌 The three named ones and «cancelar» — `action3` is declared in the preset and has no word, so it never shows.
-    expect([...vistos].sort()).toEqual([pt['scan.nothing'], 'Baixo', 'Cima', 'Confirmar'].sort());
-  });
+    // 📌 The three named ones, «cancelar» and the engine's two doors — `action3` is declared in the preset and has no word, so it
+    // never shows.
+    expect([...vistos].sort())
+      .toEqual([pt['scan.nothing'], 'Baixo', 'Cima', 'Confirmar', pt['scan.door.menus'], pt['scan.door.pause']].sort());
+  }, 15_000);
 
   it('🔴 [Right] a key HELD does not take an item at every repeat', async () => {
     estado.setSwitchScanValue(true);
@@ -307,6 +309,77 @@ describe('inside the engine\'s menus, the scan steps the menu', () => {
   }, LIMITE);
 });
 
+/*
+ * ===================== THE ENGINE'S DOORS, IN PLAY (ADR-0218 §3) =====================
+ * «then the positions the GAME declared in its preset, then the doors the engine itself opens (the menu and, where the game has
+ * one, the pause)». 📏 Before this, the pass in play was «cancel» and the game's named positions only: a child with one switch
+ * could not reach the pause or the menus at all. The whole story is measured with her one key and nothing else.
+ */
+describe('in play, the scan offers the engine\'s doors after the game\'s words', () => {
+  const LIMITE = 30_000;
+  const pausadoAVista = () => { const w = document.querySelector('#game-region .pausa-rapida'); return !!w && w.hidden === false; };
+  const cartaoAberto = () => document.getElementById('vp-pause-0')?.hidden === false;
+  const quadro = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+  const quandoOferecer = async (texto) => {
+    const fim = performance.now() + PASSO * 10;
+    while (chip().textContent !== texto) {
+      if (performance.now() > fim) throw new Error(`the chip never offered «${texto}» (last: «${chip().textContent}»)`);
+      await quadro();
+    }
+  };
+  const SWITCH = TECLA.down;
+
+  beforeEach(async () => {
+    estado.setSwitchScanValue(true);
+    motor.pause.hide(0);
+    for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
+    if (pausadoAVista()) { motor.controller.press('start', 'olhos', 0); motor.controller.release('start', 'olhos', 0); }
+    await quadro();
+    comandos.length = 0;
+  });
+  afterAll(() => { estado.setSwitchScanValue(false); motor.pause.hide(0); });
+
+  it('🔴 [Right] the pass in play is «cancel», the game\'s named positions, then «menu», then «pause» — in that order', async () => {
+    const vistos = [];
+    await quadro();
+    const fim = performance.now() + PASSO * 6 + 300;
+    while (performance.now() < fim) {
+      const agora = chip().textContent;
+      if (vistos.at(-1) !== agora) vistos.push(agora);
+      await quadro();
+    }
+    expect(vistos.slice(0, 6), 'the doors are missing, or out of the order ADR-0218 §3 names')
+      .toEqual([pt['scan.nothing'], 'Cima', 'Baixo', 'Confirmar', pt['scan.door.menus'], pt['scan.door.pause']]);
+  }, LIMITE);
+
+  it('🔴 [Right] WITH ONE KEY: «pause» opens the quick pause, «next» walks the bar, «back» leaves it — and the game heard nothing', async () => {
+    await quandoOferecer(pt['scan.door.pause']);
+    apertar(SWITCH);
+    expect(pausadoAVista(), 'taking «pause» did not open the quick pause').toBe(true);
+    const icones = () => [...document.querySelectorAll('#title-icons .pi-btn')];
+    const cursor = () => icones().findIndex((b) => b.classList.contains('pi-sel'));
+    const antes = cursor();
+    await quandoOferecer(pt['scan.menu.next']);
+    apertar(SWITCH);
+    expect(cursor(), 'inside the quick pause the key moved nothing along the bar').toBe((antes + 1) % icones().length);
+    await quandoOferecer(pt['scan.menu.back']);
+    apertar(SWITCH);
+    expect(pausadoAVista(), 'the child who opened the quick pause by scanning cannot leave it').toBe(false);
+    expect(comandos.filter((c) => c.action === 'start' || c.action === 'select'), 'the game heard a door').toEqual([]);
+  }, LIMITE);
+
+  it('🔴 [Right] WITH ONE KEY: «menu» opens the card, and «back» closes it', async () => {
+    await quandoOferecer(pt['scan.door.menus']);
+    apertar(SWITCH);
+    expect(cartaoAberto(), 'taking «menu» did not open the card').toBe(true);
+    await quadro();
+    await quandoOferecer(pt['scan.menu.back']);
+    apertar(SWITCH);
+    expect(cartaoAberto(), '«back» at the card\'s root did not close it').toBe(false);
+    expect(comandos.filter((c) => c.action === 'start' || c.action === 'select')).toEqual([]);
+  }, LIMITE);
+});
+
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-condutor-da-varredura.py` and `mutar-captura-da-varredura.py`, 8 of 8 red:
 //   · the key no longer intercepted: the scan never sees it   · the key read but let through: one press doing two things
 //   · every repeat of a held key takes an item                · the listener out of the CAPTURE phase
@@ -324,3 +397,8 @@ describe('inside the engine\'s menus, the scan steps the menu', () => {
 //   S4 the order of the steps changed                          🔴 «in the QUICK PAUSE the pass is the menu's steps» (and 2 in node)
 //   S5 «next» and «previous» swapped                           🔴 «next moves the bar's cursor», «confirm … on the card» (and 2 in node)
 //   S6 the menu steps read with no engine word                 🔴 5 (and 1 in node)
+// And (2026-09-26, THE ENGINE'S DOORS), same discipline:
+//   D1 the doors never added to the play list                 🔴 4 (the order, «pause», «menu», and «never NAMED»'s full pass)
+//   D2 «pause» before «menu»                                   🔴 «the pass in play … in that order» (and 2 in node)
+//   D5 the quick pause taken as having no bar                  🔴 3: no «pause», and the child never reaches the quick pause
+//   D6 the card taken as not mounted                           🔴 3: no «menu»

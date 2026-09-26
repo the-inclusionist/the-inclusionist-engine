@@ -1029,6 +1029,10 @@
       "pulseMs?",
       "stepMs?"
     ],
+    "interface ScanDoors": [
+      "menus",
+      "quickPause"
+    ],
     "interface ScanFrame": [
       "press?"
     ],

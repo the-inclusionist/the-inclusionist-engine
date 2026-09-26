@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { createSwitchScan, SCAN_CANCEL, SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
+import { createSwitchScan, playScanList, SCAN_CANCEL, SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
 import { MENU_SCAN, menuStepKeys } from '../app/js/ui/menu-intent.js';
 import { scanItemText } from '../app/js/ui/scan-overlay.js';
 import { createTranslator } from '../app/js/core/i18n.js';
@@ -141,6 +141,37 @@ describe('inside a menu, the scan offers the menu\'s own steps', () => {
   });
 });
 
+/*
+ * ===================== THE ENGINE'S DOORS (ADR-0218 §3) =====================
+ * After the game's positions, the doors the engine itself opens: the menus (SELECT), then the quick pause (START) — each only
+ * where it has something behind it, because a cycle never stops on a position that does nothing (ADR-0155).
+ */
+describe('in play, the engine\'s doors come after the game\'s positions', () => {
+  const GAME = ['up', 'action2'];
+  it('🔴 [Right] both doors, after the game\'s positions, menus first: «the menu and … the pause»', () => {
+    expect(playScanList(GAME, { menus: true, quickPause: true })).toEqual(['up', 'action2', 'select', 'start']);
+  });
+  it('🔴 [Boundary] a game with no quick pause to show gets no START; with no card, no SELECT', () => {
+    expect(playScanList(GAME, { menus: true, quickPause: false })).toEqual(['up', 'action2', 'select']);
+    expect(playScanList(GAME, { menus: false, quickPause: true })).toEqual(['up', 'action2', 'start']);
+    expect(playScanList(GAME, { menus: false, quickPause: false })).toEqual(GAME);
+  });
+  it('[Zero] a game that named nothing still has the doors — the pause is not declinable (ADR-0122)', () => {
+    expect(playScanList([], { menus: true, quickPause: true })).toEqual(['select', 'start']);
+  });
+  it('[Interface] the game\'s list is not written into', () => {
+    const game = ['up'];
+    playScanList(game, { menus: true, quickPause: true });
+    expect(game).toEqual(['up']);
+  });
+  it('🔴 [Right] the chip says the ENGINE\'s word for a door — no game may name START or SELECT', () => {
+    const { t } = createTranslator();
+    const gameWord = (a) => ({ start: 'Pular', select: 'Trocar' })[a] ?? null;
+    expect(scanItemText('select', gameWord, t)).toBe(pt['scan.door.menus']);
+    expect(scanItemText('start', gameWord, t)).toBe(pt['scan.door.pause']);
+  });
+});
+
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-varredura.py`:
 //   · cancel put LAST instead of first          → «the first thing offered is cancel» / «a press on cancel takes nothing»
 //   · a press no longer restarts the pass       → «every press restarts the pass»
@@ -155,3 +186,8 @@ describe('inside a menu, the scan offers the menu\'s own steps', () => {
 //   · the order of `MENU_SCAN` changed        → «after cancel the pass is …», «the chip says the ENGINE's word»
 //   · «next» and «previous» swapped           → «each step is ONE intent», «a step handed out is a copy»
 //   · the menu steps left out of the engine's words → «the chip says the ENGINE's word»
+// And (2026-09-26, the doors):
+//   · «pause» before «menu»                   → «both doors … menus first», «named nothing still has the doors»
+//   · SELECT offered with no card             → «a game with no quick pause … no SELECT»
+//   · START offered with no quick pause       → the same case
+//   · the doors left out of the engine's words → «the chip says the ENGINE's word for a door»
