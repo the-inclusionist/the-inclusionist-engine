@@ -282,7 +282,10 @@ jobs:
           tar -xzf gitleaks.tar.gz gitleaks
           # `--redact` so a finding does not leak the secret into a public build log, which would turn
           # the gate into the disclosure. Exit code 1 on any finding: this is a gate, not a report.
-          ./gitleaks detect --source . --no-banner --redact --exit-code 1
+          # `--verbose` so the log NAMES each finding — file, line, rule, commit — with the secret still
+          # REDACTED by the flag beside it. Without it the job said only «leaks found: 1», and a second false
+          # positive hid behind the first for two days.
+          ./gitleaks detect --source . --no-banner --redact --verbose --exit-code 1
 
   # ============================================================================================
   # Static analysis. Replaces CodeQL, which is paid on a private repository.

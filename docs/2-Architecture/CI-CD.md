@@ -83,7 +83,8 @@ And outside `gate`:
     digest of Kokoro's public `tokenizer.json`, which `generic-api-key` read as a key because the constant's
     name contains «TOKEN»; it kept the job red from 2026-09-14 on. The second is a line of prose in the
     modularisation plan, «access to localStorage: keys+defaults+validation», which the first one hid. A finding
-    is allowed there, never by loosening a rule.
+    is allowed there, never by loosening a rule. The job runs with `--verbose` beside `--redact`, so its log
+    names each finding (file, line, rule, commit) with the secret still redacted.
 
 ⚠️ **And neither of them is `continue-on-error`.** On GitLab both carried `allow_failure: true` and had been
 **red since they were added** — they died on an `npm: not found` inherited from a `default:` block, and the grey
