@@ -134,6 +134,72 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   });
 });
 
+// A caller speaking PARTS IN ORDER (ADR-0243 §1) waits for each utterance to be over before the next: `finished` tells it, once,
+// however the utterance ends — and an utterance that never ends in the ordinary way must still say so, or the parts after it wait
+// forever.
+describe('interruptible speech — `finished` says an utterance is over, once, however it ends', () => {
+  const counter = () => { const c = { n: 0 }; return [c, () => { c.n++; }]; };
+
+  it('🔴 [Right] when the audio ends — and not before', async () => {
+    const { motor } = motorFalso();
+    const fala = createInterruptibleSpeech(motor);
+    let fonte = null;
+    motor.play = (audio, onEnded) => { fonte = { texto: audio.texto, onEnded }; return fonte; };
+    const [c, done] = counter();
+    fala.speak('apple', done);
+    await esperar(10);
+    expect(c.n, 'said over while still playing').toBe(0);
+    fonte.onEnded();
+    expect(c.n).toBe(1);
+  });
+
+  it('🔴 [Right] when a newer request silences it, or `silence()` does', async () => {
+    const { motor } = motorFalso();
+    const fala = createInterruptibleSpeech(motor);
+    const [a, doneA] = counter(), [b, doneB] = counter();
+    fala.speak('first', doneA);
+    await esperar(10);
+    fala.speak('second', doneB);
+    expect(a.n, 'the silenced utterance never said it was over').toBe(1);
+    await esperar(10);
+    fala.silence();
+    expect(b.n).toBe(1);
+  });
+
+  it('🔴 [Right] when it was overtaken during synthesis, failed, or had nothing to say', async () => {
+    const { motor, demora } = motorFalso();
+    demora['slow'] = 30;
+    const fala = createInterruptibleSpeech(motor);
+    const [slow, doneSlow] = counter(), [empty, doneEmpty] = counter();
+    fala.speak('slow', doneSlow);
+    await esperar(1);
+    fala.speak('', doneEmpty);
+    await esperar(60);
+    expect(slow.n, 'overtaken during synthesis').toBe(1);
+    expect(empty.n, 'nothing to say').toBe(1);
+    const failing = createInterruptibleSpeech({ ...motor, synthesize: () => Promise.reject(new Error('no voice')) });
+    const [failed, doneFailed] = counter();
+    failing.speak('x', doneFailed);
+    await esperar(5);
+    expect(failed.n, 'a failed synthesis').toBe(1);
+  });
+
+  it('🎯 [Cardinality] ONCE: a source that still reports its end after it was silenced is not said over twice', async () => {
+    // Some engines fire `ended` on a source they were told to stop; the parts after it would then be started twice.
+    const { motor } = motorFalso();
+    const fala = createInterruptibleSpeech(motor);
+    let fonte = null;
+    motor.play = (audio, onEnded) => { fonte = { texto: audio.texto, onEnded }; return fonte; };
+    const [c, done] = counter();
+    fala.speak('apple', done);
+    await esperar(10);
+    fala.silence();
+    fonte.onEnded();
+    fala.speak('pear');
+    expect(c.n).toBe(1);
+  });
+});
+
 // ========================= MUTATIONS CHECKED =========================
 //   · removing the `pararTudo()` at the start of `falar` → "[Right] pedido novo CALA o anterior" fails with
 //     "expected 'sintetizar:Sair' to be 'parar:Continuar'".
@@ -141,3 +207,5 @@ describe('fala interrompível — o último pedido é o que vale', () => {
 //     ['tocar:rápido', 'tocar:lento'].
 //   · replacing `falar` with a queue (`if (tocando) proximo = texto`) → "[Many] varrer cinco" fails, which is exactly
 //     the old behaviour coming back.
+//   · (ADR-0243, 2026-09-26) `stopPlayback` not calling `finished` → «when a newer request silences it» red; `finished` not
+//     guarded to once → «ONCE» red. Each applied by a counting script, restored from a copy and checked by SHA-256.

@@ -898,9 +898,9 @@
       "fanIn": 5
     },
     "platform/interruptible-speech.ts": {
-      "codeLines": 39,
-      "decisionNodes": 9,
-      "maxDepth": 3,
+      "codeLines": 55,
+      "decisionNodes": 10,
+      "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
@@ -1068,9 +1068,9 @@
       "fanIn": 1
     },
     "platform/tts.ts": {
-      "codeLines": 207,
-      "decisionNodes": 38,
-      "maxDepth": 3,
+      "codeLines": 292,
+      "decisionNodes": 61,
+      "maxDepth": 2,
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 10,
@@ -1108,12 +1108,12 @@
       "fanIn": 1
     },
     "platform/voice-plan.ts": {
-      "codeLines": 12,
-      "decisionNodes": 0,
-      "maxDepth": 0,
+      "codeLines": 23,
+      "decisionNodes": 3,
+      "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 2,
+      "worstFunction": 6,
       "statefulEdges": 0,
       "fanIn": 1
     },

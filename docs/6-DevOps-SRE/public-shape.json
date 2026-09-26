@@ -1725,6 +1725,10 @@
     ]
   },
   "platform/tts.ts": {
+    "interface SpokenPart": [
+      "language?",
+      "text"
+    ],
     "interface TtsCtx": [
       "audioOut",
       "catNode",
@@ -1761,7 +1765,8 @@
       "speakWebSpeech",
       "ttsSpeak",
       "voices"
-    ]
+    ],
+    "type SpokenText": "string | readonly SpokenPart[]"
   },
   "platform/vision-loop.ts": {
     "interface VisionLoopDeps": [

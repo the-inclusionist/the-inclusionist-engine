@@ -4,16 +4,19 @@
 // loader, the browser's speech, the clock and the `<audio>` maker are the root's, received here (ADR-0232 D4). narrate()
 // is the entry point, gated by the mixer's narration toggle (audioCat.tts.on) — independent of captions. The PANEL's side (the
 // engine and voice lists) lives in `ui/voice-settings` and reads and writes the choice through this module. Injection by closure.
+//
+// A SPOKEN TEXT CARRIES ITS LANGUAGE (ADR-0243): `narrate` takes a text, in the interface's language, or parts spoken in order —
+// the frame in the interface's voice, the content in a voice of its own language (`voice-plan.voiceOfLanguage`).
 
 import type { Store } from './storage.js';
 import { KEYS } from './storage-keys.js';
 import type { Translator } from '../core/i18n.js';
-import { createInterruptibleSpeech } from './interruptible-speech.js';
-import { voicesForLocale, speaksLanguageOf, type NeuralVoice } from './voice-plan.js';
+import { createInterruptibleSpeech, type InterruptibleSpeech } from './interruptible-speech.js';
+import { voicesForLocale, voiceOfLanguage, speaksLanguageOf, type NeuralVoice } from './voice-plan.js';
 import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
 import {
   KOKORO_VOICES, tokenize, sentenceStyle, eFala, wavDe,
-  type LoadKokoro, type KokoroSession,
+  type LoadKokoro, type KokoroSession, type KokoroVoice,
 } from './kokoro.js';
 
 import type { SpeechPort } from './speech.js';
@@ -22,7 +25,24 @@ import type { SpeechPort } from './speech.js';
 // from here (issue #204).
 export type { LoadKokoro };
 
-interface TtsEngine { id: string; speak: (text: string) => void; }
+/**
+ * A PART OF A SPOKEN TEXT (ADR-0243 §1). Without `language` it is FRAME, read by the interface's voice; with a BCP-47 `language`
+ * it is CONTENT, read by a voice of that language and never by a voice of another one (§2) — an English word in a Portuguese
+ * activity is read by an English voice. A game already keeps the frame in keys and the content in `{params}`; this says which is which.
+ */
+export interface SpokenPart {
+  readonly text: string;
+  readonly language?: string;
+}
+/** What narration speaks: a text in the interface's language, or parts spoken in order, each in its own language. */
+export type SpokenText = string | readonly SpokenPart[];
+
+/** `finished` is called once the utterance is over, however it ends: what lets parts be spoken in order. */
+interface TtsEngine { id: string; speak: (text: string, finished?: () => void) => void; }
+/** One neural utterance: its text and the Kokoro voice that reads it. */
+interface NeuralRequest { readonly text: string; readonly voice: KokoroVoice; }
+/** One part, ready: an utterance for the browser's own queue, or a neural utterance that says when it is over. */
+type Segment = { readonly browser: () => SpeechSynthesisUtterance } | { readonly neural: (finished: () => void) => void };
 
 export interface TtsCtx {
   /**
@@ -71,7 +91,8 @@ export interface TtsCtx {
 }
 
 export interface Tts {
-  narrate: (text: string) => void;         // the entry point (gated by the mixer)
+  /** The entry point, gated by the mixer: a text in the interface's language, or parts in order (ADR-0243 §1). */
+  narrate: (text: SpokenText) => void;
   ttsSpeak: (text: string) => boolean;
   loadTTS: () => void;
   speakWebSpeech: (text: string) => boolean;
@@ -120,6 +141,10 @@ export function createTts(ctx: TtsCtx): Tts {
   };
   let kokoroBackend: 'webgpu' | 'wasm' | null = null;
   let loadedVoice: string | null = null; // the voice the loaded engine speaks; another choice reloads it
+  /** The loaded Kokoro model's speaker, any of its voices; null until the model loads. */
+  let neural: InterruptibleSpeech<NeuralRequest> | null = null;
+  /** A narration's number: a newer one ends the parts an older one has still to speak (ADR-0243 §1). */
+  let narrationTurn = 0;
   // Each voice's words per minute, averaged over the utterances long enough to measure (`core/speech-rate`): what a short
   // utterance («Voltar») is played against. Neural voices by id; browser voices by name.
   const voiceAverage = new Map<string, number>();
@@ -133,21 +158,21 @@ export function createTts(ctx: TtsCtx): Tts {
    * WEB SPEECH FIRST (ADR-0200; issue #190): the browser's voices for the language lead the list, so where the device already speaks
    * no neural voice is loaded; then Kokoro's where the game declared it speaks neurally (ADR-0216 §3) — the fallback.
    */
-  const browserVoices = (): readonly NeuralVoice[] => {
+  /** Every voice the browser lists, in every language: what a part in another language is matched against (ADR-0243 §2). */
+  const deviceVoices = (): readonly NeuralVoice[] => {
     let list: readonly SpeechSynthesisVoice[] = [];
     try { list = ctx.speech.synth()?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
-    return voicesForLocale(bcp47(), list.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
+    return list.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name }));
   };
-  const availableVoices = (): readonly NeuralVoice[] => [...browserVoices(), ...(ctx.neuralVoice ? voicesForLocale(bcp47(), KOKORO_VOICES) : [])];
+  const availableVoices = (): readonly NeuralVoice[] => [...voicesForLocale(bcp47(), deviceVoices()), ...(ctx.neuralVoice ? voicesForLocale(bcp47(), KOKORO_VOICES) : [])];
   /** The browser voice an entry names, or null. */
   const browserVoice = (id: string | undefined): SpeechSynthesisVoice | null => {
     if (!id?.startsWith('webspeech:')) return null;
     try { return ctx.speech.synth()?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
   };
+  /** The interface's voice (ADR-0243 §2 over the language of now): the stored choice, else the exact tag, else the language. */
   function voiceInUse(): NeuralVoice | null {
-    const list = availableVoices();
-    const storedVoiceId = ctx.store.get(KEYS.ttsVoz, null);
-    return list.find((v) => v.voice === storedVoiceId) ?? list[0] ?? null;
+    return voiceOfLanguage(bcp47(), availableVoices(), [ctx.store.get(KEYS.ttsVoz, null)]);
   }
   function chooseVoice(id: string): boolean {
     if (!availableVoices().some((v) => v.voice === id)) return false;
@@ -166,39 +191,52 @@ export function createTts(ctx: TtsCtx): Tts {
     return _ttsVoiceObj;
   }
 
+  /**
+   * One browser utterance: `lang` is the tag the text is in and `voice` a voice of it, or null for the browser to choose by the tag.
+   * ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances (start
+   * to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
+   */
+  function browserUtterance(text: string, lang: string, voice: SpeechSynthesisVoice | null): SpeechSynthesisUtterance {
+    const u = ctx.speech.utterance(text); u.lang = lang; if (voice) u.voice = voice; u.volume = Math.min(1, ctx.getVolume() * 1.4);
+    const voiceIdOf = 'webspeech:' + (voice?.name ?? lang);
+    const words = spokenWords(text);
+    const voiceBase = voiceAverage.get(voiceIdOf) ?? null;
+    u.rate = ctx.getSpeechPpm && voiceBase ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), voiceBase).rate : 1;
+    let startAt = 0;
+    u.onstart = () => { startAt = ctx.now(); };
+    u.onend = () => {
+      const seconds = startAt ? (ctx.now() - startAt) / 1000 : 0;
+      const measured = speechPlaybackRate(words, seconds, 150, null).voiceWpm;
+      if (measured) media(voiceIdOf, measured / u.rate);
+    };
+    return u;
+  }
+
+  /**
+   * An utterance in the interface's language. `u.lang` follows the game's language: fixed at pt-BR, a game in English or Spanish
+   * would ask the browser for a PORTUGUESE voice for a text that is not Portuguese — and the result is not an accent, it is
+   * unintelligible: the wrong phonetics applied to the wrong letters.
+   */
+  const interfaceUtterance = (text: string): SpeechSynthesisUtterance =>
+    browserUtterance(text, bcp47(), voiceObjectOfNow() ?? browserVoice(voiceInUse()?.voice));
+
   function speakWebSpeech(text: string): boolean {
     try {
       const ss = ctx.speech.synth(); if (!ss) return false; ss.cancel();
-      // `u.lang` follows the game's language. Fixed at pt-BR, a game in English or Spanish would ask the browser for a
-      // PORTUGUESE voice for a text that is not Portuguese — and the result is not an accent, it is unintelligible: the
-      // wrong phonetics applied to the wrong letters.
-      const voiceName = voiceObjectOfNow() ?? browserVoice(voiceInUse()?.voice);
-      const u = ctx.speech.utterance(text); u.lang = bcp47(); if (voiceName) u.voice = voiceName; u.volume = Math.min(1, ctx.getVolume() * 1.4);
-      // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
-      // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
-      const voiceIdOf = 'webspeech:' + (voiceName?.name ?? bcp47());
-      const words = spokenWords(text);
-      const voiceBase = voiceAverage.get(voiceIdOf) ?? null;
-      u.rate = ctx.getSpeechPpm && voiceBase ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), voiceBase).rate : 1;
-      let startAt = 0;
-      u.onstart = () => { startAt = ctx.now(); };
-      u.onend = () => {
-        const seconds = startAt ? (ctx.now() - startAt) / 1000 : 0;
-        const measured = speechPlaybackRate(words, seconds, 150, null).voiceWpm;
-        if (measured) media(voiceIdOf, measured / u.rate);
-      };
-      ss.speak(u); return true;
+      ss.speak(interfaceUtterance(text)); return true;
     } catch (e) { return false; }
   }
 
   /**
    * A neural voice's utterances, whatever made the WAV (ADR-0183 §1): every utterance is measured — its words over its speech time,
-   * silent ends trimmed — and played at the child's rate over the voice's, through a media element that keeps the pitch.
+   * silent ends trimmed — and played at the child's rate over the voice's, through a media element that keeps the pitch. Each
+   * request names its voice, so one loaded model reads the parts of every language it has a voice for (ADR-0243 §2).
    */
-  function speakByWav(voiceId: string, produce: (text: string) => Promise<ArrayBuffer>): { speak: (text: string) => void } {
-    return createInterruptibleSpeech<{ url: string; rate: number }, HTMLAudioElement>({
-      synthesize: async (text) => {
-        const bytes = await produce(text);
+  function speakByWav(produce: (request: NeuralRequest) => Promise<ArrayBuffer>): InterruptibleSpeech<NeuralRequest> {
+    return createInterruptibleSpeech<{ url: string; rate: number }, HTMLAudioElement, NeuralRequest>({
+      synthesize: async (request) => {
+        const { text } = request, voiceId = request.voice.voice;
+        const bytes = await produce(request);
         const ac = ctx.ensureAC();
         if (!ac) throw new Error('AudioContext unavailable'); // the `catch` there handles it: this item is silent, the engine lives
         let speedRatio = 1;
@@ -238,19 +276,27 @@ export function createTts(ctx: TtsCtx): Tts {
     ttsLoading = true; loadedVoice = forVoice.voice; const t0 = ctx.now(); ctx.srSay(t('sr.tts.downloading'));
     load().then(async (mod) => {
       const [symbolIds, table] = await Promise.all([mod.vocabulary(), mod.voice(kv.voice)]);
-      const synthesiseWith = async (kokoroSession: KokoroSession, text: string): Promise<Float32Array> => {
-        const ids = tokenize(await mod.phonemize(text, kv.espeak), symbolIds);
-        return kokoroSession.synthesize(ids, sentenceStyle(table, ids.length - 2));
+      // Each voice's style table, fetched the first time an utterance asks for that voice; a failed fetch is tried again.
+      const tables = new Map<string, Promise<Float32Array>>([[kv.voice, Promise.resolve(table)]]);
+      const tableOf = (voice: KokoroVoice): Promise<Float32Array> => {
+        let styles = tables.get(voice.voice);
+        if (!styles) { styles = mod.voice(voice.voice); tables.set(voice.voice, styles); styles.catch(() => tables.delete(voice.voice)); }
+        return styles;
+      };
+      const synthesiseWith = async (kokoroSession: KokoroSession, text: string, voice: KokoroVoice): Promise<Float32Array> => {
+        const ids = tokenize(await mod.phonemize(text, voice.espeak), symbolIds);
+        return kokoroSession.synthesize(ids, sentenceStyle(await tableOf(voice), ids.length - 2));
       };
       let kokoroSession: KokoroSession | null = null;
       try {
         const gpu = await mod.session('webgpu');
-        if (eFala(await synthesiseWith(gpu, t('tts.kokoro.teste')))) { kokoroSession = gpu; kokoroBackend = 'webgpu'; }
+        if (eFala(await synthesiseWith(gpu, t('tts.kokoro.teste'), kv))) { kokoroSession = gpu; kokoroBackend = 'webgpu'; }
       } catch { /* no WebGPU here: WASM below */ }
       if (!kokoroSession) { kokoroSession = await mod.session('wasm'); kokoroBackend = 'wasm'; }
       const used = kokoroSession;
-      const fala = speakByWav(kv.voice, async (text) => wavDe(await synthesiseWith(used, text)));
-      ttsEngine = { id: 'kokoro', speak: (text: string) => { fala.speak(text); } };
+      const speaker = speakByWav(async (request) => wavDe(await synthesiseWith(used, request.text, request.voice)));
+      neural = speaker;
+      ttsEngine = { id: 'kokoro', speak: (text, finished) => { speaker.speak({ text, voice: kv }, finished); } };
       ttsLoading = false;
       try { ctx.speech.synth()?.cancel(); } catch (e) { /* noop */ }
       narrate(t('sr.tts.ready', { s: ((ctx.now() - t0) / 1000).toFixed(0) }));
@@ -277,21 +323,112 @@ export function createTts(ctx: TtsCtx): Tts {
     loadKokoroEngine(forVoice);
   }
 
+  /** The loaded neural engine when the interface speaks neurally; else it starts loading, and the browser speaks meanwhile. */
+  function interfaceEngine(): TtsEngine | null {
+    if (engineSel() === 'webspeech') return null;
+    // another voice picked, or the language changed, since the engine loaded: load the voice in use
+    const inUse = voiceInUse();
+    if (ttsEngine && inUse?.engine !== 'webspeech' && loadedVoice !== inUse?.voice) { ttsEngine = null; ttsFailed = false; }
+    if (!ttsEngine) loadTTS(); // the neural engine is downloading or unavailable → falls back
+    return ttsEngine;
+  }
+
   function ttsSpeak(text: string): boolean {
-    if (engineSel() !== 'webspeech') {
-      // another voice picked, or the language changed, since the engine loaded: load the voice in use
-      const inUse = voiceInUse();
-      if (ttsEngine && inUse?.engine !== 'webspeech' && loadedVoice !== inUse?.voice) { ttsEngine = null; ttsFailed = false; }
-      if (ttsEngine && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
-      loadTTS(); // the neural engine is downloading or unavailable → falls back
-    }
+    const engine = interfaceEngine();
+    if (engine) { try { engine.speak(text); } catch (e) { /* noop */ } return true; }
+    neural?.silence(); // a neural part still speaking gives way: the latest narration is the one that counts
     return speakWebSpeech(text); // immediate fallback: Web Speech, in the game's language
   }
 
-  function narrate(text: string): void { // gated by the mixer's narration toggle, independent of captions
-    const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on || !text) return;
+  /** A FRAME part (ADR-0243 §1): the interface's voice, as a text narrated alone; none while narration is locked (ADR-0185 §4). */
+  function frameSegment(text: string): Segment | null {
+    if (availableVoices().length === 0) return null;
+    const engine = interfaceEngine();
+    if (engine) return { neural: (finished) => { engine.speak(text, finished); } };
+    return { browser: () => interfaceUtterance(text) };
+  }
+
+  /**
+   * A CONTENT part (ADR-0243 §2): a voice of its language — the browser's first, then the neural ones this game asked for, which
+   * read only once the model is loaded; while it loads, the part starts the load and a browser voice of the language reads it if
+   * the device has one. `null`: the device has no voice for the language, and no voice of another language reads it instead.
+   */
+  function contentSegment(text: string, language: string): Segment | null {
+    const chosen = chosenVoices();
+    const neuralVoices = ctx.neuralVoice && !ttsFailed ? KOKORO_VOICES : [];
+    const best = voiceOfLanguage(language, [...deviceVoices(), ...neuralVoices], chosen);
+    const kokoro = KOKORO_VOICES.find((v) => v.voice === best?.voice);
+    if (kokoro) return neuralSegment(text, language, kokoro, chosen);
+    return best ? browserSegment(text, language, best) : null;
+  }
+
+  /** The voices the child chose, in order of precedence: the page's voice object, then the stored choice (ADR-0243 §2). */
+  const chosenVoices = (): readonly (string | null)[] =>
+    [_ttsVoiceObj ? 'webspeech:' + _ttsVoiceObj.name : null, ctx.store.get(KEYS.ttsVoz, null)];
+
+  const browserSegment = (text: string, language: string, voice: NeuralVoice): Segment =>
+    ({ browser: () => browserUtterance(text, language, browserVoice(voice.voice)) });
+
+  /** A part a Kokoro voice reads; while the model loads, a browser voice of the language reads it if the device has one. */
+  function neuralSegment(text: string, language: string, voice: KokoroVoice, chosen: readonly (string | null)[]): Segment | null {
+    const speaker = neural;
+    if (speaker) return { neural: (finished) => { speaker.speak({ text, voice }, finished); } };
+    if (!ttsLoading) loadKokoroEngine(voice);
+    const meanwhile = voiceOfLanguage(language, deviceVoices(), chosen);
+    return meanwhile ? browserSegment(text, language, meanwhile) : null;
+  }
+
+  /** Resolves when an utterance is over, however it ends — set before it is queued. */
+  const utteranceOver = (u: SpeechSynthesisUtterance): Promise<void> => new Promise((over) => {
+    const measure = u.onend;
+    u.onend = function (this: SpeechSynthesisUtterance, e: SpeechSynthesisEvent) { measure?.call(this, e); over(); };
+    u.onerror = () => { over(); };
+  });
+
+  /** Queues the browser parts from `from` on at once; `over` resolves when the last is over, when a part follows them. */
+  function queueBrowserParts(ss: SpeechSynthesis | null, segments: readonly Segment[], from: number): { next: number; over: Promise<void> | null } {
+    const queued: SpeechSynthesisUtterance[] = [];
+    let i = from;
+    for (let s = segments[i]; s && 'browser' in s; s = segments[++i]) queued.push(s.browser());
+    const last = queued.at(-1);
+    const over = ss && last && i < segments.length ? utteranceOver(last) : null;
+    try { for (const u of queued) ss?.speak(u); } catch (e) { /* the device refused to speak: the rest goes on */ }
+    return { next: i, over };
+  }
+
+  /**
+   * THE PARTS, IN ORDER (ADR-0243 §1). Browser utterances go into the browser's own queue at once, each with its tag and voice; a
+   * neural part waits for what is before it to end, and what follows waits for it. A newer narration ends the rest.
+   */
+  async function speakInOrder(segments: readonly Segment[], turn: number): Promise<void> {
+    const ss = ctx.speech.synth();
+    try { ss?.cancel(); } catch (e) { /* noop */ }
+    neural?.silence();
+    let i = 0;
+    while (i < segments.length && turn === narrationTurn) {
+      const first = segments[i]!;
+      if ('neural' in first) { await new Promise<void>((over) => { first.neural(over); }); i++; continue; }
+      const queuedParts = queueBrowserParts(ss, segments, i);
+      i = queuedParts.next;
+      if (queuedParts.over) await queuedParts.over;
+    }
+  }
+
+  function narrate(text: SpokenText): void { // gated by the mixer's narration toggle, independent of captions
+    const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on) return;
+    if (typeof text !== 'string') { narrateParts(text); return; }
+    if (!text) return;
     if (availableVoices().length === 0) return; // no voice speaks this language: narration is locked (ADR-0185 §4)
-    _narrateCount++; ttsSpeak(text);
+    narrationTurn++; _narrateCount++; ttsSpeak(text);
+  }
+
+  function narrateParts(parts: readonly SpokenPart[]): void {
+    const segments = parts.filter((p) => p.text)
+      .map((p) => (p.language ? contentSegment(p.text, p.language) : frameSegment(p.text)))
+      .filter((s): s is Segment => s !== null);
+    if (!segments.length) return;
+    _narrateCount++;
+    void speakInOrder(segments, ++narrationTurn);
   }
 
   return {

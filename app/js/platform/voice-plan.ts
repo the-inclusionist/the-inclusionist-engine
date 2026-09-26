@@ -27,3 +27,21 @@ const primaryLanguage = (tag: string): string => (tag.split('-')[0] ?? '').toLow
 export function speaksLanguageOf(locale: string, tag: string): boolean {
   return primaryLanguage(locale) === primaryLanguage(tag);
 }
+
+/**
+ * THE VOICE OF A LANGUAGE (ADR-0243 §2): the child's chosen voice when it speaks that language; else the first voice whose tag is
+ * exactly that language (pt-BR before pt-PT for a pt-BR part); else the first voice of the same primary language. `voices` come in
+ * the order they are tried — the browser's before the neural, as ADR-0200 decided — and `chosen` in order of precedence.
+ * 🔴 No voice of another language is ever returned: `null` means the list has none for it, and the part is not spoken (§3).
+ */
+export function voiceOfLanguage(
+  tag: string, voices: readonly NeuralVoice[], chosen: readonly (string | null | undefined)[] = [],
+): NeuralVoice | null {
+  const own = voicesForLocale(tag, voices);
+  for (const id of chosen) {
+    const picked = id ? own.find((v) => v.voice === id) : undefined;
+    if (picked) return picked;
+  }
+  const exact = tag.toLowerCase();
+  return own.find((v) => v.locale.toLowerCase() === exact) ?? own[0] ?? null;
+}

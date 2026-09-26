@@ -884,6 +884,8 @@
   ],
   "platform/tts.ts": [
     "LoadKokoro",
+    "SpokenPart",
+    "SpokenText",
     "Tts",
     "TtsCtx",
     "createTts"
@@ -924,6 +926,7 @@
   "platform/voice-plan.ts": [
     "NeuralVoice",
     "speaksLanguageOf",
+    "voiceOfLanguage",
     "voicesForLocale"
   ],
   "platform/vosk-runtime.ts": [

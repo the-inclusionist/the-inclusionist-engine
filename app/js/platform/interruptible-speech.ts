@@ -30,27 +30,37 @@
 // synthesise", "how to play" and "how to stop" — and the node test exercises the race and the interruption with fakes,
 // in milliseconds.
 
-/** What the caller provides. Nothing here knows the neural engine, Web Audio or the browser. */
-export interface SpeechEngine<Audio, Fonte> {
-  /** Text → audio. ASYNCHRONOUS on purpose: it is where neural synthesis spends its time. */
-  synthesize(text: string): Promise<Audio>;
+/**
+ * What the caller provides. Nothing here knows the neural engine, Web Audio or the browser. `Request` is what one utterance
+ * asks for: a text by default, or a text with the voice that reads it (ADR-0243 §2).
+ */
+export interface SpeechEngine<Audio, Fonte, Request = string> {
+  /** Request → audio. ASYNCHRONOUS on purpose: it is where neural synthesis spends its time. */
+  synthesize(request: Request): Promise<Audio>;
   /** Starts playing and returns the source, so it can be stopped. `null` = it could not play right now. */
   play(audio: Audio, onEnded: () => void): Fonte | null;
   /** Silences the source. Called with what `play` returned, and never with `null`. */
   stop(playing: Fonte): void;
 }
 
-export interface InterruptibleSpeech {
-  /** Speaks `text`, SILENCING at once whatever is speaking. It does not queue: the latest request is the one that counts. */
-  speak(text: string): void;
+export interface InterruptibleSpeech<Request = string> {
+  /**
+   * Speaks `request`, SILENCING at once whatever is speaking. It does not queue: the latest request is the one that counts.
+   * `finished` is called ONCE, when this utterance is over for any reason — it ended, it was silenced or overtaken, or it could
+   * not be synthesised or played — so a caller speaking parts in order (ADR-0243 §1) knows when to go on, and never waits forever.
+   */
+  speak(request: Request, finished?: () => void): void;
   /** Silences and forgets. Used when a menu closes or narration is switched off. */
   silence(): void;
   /** Is anything playing? For tests and debugging only — the policy does not depend on it. */
   speaking(): boolean;
 }
 
-export function createInterruptibleSpeech<Audio, Fonte>(engine: SpeechEngine<Audio, Fonte>): InterruptibleSpeech {
+export function createInterruptibleSpeech<Audio, Fonte, Request = string>(
+  engine: SpeechEngine<Audio, Fonte, Request>,
+): InterruptibleSpeech<Request> {
   let nowPlaying: Fonte | null = null;
+  let nowFinished: (() => void) | null = null;
   let currentTurn = 0;
 
   /** Silences whatever is playing. The `try` exists because stopping an already finished source throws in some engines. */
@@ -59,27 +69,42 @@ export function createInterruptibleSpeech<Audio, Fonte>(engine: SpeechEngine<Aud
       try { engine.stop(nowPlaying); } catch (e) { /* the source already ended — stopping again is no error */ }
       nowPlaying = null;
     }
+    const finished = nowFinished;
+    nowFinished = null;
+    finished?.();
   }
 
-  async function speakNow(text: string): Promise<void> {
+  async function speakNow(request: Request, finished: () => void): Promise<void> {
     const myTurn = ++currentTurn; // claims the turn BEFORE any wait
     stopPlayback();             // guarantee 1: immediate silence, not at the end of synthesis
-    if (!text) return;
+    if (!request) { finished(); return; }
     try {
-      const audio = await engine.synthesize(text);
-      if (myTurn !== currentTurn) return; // guarantee 2: it arrived late — another request already took over
+      const audio = await engine.synthesize(request);
+      if (myTurn !== currentTurn) { finished(); return; } // guarantee 2: it arrived late — another request already took over
       stopPlayback();                   // again: something may have started playing during the wait
-      const playing = engine.play(audio, () => { if (nowPlaying === playing) nowPlaying = null; });
-      if (myTurn !== currentTurn) { if (playing !== null) { try { engine.stop(playing); } catch (e) { /* noop */ } } return; }
+      const playing = engine.play(audio, () => {
+        if (nowPlaying === playing) { nowPlaying = null; nowFinished = null; }
+        finished();
+      });
+      if (playing === null) { finished(); return; }
+      if (myTurn !== currentTurn) { try { engine.stop(playing); } catch (e) { /* noop */ } finished(); return; }
       nowPlaying = playing;
+      nowFinished = finished;
     } catch (e) {
       // Synthesis failed for THIS text. No reason to bring the whole narration down: the next request tries again, and one
       // silent item is better than a dead engine.
+      finished();
     }
   }
 
+  /** Calls `finished` at most once, whichever of the ends above comes first. */
+  const once = (finished: (() => void) | undefined): (() => void) => {
+    let called = false;
+    return () => { if (called) return; called = true; finished?.(); };
+  };
+
   return {
-    speak: (text) => { void speakNow(text); },
+    speak: (request, finished) => { void speakNow(request, once(finished)); },
     silence: () => { currentTurn++; stopPlayback(); }, // the `++` invalidates whatever is being synthesised now
     speaking: () => nowPlaying !== null,
   };
