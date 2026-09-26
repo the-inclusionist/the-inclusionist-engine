@@ -22,38 +22,22 @@
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * WHERE THE RECORDS' TREE LIVES SINCE ADR-0123 — in another repository, `the-inclusionist-docs`.
+ * WHERE THE RECORDS' TREE LIVES — HERE, in `docs/2-Architecture/adr/`, since ADR-0242 brought the engine's records home.
  *
- * ⚠️ AND THIS GATE STAYS HERE, on the CODE side, on purpose. What it catches is a record naming a file of **this**
- * tree that no longer exists — and that is a break of the ENGINE, which has to turn red where someone fixes it.
- * Moving it next to the records would put the red in the wrong repository (ADR-0123 §5).
- *
- * 📌 The tree arrives through `ADR_TREE` (which is what CI passes, after checking it out) or, for whoever works with
- * both repositories side by side, through the sibling clone. With neither, the cases below SKIP — and skipping shows
- * in Vitest's output, unlike passing for having nothing to read.
+ * What this catches is a record naming a file of this tree that no longer exists: a break of the ENGINE, red where it
+ * is fixed. The tree is local, so the sweep never skips and needs no checkout. The records that stayed in
+ * `the-inclusionist-docs` belong to the whole project and cite the engine through `confirmed-by`, which the engine's
+ * `adr` job opens with `--repo engine=.`.
  */
-const CANDIDATAS = [
-  process.env.ADR_TREE,
-  fileURLToPath(new URL('../../the-inclusionist-docs/docs/2-Architecture/adr/', import.meta.url)),
-].filter(Boolean);
-const ADR = CANDIDATAS.find((p) => existsSync(p)) ?? CANDIDATAS[CANDIDATAS.length - 1];
-const TEM_ARVORE = existsSync(ADR);
+const ADR = fileURLToPath(new URL('../docs/2-Architecture/adr/', import.meta.url));
 const RAIZ = process.cwd();
-/** The root of the repository where the records live: `<docs>/docs/2-Architecture/adr/` → `<docs>`. */
-const RAIZ_DOS_REGISTOS = resolve(ADR, '..', '..', '..');
 
-/**
- * Does the cited path exist in EITHER of the two repositories?
- *
- * 🔴 The question has a second place since the records moved: ADR-0123 cites `scripts/test-validate-adr.py`, which is
- * the validator's own gate and lives WITH the records. Against the engine alone it looked like a dead pointer — and
- * it is not: it is alive, on the other side. The question this file asks is «este gate existe?», not «existe aqui».
- */
-const existeAlgures = (c) => existsSync(join(RAIZ, c)) || existsSync(join(RAIZ_DOS_REGISTOS, c));
+/** Does the cited path exist in this repository? */
+const existeAlgures = (c) => existsSync(join(RAIZ, c));
 
 /*
  * Repository paths a record cites: `tests/x.node.test.js`, `scripts/y.mjs`.
@@ -75,15 +59,9 @@ const CAMINHO = /(?<![\w/])(?:tests|scripts)\/[A-Za-z0-9_.\-]+\.(?:m?js|py|ts)(?
  */
 const MORTOS = {
   'tests/main-i18n.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`, #111): testava o `main.js`, que deixou de viver aqui',
-  'tests/alternancia-do-correr.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`): mecânica de plataforma, não de engine',
   'scripts/check-types.mjs': 'APOSENTADO DE PROPÓSITO (`f622221`) quando a dívida de tipos chegou a ZERO. Era um tecto que só descia; chegado ao fundo, um tecto deixa de ter função',
-  // ⚠️ TWO DATES IN ONE SENTENCE, and the second is there because the phase-3 tool rewrote the first: on 09/09 this file
-  // became `arte-licencas-aceites`, and that is the name it had. Saying it became TODAY's name is false for that day — and a
-  // book of pointers that lies about the date stops serving its purpose. Both stay: what it was, and where it is.
-  'tests/lcp-quarantine.node.test.js': 'MUDOU DE NOME DUAS VEZES. Em 2026-09-09 virou `tests/arte-licencas-aceites.node.test.js`, quando o ADR-0133 recusou share-alike e a quarentena deixou de ter o que segurar; em 2026-09-22 a fase 3 do ADR-0219 pô-lo em inglês, e hoje é `tests/art-licences-accepted.node.test.js`. ⚠️ O ADR-0133 nomeia o primeiro para dizer que foi APOSENTADO, e essa frase é história — o gate não morreu, virou-se do avesso',
   'tests/barra-rapida-no-hud.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/quick-bar-in-the-hud.node.test.js`',
   'tests/contract-topologia-e-funcao.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/contract-topology-is-a-function.node.test.js`',
-  'tests/instrucao-do-botao-falada.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/spoken-button-instruction.node.test.js`',
   'tests/storage-escopos.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/storage-scopes.node.test.js`',
   'tests/storage-legado.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/storage-legacy-keys.node.test.js`',
   'tests/validador-sem-deriva.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/the-validator-does-not-drift.node.test.js`',
@@ -117,6 +95,11 @@ const MORTOS = {
 // ========================= WHAT HAS ALREADY LEFT, AND HOW =========================
 // Of the entries the list was born with, three have left. None was deleted; each left by a different route, and the
 // routes are the subject.
+//
+// ✅ THREE LEFT ON 2026-09-26, BY A ROUTE OF THEIR OWN: the records citing them stayed in `the-inclusionist-docs` when
+//    the engine's records came home (ADR-0242). `alternancia-do-correr` and `instrucao-do-botao-falada` are cited by
+//    ADR-0045 and ADR-0060, which read as `game-platformer`'s; `lcp-quarantine` by ADR-0133, which is the project's
+//    art licensing. This sweep reads the engine's own tree, and their prose is history in that repository.
 //
 // ✅ `tests/carregar-e-arremessar.node.test.js` — cited ONLY by ADR-0045, which is `superseded` (by 0060).
 //    ⚠️ A FALSE POSITIVE OF THIS SIEVE: a record that no longer governs owes no CURRENT gate, and demanding one would be
@@ -182,25 +165,13 @@ function citados() {
   return [...fora];
 }
 
-describe('a árvore dos registos, que desde o ADR-0123 mora noutro repositório', () => {
-  it('🔴 [Interface] onde ela é EXIGIDA, saltar é reprovar — um gate que salta sozinho não é um gate', () => {
-    // ⚠️ WITHOUT THIS CASE, the day `ADR_TREE` pointed at the wrong place would be the day this file stopped
-    // measuring anything — and the suite would say «verde». A failing checkout brings the job down by itself; what
-    // nobody would catch is the variable holding a wrong path.
-    //
-    // 📌 `ADR_TREE_REQUIRED` AND NOT `CI`, and the difference is measured: the whole suite also runs in the `gate`
-    // job, which does NOT check out the records — using `CI` would fail that job for lacking a tree it was never
-    // meant to fetch. The requirement belongs to the job that declares itself responsible for it.
-    expect(
-      TEM_ARVORE || !process.env.ADR_TREE_REQUIRED,
-      `a árvore dos registos não foi encontrada em ${ADR}, e este trabalho declarou-se responsável por ela `
-      + '(`ADR_TREE_REQUIRED`). Ela vem por checkout do `the-inclusionist-docs`, com `ADR_TREE` a apontar '
-      + 'para `docs/2-Architecture/adr`; localmente, um clone irmão serve.',
-    ).toBe(true);
+describe('the records tree lives in this repository (ADR-0242)', () => {
+  it('🔴 [Vacuum] the tree is here, so this sweep cannot skip — a sieve with nothing to read is green for the worst reason', () => {
+    expect(existsSync(ADR), `the engine's records tree is not at ${ADR}; ADR-0242 put it there`).toBe(true);
   });
 });
 
-describe.skipIf(!TEM_ARVORE)('um registo não aponta para um gate que não existe', () => {
+describe('um registo não aponta para um gate que não existe', () => {
   it('⚠️ [Interface] nenhum ponteiro morto NOVO entrou sem ser declarado', () => {
     const novos = citados().filter((c) => !existeAlgures(c) && !(c in MORTOS));
     expect(
