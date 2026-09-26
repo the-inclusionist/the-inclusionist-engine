@@ -4329,8 +4329,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // handles the shared dialog before the card, which is the panel open on top. The same question the controller asks.
     pauseMenu: menuWithDpad,
     worldRunning: gameHooks.worldRunning,
-    // The gamepad's START is the QUICK PAUSE (ADR-0155), like the screen's; and the way out reuses the decision already
-    // written for the finger, which knows leaving the quick pause from closing the card.
+    // The pad's START in play is PRESSED for its seat and answered by `systemPress` (ADR-0144 §1); this `pause` is the mapping
+    // wizard's, which stops the game while a pad is mapped. The way out on the card and on seat 0's quick pause reuses the
+    // decision already written for the finger, which knows leaving the quick pause from closing the card.
     pause: () => { enterQuickPause(0); },
     resume: togglePauseByTouch,
     isAttractActive: gameHooks.attractActive,

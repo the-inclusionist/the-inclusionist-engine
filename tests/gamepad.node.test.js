@@ -979,16 +979,28 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.calls.pressionadas.filter(([a]) => a === 'select')).toEqual([]);
   });
 
-  it('🔴 [Right] a jogar, o START pausa e diz QUEM pausou', () => {
-    const p = makePlayer({ pad: 0 });
-    const ctx = buildCtx({ players: [p] });
-    const api = initGamepad(ctx);
-    ctx.setPhaseValue('playing');
-    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [9] })]);
-    api.pollPads();
-    expect(ctx.calls.setPhase, 'o START do controle não pausa').toEqual(['paused']);
-    expect(ctx.calls.setPauseActor, 'pausou sem dizer de quem é o cartão que abre').toEqual([0]);
-  });
+  /*
+   * 🔴 START IN PLAY IS PRESSED FOR THE PAD'S SEAT (ADR-0155 — the quick pause is per seat; ADR-0144 §1 and its erratum of
+   * 2026-09-26 — START from every transport reaches `systemPress` with the seat that pressed). 📏 Measured before: the pad called
+   * the root's `pause()`, which carries no seat, and the root answered `enterQuickPause(0)` — a second player's START froze the
+   * game on the FIRST player's quick pause and put the first player's directional on the bar.
+   * 📏 Mutations (2026-09-26, `scratchpad/pad-seat-select/mutate.mjs seat`, restored by SHA-256): the seatless `pause()` back → both
+   * cases; the press for seat 0 always → the seat-1 case; the pause actor not told → both. The root's half is
+   * `the-pad-start-pauses-its-own-seat.browser`.
+   */
+  for (const [seat, players] of [[0, () => [makePlayer({ pad: 0 })]], [1, () => [makePlayer(), makePlayer({ pad: 0 })]]]) {
+    it(`🔴 [Right] a jogar, o START do controle do assento ${seat} é PRESSIONADO para esse assento, uma vez, e diz QUEM pausou`, () => {
+      const ctx = buildCtx({ players: players() });
+      const api = initGamepad(ctx);
+      ctx.setPhaseValue('playing');
+      ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [9] })]);
+      api.pollPads();
+      api.pollPads(); // held: still ONE press — an edge, not a state
+      expect(ctx.calls.pressionadas, 'o START do controle não chegou ao assento dele').toEqual([['start', 'gamepad', seat]]);
+      expect(ctx.calls.setPhase, 'o START pausou por uma porta sem assento').toEqual([]);
+      expect(ctx.calls.setPauseActor, 'pausou sem dizer de quem é o cartão que abre').toEqual([seat]);
+    });
+  }
 });
 
 /*

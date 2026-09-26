@@ -226,7 +226,10 @@ export interface GamepadCtx {
   worldRunning: () => boolean;
   /** Is the pause menu open? (START here RESUMES.) */
   pauseMenu: () => boolean;
-  /** Pause and resume. The root stacks the scene; only the intent leaves from here. */
+  /**
+   * Pause and resume. The root stacks the scene; only the intent leaves from here. ⚠️ `pause` carries no seat: it is the
+   * mapping wizard's, which stops everything while a pad is mapped. START in play is PRESSED for the pad's seat (`press`).
+   */
   pause: () => void;
   resume: () => void;
   /** Demonstration (attract) mode. */
@@ -276,7 +279,7 @@ export interface GamepadCtx {
    * 📌 REQUIRED, and ADR-0223's erratum says why: an optional door is one more field a game can forget, and forgetting
    * it brings back the silence this work exists to end. The root passes its virtual controller's `press`.
    */
-  press: (action: ActionKey | 'select', source: 'gamepad', player: number) => boolean;
+  press: (action: ActionKey | 'start' | 'select', source: 'gamepad', player: number) => boolean;
   /** Release the POSITION. The controller lets go of the key it held and delivers the release — only for a press the game heard. */
   release: (action: ActionKey, source: 'gamepad', player: number) => void;
   /**
@@ -536,7 +539,10 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   /** The real game: START pauses, the modal eats the d-pad, and the rest becomes an action flag. */
   function playRound(f: PadFrame, p: GamepadPlayer): void {
-    if (f.pauseEdge) { ctx.pause(); ctx.setPauseActor(f.owner); return; } // START pauses (everyone pauses; each screen navigates its own)
+    // START IS PRESSED FOR THIS PAD'S SEAT, as SELECT is: the virtual controller hands it to the engine (`systemPress`), which
+    // answers it as that seat's START key — its own quick pause, and START again leaves it (ADR-0155, ADR-0144 §1 and its
+    // erratum of 2026-09-26). A seatless `pause()` here froze seat 0's quick pause whoever pressed.
+    if (f.pauseEdge) { ctx.press('start', 'gamepad', f.owner); ctx.setPauseActor(f.owner); return; }
     if (ctx.hasModal(f.owner)) { // the pad navigates the player's OWN modal (the others' game goes on)
       // What left this module is the MEANING — the grid's ±1/±3 and the Braille detour, which are the game's decision.
       const hit = MODAL_BY_POSITION.find(([position]) => f.edge(position));

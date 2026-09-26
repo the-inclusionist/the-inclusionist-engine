@@ -20,6 +20,7 @@ metadata:
     - tests/the-pad-select-opens-the-menus.browser.test.js
     - tests/gamepad.node.test.js
     - tests/one-button-only.browser.test.js
+    - tests/the-pad-start-pauses-its-own-seat.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
@@ -38,6 +39,18 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        🔴 THE GAMEPAD'S START HAD A DOOR OF ITS OWN, AND IT HAD NO SEAT. The erratum below counts the gamepad's START among the
+        transports that already reached the pause; it did, but only SEAT 0's: in play the pad called the root's `pause()`, which
+        carries no seat, and the root answered `enterQuickPause(0)`. 📏 Measured through the real root with two fake pads, one
+        seated on each seat: seat 1's START opened the quick pause and put SEAT 0's directional on the bar — the child who pressed
+        nothing lost her d-pad to a menu. Now the pad's START in play is PRESSED on the virtual controller for the pad's seat, as
+        its SELECT already was, and `systemPress` answers it with `startForSeat`: that seat's quick pause, and START again leaves
+        it. ⚠️ Still seat 0's, not by this fix: with seat 0's quick pause or card open every pad's frame goes to the pause branch,
+        whose START is the finger's toggle for seat 0 (`togglePauseByTouch`) — so another seat's START there leaves seat 0's quick
+        pause; and the root's `menuWithDpad` sees seat 0's quick pause only. Gated by
+        `tests/the-pad-start-pauses-its-own-seat.browser.test.js` and `tests/gamepad.node.test.js`. Engine branch `pad-seat-select`.
     - date: 2026-09-26
       what: >-
         ✅ THE TWO TRANSPORTS STILL SHORT OF IT ARRIVE, AND THE ROUTE WITH A MENU OPEN CHANGED. The erratum below named the scan and
