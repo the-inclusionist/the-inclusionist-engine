@@ -102,25 +102,18 @@ jobs:
         run: npm run check:annual-report
 
   # ============================================================================================
-  # The promise the index makes about the records, kept by a machine.
+  # The engine's own records, beside the code they name (ADR-0242).
   # ============================================================================================
-  # 🔴 THE RECORDS' TREE NO LONGER LIVES HERE (ADR-0123) — and this job STAYS, which is the Dev's rule:
-# «cada repositório precisa ter seus validadores e gates para ADRs». What changed is where the tree comes from and,
-# above all, what THIS side can check and the other cannot: passing `--repo engine=.`, the `confirmed-by` paths
-# marked `engine:` are OPENED. In `the-inclusionist-docs` they can only be counted.
-#
-# 🔴 AND IT IS BORN DORMANT, which is a decision and not a retreat. The first version let the checkout fail without a
-# token — «falha ALTO é melhor do que um validador a correr sobre uma pasta vazia» —, and the first run after the push
-# proved it right in the diagnosis and wrong in the consequence: `Not Found`, `main` red, and red indefinitely while
-# waiting for a secret only the Dev can create.
-#
-# ⚠️ THIS FILE'S HEADER HAD ALREADY WRITTEN WHY THAT IS WORSE: the two GitLab scanners were RED for weeks and the grey
-# ✗ was read by nobody. A `main` that stays red for an administrative reason teaches people not to read red — and the
-# next red is the one that matters.
-#
-# 📌 THE WAY OUT ALREADY EXISTS IN THIS FILE, in `check:annual-report`: a DORMANT gate that prints a notice on every run
-# — a dormant gate is a notice, not a pass. It is the same shape here: without the secret, the job ANNOUNCES that it
-# checked nothing and says what to create; with it, it runs for real. Creating the secret is what wakes it.
+  # 🔴 THE TREE LIVES HERE AGAIN, so this job checks it on every push and needs no token for it — the dormant state
+  # ADR-0123 forced on this job is over for the engine's records. The Dev's rule stands: «cada repositório precisa ter
+  # seus validadores e gates para ADRs»; the kit (validator, its test, the tempo and debt sieves) lives here and in
+  # `the-inclusionist-docs`, identical.
+  #
+  # 📌 WHAT CROSSES INTO `the-inclusionist-docs` — 53 index rows and 9 supersession pointers — is COUNTED and SAID
+  # without the token, and OPENED with it. The token also buys the two things only this side can do: open the
+  # `engine:` confirmations of the records that stayed there (ADR-0123 §4), and compare the two copies of the kit.
+  #
+  # ⚠️ Without `DOCS_READ_TOKEN` those steps are a NOTICE, not a pass — the same shape as `check:annual-report`.
   adr:
     runs-on: ubuntu-latest
     env:
@@ -129,41 +122,58 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # ⚠️ A PRIVATE repository of the same organisation: a workflow's `GITHUB_TOKEN` does NOT reach another repository —
-# measured in run 34352635399, which failed with `Not Found`. This needs a PAT with content read access on
-# `the-inclusionist-docs`, stored here as `DOCS_READ_TOKEN`.
-      - name: DORMANT — the records could not be fetched, so nothing here was checked
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml
+
+      # Eight checks, including the bidirectional supersession pointers — now across repositories too. ⚠️ NO PIPE:
+      # the exit code is the gate, and «N sound» coexists with a non-zero exit.
+      - name: validate the engine's records
+        run: python scripts/validate-adr.py docs/2-Architecture/adr --repo engine=.
+
+      # 🎯 THE GATE OF THE GATE (ADR-0123 §3): the validator SAYS what it did not check.
+      - name: the validator says what it did NOT check
+        run: python scripts/test-validate-adr.py
+
+      - name: a record does not contradict its own tree
+        run: python scripts/tempo-dos-registos.py
+
+      - name: the debt census stays alive
+        run: python scripts/test-divida-dos-registos.py
+
+      # A REPORT, not a gate: it never fails (ADR-0126).
+      - name: how many records owe work nobody can find
+        run: python scripts/divida-dos-registos.py
+
+      - name: NOTICE — the-inclusionist-docs could not be fetched, so what crosses into it was only counted
         if: env.TEM_TOKEN != 'true'
         run: |
-          echo "::warning title=ADR gate dormant::the secret DOCS_READ_TOKEN is not set, so the records were" \
-               "NOT fetched and NOTHING was validated. This job is a notice, not a pass. Create a" \
-               "fine-grained PAT with read access to the-inclusionist/the-inclusionist-docs and store it as" \
-               "DOCS_READ_TOKEN in this repository."
+          echo "::warning title=Cross-repository records unchecked::the secret DOCS_READ_TOKEN is not set, so" \
+               "the-inclusionist-docs was NOT fetched: the rows and supersession pointers that cross into it were" \
+               "counted, not opened, its records' confirmations naming this repository were not checked, and the" \
+               "two copies of the records tooling were not compared. Create a fine-grained PAT with read access to" \
+               "the-inclusionist/the-inclusionist-docs and store it as DOCS_READ_TOKEN in this repository."
 
-      - name: the records
+      # ⚠️ A PRIVATE repository of the same organisation: a workflow's `GITHUB_TOKEN` does NOT reach another repository —
+      # measured in run 34352635399, which failed with `Not Found`.
+      - name: the-inclusionist-docs
         if: env.TEM_TOKEN == 'true'
         uses: actions/checkout@v7
         with:
           repository: the-inclusionist/the-inclusionist-docs
-          path: adr-tree
+          path: records-docs
           token: ${{ secrets.DOCS_READ_TOKEN }}
 
-      - uses: actions/setup-python@v7
+      - name: this tree, with what crosses into the-inclusionist-docs OPENED
         if: env.TEM_TOKEN == 'true'
-        with:
-          python-version: "3.12"
-      - if: env.TEM_TOKEN == 'true'
-        run: pip install --quiet pyyaml
-      # Eight checks, including the bidirectional supersession pointers. It caught a missing back-pointer
-      # the day it was written and has caught one in almost every session since.
-      # 📌 `--repo engine=.` is what this repository has and the other does not: the CODE the confirmations name.
-      - name: validate the ADR records, and OPEN the confirmations that name this repository
-        if: env.TEM_TOKEN == 'true'
-        run: python adr-tree/scripts/validate-adr.py adr-tree/docs/2-Architecture/adr --repo engine=. --repo docs=adr-tree
+        run: python scripts/validate-adr.py docs/2-Architecture/adr --repo engine=. --repo docs=records-docs
 
-      # 🎯 AND THE PROSE SIEVE, which belongs on the code's side because a record naming a file of THIS tree that no longer
-# exists is a break of THIS tree (ADR-0123 §5). Without `ADR_TREE` it skips, and a case of its own refuses the skip
-# in CI.
+      # 📌 `--repo engine=.` is what this repository has and the other does not: the CODE the confirmations name.
+      - name: the project-wide records, with the confirmations that name this repository OPENED
+        if: env.TEM_TOKEN == 'true'
+        run: python scripts/validate-adr.py records-docs/docs/2-Architecture/adr --root=records-docs --repo engine=. --repo docs=records-docs
+
       - uses: actions/setup-node@v7
         if: env.TEM_TOKEN == 'true'
         with:
@@ -171,17 +181,14 @@ jobs:
           cache: npm
       - if: env.TEM_TOKEN == 'true'
         run: npm ci
-      # 🎯 AND THE COUNTERMEASURE TO DRIFT, in the same job because this is where the two copies meet: two versions of the
-# validator give two verdicts on the SAME tree, and nothing says which is right. It has drifted once already, on the
-# day of the move.
-      - name: no record points at a gate that does not exist, and the two validators are the same
+      # 🎯 THE COUNTERMEASURE TO DRIFT, in the job where the two copies meet: two versions of the kit give two verdicts
+      # on the same tree. `DOCS_ROOT_REQUIRED` makes a skip fail here, where the checkout was declared.
+      - name: the two copies of the records tooling are the same
         if: env.TEM_TOKEN == 'true'
         env:
-          ADR_TREE: ${{ github.workspace }}/adr-tree/docs/2-Architecture/adr
-          # 🎯 The declaration of responsibility: with it, SKIPPING fails. It is what catches an `ADR_TREE` with the wrong
-# path — a failing checkout brings the job down by itself, a wrong path does not.
-          ADR_TREE_REQUIRED: "1"
-        run: npx vitest run --project node tests/records-pointing-at-dead-gates.node.test.js tests/the-validator-does-not-drift.node.test.js
+          DOCS_ROOT: ${{ github.workspace }}/records-docs
+          DOCS_ROOT_REQUIRED: "1"
+        run: npx vitest run --project node tests/the-validator-does-not-drift.node.test.js
 
   # ============================================================================================
   # Pillar 2, measured against the app RUNNING rather than against the source.
