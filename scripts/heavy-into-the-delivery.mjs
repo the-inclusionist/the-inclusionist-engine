@@ -125,8 +125,8 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   with nothing to sign but letters. Last, it writes `libras/offline.json`, the list of the page, glosses and signs with their
  *   sha256, by which a device with deaf mode on keeps the player for the days without a network.
  * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
- * · `--libras-avatar`: the FREE player's files (ADR-0234, route B, phase B2) — the avatar and the 632 sign clips of the B1 export,
- *   32.1 MiB, into `libras/avatar/`, each checked against `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`). Beside route
+ * · `--libras-avatar`: the FREE player's files (ADR-0234, route B, phase B2) — the avatar and the 655 sign clips of the B1 export,
+ *   the whole manual alphabet among them, 32.7 MiB, into `libras/avatar/`, each checked against `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`). Beside route
  *   A, not instead of it: a host lends the free player through `EngineHost.interpreter`. It reads the glosses `--libras` writes,
  *   so the two go together. Last, it writes `libras/offline-avatar.json` (phase B3), the list of those files and of the build's
  *   three.js chunk with their sha256, by which a device with deaf mode on keeps the free player for the days without a network —

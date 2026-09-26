@@ -254,8 +254,9 @@ permission (route B's first step; the 23 letters on 2026-09-25) into a folder ou
   no file carries, and two secondary texture slots are left out; the sign's constraints baked into bone tracks and its face's
   driver-moved shape keys sampled into morph tracks; keys reduced within a stated tolerance; node names as three.js's glTF
   loader renames them.
-- **Distributed: by a delivery built with `inclusionist-heavy --libras-avatar`** (phase B2): the avatar and the 632 clips of
-  the first export, **33,699,157 bytes**, each pinned by sha256 in `scripts/libras-avatar.json`, into `libras/avatar/` with the
+- **Distributed: by a delivery built with `inclusionist-heavy --libras-avatar`** (phase B2): the avatar and 655 clips — the
+  632 signs of the first export and the manual alphabet's 23 other letters — **34,283,274 bytes**, each pinned by sha256 in
+  `scripts/libras-avatar.json`, into `libras/avatar/` with the
   GPL-3.0 text and a NOTICE naming LAViD, the pinned commit and where the Corresponding Source is (`scripts/libras-avatar.mjs`).
   The npm package carries none of them. One clip is played from a later point than its file starts: FALA's `.blend` action
   begins at a stray keyframe 1404 frames before the sign, and the pins name the sign's start (46.8 s) with why.

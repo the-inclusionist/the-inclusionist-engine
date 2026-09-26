@@ -13,8 +13,10 @@
 // WHOLE, and said: spelling only the letters it has would show the child another word («ENTROU» with only its O is «O»).
 //
 // THE TIMING: each clip plays its window once, and the next one starts `CROSS_FADE_S` before it ends, fading in while the other
-// fades out — every exported clip starts and ends in the same pose (arms down), so the overlap joins them without passing
-// through the avatar's rest. The last one plays to its end and its final pose is held: that moment is the player's «stopped».
+// fades out — almost every exported clip starts and ends in the same pose (arms down), so the overlap joins them without passing
+// through the avatar's rest. 📏 13 of the 655 do not: the letter E holds its raised handshape from its first frame to its last,
+// NÃO_OUVIR keeps the right arm at the avatar's rest, and eleven (CASA and SIM among them) rest their hands lower. The last one
+// plays to its end and its final pose is held: that moment is the player's «stopped».
 
 import { provisionalGloss } from './libras-glosses.js';
 
@@ -27,7 +29,7 @@ export { LIBRAS_AVATAR_FOLDER } from '../platform/heavy-catalogue.js';
 /** The manifest the delivery writes in that folder: the avatar's file and every clip it carries, with its window. */
 export const LIBRAS_AVATAR_MANIFEST = 'manifest.json';
 /**
- * How long two clips overlap, fading one into the other, in seconds. Every clip is at least 1.2 s (📏 the 632 of the export:
+ * How long two clips overlap, fading one into the other, in seconds. Every clip is at least 1.2 s (📏 the 655 of the delivery:
  * 1.2–7.1 s, median 2.47 s), and the overlap never exceeds half of either clip, so no clip is swallowed by its neighbours.
  */
 export const CROSS_FADE_S = 0.3;

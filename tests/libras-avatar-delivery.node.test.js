@@ -15,8 +15,10 @@ import {
 } from '../scripts/libras-avatar.mjs';
 import { avatarPlace, prepareClips } from '../app/js/ui/libras-avatar-load.js';
 import { DELIVERY_LISTS, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
-import { COMMIT } from '../scripts/libras-export.mjs';
-import { avatarManifestOf, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, playedLength } from '../app/js/ui/libras-avatar-plan.js';
+import { COMMIT, MANUAL_ALPHABET, PINS as SOURCE_PINS } from '../scripts/libras-export.mjs';
+import {
+  avatarManifestOf, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, planSigns, playedLength,
+} from '../app/js/ui/libras-avatar-plan.js';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex');
 const FILES = {
@@ -169,7 +171,7 @@ describe('the free player asks every clip where the delivery\'s list keeps it', 
     expect(await prepareClips(stage, names, manifest, place, fetchFile, new Map())).toEqual([]);
     const kept = avatarListPaths({ folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk: 'assets/x.js' })
       .filter((p) => p.includes('/clips/')).map((p) => new URL(p, BASE).href);
-    expect(fetched.length).toBe(632);
+    expect(fetched.length).toBe(655); // the 632 signs the glosses use and the manual alphabet's 23 missing letters
     expect(fetched.filter((u) => !kept.includes(u)), 'the player asks these where the checked cache holds nothing').toEqual([]);
     expect(fetched).toContain('https://escola.example/jogo/libras/avatar/clips/PRIMEIRO&ORDINAL.json');
     expect(fetched).toContain('https://escola.example/jogo/libras/avatar/clips/N%C3%83O.json');
@@ -183,12 +185,13 @@ describe('the free player asks every clip where the delivery\'s list keeps it', 
 describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
   const pins = readAvatarPins();
 
-  it('🔴 [Right] they are the B1 export at the pinned commit: the avatar and the 632 clips, the digits among them', () => {
+  it('🔴 [Right] they are the B1 export at the pinned commit: the avatar and the 655 clips, the digits and the whole manual alphabet among them', () => {
     expect(pins.commit).toBe(COMMIT);
     expect(pins.mirror).toBe(`vlibras-avatar-${COMMIT.slice(0, 7)}/`);
     expect(pins.avatar).toEqual({ bytes: 2175208, sha256: '60a166b6ac3af4c9bc773193c32bccd45536746b195ee85d597484f2653d26f8' });
-    expect(Object.keys(pins.clips)).toHaveLength(632);
+    expect(Object.keys(pins.clips)).toHaveLength(655);
     for (const d of '0123456789') expect(pins.clips[d], `the digit ${d} has no clip`).toBeDefined();
+    for (const letter of MANUAL_ALPHABET) expect(pins.clips[letter], `the letter ${letter} has no clip`).toBeDefined();
     for (const [name, c] of Object.entries(pins.clips)) {
       expect(c.sha256, name).toMatch(/^[0-9a-f]{64}$/);
       expect(c.duration, name).toBeGreaterThan(0);
@@ -199,7 +202,26 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
     expect(pins.clips.FALA.from).toBe(46.8);
     expect(pins.windows.FALA).toMatch(/-1404/);
     expect(Object.entries(pins.clips).filter(([, c]) => c.from !== undefined).map(([n]) => n)).toEqual(['FALA']);
-    expect(avatarManifestOf(deliveredManifest(pins)).clips.size).toBe(632);
+    expect(avatarManifestOf(deliveredManifest(pins)).clips.size).toBe(655);
+  });
+
+  it('🔴 [Right] every delivered clip has its .blend pinned: the Corresponding Source of each is in libras-export/sources.json', () => {
+    const sources = JSON.parse(readFileSync(SOURCE_PINS, 'utf8')).signs;
+    const unsourced = Object.keys(pins.clips).filter((name) => !sources[name]);
+    expect(unsourced, 'a clip is delivered whose source is not pinned').toEqual([]);
+  });
+
+  it('🎯 [Right] a word with no sign is spelled whole from the delivery\'s letters: «PÕE» P-O-E, and a word of letters it lacked before', () => {
+    const carried = (name) => name in pins.clips;
+    // the quiz's first question, as the delivery's glosses hand it over (PÕE has no sign; the build wrote it as the child reads it)
+    expect(planSigns('QUAL ANIMAL POE OVO TER BICO [INTERROGAÇÃO]', carried)).toEqual({
+      steps: ['QUAL', 'ANIMAL', 'P', 'O', 'E', 'OVO', 'TER', 'BICO'].map((clip) => (clip.length === 1 ? { clip, spells: 'POE' } : { clip })),
+      unsigned: [],
+    });
+    // «CRT», of the visual sensitivity panel: none of its letters was carried before the manual alphabet
+    expect(planSigns('ESTÉTICA CRT', carried).steps.slice(-3)).toEqual([{ clip: 'C', spells: 'CRT' }, { clip: 'R', spells: 'CRT' }, { clip: 'T', spells: 'CRT' }]);
+    // no word of Portuguese letters is left out any more: every letter, accented or not, reaches a clip
+    expect(planSigns('ÁGUA JÁ ÇÃO XÍCARA WEB KIWI ÊXITO ÔNIBUS ÜBER', carried).unsigned).toEqual([]);
   });
 
   it('[Right] regenerated from an export\'s manifest, the pins carry the window at the clip\'s own rate, as text one clip a line', () => {
@@ -230,3 +252,8 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
 //   L5 the list hashing something other than the bytes on the disk      🔴 «the sha256 on the disk» (in `scripts/vlibras-player.mjs`)
 //   K1 the player encoding each clip name with encodeURIComponent again  🔴 «the address fetched is the address kept» (in `ui/libras-avatar-load`)
 //   K2 a pinned clip whose name carries a `#`                              🔴 «no real clip name carries…» (in `scripts/libras-avatar.json`)
+// (2026-09-25, the manual alphabet; scripted the same way, the pins or the plan restored from a copy — all 4 red)
+//   D6 the pins without P's clip                                          🔴 «the 655 clips» · «spelled whole»
+//   D7 the pins without Ç's clip                                          🔴 «the 655 clips»
+//   D8 Z's .blend unpinned in libras-export/sources.json                  🔴 «every delivered clip has its .blend pinned»
+//   D9 planSigns spelling a word with its accents kept                    🔴 «spelled whole»
