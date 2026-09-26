@@ -18,9 +18,9 @@ covered by it, we do **not** add a separate rules doc — that plan carries them
   `metadata.status: "superseded by ADR-NNNN"`, and `status` is now an ENUM that holds nothing else. The
   narrative moved to `superseded-by`, `supersedes`, `superseded-in-part` and `errata` — and the validator
   checks the pair in BOTH directions, so a supersession without its back-pointer fails.
-- **ADRs are modified during a sprint** and live in
-  [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs) (`docs/2-Architecture/adr/`)
-  — **not** in the sprints folder, and 🔴 since 2026-09-09 (ADR-0123) **not in this repository either**.
+- **ADRs are modified during a sprint** and live in `docs/2-Architecture/adr/` — **not** in the sprints folder. The
+  engine's records came home on 2026-09-26 (ADR-0242); what belongs to the whole project stays in
+  [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs).
 
 > Author's guardrail: *"an LLM 'likes' to solve a problem by writing more, not by revising."* The antidote is
 > **tiering** (only the artifacts a Tier-2 project needs) + **supersede-don't-append**, so the record shrinks as it

@@ -4,7 +4,7 @@ Historical study (2026-07-06): kept as a record; the current state lives in `app
 # Why ONNX and not NCNN for the neural TTS (study)
 
 It justifies the choice of the **ONNX** runtime (via sherpa-onnx-wasm) instead of **NCNN** (via sherpa-ncnn), decided in
-**[ADR-0022](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**.
+**[ADR-0022](../2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**.
 
 ## What the study confirmed
 

@@ -1,4 +1,4 @@
-> Historical plan (2026-06-30): kept as a record; the current state lives in ADR-0011 (visual) and ADR-0013 (motor) in `the-inclusionist-docs`, and in the panels `app/js/ui/settings-visual.ts`, `settings-motion.ts` and `settings-mobility.ts`.
+> Historical plan (2026-06-30): kept as a record; the current state lives in ADR-0011 (visual) and ADR-0013 (motor) in `docs/2-Architecture/adr/`, and in the panels `app/js/ui/settings-visual.ts`, `settings-motion.ts` and `settings-mobility.ts`.
 
 # Accessibility Plan — The Inclusionist (v4)
 

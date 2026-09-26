@@ -1,4 +1,4 @@
-Historical plan (2026-07-06): kept as a record; the current state lives in ADR-0020 (the canonical z-order, in `the-inclusionist-docs`). [Today: `app/js/core/layers.ts` no longer exists; it left the engine with the tile world on 2026-09-23 (commit `87b6cdbe`).]
+Historical plan (2026-07-06): kept as a record; the current state lives in ADR-0020 (the canonical z-order, in `docs/2-Architecture/adr/`). [Today: `app/js/core/layers.ts` no longer exists; it left the engine with the tile world on 2026-09-23 (commit `87b6cdbe`).]
 
 # Plan — rewiring the layers to `core/layers.ts` (canonical z-order) · issue !52 · ADR-0020
 

@@ -6,7 +6,7 @@ A **camada currículo** do modelo de duas camadas (ver `../CONTRIBUTING.md`). Aq
 
 Escrita em **pt-BR** por natureza (BNCC, alfabetização, fundamentos pedagógicos são conteúdo brasileiro).
 
-Decisão de governança: **[ADR-0004](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml)** (quais
+Decisão de governança: **[ADR-0004](../2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml)** (quais
 artefatos educacionais adotamos/adiamos/rejeitamos).
 
 ## Artefatos

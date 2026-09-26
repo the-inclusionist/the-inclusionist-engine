@@ -1,4 +1,4 @@
-Historical study (2026-07-02, engine v4.0.0): kept as a record; the current state lives in `app/js/render/high-contrast.ts`, `app/js/render/viz-modes.ts`, `app/js/render/lq-filter.ts` and ADR-0011 (visual accessibility, in `the-inclusionist-docs`).
+Historical study (2026-07-02, engine v4.0.0): kept as a record; the current state lives in `app/js/render/high-contrast.ts`, `app/js/render/viz-modes.ts`, `app/js/render/lq-filter.ts` and ADR-0011 (visual accessibility, in `docs/2-Architecture/adr/`).
 
 # Research — High Contrast modes (v4.0.0)
 

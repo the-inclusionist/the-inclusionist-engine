@@ -1,4 +1,4 @@
-> Historical plan (2026-06-30): kept as a record; the current state lives in ADR-0014 in `the-inclusionist-docs` and in `app/js/platform/audio-*.ts` and `app/js/ui/settings-audio.ts`.
+> Historical plan (2026-06-30): kept as a record; the current state lives in ADR-0014 in `docs/2-Architecture/adr/` and in `app/js/platform/audio-*.ts` and `app/js/ui/settings-audio.ts`.
 
 # Phase F — Audio / Sound design (strategy)
 

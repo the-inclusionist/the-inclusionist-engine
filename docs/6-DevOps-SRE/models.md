@@ -2,7 +2,7 @@
 
 > The engine's voice, recognition and vision models, one section each: **role**, **where it comes from**, **how the engine uses
 > it**, **how to rebuild it from zero**, and **how to check it**. Decisions: ADR-0190, ADR-0193, ADR-0194, ADR-0197, ADR-0198,
-> ADR-0200, ADR-0201, ADR-0202, ADR-0203, ADR-0207 (all in `the-inclusionist-docs`). Issues: #181, #184, #185, #189, #190, #193.
+> ADR-0200, ADR-0201, ADR-0202, ADR-0203, ADR-0207 (all in `docs/2-Architecture/adr/`). Issues: #181, #184, #185, #189, #190, #193.
 
 ## The order the engine tries
 

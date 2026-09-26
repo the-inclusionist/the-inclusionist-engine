@@ -93,7 +93,7 @@ What speaks it, fetched by the engine beside the model: **[eSpeak NG](https://gi
 
 > The voice's files are **downloaded once** — by the build into the delivery's `heavy/` folder, and from there into the
 > device's cache — and run **100% locally** afterwards: no child's audio leaves the device. See ADR-0216 (the engine loads
-> the voice), ADR-0198 and ADR-0207 in `the-inclusionist-docs · docs/2-Architecture/adr/`.
+> the voice), ADR-0198 and ADR-0207 in `docs/2-Architecture/adr/`.
 
 ## The other runtimes and models the engine downloads
 

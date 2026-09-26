@@ -1,6 +1,6 @@
 # Notice — the Piper voices are withdrawn from The Inclusionist engine
 
-**Date:** 2026-09-14 · **Decision:** ADR-0207 (`the-inclusionist-docs`) · **Work:** issue #193
+**Date:** 2026-09-14 · **Decision:** ADR-0207 (`docs/2-Architecture/adr/`) · **Work:** issue #193
 
 ## What we learned
 

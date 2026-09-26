@@ -10,8 +10,9 @@ rule for which one wins.
 The list of problems comes from an external catalogue of 108 software engineering problems; the
 verdicts come from reading **this** repository. The evidence column is always from here.
 
-> 🔴 **THE ADR TREE LEFT THIS REPOSITORY ON 2026-09-09 (ADR-0123)** and lives in
-> [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs), at the same path.
+> 🔴 **THE ADR TREE LEFT THIS REPOSITORY ON 2026-09-09 (ADR-0123), AND THE ENGINE'S RECORDS CAME BACK ON 2026-09-26
+> (ADR-0242)**, to the same path; the whole project's stay in
+> [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs).
 > The **fifty-five** citations of `docs/2-Architecture/adr/…` in the evidence column **stay as
 > they are**, and the decision is the same one ADR-0057 takes about a record's prose: they are EVIDENCE of a
 > reading made on a date, not an index of where to look today. Rewriting them would make false the only column
