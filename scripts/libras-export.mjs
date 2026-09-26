@@ -415,6 +415,58 @@ export function probeError(gltf, clip, report) {
   return { position, weight };
 }
 
+// ── where a spelled letter's hand is held up ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * THE SHARE OF ITS RISE AT WHICH A HAND COUNTS AS UP, and the rule it belongs to (`heldWindow`). The free player chains the
+ * letters of a spelled word — each one starts where its hand is up and hands over where it starts down, so the hand stays up
+ * between letters (interface log, 2026-09-26) — and this is where «up» is. 📏 Measured on the 37 letter and digit clips of
+ * the export at `COMMIT` — each lifts the right wrist 2.44–3.46 units from the arms-down pose it starts and ends in, and the left
+ * 0.001 at most; E alone is still: at 90 % the rise takes 0.28–0.50 s (median 0.47), the fall from `down` 0.28–0.54 s (median
+ * 0.50), and the window held between them is 0.64–1.17 s (median 0.66; E 1.67). At `up` the fingers and the wrist are already
+ * 83–92 % of the way to their held pose in the 30 clips that hold still once up (H, J, K, X, Y and Z move while up, inside the
+ * window) — the cross-fade finishes the rest. The share is not sensitive: 95 % moves either edge by 0.05 s at most, 80 % by 0.07.
+ */
+export const HELD_SHARE = 0.9;
+/** A hand that rises less than this (avatar units; the letters rise 2.44–3.46, E 0) does not move: its clip is a still pose. */
+export const STILL_RISE = 0.01;
+/** How finely a clip is sampled for its window: twice the clips' 30 frames a second. */
+const HELD_STEP = 1 / 60;
+
+/**
+ * WHERE A CLIP'S HAND IS HELD UP, `[up, down]` in seconds — measured on the clip itself, by forward kinematics over the avatar:
+ *   · the hand is the one that rises most, from the lower of its heights at the clip's two ends (a letter starts and ends
+ *     with the arms down);
+ *   · its RAISED height is the median of its heights over the frames above half its peak — robust to a letter whose motion
+ *     overshoots or dips: X peaks at 3.91 and holds at 3.32, so 90 % of its PEAK would end its window at 0.82 s, in the middle
+ *     of the hook it makes up there (it ends at 1.30);
+ *   · `up` is the first frame at `share` of that height, `down` the last — so a motion made while raised (J, Z, X, H) stays
+ *     inside the window;
+ *   · a clip whose hand does not move (`STILL_RISE`; the letter E, held raised from its first frame to its last) is held for
+ *     its whole length: `[0, duration]`, and a chain passes through it.
+ * Rounded to the hundredth — the sampling is 1/60 s — and never past the clip's end.
+ */
+export function heldWindow(gltf, clip, { hands = ['BnMao.R', 'BnMao.L'], share = HELD_SHARE, step = HELD_STEP } = {}) {
+  const times = [];
+  for (let i = 0; i * step < clip.duration - 1e-9; i++) times.push(i * step);
+  times.push(clip.duration);
+  const curves = hands.map((bone) => {
+    const heights = times.map((t) => worldPosition(gltf, clip, bone, t)[1]);
+    const low = Math.min(heights[0], heights[heights.length - 1]);
+    const ys = heights.map((y) => y - low);
+    const peak = Math.max(...ys);
+    const above = ys.filter((y) => y >= peak / 2).sort((a, b) => a - b);
+    return { ys, raised: peak < STILL_RISE ? 0 : above[above.length >> 1] };
+  });
+  const { ys, raised } = curves.reduce((a, b) => (b.raised > a.raised ? b : a));
+  if (!raised) return [0, clip.duration];
+  const up = ys.findIndex((y) => y >= share * raised);
+  let down = ys.length - 1;
+  while (down > up && ys[down] < share * raised) down -= 1;
+  const at = (t) => Math.min(clip.duration, Math.round(t * 100) / 100);
+  return [at(times[up]), at(times[down])];
+}
+
 // ── avatar identity and the manifest ───────────────────────────────────────────────────────────────────────────────────────
 
 /** How far (Blender units, i.e. metres; weights and colours are 0…1) a file's avatar may be from the avatar sign's and be it. */

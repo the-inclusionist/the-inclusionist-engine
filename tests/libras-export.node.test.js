@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import {
   signNames, blendUrl, isBlend, sanitizeNodeName, parseGlb, readAccessor, reduceKeys, continuousQuaternions, clipFromGlb,
   avatarBindings, checkClip, worldPosition, avatarIdentity, timing, clipEntry, manifest, BLENDER_FLAGS, EXPORT_PY, COMMIT,
-  DISCRETE, IDENTITY_TOLERANCE, pinsText, PINS, MANUAL_ALPHABET, exportNames, defaultSigns,
+  DISCRETE, IDENTITY_TOLERANCE, pinsText, PINS, MANUAL_ALPHABET, exportNames, defaultSigns, heldWindow, HELD_SHARE,
 } from '../scripts/libras-export.mjs';
 import { readAvatarPins } from '../scripts/libras-avatar.mjs';
 
@@ -258,6 +258,45 @@ describe('the numeric check: a clip against the avatar', () => {
     // the clip's scale 1.5 on Bn.A stretches Bn.B's offset: (0, 1 + 1.5, 0) before the turn, (−1.5, 1, 0) after it
     expect(at(0)).toEqual([0, 2.5, 0]);
     expect(at(1)).toEqual([-1.5, 1, 0]);
+  });
+});
+
+/**
+ * 🔴 WHERE A SPELLED LETTER'S HAND IS HELD UP (`heldWindow`): the free player chains a spelled word's letters from it, so the
+ * window must be the hand's own, measured on the clip. Two wrists, no parents, heights driven by a position track.
+ */
+describe('where a spelled letter\'s hand is held up', () => {
+  const hands = { asset: { version: '2.0' }, nodes: [{ name: 'BnMao.R', translation: [0.3, -0.8, 0] }, { name: 'BnMao.L', translation: [-0.3, -0.8, 0] }] };
+  /** A clip moving one wrist's height through `keys` ([time, height] pairs), the other left where it stands. */
+  const lift = (node, keys, duration = keys[keys.length - 1][0]) => ({ name: 'L', duration, tracks: [{
+    name: `${sanitizeNodeName(node)}.position`, type: 'vector', times: keys.map(([t]) => t),
+    values: keys.flatMap(([, y]) => [node.endsWith('R') ? 0.3 : -0.3, y, 0]) }] });
+
+  it('🔴 [Right] up is the first moment at 90 % of the rise, down the last: a rise, a hold and a fall', () => {
+    // up by 3 in 0.4 s, held to 1.5 s, down in 0.4 s: sampled every 1/60 s, 2.7 is first reached at 0.367 s and last held at 1.533 s
+    expect(heldWindow(hands, lift('BnMao.R', [[0, -0.8], [0.4, 2.2], [1.5, 2.2], [1.9, -0.8]]))).toEqual([0.37, 1.53]);
+  });
+
+  it('🎯 [Right] a motion that overshoots while up stays INSIDE the window — measured against the height held, not the peak', () => {
+    // up by 4 at 0.5 s, back to 3 by 0.7 s and held there (X's hook): 90 % of its PEAK would end the window at 0.58 s
+    const hook = lift('BnMao.R', [[0, -0.8], [0.5, 3.2], [0.7, 2.2], [1.5, 2.2], [1.9, -0.8]]);
+    expect(heldWindow(hands, hook)).toEqual([0.35, 1.53]);
+  });
+
+  it('🔴 [Right] the hand measured is the one that rises: a sign made with the left hand is the left hand\'s window', () => {
+    expect(heldWindow(hands, lift('BnMao.L', [[0, -0.8], [0.25, 2.2], [1, 2.2], [1.4, -0.8]]))).toEqual([0.23, 1.03]);
+  });
+
+  it('🎯 [Boundary] a hand that does not move is a still pose, held for the whole clip — E, held up from its first frame to its last', () => {
+    expect(heldWindow(hands, lift('BnMao.R', [[0, 1.98], [1.6667, 1.98]]))).toEqual([0, 1.6667]);
+    expect(heldWindow(hands, { name: 'E', duration: 1.2, tracks: [] }), 'no track at all is no rise').toEqual([0, 1.2]);
+  });
+
+  it('[Boundary] the edges are hundredths, and never past the clip\'s end', () => {
+    const [up, down] = heldWindow(hands, lift('BnMao.R', [[0, -0.8], [0.333, 2.2], [1.6667, 2.2]]));
+    expect(up).toBe(0.3);
+    expect(down, 'the window ran past the clip').toBe(1.6667);
+    expect(HELD_SHARE).toBe(0.9);
   });
 });
 
