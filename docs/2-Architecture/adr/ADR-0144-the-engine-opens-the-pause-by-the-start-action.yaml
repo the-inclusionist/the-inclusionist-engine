@@ -17,6 +17,9 @@ metadata:
     - app/js/input/virtual-controller.ts
     - tests/virtual-controller.node.test.js
     - tests/start-and-select-from-every-transport.browser.test.js
+    - tests/the-pad-select-opens-the-menus.browser.test.js
+    - tests/gamepad.node.test.js
+    - tests/one-button-only.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
@@ -35,6 +38,21 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        ✅ THE TWO TRANSPORTS STILL SHORT OF IT ARRIVE, AND THE ROUTE WITH A MENU OPEN CHANGED. The erratum below named the scan and
+        the gamepad's SELECT. The gamepad's SELECT button (8 in the standard table) now presses `select` on the virtual controller
+        for its seat, and the engine answers it as the keyboard's F: the card in play, the card from the quick pause without
+        unfreezing, nothing over an open card or panel. The scan offers «menu» (SELECT) and «pausar» (START) in play (ADR-0218
+        erratum of the same day). 🔴 And the erratum below said «with a menu open the position is still the menu's key» — the FIRST
+        key the child bound to it. 📏 Measured with `start` bound to `Enter` alone: a camera's START in the quick pause became the
+        bar's «confirm», pressing the icon under the cursor, and the game stayed frozen; in the solo scheme (`KeyH` first) it worked
+        only because H means nothing to a menu. Now `start` and `select` go to `systemPress` with a menu open too, as the
+        position, and the root answers them with `startForSeat` and `openSeatMenus`: START always leaves the quick pause,
+        whatever keys are bound. The keyboard is unchanged — its Enter on the bar is still «confirm». Gated by
+        `tests/start-and-select-from-every-transport.browser.test.js` (START bound to Enter), `tests/virtual-controller.node.test.js`
+        and `tests/the-pad-select-opens-the-menus.browser.test.js` with `tests/gamepad.node.test.js`; every mutation red but one,
+        named in the pad file (the edge read as the state is held in node only). Engine `f4f1b684`, `9f61641a`, `2e9c76a1`.
     - date: 2026-09-26
       what: >-
         ✅ START AND SELECT NOW REACH THE PAUSE FROM EVERY TRANSPORT — §1 said «from any transport», and it was true only for the

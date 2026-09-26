@@ -254,3 +254,16 @@ now built from the child's scheme: one key per position, an arrow or Space named
 escolher e Espaço para responder.» in the default scheme, her own keys after a remap, and a position with no key is not
 named (with no key at all: «Quiz. Toque numa resposta para responder.»). `engine:77868fdc`; the double answer one Space used
 to give, which this line would have sent children into, `engine:aeea9423`.
+
+## 2026-09-26 · One-button scanning inside a menu, and the engine's two doors in play
+
+⚠️ Chosen while building ADR-0218 §3 and NOT YET SEEN by the Dev — no Dev words to quote. Inside the quick pause, the card or
+a panel, the scan offers that menu's own steps after «cancelar»: «próximo · confirmar · voltar · anterior» (English «next ·
+confirm · back · previous», Spanish «siguiente · confirmar · volver · anterior»). The order is how often a child needs each:
+every menu here is a ring, so «próximo» alone reaches every item; «confirmar» ends every choice; «voltar» leaves — the quick
+pause, a sub-list, a panel, the card —; «anterior» is a shortcut the ring already covers, so it waits last. There is no
+sideways step, so a slider or a ⯇ ⯈ control in a panel cannot be adjusted by scanning yet. In play, after the game's named
+positions, the scan offers the engine's doors in the order ADR-0218 §3 names them: «menu» (SELECT, the card), then «pausar»
+(START, the quick pause; English «menu», «pause», Spanish «menú», «pausar»), each only where it has something behind it.
+The chip's words for both lists are lower case, like «cancelar», so they read as the engine's and not as a game's own words.
+Engine `5aff5bf8` (the menus), `2e9c76a1` (the doors).

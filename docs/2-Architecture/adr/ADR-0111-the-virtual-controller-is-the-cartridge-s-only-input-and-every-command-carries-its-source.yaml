@@ -12,7 +12,17 @@ metadata:
     - tests/no-abstract-name-reaches-a-person.node.test.js
     - app/js/input/synthetic-source.ts
     - tests/virtual-controller.node.test.js
+    - tests/start-and-select-from-every-transport.browser.test.js
   errata:
+    - date: 2026-09-26
+      what: >-
+        🔴 «WITH A MENU OPEN THEY ARE STILL THE MENU'S KEY», in the first erratum below, is no longer true, and it was the cause of a
+        defect. Handed to the menu, a system position became the FIRST key the child bound to it: with `start` bound to `Enter`
+        alone, a camera's START in the quick pause was the bar's «confirm» and not the way out. The virtual controller now hands
+        `start` and `select` to the engine (`systemPress`) with a menu open too, as the position, and the engine answers them as
+        its own START and SELECT keys: START again leaves the quick pause, SELECT goes on to the card, an open card or panel refuses
+        both. They still never reach play. A KEY still means what the child bound to it: the keyboard's Enter on the bar is still
+        «confirm». ADR-0144's erratum of the same day has the measurement. Engine `f4f1b684`.
     - date: 2026-09-26
       what: >-
         ✅ THE SYSTEM POSITIONS NEVER REACH PLAY, AND TWO MORE KEYS STOP BEING TWO ACTIONS — the rule of the two errata below,

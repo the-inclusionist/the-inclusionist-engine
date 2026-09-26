@@ -6,9 +6,28 @@ metadata:
     - tests/pause-icons.node.test.js
     - tests/no-need-to-hold.browser.test.js
     - tests/boot-create-game.browser.test.js
+    - tests/one-button-only.browser.test.js
+    - tests/menu-nav.browser.test.js
   supersedes-in-part:
     - ADR-0211
   errata:
+    - date: 2026-09-26
+      what: >-
+        ✅ THE ENGINE'S DOORS ARE BUILT, AND SCANNING WORKS INSIDE THE MENUS. §3's «then the doors the engine itself opens» was
+        unbuilt: in play the scan offered «cancel» and the game's named positions only. 📏 And a door built alone would have been a
+        trap, measured before: inside the quick pause, the card or a panel a scan press did NOTHING — the switch's key is stopped
+        before any listener, and the press reached the virtual controller stamped `teclado`, which the menu-key translator treats
+        as a key already in the world and never re-sends. Now, in play, after the game's named positions the scan offers «menu»
+        (SELECT, where the card is mounted) and then «pausar» (START, where the quick pause has its bar), in the order §3 names
+        them; a door with nothing behind it is not offered (ADR-0155). With a menu in front — the quick pause, the card, a panel —
+        the pass is that menu's own steps, «cancel · next · confirm · back · previous», and a press moves the menu through
+        `ui/menu-nav` (`MenuNavApi.navIntent`), the path and guards a key takes; the list changes, from «cancel», when a menu
+        opens or closes. §4 (any input selects) and §5 (the 1 s step) stand. The order and the words are an interface choice,
+        in the interface log of 2026-09-26 and not yet seen by the Dev. 🌐 On the served `dist/quiz.html` with one key (S): «pausar»
+        opened the quick pause, «próximo» walked the bar twice, «voltar» left it; «menu» opened the card, «próximo» moved its
+        cursor, «voltar» closed it; the pass went back to the game's words. ⚠️ Not built: a sideways step, so a slider or a ⯇ ⯈
+        control in a panel cannot be adjusted by scanning; and §4's touch and camera presses still act as themselves while the
+        scan is on — only keys are collapsed into «take the one shown». Engine `5aff5bf8`, `2e9c76a1`.
     - date: 2026-09-21
       what: >-
         ✅ THE SKIP IS THE DEV'S NOW, not an inference of mine. Shown that the ☝️ offers two positions in the quiz demo — which
