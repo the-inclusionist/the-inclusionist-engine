@@ -280,6 +280,14 @@ export interface GamepadCtx {
   /** Release the POSITION. The controller lets go of the key it held and delivers the release — only for a press the game heard. */
   release: (action: ActionKey, source: 'gamepad', player: number) => void;
   /**
+   * ONE BUTTON ONLY (ADR-0218 §4): asked once per frame in which a button of a pad WENT DOWN — a position, START or SELECT.
+   * `true`: one-button scanning took it as «take the one shown», and nothing else of that pad's frame happens. It is the question
+   * the virtual controller asks of every press (`takeShown` there); the pad asks it too because it also steers the pause card,
+   * a panel, the quick bar and the title, and opens and leaves the pause, by itself and without pressing a position.
+   * Absent: every press is itself.
+   */
+  takeShown?: () => boolean;
+  /**
    * The player's OWN modal: the engine delivers the INTENT, the game decides (ADR-0033).
    *
    * One intent and not four verbs (move, confirm, erase, announce Braille): with the verbs, the decision of which to
@@ -583,6 +591,9 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     return true;
   }
 
+  /** Did a button go down on this frame — any position, START or SELECT? A button held is one press, not one a frame. */
+  const wentDown = (f: PadFrame): boolean => f.startEdge || f.pauseEdge || f.selectEdge || PAD_POSITIONS.some((k) => f.edge(k));
+
   /** A physical button used -> the on-screen pad goes away (the keyboard's rule): any of the nine positions read. */
   function hideTouchPadIfHeld(f: PadFrame): void {
     if (ctx.isTouchMode() && (f.cur._start || PAD_POSITIONS.some((k) => f.cur[k]))) ctx.hideTouchControls();
@@ -616,6 +627,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       const f = readPad(gp, ctx.getPlayers());
       releaseWhatCameUp(f); // before every branch: the finger leaves the button wherever it likes (ADR-0223)
       hideTouchPadIfHeld(f);
+      if (wentDown(f) && ctx.takeShown?.()) continue; // one button only: the button is the switch (ADR-0218 §4)
       if (!winOverlayTook(f)) steerFrame(f);
     }
   }

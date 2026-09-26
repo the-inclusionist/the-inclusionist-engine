@@ -673,6 +673,7 @@
       "srSay",
       "stopAttract",
       "t",
+      "takeShown?",
       "wizardStep",
       "wizardTick",
       "worldRunning"
@@ -1225,7 +1226,8 @@
       "menuOpen",
       "releaseKey",
       "scheme",
-      "systemPress?"
+      "systemPress?",
+      "takeShown?"
     ],
     "interface VirtualController": [
       "press",

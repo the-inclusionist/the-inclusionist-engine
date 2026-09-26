@@ -3244,6 +3244,8 @@
     "warp",
     "weight",
     "pass",
-    "scanning"
+    "scanning",
+    "pressing",
+    "takes"
   ]
 }

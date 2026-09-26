@@ -28,8 +28,8 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2281,
-      "decisionNodes": 289,
+      "codeLines": 2303,
+      "decisionNodes": 293,
       "maxDepth": 4,
       "fanOut": 97,
       "globalReach": 0,
@@ -498,12 +498,12 @@
       "fanIn": 1
     },
     "input/gamepad.ts": {
-      "codeLines": 308,
-      "decisionNodes": 60,
+      "codeLines": 311,
+      "decisionNodes": 61,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 8,
+      "worstFunction": 10,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -758,12 +758,12 @@
       "fanIn": 1
     },
     "input/virtual-controller.ts": {
-      "codeLines": 51,
-      "decisionNodes": 8,
+      "codeLines": 53,
+      "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 10,
+      "worstFunction": 11,
       "statefulEdges": 0,
       "fanIn": 1
     },

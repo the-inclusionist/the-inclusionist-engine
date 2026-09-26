@@ -2460,7 +2460,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * first is not what can be built first.
    */
   const blockKey = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
-  let scanPress: ((source: TransportName) => void) | null = null;
+  /** Takes the item the scan shows, for a press from `source`; answers whether one-button scanning took it (ADR-0218 §4). */
+  let scanPress: ((source: TransportName | undefined) => boolean) | null = null;
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (!state.switchScan || !scanPress || keyboard.whichPlayer(e.code) < 0) return;
     // A HELD KEY IS ONE PRESS, not one a frame: a child who cannot let go would otherwise take an item every repeat.
@@ -2470,6 +2471,30 @@ export function createGame(o: CreateGameOptions): Engine {
   win.addEventListener('keyup', (e: KeyboardEvent) => {
     if (state.switchScan && scanPress && keyboard.whichPlayer(e.code) >= 0) blockKey(e);
   }, true);
+  /*
+   * 🔴 AND EVERY TOUCH ON THE GAME REGION (ADR-0218 §4) — and on the on-screen pad, wherever the host put it. Registered here
+   * for the key's reason: above the menus' own pointer listeners (a hold places the cursor, ADR-0159), the pad's and the game's,
+   * so one touch is one take and nothing else. The click the browser fires after it is swallowed too; a click the ENGINE sends
+   * — a menu's «confirm» pressing its item — is not, which is why `scanPress` clears the mark before every take.
+   * 📌 THE QUICK BAR STAYS ITSELF: ☝️ on it is the way OUT of one-button mode, and 📷 and 👄 turn the camera and voice transports
+   * on and off — the child's own switches, which a scan must not swallow (ADR-0218 erratum of 2026-09-26).
+   */
+  let swallowClick = false;
+  const scanTakesTouch = (target: EventTarget | null): boolean => {
+    const el = target as Element | null;
+    if (!state.switchScan || !scanPress || !el || typeof el.closest !== 'function') return false;
+    const onTheBar = !!el.closest(`${ENGINE_CONTROLS_IN_PLAY}, .pause-icons`) || !!a11yBar?.contains(el);
+    return !onTheBar && !!el.closest('#game-region, #touch-controls');
+  };
+  win.addEventListener('pointerdown', (e: PointerEvent) => {
+    swallowClick = false;
+    if (!scanTakesTouch(e.target)) return;
+    blockKey(e);
+    scanPress?.('toque');
+    swallowClick = true;
+  }, true);
+  win.addEventListener('pointerup', (e: PointerEvent) => { if (scanTakesTouch(e.target)) blockKey(e); }, true);
+  win.addEventListener('click', (e: MouseEvent) => { if (swallowClick) { swallowClick = false; blockKey(e); } }, true);
 
   // ⚠️ AND NOW THE MENU NAVIGATION SWITCHES ON — after the block above, and the ORDER IS THE BEHAVIOUR: listeners on one
   // node run in registration order, so the scan sees the key first and can stop it. The other way round, one press would
@@ -4111,8 +4136,11 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     scanning = freshScan();
     scanTick();
   };
+  /** The scan is pressing the controller itself: that press is the position it took, and must not be taken again. */
+  let scanIsPressing = false;
   scanPress = (source) => {
-    if (!scanning) return;
+    if (!scanning || scanIsPressing) return false;
+    swallowClick = false; // a click this take sends — a menu's «confirm» — is the take's, not a touch's (see the pointer above)
     // 📌 THE CHIP IS NOT REDRAWN HERE, and a surviving mutation is why: the frame loop above draws every frame, so a second
     // drawing path only saved the sixteen milliseconds until the next one — a line that could disagree with the loop and could
     // never be seen doing it.
@@ -4121,14 +4149,16 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       // THE MENU MOVES BY ITS OWN PATH: the step is the intent a key with that meaning carries, handed to `ui/menu-nav` as seat 0.
       const step = scanning.pass(now, { press: true }).commanded;
       if (step) nav.navIntent(0, menuStepKeys(step));
-      return;
+      return true;
     }
     const action = scanning.pass(now, { press: true }).commanded;
-    if (!action) return;
+    if (!action) return true; // «cancel»: the press was taken, and means nothing
     // 📌 THROUGH THE VIRTUAL CONTROLLER, like every other transport (ADR-0111): in play it holds the child's key and reaches the
     // cartridge. The scan decides WHICH position; it does not decide what a position does.
-    virtualController.press(action, source, 0);
+    scanIsPressing = true;
+    try { virtualController.press(action, source, 0); } finally { scanIsPressing = false; }
     win.setTimeout(() => virtualController.release(action, source, 0), SWITCH_SCAN_DEFAULTS.pulseMs);
+    return true;
   };
   stateOn('switchScan', (on) => { if (on) startScan(); else stopScan(); });
   whenDisposed(stopScan); // the scan's frames are this root's, and an ended root keeps none running (ADR-0220)
@@ -4147,6 +4177,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // the keys do, for the seat that pressed (ADR-0144 §1, ADR-0155): in play and in the quick pause alike, so START there
     // always LEAVES, whatever key the child bound first to `start` (ADR-0144 erratum of 2026-09-26).
     systemPress: (action, seat) => { if (action === 'start') startForSeat(seat); else openSeatMenus(seat); },
+    // 🔴 WITH ONE BUTTON ONLY ON, EVERY PRESS HERE IS THE SWITCH (ADR-0218 §4): the eyes, the face, the hands, the voice, the
+    // on-screen pad and the gamepad press this controller, so asking here is asking once for all of them.
+    takeShown: (source) => !!scanPress?.(source),
   });
   /*
    * 🔴 THE KEYBOARD CONDUCTOR, AND ONLY THAT (ADR-0223). It resolves the action and PRESSES the virtual controller, like the
@@ -4256,6 +4289,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     playerEdge,
     press: (action, source, player) => virtualController.press(action, source, player),
     release: (action, source, player) => virtualController.release(action, source, player),
+    // the pad also steers menus and the pause without pressing a position, so it asks the scan's question itself (ADR-0218 §4)
+    takeShown: () => !!scanPress?.('gamepad'),
     modalInput: gameHooks.modalInput,
     hasModal: gameHooks.hasModal,
     joinPlayer: gameHooks.joinPlayer,

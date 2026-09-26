@@ -210,7 +210,14 @@ describe('inside the engine\'s menus, the scan steps the menu', () => {
   const cartaoAberto = () => document.getElementById('vp-pause-0')?.hidden === false;
   const icones = () => [...document.querySelectorAll('#title-icons .pi-btn')];
   const cursor = () => icones().findIndex((b) => b.classList.contains('pi-sel'));
-  const tocar = (action) => { motor.controller.press(action, 'olhos', 0); motor.controller.release(action, 'olhos', 0); };
+  // ⚠️ THE EYES OPEN THE MENU WITH THE SCAN OFF FOR THAT PRESS: with it on, the eyes' START is the switch too and takes the item
+  // shown (ADR-0218 §4, `every-press-takes-the-one-shown.browser`). Turning it back on starts the menu's pass from «cancel».
+  const tocar = (action) => {
+    const ligado = estado.switchScan;
+    estado.setSwitchScanValue(false);
+    motor.controller.press(action, 'olhos', 0); motor.controller.release(action, 'olhos', 0);
+    estado.setSwitchScanValue(ligado);
+  };
   const quadro = () => new Promise((r) => requestAnimationFrame(() => r(null)));
   /** Waits until the chip OFFERS `texto`, frame by frame, and fails naming the last word seen. */
   const quandoOferecer = async (texto) => {
@@ -389,7 +396,11 @@ describe('in play, the scan offers the engine\'s doors after the game\'s words',
     estado.setSwitchScanValue(true);
     motor.pause.hide(0);
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    if (pausadoAVista()) { motor.controller.press('start', 'olhos', 0); motor.controller.release('start', 'olhos', 0); }
+    if (pausadoAVista()) { // left by the eyes' START with the scan off: with it on, that START is the switch (ADR-0218 §4)
+      estado.setSwitchScanValue(false);
+      motor.controller.press('start', 'olhos', 0); motor.controller.release('start', 'olhos', 0);
+      estado.setSwitchScanValue(true);
+    }
     await quadro();
     comandos.length = 0;
   });

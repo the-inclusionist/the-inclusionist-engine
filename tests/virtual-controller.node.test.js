@@ -139,6 +139,68 @@ describe('with a menu open', () => {
   });
 });
 
+/*
+ * ===================== ONE BUTTON ONLY: EVERY PRESS TAKES THE ONE SHOWN (ADR-0218 §4) =====================
+ * «With one button only on, every key, every touch on the game region and every press a camera or speech transport sends
+ * collapses into "take the one shown".» The controller is the door every transport that reads positions presses — the eyes, the
+ * face, the hands, the voice, the on-screen pad, the gamepad — so it asks ONCE, first, whether one-button scanning takes the
+ * press; the scan answers, and a taken press reaches nothing else.
+ */
+describe('with one-button scanning on, a press is the scan\'s and nothing else', () => {
+  const makeScan = ({ menu = false } = {}) => {
+    const log = [];
+    const asked = [];
+    let takes = true;
+    const vc = createVirtualController({
+      scheme: () => SCHEME, menuOpen: () => menu,
+      holdKey: (code, source) => log.push(['hold', code, source]), releaseKey: (code) => log.push(['release', code]),
+      menuKey: (code, source) => log.push(['menu', code, source]), deliver: (c) => log.push(['deliver', c]),
+      systemPress: (action, player) => log.push(['system', action, player]),
+      takeShown: (source) => { asked.push(source); return takes; },
+    });
+    return { vc, log, asked, setTakes: (v) => { takes = v; } };
+  };
+
+  for (const source of [undefined, 'teclado', 'olhos', 'rosto', 'gestos', 'fala', 'toque', 'gamepad']) {
+    it(`🔴 [Right] a press from ${source ?? 'an unsigned key'} is asked of the scan with its source, and taken it reaches NOTHING`, () => {
+      const { vc, log, asked } = makeScan();
+      expect(vc.press('action2', source, 1), 'a taken press answered that it reached play').toBe(false);
+      vc.release('action2', source, 1);
+      expect(asked, 'the scan was not asked, or not told who pressed').toEqual([source]);
+      expect(log, 'a taken press held a key, reached the game, a menu or the engine').toEqual([]);
+    });
+  }
+
+  it('🔴 [Right] START and SELECT are presses like any other: taken, the engine opens no pause', () => {
+    const { vc, log } = makeScan();
+    vc.press('start', 'olhos'); vc.press('select', 'fala');
+    expect(log, 'a camera\'s START opened the pause although the scan took it').toEqual([]);
+  });
+
+  it('🔴 [Right] with a menu open too: a taken press is not the menu\'s key', () => {
+    const { vc, log } = makeScan({ menu: true });
+    vc.press('down', 'olhos');
+    expect(log).toEqual([]);
+  });
+
+  it('🔴 [Zero] a press the scan does NOT take is itself, as without the scan', () => {
+    const { vc, log, setTakes } = makeScan();
+    setTakes(false);
+    expect(vc.press('down', 'olhos')).toBe(true);
+    expect(log).toEqual([['hold', 'KeyS', 'olhos'], ['deliver', { action: 'down', pressed: true, source: 'olhos', player: 0 }]]);
+  });
+
+  it('🔴 [Boundary] a press the game heard BEFORE the scan went on is still released to it — no child is left holding a button', () => {
+    const { vc, log, asked, setTakes } = makeScan();
+    setTakes(false);
+    vc.press('up', 'rosto');
+    setTakes(true); log.length = 0; asked.length = 0;
+    vc.release('up', 'rosto');
+    expect(log).toEqual([['release', 'KeyW'], ['deliver', { action: 'up', pressed: false, source: 'rosto', player: 0 }]]);
+    expect(asked, 'a release was offered to the scan: letting go is not a press').toEqual([]);
+  });
+});
+
 // MUTATIONS CHECKED (2026-09-16), each red before this file counted — `scratchpad/mutar-virtual-controller.py`:
 //   · the menu not checked (a menu press reaches the game)     → «the game hears nothing»
 //   · a release delivered without a press the game heard       → «the game hears nothing»
@@ -160,3 +222,6 @@ describe('with a menu open', () => {
 //     and «even a press held back» (3 red; 1 red in `start-and-select-from-every-transport.browser`)
 //   · with a menu open, `systemPress` asked only when `toPlay`  → «even a press held back from play reaches the engine»
 //   · `systemPress` asked in play whatever `toPlay` says        → «held back from play reaches nobody»
+// And (2026-09-26, one button only: every press takes the one shown) — `scratchpad/scan-rest/mutate2.mjs`, same discipline:
+//   · the controller never asks the scan (Q1)                   → the ten «taken it reaches NOTHING» cases
+//   · START and SELECT let through untaken (Q2)                 → «START and SELECT are presses like any other»

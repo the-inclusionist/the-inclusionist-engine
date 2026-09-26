@@ -991,6 +991,90 @@ describe('initGamepad — pollPads', () => {
   });
 });
 
+/*
+ * ===================== ONE BUTTON ONLY: A PAD'S PRESS TAKES THE ONE SHOWN (ADR-0218 §4) =====================
+ * The virtual controller asks the scan first for every position pressed on it. The pad ALSO steers the pause card, a panel, the
+ * quick bar and the title by itself, and opens and leaves the pause by its own START — none of which presses a position — so it
+ * asks the same question once per frame in which a button went down, and a taken frame goes nowhere else.
+ */
+describe('initGamepad — with one-button scanning on, a button that goes down is the scan\'s', () => {
+  const scanCtx = (over = {}) => {
+    const asked = [];
+    let takes = true;
+    const ctx = buildCtx({ takeShown: () => { asked.push('asked'); return takes; }, ...over });
+    return { ctx, api: initGamepad(ctx), asked, setTakes: (v) => { takes = v; } };
+  };
+
+  it('🔴 [Right] in play: asked once — and taken, nothing is pressed and no edge is raised', () => {
+    const p = makePlayer({ pad: 0 }); // the pad is the SECOND seat's
+    const { ctx, api, asked } = scanCtx({ players: [makePlayer(), p] });
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0, 13] })]);
+    api.pollPads();
+    expect(asked, 'the scan was not asked once').toEqual(['asked']);
+    expect(ctx.calls.pressionadas, 'a taken frame still pressed positions').toEqual([]);
+    expect(p.jumpEdge, 'a taken frame still raised the game\'s edge').toBe(false);
+  });
+
+  it('🔴 [Right] START in play does not pause, and SELECT is not pressed', () => {
+    const { ctx, api } = scanCtx({ players: [makePlayer({ pad: 0 })] });
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [9] })]);
+    api.pollPads();
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [8] })]);
+    api.pollPads();
+    expect(ctx.calls.setPhase, 'START paused although the scan took it').toEqual([]);
+    expect(ctx.calls.pressionadas, 'SELECT was pressed although the scan took it').toEqual([]);
+  });
+
+  it('🔴 [Right] in the pause: the d-pad moves no menu and START does not resume', () => {
+    const { ctx, api } = scanCtx({ players: [makePlayer({ pad: 0 })] });
+    ctx.setPhaseValue('paused');
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [13] })]);
+    api.pollPads();
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [9] })]);
+    api.pollPads();
+    expect(ctx.calls.navPause.length + ctx.calls.navDialog.length, 'the d-pad moved a menu').toBe(0);
+    expect(ctx.calls.setPhase, 'START resumed').toEqual([]);
+  });
+
+  it('🔴 [Right] on the quick bar: the bar does not move', () => {
+    const { ctx, api } = scanCtx({ players: [makePlayer({ pad: 0 })], naBarra: new Set([0]) });
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [15] })]);
+    api.pollPads();
+    expect(ctx.calls.navBar).toEqual([]);
+  });
+
+  it('🔴 [Zero] a frame where nothing WENT DOWN asks nothing — a button held is one press, not one a frame', () => {
+    const { ctx, api, asked } = scanCtx({ players: [makePlayer({ pad: 0 })] });
+    ctx.setPads([makePad({ id: 'std', index: 0 })]);
+    api.pollPads();
+    expect(asked, 'a frame with nothing pressed was offered to the scan').toEqual([]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads(); api.pollPads(); api.pollPads();
+    expect(asked, 'a held button took an item at every frame').toEqual(['asked']);
+  });
+
+  it('🔴 [Zero] not taken, the pad plays as before', () => {
+    const p = makePlayer({ pad: 0 });
+    const { ctx, api, setTakes } = scanCtx({ players: [p] });
+    setTakes(false);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.pressionadas).toEqual([['action2', 'gamepad', 0]]);
+    expect(p.jumpEdge).toBe(true);
+  });
+
+  it('🔴 [Boundary] a button held BEFORE the scan went on is still released when it comes up', () => {
+    const { ctx, api, setTakes } = scanCtx({ players: [makePlayer({ pad: 0 })] });
+    setTakes(false);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    setTakes(true);
+    ctx.setPads([makePad({ id: 'std', index: 0 })]);
+    api.pollPads();
+    expect(ctx.calls.soltas, 'the game was left believing the button is still down').toEqual([['action2', 'gamepad', 0]]);
+  });
+});
+
 /* ===================== WHAT AN ABSENCE MEANS (ADR-0224) ===================== */
 // 🔴 The engine MOUNTS this transport, and what only the cartridge knows arrives in an optional field. The value of these
 // cases is not the table — it is that each absence has ONE written meaning, instead of being guessed where it is missed.
@@ -1258,3 +1342,7 @@ describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem exce
     }
   });
 });
+
+// MUTATIONS CHECKED (2026-09-26, one button only) — `scratchpad/scan-rest/mutate2.mjs`, restored and checked by SHA-256:
+//   · the pad never asks the scan (Q4)                           → 5 of «a button that goes down is the scan's»
+//   · the pad asks on every frame, not only when a button went down (Q5) → «a frame where nothing WENT DOWN asks nothing»

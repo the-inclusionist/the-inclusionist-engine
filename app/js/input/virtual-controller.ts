@@ -18,6 +18,8 @@
 // first: with `start` remapped to `Enter`, a camera's START on the quick pause's bar was the bar's «confirm» and not the way out.
 // The engine answers the POSITION the same way its key listeners do — START again leaves the quick pause, SELECT goes on to the
 // card, and an open card or panel refuses both.
+// 🔴 AND WITH ONE BUTTON ONLY ON, NONE OF THE ABOVE (ADR-0218 §4): every press here is the child's one switch, and it takes the
+// item the scan shows (`takeShown`, asked before anything else). This is the one place every position-pressing transport shares.
 
 import { SYSTEM, type Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -66,6 +68,13 @@ export interface VirtualControllerDeps {
    * a cartridge with no `onCommand` — the host's keyboard conductor does not press these two, or one key would pause twice.
    */
   readonly systemPress?: (action: Action, player: number) => void;
+  /**
+   * ONE BUTTON ONLY (ADR-0218 §4): asked FIRST, for every press from every transport that presses here — the eyes, the face,
+   * the hands, the voice, the on-screen pad, the gamepad. `true` means one-button scanning took the press as «take the one
+   * shown»: the position reaches nothing else — not play, not a menu, not the engine — and no release is owed for it. A press
+   * that lands on the scan's «cancel» is taken too, and means nothing. Absent: every press is itself.
+   */
+  readonly takeShown?: (source: TransportName | undefined) => boolean;
 }
 
 export interface VirtualController {
@@ -97,6 +106,7 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
   const held = new Map<string, string | null>();
   return {
     press(action, source, player = 0, toPlay = true) {
+      if (d.takeShown?.(source)) return false; // one button only: whatever was pressed, it was the switch (ADR-0218 §4)
       const menu = d.menuOpen();
       // the POSITION, not its first key: a key means what the child bound to it, and `Enter` on a menu is «confirm»
       if (ENGINE_POSITIONS.has(action)) { if (menu || toPlay) d.systemPress?.(action, player); return false; }
