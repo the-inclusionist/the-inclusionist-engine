@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // NOTHING THE ENGINE DRAWS OVER THE GAME STANDS ON ANYTHING ELSE IT DRAWS — the quick bar, the HUD (its mission, points,
-// power, learning bars and session clock) and the on-screen pad (its directional, its four buttons, both shoulders and the two
-// pills), measured by box, at 640×360 and 1280×720, with the pad shown and hidden, on a
+// power, learning bars and session clock), the on-screen pad (its directional, its four buttons, both shoulders and the two
+// pills) and a simulation's indicator dot, measured by box, at 640×360 and 1280×720, with the pad shown and hidden, on a
 // page whose HUD bands a caller mounts WITHOUT the row (`mountHudBands` with no cells) and on the root's own HUD row.
 //
 // 📌 Which records place what: the quick bar on the top edge (ADR-0180, ADR-0148); the mission just under it (ADR-0239
@@ -54,11 +54,12 @@ function overlaps(region) {
   return { found, pieces: pieces.map((p) => `${p.what} ${at(p)}`) };
 }
 
-/** The page: a 640×360 stage, the region with the quick bar, and a root with the pad on. */
+/** The page: a 640×360 stage, the region with the quick bar and the indicator dot, and a root with the pad on. */
 async function openPage({ row, bars }) {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div class="stage-wrap" style="width:640px;height:360px;display:flex;flex:none"><div id="game-region" class="game-region" '
-    + 'tabindex="-1" style="position:relative"><div id="title-icons"></div></div></div>';
+    + 'tabindex="-1" style="position:relative"><div id="title-icons"></div>'
+    + '<button id="viz-indicator" type="button" class="blind" aria-label="Simulação de cegueira"></button></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   const { keyed } = await import('./fixtures/declared-words.js');
   const game = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: PAD, ...(row ? { hud: HUD(bars) } : {}) }),
@@ -77,6 +78,7 @@ async function openPage({ row, bars }) {
     region.querySelector(':scope > .hud-row')?.remove();
   }
   game.settings.setCaptionsOnValue(true);
+  document.getElementById('viz-indicator').hidden = false;
   await wait(120);
   return { game, region };
 }
@@ -110,33 +112,39 @@ describe.each([
       document.getElementById('touch-controls').hidden = padHidden;
       await atSize(document, w, h);
       const { found, pieces } = overlaps(page.region);
-      // the case sees what it is about: the bar, the HUD and — while it shows — every part of the pad
-      const want = ['pi-btn', 'hud-numero «3 de 10', 'hud-numero «00012', 'hud-numero «Superpoder', 'hud-barra',
+      // the case sees what it is about: the bar, the HUD, the dot and — while it shows — every part of the pad
+      const want = ['pi-btn', 'hud-numero «3 de 10', 'hud-numero «00012', 'hud-numero «Superpoder', 'hud-barra', '#viz-indicator',
         ...(row ? ['session-clock'] : []), ...(padHidden ? [] : ['#touch-stick', '«L2', '«L1', '«R2', '«R1', '«1»', '«4»', '#touch-start', '#touch-select'])];
       for (const part of want) expect(pieces.some((p) => p.includes(part)), `nothing of ${part} measured:\n${pieces.join('\n')}`).toBe(true);
       expect(pieces.filter((p) => p.includes('hud-barra')).length, 'not every learning bar measured').toBe(bars);
       expect(found, pieces.join('\n')).toEqual([]);
-      if (!padHidden || row) return;
-      // …and a hidden pad keeps no corner: the points stand right under the bar's band
+      if (!padHidden) return;
+      // …and a hidden pad keeps no corner: the dot is back at the margin, and the points stand right under the bar's band
       const r = page.region.getBoundingClientRect();
       const margin = parseFloat(page.region.style.getPropertyValue('--margem-borda'));
       const band = parseFloat(page.region.style.getPropertyValue('--barra-a11y-h'));
-      const points = page.region.querySelector(':scope > .hud-points').getBoundingClientRect();
-      expect(Math.abs(points.top - r.top - Math.max(margin, band)), 'the points are held down by a hidden pad').toBeLessThan(0.5);
+      const dot = document.getElementById('viz-indicator').getBoundingClientRect();
+      expect([dot.left - r.left, dot.top - r.top], 'the dot is not in its corner with the pad hidden').toEqual([margin, margin]);
+      if (!row) {
+        const points = page.region.querySelector(':scope > .hud-points').getBoundingClientRect();
+        expect(Math.abs(points.top - r.top - Math.max(margin, band)), 'the points are held down by a hidden pad').toBeLessThan(0.5);
+      }
     });
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
 // (2026-09-26; `scratchpad/corners-clear/mutate.mjs`, counting each target first, this file with the edge-margin page) — red:
-//   M3 the no-row mission at the top margin   M4 `ui/top-band` writing no `--hud-mission-top`   M5/M6 the right stack blind
-//   to the bar's band / to the shoulders   M7 two right shoulders counted as one   M9 the no-row bars not lifted above the pad
-//   M10 the no-row bars side by side again   M11/M12 the row not clear of the left / right shoulders   M13 the power under the
-//   points counted from the margin   M14 the points at the top margin   M15b a hidden pad still holding two right shoulders'
-//   room   M16 the shoulder's size without the target floor (56 px at 1280×720, where the button is 88)
+//   M1 the dot back on the right   M2 the dot at the top margin, over the left shoulders   M3 the no-row mission at the top
+//   margin   M4 `ui/top-band` writing no `--hud-mission-top`   M5/M6 the right stack blind to the bar's band / to the
+//   shoulders   M7/M8 two shoulders counted as one, right / left   M9 the no-row bars not lifted above the pad   M10 the no-row
+//   bars side by side again   M11/M12 the row not clear of the left / right shoulders   M13 the power under the points counted
+//   from the margin   M14 the points at the top margin   M15b/M15c a hidden pad still holding two shoulders' room, right / left
+//   M16 the shoulder's size without the target floor (56 px at 1280×720, where the button is 88)
 // ⚠️ SURVIVES, and says so: M15, a hidden pad still holding ONE right shoulder's room — inert on these pages, where the bar's
 // band reaches lower than one shoulder (75 against 72 px at 640×360, 149 against 120 at 1280×720).
 // 📏 Before the fix (640×360, pad shown): with no row the mission (y 8–28) under the bar's icons, the points (559–632 ×
-// 8–32) and the power (477–632 × 34–54) under R2 (576–632 × 8–64) and the power under the bar's last two icons, the learning
-// bar (241–400 × 330–352) under SELECT and START; with the row, the power over the score (434–590 × 121–141) 5 px into R1
-// (576–632 × 70–126). The same at 1280×720, the power under the bar's last icon even with the pad hidden.
+// 8–32) and the power (477–632 × 34–54) under R2 (576–632 × 8–64) and the power under the bar's last two icons, the dot
+// (616–632 × 8–24) on R2 and the points, the learning bar (241–400 × 330–352) under SELECT and START; with the row, the dot on
+// R2 and the power over the score (434–590 × 121–141) 5 px into R1 (576–632 × 70–126). The same at 1280×720, the power under the
+// bar's last icon even with the pad hidden.

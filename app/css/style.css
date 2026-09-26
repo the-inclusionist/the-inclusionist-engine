@@ -626,9 +626,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* THE PAD'S SHOULDER COLUMNS, as what else stands on the region must keep clear of them: while the pad shows them they own the
    TOP CORNERS (ADR-0160; drawn only when the game names them, ADR-0162), and they are placed for REACH — a thumb finds a corner
    without looking — so where they and anything else meet, the other thing moves. A shoulder is a `.touch-btn`, 56 px with the
-   target floor under it; a column holds one or two, 6 px apart. `--shoulders-right-reach` is how far down the right column
-   reaches, the edge margin under it counted: 0 while that corner holds none. */
-#game-region,.game-region{--shoulder-size:max(56px,var(--alvo-min,44px));--shoulders-right-reach:0px}
+   target floor under it; a column holds one or two, 6 px apart. `--shoulders-*-reach` is how far down a column reaches, the edge
+   margin under it counted: 0 while that corner holds none. */
+#game-region,.game-region{--shoulder-size:max(56px,var(--alvo-min,44px));--shoulders-left-reach:0px;--shoulders-right-reach:0px}
+#game-region:has(#touch-controls:not([hidden]) > .touch-ombros--esq),.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--esq){
+  --shoulders-left-reach:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size))}
+#game-region:has(#touch-controls:not([hidden]) > .touch-ombros--esq > :nth-child(2)),.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--esq > :nth-child(2)){
+  --shoulders-left-reach:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size) * 2 + 6px)}
 #game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir),.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir){
   --shoulders-right-reach:calc(var(--margem-borda,8px) * 2 + var(--shoulder-size))}
 #game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir > :nth-child(2)),.game-region:has(#touch-controls:not([hidden]) > .touch-ombros--dir > :nth-child(2)){
@@ -844,8 +848,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 #game-region .overlay__actions{position:static;background:transparent;padding:.5rem 0 0;margin:0}
 #visual{background:rgba(0,0,0,.28)} /* colour: a translucent background, to see the effect on the game at once */
 
-/* Simulation indicator (top right corner): white=blindness, green=low vision. A double tap returns to normal. */
-#viz-indicator{position:absolute;top:var(--margem-borda,8px);right:var(--margem-borda,8px);z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* INSIDE the canvas (game-region) — it works as a button */
+/* Simulation indicator (TOP LEFT corner): white=blindness, green=low vision. A double tap returns to normal. The top right is
+   the right shoulders' (ADR-0160) and, with no HUD row, the points'; nothing of the HUD sits top left, so the dot is alone
+   there — under the left shoulders while the pad shows them (`--shoulders-left-reach`, with the HUD's rules). */
+#viz-indicator{position:absolute;top:max(var(--margem-borda,8px),var(--shoulders-left-reach,0px));left:var(--margem-borda,8px);z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* INSIDE the canvas (game-region) — it works as a button */
 #viz-indicator.blind{background:#fff}
 #viz-indicator.low{background:#36d36a}
 /* Low vision — 5 simulations (the blur comes from the filter on the canvas; only the overlays are here) */
