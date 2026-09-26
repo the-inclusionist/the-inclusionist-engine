@@ -37,10 +37,32 @@ export function speaksLanguageOf(locale: string, tag: string): boolean {
   return primaryLanguage(locale) === primaryLanguage(tag);
 }
 
+/** The engine of a browser (Web Speech) voice in a list; every other engine is neural (ADR-0200). */
+const BROWSER_ENGINE = 'webspeech';
+
+/** One step of the voice order: which voices of a list it takes, for a part in `tag`. */
+type VoiceStep = (voice: NeuralVoice, tag: string) => boolean;
+const browser = (v: NeuralVoice): boolean => v.engine === BROWSER_ENGINE;
+const exactTag = (v: NeuralVoice, tag: string): boolean => v.locale.toLowerCase() === tag.toLowerCase();
+
 /**
- * THE VOICE OF A LANGUAGE (ADR-0243 §2): the child's chosen voice when it speaks that language; else the first voice whose tag is
- * exactly that language (pt-BR before pt-PT for a pt-BR part); else the first voice of the same primary language. `voices` come in
- * the order they are tried — the browser's before the neural, as ADR-0200 decided — and `chosen` in order of precedence.
+ * THE VOICE ORDER (ADR-0243 §2, errata 2026-09-26 — the Dev: «Se a do navegador (mais leve) pode ser usada, a do navegador, senão
+ * ganha a voz neural (backup)»), after the child's chosen voice: a BROWSER voice that can read the tag, then a NEURAL one. Every
+ * step is tried over the whole list, in order; within a step the list's own order decides.
+ * ⏸ THE REGION QUESTION IS OPEN (same erratum): does a pt-PT browser voice read a pt-BR part before the neural pt-BR voice? The line
+ * marked below answers «yes» — within the browser voices, the exact tag and then the same primary language, as before. Should the
+ * Dev answer «no», that line moves below the neural exact tag, and nothing else changes.
+ */
+const VOICE_ORDER: readonly VoiceStep[] = [
+  (v, tag) => browser(v) && exactTag(v, tag),
+  (v) => browser(v), // ⏸ the region question: a browser voice of the same language, another region
+  (v, tag) => !browser(v) && exactTag(v, tag),
+  (v) => !browser(v),
+];
+
+/**
+ * THE VOICE OF A LANGUAGE (ADR-0243 §2): the child's chosen voice when it speaks that language; else the first voice `VOICE_ORDER`
+ * reaches — a browser voice before a neural one. `chosen` comes in order of precedence.
  * 🔴 No voice of another language is ever returned: `null` means the list has none for it, and the part is not spoken (§3).
  */
 export function voiceOfLanguage(
@@ -51,6 +73,9 @@ export function voiceOfLanguage(
     const picked = id ? own.find((v) => v.voice === id) : undefined;
     if (picked) return picked;
   }
-  const exact = tag.toLowerCase();
-  return own.find((v) => v.locale.toLowerCase() === exact) ?? own[0] ?? null;
+  for (const step of VOICE_ORDER) {
+    const found = own.find((v) => step(v, tag));
+    if (found) return found;
+  }
+  return null;
 }

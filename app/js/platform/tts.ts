@@ -175,7 +175,7 @@ export function createTts(ctx: TtsCtx): Tts {
     if (!id?.startsWith('webspeech:')) return null;
     try { return ctx.speech.synth()?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
   };
-  /** The interface's voice (ADR-0243 §2 over the language of now): the stored choice, else the exact tag, else the language. */
+  /** The interface's voice (ADR-0243 §2 over the language of now): the stored choice, else a browser voice, else a neural one. */
   function voiceInUse(): NeuralVoice | null {
     return voiceOfLanguage(bcp47(), availableVoices(), [ctx.store.get(KEYS.ttsVoz, null)]);
   }
@@ -354,7 +354,8 @@ export function createTts(ctx: TtsCtx): Tts {
   }
 
   /**
-   * A CONTENT part (ADR-0243 §2): a voice of its language — the browser's first, then the neural ones this game asked for, which
+   * A CONTENT part (ADR-0243 §2): a voice of its language — any browser voice that reads it before the neural ones this game asked
+   * for (`voice-plan`'s `VOICE_ORDER`), which
    * read only once the model is loaded; while it loads, the part starts the load and a browser voice of the language reads it if
    * the device has one. `null`: the device has no voice for the language, and no voice of another language reads it instead.
    */

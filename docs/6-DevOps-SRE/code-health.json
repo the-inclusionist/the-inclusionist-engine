@@ -1128,8 +1128,8 @@
       "fanIn": 1
     },
     "platform/voice-plan.ts": {
-      "codeLines": 27,
-      "decisionNodes": 4,
+      "codeLines": 40,
+      "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
