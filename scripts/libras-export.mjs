@@ -34,7 +34,8 @@
 // USAGE (downloads into --cache, NEVER into the repository):
 //   node scripts/libras-export.mjs --cache <dir> --out <dir> [--signs CASA,ESCOLA] [--blender <exe>] [--jobs 4]
 //        [--avatar-from CASA] [--textures-from 0] [--write-pins]
-// With no --signs, the names are the 632 of `libras-signs.json` (the signs the engine's glosses use).
+// With no --signs, the names are the 632 of `libras-signs.json` (the signs the engine's glosses use) and the manual alphabet's
+// letters (`MANUAL_ALPHABET`), which the free player fingerspells from: 655 in all (`defaultSigns`).
 
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -59,6 +60,19 @@ export function signNames(doc) {
   if (!doc || typeof doc.signs !== 'object' || doc.signs === null) throw new Error('no `signs` object in the sign list');
   return [...new Set(Object.keys(doc.signs))].sort();
 }
+
+/**
+ * THE MANUAL ALPHABET (datilologia): the letters route B's player fingerspells a word with no sign from (`ui/libras-avatar-plan`
+ * `planSigns`), one sign each in the dictionary — A to Z and Ç. The engine's glosses name only four of them (A, D, M, O), so
+ * the sign list alone would leave the player unable to spell most words; the export makes them all.
+ */
+export const MANUAL_ALPHABET = Object.freeze([...'ABCDEFGHIJKLMNOPQRSTUVWXYZÇ']);
+
+/** The signs the export makes with no `--signs`: those of a sign list and the manual alphabet, sorted, each once. */
+export const exportNames = (doc) => [...new Set([...signNames(doc), ...MANUAL_ALPHABET])].sort();
+
+/** The export's default names: the engine's sign list (`libras-signs.json`) and the manual alphabet. */
+export const defaultSigns = () => exportNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')));
 
 /** Where a sign's `.blend` is published: the repository at the pinned commit, the name percent-encoded (`&`, accents). */
 export const blendUrl = (name, source = SOURCE) => source + encodeURIComponent(name) + '.blend';
@@ -530,7 +544,7 @@ function runBlender(blender, jobFile, log) {
 
 async function main() {
   const o = options(process.argv.slice(2));
-  const names = o.signs ?? signNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')));
+  const names = o.signs ?? defaultSigns();
   const pins = existsSync(PINS) ? JSON.parse(readFileSync(PINS, 'utf8')) : null;
   console.log(`${names.length} signs; downloading what the cache lacks into ${o.cache}`);
   // The avatar's textures come from a sign file that PACKS them (export.py, TEXTURED): fetched even when not exported.

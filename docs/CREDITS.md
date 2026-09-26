@@ -236,9 +236,11 @@ the Dev's permission («Autorizo»); none is committed to this repository.
 
 What the free player of route B is built from (ADR-0234, route B, phase B1): each sign's Blender 2.79 source,
 `FILES/BLENDS/BR/<NAME>.blend` of the same repository at the same commit `f8ddb378affd0d6da42f04c9fc888dafe1cc1299` — the whole
-avatar (meshes, armature, shape keys, materials) plus one Action named after the sign. Only the signs the engine's glosses use:
-**632 files, 1,141,253,870 bytes**, each pinned by sha256 and byte count in `scripts/libras-export/sources.json`. Downloaded with
-the Dev's permission (route B's first step) into a folder outside the repository; none is committed.
+avatar (meshes, armature, shape keys, materials) plus one Action named after the sign. Only the signs the engine's glosses use
+and the manual alphabet's letters the player fingerspells from: **655 files, 1,194,114,310 bytes** — the 632 of the glosses
+(1,141,253,870 bytes, with A, D, M and O among them) and the alphabet's 23 other letters, B–Z but those four, and Ç
+(52,860,440 bytes) — each pinned by sha256 and byte count in `scripts/libras-export/sources.json`. Downloaded with the Dev's
+permission (route B's first step; the 23 letters on 2026-09-25) into a folder outside the repository; none is committed.
 
 - **Licence:** the repository declares **GPL-3.0**. What `scripts/libras-export.mjs` makes of them — **one avatar**
   (`avatar.glb`, glTF 2.0) and **one clip per sign** (three.js AnimationClip JSON) — are **derivatives under GPL-3.0**, and a

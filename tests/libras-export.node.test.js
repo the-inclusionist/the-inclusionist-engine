@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import {
   signNames, blendUrl, isBlend, sanitizeNodeName, parseGlb, readAccessor, reduceKeys, continuousQuaternions, clipFromGlb,
   avatarBindings, checkClip, worldPosition, avatarIdentity, timing, clipEntry, manifest, BLENDER_FLAGS, EXPORT_PY, COMMIT,
-  SIGN_LIST, DISCRETE, IDENTITY_TOLERANCE, pinsText, PINS,
+  SIGN_LIST, DISCRETE, IDENTITY_TOLERANCE, pinsText, PINS, MANUAL_ALPHABET, exportNames, defaultSigns,
 } from '../scripts/libras-export.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -92,6 +92,16 @@ describe('which signs, and where their sources are', () => {
     const engine = signNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')));
     expect(engine).toHaveLength(632);
     expect(engine).toEqual(expect.arrayContaining(['CASA', 'NÃO', 'PRIMEIRO&ORDINAL']));
+  });
+
+  it('🔴 [Right] with no --signs the export makes the glosses\' signs AND the whole manual alphabet, A to Z and Ç: 655', () => {
+    expect(MANUAL_ALPHABET).toHaveLength(27);
+    expect(MANUAL_ALPHABET).toContain('Ç');
+    expect(exportNames({ signs: { CASA: {}, A: {} } })).toEqual(['A', 'B', 'C', 'CASA', ...'DEFGHIJKLMNOPQRSTUVWXYZÇ']);
+    const names = defaultSigns();
+    expect(names).toHaveLength(655);
+    for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZÇ') expect(names, `the letter ${letter} is not exported`).toContain(letter);
+    expect(names).toEqual(expect.arrayContaining(signNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')))));
   });
 
   it('🎯 [Error] a document with no `signs` is refused, not read as zero signs', () => {
@@ -294,7 +304,8 @@ describe('the manifest', () => {
     expect(text).toContain(`"CASA": { "bytes": 1, "sha256": "${'a'.repeat(64)}" }`);
     const committed = readFileSync(PINS, 'utf8');
     expect(pinsText(JSON.parse(committed).signs)).toBe(committed);
-    expect(Object.keys(JSON.parse(committed).signs)).toEqual(signNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8'))));
+    // every sign the export makes by default has its source pinned, the manual alphabet's letters among them, and nothing else
+    expect(Object.keys(JSON.parse(committed).signs)).toEqual(defaultSigns());
   });
 
   it('🔴 [Right] the manifest names the pinned commit and the GPL source, and lists clips sorted', () => {
@@ -323,3 +334,6 @@ describe('the safety of running Blender on these files', () => {
 //   multiplies in the wrong order · STEP becomes linear · duplicate names not reported · a constant off rest keeps two keys ·
 //   sha256 of the path instead of the bytes · face times in frames, not seconds · pins unsorted · the face ignored ·
 //   export.py opens files with `use_scripts=True`.
+// And for the manual alphabet (2026-09-25, scripted, each file restored from a copy and checked by sha256; all 4 red):
+//   the alphabet without Ç · the default export the sign list alone · the letter Q's source unpinned in sources.json ·
+//   the default names not deduplicated.
