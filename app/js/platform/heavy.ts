@@ -90,8 +90,8 @@ export function heavyAtBoot(
 ): readonly string[] {
   const baseLanguage = (tag: string): string => tag.split('-')[0]!.toLowerCase();
   const reading = declared.reading ? baseLanguage(declared.reading) : null;
-  const askedTags = declared.commands == null ? [] : typeof declared.commands === 'string' ? [declared.commands] : declared.commands;
-  const commands = [...new Set(askedTags.filter(Boolean).map(baseLanguage))];
+  const askedLanguages = declared.commands == null ? [] : typeof declared.commands === 'string' ? [declared.commands] : declared.commands;
+  const commands = [...new Set(askedLanguages.filter(Boolean).map(baseLanguage))];
   const asked = (id: string): boolean => {
     const language = readingLanguageOf(id);
     if (language) return language === reading;
