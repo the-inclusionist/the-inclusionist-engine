@@ -39,7 +39,12 @@ beforeAll(async () => {
     + 'tabindex="-1" style="position:relative"><div id="title-icons"></div>'
     + '<button id="viz-indicator" type="button" class="blind" aria-label="Simulação de cegueira"></button></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  game = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true, host: { doc: document, win: window }, downloadHeavy: false,
+  const { keyed } = await import('./fixtures/declared-words.js');
+  // every position named, so the pad draws its directional, its four buttons and both shoulders (ADR-0162)
+  const PAD = { up: { label: 'Cima' }, down: { label: 'Baixo' }, left: { label: 'Esquerda' }, right: { label: 'Direita' },
+    action1: { label: 'Um' }, action2: { label: 'Dois' }, action3: { label: 'Três' }, action4: { label: 'Quatro' },
+    leftShoulder: { label: 'L1' }, rightShoulder: { label: 'R1' } };
+  game = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true, ...keyed({ preset: PAD }), host: { doc: document, win: window }, downloadHeavy: false,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
       world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
@@ -89,6 +94,10 @@ describe.each([[640, 360, 8], [1280, 720, 16]])('the edge margin with no HUD row
     expect(mission.width, 'the mission\'s text is not long enough to fill its box').toBeGreaterThanOrEqual(w / 2 - 1);
     expect([mission.left - r.left, r.right - mission.right].map((d) => d >= margin - 0.05), 'the mission\'s box is nearer a side than the margin')
       .toEqual([true, true]);
+    // and the pad's own buttons — the four actions and both shoulders, not only its pills (the Dev: «botões (exceto botões da
+    // barra de acessibilidade rápida)»)
+    const padButtons = items.filter(([what]) => what.includes('touch-btn') && !/touch-(start|select)|own-pill/.test(what));
+    expect(padButtons.length, 'the pad\'s own buttons were not measured').toBeGreaterThanOrEqual(6);
     expect(found).toEqual([]);
   });
 
