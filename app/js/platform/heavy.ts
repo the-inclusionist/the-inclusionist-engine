@@ -229,7 +229,7 @@ interface ListedFile { readonly path: string; readonly url: string; readonly sha
  */
 function listedFiles(data: unknown, l: DeliveryList, base: string): ListedFile[] {
   const files = (data as { files?: unknown } | null)?.files;
-  if (!Array.isArray(files)) throw new Error('it has no `files`');
+  if (!Array.isArray(files)) throw new Error('its `files` is missing');
   const folders = l.folders.map((folder) => new URL(folder, base).href);
   return files.map((f: unknown) => {
     const { path, sha256 } = (f ?? {}) as { path?: unknown; sha256?: unknown };

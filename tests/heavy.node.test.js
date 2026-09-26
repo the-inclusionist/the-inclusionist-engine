@@ -568,7 +568,7 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
     }
     const c = cacheWithResponses();
     expect((await keep(c, delivery({ files: [{ path: 'libras/signs/X', sha256: 'abc' }] })))[0].error).toMatch(/is refused: a listed file is malformed/);
-    expect((await keep(c, delivery({ nothing: [] })))[0].error).toMatch(/is refused: it has no `files`/);
+    expect((await keep(c, delivery({ nothing: [] })))[0].error).toMatch(/is refused: its `files` is missing/);
   });
 
   it('🎯 [Zero] a delivery without the player answers 404 for the list: reported, and nothing else is asked', async () => {
