@@ -20,7 +20,7 @@ metadata:
     - tests/the-pad-select-opens-the-menus.browser.test.js
     - tests/gamepad.node.test.js
     - tests/one-button-only.browser.test.js
-    - tests/the-pad-start-pauses-its-own-seat.browser.test.js
+    - tests/on-a-shared-screen-only-the-first-player-pauses.browser.test.js
     - app/js/input/pad-wizard.ts
     - tests/mapping-a-pad-follows-the-hand.node.test.js
     - tests/a-mapped-pad-has-start-and-select.browser.test.js
@@ -43,6 +43,18 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        BUILT: THE PAUSE ANSWERS THE SCREEN'S FIRST PLAYER. A `createGame` root draws one screen — one region, one card
+        (`#vp-pause-0`), one quick bar — and every seat it seats plays there, so `boot/create-game.leadsTheScreen` names seat 0.
+        START from another seat does nothing by the key of its scheme, by its pad and through the virtual controller
+        (`startForSeat`), and the pad's START on an open menu asks the root for its seat (`GamepadCtx.resume(seat)`), so another
+        seat's START no longer leaves seat 0's quick pause nor closes its card. SELECT from another seat already opened nothing: the
+        card it looks for is its own, and only seat 0's is mounted. Separate screens are separate roots, each with its pause; one
+        root has no second screen to measure. `tests/the-pad-start-pauses-its-own-seat.browser.test.js`, which pinned commit
+        8286e9fb's reading, became `tests/on-a-shared-screen-only-the-first-player-pauses.browser.test.js` (pad, key and
+        controller, in play, over the quick pause and over the card), with a seat case in `tests/gamepad.node.test.js`; four
+        mutations, all red.
     - date: 2026-09-26
       what: >-
         THE PAUSE IS PER SCREEN, and on a shared screen it is the first player's. The Dev, asked what another pad's START does

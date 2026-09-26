@@ -3087,10 +3087,22 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   /**
+   * THE PAUSE IS PER SCREEN, AND A SHARED SCREEN'S IS ITS FIRST PLAYER'S (ADR-0144, erratum of 2026-09-26). This root draws ONE
+   * screen — one region, one pause card (`#vp-pause-0`), one quick bar (`getA11yBars`) — and every seat it seats plays on it, so
+   * its pause and its menus answer seat 0: START and SELECT from any other seat, by any transport, do nothing. A player with a
+   * screen of her own has a root of her own, and its pause. START asks this below and the pad's START on an open menu asks it
+   * too (`resume`); SELECT needs no question, because `openSeatMenus` opens the seat's own card and this root mounts seat 0's only.
+   */
+  function leadsTheScreen(seat: number): boolean {
+    return seat === 0;
+  }
+
+  /**
    * START for a seat, by whatever door: the key below, or a transport pressing the virtual controller in play (`systemPress`,
    * ADR-0144 §1 «from any transport»). Answers whether it acted — the key is consumed only then.
    */
   function startForSeat(seat: number): boolean {
+    if (!leadsTheScreen(seat)) return false; // another seat of this screen: its START does nothing (ADR-0144 erratum)
     // GUARD 1 — A PANEL IS OPEN. With an overlay visible, `menuNavKey` receives the key, finds no intent in it and leaves
     // without consuming it. Without this guard the quick pause would open UNDER the panel the child is in. Escape closes
     // a panel, not START.
@@ -4355,9 +4367,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     worldRunning: gameHooks.worldRunning,
     // The pad's START in play is PRESSED for its seat and answered by `systemPress` (ADR-0144 §1); this `pause` is the mapping
     // wizard's, which stops the game while a pad is mapped. The way out on the card and on seat 0's quick pause reuses the
-    // decision already written for the finger, which knows leaving the quick pause from closing the card.
+    // decision already written for the finger, which knows leaving the quick pause from closing the card — for the screen's
+    // first seat only: another seat's START there does nothing (ADR-0144, erratum of 2026-09-26).
     pause: () => { enterQuickPause(0); },
-    resume: togglePauseByTouch,
+    resume: (seat) => { if (leadsTheScreen(seat)) togglePauseByTouch(); },
     isAttractActive: gameHooks.attractActive,
     stopAttract: gameHooks.stopAttract,
     // A PHYSICAL button makes the on-screen pad vanish — the same per-modality switch as the keyboard.

@@ -927,6 +927,16 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.calls.setPhase, 'o START não retomou — a pausa aberta pelo controle não fecha pelo controle').toEqual(['playing']);
   });
 
+  it('🔴 [Right] in the pause, START asks to resume FOR THE PAD\'S SEAT — the root answers only the screen\'s first (ADR-0144 erratum)', () => {
+    const resumed = [];
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 }), makePlayer({ pad: 1 })], resume: (seat) => resumed.push(seat) });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    ctx.setPads([null, makePad({ id: 'std', index: 1, mapping: 'standard', pressed: [9] })]);
+    api.pollPads();
+    expect(resumed, 'the seat that pressed START was not named: the root cannot tell the first player\'s from another\'s').toEqual([1]);
+  });
+
   it('🔴 [Right] na BARRA RÁPIDA, o botão dirige a barra e NÃO vira acção de jogo (ADR-0044 item 7)', () => {
     // ⚠️ The second expectation carries the subject: while the mode is on, nothing from this pad is the game's. Without it, a
     // bar that navigated and let the character jump at the same time would pass.
@@ -983,13 +993,12 @@ describe('initGamepad — pollPads', () => {
   });
 
   /*
-   * 🔴 START IN PLAY IS PRESSED FOR THE PAD'S SEAT (ADR-0155 — the quick pause is per seat; ADR-0144 §1 and its erratum of
-   * 2026-09-26 — START from every transport reaches `systemPress` with the seat that pressed). 📏 Measured before: the pad called
-   * the root's `pause()`, which carries no seat, and the root answered `enterQuickPause(0)` — a second player's START froze the
-   * game on the FIRST player's quick pause and put the first player's directional on the bar.
+   * 🔴 START IN PLAY IS PRESSED FOR THE PAD'S SEAT (ADR-0144 §1 and its errata of 2026-09-26 — START from every transport reaches
+   * `systemPress` with the seat that pressed, and the root answers only the screen's first seat). 📏 Measured before: the pad
+   * called the root's `pause()`, which carries no seat, and the root answered `enterQuickPause(0)` whoever pressed.
    * 📏 Mutations (2026-09-26, `scratchpad/pad-seat-select/mutate.mjs seat`, restored by SHA-256): the seatless `pause()` back → both
    * cases; the press for seat 0 always → the seat-1 case; the pause actor not told → both. The root's half is
-   * `the-pad-start-pauses-its-own-seat.browser`.
+   * `on-a-shared-screen-only-the-first-player-pauses.browser`.
    */
   for (const [seat, players] of [[0, () => [makePlayer({ pad: 0 })]], [1, () => [makePlayer(), makePlayer({ pad: 0 })]]]) {
     it(`🔴 [Right] a jogar, o START do controle do assento ${seat} é PRESSIONADO para esse assento, uma vez, e diz QUEM pausou`, () => {

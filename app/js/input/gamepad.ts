@@ -230,9 +230,12 @@ export interface GamepadCtx {
   /**
    * Pause and resume. The root stacks the scene; only the intent leaves from here. ⚠️ `pause` carries no seat: it is the
    * mapping wizard's, which stops everything while a pad is mapped. START in play is PRESSED for the pad's seat (`press`).
+   * `resume` names the seat whose START asks it — the wizard's own resume is seat 0's, whose quick pause `pause` opened —, because
+   * the root decides whether that seat's START reaches this screen's pause: on a shared screen only the first seat's does
+   * (ADR-0144, erratum of 2026-09-26).
    */
   pause: () => void;
-  resume: () => void;
+  resume: (seat: number) => void;
   /** Demonstration (attract) mode. */
   isAttractActive: () => boolean;
   stopAttract: () => void;
@@ -403,7 +406,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         const gp = pads[gi];
         if (gp) { const c = actionsFor(gp); padCur[gi] = c; padPrevAct[gi] = c; padPrevStart[gi] = c._start; }
       } catch { /* a pad API that throws here only costs the edge baseline, never the closing */ }
-      if (padWizAutoResume) { padWizAutoResume = false; if (ctx.pauseMenu()) ctx.resume(); }
+      if (padWizAutoResume) { padWizAutoResume = false; if (ctx.pauseMenu()) ctx.resume(0); }
     },
   });
   function openPadWiz(): void {
@@ -488,12 +491,12 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   /** The pause card: START resumes, and the d-pad navigates the shared dialog or the seat's own menu. */
   function steerPause(f: PadFrame): void {
-    if (f.pauseEdge) { ctx.resume(); return; } // START resumes
+    const pi = f.owner < 0 ? 0 : f.owner;
+    if (f.pauseEdge) { ctx.resume(pi); return; } // START resumes — if this seat's START reaches this screen's pause (the root's)
     const k = f.navKeys();
     if (!anyIntent(k)) return;
     const dlg = ctx.sharedDialogOpen();
     if (dlg) { ctx.navDialog(dlg, k); return; }
-    const pi = f.owner < 0 ? 0 : f.owner;
     const menu = ctx.getPauseMenu(pi);
     if (menu && !menu.hidden) ctx.navPause(menu, pi, k);
   }
