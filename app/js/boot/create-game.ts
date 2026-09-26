@@ -3597,9 +3597,14 @@ export function createGame(o: CreateGameOptions): Engine {
      * pad with no map), and each asks only about itself. So the root, which holds both, keeps them apart: while this one maps,
      * the pad's poll does not run (below), and while that one maps, this row does not open a second.
      */
-    /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */
+    /**
+     * One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides.
+     * 🔴 WHICHEVER WIZARD IS MAPPING: the transport's own shows in this same overlay, and hiding it alone left that wizard
+     * mapping unseen — the game paused, the pad answering questions nobody showed, and its map stored at the end.
+     */
     const closeControl = (): void => {
       if (padWizard?.state()) { padWizard.close(false); return; }
+      if (gamepad.getPadWiz()) gamepad.closePadWiz(false); // its close hides the overlay and resumes the game it paused
       controlPanel.shell.overlay.hidden = true;
       overlays.restoreFocus?.('padwiz');
     };

@@ -28,8 +28,8 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2343,
-      "decisionNodes": 302,
+      "codeLines": 2344,
+      "decisionNodes": 303,
       "maxDepth": 4,
       "fanOut": 98,
       "globalReach": 0,
