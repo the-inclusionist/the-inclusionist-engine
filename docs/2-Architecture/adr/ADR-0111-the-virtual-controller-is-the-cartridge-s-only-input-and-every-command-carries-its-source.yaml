@@ -22,7 +22,7 @@ metadata:
         `start` and `select` to the engine (`systemPress`) with a menu open too, as the position, and the engine answers them as
         its own START and SELECT keys: START again leaves the quick pause, SELECT goes on to the card, an open card or panel refuses
         both. They still never reach play. A KEY still means what the child bound to it: the keyboard's Enter on the bar is still
-        «confirm». ADR-0144's erratum of the same day has the measurement. Engine `f4f1b684`.
+        «confirm». ADR-0144's erratum of the same day has the measurement. Engine `f6032637`.
     - date: 2026-09-26
       what: >-
         ✅ THE SYSTEM POSITIONS NEVER REACH PLAY, AND TWO MORE KEYS STOP BEING TWO ACTIONS — the rule of the two errata below,
@@ -35,7 +35,7 @@ metadata:
         (`input/key-default.keyPressesOwnControl`, asked by START's listener on the way in); on the quick pause's bar Enter
         stays the bar's «confirm». The key that ends print mode is print's: its listener runs after the conductor, so the
         conductor reads print's armed state instead — no `stopImmediatePropagation`, so the listeners after it still see the
-        key. After: the game hears none of the four. Engine `e7cccc29`, `05db38df`, `292dc1eb`.
+        key. After: the game hears none of the four. Engine `688d9acc`, `3fdd2d1f`, `c52107a3`.
     - date: 2026-09-26
       what: >-
         ✅ A KEY THAT WENT TO SOMETHING ELSE IS NOT ALSO PLAYED — the second half of the erratum above. Measured on the

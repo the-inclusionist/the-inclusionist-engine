@@ -27,7 +27,7 @@ metadata:
         opened the quick pause, «próximo» walked the bar twice, «voltar» left it; «menu» opened the card, «próximo» moved its
         cursor, «voltar» closed it; the pass went back to the game's words. ⚠️ Not built: a sideways step, so a slider or a ⯇ ⯈
         control in a panel cannot be adjusted by scanning; and §4's touch and camera presses still act as themselves while the
-        scan is on — only keys are collapsed into «take the one shown». Engine `5aff5bf8`, `2e9c76a1`.
+        scan is on — only keys are collapsed into «take the one shown». Engine `dcae9422`, `66342f10`.
     - date: 2026-09-21
       what: >-
         ✅ THE SKIP IS THE DEV'S NOW, not an inference of mine. Shown that the ☝️ offers two positions in the quiz demo — which
@@ -130,7 +130,7 @@ decision-outcome:
       - "The icon's label has to name the position in one readable word, in three languages"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #201**. The gates, each red by mutation before it counts: the icon cycles the three positions in order and keeps
+    ✅ Built (issue #201, closed); the scan's doors and menus came on 2026-09-26 (errata above), with what is still partial said there. The gates, each red by mutation before it counts: the icon cycles the three positions in order and keeps
     the choice; in a game that holds no key it cycles two and never stops on sticky; the three are exclusive, so entering one
     leaves the others off; with one button only on, a press takes the position the preview shows and the first position of every
     pass is «cancel»; the scanned list is the game's declared positions plus the engine's own doors, and never a position the

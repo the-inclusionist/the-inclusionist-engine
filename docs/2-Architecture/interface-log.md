@@ -252,8 +252,8 @@ not a letter or digit keeps its whole clip. Engine: route B's sequencer (`ui/lib
 para escolher e Enter para responder», and Enter is `start` (it opened the pause, measured on the served `dist`). The line is
 now built from the child's scheme: one key per position, an arrow or Space named first when bound — «Quiz. Use ↑ e ↓ para
 escolher e Espaço para responder.» in the default scheme, her own keys after a remap, and a position with no key is not
-named (with no key at all: «Quiz. Toque numa resposta para responder.»). `engine:77868fdc`; the double answer one Space used
-to give, which this line would have sent children into, `engine:aeea9423`.
+named (with no key at all: «Quiz. Toque numa resposta para responder.»). `engine:ad229a23`; the double answer one Space used
+to give, which this line would have sent children into, `engine:e1fe84ba`.
 
 ## 2026-09-26 · One-button scanning inside a menu, and the engine's two doors in play
 
@@ -266,4 +266,4 @@ sideways step, so a slider or a ⯇ ⯈ control in a panel cannot be adjusted by
 positions, the scan offers the engine's doors in the order ADR-0218 §3 names them: «menu» (SELECT, the card), then «pausar»
 (START, the quick pause; English «menu», «pause», Spanish «menú», «pausar»), each only where it has something behind it.
 The chip's words for both lists are lower case, like «cancelar», so they read as the engine's and not as a game's own words.
-Engine `5aff5bf8` (the menus), `2e9c76a1` (the doors).
+Engine `dcae9422` (the menus), `66342f10` (the doors).
