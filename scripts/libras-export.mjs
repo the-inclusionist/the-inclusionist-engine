@@ -34,8 +34,9 @@
 // USAGE (downloads into --cache, NEVER into the repository):
 //   node scripts/libras-export.mjs --cache <dir> --out <dir> [--signs CASA,ESCOLA] [--blender <exe>] [--jobs 4]
 //        [--avatar-from CASA] [--textures-from 0] [--write-pins]
-// With no --signs, the names are the 632 of `libras-signs.json` (the signs the engine's glosses use) and the manual alphabet's
-// letters (`MANUAL_ALPHABET`), which the free player fingerspells from: 655 in all (`defaultSigns`).
+// With no --signs, the names are the ones whose `.blend` is pinned in `libras-export/sources.json` — the signs the engine's glosses
+// use and the manual alphabet's letters (`MANUAL_ALPHABET`), which the free player fingerspells from: 655 in all (`defaultSigns`).
+// A new sign enters by `--signs NAME --write-pins`, which adds its `.blend` to those pins.
 
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -49,13 +50,12 @@ export const SOURCE = `https://gitlab.lavid.ufpb.br/vlibras-public/vlibras-dicti
 const HERE = fileURLToPath(new URL('./', import.meta.url));
 export const EXPORT_PY = join(HERE, 'libras-export', 'export.py');
 export const PINS = join(HERE, 'libras-export', 'sources.json');
-export const SIGN_LIST = join(HERE, 'libras-signs.json');
 /** The flags that keep a `.blend`'s embedded Python from running. Never run Blender on these files without them. */
 export const BLENDER_FLAGS = Object.freeze(['--background', '--factory-startup', '--disable-autoexec']);
 
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-/** The sign names of a `libras-signs.json`-shaped document (`{ signs: { NAME: … } }`), sorted, each once. */
+/** The sign names of a pins document (`{ signs: { NAME: … } }`, as `libras-export/sources.json`), sorted, each once. */
 export function signNames(doc) {
   if (!doc || typeof doc.signs !== 'object' || doc.signs === null) throw new Error('no `signs` object in the sign list');
   return [...new Set(Object.keys(doc.signs))].sort();
@@ -71,8 +71,11 @@ export const MANUAL_ALPHABET = Object.freeze([...'ABCDEFGHIJKLMNOPQRSTUVWXYZÇ']
 /** The signs the export makes with no `--signs`: those of a sign list and the manual alphabet, sorted, each once. */
 export const exportNames = (doc) => [...new Set([...signNames(doc), ...MANUAL_ALPHABET])].sort();
 
-/** The export's default names: the engine's sign list (`libras-signs.json`) and the manual alphabet. */
-export const defaultSigns = () => exportNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')));
+/**
+ * The export's default names: every sign whose `.blend` is pinned (`libras-export/sources.json`) and the manual alphabet — the
+ * export's own source list, so the export needs no other player's sign list (ADR-0234, phase B3).
+ */
+export const defaultSigns = () => exportNames(JSON.parse(readFileSync(PINS, 'utf8')));
 
 /** Where a sign's `.blend` is published: the repository at the pinned commit, the name percent-encoded (`&`, accents). */
 export const blendUrl = (name, source = SOURCE) => source + encodeURIComponent(name) + '.blend';

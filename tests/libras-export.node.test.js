@@ -14,8 +14,9 @@ import { createHash } from 'node:crypto';
 import {
   signNames, blendUrl, isBlend, sanitizeNodeName, parseGlb, readAccessor, reduceKeys, continuousQuaternions, clipFromGlb,
   avatarBindings, checkClip, worldPosition, avatarIdentity, timing, clipEntry, manifest, BLENDER_FLAGS, EXPORT_PY, COMMIT,
-  SIGN_LIST, DISCRETE, IDENTITY_TOLERANCE, pinsText, PINS, MANUAL_ALPHABET, exportNames, defaultSigns,
+  DISCRETE, IDENTITY_TOLERANCE, pinsText, PINS, MANUAL_ALPHABET, exportNames, defaultSigns,
 } from '../scripts/libras-export.mjs';
+import { readAvatarPins } from '../scripts/libras-avatar.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
@@ -87,21 +88,22 @@ function signGlb() {
 }
 
 describe('which signs, and where their sources are', () => {
-  it('🔴 [Right] the names of a sign list, sorted, each once — and the engine\'s own list holds the 632 the glosses use', () => {
+  it('🔴 [Right] the names of a pins document, sorted, each once — and the export\'s own source pins hold the 655 the free player carries', () => {
     expect(signNames({ signs: { SIM: {}, CASA: {}, 'OLÁ': {} } })).toEqual(['CASA', 'OLÁ', 'SIM']);
-    const engine = signNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')));
-    expect(engine).toHaveLength(632);
-    expect(engine).toEqual(expect.arrayContaining(['CASA', 'NÃO', 'PRIMEIRO&ORDINAL']));
+    const pinned = signNames(JSON.parse(readFileSync(PINS, 'utf8')));
+    expect(pinned).toHaveLength(655);
+    expect(pinned).toEqual(expect.arrayContaining(['CASA', 'NÃO', 'PRIMEIRO&ORDINAL', 'Ç']));
   });
 
-  it('🔴 [Right] with no --signs the export makes the glosses\' signs AND the whole manual alphabet, A to Z and Ç: 655', () => {
+  it('🔴 [Right] with no --signs the export makes every pinned sign AND the whole manual alphabet, A to Z and Ç: 655', () => {
     expect(MANUAL_ALPHABET).toHaveLength(27);
     expect(MANUAL_ALPHABET).toContain('Ç');
     expect(exportNames({ signs: { CASA: {}, A: {} } })).toEqual(['A', 'B', 'C', 'CASA', ...'DEFGHIJKLMNOPQRSTUVWXYZÇ']);
     const names = defaultSigns();
     expect(names).toHaveLength(655);
     for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZÇ') expect(names, `the letter ${letter} is not exported`).toContain(letter);
-    expect(names).toEqual(expect.arrayContaining(signNames(JSON.parse(readFileSync(SIGN_LIST, 'utf8')))));
+    // the same names the delivered clips carry: a sign pinned for export and never delivered, or the other way, is a drift
+    expect(names).toEqual(Object.keys(readAvatarPins().clips).sort());
   });
 
   it('🎯 [Error] a document with no `signs` is refused, not read as zero signs', () => {
@@ -337,3 +339,5 @@ describe('the safety of running Blender on these files', () => {
 // And for the manual alphabet (2026-09-25, scripted, each file restored from a copy and checked by sha256; all 4 red):
 //   the alphabet without Ç · the default export the sign list alone · the letter Q's source unpinned in sources.json ·
 //   the default names not deduplicated.
+// And for the default names read from the export's own source pins (2026-09-26, phase B3; scripted, restored and checked by sha256):
+//   E1 the default names read from no pins (the alphabet alone) · E2 a pinned sign dropped from the defaults — both red
