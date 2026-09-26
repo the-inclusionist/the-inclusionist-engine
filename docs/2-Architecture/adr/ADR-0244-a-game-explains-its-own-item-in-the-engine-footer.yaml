@@ -6,7 +6,7 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
-        CONFIRMED (`engine:3f832def`): `Engine.explain(text | null)` writes the game's text into the same band the engine's
+        CONFIRMED (`engine:ef5064d9`): `Engine.explain(text | null)` writes the game's text into the same band the engine's
         items use, so the two-line clamp of §3 holds for it by construction and is measured. Beyond §1–§2, releasing the
         cartridge clears its text — `unmount()`, and `mount()` of another — since a text left by a game that is gone would
         explain nothing on screen; and a game explaining again while an engine item is pointed waits under it until the item
