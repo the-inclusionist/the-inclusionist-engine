@@ -11,6 +11,11 @@ explains *intent* and points there, it does not restate the YAML.
 `game-ci.yml`, next to it, is a different thing: the reusable gate every **game** repository calls
 (ADR-0068 §4). The engine itself does not use it.
 
+⚠️ **A workflow that does not parse is not a red run — GitHub runs it with no jobs**, and says nothing. That is
+how `ci.yml` checked nothing from `b764c41b` (2026-09-24) to `2a922c1b`: a comment at column 0 had cut a
+`run: |` block. The check therefore lives in the suite a person runs before pushing, not in CI:
+`tests/workflow-run-blocks-are-not-cut.node.test.js` reads every workflow for a cut block scalar and for tabs.
+
 ## CI (on every push to `main` and every pull request)
 
 Runs on **GitHub Actions**, Node pinned by `.node-version`. **Six jobs**, and what each one blocks:
