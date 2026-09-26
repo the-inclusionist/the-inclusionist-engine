@@ -20,7 +20,10 @@
 //
 // 📌 TODAY'S RULE (`provisionalGloss`), which stays the fallback: the words in capitals with the accents stripped, anything that
 // is not a letter or a digit a separator. Not a gloss — the player fingerspells it — and the accents go because the player has
-// no clip for an accented letter (📏 `Ã` measured: «Clip Ã não foi encontrado»).
+// no clip for an accented letter (📏 `Ã` measured: «Clip Ã não foi encontrado»). Ç IS KEPT: it is a letter of the Libras
+// manual alphabet, with its own handshape and movement, and both routes carry it (📏 route A spells «CAÇA» C-A-Ç-A from its
+// own clip; route B exports `Ç`). The build spells with the same rule (`scripts/libras-glosses.mjs` `spelledWord`, ADR-0234
+// erratum «A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN»).
 //
 // It reaches no global: the file comes through the fetch the interpreter was given (ADR-0232).
 
@@ -39,11 +42,12 @@ export interface GlossFile {
 export type Glosser = (text: string) => string;
 
 /**
- * The text as the player is handed it where no gloss is known: its words in capitals, accents stripped, anything that is not a
- * letter or a digit a separator. Not a gloss — see the header.
+ * The text as the player is handed it where no gloss is known: its words in capitals, accents stripped but Ç kept, anything
+ * that is not a letter or a digit a separator. Not a gloss — see the header. The marks are stripped from each run of text
+ * with no Ç in it: Ç is the only letter with a mark that the manual alphabet signs as itself.
  */
 export function provisionalGloss(text: string): string {
-  return text.normalize('NFD').replace(/\p{M}+/gu, '').toUpperCase()
+  return text.normalize('NFC').replace(/[^Çç]+/gu, (run) => run.normalize('NFD').replace(/\p{M}+/gu, '')).toUpperCase()
     .split(/[^\p{L}\p{N}]+/u).filter(Boolean).join(' ');
 }
 

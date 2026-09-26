@@ -9,8 +9,9 @@
 // THE GLOSS IS THE ONE ROUTE A PLAYS: the delivery's build-time glosses (`ui/libras-glosses`), where a word with no sign is
 // already written as the child reads it on the screen. A token the delivery carries a clip for is signed; any other is
 // FINGERSPELLED letter by letter from the clips named by a single letter or digit — the word as written, capitals, accents
-// stripped (`provisionalGloss`), which is route A's rule. 📌 A word whose letters the avatar does not all carry is LEFT OUT
-// WHOLE, and said: spelling only the letters it has would show the child another word («ENTROU» with only its O is «O»).
+// stripped but Ç kept, a letter of the manual alphabet with a clip of its own (`provisionalGloss`), which is route A's rule.
+// 📌 A word whose letters the avatar does not all carry is LEFT OUT WHOLE, and said: spelling only the letters it has would
+// show the child another word («ENTROU» with only its O is «O»).
 //
 // THE TIMING: each clip plays its window once, and the next one starts `CROSS_FADE_S` before it ends, fading in while the other
 // fades out — almost every exported clip starts and ends in the same pose (arms down), so the overlap joins them without passing
@@ -97,7 +98,8 @@ const NOT_A_SIGN = /^\[.*\]$|^\{.*\}$/u;
 
 /**
  * The clips a gloss is signed with, in order: a token with a clip is its clip; any other is fingerspelled from the letter and
- * digit clips, as written (capitals, accents stripped); a word with a letter the avatar lacks is left out whole and listed.
+ * digit clips, as written (capitals, accents stripped, Ç kept); a word with a letter the avatar lacks is left out whole and
+ * listed.
  */
 export function planSigns(gloss: string, carried: (name: string) => boolean): SignPlan {
   const steps: SignStep[] = [];

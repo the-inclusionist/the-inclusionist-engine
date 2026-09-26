@@ -51,7 +51,7 @@ describe('ui/libras-glosses — a template, and the value in its hole', () => {
 
   it('🔴 [Right] a value with no gloss — a number, a name — is fingerspelled by today\'s rule', () => {
     expect(glosserOf(FILE)('Jogador 2 entrou!')).toBe('JOGADOR 2 ENTRAR [EXCLAMAÇÃO]');
-    expect(glosserOf(FILE)('Você soltou: Açaí.')).toBe('VOCE SOLTAR ACAI [PONTO]');
+    expect(glosserOf(FILE)('Você soltou: Açaí.')).toBe('VOCE SOLTAR AÇAI [PONTO]');
   });
 });
 
@@ -80,6 +80,13 @@ describe('ui/libras-glosses — what the file does not cover falls back, alone',
   it('📌 [Boundary] today\'s rule: capitals, accents stripped, anything not a letter or digit a separator', () => {
     expect(provisionalGloss('Avião, casa! 3')).toBe('AVIAO CASA 3');
     expect(provisionalGloss(' … !')).toBe('');
+    expect(provisionalGloss('ÁÉÍÓÚ âêô ãõ ü à'), 'an accented vowel kept its mark: the player has no clip for it').toBe('AEIOU AEO AO U A');
+  });
+
+  it('🔴 [Right] today\'s rule keeps Ç — «caça», «espaço» are spelled CAÇA, ESPAÇO: a letter of the manual alphabet both routes sign', () => {
+    expect(provisionalGloss('A caça no espaço!'), 'Ç was spelled as C').toBe('A CAÇA NO ESPAÇO');
+    expect(provisionalGloss('Ação'), 'Ç was spelled as C, or Ã kept').toBe('AÇAO');
+    expect(provisionalGloss('ça'), 'a Ç written as C and a combining cedilla was spelled as C').toBe('ÇA');
   });
 });
 
@@ -113,3 +120,6 @@ describe('ui/libras-glosses — reading the delivered file', () => {
 //   L6 the file's format not checked                      🔴 no file, a fallback page, another format
 //   L7 a template of holes only kept                      🎯 a template that is all holes matches nothing
 //   L8 a 404's body read as glosses                       🔴 no fetch, a 404, a network error, a body that is not JSON
+// (2026-09-25, Ç spelled as written: scripted, restored from a copy and checked by sha256)
+//   L9 today's rule strips Ç's cedilla                    🔴 today's rule keeps Ç · a value fingerspelled
+//   L10 today's rule keeps every mark                     🔴 today's rule: capitals, accents stripped · today's rule keeps Ç and 3 more

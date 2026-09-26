@@ -29,6 +29,16 @@ describe('ui/libras-avatar-plan — the clips a gloss is signed with', () => {
     ]);
   });
 
+  it('🔴 [Right] ROUTE B — «CAÇA» and «ESPAÇO» with no clip of their own are spelled with the Ç clip; an accented vowel with its base', () => {
+    const letters = new Set(['A', 'C', 'Ç', 'E', 'O', 'P', 'S']);
+    const spells = (word, clips) => [...clips].map((clip) => ({ clip, spells: word }));
+    expect(planSigns('CAÇA ESPAÇO', (n) => letters.has(n)), 'Ç was spelled with the C clip').toEqual({
+      steps: [...spells('CAÇA', 'CAÇA'), ...spells('ESPAÇO', 'ESPAÇO')], unsigned: [],
+    });
+    expect(planSigns('PÃO', (n) => letters.has(n)).steps, 'an accented vowel was asked for a clip of its own')
+      .toEqual(spells('PÃO', 'PAO'));
+  });
+
   it('🎯 [Right] a word with a letter the avatar lacks is left out WHOLE and listed — spelling only its O would show another word', () => {
     const plan = planSigns('GATO ENTROU CASA', carried);
     expect(plan.steps, 'part of a word was spelled with the letters the avatar happens to have').toEqual([{ clip: 'GATO' }, { clip: 'CASA' }]);
@@ -213,3 +223,6 @@ describe('ui/libras-avatar-plan — the clip, before three.js reads it', () => {
 //   P15 the unread clips left out of what is said                        🔴 «left-out part»
 //   P10 FALA cut without its value at the cut · P11 a STEP track interpolated  🔴 «FALA from 46.8 s»
 //   P12 the face track bound to one mesh of the head                     🔴 «written once for EACH»
+// (2026-09-25, Ç spelled as written; scripted on `ui/libras-glosses`, restored from a copy and checked by sha256 — both red)
+//   P16 the spelling rule strips Ç's cedilla                             🔴 «ROUTE B — CAÇA and ESPAÇO»
+//   P17 the spelling rule keeps every mark                               🔴 «ROUTE B — CAÇA and ESPAÇO» · «FINGERSPELLED as written»

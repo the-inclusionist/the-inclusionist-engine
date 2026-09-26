@@ -29,9 +29,10 @@
 // delivery glossed the engine's and the game's texts at build time and wrote them beside the player (`glosses.json`); the
 // interpreter reads that file once, with the configuration, and hands the player the gloss `ui/libras-glosses` looks up. A text
 // the file does not cover — a delivery without it, a sentence no dictionary holds, a `{param}`'s value — becomes its words in
-// capitals with the accents stripped, which the player fingerspells. A word the delivery carries no sign for is fingerspelled
-// too, from the letters the player carries — as it is WRITTEN on the screen, not as the translator's lemma: the delivery put
-// the written word in the gloss for it (`scripts/libras-glosses.mjs`, ADR-0234 erratum).
+// capitals with the accents stripped and Ç kept (a letter the player carries), which the player fingerspells. A word the
+// delivery carries no sign for is fingerspelled too, from the letters the player carries — as it is WRITTEN on the screen, not
+// as the translator's lemma: the delivery put the written word in the gloss for it (`scripts/libras-glosses.mjs`, ADR-0234
+// erratum).
 import { NO_INTERPRETER, type Interpreter, type SignResult } from './vlibras.js';
 import { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER } from '../platform/heavy-catalogue.js';
 import { LIBRAS_GLOSSES_FILE, loadGlosser, provisionalGloss, type Glosser } from './libras-glosses.js';

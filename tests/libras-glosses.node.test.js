@@ -112,14 +112,24 @@ describe('a word with no sign is spelled AS IT IS WRITTEN (ADR-0234 erratum; the
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
-  it('📌 [Boundary] an accented letter is spelled as its base letter — the run time\'s own rule, word for word', async () => {
+  it('📌 [Boundary] an accented vowel is spelled as its base letter, Ç as Ç — the run time\'s own rule, word for word', async () => {
     const file = await glossTexts(['Atenção, você já é campeã'], translator({ 'Atenção, você já é campeã': {
       gloss: 'ATENÇÃO VOCÊ JÁ SER CAMPEÃO',
       words: [['Atenção', ['ATENÇÃO']], ['você', ['VOCÊ']], ['já', ['JÁ']], ['é', ['SER', 'É']], ['campeã', ['CAMPEÃ', 'CAMPEÃO']]] } }));
-    expect(spellable(file, new Set(['VOCÊ'])).file.glosses[0][1]).toBe('ATENCAO VOCÊ JA E CAMPEA');
-    for (const word of ['Atenção', 'campeã', 'Ç', 'pôr-do-sol', 'd\'água', 'ÁÉÍÓÚÂÊÔÃÕÜ']) {
+    expect(spellable(file, new Set(['VOCÊ'])).file.glosses[0][1]).toBe('ATENÇAO VOCÊ JA E CAMPEA');
+    expect(spelledWord('ÁÉÍÓÚÂÊÔÃÕÜàèìòù'), 'an accented vowel kept its mark: the player has no clip for it').toBe('AEIOUAEOAOUAEIOU');
+    for (const word of ['Atenção', 'campeã', 'Ç', 'ç', 'caça', 'espaço', 'ça', 'pôr-do-sol', 'd\'água', 'ÁÉÍÓÚÂÊÔÃÕÜ']) {
       expect(spelledWord(word), word).toBe(provisionalGloss(word));
     }
+  });
+
+  it('🔴 [Right] ROUTE A — «caça» and «espaço» with no sign carried are spelled CAÇA and ESPAÇO: Ç is a letter the player signs', async () => {
+    const text = 'A caça no espaço';
+    const file = await glossTexts([text], translator({ [text]: {
+      gloss: 'CAÇAR ESPAÇO', words: [['A', ['A', 'O']], ['caça', ['CAÇA', 'CAÇAR']], ['no', ['NO', 'EM']], ['espaço', ['ESPAÇO']]] } }));
+    expect(spellable(file, new Set()).file.glosses[0][1], 'the build spelled Ç as C').toBe('CAÇA ESPAÇO');
+    expect(spelledWord('caça'), 'the build spelled Ç as C').toBe('CAÇA');
+    expect(spelledWord('Espaço'), 'the build spelled Ç as C').toBe('ESPAÇO');
   });
 
   it('🔴 [Right] AMBIGUOUS — two words share the lemma: the next one in the sentence\'s order is taken', () => {
@@ -382,5 +392,7 @@ describe('the delivery\'s arguments', () => {
 //   M20 a number matched by its start                     🔴 … a number is not
 //   M21 the pieces of a re-glossed template keep the first pass's alignment  🔴 a template glossed again in PIECES
 //   M22 the glosser's answer accepted without `words`     🔴 the glosser's answer without the written words is REFUSED
-//   M23 `spelledWord` keeps the accents                   🔴 an accented letter is spelled as its base letter · loses its accents ·
-//       writes `glosses.json`
+//   M23 `spelledWord` keeps the accents                   🔴 an accented vowel is spelled as its base letter, Ç as Ç · loses its
+//       accents · writes `glosses.json` (2026-09-25, re-run scripted after Ç: restored from a copy, checked by sha256)
+//   M24 `spelledWord` strips Ç's cedilla (the old rule)   🔴 ROUTE A — «caça» and «espaço» … spelled CAÇA and ESPAÇO · … Ç as Ç
+//       (the agreement with `provisionalGloss`)

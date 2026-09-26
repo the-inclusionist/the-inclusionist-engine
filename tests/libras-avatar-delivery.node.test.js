@@ -222,6 +222,8 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
     expect(planSigns('ESTÉTICA CRT', carried).steps.slice(-3)).toEqual([{ clip: 'C', spells: 'CRT' }, { clip: 'R', spells: 'CRT' }, { clip: 'T', spells: 'CRT' }]);
     // no word of Portuguese letters is left out any more: every letter, accented or not, reaches a clip
     expect(planSigns('ÁGUA JÁ ÇÃO XÍCARA WEB KIWI ÊXITO ÔNIBUS ÜBER', carried).unsigned).toEqual([]);
+    // «CAÇA» has no sign: its Ç is the delivery's own Ç clip, not a C
+    expect(planSigns('CAÇA', carried).steps.map((s) => s.clip), 'the Ç clip the delivery carries was never played').toEqual(['C', 'A', 'Ç', 'A']);
   });
 
   it('[Right] regenerated from an export\'s manifest, the pins carry the window at the clip\'s own rate, as text one clip a line', () => {
@@ -257,3 +259,6 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
 //   D7 the pins without Ç's clip                                          🔴 «the 655 clips»
 //   D8 Z's .blend unpinned in libras-export/sources.json                  🔴 «every delivered clip has its .blend pinned»
 //   D9 planSigns spelling a word with its accents kept                    🔴 «spelled whole»
+// (2026-09-25, Ç spelled as written; scripted the same way, the file restored from a copy and checked by sha256 — both red)
+//   D10 the spelling rule strips Ç's cedilla (`ui/libras-glosses`)        🔴 «spelled whole» («CAÇA» C-A-Ç-A)
+//   D11 the pins without Ç's clip (D7 again)                              🔴 «the 655 clips» · «spelled whole» and 2 more

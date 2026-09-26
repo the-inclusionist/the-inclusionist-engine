@@ -8,8 +8,8 @@
 //
 // WHAT IT KEEPS FROM ROUTE A, rule for rule (`ui/vlibras-player`): the gloss is the delivery's (`glosses.json`, beside route A's
 // player page, where a word with no sign is written as the child reads it), and a text it does not cover is its words in
-// capitals, accents stripped; the avatar appears at the bottom right when a request is played, in front of the screen, never
-// taking the keyboard; a new press replaces what was being signed; the avatar LEAVES the screen `leaveAfterMs` after it stopped
+// capitals, accents stripped, Ç kept; the avatar appears at the bottom right when a request is played, in front of the screen,
+// never taking the keyboard; a new press replaces what was being signed; the avatar LEAVES the screen `leaveAfterMs` after it stopped
 // signing — hidden, kept loaded for the next press — and a press in those seconds cancels the leaving; `hide()` takes it off at
 // once and `dispose()` releases it. A delivery that did not ship it answers «signing unavailable» with the flag that ships it,
 // and so does a device that cannot draw it (no WebGL) or a load that never ends (`ui/libras-avatar-load`).

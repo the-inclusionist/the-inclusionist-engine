@@ -37,8 +37,9 @@
 // returns LEMMAS, and a token the delivery carries no sign for is fingerspelled — so «entrou» would be spelled E-N-T-R-A-R. So
 // `gloss.py` also reports each text's words as written, with the forms the translator can make of each; every gloss token is
 // aligned back to the word that produced it (`writtenWords`), and a token with no sign carried is replaced by THAT word, in
-// capitals, its accents stripped as the player's letters require (`spelledWord`, the run-time fallback's own rule). The child
-// sees spelled what she reads. Measured on the engine's dictionary, and printed by every delivery: see `spellable`.
+// capitals, its accents stripped as the player's letters require and its Ç kept, a letter of its own (`spelledWord`, the
+// run-time fallback's own rule). The child sees spelled what she reads. Measured on the engine's dictionary, and printed by
+// every delivery: see `spellable`.
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -285,12 +286,15 @@ export function glossTokens(file) {
 
 /**
  * A word as the player fingerspells it — the run-time fallback's rule (`ui/libras-glosses` `provisionalGloss`), so a word is
- * spelled the same whether the build or the run time spelled it: capitals, and every mark stripped, because the player has no
- * clip for an accented letter (📏 `Ã` measured: «Clip Ã não foi encontrado») — an accented letter is spelled as its base letter
- * (Ã → A, É → E, Ç → C). Anything that is not a letter or a digit separates.
+ * spelled the same whether the build or the run time spelled it: capitals, and every mark stripped but Ç's. The player has no
+ * clip for an accented vowel (📏 `Ã` measured: «Clip Ã não foi encontrado»), so it is spelled as its base letter (Ã → A,
+ * É → E); Ç is a letter of the Libras manual alphabet, with its own handshape and movement, and both routes carry it (📏 route
+ * A spells «CAÇA» C-A-Ç-A from its own clip), so it stays Ç: the marks are stripped from each run with no Ç in it. Anything
+ * that is not a letter or a digit separates.
  */
 export function spelledWord(word) {
-  return word.normalize('NFD').replace(/\p{M}+/gu, '').toUpperCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean).join(' ');
+  return word.normalize('NFC').replace(/[^Çç]+/gu, (run) => run.normalize('NFD').replace(/\p{M}+/gu, '')).toUpperCase()
+    .split(/[^\p{L}\p{N}]+/u).filter(Boolean).join(' ');
 }
 
 /**
