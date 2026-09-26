@@ -692,6 +692,12 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* …and there, at the top edge, the digits get a line that holds their glyphs: at 1.1 the face's box rose 1 px over the line
    (measured: 24 px of glyph box on a 22 px line at 640×360, 46 on 44 at 1280×720), into the edge margin */
 .game-region > .hud-points .hud-numero,#game-region > .hud-points .hud-numero{line-height:1.2}
+/* …and the POWER, which in the row stands over the points (ADR-0239 §3), has no room over them at the top edge: the same pair
+   reads top-down, the points in the corner and the power directly under them, on the same right edge — both at `top:margin`
+   drew one box over the other. The points' line is one line of digits, 1.25 × the text size on a 1.2 line (above); 2 px apart,
+   as in the row's cell. With no points shown the power is the corner's first line. */
+.game-region:has(> .hud-points:not([hidden]) > .hud-numero:not([hidden])) > .hud-direita,
+#game-region:has(> .hud-points:not([hidden]) > .hud-numero:not([hidden])) > .hud-direita{top:calc(var(--margem-borda,8px) + var(--ui-fs,16px) * 1.25 * 1.2 + 2px)}
 /* THE SESSION CLOCK (ADR-0236, ADR-0239): the label over the time left, and the Time Timer pie to their right, as tall as a
    target. The pie is the share still to go (`--left`, written by `ui/session-clock`), green on a white face (ADR-0050 §3)
    inside a dark rim and a white ring, drawn inside its box. At the end the WHOLE pie turns red — an almost empty face

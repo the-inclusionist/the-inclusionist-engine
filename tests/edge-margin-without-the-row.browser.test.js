@@ -101,6 +101,38 @@ describe.each([[640, 360, 8], [1280, 720, 16]])('the edge margin with no HUD row
     expect(found).toEqual([]);
   });
 
+  // THE POINTS AND THE POWER SHARE THE TOP-RIGHT CORNER WITHOUT A ROW (ADR-0239 §3: the score, and «above it the power in use»).
+  // In the row the power stands over the points; at the top edge there is no room over them, so the same pair reads top-down:
+  // the points in the corner, the power directly under them, both on the same right edge — never one box over the other.
+  it('🔴 [Right] the POINTS stand in the top-right corner and the POWER directly under them, never over them', async () => {
+    await atSize(document, w, h);
+    const r = region.getBoundingClientRect();
+    const box = (sel) => {
+      const b = region.querySelector(`:scope > ${sel}`).getBoundingClientRect();
+      return { left: b.left - r.left, top: b.top - r.top, right: b.right - r.left, bottom: b.bottom - r.top };
+    };
+    const points = box('.hud-points');
+    const power = box('.hud-direita');
+    const seen = JSON.stringify({ points, power });
+    const meet = power.left < points.right && points.left < power.right && power.top < points.bottom && points.top < power.bottom;
+    expect(meet, `the power's box and the points' box overlap: ${seen}`).toBe(false);
+    expect(Math.abs(points.top - margin), `the points are not in the corner: ${seen}`).toBeLessThan(0.5);
+    expect(Math.abs(r.width - points.right - margin), `the points are not in the corner: ${seen}`).toBeLessThan(0.5);
+    expect(power.top - points.bottom, `the power is not directly under the points: ${seen}`).toBeGreaterThanOrEqual(0);
+    expect(power.top - points.bottom, `the power is not directly under the points: ${seen}`).toBeLessThanOrEqual(4);
+    expect(Math.abs(power.right - points.right), `the power is not on the points' right edge: ${seen}`).toBeLessThan(0.5);
+    // a game with no points: the power is the corner's first line, not a line under an empty place
+    const pointsBand = region.querySelector(':scope > .hud-points');
+    pointsBand.hidden = true;
+    try {
+      await wait();
+      expect(Math.abs(box('.hud-direita').top - margin), 'with no points the power does not take the corner').toBeLessThan(0.5);
+    } finally {
+      pointsBand.hidden = false;
+      await wait();
+    }
+  });
+
   it('🔴 [Right] the SOUND CAPTION alone at the foot stands the margin off the bottom', async () => {
     game.captionSound('Porta rangendo');
     await wait();
@@ -135,5 +167,9 @@ describe.each([[640, 360, 8], [1280, 720, 16]])('the edge margin with no HUD row
 //   M6/M7 the points right:4px / top:0   M8 the points' digits back on their 1.1 line (the glyph box 1 px into the margin)
 //   M9 the legend's bottom padding a literal 8 px (red at 1280×720)   M10 the lowest caption's 4 px   M11/M14 the viz dot at 6 px
 //   M12 the engine's pill container bottom:6px   M13 a page's own pill bottom:6px
+// (2026-09-26, the points and the power in one corner; `scratchpad/hud-corner/mutate.mjs`, counting each target first) — red:
+//   M15 the power back at top:margin (📏 before the fix, 640×360: points 559–632 × 8–32, power 532–632 × 8–28, one over the
+//   other)   M16 the power under the points with no points shown   M17 12 px under them, not directly   M18 the height term
+//   one text line, not the digits' 1.25 × 1.2   M19 the power 12 px off the points' right edge
 // ⚠️ SURVIVES, and says so: M2, the mission's `max-width` back to `100% - 8px` — inert, since `left:50%` leaves the band half
 // the region to shrink into and the max-width never binds (measured above).
