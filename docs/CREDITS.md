@@ -183,58 +183,22 @@ The command models (catalogue `commands:model:*`): `vosk-model-small-pt-0.3`, `v
 - **Copyright lines, as each archive's `README` states them:** en-us 0.15 «Copyright 2020 Alpha Cephei Inc»; es 0.42
   «Copyright 2022-2050 AC Technologies LLC»; pt 0.3 **none** (its `README` says only what the model is).
 
-## VLibras player — `spbgovbr-vlibras/vlibras-web-browsers` — LGPL-3.0 declared, Unity runtime closed
-
-The avatar deaf mode's interpreter drives (ADR-0234, route A; catalogue `libras:player:*`): `unity-loader.js`,
-`playerweb.wasm.framework.unityweb`, `playerweb.wasm.code.unityweb` and `playerweb.data.unityweb` from the repository's
-`public/unity/` at commit `9d093f259ac732d755a19e80cd03c8233c70435d`. Fetched by the build only with
-`inclusionist-heavy --libras`, and served to the child from the delivery's own origin.
-
-- **Licence:** the repository declares **LGPL-3.0**. The `LICENSE` a delivery writes beside the files is the LGPL-3.0 text
-  followed by the GPL-3.0 text it incorporates; the LGPL text was copied from LAViD's `vlibras-translator` 1.3.3 distribution,
-  not from this repository, whose own `LICENSE` file was not downloaded.
-- ⚠️ **What that licence does not cover, as far as this project knows:** the files are a **Unity 2018 WebGL build**. The wasm,
-  the framework JavaScript and the data file contain **Unity Technologies' proprietary runtime**; no corresponding source is
-  published, and the terms under which it may be redistributed have **not been determined**. The project carries it as a
-  declared, temporary exception until a free player (route B) replaces it.
-- **Changed by this project:** `playerweb.framework.noeval.js`, generated at delivery time from the framework file, whose
-  sha256 is checked first: decompressed, its one `eval(str)` replaced by a parser of plain calls with JSON arguments, so the
-  player runs under a Content-Security-Policy without `'unsafe-eval'` (`scripts/vlibras-player.mjs`).
-- **Copyright line: UNVERIFIED** — the four files carry none, and nothing of the repository beyond their metadata and its
-  declared licence was read.
-
 ## VLibras translator — LAViD-UFPB `vlibras-translator` 1.3.3 — LGPL-3.0 — BUILD TIME ONLY
 
-What turns the Portuguese a child is shown into the Libras glosses the player signs (ADR-0234, route A; plan item 5b):
+What turns the Portuguese a child is shown into the Libras glosses the player signs (ADR-0234, plan item 5b):
 `inclusionist-heavy --libras` runs it once, on the build machine, over the engine's Portuguese dictionary and the game's
 (`scripts/libras-glosses.mjs`, `scripts/libras-glosses/gloss.py`), in its **rule-based mode only** — the neural mode fetches a
 model that declares no licence, and is never asked for. Published on test.pypi.org only; pinned with its hashes in
 `scripts/libras-glosses/uv.lock`.
 
-- **Licence:** **LGPL-3.0**, the `LICENSE` in its 1.3.3 source distribution (the same text `scripts/licences/LGPL-3.0.txt` holds).
+- **Licence:** **LGPL-3.0**, the `LICENSE` in its 1.3.3 source distribution.
 - **Distributed: none of it.** It runs in an environment outside the repository and nothing of it enters a delivery or the npm
-  package; what a delivery carries is its OUTPUT, `libras/player/glosses.json`.
+  package; what a delivery carries is its OUTPUT, `libras/avatar/glosses.json`.
 - **Copyright line** as its sources state it: «Copyright (c) Laboratório de Aplicações de Vídeo Digital - LAViD».
 
-## VLibras sign bundles — LAViD-UFPB `vlibras-dictionary-sources` — GPL-3.0
+## VLibras sign sources — LAViD-UFPB `vlibras-dictionary-sources`, `.blend` files — GPL-3.0 — EXPORTED, DISTRIBUTED BY `--libras`
 
-The signs the avatar plays (ADR-0234, route A): Unity 2018.3.1 WebGL AssetBundles from the repository's
-`FILES/BUNDLES/2018.3.1/WEBGL/BR/` at commit `f8ddb378affd0d6da42f04c9fc888dafe1cc1299`
-(`gitlab.lavid.ufpb.br/vlibras-public/vlibras-dictionary/vlibras-dictionary-sources`, the same bytes the dictionary host
-`dicionario2.vlibras.gov.br` serves). Only the signs the engine's own glosses use: **632 files, 15,086,780 bytes**, each pinned
-by sha256 and byte count in `scripts/libras-signs.json`. Fetched by the build only with `inclusionist-heavy --libras`, a byte
-that differs from the pin refused, and served to the child from the delivery's own origin (`libras/signs/`). Downloaded with
-the Dev's permission («Autorizo»); none is committed to this repository.
-
-- **Licence:** the repository declares **GPL-3.0**. A delivery writes the GPL-3.0 text (`LICENSE`) and a `NOTICE` naming the
-  pinned source beside the signs.
-- **Corresponding source:** the `.blend` files of the same repository, at the same commit.
-- **Changed by this project:** nothing — the files are carried byte for byte.
-- **Copyright line: UNVERIFIED** — the bundles carry none, and the repository's own `LICENSE` and README were not read.
-
-## VLibras sign sources — LAViD-UFPB `vlibras-dictionary-sources`, `.blend` files — GPL-3.0 — EXPORTED, DISTRIBUTED BY `--libras-avatar`
-
-What the free player of route B is built from (ADR-0234, route B, phase B1): each sign's Blender 2.79 source,
+What the Libras player deaf mode signs with is built from (ADR-0234, route B, phase B1; the engine's interpreter since phase B3): each sign's Blender 2.79 source,
 `FILES/BLENDS/BR/<NAME>.blend` of the same repository at the same commit `f8ddb378affd0d6da42f04c9fc888dafe1cc1299` — the whole
 avatar (meshes, armature, shape keys, materials) plus one Action named after the sign. Only the signs the engine's glosses use
 and the manual alphabet's letters the player fingerspells from: **655 files, 1,194,114,310 bytes** — the 632 of the glosses
@@ -244,7 +208,7 @@ permission (route B's first step; the 23 letters on 2026-09-25) into a folder ou
 
 - **Licence:** the repository declares **GPL-3.0**. What `scripts/libras-export.mjs` makes of them — **one avatar**
   (`avatar.glb`, glTF 2.0) and **one clip per sign** (three.js AnimationClip JSON) — are **derivatives under GPL-3.0**, and a
-  delivery that carries them will carry the GPL-3.0 text and a NOTICE naming the pinned source, as it does for the bundles.
+  delivery that carries them carries the GPL-3.0 text and a NOTICE naming the pinned source.
 - **Corresponding source of the exports:** the pinned `.blend` files plus `scripts/libras-export.mjs` and
   `scripts/libras-export/export.py`, run with the Blender version the export's `manifest.json` names (5.2.2 LTS for the first
   export).
@@ -254,7 +218,7 @@ permission (route B's first step; the 23 letters on 2026-09-25) into a folder ou
   no file carries, and two secondary texture slots are left out; the sign's constraints baked into bone tracks and its face's
   driver-moved shape keys sampled into morph tracks; keys reduced within a stated tolerance; node names as three.js's glTF
   loader renames them.
-- **Distributed: by a delivery built with `inclusionist-heavy --libras-avatar`** (phase B2): the avatar and 655 clips — the
+- **Distributed: by a delivery built with `inclusionist-heavy --libras`** (phase B3): the avatar and 655 clips — the
   632 signs of the first export and the manual alphabet's 23 other letters — **34,283,274 bytes**, each pinned by sha256 in
   `scripts/libras-avatar.json`, into `libras/avatar/` with the
   GPL-3.0 text and a NOTICE naming LAViD, the pinned commit and where the Corresponding Source is (`scripts/libras-avatar.mjs`).

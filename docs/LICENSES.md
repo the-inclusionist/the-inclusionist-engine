@@ -73,30 +73,22 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     here): **MIT**;
   - **commands** — the Vosk browser runtime built here from vosk-browser, vosk-api and Kaldi: **Apache-2.0**, with the
     BSD, Zlib and MIT parts its `NOTICE` lists; the Vosk small models (pt, en-us, es): **Apache-2.0**.
-  - **Libras** — the VLibras player (ADR-0234, route A), only in a delivery built with `inclusionist-heavy --libras`: four
-    files of `spbgovbr-vlibras/vlibras-web-browsers` at a pinned commit. ⚠️ **Not a free component, and said as such.** The
-    repository declares **LGPL-3.0**, but the files are a **Unity 2018 WebGL build** whose wasm, framework JavaScript and
-    data file contain **Unity Technologies' proprietary runtime**, with no corresponding source published and
-    **redistribution terms nobody has determined**. The delivery also carries one **modified** copy of the framework
-    JavaScript (its `eval` replaced by a parser; `scripts/vlibras-player.mjs`). It is carried as a **declared, temporary
-    exception** until route B, a free player, replaces it. What is ours around it — the player page, its glue, the CSP shim
-    and the parser (`scripts/vlibras-player/`) — is AGPL-3.0-or-later like the rest of the engine.
-    The Libras **glosses** that delivery carries (`libras/player/glosses.json`) are made at build time by LAViD's
+  - **Libras** — the Libras player deaf mode signs with (ADR-0234, route B), only in a delivery built with
+    `inclusionist-heavy --libras`: one avatar and one clip per sign, which `scripts/libras-export.mjs` exports from LAViD's
+    `vlibras-dictionary-sources` `.blend` files (**GPL-3.0**, pinned in `scripts/libras-export/sources.json`) — **GPL-3.0
+    derivatives** whose Corresponding Source is those `.blend` files plus the two export scripts. The delivery carries them
+    (`libras/avatar/`, pinned in `scripts/libras-avatar.json`) with the GPL-3.0 text and a NOTICE naming that source; the npm
+    package carries none. **Nothing closed and nothing patched is served**: the VLibras Unity player of route A — Unity
+    Technologies' proprietary runtime, with its `eval` rewritten at delivery time — was a declared, temporary exception, and
+    it left the engine and the delivery in phase B3.
+    The Libras **glosses** that delivery carries (`libras/avatar/glosses.json`) are made at build time by LAViD's
     `vlibras-translator` 1.3.3 (**LGPL-3.0**, rule-based mode only) over spaCy (**MIT**) and its Portuguese model
     `pt_core_news_md` 3.8.0 (**CC BY-SA 4.0**) — tools the build machine runs, **none of which is distributed**
     (`scripts/libras-glosses/`). Whether a gloss is a derivative of the model is **not determined**; the project believes it
-    is not, which is not a legal opinion. The **sign bundles** the glosses use are LAViD's dictionary (**GPL-3.0**), and a
-    delivery carries only those pinned by sha256 in `scripts/libras-signs.json` — the 632 signs the engine's glosses use
-    (15,086,780 bytes), from `vlibras-dictionary-sources` at a pinned commit — with the GPL-3.0 text and a NOTICE naming the
-    source beside them (`libras/signs/`). See `CREDITS.md`.
-    **Route B** (the free player that replaces the Unity one) is built from the same dictionary's `.blend` sources
-    (**GPL-3.0**, pinned in `scripts/libras-export/sources.json`): `scripts/libras-export.mjs` exports one avatar and one clip
-    per sign, **GPL-3.0 derivatives** whose Corresponding Source is those `.blend` files plus the two export scripts. A
-    delivery built with `inclusionist-heavy --libras-avatar` carries them (`libras/avatar/`, pinned in
-    `scripts/libras-avatar.json`) with the GPL-3.0 text and a NOTICE naming that source; the npm package carries none.
-    The player that draws them runs on **three.js** 0.186.1 (**MIT**), the engine's one run-time npm `dependency`, pinned
-    exactly and reached only by a dynamic `import()` at the first sign in deaf mode (ADR-0234 errata). ⚠️ The built chunk
-    that carries it keeps no licence comment — the MIT notice a delivery owes beside it is **not yet given** (`CREDITS.md`).
+    is not, which is not a legal opinion. See `CREDITS.md`.
+    The player that draws the avatar runs on **three.js** 0.186.1 (**MIT**), the engine's one run-time npm `dependency`,
+    pinned exactly and reached only by a dynamic `import()` at the first sign in deaf mode (ADR-0234 errata); the built chunk
+    that carries it keeps three.js's `@license` headers (`CREDITS.md`).
 
   ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
   lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.
