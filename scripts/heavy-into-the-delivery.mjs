@@ -42,7 +42,7 @@ const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).dige
  * Everything is injected so a gate can run it without the network.
  */
 export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, fetch: buscar = fetch, sha256 = sha256DoNode,
-  base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho), thirdParty = THIRD_PARTY }) {
+  base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho), thirdParty = THIRD_PARTY, catalogue = [] }) {
   const linhas = [];
   const present = [];
   for (const p of pesados) {
@@ -82,6 +82,15 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
     } catch (e) {
       linhas.push({ id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
     }
+  }
+  // 📌 THE NOTICES SPEAK FOR THE WHOLE DELIVERY, not for this run: a delivery is built by several runs (`--libras`, then
+  // `--libras-avatar`), and `THIRD-PARTY-NOTICES.md` is rewritten each time. So every catalogue file ALREADY in the delivery with
+  // its pinned bytes keeps its notice; a file whose bytes are not the pinned ones gets none from here.
+  const listed = new Set(present.map((f) => f.id));
+  for (const p of catalogue) {
+    if (listed.has(p.id) || !p.url || p.madeFrom || !p.sha256 || !groupOf(p.id, thirdParty)) continue;
+    const alvo = join(destino, deliveryPath(p.url));
+    if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) present.push({ id: p.id, path: deliveryPath(p.url) });
   }
   let licences = [];
   try {
@@ -220,7 +229,7 @@ if (executado) {
   console.log(`commands  ${spoken.length ? spoken.join(', ') : 'none'}${commands.length ? '' : ' (every language, the default)'}`);
   if (base) console.log(`base: ${base}`);
   const { ok, linhas, licences } = await levarPesadosParaEntrega({
-    destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf,
+    destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf, catalogue: HEAVY_FILES,
   });
   for (const l of linhas) console.log(`${l.outcome.padEnd(9)} ${l.id}${(l.error ?? l.note) ? ` — ${l.error ?? l.note}` : ''}`);
   for (const l of licences) console.log(`licence   ${l.key} — ${l.folders.length} folder(s)`);

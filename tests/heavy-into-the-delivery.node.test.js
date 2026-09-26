@@ -41,6 +41,33 @@ describe('the heavy files, put into the delivery by the build', () => {
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
+  it('🔴 [Right] a second run on the same delivery keeps the notices of what the first one wrote', async () => {
+    // 📏 measured 2026-09-25: `--libras` and then `--libras-avatar --commands none` on one folder left THIRD-PARTY-NOTICES.md
+    // listing only the second run's files — the delivery still carried the first run's, now without their notice
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    try {
+      const buscar = async (u) => resposta(CORPOS[u]);
+      await levarPesadosParaEntrega({ destino, pesados: [ENTRADAS[0]], deliveryPath, fetch: buscar, catalogue: ENTRADAS });
+      await levarPesadosParaEntrega({ destino, pesados: [ENTRADAS[1]], deliveryPath, fetch: buscar, catalogue: ENTRADAS });
+      const notices = readFileSync(join(destino, 'heavy', 'THIRD-PARTY-NOTICES.md'), 'utf8');
+      const folderOf = (e) => deliveryPath(e.url).replace(/^heavy\//, '').replace(/\/[^/]*$/, '');
+      expect(notices, 'the first run\'s file lost its notice').toContain(`${folderOf(ENTRADAS[0])}/LICENSE`);
+      expect(notices).toContain(`${folderOf(ENTRADAS[1])}/LICENSE`);
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] and a file on disk whose bytes are not the pinned ones gets no notice from the catalogue', async () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    try {
+      const alheio = join(destino, deliveryPath(ENTRADAS[0].url));
+      mkdirSync(join(alheio, '..'), { recursive: true });
+      writeFileSync(alheio, 'not the pinned bytes');
+      await levarPesadosParaEntrega({ destino, pesados: [ENTRADAS[1]], deliveryPath, fetch: async (u) => resposta(CORPOS[u]), catalogue: ENTRADAS });
+      const notices = readFileSync(join(destino, 'heavy', 'THIRD-PARTY-NOTICES.md'), 'utf8');
+      expect(notices).not.toContain('huggingface.co');
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
   it('🔴 [Right] a body whose sha256 differs is NOT written, and the run reports failure', async () => {
     const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
     try {
@@ -269,3 +296,7 @@ describe('the script, reachable by a cartridge', () => {
 //   C3 an explicit `--commands` list does not narrow           🔴 the flag narrows
 //   C4 `--commands none` read as a language                    🔴 `none` empties
 //   ⚠️ The filter's wiring in the program body is not run here: it would download the catalogue.
+//   T1 a file already in the delivery gets no notice      🔴 a second run keeps the first run's notices
+//   T2 any file on disk gets a notice, pinned or not      🔴 bytes that are not the pinned ones get no notice
+//   T3 the program not passing the catalogue survives here (program body): measured instead on a real delivery,
+//      2026-09-25 — `--libras` then `--libras-avatar --commands none` into one `dist` keeps all six projects' notices
