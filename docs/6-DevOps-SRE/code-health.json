@@ -549,7 +549,7 @@
     },
     "input/key-default.ts": {
       "codeLines": 11,
-      "decisionNodes": 3,
+      "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
@@ -758,12 +758,12 @@
       "fanIn": 1
     },
     "input/virtual-controller.ts": {
-      "codeLines": 46,
-      "decisionNodes": 5,
+      "codeLines": 47,
+      "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 6,
+      "worstFunction": 7,
       "statefulEdges": 0,
       "fanIn": 1
     },

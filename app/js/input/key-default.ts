@@ -1,19 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/key-default — A KEY THE ENGINE DELIVERED TO THE GAME DOES NOT ALSO DO THE BROWSER'S DEFAULT (ADR-0111 erratum of 2026-09-26).
+// input/key-default — WHICH KEY THE GAME HEARS, AND WHICH KEEPS ITS BROWSER DEFAULT (ADR-0111 errata of 2026-09-26).
 //
-// The engine owns the keyboard (ADR-0111): it turns a key into a position and carries the position to the game. A key it
-// carried is spent. Left with its default, Space on a focused `<button>` was two actions — the game's `action2`, then the
-// button's native click on the release — and every game with a focusable button got the double.
+// The engine owns the keyboard (ADR-0111): it turns a key into a position and carries the position to the game. One key press
+// is one action, and that makes two rules, which are one rule seen from two sides:
+//   · A KEY THE GAME HEARD IS SPENT. The keyboard conductor cancels its default, or Space on a focused `<button>` was the game's
+//     `action2` AND the button's click on the release.
+//   · A KEY THAT WENT TO SOMETHING ELSE IS NOT ALSO PLAYED. It keeps its default, and the game does not hear it. That is what
+//     this module answers, before the engine delivers:
+//       · a key typed into an editable field (input, textarea, select, contenteditable): typing is the field's;
+//       · a key that ACTIVATES one of the engine's own focused controls (`ownControls`, the accessibility bar, in the tab order
+//         in play): Space and Enter press a focused button, and that press is the control's.
+//     📏 Both used to keep their default AND be delivered. On the served quiz, Space on ☰ opened the menus and answered a
+//     question; Space typed into a text field answered one too.
 //
-// WHAT KEEPS ITS DEFAULT, and why each one is here:
-//   · A key the engine did NOT deliver — unmapped (Tab), refused by an open menu, taken by another transport. It was never the
-//     game's, so it is the browser's or whoever else decides it (`ui/menu-nav` consumes the menus' keys itself).
-//   · A key typed into an editable field (input, textarea, select, contenteditable): typing is never taken.
-//   · A key on one of the engine's OWN controls in play (`ownControls`, the accessibility bar): its native activation is how a
-//     keyboard or screen-reader user presses it, and cancelling it would leave that control with no key at all — `Enter` is
-//     `start` and already opens the quick pause.
+// 📌 ONLY THE ACTIVATION KEYS on the engine's control, and not every key: a focused button does nothing native with an arrow or
+// a letter, so an arrow pressed after Tab left the focus on ☰ is still the child moving in the game — held back, it would be
+// lost, and the game would stop answering until she clicked somewhere else.
 //
-// Pure: it is told whether the key was delivered and where the focus was; it answers a decision. No document, no event.
+// Not decided here: a key refused by an open menu, or consumed by the engine's menus, is the menus' (`input/virtual-controller`,
+// `ui/menu-nav`); a key mapped to no position was never the game's.
+//
+// Pure: it is told the key and where the focus was; it answers a decision. No document, no event.
 
 /** The part of a key event's target this reads — an `Element` satisfies it; `window`/`document` have no `closest`. */
 export interface KeyTargetLike {
@@ -23,10 +30,15 @@ export interface KeyTargetLike {
 
 const EDITABLE = 'input, textarea, select';
 
-/** Whether the engine cancels the browser's default of a key it just handled. */
-export function cancelsKeyDefault(delivered: boolean, target: KeyTargetLike | null, ownControls: string): boolean {
-  if (!delivered) return false;
-  if (!target || typeof target.closest !== 'function') return true; // no element had the focus: nothing native to keep
+/** The keys a focused button answers natively: Enter presses it on the key's press, Space on its release. */
+export const BUTTON_ACTIVATION_KEYS: ReadonlySet<string> = new Set(['Space', 'Enter', 'NumpadEnter']);
+
+/**
+ * Whether the key `code`, pressed with the focus on `target`, is play's to hear. `false`: it belongs to what has the focus — a
+ * field, or the engine's own control it activates (`ownControls`, a selector) — and keeps its default.
+ */
+export function keyGoesToGame(code: string, target: KeyTargetLike | null, ownControls: string): boolean {
+  if (!target || typeof target.closest !== 'function') return true; // no element had the focus: nothing else to go to
   if (target.isContentEditable || target.closest(EDITABLE)) return false;
-  return !target.closest(ownControls);
+  return !(BUTTON_ACTIVATION_KEYS.has(code) && target.closest(ownControls));
 }

@@ -116,7 +116,7 @@ import { mountPanel } from '../ui/mount-panel.js';
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
-import { cancelsKeyDefault } from '../input/key-default.js';
+import { keyGoesToGame } from '../input/key-default.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
@@ -835,7 +835,8 @@ const A11Y_BAR_SELECTOR = '#title-icons';
 
 /**
  * The engine's own controls that stay pressable by key IN PLAY: the accessibility bar's icons, in `#title-icons` and in the
- * HUD. A key the engine delivered to the game keeps its default on them (`input/key-default`, ADR-0111 erratum of 2026-09-26).
+ * HUD. A key that activates one of them is that control's, and play does not hear it (`input/key-default`, ADR-0111 errata of
+ * 2026-09-26).
  */
 const ENGINE_CONTROLS_IN_PLAY = '.pi-btn';
 
@@ -4094,8 +4095,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * 📌 And it does not ask whether a menu is open. That question has ONE answer, the controller's; what makes it true
    * for the keyboard is `keyToMenu` above, which does not redispatch a key that is already in the world.
    *
-   * 🔴 A KEY THE GAME HEARD IS SPENT (ADR-0111 erratum of 2026-09-26): its browser default is cancelled, or Space on a focused
-   * button was the game's `action2` AND the button's click. What keeps its default is `input/key-default`'s to say.
+   * 🔴 ONE KEY PRESS IS ONE ACTION (ADR-0111 errata of 2026-09-26), from both sides. A key the game HEARD is spent: its browser
+   * default is cancelled, or Space on a focused button was the game's `action2` AND the button's click. A key that went to
+   * something else — a field being typed into, the engine's own control it activates — is not also played: `input/key-default`
+   * says which, and the controller holds it back from play (with a menu open it is the menu's either way).
    */
   for (const kind of ['keydown', 'keyup'] as const) {
     win.addEventListener(kind, (e: KeyboardEvent) => {
@@ -4109,8 +4112,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       const action = keyboard.actionOf(e.code, seat) as Action | null;
       if (!action) return;
       if (kind === 'keyup') { virtualController.release(action, source, seat); return; }
-      const delivered = virtualController.press(action, source, seat);
-      if (cancelsKeyDefault(delivered, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY)) e.preventDefault();
+      const toPlay = keyGoesToGame(e.code, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY);
+      if (virtualController.press(action, source, seat, toPlay)) e.preventDefault();
     }, true);
   }
   /*

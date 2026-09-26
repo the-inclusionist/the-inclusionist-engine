@@ -400,8 +400,9 @@
     "createInputCooldown"
   ],
   "input/key-default.ts": [
+    "BUTTON_ACTIVATION_KEYS",
     "KeyTargetLike",
-    "cancelsKeyDefault"
+    "keyGoesToGame"
   ],
   "input/keyboard-runtime.ts": [
     "ControlsState",

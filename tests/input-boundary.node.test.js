@@ -77,7 +77,8 @@ const PUBLICADOS = {
   'virtual-controller': 'the engine carrying the virtual button to the game (ADR-0111 erratum, issue #197); wired by `boot/create-game`, '
     + 'which gives the cartridge `onCommand`. Published by the wildcard, with no external consumer — and it should not gain one: a '
     + 'cartridge receives commands, it does not press them',
-  'key-default': 'which key the engine HANDLED keeps its browser default (ADR-0111 erratum of 2026-09-26); pure, and wired by '
+  'key-default': 'which key is play\'s to hear, and which belongs to what has the focus and keeps its browser default (ADR-0111 '
+    + 'errata of 2026-09-26); pure, and wired by '
     + '`boot/create-game` in the keyboard conductor, beside the virtual controller. Published by the wildcard, with no external '
     + 'consumer — and it should not gain one: a key the engine delivered is the engine\'s to spend, and a cartridge that cancelled '
     + 'keys itself (the demo cartridge did, until the same day) would be a second answer to one question',

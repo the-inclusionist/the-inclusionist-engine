@@ -55,6 +55,14 @@ describe('in play', () => {
     const { vc } = make();
     expect(vc.press('down', 'toque')).toBe(true);
   });
+  // 🔴 ONE PRESS, ONE ACTION (ADR-0111 erratum of 2026-09-26): a key typed into a field, or pressing the engine's own control,
+  // is that thing's. The keyboard says so (`input/key-default`), and play hears nothing — not the press, not its release.
+  it('a press held back from play (`toPlay` false) holds nothing, delivers nothing, answers false — and its release delivers nothing', () => {
+    const { vc, log } = make();
+    expect(vc.press('action2', undefined, 0, false)).toBe(false);
+    vc.release('action2', undefined, 0);
+    expect(log).toEqual([]);
+  });
 });
 
 describe('with a menu open', () => {
@@ -71,6 +79,11 @@ describe('with a menu open', () => {
     const { vc, log } = make({ menu: true });
     expect(vc.press('rightShoulder', 'toque')).toBe(false);
     expect(log).toEqual([]);
+  });
+  it('a press held back from play is still the menu\'s: the menu is asked first, as for every press', () => {
+    const { vc, log } = make({ menu: true });
+    expect(vc.press('down', 'olhos', 0, false)).toBe(false);
+    expect(log).toEqual([['menu', 'KeyS', 'olhos']]);
   });
   it('a press the game heard is released to it even if a menu opened meanwhile', () => {
     const { vc, log, setMenu } = make();

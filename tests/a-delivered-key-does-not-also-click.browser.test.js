@@ -81,7 +81,7 @@ describe('a key the engine delivered to the game', () => {
 /* ----- what keeps its default ----- */
 const cancelada = (code) => vistas.findLast((v) => v.code === code)?.cancelada;
 
-describe('a key typed into an editable field keeps its default — typing is never taken', () => {
+describe('a key typed into an editable field keeps its default and is not played — typing is the field\'s', () => {
   const campo = (html) => {
     const el = document.createElement('div');
     el.innerHTML = html;
@@ -95,7 +95,9 @@ describe('a key typed into an editable field keeps its default — typing is nev
     ['contenteditable', '<div contenteditable="true"></div>', (el) => el.textContent],
     ['a child of contenteditable', '<div contenteditable="true"><span>x</span></div>', (el) => el.textContent],
   ]) {
-    it(`🔴 [Boundary] ${nome}: Space types a space`, async () => {
+    it(`🔴 [Boundary] ${nome}: Space types a space, and the game hears none of what was typed`, async () => {
+      // 📏 `a` is `left` and Space is `action2` in this scheme: both are positions the conductor would deliver in play.
+      expect(motor.keyboard.actionOf('KeyA', 0), 'KeyA has no position: the case would measure less than it says').toBe('left');
       const el = campo(html);
       try {
         const alvo = el.firstElementChild ?? el;
@@ -104,16 +106,29 @@ describe('a key typed into an editable field keeps its default — typing is nev
         await userEvent.keyboard('a[Space]b');
         expect(cancelada('Space'), `the engine cancelled Space in ${nome}`).toBe(false);
         expect(lido(el), `Space typed nothing into ${nome}`).toMatch(/a b/);
+        expect(comandos, `typing into ${nome} was also played`).toEqual([]);
       } finally { el.parentElement.remove(); }
     });
   }
 
-  it('🔴 [Boundary] select: Space keeps its default (it opens the list)', async () => {
+  it('🔴 [Boundary] select: Space keeps its default (it opens the list), and the game does not hear it', async () => {
     const el = campo('<select><option>one</option><option>two</option></select>');
     try {
       el.focus();
       await userEvent.keyboard('[Space]');
       expect(cancelada('Space'), 'the engine cancelled Space on a select').toBe(false);
+      expect(comandos, 'Space on a select was also played').toEqual([]);
+    } finally { el.parentElement.remove(); }
+  });
+
+  it('🔴 [Right] a key pressed in play after the field lost the focus is played again', async () => {
+    const el = campo('<input type="text">');
+    try {
+      el.focus();
+      await userEvent.keyboard('[Space]');
+      el.blur();
+      await userEvent.keyboard('[Space]');
+      expect(presses('action2'), 'leaving the field did not give the key back to the game').toHaveLength(1);
     } finally { el.parentElement.remove(); }
   });
 });
@@ -147,10 +162,13 @@ describe('a key the engine did not deliver keeps its default', () => {
 });
 
 describe("the engine's own menus and controls keep their behaviour", () => {
-  it('🔴 [Right] Space on an icon of the accessibility bar still presses it: ☰ opens the menus', async () => {
+  const menuIcon = () => document.querySelector('#title-icons .pi-btn[data-pi="menu"]');
+
+  it('🔴 [Right] Space on an icon of the accessibility bar presses it — ☰ opens the menus — and the game does not hear it', async () => {
     // 📌 In play the bar in `#title-icons` stays in the tab order (measured in the quiz: ten `.pi-btn` after the options), and
     // `Enter` is `start`. Cancelling Space there would leave a keyboard or screen-reader user no key to press the icon with.
-    const icone = document.querySelector('#title-icons .pi-btn[data-pi="menu"]');
+    // 📏 And delivering it too was one press doing two things: on the served quiz, Space on ☰ opened the menus AND answered.
+    const icone = menuIcon();
     expect(icone, 'no ☰ on the accessibility bar in #title-icons: the case would measure nothing').not.toBeNull();
     const cartao = document.getElementById('vp-pause-0');
     expect(cartao.hidden, 'the card was already open: the case would measure nothing').toBe(true);
@@ -159,7 +177,30 @@ describe("the engine's own menus and controls keep their behaviour", () => {
       await userEvent.keyboard('[Space]');
       expect(cancelada('Space'), 'the engine cancelled Space on its own bar: the icon has no key left').toBe(false);
       expect(cartao.hidden, 'Space on ☰ did not open the menus').toBe(false);
+      expect(comandos, 'Space pressed ☰ AND reached the game: one press, two actions').toEqual([]);
     } finally { motor.pause.hide(0); }
+  });
+
+  it("🔴 [Boundary] any other key with the focus left on ☰ is still the game's — an arrow is delivered, and spent", async () => {
+    // 📌 A focused button does nothing native with an arrow: held back, the child's move after a Tab onto the bar would be lost.
+    menuIcon().focus();
+    await userEvent.keyboard('[ArrowDown]');
+    expect(presses('down'), 'an arrow with the focus on ☰ no longer reaches the game').toHaveLength(1);
+    expect(cancelada('ArrowDown'), 'the game heard the arrow and the page could scroll with it as well').toBe(true);
+    expect(document.getElementById('vp-pause-0').hidden, 'the arrow pressed ☰').toBe(true);
+  });
+
+  it('🔴 [Right] Enter on ☰ is not played either: the game hears no `start`', async () => {
+    // What Enter DOES there is the quick pause (`start`), as with the focus anywhere in play — the case pins only that the game
+    // does not ALSO hear it. See the report: whether Enter on ☰ should press ☰ instead is an open question.
+    menuIcon().focus();
+    try {
+      await userEvent.keyboard('[Enter]');
+      expect(comandos, 'Enter on ☰ reached the game').toEqual([]);
+    } finally {
+      await userEvent.keyboard('[Escape]');
+      motor.pause.hide(0);
+    }
   });
 
   it('🔴 [Right] in the pause card the arrow still moves the selection — the menu consumes its key, the game hears nothing', async () => {
@@ -211,15 +252,20 @@ describe('Escape and the pause are unchanged', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 // `mutate.mjs` (scratchpad), each alone, CRLF normalised, exactly one occurrence required, restored from a copy and verified
-// by hash, 2026-09-26. Run with this file, `key-default.node` and `quiz-answers-by-real-key`:
-//   E1 the conductor never cancels                          🔴 the two Space cases here, and the quiz's Space and welcome
-//   E2 the conductor ignores whether the key was delivered  🔴 the refused key with a menu open
-//   E3 the conductor cancels every key it sees              🔴 the five fields, Tab, the letter, the refused key, ☰, Escape
-//   K1 key-default forgets the delivery                     🔴 the refused key (and the node case)
-//   K2 key-default forgets editable fields                  🔴 the five fields
-//   K3 key-default forgets contenteditable                  🔴 both contenteditable cases
-//   K4 key-default forgets select                           🔴 the select case
-//   K5 key-default forgets the engine's own controls        🔴 ☰ on the bar
-//   K6 a target with no `closest` keeps its default         🔴 the node case only: a browser key always has an element target
-//   P1 `start` no longer opens the quick pause (existing)   🔴 the Enter case
-//   P2 Escape at the card root no longer resumes (existing) 🔴 the Escape-closes-the-card case
+// by hash. Run with this file, `key-default.node`, `virtual-controller.node` and `quiz-answers-by-real-key`.
+// First pass (2026-09-26, when a delivered key started losing its default): the conductor never cancelling, cancelling every
+// key, or ignoring the delivery; key-default forgetting a field kind or the engine's controls; `start` and Escape — each red.
+// Second pass (2026-09-26, a key that went to something else is not also played; the rule moved BEFORE the delivery):
+//   K1 key-default forgets editable fields                      🔴 the five fields, the field-then-play case (and the node case)
+//   K2 key-default forgets contenteditable                      🔴 both contenteditable cases
+//   K3 key-default forgets select                               🔴 the select case
+//   K4 key-default forgets the engine's own control             🔴 Space on ☰, Enter on ☰
+//   K5 every key on the engine's control is held back           🔴 the arrow with the focus on ☰
+//   K6 a target with no `closest` is held back                  🔴 the node case only: a browser key always has an element target
+//   K7 Space is not an activation key                           🔴 Space on ☰
+//   K8 Enter is not an activation key                           🔴 Enter on ☰
+//   V1 the controller ignores `toPlay`                          🔴 the fields, ☰ (Space and Enter), and the node case
+//   V2 the controller asks `toPlay` before the menu             🔴 the node case only (the sonar in a menu, `menuAnswers`)
+//   E1 the conductor does not pass `toPlay`                     🔴 the fields, ☰ (Space and Enter)
+//   E2 the conductor never cancels                              🔴 both Space cases, the arrow on ☰, and the quiz's three cases
+//   E3 the conductor cancels every key it sees                  🔴 the fields, the refused key, Space on ☰
