@@ -195,13 +195,13 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
   it('🔴 [Right] an interface that becomes a type alias fails, with every member unchanged', () => {
     const q = quebrasDeForma(
       { 'm.ts': { 'interface A': ['x', 'y?'] } },
-      { 'm.ts': { 'type A': '{ x: number' } },
+      { 'm.ts': { 'type A': '{ x: number; }' } },
     );
     expect(q).toEqual(['m.ts  interface A  changed kind to «type A»']);
   });
 
   it('🔴 [Right] and the reverse — a type alias that becomes an interface — fails too', () => {
-    const q = quebrasDeForma({ 'm.ts': { 'type A': '{ x: number' } }, { 'm.ts': { 'interface A': ['x'] } });
+    const q = quebrasDeForma({ 'm.ts': { 'type A': '{ x: number; }' } }, { 'm.ts': { 'interface A': ['x'] } });
     expect(q).toEqual(['m.ts  type A  changed kind to «interface A»']);
   });
 
@@ -227,6 +227,40 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
     ].join('\n'));
     expect(f['interface A']).toEqual(['LOGICAL_W?', 'holdsAtOnce', 'i', 'topology']);
     expect(f['type U']).toBe('"a" | "b"');
+  });
+
+  /*
+   * 🔴 AN ALIAS WAS READ UP TO ITS FIRST `;`, and a union of object types has one inside its first member. The portrait
+   * kept `| { readonly mode: 'glide'` for the whole union, so every change AFTER that semicolon — a member's field, a
+   * member added or removed, the second member entirely — left the recorded shape identical and passed this gate green.
+   */
+  it('🔴 [Right] a multi-line union whose SECOND member changes has another shape', () => {
+    const union = (segundo) => [
+      'export type Plan =',
+      "  | { readonly mode: 'glide'; readonly waitMs: number }",
+      `  | { readonly mode: 'pages'; ${segundo} };`,
+      'export const after = 1;',
+    ].join('\n');
+    const antes = { 'm.ts': formaDoTexto(union('readonly pageMs: number')) };
+    const agora = { 'm.ts': formaDoTexto(union('readonly pageMs: string')) };
+    expect(antes['m.ts']['type Plan'], 'the alias was cut before its end').toContain('pageMs: number');
+    expect(quebrasDeForma(antes, agora)).toHaveLength(1);
+  });
+
+  // ⚠️ The leading `|` is formatting too: a formatter adds it when a union wraps onto several lines.
+  it('[Right] and formatting alone — line breaks, indentation, comments, a leading `|` — is not a change of shape', () => {
+    const umaLinha = formaDoTexto("export type P = { a: number; b: 'x' | 'y' } | null;");
+    const outra = formaDoTexto([
+      'export type P =',
+      '  // why it is a union',
+      '  | {',
+      '      a: number; /* the count */',
+      "      b: 'x' |   'y'",
+      '    }',
+      '  | null;',
+    ].join('\n'));
+    expect(umaLinha['type P']).toBe("{ a: number; b: 'x' | 'y'; } | null");
+    expect(outra['type P']).toBe(umaLinha['type P']);
   });
 });
 
@@ -277,3 +311,12 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
 //     mutation above: it goes back to green.
 //   · keying aliases as `interface …` in the extractor → the real-tree case and the extractor case fail: the kind the
 //     rule reads comes from that key.
+//
+// ========================= MUTATIONS OF THE WHOLE ALIAS =========================
+// Applied by script, one occurrence each, all RED:
+//   · `hour: number` → `hour: string` in the SECOND member of `core/contract.ts` `Bearing` → `[Zero] NENHUM tipo mudou de
+//     forma` fails. Before the parser read the alias, `Bearing` was recorded as `| { readonly kind: 'compass'`, and this
+//     edit could not change that text.
+//   · the alias read by the old regex again (up to the first `;`) → the multi-line union case, the formatting case and the
+//     real-tree case fail.
+//   · the alias kept as its raw source text instead of printed → the formatting case and the real-tree case fail.

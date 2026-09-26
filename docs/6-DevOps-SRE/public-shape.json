@@ -118,7 +118,7 @@
     ],
     "type Move": "'up' | 'down' | 'left' | 'right'",
     "type AttemptPhase": "'trying' | 'explained' | 'copying'",
-    "type AttemptOutcome": "| { readonly kind: 'refused' } | { readonly kind: 'wrong' | 'failed' | 'copy'"
+    "type AttemptOutcome": "{ readonly kind: 'refused'; } | { readonly kind: 'wrong' | 'failed' | 'copy'; readonly next: Attempts; } | { readonly kind: 'right'; readonly result: ResultadoDaQuestao | null; readonly copied: boolean; }"
   },
   "consumer-quiz/quiz-skills.ts": {
     "interface QuizQuestion": [
@@ -138,7 +138,7 @@
       "source",
       "stage"
     ],
-    "type Words": "Readonly<{ pt: string",
+    "type Words": "Readonly<{ pt: string; en: string; es: string; }>",
     "type QuizOption": "Words | string"
   },
   "core/a11y-sr.ts": {
@@ -256,15 +256,15 @@
       "world"
     ],
     "type Gender": "'m' | 'f' | 'n'",
-    "type MoveRule": "| 'orthogonal' | 'diagonal' | 'free'",
+    "type MoveRule": "'orthogonal' | 'diagonal' | 'free'",
     "type Frame": "'compass' | 'clock'",
-    "type Topology": "| { readonly kind: 'grid'",
-    "type Role": "| 'hazard' | 'climb' | 'water' | 'goal' | 'gate' | 'key' | 'structure' | 'free'",
+    "type Topology": "{ readonly kind: 'grid'; readonly size: readonly number[]; readonly move: MoveRule; readonly frame: Frame; } | { readonly kind: 'continuous'; readonly size: readonly number[]; readonly unit: number; readonly move: MoveRule; readonly frame: Frame; } | { readonly kind: 'hotspots'; readonly order: readonly string[]; }",
+    "type Role": "'hazard' | 'climb' | 'water' | 'goal' | 'gate' | 'key' | 'structure' | 'free'",
     "type Heading": "'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'zenith' | 'nadir' | 'none'",
-    "type Bearing": "| { readonly kind: 'compass'",
+    "type Bearing": "{ readonly kind: 'compass'; readonly heading: Heading; } | { readonly kind: 'clock'; readonly hour: number; } | { readonly kind: 'none'; }",
     "type TickOwner": "'player' | 'clock'",
-    "type Announcement": "| { readonly kind: 'state'",
-    "type WorldScope": "| { readonly kind: 'element'"
+    "type Announcement": "{ readonly kind: 'state'; readonly name: Speakable; } | { readonly kind: 'event'; readonly name: Speakable; readonly urgent: boolean; }",
+    "type WorldScope": "{ readonly kind: 'element'; readonly selector: string; } | { readonly kind: 'none'; }"
   },
   "core/dom-query.ts": {
     "type DomQuery": "<T extends Element = HTMLElement>(sel: string) => T | null"
@@ -349,7 +349,7 @@
     ],
     "type KeyScheme": "Record<Action, readonly string[] | null>",
     "type ClingSide": "'R' | 'L' | 'U' | 'D'",
-    "type ControlledPlayer": "Player & { ctrl: KeyScheme }",
+    "type ControlledPlayer": "Player & { ctrl: KeyScheme; }",
     "type PlayerView": "Pick<Player, K>"
   },
   "core/flash-threshold.ts": {
@@ -466,7 +466,7 @@
     ]
   },
   "core/setting-defaults.ts": {
-    "type MediaQuery": "(query: string) => { readonly matches: boolean }"
+    "type MediaQuery": "(query: string) => { readonly matches: boolean; }"
   },
   "core/speech-rate.ts": {
     "type SpeechRate": "(typeof SPEECH_RATES)[number]"
@@ -585,9 +585,9 @@
       "faixa",
       "motivo"
     ],
-    "type ResultadoDaQuestao": "| 'primeira' | 'mediada' | 'falhou'",
+    "type ResultadoDaQuestao": "'primeira' | 'mediada' | 'falhou'",
     "type Band": "'proficiente' | 'zona' | 'frustracao'",
-    "type Reason": "| 'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'dentro-da-zona' | 'janela-incompleta'"
+    "type Reason": "'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'dentro-da-zona' | 'janela-incompleta'"
   },
   "educational/segment-bar.ts": {
     "interface ReadVerdict": [
@@ -604,7 +604,7 @@
       "copiouAResposta?"
     ],
     "type Resultado": "'primeira' | 'mediada' | 'falhou'",
-    "type Segmento": "| 'azul' | 'verde' | 'vermelho'",
+    "type Segmento": "'azul' | 'verde' | 'vermelho'",
     "type BarColour": "'nenhuma' | 'laranja' | 'roxa'"
   },
   "input/default-bindings.ts": {
@@ -636,10 +636,10 @@
     "interface FaceRest": [
       "scores"
     ],
-    "type FaceExpression": "| 'browsUp' | 'frown' | 'headLeft' | 'headRight' | 'squeeze' | 'pressLips' | 'openMouth' | 'smile' | 'pucker' | 'lookRightThenLeft' | 'mouthLeft' | 'lookLeftThenRight' | 'mouthRight'",
+    "type FaceExpression": "'browsUp' | 'frown' | 'headLeft' | 'headRight' | 'squeeze' | 'pressLips' | 'openMouth' | 'smile' | 'pucker' | 'lookRightThenLeft' | 'mouthLeft' | 'lookLeftThenRight' | 'mouthRight'",
     "type FaceBlendshape": "(typeof FACE_BLENDSHAPES)[number]",
     "type FaceScores": "Partial<Readonly<Record<FaceBlendshape, number>>>",
-    "type ExpressionLevels": "{ readonly [E in FaceExpression]?: number }"
+    "type ExpressionLevels": "{ readonly [E in FaceExpression]?: number; }"
   },
   "input/face-signals.ts": {
     "interface HeadPose": [
@@ -733,8 +733,8 @@
       "padWizTick",
       "pollPads"
     ],
-    "type GamepadPlayer": "PlayerView< 'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
-    "type PadGameAnswers": "Required<Omit<GamepadGameHooks, 'worldRunning'>> & { readonly worldRunning: () => boolean }"
+    "type GamepadPlayer": "PlayerView<'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>",
+    "type PadGameAnswers": "Required<Omit<GamepadGameHooks, 'worldRunning'>> & { readonly worldRunning: () => boolean; }"
   },
   "input/gaze-cycle.ts": {
     "interface GazeCycleOptions": [
@@ -809,7 +809,7 @@
     "interface HandPoint": [
       "x"
     ],
-    "type HandGesture": "| 'indexUp' | 'indexDown' | 'indexLeft' | 'indexRight' | 'iLoveYou' | 'dog' | 'victory' | 'fist' | 'openPalm' | 'zero' | 'thumbUp' | 'thumbDown' | 'threeFingers' | 'fourFingers'"
+    "type HandGesture": "'indexUp' | 'indexDown' | 'indexLeft' | 'indexRight' | 'iLoveYou' | 'dog' | 'victory' | 'fist' | 'openPalm' | 'zero' | 'thumbUp' | 'thumbDown' | 'threeFingers' | 'fourFingers'"
   },
   "input/input-cooldown.ts": {
     "interface InputCooldown": [
@@ -867,7 +867,7 @@
       "set"
     ],
     "type KeyboardStore": "Pick<Store, 'getJSON' | 'setJSON' | 'remove'>",
-    "type KBDefaults": "{ solo: KeyScheme",
+    "type KBDefaults": "{ solo: KeyScheme; p2: KeyScheme[]; p3: KeyScheme[]; p4: KeyScheme[]; }",
     "type KeyboardMapping": "(players: number, seat: number) => Partial<KeyScheme> | null"
   },
   "input/keydown.ts": {
@@ -941,9 +941,9 @@
       "onKeyup",
       "snapshot"
     ],
-    "type KeydownPlayer": "PlayerView< 'i' | 'ctrl' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
+    "type KeydownPlayer": "PlayerView<'i' | 'ctrl' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>",
     "type ModalIntent": "'left' | 'right' | 'up' | 'down' | 'confirm' | 'erase'",
-    "type KeydownDecision": "| { kind: 'overlay'"
+    "type KeydownDecision": "{ kind: 'overlay'; closeId: string | null; preventDefault: boolean; } | { kind: 'touchcfg'; close: boolean; preventDefault: boolean; } | { kind: 'padwiz'; close: boolean; preventDefault: boolean; } | { kind: 'win'; again: boolean; preventDefault: boolean; } | { kind: 'title'; wait: boolean; nav: TitleNav | null; preventDefault: boolean; } | { kind: 'screens'; count: number; preventDefault: boolean; } | { kind: 'pause'; preventDefault: boolean; } | { kind: 'modal'; playerIndex: number; intent: ModalIntent | null; preventDefault: boolean; } | { kind: 'play'; gameKey: boolean; wake: number[]; edges: EdgeRaise[]; releaseKeys: string[]; preventDefault: boolean; }"
   },
   "input/latch-edge.ts": {
     "interface LatchedEdgeOptions": [
@@ -1089,7 +1089,7 @@
       "showing"
     ],
     "interface SwitchScan": [],
-    "type ScanItem": "Action> = T | typeof SCAN_CANCEL"
+    "type ScanItem": "T | typeof SCAN_CANCEL"
   },
   "input/synthetic-source.ts": {
     "interface KeyEventLike": [
@@ -1148,7 +1148,7 @@
     ],
     "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
     "type TouchBindPlayer": "PlayerView<'ctrl'> & Partial<PlayerView<'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>>",
-    "type TouchDecision": "| { kind: 'noop' } | { kind: 'pause' } | { kind: 'press'"
+    "type TouchDecision": "{ kind: 'noop'; } | { kind: 'pause'; } | { kind: 'press'; action: Action; addKey: boolean; edges: EdgeRaise[]; hideTips: boolean; } | { kind: 'release'; action: Action; }"
   },
   "input/touch.ts": {
     "interface TouchStore": [
@@ -1296,8 +1296,8 @@
       "items",
       "partial"
     ],
-    "type VoiceWords": "{ readonly [A in Action]?: readonly string[] }",
-    "type VoiceCommand": "| { readonly kind: 'position'"
+    "type VoiceWords": "{ readonly [A in Action]?: readonly string[]; }",
+    "type VoiceCommand": "{ readonly kind: 'position'; readonly action: Action; } | { readonly kind: 'item'; readonly name: string; }"
   },
   "platform/audio-ambient.ts": {
     "interface AudioAmbientCtx": [
@@ -1419,7 +1419,7 @@
       "sonarCount",
       "updateGuide"
     ],
-    "type SinkAC": "AudioContext & { setSinkId?: (id: string) => Promise<void> }"
+    "type SinkAC": "AudioContext & { setSinkId?: (id: string) => Promise<void>; }"
   },
   "platform/audio.ts": {
     "interface AudioDeps": [
@@ -1445,7 +1445,7 @@
       "tonePan",
       "volume"
     ],
-    "type CatState": "{ on: boolean"
+    "type CatState": "{ on: boolean; vol: number; }"
   },
   "platform/flash-sampler.ts": {
     "interface FlashMeasurement": [
@@ -1520,7 +1520,7 @@
       "fetch",
       "ort"
     ],
-    "type EspeakFactory": "(options: { readonly arguments: readonly string[]"
+    "type EspeakFactory": "(options: { readonly arguments: readonly string[]; readonly preRun: readonly ((m: { FS: EspeakFileSystem; }) => void)[]; }) => Promise<{ FS: EspeakFileSystem; }>"
   },
   "platform/kokoro-runtime.ts": {
     "interface KokoroRuntimeDeps": [
@@ -1680,8 +1680,8 @@
       "onmessage",
       "postMessage"
     ],
-    "type ReadingRequest": "| { readonly kind: 'load'",
-    "type ReadingAnswer": "| { readonly kind: 'ready' } | { readonly kind: 'text'"
+    "type ReadingRequest": "{ readonly kind: 'load'; readonly base: string; readonly language: string; } | { readonly kind: 'transcribe'; readonly id: number; readonly samples: Float32Array; }",
+    "type ReadingAnswer": "{ readonly kind: 'ready'; } | { readonly kind: 'text'; readonly id: number; readonly text: string; } | { readonly kind: 'failed'; readonly id?: number; readonly message: string; }"
   },
   "platform/reading.ts": {
     "interface ListeningSession": [
@@ -1739,7 +1739,7 @@
       "read"
     ],
     "type OnDeviceAvailability": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
-    "type HeardCommand": "{ readonly kind: 'palavra'"
+    "type HeardCommand": "{ readonly kind: 'palavra'; readonly word: string; } | { readonly kind: 'item'; readonly name: string; }"
   },
   "platform/speech.ts": {
     "interface SpeechPort": [
@@ -1877,10 +1877,10 @@
       "detect",
       "handLines"
     ],
-    "type Connections": "ReadonlyArray<{ readonly start: number",
+    "type Connections": "ReadonlyArray<{ readonly start: number; readonly end: number; }>",
     "type Delegate": "'GPU' | 'CPU'",
-    "type FaceTrackerLoad": "| { readonly ok: true",
-    "type HandTrackerLoad": "| { readonly ok: true"
+    "type FaceTrackerLoad": "{ readonly ok: true; readonly tracker: FaceTracker; } | { readonly ok: false; readonly missing: readonly string[]; }",
+    "type HandTrackerLoad": "{ readonly ok: true; readonly tracker: HandTracker; } | { readonly ok: false; readonly missing: readonly string[]; }"
   },
   "platform/voice-listener.ts": {
     "interface VoiceListenerDeps": [
@@ -1926,7 +1926,7 @@
       "language",
       "loadBundle"
     ],
-    "type VoskLoad": "| { readonly ok: true"
+    "type VoskLoad": "{ readonly ok: true; readonly model: VoskModel; readonly vocabulary?: () => Promise<ReadonlySet<string> | null>; } | { readonly ok: false; readonly missing: readonly string[]; }"
   },
   "render/canvas.ts": {
     "type CanvasDoc": "Pick<Document, 'createElement'>",
@@ -1947,7 +1947,7 @@
       "cfg",
       "scanVars"
     ],
-    "type CrtCfg": "{ scan: number"
+    "type CrtCfg": "{ scan: number; vig: number; round: number; }"
   },
   "render/cvd-matrices.ts": {
     "type CvdKey": "'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan'"
@@ -1989,7 +1989,7 @@
       "worldTexFor",
       "worldToTextureDirect"
     ],
-    "type RolePalette": "Record<HcRoleKey, [number, number, number]>",
+    "type RolePalette": "Record<HcRoleKey, [ number, number, number ]>",
     "type HighContrastStore": "Pick<Store, 'getJSON' | 'setJSON'>"
   },
   "render/low-vision-drawing.ts": {
@@ -2159,7 +2159,7 @@
     "type UnavailableReason": "'tema' | 'correcao' | 'ambos'"
   },
   "render/viz-modes.ts": {
-    "type VizMode": "{ key: string"
+    "type VizMode": "{ key: string; kind: string; name: string; desc: string; lv?: string; sim?: true; }"
   },
   "render/viz-refusal.ts": {
     "interface Refusal": [
@@ -2229,8 +2229,8 @@
     "type VisualStore": "Pick<Store, 'get' | 'getJSON' | 'set' | 'setJSON'>"
   },
   "ui/aac-sets.ts": {
-    "type AacTier": "| 'licensed' | 'unlicensed'",
-    "type AacSet": "| (AacSetBase & { readonly tier: 'licensed'"
+    "type AacTier": "'licensed' | 'unlicensed'",
+    "type AacSet": "(AacSetBase & { readonly tier: 'licensed'; readonly license: string; }) | (AacSetBase & { readonly tier: 'unlicensed'; readonly license: null; })"
   },
   "ui/audio-choices.ts": {
     "interface AudioCatDef": [
@@ -2363,8 +2363,8 @@
       "get"
     ],
     "type FontRole": "'geral' | 'caligrafica' | 'jogo'",
-    "type FontItem": "{ id: string",
-    "type FontGroup": "{ g: string"
+    "type FontItem": "{ id: string; k: string; fam: string; fb: string; d?: string; off?: string; notice?: string; role?: FontRole; minPx?: number; }",
+    "type FontGroup": "{ g: string; items: FontItem[]; }"
   },
   "ui/footer-scroll-driver.ts": {
     "interface FooterScrollHost": [
@@ -2409,7 +2409,7 @@
       "t",
       "word"
     ],
-    "type GameOption": "| (GameOptionBase & { readonly kind: 'steps' | 'list'"
+    "type GameOption": "(GameOptionBase & { readonly kind: 'steps' | 'list'; readonly values: readonly GameOptionValue[]; readonly read: () => string; readonly write: (value: string) => void; }) | (GameOptionBase & { readonly kind: 'switch'; readonly read: () => boolean; readonly write: (on: boolean) => void; })"
   },
   "ui/gaze-overlay.ts": {
     "interface GazeView": [
@@ -2425,7 +2425,7 @@
     ],
     "type GazeRegion": "GazeZone | 'middle'",
     "type ButtonShape": "'triangle' | 'circle' | 'cross' | 'square'",
-    "type RegionShows": "| { readonly kind: 'nothing' } | { readonly kind: 'text'"
+    "type RegionShows": "{ readonly kind: 'nothing'; } | { readonly kind: 'text'; readonly key: string; } | { readonly kind: 'arrow'; } | { readonly kind: 'button'; } | { readonly kind: 'shoulder'; readonly label: string; }"
   },
   "ui/hand-control.ts": {
     "interface HandControlDeps": [
@@ -2492,7 +2492,7 @@
       "right"
     ],
     "type HudBand": "'identity' | 'mission' | 'power' | 'learning'",
-    "type HudNumber": "| { readonly band: 'identity' | 'mission' | 'power'"
+    "type HudNumber": "{ readonly band: 'identity' | 'mission' | 'power'; readonly nameKey: string; readonly value: (seat: number) => number | { readonly have: number; readonly need: number; }; } | { readonly band: 'learning'; readonly nameKey: string; readonly value: (seat: number) => HudBar; }"
   },
   "ui/hud-row.ts": {
     "interface HudRow": [
@@ -2611,7 +2611,7 @@
       "win"
     ],
     "type FetchFile": "((url: string) => Promise<Response>) | undefined",
-    "type Opened": "{ readonly stage: AvatarStage } | { readonly reason: string }"
+    "type Opened": "{ readonly stage: AvatarStage; } | { readonly reason: string; }"
   },
   "ui/libras-avatar-plan.ts": {
     "interface ClipWindow": [
@@ -3453,7 +3453,7 @@
     "type AxisChoice": "EscolhaDeEixoDeRender"
   },
   "ui/visual-choices.ts": {
-    "type RGB": "readonly [number, number, number]"
+    "type RGB": "readonly [ number, number, number ]"
   },
   "ui/vlibras.ts": {
     "interface Interpreter": [
@@ -3479,7 +3479,7 @@
       "sonar",
       "toggle"
     ],
-    "type SignResult": "| { readonly signed: true",
+    "type SignResult": "{ readonly signed: true; readonly unsigned?: string; } | { readonly signed: false; readonly reason: string; }",
     "type DeafModeStore": "Pick<Store, 'getBool' | 'setBool'>"
   },
   "ui/voice-control.ts": {

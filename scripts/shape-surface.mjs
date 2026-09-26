@@ -17,14 +17,16 @@
 // REQUIRED member to an interface breaks everyone who builds it. So adding an OPTIONAL one passes silently, and adding a
 // REQUIRED one asks for a declaration, as a removal does.
 //
-// ⚠️ WHAT THIS FILE IS NOT: a TypeScript analyser. It counts braces over text without comments, and some shapes escape
-// it (conditional generics, a brace inside a string literal in a type). That makes it a coarse sieve and not a proof —
-// but what it catches, it catches before the major ships, and what escapes it today escaped the name gate entirely.
+// ⚠️ WHAT THIS FILE IS NOT: a type checker. Type ALIASES are read by the TypeScript parser, whole; INTERFACES are still
+// read by counting braces over text without comments, and some shapes escape that (a brace inside a string literal in a
+// type). That makes it a coarse sieve and not a proof — but what it catches, it catches before the major ships, and what
+// escapes it today escaped the name gate entirely.
 //
 // Usage: runs through `snapshot-public-surface.mjs`, which writes both portraits at once.
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import ts from 'typescript';
 
 export const RETRATO_FORMA = 'docs/6-DevOps-SRE/public-shape.json';
 
@@ -62,9 +64,9 @@ export function membrosDe(corpoTxt) {
 /**
  * The shape of ONE file: `{ 'interface Name': ['a', 'b?'], 'type Name': '<normalised right-hand side>' }`.
  *
- * Type aliases are kept by the TEXT of their right-hand side, with spaces collapsed, because most of them are a union
- * or a function signature and have no members to list. That form is what catches a union narrowing — the `KeyScheme`
- * case.
+ * Type aliases are kept by the TEXT of their right-hand side, printed without formatting, because most of them are a
+ * union or a function signature and have no members to list. That form is what catches a union narrowing — the
+ * `KeyScheme` case.
  */
 export function formaDoTexto(fonte) {
   const txt = semComentarios(fonte);
@@ -76,11 +78,32 @@ export function formaDoTexto(fonte) {
     if (c !== null) fora[`interface ${m[1]}`] = membrosDe(c);
   }
 
-  const reAlias = /(?:^|\n)export\s+type\s+([A-Za-z_$][\w$]*)[^=]*=\s*([\s\S]*?);/g;
-  for (let m; (m = reAlias.exec(txt)) !== null;) {
-    fora[`type ${m[1]}`] = m[2].replace(/\s+/g, ' ').trim();
-  }
+  for (const [nome, texto] of aliasesExportados(fonte)) fora[`type ${nome}`] = texto;
 
+  return fora;
+}
+
+/*
+ * 🔴 AN ALIAS IS READ BY THE PARSER, TO ITS LAST TOKEN. It used to be read by a regex up to the first `;`, and a union of
+ * object types has one inside its first member: `type FooterScrollPlan = | { readonly mode: 'glide'; … } | { … }` was
+ * recorded as `| { readonly mode: 'glide'`, and a change anywhere after that semicolon kept the recorded shape identical —
+ * this gate passed it green.
+ *
+ * ⚠️ WHAT IS NORMALISED IS FORMATTING, AND ONLY IT: the type is PRINTED from its syntax tree, without comments, and the
+ * printer's line breaks collapse to one space. So a line break, indentation, a comment, the leading `|` a formatter adds
+ * when a union wraps, or `,` against `;` between the members of an object type is not a change of shape; a token is.
+ */
+const IMPRESSORA = ts.createPrinter({ removeComments: true });
+
+function aliasesExportados(fonte) {
+  const sf = ts.createSourceFile('m.ts', fonte, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const fora = [];
+  for (const st of sf.statements) {
+    if (!ts.isTypeAliasDeclaration(st)) continue;
+    if (!(st.modifiers ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) continue;
+    const texto = IMPRESSORA.printNode(ts.EmitHint.Unspecified, st.type, sf);
+    fora.push([st.name.text, texto.replace(/\s+/g, ' ').trim()]);
+  }
   return fora;
 }
 
