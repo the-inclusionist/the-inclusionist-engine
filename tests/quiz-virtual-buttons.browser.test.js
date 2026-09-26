@@ -10,6 +10,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS } from './fixtures/quiz-skills.js';
 
 let regiao;
 const alertas = [];
@@ -27,7 +29,9 @@ beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.querySelector('.stage-wrap').style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await esperar();
   regiao = document.getElementById('game-region');
   for (const [id, lista] of [['sr-alert', alertas], ['sr-status', falas]]) {
@@ -43,6 +47,8 @@ beforeEach(() => { alertas.length = 0; falas.length = 0; });
 describe('the quiz demo, by virtual button', () => {
   it('🔴 [Right] the confirm button answers the question under the cursor — ONE answer for one press, the release is not a second', async () => {
     const antes = enunciado();
+    // the cursor on the right option (the fixture's first question is right on its second): a right answer moves the quiz on
+    document.querySelector('#quiz-app button[data-alt="1"]').focus();
     desce('KeyJ');
     sobe('KeyJ');
     await esperar(1100); // the quiz lets the answer be read (900 ms) before the screen changes

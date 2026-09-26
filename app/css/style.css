@@ -802,7 +802,26 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 .quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0;padding:calc(var(--ui-fs,16px) * .4) calc(var(--ui-fs,16px) * .9)} /* the list gap spaces them (#160); padding in `--ui-fs`, so a larger face grows the text only (#172) */
 /* the marked option is not colour alone either (ADR-0159 rule 10): the same base stripe as an icon switched on */
 .quiz-alt.is-on{box-shadow:inset 0 0 0 3px var(--accent-ink)} /* a ring, not a bottom strip: the strip left the fill looking shifted up (#166) */
-.quiz-alts{display:flex;flex-direction:column;gap:calc(.25rem * var(--espaco-fixo,1))}
+/* FIVE OPTIONS IN THREE COLUMNS — «1 2 3» over «4 5», read left to right (`quiz-round.OPTION_COLUMNS`, written as `--quiz-cols`).
+   📏 In one column the fifth ended under the HUD row at 640×360, and in two a two-line statement with its explanation did. */
+.quiz-alts{display:grid;grid-template-columns:repeat(var(--quiz-cols,3),minmax(0,1fr));gap:calc(.25rem * var(--espaco-fixo,1))}
+/* An option already tried is out: struck through as well as dimmed, so it is not told by colour alone (WCAG 1.4.1); an inactive
+   control is outside the contrast minimum (WCAG 1.4.3). The answer to COPY (ADR-0049 §6) carries a mark before its words. */
+.quiz-alt.is-off{opacity:.55;text-decoration:line-through;cursor:default}
+.quiz-alt.is-answer{outline:3px solid var(--accent);outline-offset:2px}
+.quiz-alt.is-answer::before{content:"➜ "}
+/* The explanation after the third wrong attempt, and the copy line: under the statement, at the text size, not bold. While it
+   shows, the statement comes down to the text size too: 📏 a two-line statement at its heading size, a three-line explanation
+   and two rows of options ended under the HUD row at 640×360 (quiz-bench-layout). */
+.quiz-note{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25;font-weight:400}
+.quiz-app:has(.quiz-note) .quiz-pergunta{font-size:1em}
+/* THE START SCREEN (the Dev: «Tela inicial para escolher a habilidade via sigla da BNCC»): each stage's name over a grid of
+   `--quiz-cols` codes (`quiz-round.SKILL_COLUMNS`), the engine's target size; a code never overflows its button. */
+.quiz-stage{margin:0}
+.quiz-stage-name{margin:0;font-size:1em;line-height:1.25}
+.quiz-skills{display:grid;grid-template-columns:repeat(var(--quiz-cols,5),minmax(0,1fr));gap:calc(.25rem * var(--espaco-fixo,1));margin:0 0 calc(.25rem * var(--espaco-fixo,1))}
+.quiz-skill{min-height:var(--alvo-min,44px);margin:0;padding:calc(var(--ui-fs,16px) * .3);overflow-wrap:anywhere;line-height:1.15}
+.quiz-skill.is-on{box-shadow:inset 0 0 0 3px var(--accent-ink)}
 :root[data-letras="upper"] body,
 :root[data-letras="upper"] button,
 :root[data-letras="upper"] select,

@@ -12,6 +12,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS } from './fixtures/quiz-skills.js';
 
 beforeAll(async () => {
   const style = document.createElement('style');
@@ -21,7 +23,9 @@ beforeAll(async () => {
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.body.innerHTML = corpo;
   // importing the module boots it, because the page now has #quiz-app — the same path as the real page
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 });
 

@@ -13,15 +13,22 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS, INFANT } from './fixtures/quiz-skills.js';
 
 /**
- * The screen as the sonar must read it: each line a sentence. Built from the DICTIONARY through the engine's translator, never from
- * the page it checks. (`motor.t` and not an import of `i18n/pt`: a test that imports an engine layer and names the quiz is a fixture
- * the engine-boundary gate refuses.)
+ * The screen as the sonar must read it: each line a sentence. Built from the DICTIONARY through the engine's translator and from the
+ * fixture's skill, never from the page it checks. (`motor.t` and not an import of `i18n/pt`: a test that imports an engine layer and
+ * names the quiz is a fixture the engine-boundary gate refuses.)
  */
 const pt = new Proxy({}, { get: (_, key) => motor.t(String(key)) });
 const sentence = (s) => (/[.!?…:;]$/u.test(s) ? s : `${s}.`);
-const question = (n) => [pt[`quiz.p${n}`], ...['a', 'b', 'c', 'd'].map((x) => pt[`quiz.p${n}.${x}`])].map(sentence).join(' ');
+const statementOf = (n) => INFANT.questions[n - 1].statement.pt;
+const question = (n) => [statementOf(n), ...INFANT.questions[n - 1].options.map((o) => o.pt)].map(sentence).join(' ');
+/** The skill's bar, which the game declared in its HUD and so is on screen for it (`ui/screen-text`): blue, green and red counts. */
+const barLine = (blue, green, red) => sentence(motor.t('hud.barra', {
+  nome: motor.t('quiz.hud.skill'), azuis: String(blue), verdes: String(green), vermelhos: String(red),
+}));
 
 let motor, regiao, narrate;
 const signed = [];
@@ -54,8 +61,10 @@ beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.querySelector('.stage-wrap').style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  motor = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, interpreter });
+  motor = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, interpreter, skills: THREE_SKILLS });
   await motor.localeReady();
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await esperar(120);
   regiao = document.getElementById('game-region');
   regiao.focus();
@@ -70,7 +79,7 @@ beforeEach(() => { narrate.mockClear(); signed.length = 0; });
 describe('the sonar reads what is on the screen now (ADR-0234)', () => {
   it('🔴 [Right] in play: the statement and every option, in reading order — and none of the engine\'s chrome', () => {
     sonar();
-    expect(heard(), 'R1 did not read the screen').toEqual([question(1)]);
+    expect(heard(), 'R1 did not read the screen').toEqual([`${question(1)} ${barLine(0, 0, 0)}`]);
     const read = heard()[0];
     // the quick bar's icons and the session clock are the engine's, not what the child asked about
     expect(read, 'the quick bar was read').not.toMatch(/🦯|🗨️|🦻|☰/u);
@@ -96,13 +105,14 @@ describe('the sonar reads what is on the screen now (ADR-0234)', () => {
   });
 
   it('🔴 [Right] after answering, the NEW question and its options — never the one read at load', async () => {
+    document.querySelector('#quiz-app button[data-alt="1"]').focus(); // the right option: a wrong one does not move on
     press('KeyJ'); // confirm: answers the first question
     await esperar(1100); // the quiz lets the answer be read (900 ms) before the screen changes
-    expect(document.querySelector('.quiz-pergunta')?.textContent, 'the quiz did not move on').toBe(pt['quiz.p2']);
+    expect(document.querySelector('.quiz-pergunta')?.textContent, 'the quiz did not move on').toBe(statementOf(2));
     narrate.mockClear();
     sonar();
-    expect(heard(), 'R1 read something other than the screen as it is now').toEqual([question(2)]);
-    expect(heard()[0]).not.toContain(pt['quiz.p1']);
+    expect(heard(), 'R1 read something other than the screen as it is now').toEqual([`${question(2)} ${barLine(1, 0, 0)}`]);
+    expect(heard()[0]).not.toContain(statementOf(1));
   });
 
   it('🔴 [Right] with a panel open: the PANEL in front — not the question behind it, not the card under it', async () => {
@@ -120,7 +130,7 @@ describe('the sonar reads what is on the screen now (ADR-0234)', () => {
       const read = heard();
       expect(read.length, 'R1 with a panel open read nothing — the menu swallowed the press').toBe(1);
       expect(read[0].startsWith(sentence(pt['pause.visual'])), `the panel's title does not open the reading: «${read[0]}»`).toBe(true);
-      expect(read[0], 'the question behind the panel was read').not.toContain(pt['quiz.p2']);
+      expect(read[0], 'the question behind the panel was read').not.toContain(statementOf(2));
       expect(read[0], 'the card under the panel was read').not.toContain(pt['pause.quit']);
       expect(openPanel()?.id, 'R1 moved the menu instead of reading it').toBe('visual');
     } finally {
@@ -147,8 +157,8 @@ describe('the sonar reads what is on the screen now (ADR-0234)', () => {
     try {
       sonar();
       await esperar(0);
-      expect(signed, 'the interpreter was not handed the screen').toEqual([question(2)]);
-      expect(soundCaption()?.textContent, 'the screen was not captioned').toBe(question(2));
+      expect(signed, 'the interpreter was not handed the screen').toEqual([`${question(2)} ${barLine(1, 0, 0)}`]);
+      expect(soundCaption()?.textContent, 'the screen was not captioned').toBe(`${question(2)} ${barLine(1, 0, 0)}`);
       expect(narrate, 'deaf mode spoke the screen').not.toHaveBeenCalled();
 
       // and with a menu open, the menu — by the same two doors

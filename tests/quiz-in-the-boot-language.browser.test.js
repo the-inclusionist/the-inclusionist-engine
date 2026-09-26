@@ -11,6 +11,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS } from './fixtures/quiz-skills.js';
 
 const falas = [];
 let antes = { lang: null, tts: null };
@@ -22,7 +24,9 @@ beforeAll(async () => {
   window.speechSynthesis.speak = (u) => { falas.push(u.text); };
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   // ⚠️ No `core/i18n` import: it would make this the test of an engine module, and the boundary gate would count the
   // quiz's own class names as a debt (measured). And `<html lang>` is no signal either — the runner's page is born «en».
   // The wait is for the first DRAW, whenever it comes: drawn in the gap, it comes at once and in Portuguese.
@@ -47,9 +51,11 @@ describe('the quiz on an English page', () => {
     // on 2026-09-23: the flag changed `<html lang>`, the footer, the bar and the panels and left the statement and
     // the options in Portuguese. They are dictionary keys now (ADR-0225, and the quiz is no language subject), so
     // what this case asks is unchanged — the place is said in English — and the words around it finally agree.
-    const pergunta = falas.find((f) => /Cat/.test(f));
+    // the fixture's English words (tests/fixtures/quiz-skills.js); the start screen is the first thing said, the question after it
+    expect(falas[0], 'the start screen was not the first thing said, in English').toBe('Choose the skill. EI03EF01, Listening, speaking, thought and imagination, 1 of 3');
+    const pergunta = falas.find((f) => /Alfa 1 \(en\)/.test(f));
     expect(pergunta, 'the question was never narrated').toBeTruthy();
-    expect(pergunta).toContain('Cat, 1 of 4');
+    expect(pergunta).toContain('Alfa 1 (en), 1 of 5');
     expect(falas.join(' | '), 'something was narrated in Portuguese frames first').not.toMatch(/\d de \d/);
   });
 });

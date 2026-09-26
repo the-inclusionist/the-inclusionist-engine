@@ -125,6 +125,14 @@
 //          ("próxima" e "confirmar"), não um direcional de plataforma.
 //     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
+//
+// ---------------------------------------------------------------------------------------------------------
+// THE TEST BENCH (the Dev: «O quiz está ineficiente para teste»). The quiz opens on a START SCREEN that lists its skills by BNCC
+// code (`quiz-skills`), explained in the engine's footer (ADR-0244); a skill plays three questions of five options with the
+// attempts of ADR-0049 §5–§6, and comes round again with the options rotated one place per pass, so the ten-question window of
+// `educational/adaptive-engine` fills in a sitting. Its ten-segment bar is the HUD's learning band — in memory, for this page
+// only (ADR-0103). Content in a language discipline carries `lang` and is spoken as a part of its own language (ADR-0243).
+// ---------------------------------------------------------------------------------------------------------
 import { escapeHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
 import type { Translate } from '../core/i18n.js';
 import { captionDuration } from '../core/caption-duration.js';
@@ -133,80 +141,179 @@ import { announceItem } from '../ui/item-announcement.js';
 import { keyName } from '../ui/control-choices.js';
 import type { KeyScheme } from '../core/entity.js';
 import { createGame, type Engine, type EngineHost, type VirtualCommand } from '../boot/create-game.js';
+import type { GameDeclaration, Objective, Speakable, Spot } from '../core/contract.js';
+import type { Scene } from '../core/scenes.js';
+import { resultadoDaQuestao, type ResultadoDaQuestao } from '../educational/adaptive-engine.js';
+import type { Bar } from '../educational/segment-bar.js';
 import { QUIZ_DICTIONARIES } from './quiz-words.js';
-import type { GameDeclaration } from '../core/contract.js';
+import {
+  afterCopying, attempt, FIRST_ATTEMPT, gridRows, gridStep, OPTION_COLUMNS, rotated, SKILL_COLUMNS, skillRows, skillsInOrder, STAGES, withResult,
+  type AttemptOutcome, type Attempts, type Move, type SkillReading,
+} from './quiz-round.js';
+import { QUIZ_SKILLS, type QuizOption, type QuizQuestion, type QuizSkill, type Words } from './quiz-skills.js';
 
-/** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
-interface Question {
-  readonly enunciado: string;
-  readonly alternativas: readonly string[];
-  readonly certa: number;
-}
+/* ===================================== WORDS AND PARTS ===================================== */
 
-/*
- * 🔴 AS PERGUNTAS SÃO CHAVES, E NÃO FRASES — e antes de 23/09 eram frases cravadas em pt-BR. 📏 Medido no `dist`:
- * trocar a bandeira levava o `<html lang>`, o rodapé e a moldura inteira da engine para o idioma novo e deixava o
- * ENUNCIADO e as alternativas em português; a página chegava a abrir com `lang="en-US"` a mostrar uma pergunta em
- * português. É o ADR-0225 pela metade: a engine seguia, a ATIVIDADE não.
- *
- * 📌 E o quiz não é uma disciplina de idioma, logo não há sequer a excepção do `CLAUDE.md` §A FRONTEIRA: «o
- * ENUNCIADO SEMPRE TRADUZ». Guardar a frase aqui é guardar uma língua; guardar a chave deixa a frase onde as três
- * línguas vivem juntas e onde o crivo dos dicionários as confere.
- */
-const QUESTIONS: readonly Question[] = [
-  { enunciado: 'quiz.p1', alternativas: ['quiz.p1.a', 'quiz.p1.b', 'quiz.p1.c', 'quiz.p1.d'], certa: 1 },
-  { enunciado: 'quiz.p2', alternativas: ['quiz.p2.a', 'quiz.p2.b', 'quiz.p2.c', 'quiz.p2.d'], certa: 0 },
-  { enunciado: 'quiz.p3', alternativas: ['quiz.p3.a', 'quiz.p3.b', 'quiz.p3.c', 'quiz.p3.d'], certa: 2 },
-];
-
-/** Marcação de uma pergunta. Pura: recebe estado, devolve texto — testável sem DOM. */
-export function questionHtml(t: Translate, p: Question, selecionada: number): string {
-  // O enunciado e as alternativas são CHAVES: resolvem-se no instante de desenhar, e é isso que faz a troca de
-  // idioma alcançar a atividade e não só a moldura (ADR-0225).
-  const alts = p.alternativas.map((a, i) =>
-    `<button class="mode-btn quiz-alt${i === selecionada ? ' is-on' : ''}" data-alt="${i}" type="button"` +
-    ` role="radio" aria-checked="${i === selecionada}">${escapeHtml(t(a))}</button>`).join('');
-  return (
-    `<h2 class="quiz-pergunta">${escapeHtml(t(p.enunciado))}</h2>` +
-    `<div class="quiz-alts" role="radiogroup" aria-label="${escapeHtml(t('quiz.alternativas'))}">${alts}</div>`
-  );
-}
-
-/** O próximo índice do foco, com as pontas dando a volta. Puro — é a regra que o teclado e o pad compartilham. */
-export function nextFocus(currentIdx: number, delta: number, total: number): number {
-  if (total <= 0) return 0;
-  return ((currentIdx + delta) % total + total) % total;
+/** The words in the page's language (`pt`, `en`, `es`); another code reads the Portuguese, as the dictionaries do. */
+export function inLanguage(words: Words, locale: string): string {
+  const code = locale.slice(0, 2);
+  return (code === 'en' || code === 'es' ? words[code] : '') || words.pt;
 }
 
 /**
- * WHAT THE VOICE SAYS WHEN A QUESTION OPENS: the statement, then every option (ADR-0158 rule 3), each with its PLACE
- * after its name (ADR-0167) — «Gato, 1 de 4. Galinha, 2 de 4. …».
- *
- * A question is not answerable by ear until its options are heard. The place is said the way every menu item says it:
- * the Dev asked for «uma única função que capture a posição de item e a totalidade de itens», and it is the engine's.
- * `indexOn` is the child's choice of saying it, which the quiz page asks its engine for (`Engine.menuIndexOn()`, ADR-0232).
+ * A PIECE OF WHAT THE VOICE SAYS (ADR-0243 §1): frame, with no language — the interface's voice —, or content, with the BCP-47
+ * of its own language. The quiz builds every narration as parts, so the day `narrate(parts)` lands only `speak` changes.
  */
-export function questionNarration(t: Translate, p: Question, indexOn: boolean): string {
-  const opcoes = p.alternativas.map((_, i) => spokenOption(t, p, i, indexOn)).join('. ');
-  return opcoes ? `${t(p.enunciado)} ${opcoes}` : t(p.enunciado);
+export interface SpokenPart {
+  readonly text: string;
+  readonly language?: string;
+}
+const part = (text: string, language?: string): SpokenPart => (language ? { text, language } : { text });
+
+/** The parts as ONE text, in order: what `narrate(text)` takes until ADR-0243's `narrate(parts)` exists (see `speak`). */
+export function joinParts(parts: readonly SpokenPart[]): string {
+  return parts.map((p) => p.text).join('');
 }
 
-/** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
-function spokenOption(t: Translate, p: Question, i: number, indexOn: boolean): string {
-  return announceItem(t, { label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, indexOn);
+/** Parts as markup: frame as text, content inside an element that says its language (WCAG 3.1.2, ADR-0243 §6). */
+function partsHtml(parts: readonly SpokenPart[]): string {
+  return parts.map((p) => (p.language ? `<span lang="${escapeHtml(p.language)}">${escapeHtml(p.text)}</span>` : escapeHtml(p.text))).join('');
 }
 
 /**
- * What to narrate on a draw, and which question has now been narrated.
- *
- * The whole question only when it OPENS; a draw on the same question is the cursor moving, and then only the option
- * under it is said. 🔴 Before this, every arrow press re-read the statement and never said which option was reached.
+ * THE STATEMENT AS PARTS: the frame in the page's language, and the `content` of a language discipline where the frame says
+ * `{content}` — untranslated, in `contentLanguage` («A FRONTEIRA», CLAUDE.md). The data gate holds one `{content}` exactly when
+ * there is content (`tests/quiz-skills-are-well-formed`).
  */
-export function narrationOnDraw(t: Translate, p: Question, question: number, focusIdx: number, alreadyNarrated: number, indexOn: boolean): { texto: string; narrada: number } {
-  return question === alreadyNarrated
-    ? { texto: spokenOption(t, p, focusIdx, indexOn), narrada: alreadyNarrated }
-    : { texto: questionNarration(t, p, indexOn), narrada: question };
+export function statementParts(q: QuizQuestion, locale: string, contentLanguage?: string): SpokenPart[] {
+  const frame = inLanguage(q.statement, locale);
+  if (q.content === undefined) return [part(frame)];
+  const [before = '', after = ''] = frame.split('{content}');
+  return [part(before), part(q.content, contentLanguage), part(after)].filter((p) => p.text !== '');
 }
+
+/** An option as it is shown and said: words in the page's language, or content in the skill's language. */
+export function optionFace(option: QuizOption, locale: string, contentLanguage?: string): SpokenPart {
+  return typeof option === 'string' ? part(option, contentLanguage) : part(inLanguage(option, locale));
+}
+
+/* ===================================== THE START SCREEN ===================================== */
+
+/** What a skill is called on its button: its BNCC code, or its component's name where the BNCC gives it none. */
+export function skillLabel(s: QuizSkill, locale: string): string {
+  return s.code ?? inLanguage(s.component, locale);
+}
+
+/** The footer's explanation of a skill (ADR-0244): component · grade — the skill's text, in the page's language. */
+export function skillExplanation(t: Translate, s: QuizSkill, locale: string): string {
+  return t('quiz.skill.explain', {
+    component: inLanguage(s.component, locale), grade: inLanguage(s.grade, locale), skill: inLanguage(s.skillText, locale),
+  });
+}
+
+/** One skill as the voice says it: code and component, then its place — «EF05MA08, Matemática, 1 de 2» (ADR-0167). */
+export function skillNarration(t: Translate, ordered: readonly QuizSkill[], i: number, locale: string, indexOn: boolean): SpokenPart[] {
+  const s = ordered[i];
+  if (!s) return [];
+  const component = inLanguage(s.component, locale);
+  return [part(announceItem(t, { label: skillLabel(s, locale), state: s.code ? component : '', position: i + 1, total: ordered.length }, indexOn))];
+}
+
+/** The start screen's markup: a title, then each group under its name, one button per skill. Pure. */
+export function startHtml(t: Translate, ordered: readonly QuizSkill[], locale: string, cursor: number): string {
+  let i = 0;
+  const groups = STAGES.map((stage) => {
+    const of = ordered.filter((s) => s.stage === stage);
+    if (!of.length) return '';
+    const buttons = of.map((s) => {
+      const k = i++;
+      const label = skillLabel(s, locale);
+      // the button's name starts with what is written on it (WCAG 2.5.3) and adds the component its code stands for
+      const name = s.code ? `${label}, ${inLanguage(s.component, locale)}` : label;
+      return `<button class="mode-btn quiz-skill${k === cursor ? ' is-on' : ''}" data-skill="${k}" type="button"`
+        + ` aria-label="${escapeHtml(name)}"${k === cursor ? ' aria-current="true"' : ''}>${escapeHtml(label)}</button>`;
+    }).join('');
+    return `<section class="quiz-stage" aria-labelledby="quiz-stage-${stage}">`
+      + `<h3 class="quiz-stage-name" id="quiz-stage-${stage}">${escapeHtml(t(`quiz.stage.${stage}`))}</h3>`
+      + `<div class="quiz-skills" style="--quiz-cols:${SKILL_COLUMNS}">${buttons}</div></section>`;
+  }).join('');
+  // the title is a HEADING for a screen reader and the first thing the voice says, not a line on screen: 📏 drawn, it pushed
+  // fifteen skills under the footer's two lines with the larger face (quiz-bench-layout)
+  return `<h2 class="sr-only">${escapeHtml(t('quiz.start.title'))}</h2>${groups}`;
+}
+
+/* ===================================== A QUESTION ===================================== */
+
+/** An option as the question screen draws it. */
+export interface OptionView extends SpokenPart {
+  /** Tried and wrong in this phase: `aria-disabled`, and picking it again is refused with a word. */
+  readonly off: boolean;
+  /** The answer marked for her to copy (ADR-0049 §6). */
+  readonly marked: boolean;
+}
+export interface QuestionView {
+  readonly statement: readonly SpokenPart[];
+  readonly options: readonly OptionView[];
+  /** The line under the statement: the explanation after the third wrong attempt, the copy line after the sixth. */
+  readonly note: string | null;
+}
+
+/** What the question screen shows now. Pure: the skill, the question, the pass, the attempts and the language. */
+export function questionView(t: Translate, s: QuizSkill, q: QuizQuestion, pass: number, at: Attempts, locale: string): QuestionView {
+  const r = rotated(q.options, q.correct, pass);
+  return {
+    statement: statementParts(q, locale, s.contentLanguage),
+    options: r.options.map((o, i) => ({
+      ...optionFace(o, locale, s.contentLanguage), off: at.off.includes(i), marked: at.phase === 'copying' && i === r.correct,
+    })),
+    note: at.phase === 'explained' ? inLanguage(q.explanation, locale) : at.phase === 'copying' ? t('quiz.copy.note') : null,
+  };
+}
+
+/** Marcação de uma pergunta. Pura: recebe o que mostrar, devolve texto — testável sem DOM. */
+export function questionHtml(t: Translate, view: QuestionView, cursor: number): string {
+  const alts = view.options.map((o, i) =>
+    `<button class="mode-btn quiz-alt${i === cursor ? ' is-on' : ''}${o.off ? ' is-off' : ''}${o.marked ? ' is-answer' : ''}"`
+    + ` data-alt="${i}" type="button" role="radio" aria-checked="${i === cursor}"${o.off ? ' aria-disabled="true"' : ''}`
+    + `${o.language ? ` lang="${escapeHtml(o.language)}"` : ''}>${escapeHtml(o.text)}</button>`).join('');
+  const note = view.note ? `<p class="quiz-note">${escapeHtml(view.note)}</p>` : '';
+  return `<h2 class="quiz-pergunta">${partsHtml(view.statement)}</h2>${note}`
+    + `<div class="quiz-alts" role="radiogroup" aria-label="${escapeHtml(t('quiz.alternativas'))}" style="--quiz-cols:${OPTION_COLUMNS}">${alts}</div>`;
+}
+
+/** One option as it is said: its words (in their own language), then its state and place — «sister, 2 de 5» (ADR-0167). */
+export function optionNarration(t: Translate, view: QuestionView, i: number, indexOn: boolean): SpokenPart[] {
+  const o = view.options[i];
+  if (!o) return [];
+  const rest = announceItem(t, { label: '', state: o.off ? t('quiz.option.off') : '', position: i + 1, total: view.options.length }, indexOn);
+  return rest ? [part(o.text, o.language), part(`, ${rest}`)] : [part(o.text, o.language)];
+}
+
+/**
+ * WHAT THE VOICE SAYS WHEN A QUESTION OPENS: the statement, then every option (ADR-0158 rule 3), each with its PLACE after its
+ * name (ADR-0167) — «… Gato, 1 de 5. Galinha, 2 de 5. …». A question is not answerable by ear until its options are heard.
+ */
+export function questionNarration(t: Translate, view: QuestionView, indexOn: boolean): SpokenPart[] {
+  const options = view.options.flatMap((_, i) => [...(i ? [part('. ')] : [part(' ')]), ...optionNarration(t, view, i, indexOn)]);
+  return [...view.statement, ...options];
+}
+
+/**
+ * What to narrate on a draw, and which question has now been narrated. The whole question only when it OPENS (a new `key`);
+ * a draw on the same one is the cursor moving, and then only the option under it is said.
+ */
+export function narrationOnDraw(t: Translate, view: QuestionView, key: string, cursor: number, alreadyNarrated: string, indexOn: boolean): { parts: SpokenPart[]; narrated: string } {
+  return key === alreadyNarrated
+    ? { parts: optionNarration(t, view, cursor, indexOn), narrated: key }
+    : { parts: questionNarration(t, view, indexOn), narrated: key };
+}
+
+/* ===================================== THE BAR ===================================== */
+
+/** The bar of a skill not answered yet in this sitting: empty, it fills as she answers. */
+const NO_BAR: Pick<Bar, 'segmentos' | 'cor'> = { segmentos: [], cor: 'nenhuma' };
+
+/* ===================================== SPEECH ===================================== */
 
 /**
  * THE WORDS OF A SENTENCE, as a comparison can use them: no case, no accents, no punctuation.
@@ -245,19 +352,6 @@ export function heardAlternative(heard: string, alternativas: readonly string[])
   return found.length === 1 ? found[0]! : null;
 }
 
-/**
- * O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE.
- * The frame is the dictionary's (study item E4): the right answer crosses as `{certa}`, the words around it translate.
- */
-export function answerText(t: Translate, gotItRight: boolean, certa: string): string {
-  return t(gotItRight ? 'quiz.resposta.certa' : 'quiz.resposta.errada', { certa });
-}
-
-/** The closing line — how many were right out of how many — in the child's language. */
-export function endText(t: Translate, gotItRight: number, total: number): string {
-  return t('quiz.fim', { n: gotItRight, m: total });
-}
-
 /** Named first when a position has more than one key: an arrow, then Space — keys a child finds by their name. */
 const KEYS_NAMED_FIRST: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
 
@@ -279,13 +373,15 @@ export function welcomeText(t: Translate, scheme: Pick<KeyScheme, 'up' | 'down' 
     const code = keyToSay(codes);
     return code ? name(code) : null;
   });
-  // One of the two is enough to reach every option: the cursor wraps around (`nextFocus`).
+  // One of the two is enough to reach every item: up and down walk every column, and wrap (`gridStep`).
   const mover = up && down ? t('sr.quiz.teclas.duas', { a: up, b: down }) : (up ?? down);
   if (mover && responder) return t('sr.quiz.bemVindo', { mover, responder });
   if (mover) return t('sr.quiz.bemVindo.soEscolher', { mover });
   if (responder) return t('sr.quiz.bemVindo.soResponder', { responder });
   return t('sr.quiz.bemVindo.semTeclas');
 }
+
+/* ===================================== THE ROUND ===================================== */
 
 /**
  * THE PAGE THE QUIZ BOOTS IN — its document and window, handed over by the page (`app/quiz.html`, an inline module script).
@@ -302,15 +398,28 @@ export interface QuizHost {
    * delivery carries (ADR-0234). A test's double.
    */
   readonly interpreter?: EngineHost['interpreter'];
+  /** The skills to offer; absent, `QUIZ_SKILLS`. A test lends its own fixtures, so no gate depends on the data. */
+  readonly skills?: readonly QuizSkill[];
 }
 
 /** Boot. The page calls it; a test calls it over the page it built. Returns the engine it mounted. */
-export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
-  let atual = 0;
-  let foco = 0;
-  let correctCount = 0;
-  /** The question whose statement and options were last narrated — see `narrationOnDraw`. */
-  let narratedQuestion = -1;
+export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHost): Engine {
+  const ordered = skillsInOrder(skills);
+  const rows = skillRows(ordered);
+  let screen: 'start' | 'question' = 'start';
+  /** The skill under the start screen's cursor — and, once confirmed, the skill being played. */
+  let chosen = 0;
+  /** The option under the question screen's cursor. */
+  let cursor = 0;
+  let attempts: Attempts = FIRST_ATTEMPT;
+  /** Between a right answer and the next question: a second confirm does not answer a question she has not seen. */
+  let settling = false;
+  /** Where each skill's round stands — the question and the pass — so going back and in again goes on from there. */
+  const places = new Map<number, { readonly question: number; readonly pass: number }>();
+  /** Each skill's results and bar, THIS PAGE ONLY: nothing is stored anywhere (ADR-0103). */
+  const readings = new Map<number, SkillReading>();
+  /** What was last narrated whole — the start screen, or a question — see `narrationOnDraw`. */
+  let narrated = '';
   let motor: Engine | null = null;
   /**
    * ANSWERING BY SPEAKING (ADR-0216, issue #200) — the child says an option out loud and this quiz receives the TEXT.
@@ -328,86 +437,139 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
    * THE QUIZ'S OWN SENTENCES, in its engine's language: the handle's `t` (ADR-0232 D3), and not `core/i18n` by import.
    *
    * 📌 LATE-BOUND because the handle exists only after `createGame` returns; nothing reads it before (the first draw waits on
-   * `localeReady`). The words the quiz DECLARES to `createGame` are not read through here: they are KEYS of its own
-   * dictionary (`quiz-words`), and the engine resolves them each time it draws them (ADR-0232 D3, erratum of 2026-09-25).
+   * `localeReady`). The quiz's sentences are KEYS of its own dictionary (`quiz-words`), resolved at each use (ADR-0232 D3).
    */
   const translate: Translate = (key, params) => (motor ? motor.t(key, params) : key);
+  const locale = (): string => (motor ? motor.locale() : 'pt');
+  const indexOn = (): boolean => (motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
   /**
    * The quiz's announcements go through ITS ENGINE's announcer (ADR-0232 D4) — the same regions, and the same Libras mirror
    * if the page connects one. Nothing is announced before the engine exists.
    */
   const alert = (text: string): void => { motor?.alert(text); };
   const say = (text: string): void => { motor?.say(text); };
+  /**
+   * 🔴 THE ONE PLACE NARRATION LEAVES THE QUIZ (ADR-0243). Every narration is built as parts — frame without a language,
+   * content with its own —, and until `narrate(parts)` lands in the engine they are joined here into the one text
+   * `narrate(text)` takes, and the content is read by the interface's voice. The switch is this line.
+   */
+  const speak = (parts: readonly SpokenPart[]): void => {
+    const text = joinParts(parts);
+    if (text.trim()) motor?.tts.narrate(text);
+  };
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
+  const place = (): { readonly question: number; readonly pass: number } => places.get(chosen) ?? { question: 0, pass: 0 };
+  const skillNow = (): QuizSkill | undefined => ordered[chosen];
+  const questionNow = (): QuizQuestion | undefined => skillNow()?.questions[place().question];
+  const skillKey = (i: number): string => ordered[i]?.code ?? `skill-${i + 1}`;
+  const viewNow = (): QuestionView | null => {
+    const s = skillNow();
+    const q = questionNow();
+    return s && q ? questionView(translate, s, q, place().pass, attempts, locale()) : null;
+  };
 
-  function render(): void {
-    const app = $<HTMLElement>('#quiz-app');
-    if (!app) return;
-    const p = QUESTIONS[atual];
-    if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(translate, correctCount, QUESTIONS.length))}</h2>`; return; }
-    app.innerHTML = questionHtml(translate, p, foco);
-    // a narração é do consumidor: a engine só empresta a voz
-    // the «N de M» follows the child's choice, which the page asks its engine for — it reads no settings store (ADR-0232)
-    const fala = narrationOnDraw(translate, p, atual, foco, narratedQuestion, motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
-    narratedQuestion = fala.narrada;
-    motor?.tts.narrate(fala.texto);
+  /**
+   * ⚠️ O FOCO SÓ VOLTA PARA A TELA SE A CRIANÇA JÁ ESTAVA NELA. O `focus()` existe para o teclado seguir o cursor; mas um
+   * desenho pode acontecer por um motivo que não é dela — trocar o idioma redesenha a atividade (ADR-0225). 📏 Medido: com um
+   * painel de ajustes aberto, o redesenho arrancava o foco do painel e punha-o numa alternativa por trás do véu.
+   * 📌 Um redesenho não move o cursor de quem está noutro sítio. `body` e ninguém contam como «não está noutro sítio».
+   */
+  function focusCursor(app: HTMLElement, selector: string): void {
+    const outsideQuiz = doc.activeElement && doc.activeElement !== doc.body && !app.contains(doc.activeElement);
+    const alvo = app.querySelector<HTMLElement>(selector);
+    if (alvo && !outsideQuiz) alvo.focus();
+  }
+
+  /** The start screen: the skills by code, the one under the cursor explained in the footer and said with its place. */
+  function drawStart(app: HTMLElement, voice: boolean): void {
+    app.innerHTML = startHtml(translate, ordered, locale(), chosen);
+    const s = ordered[chosen];
+    // the explanation follows the cursor AND the language: this draw runs on both (ADR-0244 §1)
+    motor?.explain(s ? skillExplanation(translate, s, locale()) : null);
+    if (voice) {
+      const item = skillNarration(translate, ordered, chosen, locale(), indexOn());
+      speak(narrated === 'start' ? item : [part(`${translate('quiz.start.title')}. `), ...item]);
+      narrated = 'start';
+    }
+    app.querySelectorAll<HTMLButtonElement>('button[data-skill]').forEach((b) => {
+      b.addEventListener('click', () => { chosen = Number(b.dataset.skill); openSkill(); });
+    });
+    focusCursor(app, `button[data-skill="${chosen}"]`);
+  }
+
+  /** The question screen: the statement, the explanation or the copy line when there is one, and the five options. */
+  function drawQuestion(app: HTMLElement, voice: boolean): void {
+    const view = viewNow();
+    if (!view) return;
+    app.innerHTML = questionHtml(translate, view, cursor);
+    if (voice) {
+      // a narração é do consumidor: a engine só empresta a voz
+      const said = narrationOnDraw(translate, view, `${chosen}:${place().question}:${place().pass}`, cursor, narrated, indexOn());
+      narrated = said.narrated;
+      speak(said.parts);
+    }
     app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
       b.addEventListener('click', () => answer(Number(b.dataset.alt)));
     });
-    /*
-     * ⚠️ O FOCO SÓ VOLTA PARA A PERGUNTA SE A CRIANÇA JÁ ESTAVA NELA. Este `focus()` existe para o teclado seguir a
-     * opção escolhida; mas um desenho pode acontecer por um motivo que não é dela — e desde 23/09 acontece: trocar o
-     * idioma redesenha a atividade (ADR-0225). 📏 Medido: com um painel de ajustes aberto, o redesenho arrancava o
-     * foco do painel e punha-o numa alternativa por trás do véu.
-     *
-     * 📌 É a mesma regra que a conversão dos painéis para nós ensinou, deste lado da fronteira: um redesenho não move
-     * o cursor de quem está noutro sítio. `body` e ninguém contam como «não está noutro sítio».
-     */
-    const outsideQuiz = doc.activeElement
-      && doc.activeElement !== doc.body
-      && !app.contains(doc.activeElement);
-    const alvo = app.querySelector<HTMLElement>(`button[data-alt="${foco}"]`);
-    if (alvo && !outsideQuiz) alvo.focus();
+    focusCursor(app, `button[data-alt="${cursor}"]`);
+  }
+
+  /** Draws the screen that is open. `voice` false: a redraw after an answer, whose words the answer already said. */
+  function render(voice = true): void {
+    const app = $<HTMLElement>('#quiz-app');
+    if (!app) return;
+    if (screen === 'start') drawStart(app, voice);
+    else drawQuestion(app, voice);
   }
 
   /**
    * 🔴 WHAT HAS THE FOCUS IS WHAT SPACE ANSWERS (ADR-0111 erratum of 2026-09-26). Tab, or a screen reader moving the focus with
-   * its own cursor, put the focus on an option and left the quiz's cursor behind: 📏 on the served quiz, with the focus on
-   * «Quatro», Space answered «Três», the cursor. So the cursor follows the focus, and `aria-checked` moves with it — the option
-   * a screen reader announces is the one Space answers. (A screen reader that activates from its browse cursor clicks the
-   * option it is on, and the click listener answers that option directly.)
-   * 📌 No redraw: the focus is already where it should be, and a redraw would re-focus it and narrate the option again over
+   * its own cursor, put the focus on an item and left the quiz's cursor behind. So the cursor follows the focus, and
+   * `aria-checked` moves with it; on the start screen the footer's explanation follows it too (ADR-0244).
+   * 📌 No redraw: the focus is already where it should be, and a redraw would re-focus it and narrate the item again over
    * the screen reader, which has just announced it.
    */
   function cursorFollowsFocus(e: FocusEvent): void {
-    const alt = (e.target as Element | null)?.closest?.<HTMLElement>('#quiz-app button[data-alt]');
-    if (!alt || Number(alt.dataset.alt) === foco) return;
-    foco = Number(alt.dataset.alt);
-    alt.parentElement?.querySelectorAll<HTMLElement>('button[data-alt]').forEach((b) => {
-      const on = b === alt;
+    const el = (e.target as Element | null)?.closest?.<HTMLElement>('#quiz-app button[data-alt], #quiz-app button[data-skill]');
+    if (el?.dataset.skill !== undefined) skillFollowsFocus(el, Number(el.dataset.skill));
+    else if (el) optionFollowsFocus(el, Number(el.dataset.alt));
+  }
+  function optionFollowsFocus(el: HTMLElement, i: number): void {
+    if (i === cursor) return;
+    cursor = i;
+    el.parentElement?.querySelectorAll<HTMLElement>('button[data-alt]').forEach((b) => {
+      const on = b === el;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-checked', String(on));
     });
   }
+  function skillFollowsFocus(el: HTMLElement, i: number): void {
+    if (i === chosen) return;
+    chosen = i;
+    // every group's buttons: the start screen has one cursor over both
+    $<HTMLElement>('#quiz-app')?.querySelectorAll<HTMLElement>('button[data-skill]').forEach((b) => {
+      const on = b === el;
+      b.classList.toggle('is-on', on);
+      if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    });
+    const s = ordered[chosen];
+    if (s) motor?.explain(skillExplanation(translate, s, locale()));
+  }
   $<HTMLElement>('#quiz-app')?.addEventListener('focusin', cursorFollowsFocus);
 
-  /** Puts a line where the statement is — the same box, so nothing below it moves — and gives the statement back after it is read. */
-  function sayInStatement(texto: string, backToStatement = true): void {
+  /** Puts a line where the statement is — the same box, so nothing below it moves — and gives the question back after it is read. */
+  function sayInStatement(line: string, backToStatement = true): void {
     const h2 = $<HTMLElement>('#quiz-app .quiz-pergunta');
-    if (h2) h2.textContent = texto;
-    alert(texto);
-    const p = QUESTIONS[atual];
+    if (h2) h2.textContent = line;
+    alert(line);
     // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
-    if (backToStatement && p) win.setTimeout(() => {
-      const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
-      if (alvo && !listening) alvo.textContent = translate(p.enunciado);
-    }, captionDuration(texto, 125));
+    if (backToStatement) win.setTimeout(() => { if (!listening && screen === 'question') render(false); }, captionDuration(line, 125));
   }
 
   async function listenForAnswer(): Promise<void> {
-    const p = QUESTIONS[atual];
-    if (!motor || !p || listening) return;
+    const view = viewNow();
+    if (!motor || !view || listening) return; // asked for on the question screen only (`ON_BUTTON.action1`)
     const pode = await motor.reading.ready();
     if (!pode.can) { sayInStatement(translate('quiz.semLeitura')); return; }
     listening = true;
@@ -415,11 +577,11 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
     try {
       const heard = await motor.reading.listen();
       listening = false;
-      // the options' WORDS in the child's language, never their keys: she says «galinha», not «quiz.p1.b»
-      const chosen = heardAlternative(heard.text, p.alternativas.map((a) => translate(a)));
-      if (chosen !== null) { answer(chosen); return; }
-      const texto = heard.text.trim();
-      sayInStatement(texto ? translate('quiz.naoEntendi', { texto }) : translate('quiz.ouviNada'));
+      // the options' WORDS as they are shown — the page's language, or the content's own: she says «galinha», not a key
+      const chosenOption = heardAlternative(heard.text, view.options.map((o) => o.text));
+      if (chosenOption !== null) { render(false); answer(chosenOption); return; }
+      const said = heard.text.trim();
+      sayInStatement(said ? translate('quiz.notAnOption', { heard: said }) : translate('quiz.ouviNada'));
     } catch {
       // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
       listening = false;
@@ -427,16 +589,87 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
     }
   }
 
-  function answer(i: number): void {
-    const p = QUESTIONS[atual];
-    if (!p) return;
-    const gotItRight = i === p.certa;
-    if (gotItRight) correctCount++;
-    alert(answerText(translate, gotItRight, translate(p.alternativas[p.certa] ?? '')));
-    atual++;
-    foco = 0;
-    win.setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
+  /** A result lands on the open skill's bar. */
+  function record(result: ResultadoDaQuestao): void {
+    readings.set(chosen, withResult(skillKey(chosen), readings.get(chosen), result));
   }
+
+  /** On to the next question of the skill; after the third, the first again with the options one place round. */
+  function nextQuestion(): void {
+    const s = skillNow();
+    if (!s) return;
+    const at = place();
+    const question = at.question + 1;
+    places.set(chosen, question < s.questions.length ? { question, pass: at.pass } : { question: 0, pass: at.pass + 1 });
+    attempts = FIRST_ATTEMPT;
+    cursor = 0;
+    if (screen === 'question') render();
+  }
+
+  function answer(i: number): void {
+    const view = viewNow();
+    const q = questionNow();
+    if (screen !== 'question' || settling || !view || !q) return;
+    const correct = rotated(q.options, q.correct, place().pass).correct;
+    const option = (k: number): string => view.options[k]?.text ?? '';
+    const outcome = attempt(attempts, i, correct, view.options.length);
+    if (outcome.kind === 'refused') alert(translate('quiz.tried', { option: option(i) }));
+    else if (outcome.kind === 'right') answeredRight(outcome, option(correct));
+    else {
+      attempts = outcome.next;
+      answeredWrong(outcome.kind, q, option(i), correct, option(correct));
+      render(false);
+    }
+  }
+
+  /** Right: the result lands on the bar — the copy turns it orange at once — and the next question comes after the answer is read. */
+  function answeredRight(outcome: Extract<AttemptOutcome, { kind: 'right' }>, right: string): void {
+    if (outcome.result) record(outcome.result);
+    const reading = readings.get(chosen);
+    if (outcome.copied && reading) readings.set(chosen, afterCopying(skillKey(chosen), reading));
+    alert(translate(outcome.copied ? 'quiz.copied' : 'quiz.right', { answer: right }));
+    settling = true;
+    win.setTimeout(() => { settling = false; nextQuestion(); }, 900); // deixa o anúncio ser lido antes de a tela mudar
+  }
+
+  /** Wrong: the option goes off; the third fails the question and explains it; the sixth marks the answer to copy. */
+  function answeredWrong(kind: 'wrong' | 'failed' | 'copy', q: QuizQuestion, tried: string, correct: number, right: string): void {
+    if (kind === 'wrong') { alert(translate('quiz.wrong', { option: tried })); return; }
+    if (kind === 'copy') {
+      cursor = correct;
+      alert(translate('quiz.copy', { answer: right }));
+      return;
+    }
+    // the third wrong attempt: the question counts as failed (red), and the explanation is shown and read (ADR-0049 §6)
+    record(resultadoDaQuestao(null));
+    const explanation = inLanguage(q.explanation, locale());
+    alert(translate('quiz.explained', { explanation }));
+    speak([part(explanation)]);
+  }
+  function openSkill(): void {
+    if (!ordered[chosen] || !motor) return;
+    screen = 'question';
+    attempts = FIRST_ATTEMPT;
+    cursor = 0;
+    narrated = '';
+    motor.scenes.replace(questionScene);
+    motor.scenes.draw();
+  }
+
+  function backToStart(): void {
+    if (!motor) return;
+    screen = 'start';
+    narrated = '';
+    motor.scenes.replace(startScene);
+    motor.scenes.draw();
+  }
+
+  /** Moves the cursor of the screen that is open, over its grid. */
+  const move = (m: Move) => (): void => {
+    if (screen === 'start') chosen = gridStep(rows, chosen, m);
+    else cursor = gridStep(gridRows(viewNow()?.options.length ?? 0, OPTION_COLUMNS), cursor, m);
+    render();
+  };
 
   /**
    * WHAT THE QUIZ EXECUTES FOR EACH VIRTUAL BUTTON (ADR-0111 and its erratum; issue #197): the engine takes the hardware — the keyboard by
@@ -444,33 +677,71 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
    * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
    * could only reach it by disguising itself as a keyboard.
    */
-  const ON_BUTTON: Partial<Record<VirtualCommand['action'], (total: number) => void>> = {
-    down: (total) => { foco = nextFocus(foco, 1, total); render(); },
-    up: (total) => { foco = nextFocus(foco, -1, total); render(); },
+  const ON_BUTTON: Partial<Record<VirtualCommand['action'], () => void>> = {
+    up: move('up'),
+    down: move('down'),
+    left: move('left'),
+    right: move('right'),
     // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
     action2: () => { motor?.scenes.input('confirm'); },
-    // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
-    // changed her mind should not have to wait out the ceiling with the microphone open.
-    action1: () => { void listenForAnswer(); },
-    action3: () => { if (listening) motor?.reading.stop(); },
-    // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). Its words are what is on screen now — the
-    // statement and the options — read by the engine (ADR-0234); its tone points from `atual`, the QUESTION, not the option under
-    // the cursor: pointing at the right option would be cheating.
-    rightShoulder: () => { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); },
+    // SPEAKING THE ANSWER, on the question screen.
+    action1: () => { if (screen === 'question') void listenForAnswer(); },
+    // BACK: the microphone first — a child who changed her mind should not wait out the ceiling with it open —, then the start screen.
+    action3: () => {
+      if (listening) { motor?.reading.stop(); return; }
+      if (screen === 'question') backToStart();
+    },
+    // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). Its words are what is on screen now, read by
+    // the engine (ADR-0234); its tone points from the QUESTION (or the skill), never the option under the cursor: pointing at the
+    // right option would be cheating.
+    rightShoulder: () => { motor?.sonar.sonar({ i: 0, x: screen === 'start' ? chosen : place().question, y: 0 }); },
   };
 
   /** A button with no row does nothing in this quiz; only a PRESS counts — a release is not a second press. */
   function handleCommand(cmd: VirtualCommand): void {
-    const p = QUESTIONS[atual];
-    if (!p || !cmd.pressed) return;
-    ON_BUTTON[cmd.action]?.(p.alternativas.length);
+    if (!cmd.pressed) return;
+    ON_BUTTON[cmd.action]?.();
   }
+
+  // A PILHA DE CENAS (item 22, C3): uma cena por tela, trocadas com `replace` — a de baixo não se desenha por baixo da de cima.
+  const startScene: Scene = {
+    name: 'skills',
+    draw: () => render(),
+    input: (intent) => {
+      if (intent !== 'confirm') return false;
+      openSkill();
+      return true;
+    },
+    // leaving the start screen takes its explanation out of the footer (ADR-0244: a text left there would explain nothing)
+    exit: () => { motor?.explain(null); },
+  };
+  const questionScene: Scene = {
+    name: 'perguntas',
+    draw: () => render(),
+    input: (intent) => {
+      if (intent !== 'confirm') return false;
+      answer(cursor);
+      return true;
+    },
+  };
 
   // A ENGINE INTEIRA, numa chamada. Antes eram nove inicializações à mão nesta função, em ordem que só o
   // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
-  // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
+  // realmente DESTE jogo: as telas, as tentativas e a barra.
   const engine = createGame({
-    declaration: declareQuiz(QUESTIONS, { current: () => atual, focus: () => foco, correct: () => correctCount }),
+    declaration: declareQuiz({
+      order: () => (screen === 'start' ? ordered.map((_, i) => skillKey(i)) : (skillNow()?.questions ?? []).map((_, i) => `q${i + 1}`)),
+      current: () => (screen === 'start' ? chosen : place().question),
+      cursor: () => (screen === 'start' ? 0 : cursor),
+      nameAt: (x) => {
+        if (screen === 'start') { const s = ordered[x]; return s ? { text: skillLabel(s, locale()), gender: 'f', plural: false } : null; }
+        return skillNow()?.questions[x] ? { text: translate('quiz.name.question', { n: x + 1 }), gender: 'f', plural: false } : null;
+      },
+      objective: () => (screen === 'start'
+        ? { name: { text: translate('quiz.name.skill'), gender: 'f', plural: false }, have: 0, need: 1 }
+        : { name: { text: translate('quiz.name.questions'), gender: 'f', plural: true }, have: place().question, need: skillNow()?.questions.length ?? 0 }),
+      targets: () => (screen === 'question' ? [{ x: place().question, y: 0 }] : []),
+    }),
     host: {
       doc, win, cvdHost: $<SVGElement>('#q-cvd'),
       interpreter,
@@ -496,8 +767,13 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
      */
     dictionaries: QUIZ_DICTIONARIES,
     /*
+     * THE ZPD BAR (ADR-0049 §5, ADR-0239: bottom left): ONE learning band, the bar of the skill open — or under the start
+     * screen's cursor, where the footer's explanation covers the row anyway. Read on every frame, from memory (ADR-0103).
+     */
+    hud: [{ band: 'learning', nameKey: 'quiz.hud.skill', value: () => readings.get(chosen)?.bar ?? NO_BAR }],
+    /*
      * HOW TO PLAY THIS QUIZ (ADR-0195): the cartridge tells it, the engine's help shows it before the buttons. The figures are drawn
-     * here from shapes — a question bar and four options — and the second one moves the marked option down, which is the game.
+     * here from shapes — a question bar and five options — and the second one moves the marked option, which is the game.
      */
     onCommand: handleCommand,
     howToPlay: [
@@ -507,18 +783,20 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
       },
       {
         textKey: 'quiz.comoJogar.escolher',
-        figure: ({ ctx, width, height, time }) => drawQuizFigure(ctx, width, height, Math.floor(time / 0.9) % 4),
+        figure: ({ ctx, width, height, time }) => drawQuizFigure(ctx, width, height, Math.floor(time / 0.9) % 5),
       },
     ],
     /*
-     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162): cima e baixo escolhem, a acção 2 confirma e a 3 volta — on the keyboard and a
-     * gamepad, and in the help screen. ⚠️ Since ADR-0166 they draw no on-screen pad: this quiz does not ask for one
-     * (`controleNaTela` absent), because its options are touched directly and its menu button opens the menus.
+     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162): as quatro setas andam na grade (a das habilidades, a das alternativas), a acção 2
+     * confirma e a 3 volta à tela das habilidades — on the keyboard and a gamepad, and in the help screen. ⚠️ Since ADR-0166 they
+     * draw no on-screen pad: this quiz does not ask for one (`controleNaTela` absent), because its options are touched directly.
      * 📌 KEYS, not words: the engine resolves them at every drawing, so a language change reaches them (ADR-0232 D3).
      */
     preset: {
       up: { labelKey: 'quiz.pos.up' },
       down: { labelKey: 'quiz.pos.down' },
+      left: { labelKey: 'quiz.pos.left' },
+      right: { labelKey: 'quiz.pos.right' },
       action2: { labelKey: 'quiz.pos.confirm' },
       action1: { labelKey: 'quiz.pos.falar' },
       action3: { labelKey: 'quiz.pos.back' },
@@ -562,69 +840,42 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
   // um jogo que não soubesse disso ganhava diálogos que só respondem ao rato. `createGame` liga agora, e o
   // segundo consumidor deixa de carregar a correção do primeiro.
 
-  // A PILHA DE CENAS (item 22, C3). Este quiz tem UMA cena, e ela não é inventada para o teste: `render()` já
-  // era o `draw` e o ouvinte de teclas já era o `input` — o que faltava era o lugar onde os dois se declaram juntos.
-  //
-  // Uma cena só não prova pilha nenhuma, e não é o que ela está fazendo aqui. O que ela mostra é mais modesto
-  // e é o que o item 22 precisa: que a forma (`nome`/`draw`/`input`) cabe num jogo que NÃO tem fases — sem
-  // `title`, sem `paused`, sem nada do enum da plataforma. Um segundo consumidor que precisasse inventar uma
-  // fase para usar a pilha seria o achado 10 outra vez.
-  engine.scenes.push({
-    name: 'perguntas',
-    draw: () => render(),
-    input: (intent) => {
-      if (intent !== 'confirm') return false;
-      answer(foco);
-      return true;
-    },
-  });
+  // A PILHA DE CENAS (item 22, C3): a tela das habilidades e a das perguntas são duas cenas que se trocam no topo. A forma
+  // (`name`/`draw`/`input`/`exit`) cabe num jogo que NÃO tem fases — sem `title`, sem `paused`, sem nada do enum da plataforma.
+  engine.scenes.push(startScene);
 
-  // MODO PESSOA SURDA — ⚠️ ESTE BLOCO SAIU, e a ausência é o conserto (ADR-0106).
-  //
-  // Ele lia `#q-libras`, ligava o clique a `toggleLibras`, anunciava `sr.icon.librasOn/Off` e mantinha o
-  // `aria-pressed` por `setOnLibrasChange`. Todas as quatro coisas são agora feitas pelo ícone 🦻 da barra
-  // que o `createGame` monta — o mesmo `iconAct`, e um `aria-label` que diz o estado (o ida-e-volta que o
-  // cabeçalho do `ui/pause-icons` descreve).
-  //
-  // ⚠️ MANTÊ-LO SERIA O DEFEITO DO ANÚNCIO DUPLO, que este repositório já pagou no `setModoCego`
-  // (`ba355f3`): duas superfícies a dizer a mesma mudança, e a criança que navega por ouvido a ouvi-la
-  // duas vezes. Nenhum script do VLibras nesta página continua a ser de propósito.
+  // MODO PESSOA SURDA — ⚠️ ESTE BLOCO SAIU, e a ausência é o conserto (ADR-0106): o ícone 🦻 da barra que o `createGame`
+  // monta faz as quatro coisas que ele fazia, e mantê-lo seria o anúncio duplo que este repositório já pagou (`ba355f3`).
 
   // TOUCH TARGETS are the engine's since ADR-0163: the options read `--alvo-min`, which `createGame` writes from the
-  // resolution it forces. The quiz used to compute its own 9 mm, and the last option fell out of the region.
+  // resolution it forces. THE TOUCH DOOR TO THE MENUS is the quick bar's ☰ (interface log 2026-09-16).
 
-  // THE TOUCH DOOR TO THE MENUS is the quick bar's ☰ (interface log 2026-09-16): the engine's, first on the bar, so the quiz
-  // no longer draws a Menu button of its own (ADR-0166 erratum: «não faz sentido pausar um quiz»).
-
-  // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
-  // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
+  // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first screen was
+  // read in Portuguese on an English page (measured). For pt it resolves at once.
   void engine.localeReady().then(() => {
-    engine.scenes.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
+    engine.scenes.draw(); // quem desenha é a pilha, que é quem sabe o que está no topo
     say(welcomeText(translate, engine.keyboard.kbFor(0), (code) => keyName(translate, code)));
   });
 
   /*
-   * 🔴 A ATIVIDADE REDESENHA-SE AO TROCAR DE IDIOMA, e sem esta linha ela não o fazia (ADR-0225).
-   *
-   * 📏 Medido no `dist` em 23/09: clicar na bandeira levava o `<html lang>`, o rodapé, a barra e os painéis para o
-   * idioma novo e deixava o ENUNCIADO e as alternativas onde estavam. A engine tem por onde avisar desde o estudo
-   * C6 — `i18n:change` na janela, que a raiz, o kit de painéis e o cartão já assinam —, e o cartucho não assinava.
-   *
-   * 📌 Quem redesenha é a PILHA e não o `render()` directo, pela mesma razão do primeiro desenho: ela sabe o que
-   * está no topo, e um dia isto pode não ser a tela das perguntas.
-   *
-   * ⚠️ E quem avisa é a ENGINE, não a janela: este cartucho não sabe — nem deve — que o evento se chama
-   * `i18n:change` nem onde ele é disparado (ADR-0216).
+   * 🔴 A ATIVIDADE REDESENHA-SE AO TROCAR DE IDIOMA (ADR-0225), e a explicação do rodapé com ela: o desenho da tela inicial
+   * volta a chamar `explain` no idioma novo. Quem avisa é a ENGINE, não a janela (ADR-0216).
    */
   engine.onLocaleChange(() => { engine.scenes.draw(); });
   return engine;
 }
 
-/** What the declaration reads of the round: the question, the option under the cursor, and how many were right. */
+/** What the declaration reads of the round, screen by screen. */
 interface QuizRound {
+  /** The hotspots of the screen now: the skills on the start screen, the skill's questions on the question screen. */
+  readonly order: () => readonly string[];
+  /** The hotspot now: the skill under the cursor, or the question being answered. */
   readonly current: () => number;
-  readonly focus: () => number;
-  readonly correct: () => number;
+  /** The option under the cursor (0 on the start screen, where the hotspot IS the cursor). */
+  readonly cursor: () => number;
+  readonly nameAt: (x: number) => Speakable | null;
+  readonly objective: () => Objective;
+  readonly targets: () => readonly Spot[];
 }
 
 /**
@@ -634,70 +885,55 @@ interface QuizRound {
  * diferença de índice, e o turno é do JOGADOR — o tempo não pressiona, que é o que a WCAG 2.2.1 pede e o que
  * separa este gênero da plataforma sem uma linha de condicional na engine.
  *
- * Não é o `genre-quiz` do ADR-0030: um preset é um pacote que outros quizzes reusam, e isto é a declaração de
- * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
- * mostra que os sete campos cabem num jogo que não tem mundo.
- *
- * 📌 The round arrives as three readers (ADR-0232 D4): it lives in `bootQuiz`'s call, not in this module.
+ * 📌 TWO SCREENS, ONE DECLARATION: every field is a function, so it answers for the screen that is open — on the start screen
+ * the hotspots are the skills and nothing counts yet (choosing one is the objective); on the question screen they are the
+ * skill's three questions and the one being answered is the target.
  */
-function declareQuiz(questions: readonly Question[], round: QuizRound): GameDeclaration {
-  const sequence = questions.map((_, i) => `q${i + 1}`);
+function declareQuiz(round: QuizRound): GameDeclaration {
   return {
-    topology: () => ({ kind: 'hotspots', order: sequence }),
-    // ⚠️ O MUNDO DESTE JOGO É DOM, e é exatamente o caso que o campo existe para consertar. A engine
-    // implementava «mundo» como a canvas do PixiJS; aqui não há canvas nenhuma a olhar, e uma
-    // simulação de cegueira apagaria o que ninguém vê deixando as alternativas legíveis — a
-    // simulação ao contrário. Ver o bloco 8 de `core/contract`.
+    topology: () => ({ kind: 'hotspots', order: round.order() }),
+    // ⚠️ O MUNDO DESTE JOGO É DOM, e é exatamente o caso que o campo existe para consertar: uma simulação de cegueira sobre
+    // uma canvas que ninguém vê deixaria as alternativas legíveis — a simulação ao contrário. Ver o bloco 8 de `core/contract`.
     world: () => ({ kind: 'element', selector: '#game-region' }),
-    // ⚠️ UM. Um quiz nunca pede dois dedos ao mesmo tempo: escolher uma alternativa é um comando de cada vez,
-    // e navegar entre elas também. É a resposta mais fácil do contrato inteiro, e é justamente por isso que
-    // ela vale escrita — o jogo que declara 1 fica jogável em QUALQUER transporte, incluindo os de olhar, de
-    // sopro e de um acionador só, e é isso que o campo obrigatório torna visível em vez de acidental.
+    // ⚠️ UM. Um quiz nunca pede dois dedos ao mesmo tempo: o jogo que declara 1 fica jogável em QUALQUER transporte, incluindo
+    // os de olhar, de sopro e de um acionador só.
     holdsAtOnce: () => 1,
-    // 🔴 FALSO, E ESTE JOGO É A PROVA DE QUE OS DOIS CAMPOS SÃO PERGUNTAS DIFERENTES. Ele declara `1` acima e
-    // não segura tecla NENHUMA: escolher uma alternativa é tocar e largar. O `1` está lá porque o contrato
-    // recusa zero — e foi essa colisão que fez o Dev revogar uma cláusula sua do mesmo dia: «Nem todo jogo
-    // precisa de alternância, somente os que precisam de tecla segurando» (ADR-0115).
-    // 📌 A consequência aqui é visível: a criança que abre a acessibilidade deste quiz **não vê** o controle
-    // de alternância. Não desabilitado com um motivo — AUSENTE, porque não há nada que ele pudesse fazer.
+    // 🔴 FALSO: escolher uma alternativa é tocar e largar. O `1` acima está lá porque o contrato recusa zero (ADR-0115).
     holdsKeys: () => false,
     tick: 'player',
-    // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
+    // Papel: o ponto corrente é o OBJETIVO; os outros são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === round.current() ? 'goal' : 'free'),
     // The target's name, for the navigation sentence. ⚠️ This DOM quiz never says it: with text on screen the sonar reads
-    // the screen — statement and options — at every press (ADR-0234, «sonar do que está na tela»); the name is heard only
-    // where the engine cannot read the screen.
-    nameAt: (at) => (questions[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
-    // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
-    focusOf: () => ({ id: 'p0', at: { x: round.current(), y: round.focus() }, heading: 'none' }),
-    // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é "acertos de perguntas", e a engine não sabe
-    // (nem precisa saber) o que é uma moeda para montar a mesma frase de progresso.
-    objectiveOf: () => ({
-      name: { text: 'perguntas', gender: 'f', plural: true },
-      have: round.correct(), need: questions.length,
-    }),
-    // A segunda metade do campo 5: ONDE está o que ainda conta. Num quiz é uma posição só — a pergunta
-    // corrente —, e é justamente por ser tão pobre que ela mostra a forma certa da pergunta: a engine não
-    // varre nada, ela recebe a lista e compara distâncias na métrica declarada.
-    targetsOf: () => (round.current() < questions.length ? [{ x: round.current(), y: 0 }] : []),
+    // the screen at every press (ADR-0234); the name is heard only where the engine cannot read the screen.
+    nameAt: (at) => round.nameAt(at.x),
+    // O foco é o do teclado: qual item está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
+    focusOf: () => ({ id: 'p0', at: { x: round.current(), y: round.cursor() }, heading: 'none' }),
+    // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é «perguntas desta volta» (ou «uma habilidade», na tela inicial), e a
+    // engine não sabe (nem precisa saber) o que é uma moeda para montar a mesma frase de progresso.
+    objectiveOf: () => round.objective(),
+    // A segunda metade do campo 5: ONDE está o que ainda conta — a pergunta corrente; na tela inicial, nada ainda.
+    targetsOf: () => round.targets(),
   };
 }
 
-/** The quiz drawn small, for its «how to play» slides: the question bar and four options, `marcada` outlined (−1: none). */
-function drawQuizFigure(ctx: CanvasRenderingContext2D, w: number, h: number, marcada: number): void {
+/** The quiz drawn small, for its «how to play» slides: the question bar and five options in three columns, `marked` outlined (−1: none). */
+function drawQuizFigure(ctx: CanvasRenderingContext2D, w: number, h: number, marked: number): void {
   const m = Math.round(h * 0.06);
   const barHeight = Math.round(h * 0.16);
   ctx.fillStyle = '#eaf2f8';
   ctx.fillRect(m, m, w - 2 * m, barHeight);
-  const altura = Math.floor((h - 3 * m - barHeight - 3 * m) / 4);
-  for (let i = 0; i < 4; i++) {
-    const y = 2 * m + barHeight + i * (altura + m);
+  const height = Math.floor((h - 3 * m - barHeight - 3 * m) / 2);
+  const width = Math.floor((w - 8 * m) / OPTION_COLUMNS);
+  for (let i = 0; i < 5; i++) {
+    // the same order as the screen: «1 2 3» over «4 5» (`gridRows`)
+    const x = m * 3 + (i % OPTION_COLUMNS) * (width + m);
+    const y = 2 * m + barHeight + Math.floor(i / OPTION_COLUMNS) * (height + m);
     ctx.fillStyle = '#3a4a6a'; // lighter than the slide's own #1a2740, or the options vanish into it
-    ctx.fillRect(m * 3, y, w - 6 * m, altura);
-    if (i === marcada) {
+    ctx.fillRect(x, y, width, height);
+    if (i === marked) {
       ctx.strokeStyle = '#ffd23f';
       ctx.lineWidth = Math.max(2, Math.round(m / 2));
-      ctx.strokeRect(m * 3, y, w - 6 * m, altura);
+      ctx.strokeRect(x, y, width, height);
     }
   }
 }

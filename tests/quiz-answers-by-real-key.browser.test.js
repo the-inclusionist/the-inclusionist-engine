@@ -12,6 +12,8 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS, INFANT } from './fixtures/quiz-skills.js';
 
 let engine;
 const alertas = [];
@@ -32,7 +34,9 @@ beforeAll(async () => {
     new MutationObserver(() => { if (el.textContent) lista.push(el.textContent); })
       .observe(el, { childList: true, characterData: true, subtree: true });
   }
-  engine = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  engine = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await engine.localeReady();
   await esperar(200);
 });
@@ -53,11 +57,13 @@ async function pressAndWait(code) {
 const NOME_PARA_TECLA = { Espaço: 'Space', Enter: 'Enter', '↑': 'ArrowUp', '↓': 'ArrowDown', '←': 'ArrowLeft', '→': 'ArrowRight' };
 const teclaDoNome = (nome) => NOME_PARA_TECLA[nome] ?? (/^[A-Z]$/.test(nome) ? `Key${nome}` : /^\d$/.test(nome) ? `Digit${nome}` : null);
 
-/** The question after the one on screen — one press, one answer, one step. */
+/** The question after the one on screen — one press, one answer, one step (the fixture's first skill, opened above). */
 const seguinte = () => {
-  const perguntas = ['quiz.p1', 'quiz.p2', 'quiz.p3'].map((k) => engine.t(k));
+  const perguntas = INFANT.questions.map((q) => q.statement.pt);
   return perguntas[perguntas.indexOf(enunciado()) + 1];
 };
+/** The fixture's right option of the question on screen (pass 0): a right answer is what moves the quiz on. */
+const certaAgora = () => INFANT.questions[INFANT.questions.findIndex((q) => q.statement.pt === enunciado())].correct;
 
 describe('the quiz demo, by real key', () => {
   it('🔴 [Right] the welcome in the status region names a key that REALLY answers — pressed, it answers once', async () => {
@@ -69,6 +75,8 @@ describe('the quiz demo, by real key', () => {
     const code = teclaDoNome(nomeada);
     expect(code, `the welcome names «${nomeada}», which is no key a child can find: «${boasVindas}»`).toBeTruthy();
     const depois = seguinte();
+    // on the right option, so that a second answer from the same press would show as a question skipped
+    document.querySelector(`#quiz-app button[data-alt="${certaAgora()}"]`).focus();
     await pressAndWait(code);
     expect(alertas, `pressing «${nomeada}» did not give exactly one answer`).toHaveLength(1);
     expect(enunciado()).toBe(depois);
@@ -76,6 +84,7 @@ describe('the quiz demo, by real key', () => {
 
   it('🔴 [Right] one press of Space, on the focused option, answers ONE question — not that one and the next', async () => {
     expect(document.activeElement?.dataset.alt, 'no option has the focus: the button\'s own activation is not being measured').toBe('0');
+    expect(certaAgora(), 'the fixture\'s second question is not right on its first option: the case would not move on').toBe(0);
     const depois = seguinte();
     await pressAndWait('Space');
     expect(alertas, 'one press gave more than one answer (or none)').toHaveLength(1);
@@ -94,21 +103,22 @@ describe('the quiz demo, by real key', () => {
     // 📏 On the served quiz (2026-09-26), with the focus on «Quatro», Space answered «Três» — the quiz's cursor, which Tab had
     // left behind. Here the focus moves twice, the way the two kinds of reader move it: a screen reader's own cursor puts the
     // focus on an option (`focus()`), and the keyboard steps back one (Shift+Tab). What it ends on is what it hears, and what
-    // Space must answer. (Question 3 by now: the right option, «Banana», is neither the first nor the last.)
+    // Space must answer — and the answer said names it.
     const opcoes = [...document.querySelectorAll('#quiz-app button[data-alt]')];
-    expect(opcoes, 'not four options on screen: the case would measure nothing').toHaveLength(4);
+    expect(opcoes, 'not five options on screen: the case would measure nothing').toHaveLength(5);
     const marcada = () => document.querySelector('#quiz-app [aria-checked="true"]');
     opcoes[0].focus();
     expect(marcada(), 'the cursor did not start on the first option: the case would measure less').toBe(opcoes[0]);
-    opcoes[3].focus();
-    expect(marcada(), 'the screen reader put the focus on the last option and the cursor stayed behind').toBe(opcoes[3]);
+    opcoes[4].focus();
+    expect(marcada(), 'the screen reader put the focus on the last option and the cursor stayed behind').toBe(opcoes[4]);
     await userEvent.keyboard('{Shift>}[Tab]{/Shift}');
-    expect(document.activeElement, 'Shift+Tab did not step back one option').toBe(opcoes[2]);
-    expect(marcada(), 'Shift+Tab moved the focus and the cursor stayed behind').toBe(opcoes[2]);
-    expect([...document.querySelectorAll('#quiz-app .is-on')], 'the cursor a sighted child sees stayed behind').toEqual([opcoes[2]]);
-    const certa = engine.t('quiz.resposta.certa', { certa: opcoes[2].textContent });
+    expect(document.activeElement, 'Shift+Tab did not step back one option').toBe(opcoes[3]);
+    expect(marcada(), 'Shift+Tab moved the focus and the cursor stayed behind').toBe(opcoes[3]);
+    expect([...document.querySelectorAll('#quiz-app .is-on')], 'the cursor a sighted child sees stayed behind').toEqual([opcoes[3]]);
+    // a wrong option (the right one is the third): the answer said names the option that was answered
+    const dita = engine.t('quiz.wrong', { option: opcoes[3].textContent });
     await pressAndWait('Space');
-    expect(alertas, 'Space on the focused option answered another one').toEqual([certa]);
+    expect(alertas, 'Space on the focused option answered another one').toEqual([dita]);
   });
 });
 

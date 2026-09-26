@@ -12,6 +12,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS } from './fixtures/quiz-skills.js';
 
 const falas = [];
 let ttsAnterior = null;
@@ -27,7 +29,9 @@ beforeAll(async () => {
   const corpo = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.body.innerHTML = corpo;
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 });
 
@@ -37,15 +41,17 @@ afterAll(() => {
 });
 
 describe('the quiz, heard', () => {
-  it('🔴 [Right] opening the first question says its statement AND «Gato, 1 de 4. Galinha, 2 de 4. …» (ADR-0167)', () => {
+  it('🔴 [Right] opening the first question says its statement AND «Alfa 1, 1 de 5. Bravo 1, 2 de 5. …» (ADR-0167)', () => {
     expect(falas, 'nothing reached the voice — is narration off by default?').not.toHaveLength(0);
-    expect(falas).toContain('Qual animal põe ovos e tem bico? Gato, 1 de 4. Galinha, 2 de 4. Cavalo, 3 de 4. Peixe, 4 de 4');
+    // the fixture's first skill (tests/fixtures/quiz-skills.js), opened from the start screen
+    expect(falas).toContain('EI03EF01: pergunta 1? Alfa 1, 1 de 5. Bravo 1, 2 de 5. Charlie 1, 3 de 5. Delta 1, 4 de 5. Eco 1, 5 de 5');
   });
 
   it('🔴 [Right] an arrow press says the option REACHED, its place after its name — not the statement again', () => {
     const antes = falas.length;
-    document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true }));
-    expect(falas.slice(antes)).toEqual(['Galinha, 2 de 4']);
+    // the options sit «1 2 3» over «4 5»: to the right of the first is the second
+    document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', key: 'ArrowRight', bubbles: true }));
+    expect(falas.slice(antes)).toEqual(['Bravo 1, 2 de 5']);
   });
 
   it('🔴 [Right] with the index turned off in the hearing panel, the option reached is said by name alone (ADR-0232)', () => {
@@ -57,11 +63,11 @@ describe('the quiz, heard', () => {
     indice.click();
     try {
       const antes = falas.length;
-      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp', key: 'ArrowUp', bubbles: true }));
-      expect(falas.slice(antes)).toEqual(['Gato']);
+      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft', key: 'ArrowLeft', bubbles: true }));
+      expect(falas.slice(antes)).toEqual(['Alfa 1']);
     } finally {
       indice.click();
-      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true }));
+      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', key: 'ArrowRight', bubbles: true }));
     }
   });
 

@@ -38,14 +38,24 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 280,
-      "decisionNodes": 42,
+      "codeLines": 491,
+      "decisionNodes": 96,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 10,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
       "fanIn": 0
+    },
+    "consumer-quiz/quiz-round.ts": {
+      "codeLines": 79,
+      "decisionNodes": 16,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "globalReach": 0,
+      "worstFunction": 10,
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "consumer-quiz/quiz-skills.ts": {
       "codeLines": 143,
@@ -55,10 +65,10 @@
       "globalReach": 0,
       "worstFunction": 1,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 1
     },
     "consumer-quiz/quiz-words.ts": {
-      "codeLines": 44,
+      "codeLines": 101,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -395,7 +405,7 @@
       "globalReach": 0,
       "worstFunction": 5,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 2
     },
     "educational/segment-bar.ts": {
       "codeLines": 41,
@@ -405,7 +415,7 @@
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 1
     },
     "env.d.ts": {
       "codeLines": 18,

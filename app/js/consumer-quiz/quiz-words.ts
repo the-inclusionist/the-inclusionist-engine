@@ -7,8 +7,10 @@
 //
 // 📌 THEY LEFT THE ENGINE'S DICTIONARIES FOR THIS FILE: a declared word is the game's (the engine resolves a declared key only
 // in the game's own dictionary), and the engine's three files are not where a game's words live.
-// ⚠️ Only the DECLARED words moved. The quiz's other sentences (the questions, the answers, the listening lines) are still read
-// through the handle's `t` from the engine's dictionaries — finding 2 of `main-quiz`, a separate debt.
+// 📌 THE TEST BENCH'S SENTENCES LIVE HERE TOO — the start screen, the attempts, the explanation and the copy line: the handle's
+// `t` resolves the game's dictionary first (ADR-0232 D3), so a frame is a key here and what it carries crosses as `{params}`.
+// ⚠️ Older sentences (the options' group name, the listening lines) are still read from the engine's dictionaries — finding 2
+// of `main-quiz`, a separate debt.
 export const QUIZ_DICTIONARIES: Readonly<Record<'pt' | 'en' | 'es', Readonly<Record<string, string>>>> = {
   pt: {
     'quiz.pos.up': 'Acima',
@@ -23,6 +25,25 @@ export const QUIZ_DICTIONARIES: Readonly<Record<'pt' | 'en' | 'es', Readonly<Rec
     'quiz.acom.textPace': 'Ritmo do texto',
     'quiz.acom.lexicalDifficulty': 'Dificuldade das palavras',
     'quiz.acom.wordHighlight': 'Realce de palavras',
+    'quiz.pos.left': 'Esquerda',
+    'quiz.pos.right': 'Direita',
+    'quiz.start.title': 'Escolha a habilidade',
+    'quiz.stage.infantil': 'Educação Infantil',
+    'quiz.stage.ef5': 'Ensino Fundamental',
+    'quiz.skill.explain': '{component} · {grade} — {skill}',
+    'quiz.hud.skill': 'Habilidade',
+    'quiz.name.skill': 'habilidade',
+    'quiz.name.question': 'pergunta {n}',
+    'quiz.name.questions': 'perguntas',
+    'quiz.right': 'Certo! {answer}.',
+    'quiz.wrong': 'Ainda não: {option} sai da lista. Tente outra.',
+    'quiz.tried': '{option} já foi tentada. Escolha outra.',
+    'quiz.option.off': 'já tentada',
+    'quiz.explained': 'Leia a explicação e tente de novo. {explanation}',
+    'quiz.copy': 'A resposta é {answer}. Copie: confirme a resposta marcada.',
+    'quiz.copy.note': 'Copie a resposta marcada: confirme-a.',
+    'quiz.copied': 'Copiada: {answer}.',
+    'quiz.notAnOption': 'Ouvi «{heard}», que não é nenhuma das alternativas. Diga de novo ou escolha com as setas.',
   },
   en: {
     'quiz.pos.up': 'Up',
@@ -37,6 +58,25 @@ export const QUIZ_DICTIONARIES: Readonly<Record<'pt' | 'en' | 'es', Readonly<Rec
     'quiz.acom.textPace': 'Text pace',
     'quiz.acom.lexicalDifficulty': 'Word difficulty',
     'quiz.acom.wordHighlight': 'Word highlight',
+    'quiz.pos.left': 'Left',
+    'quiz.pos.right': 'Right',
+    'quiz.start.title': 'Choose the skill',
+    'quiz.stage.infantil': 'Early childhood education',
+    'quiz.stage.ef5': 'Elementary school',
+    'quiz.skill.explain': '{component} · {grade} — {skill}',
+    'quiz.hud.skill': 'Skill',
+    'quiz.name.skill': 'skill',
+    'quiz.name.question': 'question {n}',
+    'quiz.name.questions': 'questions',
+    'quiz.right': 'Right! {answer}.',
+    'quiz.wrong': 'Not yet: {option} leaves the list. Try another.',
+    'quiz.tried': '{option} was already tried. Choose another.',
+    'quiz.option.off': 'already tried',
+    'quiz.explained': 'Read the explanation and try again. {explanation}',
+    'quiz.copy': 'The answer is {answer}. Copy it: confirm the marked answer.',
+    'quiz.copy.note': 'Copy the marked answer: confirm it.',
+    'quiz.copied': 'Copied: {answer}.',
+    'quiz.notAnOption': 'I heard «{heard}», which is none of the options. Say it again or choose with the arrows.',
   },
   es: {
     'quiz.pos.up': 'Arriba',
@@ -51,5 +91,24 @@ export const QUIZ_DICTIONARIES: Readonly<Record<'pt' | 'en' | 'es', Readonly<Rec
     'quiz.acom.textPace': 'Ritmo del texto',
     'quiz.acom.lexicalDifficulty': 'Dificultad de las palabras',
     'quiz.acom.wordHighlight': 'Resaltado de palabras',
+    'quiz.pos.left': 'Izquierda',
+    'quiz.pos.right': 'Derecha',
+    'quiz.start.title': 'Elige la habilidad',
+    'quiz.stage.infantil': 'Educación Infantil',
+    'quiz.stage.ef5': 'Educación Primaria',
+    'quiz.skill.explain': '{component} · {grade} — {skill}',
+    'quiz.hud.skill': 'Habilidad',
+    'quiz.name.skill': 'habilidad',
+    'quiz.name.question': 'pregunta {n}',
+    'quiz.name.questions': 'preguntas',
+    'quiz.right': '¡Correcto! {answer}.',
+    'quiz.wrong': 'Todavía no: {option} sale de la lista. Prueba otra.',
+    'quiz.tried': '{option} ya se intentó. Elige otra.',
+    'quiz.option.off': 'ya intentada',
+    'quiz.explained': 'Lee la explicación e inténtalo de nuevo. {explanation}',
+    'quiz.copy': 'La respuesta es {answer}. Cópiala: confirma la respuesta marcada.',
+    'quiz.copy.note': 'Copia la respuesta marcada: confírmala.',
+    'quiz.copied': 'Copiada: {answer}.',
+    'quiz.notAnOption': 'Escuché «{heard}», que no es ninguna de las alternativas. Dilo otra vez o elige con las flechas.',
   },
 };

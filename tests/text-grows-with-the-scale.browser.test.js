@@ -13,6 +13,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS } from './fixtures/quiz-skills.js';
 
 const ALVOS = {
   opcao: '.quiz-alt',
@@ -45,7 +47,9 @@ beforeAll(async () => {
   palco = document.querySelector('.stage-wrap');
   regiao = document.getElementById('game-region');
   palco.style.cssText = 'width:700px;height:420px;display:flex;flex:none';
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 });
 

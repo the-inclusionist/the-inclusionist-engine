@@ -16,6 +16,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS, INFANT } from './fixtures/quiz-skills.js';
 
 // No leading `\b`: a key glued to the key cap before it («Jquiz.pos.confirm») has no word boundary.
 const RAW_KEY = /(quiz|sr)\.[a-zA-Z]/;
@@ -61,7 +63,9 @@ beforeAll(async () => {
     new MutationObserver(() => { if (el.textContent) into.push(el.textContent); })
       .observe(el, { childList: true, characterData: true, subtree: true });
   }
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   for (let i = 0; i < 40 && !document.querySelector('.quiz-alts'); i++) await esperar(50);
   await esperar(150);
   regiao = document.getElementById('game-region');
@@ -136,21 +140,32 @@ describe('the demo quiz, in its engine\'s language', () => {
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
   });
 
-  it('🔴 [Right] the answer and the end are said in words', async () => {
-    for (let q = 0; q < 3 && document.querySelector('#quiz-app button[data-alt="0"]'); q++) {
+  it('🔴 [Right] every answer is said in words — wrong, tried again, failed with its explanation, copied, right', async () => {
+    // since the test bench there is no end: the questions come round again. What a child hears answering is these six lines.
+    const said = async (i) => {
       alerts.length = 0;
-      document.querySelector('#quiz-app button[data-alt="0"]').click();
+      document.querySelector(`#quiz-app button[data-alt="${i}"]`).click();
       await esperar(100); // the alert is written on the next frame
-      expect(alerts.join(' | '), 'the answer was said with a raw key').not.toMatch(RAW_KEY);
       expect(alerts.length, 'answering said nothing').toBeGreaterThan(0);
-      await esperar(1000);
-    }
-    expect(statement(), 'the end is a raw key, or never came').not.toMatch(RAW_KEY);
-    expect(document.querySelectorAll('#quiz-app button[data-alt]').length, 'the quiz did not reach its end').toBe(0);
+      expect(alerts.join(' | '), 'an answer was said with a raw key').not.toMatch(RAW_KEY);
+      return alerts.join(' | ');
+    };
+    const q = INFANT.questions.find((x) => x.statement.pt === statement());
+    expect(q, 'the statement on screen is none of the fixture\'s — the case would measure nothing').toBeTruthy();
+    const wrong = [0, 1, 2, 3, 4].filter((i) => i !== q.correct);
+    await said(wrong[0]);
+    await said(wrong[0]); // tried again
+    await said(wrong[1]);
+    expect(await said(wrong[2]), 'the explanation was not said').toContain(q.explanation.pt);
+    for (const w of wrong.slice(0, 3)) await said(w); // the answer to copy
+    await said(q.correct); // copied
+    await esperar(1000);
+    const next = INFANT.questions.find((x) => x.statement.pt === statement());
+    await said(next.correct); // right
+    await esperar(1000);
   }, 15000);
 });
-
 // ============================== MUTATIONS CHECKED ==============================
 // Each of the quiz's hand-overs to `translate` replaced, one at a time, by a `t` that answers the key:
-//   the welcome · «ouvindo» · «não entendi» · «ouvi nada» · the failure · the statement given back · each answer and the end ·
+//   the welcome · «ouvindo» · «não entendi» · «ouvi nada» · the failure · the statement given back · each answer ·
 //   the two «how to play» texts · the six positions' names                                            🔴 each, its case above

@@ -90,11 +90,39 @@
     "type CartridgeHooks": "Omit<GameHalf, 'declaration'>"
   },
   "consumer-quiz/main-quiz.ts": {
+    "interface SpokenPart": [
+      "language?",
+      "text"
+    ],
+    "interface OptionView": [
+      "marked",
+      "off"
+    ],
+    "interface QuestionView": [
+      "note",
+      "options",
+      "statement"
+    ],
     "interface QuizHost": [
       "doc",
       "interpreter?",
+      "skills?",
       "win"
     ]
+  },
+  "consumer-quiz/quiz-round.ts": {
+    "interface Attempts": [
+      "off",
+      "phase",
+      "wrong"
+    ],
+    "interface SkillReading": [
+      "bar",
+      "history"
+    ],
+    "type Move": "'up' | 'down' | 'left' | 'right'",
+    "type AttemptPhase": "'trying' | 'explained' | 'copying'",
+    "type AttemptOutcome": "| { readonly kind: 'refused' } | { readonly kind: 'wrong' | 'failed' | 'copy'"
   },
   "consumer-quiz/quiz-skills.ts": {
     "interface QuizQuestion": [

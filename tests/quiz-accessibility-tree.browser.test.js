@@ -9,7 +9,7 @@
 // words. Only the tree the browser builds says that, so this file reads that tree, through the DevTools protocol.
 //
 // Three demands, each on the tree of the real quiz page booted through `createGame`:
-//   · the four options are radios in the «Alternativas» group, named by their words, none pruned;
+//   · the five options are radios in the «Alternativas» group, named by their words, none pruned;
 //   · every icon the quick bar shows is a button named by its label, none pruned;
 //   · the clock is ONE image whose name is words (no «mm:ss»), with nothing exposed beneath it.
 //
@@ -22,6 +22,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { cdp } from 'vitest/browser';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
+import { openSkill } from './fixtures/quiz-page.js';
+import { THREE_SKILLS } from './fixtures/quiz-skills.js';
 
 /** This file's frame: the tests run in an iframe of the tester page, and the CDP session belongs to the page. */
 async function ownFrameId(session) {
@@ -64,15 +66,17 @@ beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   // the quiz page's own boot, which hands its document and window to `createGame` (ADR-0232 D4)
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window });
+  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
+  await openSkill(document, 0);
   await frame();
   await frame();
 });
 
 describe('the quiz, as the browser hands it to a screen reader', () => {
-  it('🔴 [Right] the four options are exposed as radios of «Alternativas», each named by its words', async () => {
+  it('🔴 [Right] the five options are exposed as radios of «Alternativas», each named by its words', async () => {
     const words = [...document.querySelectorAll('.quiz-alt')].map((b) => b.textContent.trim());
-    expect(words.length, 'no options on the page — the case would measure nothing').toBe(4);
+    expect(words.length, 'no options on the page — the case would measure nothing').toBe(5);
     const ax = await accessibilityTree();
     const group = ax.exposed.filter((n) => ax.role(n) === 'radiogroup');
     expect(group.length, `the options' group is not exposed; exposed: ${ax.describe(ax.exposed.filter((n) => /radio/.test(ax.role(n))))}`).toBe(1);
@@ -96,14 +100,17 @@ describe('the quiz, as the browser hands it to a screen reader', () => {
     const label = document.querySelector('.session-clock-label')?.textContent ?? '';
     expect(digits, 'the clock shows no digits — the case could not tell them from its name').toMatch(/\d:\d\d/);
     const ax = await accessibilityTree();
+    // two pictures in the HUD row since the test bench: the clock and the skill's ten-segment bar, each ONE image named by words
+    const bar = document.querySelector('.hud-row .hud-barra');
     const images = ax.exposed.filter((n) => ax.role(n) === 'image');
-    expect(images.length, `images exposed: ${ax.describe(images)}`).toBe(1);
-    const name = ax.name(images[0]);
+    expect(images.map(ax.name).sort(), `images exposed: ${ax.describe(images)}`).toEqual([clock.getAttribute('aria-label'), bar?.getAttribute('aria-label')].sort());
+    const clockImage = images.find((n) => ax.name(n) === clock.getAttribute('aria-label'));
+    const name = ax.name(clockImage);
     expect(name, 'the image\'s name is not the clock\'s words').toBe(clock.getAttribute('aria-label'));
     expect(name, 'the name reads the digits instead of words').not.toMatch(/\d:\d\d/);
     expect(name, 'the name has no words').toMatch(/\p{L}{3,}/u);
     // 🔴 the defect the Dev heard: the picture's parts handed to the reader as text
-    expect(ax.describe(ax.exposedUnder(images[0])), 'the clock\'s parts are exposed under the image — a reader that does not prune reads them').toBe('(none)');
+    expect(ax.describe(ax.exposedUnder(clockImage)), 'the clock\'s parts are exposed under the image — a reader that does not prune reads them').toBe('(none)');
     const leaks = ax.exposed.filter((n) => ax.role(n) === 'StaticText' && [digits, label].includes(ax.name(n).trim()));
     expect(ax.describe(leaks), 'the clock\'s label or digits are exposed as text somewhere').toBe('(none)');
   });

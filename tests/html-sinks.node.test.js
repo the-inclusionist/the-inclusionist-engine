@@ -65,7 +65,7 @@ const SEGUROS = [
   // [Zero] case — the list keeps no sink that no longer exists — is what points out an entry whose code left.
   // THE HELP SCREEN LEFT THIS LIST (2026-09-13): it is a slide show built with `textContent`, so the game's words reach the
   // document as text and no longer through markup (`ui/help-panel.showSlide`).
-  ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
+  ['consumer-quiz/main-quiz.ts', 'app.innerHTML = startHtml(translate, ordered, locale', 'the start screen (the test bench): the codes and words of the skills go through `escapeHtml`, the stage and title through `t()`, the rest are numbers — gated hostile in `consumer-quiz.node`'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(ctx.transl", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(t, modes, cur)', 'modos enumerados + i18n'],
@@ -99,7 +99,7 @@ const SEGUROS = [
   // remade the step control on every render and threw the focus of whoever was adjusting it to the `<body>`.
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
-  ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(translate, p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
+  ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(translate, view, cursor', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
   ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
   // (The Dev's decision «as categorias de áudio são DA ENGINE» is written in the module that builds that row, not here.)
 ];

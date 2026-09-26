@@ -39,8 +39,11 @@ function modulesOfTheEngine() {
   // ONE `git` process asks both questions: `--cached` is what `ls-files` lists by default, and `--others` adds what is not
   // yet in the index — the union two processes used to build by hand.
   const list = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
+  // 📌 The proof consumer (`app/js/consumer-quiz/`) asks for ITS OWN keys, which live in its own dictionary (ADR-0232 D3) and not
+  // in the engine's: they are held by `consumer-quiz.node.test.js` against both dictionaries, `translate(…)` calls included.
+  // This engine gate reading the consumer's dictionary would make it an engine test that needs the consumer to run.
   return [...new Set(list('ls-files', '--cached', '--others', '--exclude-standard', 'app/js'))]
-    .filter((f) => f.endsWith('.ts') && !f.startsWith('app/js/i18n/'));
+    .filter((f) => f.endsWith('.ts') && !f.startsWith('app/js/i18n/') && !f.startsWith('app/js/consumer-quiz/'));
 }
 
 // ⚠️ The predicates are bound once, and neither JSDoc nor parent links are built, for the reasons
