@@ -144,7 +144,7 @@ describe('interruptible speech — `finished` says an utterance is over, once, h
     const { motor } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
     let fonte = null;
-    motor.play = (audio, onEnded) => { fonte = { texto: audio.texto, onEnded }; return fonte; };
+    motor.play = (audio, onEnded) => { fonte = { text: audio.text, onEnded }; return fonte; };
     const [c, done] = counter();
     fala.speak('apple', done);
     await esperar(10);
@@ -189,7 +189,7 @@ describe('interruptible speech — `finished` says an utterance is over, once, h
     const { motor } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
     let fonte = null;
-    motor.play = (audio, onEnded) => { fonte = { texto: audio.texto, onEnded }; return fonte; };
+    motor.play = (audio, onEnded) => { fonte = { text: audio.text, onEnded }; return fonte; };
     const [c, done] = counter();
     fala.speak('apple', done);
     await esperar(10);
