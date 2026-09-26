@@ -68,7 +68,7 @@ the tree `--repo` declares, and counts it when it cannot.
 | ADR-0040 | MODE is DERIVED from activity, not stored — two variables answering one question is a d… | engine | engine | MODE derives from the curriculum layer the engine ships |
 | ADR-0043 | A KNOWN debt gets a budget that only goes down — never a disabled gate, never a red pip… | engine | engine | the engine's debt budget in CI |
 | ADR-0044 | ONE menu per screen, the exit first, and narration that can be interrupted — the quick… | engine | engine | one menu per screen, in the engine's menus |
-| ADR-0045 | The RUN button becomes a LATCH, and every other job it carried moves to the JUMP in con… | game-platformer | docs (waits for game-platformer) | the run latch and the carry jobs: `game/run-toggle`, `game/carry` live in game-platformer (superseded by ADR-0060) |
+| ADR-0045 | The RUN button becomes a LATCH, and every other job it carried moves to the JUMP in con… | game-platformer | game-platformer (moved 2026-09-26, the Dev: «Sim, mude») | the run latch and the carry jobs: `game/run-toggle`, `game/carry` live in game-platformer (superseded by ADR-0060) |
 | ADR-0046 | A SIMULATION is not an accessibility feature — so the partition is by ROLE (experience… | engine | engine | simulation versus correction in the engine's filters |
 | ADR-0047 | The decorative CRT YIELDS to accessibility with NO exception — and "yield" means switch… | engine | engine | the engine's CRT yields to accessibility |
 | ADR-0048 | The journey is FOUR screens, the ADULT logs in and never the child, and difficulty foll… | project-wide | docs | the journey across the site, Bússola Escolar and the games |
@@ -83,7 +83,7 @@ the tree `--repo` declares, and counts it when it cannot.
 | ADR-0057 | A record changes by SUPERSESSION, and an ERRATUM is the only edit in place — the test i… | project-wide | docs | how every record in every repository changes |
 | ADR-0058 | FIVE systems, NINE repositories — the boundary follows the Secretaria that answers for… | project-wide | docs | five systems, nine repositories |
 | ADR-0059 | ONE record owns the HUD's layout, and a number sits with what it is ABOUT — identity, s… | engine | engine | the HUD layout the engine owns |
-| ADR-0060 | The INTERACTION button keeps every job it had, in every input mode — and only RUNNING b… | game-platformer | docs (waits for game-platformer) | the interaction button's jobs — cling, pick up, throw — are game-platformer's physics and carry |
+| ADR-0060 | The INTERACTION button keeps every job it had, in every input mode — and only RUNNING b… | game-platformer | game-platformer (moved 2026-09-26, the Dev: «Sim, mude») | the interaction button's jobs — cling, pick up, throw — are game-platformer's physics and carry |
 | ADR-0063 | The Município CAN read the data, so the defence moves from CRYPTOGRAPHY to ACCOUNTABILI… | project-wide | docs | data access by the Município: Bússola Escolar |
 | ADR-0064 | The code licence is AGPL-3.0-or-later, because under GPL a hosted classroom server woul… | project-wide | docs | the code licence of every program |
 | ADR-0065 | THREE neural voices, owned by the ENGINE, arriving on FIRST USE — because precaching th… | engine | engine | the engine owns the neural voices |
@@ -257,7 +257,7 @@ the tree `--repo` declares, and counts it when it cannot.
 | ADR-0234 | There is no Libras mode, there is a deaf mode — sounds get captions, and the sonar call… | engine | engine | the engine's deaf mode |
 | ADR-0235 | No room code and no internet multiplayer for now — everything runs offline and single-m… | project-wide | docs | no room code and no internet multiplayer: the whole project |
 | ADR-0236 | The session clock is a Time Timer — a continuous pie, 50 minutes by default | engine | engine | the engine's session clock |
-| ADR-0237 | A sub-engine for top-down and platformer games — born as a separable folder in the plat… | game-platformer | docs (waits for game-platformer) | a folder inside game-platformer and a gate there; the engine carries nothing of it |
+| ADR-0237 | A sub-engine for top-down and platformer games — born as a separable folder in the plat… | game-platformer | game-platformer (moved 2026-09-26, the Dev: «Sim, mude») | a folder inside game-platformer and a gate there; the engine carries nothing of it |
 | ADR-0238 | The points sit beside the clock, in five digits with leading zeros | engine | engine | the engine's HUD |
 | ADR-0239 | The HUD is one row at the bottom — learning bars, clock, score and power, and the game'… | engine | engine | the engine's HUD |
 | ADR-0240 | The session clock has no settings on the child's side — one hour, red at the end, alway… | engine | engine | the engine's session clock |
