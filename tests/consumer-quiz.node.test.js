@@ -151,12 +151,12 @@ describe('words and parts — the frame translates, the content keeps its langua
     expect(optionFace({ pt: 'Um', en: 'One', es: 'Uno' }, 'es', 'en')).toEqual({ text: 'Uno' });
   });
 
-  it('🔴 [Right] the parts join in order into the one text `narrate` takes today (the single place to switch, ADR-0243)', () => {
+  it('🔴 [Right] the parts join in order into the text on screen; the voice is handed the PARTS, by one door (ADR-0243)', () => {
     expect(joinParts([{ text: 'Complete: «' }, { text: 'My ___ is Ana.', language: 'en' }, { text: '»' }])).toBe('Complete: «My ___ is Ana.»');
-    // and the switch is ONE place: every narration of the quiz leaves by `speak`, which joins
+    // every narration of the quiz leaves by `speak`, and `speak` hands the engine the parts, not a joined text
     const narrates = FONTE.match(/tts\.narrate\(/g) ?? [];
     expect(narrates.length, 'narration leaves the quiz by more than one door').toBe(1);
-    expect(FONTE).toMatch(/const speak = \(parts: readonly SpokenPart\[\]\): void => \{\s*const text = joinParts\(parts\);/);
+    expect(FONTE).toMatch(/const speak = \(parts: readonly SpokenPart\[\]\): void => \{[^}]*tts\.narrate\(parts\)/);
   });
 });
 

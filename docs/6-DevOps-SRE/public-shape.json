@@ -90,10 +90,6 @@
     "type CartridgeHooks": "Omit<GameHalf, 'declaration'>"
   },
   "consumer-quiz/main-quiz.ts": {
-    "interface SpokenPart": [
-      "language?",
-      "text"
-    ],
     "interface OptionView": [
       "marked",
       "off"

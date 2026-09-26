@@ -12,7 +12,6 @@
     "OptionView",
     "QuestionView",
     "QuizHost",
-    "SpokenPart",
     "bootQuiz",
     "heardAlternative",
     "inLanguage",

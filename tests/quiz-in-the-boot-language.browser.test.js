@@ -21,7 +21,12 @@ beforeAll(async () => {
   antes = { lang: localStorage.getItem('incl_lang'), tts: localStorage.getItem('incl_audiocat_tts') };
   localStorage.setItem('incl_lang', 'en');
   localStorage.setItem('incl_audiocat_tts', JSON.stringify({ on: true, vol: 0.8 }));
-  window.speechSynthesis.speak = (u) => { falas.push(u.text); };
+  // A narration is handed as PARTS (ADR-0243), one utterance each, and it opens with a `cancel`: one entry here per narration,
+  // its parts joined, so a sentence reads as the child hears it.
+  const cancelOriginal = window.speechSynthesis.cancel.bind(window.speechSynthesis);
+  let opened = false;
+  window.speechSynthesis.cancel = () => { opened = false; cancelOriginal(); };
+  window.speechSynthesis.speak = (u) => { if (opened) falas[falas.length - 1] += u.text; else { falas.push(u.text); opened = true; } };
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });

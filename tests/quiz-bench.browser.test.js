@@ -19,6 +19,7 @@ import { THREE_SKILLS, MATH, ENGLISH, INFANT } from './fixtures/quiz-skills.js';
 const wait = (ms = 60) => new Promise((r) => setTimeout(r, ms));
 const alerts = [];
 const spoken = [];
+const spokenParts = [];
 let engine, region;
 const key = (code) => {
   const t = document.activeElement && document.activeElement !== document.body ? document.activeElement : region;
@@ -56,12 +57,16 @@ beforeAll(async () => {
   }
   engine = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
   // what the voice is handed: the quiz narrates through its engine's `tts.narrate`, read at each call
-  engine.tts.narrate = (text) => { spoken.push(text); };
+  // the quiz hands PARTS (ADR-0243); `spoken` keeps them joined, as a sentence, and `spokenParts` as handed
+  engine.tts.narrate = (text) => {
+    spokenParts.push(text);
+    spoken.push(typeof text === 'string' ? text : text.map((p) => p.text).join(''));
+  };
   for (let i = 0; i < 40 && !skills().length; i++) await wait(25);
   region = document.getElementById('game-region');
   region.focus();
 });
-beforeEach(() => { alerts.length = 0; spoken.length = 0; });
+beforeEach(() => { alerts.length = 0; spoken.length = 0; spokenParts.length = 0; });
 
 describe('the start screen — the skills by BNCC code, explained in the footer (ADR-0244)', () => {
   it('🔴 [Right] the quiz OPENS on it: Educação Infantil first, then Ensino Fundamental, one button per skill', () => {
@@ -239,8 +244,13 @@ describe('content in its language (ADR-0243, WCAG 3.1.2)', () => {
     expect(statement.querySelector('[lang="en"]')?.textContent).toBe('My ___ is Ana.');
     expect(options().map((b) => b.getAttribute('lang'))).toEqual(['en', 'en', 'en', 'en', 'en']);
     expect(document.documentElement.lang, 'the page itself moved to English').toBe('pt-BR');
-    // and the voice gets the frame and the content in one text until `narrate(parts)` exists (ADR-0243)
+    // and the voice gets PARTS (ADR-0243): the frame without a language, the content and every string option in English
     expect(spoken.at(-1)).toContain('Complete a frase 1: «My ___ is Ana.» sister, 1 de 5.');
+    const handed = spokenParts.at(-1);
+    expect(Array.isArray(handed), 'the voice was handed one joined text').toBe(true);
+    expect(handed).toContainEqual({ text: 'My ___ is Ana.', language: 'en' });
+    expect(handed).toContainEqual({ text: 'sister', language: 'en' });
+    expect(handed.find((p) => p.text.includes('Complete a frase')), 'the frame carried a language').not.toHaveProperty('language');
     expect(ENGLISH.contentLanguage).toBe('en');
   });
 });

@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2314,
+      "codeLines": 2329,
       "decisionNodes": 297,
       "maxDepth": 4,
       "fanOut": 97,
@@ -38,7 +38,7 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 491,
+      "codeLines": 487,
       "decisionNodes": 96,
       "maxDepth": 2,
       "fanOut": 10,
@@ -58,12 +58,12 @@
       "fanIn": 1
     },
     "consumer-quiz/quiz-skills.ts": {
-      "codeLines": 143,
+      "codeLines": 1138,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 1,
+      "worstFunction": 0,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -428,7 +428,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 660,
+      "codeLines": 641,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -438,7 +438,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 660,
+      "codeLines": 641,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -448,7 +448,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 660,
+      "codeLines": 641,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,

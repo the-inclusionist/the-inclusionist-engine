@@ -143,6 +143,7 @@ import type { KeyScheme } from '../core/entity.js';
 import { createGame, type Engine, type EngineHost, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration, Objective, Speakable, Spot } from '../core/contract.js';
 import type { Scene } from '../core/scenes.js';
+import type { SpokenPart } from '../platform/tts.js';
 import { resultadoDaQuestao, type ResultadoDaQuestao } from '../educational/adaptive-engine.js';
 import type { Bar } from '../educational/segment-bar.js';
 import { QUIZ_DICTIONARIES } from './quiz-words.js';
@@ -160,17 +161,10 @@ export function inLanguage(words: Words, locale: string): string {
   return (code === 'en' || code === 'es' ? words[code] : '') || words.pt;
 }
 
-/**
- * A PIECE OF WHAT THE VOICE SAYS (ADR-0243 §1): frame, with no language — the interface's voice —, or content, with the BCP-47
- * of its own language. The quiz builds every narration as parts, so the day `narrate(parts)` lands only `speak` changes.
- */
-export interface SpokenPart {
-  readonly text: string;
-  readonly language?: string;
-}
+/** A piece of what the voice says (ADR-0243 §1): frame, with no language — the interface's voice —, or content, in its own. */
 const part = (text: string, language?: string): SpokenPart => (language ? { text, language } : { text });
 
-/** The parts as ONE text, in order: what `narrate(text)` takes until ADR-0243's `narrate(parts)` exists (see `speak`). */
+/** The parts as ONE text, in order: what is on screen and what a screen reader reads, where the voice reads the parts. */
 export function joinParts(parts: readonly SpokenPart[]): string {
   return parts.map((p) => p.text).join('');
 }
@@ -450,12 +444,11 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
   const say = (text: string): void => { motor?.say(text); };
   /**
    * 🔴 THE ONE PLACE NARRATION LEAVES THE QUIZ (ADR-0243). Every narration is built as parts — frame without a language,
-   * content with its own —, and until `narrate(parts)` lands in the engine they are joined here into the one text
-   * `narrate(text)` takes, and the content is read by the interface's voice. The switch is this line.
+   * content with its own — and handed to the engine AS PARTS: an English word in a Portuguese question is read by an English
+   * voice, and a language the device has no voice for is said to be missing instead of read in the wrong accent.
    */
   const speak = (parts: readonly SpokenPart[]): void => {
-    const text = joinParts(parts);
-    if (text.trim()) motor?.tts.narrate(text);
+    if (joinParts(parts).trim()) motor?.tts.narrate(parts);
   };
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
