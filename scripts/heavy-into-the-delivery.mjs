@@ -103,8 +103,12 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *
  * · `--kokoro` for a game that declares `uses: { neuralVoice: true }` — without it Kokoro's model, voices and runtime stay out of
  *   the delivery, as they stay out of the start's download.
- * · `--reading <pt|en|es>`, repeatable, for a game that declares `uses: { reading: true }`: each language named puts ITS model in
- *   the delivery (pt 378 MiB, en 162, es 310). A delivery for a school that reads in one language carries one.
+ * · `--reading`, for a game that declares `uses: { reading: true }`: ALONE (or `--reading all`) it carries every language the
+ *   catalogue has a reading model for — pt 378 MiB, en 162, es 310 — because the start of such a game asks for the three, and a
+ *   child tries the three at once (ADR-0225 erratum, the Dev: «Negativo, baixar os três.»). `--reading <pt|en|es>`, repeatable,
+ *   NARROWS to the languages named, with the same bytes as before; a language left out is a quiet 404 at the device's start and,
+ *   when she reads in it, a sentence to her and a line of `problems` naming this fix. `--reading none` carries none, as no flag
+ *   does. A language the catalogue has no reading model for STOPS the command (exit 2) instead of carrying nothing.
  * · `--commands <pt|en|es>`, repeatable: the voice COMMANDS (issue #184), 31–39 MiB a language plus 3.1 MiB of runtime. No game
  *   declares this one — saying «menu» is a way into the controller, not a feature (ADR-0111). WITHOUT THE FLAG THE DELIVERY
  *   CARRIES EVERY LANGUAGE the catalogue has a command model for — pt, en and es, 108 MiB (ADR-0225 erratum, the Dev: «A entrega
@@ -135,7 +139,12 @@ export function argumentosDaEntrega(args, ambiente = process.env) {
     if (args[i] === '--libras') { libras = true; continue; }
     if (args[i] === '--libras-texts') { const v = args[++i]; if (v) { librasTexts.push(v); libras = true; } continue; }
     if (args[i] === '--base') { base = args[++i]; continue; }
-    if (args[i] === '--reading') { const v = args[++i]; if (v) reading.push(v); continue; }
+    // `--reading` alone — last, or before another flag — is every language; a value after it is a language, never the folder
+    if (args[i] === '--reading') {
+      const v = args[i + 1];
+      if (v === undefined || v.startsWith('--')) reading.push('all'); else { reading.push(v); i++; }
+      continue;
+    }
     if (args[i] === '--commands') { const v = args[++i]; if (v) commands.push(v); continue; }
     if (!args[i].startsWith('--') && destino === undefined) destino = args[i];
   }
@@ -154,14 +163,37 @@ export function commandLanguagesOfTheDelivery(asked, catalogue, languageOf) {
 }
 
 /**
- * THE IDS A DELIVERY CARRIES, from the command's answers. One pass per reading language, because the start asks for ONE and the
- * delivery may hold several; the spoken languages go in one list, as the start asks for them.
+ * THE READING LANGUAGES A DELIVERY CARRIES: none without `--reading` (a game that does not listen carries no model); every
+ * language the catalogue has a reading model for with `--reading` alone or `all` (ADR-0225 erratum); else those named, as base
+ * languages (`pt-BR` is `pt`), less `none`. `languageOf` is the catalogue's `readingLanguageOf`, so a fourth language with a model
+ * is carried by `all` the day it enters the catalogue.
+ * ⚠️ A NAMED LANGUAGE WITH NO MODEL THROWS, naming it: it used to carry nothing in silence — and a folder written after the flag
+ * (`--reading dist`) was read as a language and carried nothing just as quietly.
  */
-export function idsOfTheDelivery({ kokoro, reading, commands, libras }, { heavyAtBoot, catalogue, commandsLanguageOf }) {
+export function readingLanguagesOfTheDelivery(asked, catalogue, languageOf) {
+  const known = [...new Set(catalogue.map((p) => languageOf(p.id)).filter(Boolean))];
+  const named = asked.filter((lingua) => lingua !== 'none' && lingua !== 'all');
+  const base = (tag) => tag.split('-')[0].toLowerCase();
+  const unknown = named.filter((lingua) => !known.includes(base(lingua)));
+  if (unknown.length) {
+    throw new Error(`--reading ${unknown.join(', ')}: the catalogue has no reading model for ${unknown.length > 1 ? 'these languages' : 'this language'} `
+      + `— it has ${known.join(', ')}. Name one of them, or pass \`--reading\` alone for every language (the delivery folder goes `
+      + 'before the flag: `inclusionist-heavy dist --reading`)');
+  }
+  if (asked.includes('all')) return known;
+  return [...new Set(named.map(base))];
+}
+
+/**
+ * THE IDS A DELIVERY CARRIES, from the command's answers: the reading languages go in one list and the spoken ones in another,
+ * as the start asks for them. `readingLanguageOf` is needed only when `reading` names something.
+ */
+export function idsOfTheDelivery({ kokoro, reading, commands, libras }, { heavyAtBoot, catalogue, commandsLanguageOf, readingLanguageOf }) {
   const spoken = commandLanguagesOfTheDelivery(commands, catalogue, commandsLanguageOf);
+  const read = reading.length ? readingLanguagesOfTheDelivery(reading, catalogue, readingLanguageOf) : [];
   return [...new Set([
     ...heavyAtBoot({ kokoro }),
-    ...reading.flatMap((lingua) => heavyAtBoot({ kokoro: false, reading: lingua })),
+    ...(read.length ? heavyAtBoot({ kokoro: false, reading: read }) : []),
     ...heavyAtBoot({ kokoro: false, commands: spoken }),
     ...(libras ? heavyAtBoot({ kokoro: false, libras: true }) : []),
   ])];
@@ -181,12 +213,23 @@ if (executado) {
     try { console.log(`the Libras glosser's environment is ready: ${setUpGlosser()}`); process.exit(0); }
     catch (e) { console.error(e instanceof Error ? e.message : String(e)); process.exit(1); }
   }
-  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… | --libras-setup'); process.exit(2); }
+  if (!destino) {
+    console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading [all|pt|en|es|none]]… '
+      + '[--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… | --libras-setup');
+    if (reading.some((v) => v !== 'all')) console.error(`(the value after --reading is read as a language: «${reading.join(' ')}» — put the folder first)`);
+    process.exit(2);
+  }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
-  const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK, DELIVERY_LISTS, commandsLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
+  const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK, DELIVERY_LISTS, commandsLanguageOf, readingLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
+  // 📌 THE READING LANGUAGES FIRST, before a byte is downloaded: a language the catalogue has no model for stops here, named
+  let read;
+  try { read = readingLanguagesOfTheDelivery(reading, HEAVY_FILES, readingLanguageOf); } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e));
+    process.exit(2);
+  }
   let librasGlosses = '';
   let stageChunk = '';
   if (libras) {
@@ -217,9 +260,10 @@ if (executado) {
     }
   }
   const ids = idsOfTheDelivery({ kokoro, reading, commands, libras },
-    { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf });
+    { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf, readingLanguageOf });
   const spoken = commandLanguagesOfTheDelivery(commands, HEAVY_FILES, commandsLanguageOf);
   console.log(`commands  ${spoken.length ? spoken.join(', ') : 'none'}${commands.length ? '' : ' (every language, the default)'}`);
+  console.log(`reading   ${read.length ? read.join(', ') : 'none'}${reading.includes('all') ? ' (every language)' : ''}`);
   if (base) console.log(`base: ${base}`);
   const { ok, linhas, licences } = await levarPesadosParaEntrega({
     destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf, catalogue: HEAVY_FILES,

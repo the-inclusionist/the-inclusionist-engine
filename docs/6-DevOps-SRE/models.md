@@ -27,13 +27,27 @@ delivery; the page asks for it at `heavy/<host><path>` on its own origin and the
 ```powershell
 npx inclusionist-heavy dist                                # vision + the voice commands in pt, en and es
 npx inclusionist-heavy dist --kokoro                       # uses: { neuralVoice: true }  → +372 MiB
-npx inclusionist-heavy dist --reading pt --reading en    # uses: { reading: true }      → +378 MiB, +162 MiB
+npx inclusionist-heavy dist --reading                      # uses: { reading: true }      → the pt, en and es reading models
+npx inclusionist-heavy dist --reading pt                   # the reading narrowed to Portuguese
 npx inclusionist-heavy dist --commands pt                  # the voice commands narrowed to Portuguese
 npx inclusionist-heavy dist --commands none                # no voice commands at all
 ```
 
-`--reading` takes a language and repeats, because a reading model is **per language** (pt 378 MiB, en 162, es 310) and a school
-reads in one or two of them, not three. At run time the start asks for the one the interface booted in, and for nothing else.
+**The reading models are carried in the three languages when the game listens** (ADR-0225 erratum of 2026-09-26, the Dev:
+«Negativo, baixar os três. Toda criança vai experimentar as três línguas imediatamente.»). A reading model is per language (pt 378
+MiB, en 162, es 310), and a game that declares `uses: { reading: true }` asks, at every device's start, for the models of every
+language the page can switch to — the child's whole language first, then each other one whole, so her command model never waits
+behind another language's reading. `--reading` alone (or `--reading all`) carries every language the catalogue has a reading
+model for. `--reading <language>` repeats and **narrows**, with the same bytes as before; `--reading none`, like no flag, carries
+none. A language the catalogue has no reading model for **stops the command with exit 2**, naming it — `--reading fr`, or a
+folder written after the flag (`inclusionist-heavy --reading dist`), used to carry nothing in silence. Put the folder first.
+⚠️ **What a narrowed delivery costs on the device:** built with `--reading pt`, a game that listens still asks for the en and es
+models at its start — two quiet 404s in `onHeavyProgress` — and a child who switches to English or Spanish and reads is told
+that reading could not start in this language, and `problems` names the fix: `--reading` alone, or that language in its list.
+📏 **Measured on 2026-09-26**, building the engine's `dist` from the local staging tree with `--base`: with `--reading` the
+delivery is **1,079,687,568 bytes**; with `--reading pt`, 584,586,876 (so the three cost **495,100,692 bytes**, 472.2 MiB, more);
+with no `--reading`, 160,916,123. The three languages' folders are 891,780,140 bytes — the models (891,751,676: pt 396,659,515,
+en 169,517,267, es 325,574,894) and their licence files.
 
 **The voice commands are carried in the three languages by default** (ADR-0225 erratum, the Dev: «A entrega leva as três
 línguas.»). No game declares them — saying «menu» is a way into the controller (ADR-0111) — and a child can switch language
@@ -45,8 +59,9 @@ the default before. A language the delivery did not carry is still a line of `pr
 📏 **Measured on 2026-09-25**, building from the local staging tree with `--base`: the default delivery is **116,455,039 bytes**
 (111.1 MiB) larger than one built with `--commands none` — the three models (113,224,199 bytes: pt 32,358,733, en 41,116,539, es
 39,748,927), the runtime (3,197,688) and two licence folders with the notice lines (33,152) — and **80,865,466 bytes** (77.1 MiB)
-larger than one built with `--commands pt`. The reading models do not follow: their three-language default waits on the Dev
-(ADR-0225 erratum), so `--reading` still carries only what it names.
+larger than one built with `--commands pt`. The reading models follow the same rule since 2026-09-26 (above), with one
+difference that is the game's answer: without `--reading` a delivery carries no reading model, because only a game that listens
+needs one.
 
 **Where the build reads from is a choice** (the Dev, 2026-09-21). Unset, it is upstream. With a base, each file comes from a
 mirror — the project's Cloudflare, a school's own server, or a folder on the build machine, which needs no network at all:

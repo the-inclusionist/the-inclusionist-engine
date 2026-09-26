@@ -14,10 +14,10 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import {
-  levarPesadosParaEntrega, argumentosDaEntrega, idsOfTheDelivery, commandLanguagesOfTheDelivery,
+  levarPesadosParaEntrega, argumentosDaEntrega, idsOfTheDelivery, commandLanguagesOfTheDelivery, readingLanguagesOfTheDelivery,
 } from '../scripts/heavy-into-the-delivery.mjs';
 import { deliveryPath, heavyAtBoot, HEAVY_FILES } from '../app/js/platform/heavy.js';
-import { commandsLanguageOf } from '../app/js/platform/heavy-catalogue.js';
+import { commandsLanguageOf, readingLanguageOf } from '../app/js/platform/heavy-catalogue.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
 // the ids carry real group prefixes (`voz:kokoro`, `visao`): an id with no licence group is refused (heavy-licences test)
@@ -207,7 +207,7 @@ describe('the script, reachable by a cartridge', () => {
    * the same `[]` with or without this decision, so a case on them would see nothing.
    */
   it('🔴 [Right] without `--commands` the delivery carries the pt, en and es command models; the flag narrows, `none` empties', () => {
-    const ids = (args) => idsOfTheDelivery(argumentosDaEntrega(args, {}), { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf });
+    const ids = (args) => idsOfTheDelivery(argumentosDaEntrega(args, {}), { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf, readingLanguageOf });
     const modelos = (args) => ids(args).filter((id) => id.startsWith('commands:model:')).sort();
     const runtime = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('commands:runtime'));
     expect(runtime.length, 'the catalogue has no command runtime: the case would pass empty').toBeGreaterThan(0);
@@ -237,6 +237,63 @@ describe('the script, reachable by a cartridge', () => {
     expect(duas.reading, 'the second language was dropped').toEqual(['pt', 'es']);
     expect(duas.destino, 'a language was taken for the delivery folder').toBe('dist');
     expect(argumentosDaEntrega(['--reading', 'pt'], {}).destino, 'the value was taken for the folder').toBeUndefined();
+  });
+
+  /**
+   * 🔴 `--reading` ALONE IS EVERY LANGUAGE (ADR-0225 erratum of 2026-09-26; the Dev: «Negativo, baixar os três.»): at the end of
+   * the line, or before another flag, it takes no value — and eats neither the flag after it nor the folder.
+   */
+  it('🔴 [Right] `--reading` with no value is `all`, last or before another flag, and eats neither', () => {
+    expect(argumentosDaEntrega(['dist', '--reading'], {}).reading, 'the bare flag at the end carried nothing').toEqual(['all']);
+    const antes = argumentosDaEntrega(['--reading', '--kokoro', 'dist'], {});
+    expect(antes, 'the bare flag ate the flag after it, or the folder')
+      .toEqual(expect.objectContaining({ destino: 'dist', kokoro: true, reading: ['all'] }));
+    expect(argumentosDaEntrega(['dist', '--reading', '--commands', 'pt'], {}))
+      .toEqual(expect.objectContaining({ reading: ['all'], commands: ['pt'] }));
+  });
+
+  it('🔴 [Right] the reading languages: none without the flag, the catalogue\'s three with it alone, those named when named', () => {
+    const linguas = (asked) => readingLanguagesOfTheDelivery(asked, HEAVY_FILES, readingLanguageOf);
+    expect(linguas([]), 'a delivery without `--reading` carried a reading model').toEqual([]);
+    expect(linguas(['all']), '`--reading` alone does not carry the three').toEqual(['pt', 'en', 'es']);
+    expect(linguas(['pt']), 'a named language did not narrow').toEqual(['pt']);
+    expect(linguas(['es', 'pt-BR', 'es'])).toEqual(['es', 'pt']);
+    expect(linguas(['none']), '`none` carried a language').toEqual([]);
+    expect(linguas(['none', 'en'])).toEqual(['en']);
+    const comQuarta = [...HEAVY_FILES, { id: 'reading:fr:encoder', url: null }];
+    expect(readingLanguagesOfTheDelivery(['all'], comQuarta, readingLanguageOf), 'a fourth language with a model is left out of `all`')
+      .toEqual(['pt', 'en', 'es', 'fr']);
+  });
+
+  /**
+   * 🔴 A LANGUAGE WITH NO MODEL STOPS THE COMMAND. It used to carry nothing, in silence — and `--reading dist`, a folder after the
+   * flag, was read as a language and carried nothing just as quietly.
+   */
+  it('🔴 [Right] a named language the catalogue has no reading model for is refused by name, with the languages it has', () => {
+    const linguas = (asked) => readingLanguagesOfTheDelivery(asked, HEAVY_FILES, readingLanguageOf);
+    expect(() => linguas(['dist']), 'a folder read as a language was carried as nothing').toThrow(/--reading dist: .*pt, en, es/);
+    expect(() => linguas(['pt', 'fr'])).toThrow(/--reading fr:/);
+    expect(() => idsOfTheDelivery(argumentosDaEntrega(['out', '--reading', 'dist'], {}),
+      { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf, readingLanguageOf }), 'the ids were computed past an unknown language')
+      .toThrow(/no reading model/);
+  });
+
+  /**
+   * 🔴 WHAT THE FLAG PUTS IN THE DELIVERY, through the real `heavyAtBoot` and the real catalogue: alone, the three languages'
+   * models and the graph runtime that opens them; narrowed, exactly one language's — the same ids a narrowed delivery wrote before.
+   */
+  it('🔴 [Right] `--reading` alone carries the pt, en and es reading models; `--reading pt` carries pt\'s alone; `none`, none', () => {
+    const ids = (args) => idsOfTheDelivery(argumentosDaEntrega(args, {}), { heavyAtBoot, catalogue: HEAVY_FILES, commandsLanguageOf, readingLanguageOf });
+    const leitura = (args) => ids(args).filter((id) => id.startsWith('reading:')).sort();
+    const doCatalogo = (...linguas) => HEAVY_FILES.map((p) => p.id).filter((id) => linguas.includes(readingLanguageOf(id) ?? '')).sort();
+    expect(leitura(['dist', '--reading']), 'the bare flag did not carry the three').toEqual(doCatalogo('pt', 'en', 'es'));
+    expect(leitura(['dist', '--reading', 'all'])).toEqual(doCatalogo('pt', 'en', 'es'));
+    expect(leitura(['dist', '--reading', 'pt']), '`--reading pt` did not narrow to Portuguese').toEqual(doCatalogo('pt'));
+    expect(leitura(['dist']), 'no flag carried a reading model').toEqual([]);
+    expect(leitura(['dist', '--reading', 'none'])).toEqual([]);
+    for (const id of HEAVY_FILES.map((p) => p.id).filter((x) => x.startsWith('voz:runtime:onnx'))) {
+      expect(ids(['dist', '--reading']), `${id} left out: three models and nothing able to open them`).toContain(id);
+    }
   });
 
   it('🔴 [Right] the base comes from `--base`, from the environment, or from neither — and the flag wins', () => {
@@ -282,6 +339,14 @@ describe('the script, reachable by a cartridge', () => {
 //   C3 an explicit `--commands` list does not narrow           🔴 the flag narrows
 //   C4 `--commands none` read as a language                    🔴 `none` empties
 //   ⚠️ The filter's wiring in the program body is not run here: it would download the catalogue.
+//   L1 the bare `--reading` eats the token after it         🔴 alone is `all`, and eats neither
+//   L2 `all` not honoured (carries nothing)                 🔴 alone carries the three
+//   L3 the default is every language even without the flag 🔴 no flag carries none
+//   L4 a named language does not narrow (always all)         🔴 `--reading pt` carries pt's alone
+//   L5 an unknown language carried as nothing, in silence   🔴 refused by name
+//   L6 `none` read as a language                             🔴 `none` carries none
+//   ⚠️ The program's exit 2 on an unknown language is in its body, which needs `dist-pkg`: measured instead (2026-09-26),
+//      `node scripts/heavy-into-the-delivery.mjs dist --reading fr` exits 2 naming `fr` before a byte is fetched.
 //   T1 a file already in the delivery gets no notice      🔴 a second run keeps the first run's notices
 //   T2 any file on disk gets a notice, pinned or not      🔴 bytes that are not the pinned ones get no notice
 //   T3 the program not passing the catalogue survives here (program body): measured instead on a real delivery,
