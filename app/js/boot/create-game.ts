@@ -532,6 +532,14 @@ export interface Engine {
    */
   readonly captionSound: (text: string) => void;
   /**
+   * THE GAME EXPLAINS THE ITEM UNDER ITS OWN CURSOR IN THE ENGINE'S FOOTER (ADR-0244): `text`, already in the child's language as
+   * `say` takes it, becomes the footer's RESTING text — the engine's own items (a quick-bar icon, a pause-card item) take the
+   * footer while pointed and give it back to this text when they leave. `null` clears it; call it again when the cursor moves
+   * or the language changes, and with `null` when the screen it explains goes. At most two lines (ADR-0164): a longer text is
+   * clamped there, so say it whole through narration too. Releasing the cartridge clears it.
+   */
+  readonly explain: (text: string | null) => void;
+  /**
    * The game speed the child chose on the quick bar (ADR-0180): 1 is 100%, down to 0.5. Pass it as `startLoop`'s REQUIRED
    * `speed` (ADR-0232 D2c), which multiplies the frame time by it; a game that runs its own frames multiplies by this.
    */
@@ -1265,6 +1273,12 @@ export function createGame(o: CreateGameOptions): Engine {
   // The screen footer (see `screenFooter`): declared HERE, before the first `changePhase`, which already clears it.
   let footer: HTMLElement | null = null;
   let barExplanation: HTMLElement | null = null;
+  /*
+   * WHO HOLDS THE EXPLANATION BAND (ADR-0244): the GAME's text is the band's resting text (`Engine.explain`); an engine item —
+   * a quick-bar icon, a pause-card item, a locked item's reason — takes the band while it is pointed and gives it back.
+   */
+  let gameExplanation: string | null = null;
+  let itemExplanation: string | null = null;
   // The quick-pause state and the button legend, declared before the first `changePhase` too: its `pauseControls.hide`
   // refreshes the legend (ADR-0164 rule 3), and reading them earlier would be a temporal-dead-zone error at boot.
   const inQuickPause = new Set<number>();
@@ -2997,8 +3011,21 @@ export function createGame(o: CreateGameOptions): Engine {
     if (clearSoundCaption !== null) clearTimeout(clearSoundCaption);
     clearSoundCaption = setTimeout(() => { captionHome.hidden = true; captionHome.textContent = ''; }, captionDuration(text, state.captionPpm));
   }
-  /** The footer says ONE explanation at a time: the pointed icon's, or the reason a locked item is locked (ADR-0161). */
+  /**
+   * The footer says ONE explanation at a time: the pointed icon's, or the reason a locked item is locked (ADR-0161). `null` is
+   * the item leaving — and the band goes back to the game's text, not to empty (ADR-0244 §2).
+   */
   function writeInFooter(text: string | null): void {
+    itemExplanation = text || null;
+    showExplanation();
+  }
+  /** The game's own explanation, its resting text (ADR-0244 §1); `null` clears it. Under a pointed engine item until it leaves. */
+  function explainForGame(text: string | null): void {
+    gameExplanation = text || null;
+    showExplanation();
+  }
+  function showExplanation(): void {
+    const text = itemExplanation ?? gameExplanation;
     if (!barExplanation && text) {
       const home = screenFooter($<HTMLElement>('#game-region'));
       if (home) {
@@ -3911,6 +3938,7 @@ export function createGame(o: CreateGameOptions): Engine {
     refuseIfOptionsMalformed('mount', hooks.gameOptions);
     refuseIfHowToPlayMalformed('mount', hooks.howToPlay);
     cartridge = { ...hooks, declaration };
+    explainForGame(null); // the explanation was the replaced cartridge's (ADR-0244)
     // its words, before anything draws them: ADDED to the root's dictionary, so the keys a shell registered at boot stay
     for (const [code, entries] of Object.entries(hooks.dictionaries ?? {})) translator.registerDict(code, entries);
     mountHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
@@ -4420,6 +4448,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     closeReadingThread();
     followCartridgeMappings(null);
     removeReachNotice();
+    // the released cartridge's explanation goes with it: the next one has not explained anything yet (ADR-0244)
+    explainForGame(null);
     hudMounted?.remove();
     hudMounted = null;
     // the map was the released cartridge's; the next one mounts its own (ADR-0239)
@@ -4449,6 +4479,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     tts,
     reading,
     captionSound: writeSoundCaption,
+    explain: explainForGame,
     gameSpeed: () => state.gameSpeed,
     menuIndexOn: () => state.menuIndexOn,
     t: translator.t,
