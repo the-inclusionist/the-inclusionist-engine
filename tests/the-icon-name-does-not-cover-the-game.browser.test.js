@@ -28,7 +28,7 @@ async function medir() {
   const nome = barra.querySelector('.pause-icons-cap');
   const caixa = nome.getBoundingClientRect();
   const jogo = [document.querySelector('.quiz-pergunta'), ...document.querySelectorAll('.quiz-alt')].map((el) => el.getBoundingClientRect());
-  return { texto: nome.textContent.trim(), box: caixa, jogo };
+  return { text: nome.textContent.trim(), box: caixa, jogo };
 }
 const cruza = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
@@ -46,8 +46,8 @@ beforeAll(async () => {
 
 describe('the icon name under the quick bar', () => {
   it('🔴 [Right] at 640×360, the pointed icon\'s name covers nothing of the game, with a gap before the statement', async () => {
-    const { texto, box: caixa, jogo } = await medir();
-    expect(texto, 'no name shown — the case would measure an empty box').not.toBe('');
+    const { text, box: caixa, jogo } = await medir();
+    expect(text, 'no name shown — the case would measure an empty box').not.toBe('');
     jogo.forEach((r, i) => { expect(cruza(caixa, r), `the name covers game node ${i} (0 = statement)`).toBe(false); });
     expect(jogo[0].top - caixa.bottom, 'no gap between the name and the statement').toBeGreaterThanOrEqual(1);
   });

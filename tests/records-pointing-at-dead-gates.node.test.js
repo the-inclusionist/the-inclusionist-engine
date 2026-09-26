@@ -127,11 +127,11 @@ const MORTOS = {
 
 function registos() {
   return readdirSync(ADR).filter((n) => n.startsWith('ADR-') && n.endsWith('.yaml'))
-    .map((n) => ({ id: n.replace(/^(ADR-\d+).*/, '$1'), texto: readFileSync(join(ADR, n), 'utf8') }));
+    .map((n) => ({ id: n.replace(/^(ADR-\d+).*/, '$1'), text: readFileSync(join(ADR, n), 'utf8') }));
 }
 
 /** Does the record declare, under a checked key, what confirms it TODAY? */
-const temChaveConferida = (r) => /^\s{2}confirmed-by:/m.test(r.texto);
+const temChaveConferida = (r) => /^\s{2}confirmed-by:/m.test(r.text);
 
 /**
  * Does the record still GOVERN?
@@ -143,7 +143,7 @@ const temChaveConferida = (r) => /^\s{2}confirmed-by:/m.test(r.texto);
  * 📌 Measured: of the seven records that cited a dead path, TWO were superseded — ADR-0034 (by 0037) and ADR-0045
  * (by 0060). `carregar-e-arremessar` was cited only by 0045, and leaves by this rule.
  */
-const aindaGoverna = (r) => !/^\s{2}status:\s*"?(superseded|deprecated)"?/m.test(r.texto);
+const aindaGoverna = (r) => !/^\s{2}status:\s*"?(superseded|deprecated)"?/m.test(r.text);
 
 /**
  * Every path cited in PROSE by a record that does NOT yet have `confirmed-by`.
@@ -160,7 +160,7 @@ function citados() {
   const fora = new Set();
   for (const r of registos()) {
     if (temChaveConferida(r) || !aindaGoverna(r)) continue;
-    for (const c of r.texto.match(CAMINHO) ?? []) fora.add(c);
+    for (const c of r.text.match(CAMINHO) ?? []) fora.add(c);
   }
   return [...fora];
 }
@@ -219,7 +219,7 @@ describe('um registo não aponta para um gate que não existe', () => {
     // This case pins the mechanism: if it disappears, this list has nowhere left to shrink to.
     const validador = readFileSync(join(RAIZ, 'scripts', 'validate-adr.py'), 'utf8');
     expect(validador, 'o validador deixou de conferir os caminhos de `confirmed-by`').toMatch(/os\.path\.exists/);
-    const comChave = registos().filter((r) => /^\s{2}confirmed-by:/m.test(r.texto));
+    const comChave = registos().filter((r) => /^\s{2}confirmed-by:/m.test(r.text));
     expect(comChave.length, 'nenhum registo usa a chave — o caminho de saída desta dívida fechou-se').toBeGreaterThan(0);
   });
 });

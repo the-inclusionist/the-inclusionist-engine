@@ -31,7 +31,7 @@ const formaDe = (el) => {
     sombra: semCores(cs.boxShadow),
     depois: `${depois.content} ${semCores(depois.boxShadow)}`,
     antes: antes.content,
-    texto: el.textContent.trim(),
+    text: el.textContent.trim(),
     opacidade: cs.opacity,
   });
 };
@@ -71,7 +71,7 @@ describe('state beyond colour', () => {
     // the marked option also holds the page focus, and its focus ring is not the MARK: measure without focus
     document.activeElement?.blur();
     // the text and the number differ between two options by nature; compare the shape without them
-    const semTexto = (el) => { const f = JSON.parse(formaDe(el)); delete f.texto; delete f.antes; return JSON.stringify(f); };
+    const semTexto = (el) => { const f = JSON.parse(formaDe(el)); delete f.text; delete f.antes; return JSON.stringify(f); };
     expect(semTexto(marcada), 'the marked option differs only in colour').not.toBe(semTexto(outra));
   });
 

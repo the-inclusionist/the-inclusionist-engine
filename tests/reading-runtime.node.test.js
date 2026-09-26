@@ -156,8 +156,8 @@ async function ouvir(lingua, opcoes = {}) {
   const base = 'https://escola.exemplo/jogo/';
   const { fetch, pedidos } = entregaDe(lingua, base, { config: opcoes.config, generation: opcoes.generation });
   const runtime = await loadReadingRuntime({ base, language: lingua, fetch, ort, ...opcoes });
-  const texto = await runtime.transcribe(opcoes.samples ?? new Float32Array(16_000));
-  return { texto, chamadas, pedidos };
+  const text = await runtime.transcribe(opcoes.samples ?? new Float32Array(16_000));
+  return { text, chamadas, pedidos };
 }
 
 /** One second of a 440 Hz tone: not silence, so the mel filters change what the encoder sees (silence answers the same always). */
@@ -166,8 +166,8 @@ const tom = (length = 16_000) => Float32Array.from({ length }, (_, i) => 0.3 * M
 describe('the reading loop, on the real models\' numbers', () => {
   for (const lingua of ['pt', 'es', 'en']) {
     it(`🔴 [Right] ${lingua}: the same words the model itself answered`, async () => {
-      const { texto } = await ouvir(lingua);
-      expect(texto).toBe(trace.languages[lingua].text.trim());
+      const { text } = await ouvir(lingua);
+      expect(text).toBe(trace.languages[lingua].text.trim());
     });
   }
 
@@ -230,13 +230,13 @@ describe('the reading loop, on the real models\' numbers', () => {
     const [idDaPeça, peça] = Object.entries(caso.pieces)[0];
     const doComeço = caso.generation.begin_suppress_tokens[0];
     const sempre = caso.generation.suppress_tokens[0];
-    const { texto } = await ouvir('pt', {
+    const { text } = await ouvir('pt', {
       steps: [
         { top: [[doComeço, 9], [Number(idDaPeça), 8]] },   // the model's best is refused AT THE START
         { top: [[sempre, 9], [caso.eos, 8]] },             // and here one that is refused always
       ],
     });
-    expect(texto, `the refused token ${doComeço} or ${sempre} reached the child`).toBe(peça.replaceAll('Ġ', ' ').trim());
+    expect(text, `the refused token ${doComeço} or ${sempre} reached the child`).toBe(peça.replaceAll('Ġ', ' ').trim());
   });
 
   it('🔴 [Zero] a language the project has no model for is REFUSED by name, never half-answered', async () => {
@@ -303,8 +303,8 @@ describe('the reading loop, on the real models\' numbers', () => {
   it('🔴 [Right] a recording that is not whole frames (11 microphone blocks, 45 056 samples) is read, with the same words', async () => {
     expect(ONZE_BLOCOS % MOONSHINE_FRAME, 'the length is whole frames: the case measures nothing').not.toBe(0);
     for (const lingua of ['es', 'en']) {
-      const { texto } = await ouvir(lingua, { samples: tom(ONZE_BLOCOS) });
-      expect(texto, lingua).toBe(trace.languages[lingua].text.trim());
+      const { text } = await ouvir(lingua, { samples: tom(ONZE_BLOCOS) });
+      expect(text, lingua).toBe(trace.languages[lingua].text.trim());
     }
   });
 
@@ -374,7 +374,7 @@ describe('the reading loop, on the real models\' numbers', () => {
     const caso = trace.languages.es;
     const [primeira, segunda] = caso.steps.map((s) => s.chosen);
     const peça = caso.pieces[primeira];
-    const { texto, chamadas } = await ouvir('es', {
+    const { text, chamadas } = await ouvir('es', {
       steps: [
         { top: [[primeira, 9]] },
         { broken: true },
@@ -382,7 +382,7 @@ describe('the reading loop, on the real models\' numbers', () => {
       ],
     });
     expect(chamadas.filter((c) => c.graph !== 'encoder'), 'the decoder was asked again after choosing nothing').toHaveLength(2);
-    expect(texto).toBe(peça.replaceAll('▁', ' ').trim());
+    expect(text).toBe(peça.replaceAll('▁', ' ').trim());
   });
 
   /**
@@ -415,9 +415,9 @@ describe('the reading loop, on the real models\' numbers', () => {
   });
 
   it('📌 [Boundary] a model that never stops is cut, and what it said so far is what the child gets', async () => {
-    const { texto } = await ouvir('es', { maxTokens: 3 });
-    expect(texto.length, 'the ceiling answered nothing at all').toBeGreaterThan(0);
-    expect(texto.length).toBeLessThan(trace.languages.es.text.trim().length);
+    const { text } = await ouvir('es', { maxTokens: 3 });
+    expect(text.length, 'the ceiling answered nothing at all').toBeGreaterThan(0);
+    expect(text.length).toBeLessThan(trace.languages.es.text.trim().length);
   });
 });
 

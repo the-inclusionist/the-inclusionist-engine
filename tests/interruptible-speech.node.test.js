@@ -23,16 +23,16 @@ function motorFalso() {
   const demora = {};
   let n = 0;
   const motor = {
-    synthesize: (texto) => {
-      log.push('sintetizar:' + texto);
-      const ms = demora[texto] || 0;
-      return new Promise((r) => setTimeout(() => r({ texto, id: ++n }), ms));
+    synthesize: (text) => {
+      log.push('sintetizar:' + text);
+      const ms = demora[text] || 0;
+      return new Promise((r) => setTimeout(() => r({ text, id: ++n }), ms));
     },
     play: (audio, aoTerminar) => {
-      log.push('tocar:' + audio.texto);
-      return { texto: audio.texto, aoTerminar };
+      log.push('tocar:' + audio.text);
+      return { text: audio.text, aoTerminar };
     },
-    stop: (fonte) => { log.push('parar:' + fonte.texto); },
+    stop: (fonte) => { log.push('parar:' + fonte.text); },
   };
   return { motor, log, demora };
 }
@@ -120,9 +120,9 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     const log = [];
     let falhar = true;
     const motor = {
-      synthesize: (texto) => { log.push('sintetizar:' + texto); return falhar ? Promise.reject(new Error('sem voz')) : Promise.resolve({ texto }); },
-      play: (audio) => { log.push('tocar:' + audio.texto); return { texto: audio.texto }; },
-      stop: (f) => { log.push('parar:' + f.texto); },
+      synthesize: (text) => { log.push('sintetizar:' + text); return falhar ? Promise.reject(new Error('sem voz')) : Promise.resolve({ text }); },
+      play: (audio) => { log.push('tocar:' + audio.text); return { text: audio.text }; },
+      stop: (f) => { log.push('parar:' + f.text); },
     };
     const fala = createInterruptibleSpeech(motor);
     fala.speak('quebra');

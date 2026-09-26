@@ -24,12 +24,12 @@ function tamanhos() {
   const achados = [];
   const linha = (i) => CSS.slice(0, i).split('\n').length;
   for (const m of CSS.matchAll(/font-size:\s*([^;}]+)/g)) {
-    for (const v of m[1].matchAll(/(\d*\.?\d+)(px|rem|em)\b/g)) achados.push({ valor: +v[1], unidade: v[2], texto: m[0].trim(), linha: linha(m.index) });
-    if (/\b(small|smaller|x-small|xx-small)\b/.test(m[1])) achados.push({ valor: 0, unidade: 'keyword', texto: m[0].trim(), linha: linha(m.index) });
+    for (const v of m[1].matchAll(/(\d*\.?\d+)(px|rem|em)\b/g)) achados.push({ valor: +v[1], unidade: v[2], text: m[0].trim(), linha: linha(m.index) });
+    if (/\b(small|smaller|x-small|xx-small)\b/.test(m[1])) achados.push({ valor: 0, unidade: 'keyword', text: m[0].trim(), linha: linha(m.index) });
   }
   for (const m of CSS.matchAll(/(?<![-\w])font:\s*([^;}]+)/g)) {
     const v = m[1].match(/(?:^|\s)(\d*\.?\d+)(px|rem|em)(?=\/|\s)/);
-    if (v) achados.push({ valor: +v[1], unidade: v[2], texto: m[0].trim(), linha: linha(m.index) });
+    if (v) achados.push({ valor: +v[1], unidade: v[2], text: m[0].trim(), linha: linha(m.index) });
   }
   return achados;
 }
@@ -41,7 +41,7 @@ describe('text is never under 16 px and always follows the scale (ADR-0163 rule 
   it('⚠️ [Cross-check] the reading finds sizes in all three forms — or every case below would pass on nothing', () => {
     expect(TODOS.filter((a) => a.unidade === 'em').length).toBeGreaterThan(10);
     expect(TODOS.filter((a) => a.unidade === 'px').length).toBeGreaterThan(0);
-    expect(TODOS.some((a) => a.texto.startsWith('font:')), 'the `font` shorthand is not read').toBe(true);
+    expect(TODOS.some((a) => a.text.startsWith('font:')), 'the `font` shorthand is not read').toBe(true);
   });
 
   it('🔴 [Boundary] no declaration under 1em, and no px size under 16', () => {
