@@ -18,8 +18,12 @@
 
 import { provisionalGloss } from './libras-glosses.js';
 
-/** Where the delivery puts the free player's avatar, clips and manifest, beside the game's page (`inclusionist-heavy --libras-avatar`). */
-export const LIBRAS_AVATAR_FOLDER = 'libras/avatar/';
+/**
+ * Where the delivery puts the free player's avatar, clips and manifest, beside the game's page (`inclusionist-heavy --libras-avatar`):
+ * written in the catalogue, whose delivery list keeps these files offline (ADR-0234, phase B3), and re-exported here where the
+ * player and the delivery script already read it.
+ */
+export { LIBRAS_AVATAR_FOLDER } from '../platform/heavy-catalogue.js';
 /** The manifest the delivery writes in that folder: the avatar's file and every clip it carries, with its window. */
 export const LIBRAS_AVATAR_MANIFEST = 'manifest.json';
 /**

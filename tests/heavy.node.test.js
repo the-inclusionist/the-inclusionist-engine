@@ -15,7 +15,7 @@ import { createHash, webcrypto } from 'node:crypto';
 import {
   downloadHeavy as downloadWith, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256With, checkedCacheHas, deliveryPath, heavyAtBoot,
 } from '../app/js/platform/heavy.js';
-import { DELIVERY_LISTS } from '../app/js/platform/heavy-catalogue.js';
+import { DELIVERY_LISTS, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
 
 /** The page the delivery is resolved against — REQUIRED since ADR-0232 D4, so every case names one. */
 const BASE = 'https://escola.example/';
@@ -450,8 +450,9 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
   it('🔴 [Right] the Libras player comes whole with `libras`, and never without it', () => {
     const player = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:'));
     expect(player.length, 'the catalogue has no Libras player: the case would pass empty').toBe(5);
-    // the five files, and then the delivery's list of the player's page and signs
-    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:'))).toEqual([...player, 'libras:delivery']);
+    // the five files, then the delivery's list of the player's page and signs, then its list of the free player's files
+    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:')))
+      .toEqual([...player, 'libras:delivery', 'libras:avatar:delivery']);
     for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, libras: false }, { kokoro: false, commands: 'pt', reading: 'pt' }]) {
       expect(heavyAtBoot(portas).filter((id) => id.startsWith('libras:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
     }
@@ -597,6 +598,99 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
     expect(d.asked.filter((a) => a.u.includes('/libras/')), 'the player\'s page or signs came down with deaf mode off').toEqual([]);
   });
 });
+
+/**
+ * 🔴 THE FREE PLAYER IS KEPT BY ITS OWN LIST (ADR-0234, route B, phase B3). 📏 Measured on a served delivery built with
+ * `--libras --libras-avatar` (2026-09-25): with deaf mode on the start kept route A's 636 files and none of route B's — no
+ * avatar, no clip, no three.js chunk in the checked cache — so offline the free player had nothing to draw. `--libras-avatar`
+ * now writes `libras/offline-avatar.json`, and the start keeps it by the same rule as route A's.
+ */
+describe('a delivery\'s list: the free Libras player\'s avatar, clips and stage, kept checked (ADR-0234, phase B3)', () => {
+  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
+  const digest = sha256With(webcrypto.subtle);
+  const hex = (text) => createHash('sha256').update(text).digest('hex');
+  const STAGE = 'assets/libras-avatar-stage-fyxZVSPc.js';
+  const FILES = {
+    'libras/avatar/manifest.json': '{"format":1}', 'libras/avatar/avatar.glb': 'glTF', 'libras/avatar/clips/GATO.json': '{"tracks":[]}',
+    'libras/avatar/clips/PRIMEIRO&ORDINAL.json': '{"tracks":[1]}', [STAGE]: 'export const three = 1;',
+  };
+  const listOf = (files, extra = []) => ({ format: 1, files: [...Object.entries(files).map(([path, text]) => ({ path, sha256: hex(text), bytes: text.length })), ...extra] });
+  function cacheWithResponses() {
+    const held = new Map();
+    const put = [];
+    return { held, put, cacheStorage: { open: async () => ({ match: async (u) => held.get(u), put: async (u, r) => { put.push(u); held.set(u, r); } }) } };
+  }
+  function delivery(list, served = FILES) {
+    const asked = [];
+    const fetch = async (u) => {
+      asked.push(u);
+      const path = decodeURIComponent(new URL(u).pathname.slice(1));
+      if (path === LIST.path) return new Response(JSON.stringify(list));
+      return path in served ? new Response(served[path]) : new Response('', { status: 404 });
+    };
+    return { asked, fetch };
+  }
+  const keep = (c, d, only = [LIST.id]) => downloadHeavy({ cacheStorage: c.cacheStorage, fetch: d.fetch, digest, only });
+
+  it('🔴 [Right] the list names the avatar\'s folder and the stage chunk\'s name, and lies outside both', () => {
+    expect(LIST, 'no list keeps the free player: offline it has nothing to draw').toBeTruthy();
+    expect(LIST.folders).toEqual([LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK]);
+    // the chunk's start is the bundler's name for `ui/libras-avatar-stage`, under Vite's `assets/`: the delivery finds it by it
+    expect([LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK]).toEqual(['libras/avatar/', 'assets/libras-avatar-stage-']);
+    for (const folder of LIST.folders) expect(LIST.path.startsWith(folder), `${LIST.path} is inside ${folder}`).toBe(false);
+  });
+
+  it('🔴 [Right] the avatar, every clip and the stage chunk are fetched, checked, and kept under the address the player asks', async () => {
+    const c = cacheWithResponses();
+    const [r] = await keep(c, delivery(listOf(FILES)));
+    expect(r).toEqual({ id: LIST.id, outcome: 'baixado', bytes: Object.values(FILES).reduce((s, t) => s + Buffer.byteLength(t), 0) });
+    expect(c.put).toEqual(Object.keys(FILES).map((p) => new URL(p, BASE).href));
+    // the stage chunk is asked by the page's `import()` at this very address
+    expect(c.put).toContain(`${BASE}${STAGE}`);
+  });
+
+  it('🔴 [Right] a tampered clip is NOT kept — the rest are, and the report names it', async () => {
+    const c = cacheWithResponses();
+    const [r] = await keep(c, delivery(listOf(FILES), { ...FILES, 'libras/avatar/clips/GATO.json': '{"tracks":["other"]}' }));
+    expect(r.outcome).toBe('falhou');
+    expect(r.error).toMatch(/1 of 5 files of libras\/offline-avatar\.json not kept: libras\/avatar\/clips\/GATO\.json: sha256 mismatch/);
+    expect(c.put, 'the tampered clip was kept').not.toContain(`${BASE}libras/avatar/clips/GATO.json`);
+    expect(c.put.length).toBe(4);
+  });
+
+  it('📌 [Boundary] the chunk\'s name admits only the stage: another asset, the chunk\'s bare start or the game\'s page refuse the list whole', async () => {
+    for (const path of ['assets/pixi-BlYJRVmO.js', 'assets/libras-avatar-stage-', 'assets/libras-avatar-stage-x/../../quiz.html', 'quiz.html',
+      'libras/avatar/../offline.json', 'libras/player/index.html']) {
+      const c = cacheWithResponses();
+      const [r] = await keep(c, delivery(listOf(FILES, [{ path, sha256: hex('x'), bytes: 1 }])));
+      expect(r.error, path).toMatch(/is refused: it names/);
+      expect(c.put, `${path}: a file of a refused list was kept`).toEqual([]);
+    }
+  });
+
+  it('🎯 [Zero] a delivery built without `--libras-avatar` answers 404 for the list: reported, and nothing else is asked', async () => {
+    const c = cacheWithResponses();
+    const d = delivery(null, {});
+    d.fetch = async (u) => { d.asked.push(u); return new Response('', { status: 404 }); };
+    expect((await keep(c, d))[0]).toEqual({ id: LIST.id, outcome: 'falhou', error: `HTTP 404 — ${LIST.path}` });
+    expect(d.asked).toEqual([`${BASE}${LIST.path}`]);
+  });
+
+  it('🔴 [Zero] without deaf mode the list is not asked for — a child who never asks for signing downloads none of it', async () => {
+    expect(heavyAtBoot({ kokoro: false, libras: true })).toContain(LIST.id);
+    for (const portas of [{ kokoro: false }, { kokoro: true, reading: 'pt', commands: ['pt', 'en', 'es'] }, { kokoro: false, libras: false }]) {
+      expect(heavyAtBoot(portas), JSON.stringify(portas)).not.toContain(LIST.id);
+    }
+    const d = delivery(listOf(FILES));
+    await downloadHeavy({ cacheStorage: cacheWithResponses().cacheStorage, fetch: d.fetch, digest, only: heavyAtBoot({ kokoro: false, commands: 'pt' }) });
+    expect(d.asked.filter((u) => /libras|libras-avatar-stage/.test(u)), 'the free player\'s files came down with deaf mode off').toEqual([]);
+  });
+});
+
+// MUTATIONS CHECKED for the free player's list (2026-09-25, scripted, each applied, this describe run, the file restored from a
+// copy and checked by hash), 6 of 6 red: the list removed from `DELIVERY_LISTS` · the list asked for without deaf mode · the
+// chunk's name widened to `assets/` · the list written inside the folder it names · a listed body kept unchecked · the chunk's
+// bare name admitted.
 
 // MUTATIONS CHECKED for a delivery's list (2026-09-25), 12 of 12 red, each on `platform/heavy.ts` and restored from a copy: the
 // folder check removed · a query or fragment admitted · a folder admitted as a file · the body kept unchecked · a kept file

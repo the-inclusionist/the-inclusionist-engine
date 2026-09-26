@@ -709,6 +709,8 @@
     "DeliveryList",
     "HEAVY_FILES",
     "HeavyFile",
+    "LIBRAS_AVATAR_FOLDER",
+    "LIBRAS_AVATAR_STAGE_CHUNK",
     "LIBRAS_PLAYER_FOLDER",
     "LIBRAS_SIGNS_FOLDER",
     "commandsLanguageOf",

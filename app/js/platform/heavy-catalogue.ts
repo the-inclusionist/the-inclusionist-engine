@@ -269,6 +269,19 @@ export const LIBRAS_PLAYER_FOLDER = 'libras/player/';
  * the letters it carries.
  */
 export const LIBRAS_SIGNS_FOLDER = 'libras/signs/';
+/**
+ * Where the delivery puts the FREE player's avatar, clips and manifest, beside the game's page (ADR-0234, route B;
+ * `inclusionist-heavy --libras-avatar`). Written here, below the player that reads it (`ui/libras-avatar-plan` re-exports it),
+ * because the delivery's list of those files names it too.
+ */
+export const LIBRAS_AVATAR_FOLDER = 'libras/avatar/';
+/**
+ * THE START OF THE FREE PLAYER'S STAGE CHUNK, under the page: `ui/libras-avatar-stage` and the three.js it carries, which the
+ * bundler emits as `assets/libras-avatar-stage-<content hash>.js`. The precache leaves it out on purpose (three.js is only a
+ * deaf-mode child's download), so the delivery finds the hashed name after the build and lists it; a NAME's start and not a
+ * folder, because the rest of `assets/` belongs to the precache.
+ */
+export const LIBRAS_AVATAR_STAGE_CHUNK = 'assets/libras-avatar-stage-';
 
 /**
  * A LIST THE DELIVERY WRITES OF ITS OWN FILES, each with its sha256 — for what no catalogue entry can pin because each delivery
@@ -285,13 +298,26 @@ export interface DeliveryList {
   readonly id: string;
   /** Where the delivery writes the list, relative to the page. */
   readonly path: string;
-  /** The only folders the list may name, relative to the page: a listed file outside them is refused, never kept. */
+  /**
+   * The only places the list may name, relative to the page: a listed file outside them is refused, never kept. Each is a
+   * folder (ending in `/`) or, for a file whose name the build hashes, the start of that name (`LIBRAS_AVATAR_STAGE_CHUNK`).
+   */
   readonly folders: readonly string[];
 }
 
-/** The lists a device may read: the Libras player's, only in a delivery built with `--libras`, asked for with the player. */
+/**
+ * The lists a device may read, each asked for with deaf mode (`heavyAtBoot`) — ONE PER DELIVERY STEP, so each step writes its own
+ * and a delivery that ran one of them keeps exactly what it carries:
+ * · `libras:delivery`, route A's page, glosses and signs, written by `--libras`;
+ * · `libras:avatar:delivery`, route B's avatar, clips and manifest and the stage chunk with three.js, written by `--libras-avatar`
+ *   (ADR-0234, phase B3). A delivery without that step has no such list: the same quiet 404 as a delivery without `--libras`.
+ * 📌 THE RULE IS «WHAT THE DELIVERY CARRIES, DEAF MODE KEEPS»: a device keeps both players' files when its delivery carries both,
+ * whichever interpreter the host lends.
+ */
 export const DELIVERY_LISTS: readonly DeliveryList[] = Object.freeze([
   Object.freeze({ id: 'libras:delivery', path: 'libras/offline.json', folders: Object.freeze([LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER]) }),
+  Object.freeze({ id: 'libras:avatar:delivery', path: 'libras/offline-avatar.json',
+    folders: Object.freeze([LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK]) }),
 ]);
 
 /**

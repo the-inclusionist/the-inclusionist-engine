@@ -79,7 +79,8 @@ export interface HeavyOptions {
  * · The Libras player (ADR-0234, route A), 19.7 MiB, and the delivery's list of its page and signs (15.2 MB in the engine's
  *   delivery), only with `libras`: the root asks for them while deaf mode is on, so a device whose child never asks for signing
  *   never downloads them. No game declares it either — deaf mode is the person's (ADR-0111) — and a delivery built without
- *   `--libras` simply has none, the same quiet 404 as a missing command model.
+ *   `--libras` simply has none, the same quiet 404 as a missing command model. The free player's list (route B: its avatar,
+ *   clips and three.js chunk, 32.7 MiB) comes with it, by the same rule: what the delivery carries, deaf mode keeps.
  * The ids are the catalogue's files, then the delivery lists (`DELIVERY_LISTS`), by one rule.
  */
 export function heavyAtBoot(
