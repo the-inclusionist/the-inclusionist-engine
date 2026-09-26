@@ -7,6 +7,16 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        §1 NEVER SAID WHAT WAS DECIDED. It wrote «moves up line by line», and the Dev had asked for a text that «poderia
+        rolar … numa velocidade lenta»; seeing it built, the Dev: «Você está subindo uma linha por vez de forma analógica nas
+        dicas, quando era para rolar de forma suave e contínua, lentamente.» and «Como na abertura de starwars.» So §1 reads:
+        after the first wait the text GLIDES upward continuously, at one constant speed — the speed at which the whole text
+        passes in the time its words take at the child's caption rate —, holds at the end, and starts again from the top.
+        What was taken from the film is the continuous crawl; its receding perspective is not, because a tilted, shrinking
+        line is what a low-vision reader cannot read. §2 (reduced motion turns pages), §3 (held under the pointer or focus)
+        and §4 (the whole text said once) stand. The line-by-line build (`engine:b2ff44e6`) is corrected by the next commit.
+    - date: 2026-09-26
+      what: >-
         CONFIRMED (`engine:b2ff44e6`): the pace is `ui/footer-scroll`, pure, and the DOM half `ui/footer-scroll-driver`,
         watching the region from the root, for the screen's band and a panel's `.opt-explain`. Chosen in building it, where
         the record was silent: the hold at the end is the time to read the last view's lines, as the first wait is the
