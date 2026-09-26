@@ -115,17 +115,20 @@ describe('the «test voice» sample speaks the page\'s language', () => {
     await motor.setLocale('pt');
   });
 
-  it('🔴 [Right] a voice of ANOTHER language is neither offered nor handed to the sample — the language decides', async () => {
+  it('🔴 [Right] a voice of ANOTHER language is neither offered nor asked for — the button locks with the speech rows', async () => {
     // The device speaks only Portuguese; the page is English. The page's system-voice list offers only the page's language
-    // (`pickVoicesFor`, ADR-0185 — it used to fall back to every voice and CHOOSE Luciana), so nothing is chosen; the root's own
-    // guard, the last place that can refuse a voice of another language, is held by the language-switch case above.
+    // (`pickVoicesFor`, ADR-0185 — it used to fall back to every voice and CHOOSE Luciana), and with no voice of the language the
+    // «test voice» button locks like the speech rows (ADR-0185 §4): a press says why and asks the browser for nothing, where it
+    // used to send the English sample for the browser to read with whatever voice it had. The root's own guard, the last place
+    // that can refuse a voice of another language, is held by the language-switch case above.
     localStorage.setItem('incl_lang', 'en');
     const host = await open([LUCIANA]);
     const offered = [...document.getElementById('tts-voice').options].map((o) => o.value);
     expect(offered, 'a Portuguese voice was offered to read English').not.toContain('Luciana');
-    const u = sample(host);
-    expect(u.lang).toBe(bcp47('en'));
-    expect(u.voice, 'a Portuguese voice was handed English words').toBeNull();
+    const button = document.getElementById('opt-tts-test');
+    expect(button.getAttribute('aria-disabled'), 'the sample button was left unlocked').toBe('true');
+    button.click();
+    expect(host.spoken, 'an English sample was asked of a device with no English voice').toEqual([]);
   });
 
   it('🔴 [Right] a chosen voice of the page\'s language IS handed to the sample — the fix does not drop every voice', async () => {
@@ -156,3 +159,4 @@ describe('the «test voice» sample speaks the page\'s language', () => {
 // After `pickVoicesFor` stopped falling back to every voice (ADR-0185, 2026-09-26), measured again the same way:
 // 2. again                                                         → red: the switch (now the only path to that guard)
 // 6. `pickVoicesFor`'s fallback to the whole list restored        → red: the other-language voice
+// 7. `#opt-tts-test` left out of the locked rows (`ui/voice-settings`) → red: the other-language voice

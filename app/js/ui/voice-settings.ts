@@ -131,8 +131,11 @@ function panelVoiceLabel(v: PanelVoice): string {
   return (v.recommended ? '❤️ ' : '') + voiceName(v);
 }
 
-/** The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, and the voice. */
-const SPEECH_ROWS: readonly string[] = ['#opt-tts', '#tts-vol', '#tts-ppm', '#opt-menuindex', '#tts-voz'];
+/**
+ * The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, the voice — and the «test voice»
+ * button a page may carry, which with no voice of the language would ask the browser for one of another (ADR-0243 §3).
+ */
+const SPEECH_ROWS: readonly string[] = ['#opt-tts', '#tts-vol', '#tts-ppm', '#opt-menuindex', '#tts-voz', '#opt-tts-test'];
 
 export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): VoiceSettings {
   const { t, bcp47 } = ctx.translator;

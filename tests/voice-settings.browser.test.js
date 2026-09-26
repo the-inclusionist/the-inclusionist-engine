@@ -105,6 +105,25 @@ describe('a LOCKED speech row undoes what the control did, and says why (ADR-018
     expect([...list.options].map((o) => o.textContent)).toEqual([t('audio.voz.nenhuma')]);
   });
 
+  it('🔴 [Right] the «test voice» button locks with the speech rows: no sample, no load, the reason said', () => {
+    const m = mount({ voices: [], engineSel: 'kokoro' });
+    const button = $('#opt-tts-test');
+    expect(button.getAttribute('aria-disabled'), 'the sample button was left unlocked').toBe('true');
+    expect(button.dataset.motivo).toBe(t('audio.semVoz'));
+    fire(button, 'click');
+    expect(m.samples, 'a sample was asked of the browser with no voice of the language').toEqual([]);
+    expect(m.rec.loadTTS, 'the neural download started from a locked button').toBe(0);
+    expect(m.said).toContain(t('audio.semVoz'));
+  });
+
+  it('🎯 [Right] with a voice of the language the button is not locked, and the sample speaks', () => {
+    const m = mount();
+    const button = $('#opt-tts-test');
+    expect(button.hasAttribute('aria-disabled')).toBe(false);
+    fire(button, 'click');
+    expect(m.samples).toHaveLength(1);
+  });
+
   it('🔴 [Right] focusing a locked row puts its reason in the footer', () => {
     mount({ voices: [] });
     $('#opt-tts').focus();
@@ -194,3 +213,5 @@ describe('the voice, the rate, the engine, the system voice and the sample', () 
 // `scratchpad/sonda-voz.py`: the twenty decisions green before this file. Declared and not pinned:
 //   · the refusal in the CAPTURE phase is equivalent today: the refusal is registered on the control BEFORE the control's
 //     own listener, and at the target both phases run in registration order, so it runs first either way.
+//   · (ADR-0185 with ADR-0243 §3, 2026-09-26) `#opt-tts-test` left out of the locked rows → red: «the test voice button locks»;
+//     applied by a counting script, restored from a copy and checked by SHA-256.
