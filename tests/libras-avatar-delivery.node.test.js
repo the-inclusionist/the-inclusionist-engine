@@ -11,8 +11,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
   avatarPinsFromExport, avatarPinsText, avatarSourceOf, deliverLibrasAvatar, deliveredManifest, readAvatarPins, WINDOWS,
-  stageChunkOf, writeAvatarList,
+  stageChunkOf, writeAvatarList, avatarListPaths,
 } from '../scripts/libras-avatar.mjs';
+import { avatarPlace, prepareClips } from '../app/js/ui/libras-avatar-load.js';
 import { DELIVERY_LISTS, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
 import { COMMIT } from '../scripts/libras-export.mjs';
 import { avatarManifestOf, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, playedLength } from '../app/js/ui/libras-avatar-plan.js';
@@ -147,6 +148,38 @@ describe('scripts/libras-avatar — the list of the free player\'s files, the st
   });
 });
 
+/**
+ * 🔴 THE PLAYER ASKS EACH CLIP AT THE ADDRESS THE LIST KEEPS IT UNDER (ADR-0234, phase B3). The two sides are different code —
+ * the delivery's list (`avatarListPaths`, resolved by the device as `new URL(path, page)`) and the player's `prepareClips` — and a
+ * cache answers only an address it holds. 📏 Found by comparing them over the real 632 clips: the player encoded every name with
+ * `encodeURIComponent`, so it asked `PRIMEIRO%26ORDINAL.json` where the list kept `PRIMEIRO&ORDINAL.json`, and offline those two
+ * signs were left out.
+ */
+describe('the free player asks every clip where the delivery\'s list keeps it', () => {
+  const pins = readAvatarPins();
+  const BASE = 'https://escola.example/jogo/quiz.html?libras=avatar';
+
+  it('🔴 [Right] for each of the real clips, the address fetched is the address kept — the `&` in two names included', async () => {
+    const manifest = avatarManifestOf(deliveredManifest(pins));
+    const place = avatarPlace(BASE);
+    const fetched = [];
+    const fetchFile = async (url) => { fetched.push(url); return new Response('{"duration":1,"tracks":[]}'); };
+    const stage = { prepare: () => {} };
+    const names = Object.keys(pins.clips);
+    expect(await prepareClips(stage, names, manifest, place, fetchFile, new Map())).toEqual([]);
+    const kept = avatarListPaths({ folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk: 'assets/x.js' })
+      .filter((p) => p.includes('/clips/')).map((p) => new URL(p, BASE).href);
+    expect(fetched.length).toBe(632);
+    expect(fetched.filter((u) => !kept.includes(u)), 'the player asks these where the checked cache holds nothing').toEqual([]);
+    expect(fetched).toContain('https://escola.example/jogo/libras/avatar/clips/PRIMEIRO&ORDINAL.json');
+    expect(fetched).toContain('https://escola.example/jogo/libras/avatar/clips/N%C3%83O.json');
+  });
+
+  it('📌 [Boundary] no real clip name carries `%`, `#`, `?` or `\\` — a URL reads them as something other than a name, and the player asks the name as a URL spells it', () => {
+    expect(Object.keys(pins.clips).filter((n) => /[%#?\\]/.test(n))).toEqual([]);
+  });
+});
+
 describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
   const pins = readAvatarPins();
 
@@ -195,3 +228,5 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
 //   L3 the manifest left out of the list                                 🔴 «the ONE stage chunk the build emitted»
 //   L4 any file with the chunk's start taken, not only a .js             🔴 «only a `.js`»
 //   L5 the list hashing something other than the bytes on the disk      🔴 «the sha256 on the disk» (in `scripts/vlibras-player.mjs`)
+//   K1 the player encoding each clip name with encodeURIComponent again  🔴 «the address fetched is the address kept» (in `ui/libras-avatar-load`)
+//   K2 a pinned clip whose name carries a `#`                              🔴 «no real clip name carries…» (in `scripts/libras-avatar.json`)

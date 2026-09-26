@@ -123,6 +123,15 @@ const isClipJson = (data: unknown): data is ClipJson => {
 };
 
 /**
+ * A clip's address under the avatar's folder, SPELLED AS A URL SPELLS ITS NAME — which is the address the delivery's list keeps it
+ * under offline (`libras/offline-avatar.json`, ADR-0234 phase B3). Escaping the name first (`&` as `%26`, as `encodeURIComponent`
+ * does) asks another address, which the server answers online and the checked cache never holds: PRIMEIRO&ORDINAL and
+ * SEGUNDO&ORDINAL went unsigned offline. 📌 No clip name carries `%`, `#`, `?` or `\`, which a URL reads as something other than
+ * a name — `tests/libras-avatar-delivery.node.test.js` holds that over the pins.
+ */
+const clipAddress = (file: string, folder: string): string => new URL(file, folder).href;
+
+/**
  * Makes each clip of `names` playable on `stage`, fetching the ones it has not got — once each, remembered in `ready` — and
  * answers the names whose file could not be read or prepared.
  */
@@ -131,8 +140,7 @@ export async function prepareClips(stage: AvatarStage, names: readonly string[],
   const one = async (name: string): Promise<boolean> => {
     const w = manifest.clips.get(name);
     if (!w) return false;
-    const file = w.file.split('/').map(encodeURIComponent).join('/');
-    const json = await readJson(fetchFile, new URL(file, place.folder).href);
+    const json = await readJson(fetchFile, clipAddress(w.file, place.folder));
     if (!isClipJson(json)) return false;
     try { stage.prepare(name, json, w.from); return true; } catch { return false; }
   };
