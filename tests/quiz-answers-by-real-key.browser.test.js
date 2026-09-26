@@ -95,5 +95,8 @@ describe('the quiz demo, by real key', () => {
 // `mutate.mjs` (scratchpad), each alone, restored from a copy and verified by hash, 2026-09-26:
 //   · M1 the quiz's keydown stops calling `preventDefault` → the Space case RED (2 answers), and the welcome case with it.
 //   · M2 the guard becomes «every key» → the Tab case RED: Tab stayed on the option.
+//   📌 That keydown LEFT the quiz the same day: the ENGINE cancels the default of a key it delivered (ADR-0111 erratum of
+//   2026-09-26, `input/key-default`). Re-run against the engine: its conductor stops cancelling → the Space case and the
+//   welcome case RED again; it cancels every key it sees → the Tab case RED. See `a-delivered-key-does-not-also-click`.
 //   · B1 the welcome goes back to a fixed sentence naming Enter → the welcome case RED: Enter is not a key of `action2`.
 //   · B2 the welcome reads `start` as the answering position (names H) → the welcome case RED.

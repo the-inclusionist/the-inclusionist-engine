@@ -527,18 +527,8 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
   // verdade isto iria para a tela; aqui basta o console, porque o instrumento é lido por quem desenvolve.
   if (engine.problems.length) console.warn('[quiz] what the host lacks:', engine.problems);
 
-  /*
-   * 🔴 A KEY THE ENGINE CARRIES TO THIS QUIZ DOES NOT ALSO PRESS THE FOCUSED OPTION. The options are buttons — a click
-   * answers, for a mouse, a finger and a screen reader's own activation — and the focus follows the cursor onto them. Space
-   * is `action2` in the default scheme AND a button's native activation: without this, one press answered the option under
-   * the cursor through `onCommand` and then, on the release, the NEXT question through the button's click.
-   * 📌 Asked through the child's scheme (`keyboard.actionOf`), not a list of key names: a key she moved onto a position this
-   * quiz uses is covered, and a key it does not use keeps its native behaviour.
-   */
-  $<HTMLElement>('#quiz-app')?.addEventListener('keydown', (e) => {
-    const action = engine.keyboard.actionOf(e.code, 0) as VirtualCommand['action'] | null;
-    if (action && ON_BUTTON[action]) e.preventDefault();
-  });
+  // 📌 A key the engine carries to this quiz does not also press the focused option: the ENGINE cancels the default of a key it
+  // delivered (ADR-0111 erratum of 2026-09-26). The quiz's own guard for that left with it — two cancellers are two answers.
 
   // 🔴 O PAINEL DE TIPOGRAFIA E O SELETOR DE VISÃO DESTE JOGO SAÍRAM (2026-09-12). Desenhavam um botão e uma lista na
   // zona do rodapé, que é da explicação (`CLAUDE.md` §4), e repetiam a barra rápida: a letra muda pelo ciclo de
