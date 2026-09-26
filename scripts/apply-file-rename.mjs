@@ -41,13 +41,17 @@ const posix = (p) => p.split('\\').join('/');
  */
 const LEFT_OUT = [MAP, 'scripts/apply-file-rename.mjs', 'docs/6-DevOps-SRE/Breaking-Changes.md', 'CHANGELOG.md',
   'tests/records-pointing-at-dead-gates.node.test.js'];
+const RECORDS = 'docs/2-Architecture/adr/';
 const filesToTouch = () => execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
   .trim().split(/\r?\n/)
   // 📌 `.css` IS IN THE LIST BECAUSE A STYLESHEET NAMES ITS GATE. Measured on the first tests batch: `app/css/style.css`
   // cites `tests/contraste-menu.node.test.js` in a comment, and the file type was not being read at all — the gate of this
   // phase caught it, which is the whole reason that gate scans the tracked tree rather than only the imports.
   .filter((f) => /\.(ts|js|mjs|cjs|md|json|html|py|yaml|yml|css)$/.test(f))
-  .filter((f) => !LEFT_OUT.includes(f));
+  .filter((f) => !LEFT_OUT.includes(f))
+  // 🔴 AND THE RECORDS, which came home with ADR-0242: a record names the path it had ON ITS DATE, and «renaming a file
+  // is not an erratum» (ADR-0057, the index's own rule). What confirms a record today is its `confirmed-by`, fixed by hand.
+  .filter((f) => !f.startsWith(RECORDS));
 
 /**
  * The specifiers a file writes, with their position: `from '…'`, a bare `import '…'`, a dynamic `import('…')` and `require('…')`.

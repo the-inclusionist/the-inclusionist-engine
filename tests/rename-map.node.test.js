@@ -139,6 +139,8 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
       if (f === 'tests/rename-map.node.test.js') continue;                                     // and this file cites them too
       if (f === 'tests/records-pointing-at-dead-gates.node.test.js') continue;
       if (f.startsWith('.claude/plans/')) continue; // the working plan is the HISTORY of the work: it names what moved, as a log
+      // The records and their index name the path of their DATE — a rename is not an erratum (ADR-0057, ADR-0242).
+      if (f.startsWith('docs/2-Architecture/adr/')) continue;
       const texto = readFileSync(join(RAIZ, f), leitura);
       // ⚠️ ONE PASS PER FILE, not one per moved path: an `includes` for each of the ~320 forms inside the loop over the
       // ~1050 tracked files — ~335 thousand scans of the whole text — blew the 5 s ceiling in about one run in five under

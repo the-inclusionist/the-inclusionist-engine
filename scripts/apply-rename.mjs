@@ -50,7 +50,9 @@ const LEFT_OUT = [
   // here at all; `CHANGELOG.md` is what was released, and a released line does not get a new spelling.
   'CHANGELOG.md', '.release-it.json',
 ];
-const LEFT_OUT_FOLDERS = ['app/js/i18n/', 'research/'];
+// 📌 `docs/2-Architecture/adr/` since ADR-0242 brought the records home: a record and its index quote the names of their
+// date, and a rename is not an erratum (ADR-0057).
+const LEFT_OUT_FOLDERS = ['app/js/i18n/', 'research/', 'docs/2-Architecture/adr/'];
 
 export function filesToRename() {
   return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
