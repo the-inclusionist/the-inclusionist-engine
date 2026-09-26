@@ -11,9 +11,25 @@ metadata:
     - tests/every-press-takes-the-one-shown.browser.test.js
     - tests/virtual-controller.node.test.js
     - tests/gamepad.node.test.js
+    - tests/a-name-said-under-one-button-is-one-take.browser.test.js
+    - tests/voice-control.node.test.js
   supersedes-in-part:
     - ADR-0211
   errata:
+    - date: 2026-09-26
+      what: >-
+        🔴 §4 HELD FOR THE VOICE'S PRESS AND NOT FOR WHAT A NAME DID BEFORE IT: one utterance was two actions. ADR-0194 §2 makes
+        a menu item's name heard a cursor put on that item and then a confirm pressed on the virtual controller; the confirm was
+        taken as «take the one shown», and the cursor had already moved. 📏 Measured on a root with the pause card open, the
+        recogniser replaced by the voice tests' fakes: on «cancelar» a name said moved the cursor to its item; on «próximo» the
+        cursor went to the named item and one step on from there; on «confirmar» the named item was activated. Now, with one
+        button only on, every word heard — a position word, a name, any kind a later reader adds — is ONE press and nothing
+        else: the voice control asks the one-button position first, per word, and a name is not pointed at, so it takes the
+        step the scan shows like any other word. With one button only off ADR-0194 is unchanged. 📌 Why the name collapses into
+        the take rather than being left alone (only a command word counting): measured by mutation, a name left alone moved
+        nothing on «próximo» — a press lost — and §4 is «the engine does not ask which»: a child whose one reliable utterance is
+        an item's name would have a switch that works on some words only. Engine, branch `eb61e4b6` (the fix),
+        `4e394dc8` (the note in Breaking-Changes, section E).
     - date: 2026-09-26
       what: >-
         ✅ THE TWO PARTS LEFT PARTIAL ARE BUILT: THE SIDEWAYS STEP, AND §4 FOR EVERY INPUT. 📏 Measured before: on a panel's slider
