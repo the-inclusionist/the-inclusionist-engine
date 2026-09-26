@@ -3586,10 +3586,11 @@ export function createGame(o: CreateGameOptions): Engine {
     reflectKeyboardRows();
 
     /*
-     * MAPEAR CONTROLE (ADR-0151 §2; issue #182): the engine's own wizard (`input/pad-wizard`), asking only the positions this
-     * game names, in its words, and storing the map `initGamepad` reads — one cache for the page. It reads the pads only
-     * while it is open. «Voltar» cancels; the last named position saves and closes. The shell's «restore» is hidden: a pad's
-     * map is replaced by mapping again.
+     * MAPEAR CONTROLE (ADR-0151 §2; issue #182): the engine's own wizard (`input/pad-wizard`), asking the positions this
+     * game names, in its words, then START and SELECT in the engine's (ADR-0144 erratum of 2026-09-26 — this labeller is the
+     * preset's, which may not name them), and storing the map `initGamepad` reads — one cache for the page. It reads the pads
+     * only while it is open. «Voltar» cancels; SELECT, the last step, saves and closes. The shell's «restore» is hidden: a
+     * pad's map is replaced by mapping again.
      */
     let padWizard: ReturnType<typeof createPadWizard> | null = null;
     /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */

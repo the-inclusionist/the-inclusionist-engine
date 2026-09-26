@@ -169,6 +169,68 @@ describe('closing', () => {
 });
 
 /*
+ * START AND SELECT ARE ALWAYS ASKED, LAST, IN THE ENGINE'S WORDS (ADR-0122, ADR-0144 §1 and §4, ADR-0155 §4).
+ * 🔴 MEASURED on 2026-09-26: the wizard asked only what the host's labeller named, and a game's preset may not name `start` or
+ * `select` (refused at boot) — so a pad mapped in the motor panel, or a DirectInput pad whose wizard opened by itself, came out
+ * with no START and no SELECT: no quick pause, no menus, for a pause no game may decline. They are the system's positions, and
+ * `core/actions` says the engine may name them (the legend printed on the pad): the wizard asks them from its own dictionary.
+ */
+describe('START and SELECT: always asked, last, in the engine\'s words', () => {
+  /** Answers the question on screen with button `b`: pressed on one frame, let go on the next. */
+  function answer(wiz, pad, b) {
+    pad.buttons[b].pressed = true;
+    wiz.tick();
+    pad.buttons[b].pressed = false;
+    wiz.tick();
+  }
+  const START_SENTENCE = translate('pad.wiz.stepStart', { n: PADWIZ_ORDER.indexOf('start') + 1, total: PADWIZ_ORDER.length });
+  const SELECT_SENTENCE = translate('pad.wiz.stepSelect', { n: PADWIZ_ORDER.indexOf('select') + 1, total: PADWIZ_ORDER.length });
+
+  it('🔴 [Right] after the game\'s last named position it asks START, then SELECT, and only then closes and stores them', () => {
+    const pad = mkPad('p', 0);
+    const { ctx, steps, closed } = mkCtx([pad]);
+    const wiz = createPadWizard(ctx);
+    upToTheFirstQuestion(wiz, pad);
+    answer(wiz, pad, 4); answer(wiz, pad, 5); answer(wiz, pad, 6); // up, down, left: the three the game names
+    expect(wiz.state(), 'the wizard closed after the game\'s last position, without asking START').not.toBeNull();
+    answer(wiz, pad, 7);
+    expect(wiz.state(), 'the wizard closed after START, without asking SELECT').not.toBeNull();
+    answer(wiz, pad, 8);
+    expect(steps.filter(Boolean), 'the order of the questions').toEqual(['up', 'down', 'left', 'start', 'select']);
+    expect(closed, 'the wizard did not close and save after SELECT').toEqual([[0, true]]);
+    expect(ctx.maps.padMap('p'), 'the stored map').toEqual({
+      up: { b: 4 }, down: { b: 5 }, left: { b: 6 }, start: { b: 7 }, select: { b: 8 },
+    });
+  });
+
+  it('🔴 [CrossCheck] the words are the ENGINE\'s: a host that names `start` and `select` does not choose what the child hears', () => {
+    // 📌 A preset cannot name them (ADR-0144 §4, ADR-0155 §4), so a word here could only be a game speaking where the system does.
+    const pad = mkPad('p', 0);
+    const { ctx, said } = mkCtx([pad]);
+    ctx.actionLabel = (a) => ({ up: 'UP', start: 'THE GAME\'S WORD', select: 'ANOTHER GAME WORD' })[a] ?? null;
+    const wiz = createPadWizard(ctx);
+    upToTheFirstQuestion(wiz, pad);
+    answer(wiz, pad, 4); // up
+    expect(said.at(-1), 'START was not asked in the engine\'s words').toBe(START_SENTENCE);
+    answer(wiz, pad, 5); // start
+    expect(said.at(-1), 'SELECT was not asked in the engine\'s words').toBe(SELECT_SENTENCE);
+    expect(said.some((s) => s.includes('GAME')), 'the game\'s word reached the system\'s question').toBe(false);
+    expect(START_SENTENCE, 'the engine\'s dictionary has no START question').toMatch(/START/);
+    expect(SELECT_SENTENCE, 'the engine\'s dictionary has no SELECT question').toMatch(/SELECT/);
+  });
+
+  it('🎯 [Zero] a host that names no position still maps START and SELECT — the pause is not the game\'s to decline', () => {
+    const pad = mkPad('p', 0);
+    const { ctx, steps } = mkCtx([pad], []);
+    const wiz = createPadWizard(ctx);
+    upToTheFirstQuestion(wiz, pad);
+    answer(wiz, pad, 4); answer(wiz, pad, 5);
+    expect(steps.filter(Boolean)).toEqual(['start', 'select']);
+    expect(ctx.maps.padMap('p')).toEqual({ start: { b: 4 }, select: { b: 5 } });
+  });
+});
+
+/*
  * THE STORED MAPS ARE ONE ROOT'S (ADR-0232 D4). As a module cache they were one for the page: two roots on two stores read
  * each other's map, and a pad a child in one root never recorded answered with the map another child saved.
  */
@@ -209,6 +271,10 @@ describe('the stored maps, one cache per root', () => {
 //   · the extreme not kept                           → «what gets wired is the EXTREME»
 //   · the interval never cleared                     → «closing stops the clock»
 //   · a closed wizard reading a pad into a null state → «`tique()` is published»
+// and (2026-09-26, `scratchpad/wizard-start-select/mutate.mjs`, restored by SHA-256):
+//   · the START step dropped                         → «after the game's last named position» and «[Zero]»
+//   · the SELECT step dropped                        → the same two
+//   · START and SELECT asked from the host's labeller → all three (the preset cannot name them: the steps vanish)
 //
 // 🟡 AND THREE SURVIVORS ARE DECLARED, because two of them are the same fact: **the baseline's button array is all
 // false by construction.** It is captured in the one frame where `!gp.buttons.some(pressed)` holds, so

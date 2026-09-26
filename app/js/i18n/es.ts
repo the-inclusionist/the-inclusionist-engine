@@ -301,6 +301,8 @@ const es: Record<string, string> = {
   'pad.glyph.square': 'cuadrado',
   'pad.glyph.triangle': 'triángulo',
   'pad.wiz.step': '{n} de {total} — pulsa: {acao}',
+  'pad.wiz.stepStart': '{n} de {total} — pulsa el botón que quieras como START (pausa el juego)',
+  'pad.wiz.stepSelect': '{n} de {total} — pulsa el botón que quieras como SELECT (abre los menús)',
   'pad.wiz.mapped': 'Asignados: {lista}',
   'pad.wiz.pressAny': 'Pulsa CUALQUIER botón del mando que quieras configurar.',
   'pad.wiz.detected': 'Mando nuevo detectado: {id}. El juego se pausó para que puedas configurarlo. SUELTA todo para empezar.',

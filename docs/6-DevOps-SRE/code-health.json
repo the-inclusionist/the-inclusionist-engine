@@ -125,7 +125,7 @@
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
-      "fanIn": 9
+      "fanIn": 10
     },
     "core/calm-mode.ts": {
       "codeLines": 14,
@@ -428,7 +428,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 641,
+      "codeLines": 643,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -438,7 +438,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 641,
+      "codeLines": 643,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -448,7 +448,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 641,
+      "codeLines": 643,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -678,10 +678,10 @@
       "fanIn": 1
     },
     "input/pad-wizard.ts": {
-      "codeLines": 172,
-      "decisionNodes": 31,
+      "codeLines": 182,
+      "decisionNodes": 33,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,

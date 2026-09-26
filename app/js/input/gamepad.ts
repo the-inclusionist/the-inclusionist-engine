@@ -49,7 +49,8 @@ import {
  *
  * ⚠️ AND AN ACTION THE GAME DOES NOT NAME IS NOT ASKED. `input/pad-wizard` skips it, because a game that does not use
  * the position has nothing to map on it — and asking would produce a mute step or, worse, a step saying `action7` out
- * loud.
+ * loud. The exception is the system's two: START and SELECT are always asked, in the engine's words, because no game may
+ * name them and no pad may lack them (ADR-0144, erratum of 2026-09-26).
  */
 export const PADWIZ_ORDER: readonly string[] = ORDEM_DO_ASSISTENTE;
 
@@ -396,7 +397,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     onTick: () => ctx.wizardTick(),
     onClose: (gi) => {
       const ov = ctx.$<HTMLElement>('#padwiz'); if (ov) ov.hidden = true;
-      // no phantom edges: the button still HELD from the last step (START) must not pause or act on resume
+      // no phantom edges: the button still HELD from the last step (SELECT) must not open the menus or act on resume
       try {
         const pads = ctx.getGamepads() ?? [];
         const gp = pads[gi];

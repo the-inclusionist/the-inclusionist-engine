@@ -167,7 +167,8 @@ export type ActionLabeller = (a: Action) => string;
  * the silent defect `speakableProblems` already chases elsewhere.
  *
  * It returns `null`, and the caller decides: the pad wizard DOES NOT ASK for an action the game does not name — if the
- * game does not use it, there is nothing to map. An absence becomes one step fewer, never a mute step.
+ * game does not use it, there is nothing to map. An absence becomes one step fewer, never a mute step. (`SYSTEM` is the
+ * exception there: the wizard asks START and SELECT in its own words, since no preset may name them — ADR-0144 erratum.)
  */
 export function labellerFrom(p: ActionWords): (a: Action) => string | null {
   return (a) => {

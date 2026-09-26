@@ -398,6 +398,8 @@ const pt: Record<string, string> = {
   'pad.glyph.square': 'quadrado',
   'pad.glyph.triangle': 'triângulo',
   'pad.wiz.step': '{n} de {total} — aperte: {acao}',
+  'pad.wiz.stepStart': '{n} de {total} — aperte o botão que você quer como START (ele pausa o jogo)',
+  'pad.wiz.stepSelect': '{n} de {total} — aperte o botão que você quer como SELECT (ele abre os menus)',
   'pad.wiz.mapped': 'Mapeados: {lista}',
   'pad.wiz.pressAny': 'Aperte QUALQUER botão no controle que deseja mapear.',
   'pad.wiz.detected': 'Controle novo detectado: {id}. O jogo pausou para você configurá-lo. SOLTE tudo para começar.',

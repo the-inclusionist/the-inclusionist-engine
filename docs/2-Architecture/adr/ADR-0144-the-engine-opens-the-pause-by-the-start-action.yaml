@@ -21,6 +21,10 @@ metadata:
     - tests/gamepad.node.test.js
     - tests/one-button-only.browser.test.js
     - tests/the-pad-start-pauses-its-own-seat.browser.test.js
+    - app/js/input/pad-wizard.ts
+    - tests/mapping-a-pad-follows-the-hand.node.test.js
+    - tests/a-mapped-pad-has-start-and-select.browser.test.js
+    - tests/map-the-gamepad.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
@@ -39,6 +43,24 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        🔴 A PAD THE CHILD MAPPED HAD NO START AND NO SELECT, AND THE MAPPING WIZARD NOW ALWAYS ASKS THEM. §1 says «from any
+        transport», and §4 (with ADR-0155 §4) refuses a preset that names `start` or `select`. The gamepad mapping wizard
+        (`input/pad-wizard`) asked only the positions its host's labeller named, and both of its hosts label from the preset — the
+        motor panel's «Mapear controle» (`boot/create-game`) and the wizard that opens by itself on a DirectInput pad with no map
+        (`input/gamepad`). 📏 Measured through the real root: it walked the game's positions and closed, and the stored map had
+        neither — no quick pause and no menus on that pad, the pause ADR-0122 says no game may decline, declined by the pad. Now the
+        wizard always asks START and then SELECT as its last two steps (`PADWIZ_ORDER` already placed them there), in the ENGINE's
+        words (`pad.wiz.stepStart` / `pad.wiz.stepSelect` in pt, en and es — `core/actions` `SYSTEM`: the engine may name the
+        system's two), whatever the host's labeller says about them; the saved map carries both, which `input/pad-reading` reads
+        (`actionsFromTheSavedMap`). There is no skip for a step: a child may answer START or SELECT with a button already mapped (the
+        wizard does not deduplicate), and cancelling stores nothing, as before. Gated by
+        `tests/a-mapped-pad-has-start-and-select.browser.test.js` (the wizard that opened by itself asks START then SELECT last and
+        stores them; afterwards that pad's START opens and leaves its seat's quick pause and its SELECT opens the card),
+        `tests/map-the-gamepad.browser.test.js` (the motor panel's) and `tests/mapping-a-pad-follows-the-hand.node.test.js` (the
+        order, the engine's words over a host that names them, a host that names nothing); three mutations — the START step dropped,
+        the SELECT step dropped, the two asked from the preset — all red. Engine branch `wizard-start-select`.
     - date: 2026-09-26
       what: >-
         🔴 THE GAMEPAD'S START HAD A DOOR OF ITS OWN, AND IT HAD NO SEAT. The erratum below counts the gamepad's START among the

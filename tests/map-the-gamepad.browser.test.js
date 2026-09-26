@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// «MAPEAR CONTROLE» IN THE MOTOR PANEL (ADR-0151 §2; issue #182): the engine's own gamepad mapping wizard, asking only the
-// positions THIS game names, in its words, and storing the map the game's pad reading uses.
+// «MAPEAR CONTROLE» IN THE MOTOR PANEL (ADR-0151 §2; issue #182): the engine's own gamepad mapping wizard, asking the
+// positions THIS game names, in its words, then START and SELECT in the engine's (ADR-0144 erratum of 2026-09-26), and storing
+// the map the game's pad reading uses.
 //
 // 📌 A fake pad behind `navigator.getGamepads`: the wizard reads a button pressed against the pad at rest.
 //
@@ -8,6 +9,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { keyed } from './fixtures/declared-words.js'; // a game declares KEYS of its dictionary (ADR-0232 D3)
+import { createTranslator } from '../app/js/core/i18n.js';
+import { PADWIZ_ORDER } from '../app/js/input/pad-wizard.js';
+
+const t = createTranslator().t; // the engine's own words, in the root's language (pt)
 
 let motor;
 const declaracao = () => ({
@@ -57,26 +62,30 @@ describe('«Mapear controle»', () => {
     expect(document.querySelector('#padwiz-prompt')?.textContent).toMatch(/Aperte QUALQUER botão/);
   });
 
-  it('🔴 [Right] it asks only the positions the game names, in its words, and stores the map', async () => {
+  it('🔴 [Right] it asks the positions the game names, in its words, then START and SELECT in the engine\'s, and stores the map', async () => {
     pad.buttons[3].pressed = true; // any button: this pad is the one
     await esperar();
     soltarTudo();
     await esperar();
     const prompt = () => document.querySelector('#padwiz-prompt').textContent;
+    const aperta = async (i) => { pad.buttons[i].pressed = true; await esperar(); soltarTudo(); await esperar(); };
     // left comes before action2 in the wizard's order, and up/down are skipped: the game does not name them
     expect(prompt(), 'the first question is not the game\'s first named position').toMatch(/Esquerda/);
-    pad.buttons[7].pressed = true;
-    await esperar();
-    soltarTudo();
-    await esperar();
+    await aperta(7);
     expect(prompt(), 'the second question').toMatch(/Pular/);
-    pad.buttons[1].pressed = true;
-    await esperar();
-    soltarTudo();
-    await esperar();
+    await aperta(1);
+    // 🔴 THE SYSTEM'S TWO, ALWAYS, LAST (ADR-0122, ADR-0144): a preset may not name them, so the engine does (issue: a pad
+    // mapped here had no quick pause and no menus)
+    const total = PADWIZ_ORDER.length;
+    expect(prompt(), 'START was not asked, in the engine\'s words, after the game\'s positions')
+      .toBe(t('pad.wiz.stepStart', { n: PADWIZ_ORDER.indexOf('start') + 1, total }));
+    await aperta(5);
+    expect(prompt(), 'SELECT was not asked, in the engine\'s words, after START')
+      .toBe(t('pad.wiz.stepSelect', { n: PADWIZ_ORDER.indexOf('select') + 1, total }));
+    await aperta(6);
     const guardado = JSON.parse(localStorage.getItem('incl_padmap_' + pad.id) ?? 'null');
-    expect(guardado, 'the map was not stored').toEqual({ left: { b: 7 }, action2: { b: 1 } });
-    expect(document.querySelector('#padwiz').hidden, 'the wizard stayed open after the last named position').toBe(true);
+    expect(guardado, 'the map was not stored').toEqual({ left: { b: 7 }, action2: { b: 1 }, start: { b: 5 }, select: { b: 6 } });
+    expect(document.querySelector('#padwiz').hidden, 'the wizard stayed open after SELECT').toBe(true);
   });
 
   it('🔴 [Right] the map the wizard stored is the one the pad plays with, on the next frame (one cache per root, ADR-0232 D4)', async () => {
@@ -97,8 +106,10 @@ describe('«Mapear controle»', () => {
       await premir(16); // any button: this pad is the one
       await premir(16); // «Esquerda» is button 16
       await premir(11); // «Pular» is button 11
+      await premir(9); // START
+      await premir(8); // SELECT
       expect(JSON.parse(localStorage.getItem('incl_padmap_' + std.id) ?? 'null'), 'the premise: the map was stored')
-        .toEqual({ left: { b: 16 }, action2: { b: 11 } });
+        .toEqual({ left: { b: 16 }, action2: { b: 11 }, start: { b: 9 }, select: { b: 8 } });
       expect((await premir(16))?.left, 'the pad does not play with the map the wizard stored').toBe(true);
     } finally {
       Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
@@ -148,3 +159,5 @@ describe('«Mapear controle»', () => {
 //   K1 no row · K2 wizard not started · K3 asks every position · K4 «Voltar» not wired · K5 cancel saves
 //   K6 row offered with nothing named · K7 closing does not hide the panel                                🔴 each
 //   K8 the root's wizard and its gamepad on two caches of stored maps (ADR-0232 D4)                        🔴
+//   K9 the START step dropped · K10 the SELECT step dropped · K11 START and SELECT asked from the preset
+//      (2026-09-26, `scratchpad/wizard-start-select/mutate.mjs`, restored by SHA-256)                    🔴 both mapping cases, each

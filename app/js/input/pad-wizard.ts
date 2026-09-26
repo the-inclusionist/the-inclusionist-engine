@@ -3,13 +3,15 @@
 //
 // The Dev listed «mapear controle» in the motor panel (ADR-0151 §2). The wizard lived inside `initGamepad`, which a cartridge
 // starts — two of seven games — and drew the platformer's sprites as its demonstration; `createGame` could not offer it
-// without describing that game. Here is only what every game shares: the steps, one per position the GAME names, reading a
+// without describing that game. Here is only what every game shares: the steps, one per position the GAME names and then the
+// system's START and SELECT, always, in the engine's words (ADR-0144, erratum of 2026-09-26), reading a
 // button or an axis against the pad at rest, and the stored map per pad id. The demonstration and what happens around closing
 // (the play phase, the edges of the held button) are the host's, by hooks.
 //
 // ⚠️ ONE CACHE of stored maps per ROOT (`createPadMaps`), handed to its wizard and to `initGamepad`: a map saved by the
 // engine's wizard is the one `initGamepad` reads on the next frame, not a copy it cached before.
 import type { Translate } from '../core/i18n.js';
+import { SYSTEM } from '../core/actions.js';
 import { migrateControlMap } from './vocabulary-migration.js';
 import type { Store } from '../platform/storage.js';
 
@@ -51,6 +53,20 @@ export const PADWIZ_ORDER: readonly string[] = [
   // System last: `start` and `select` are usually the smallest and most hidden buttons.
   'start', 'select',
 ];
+
+/**
+ * 🔴 THE SYSTEM'S TWO ARE ALWAYS ASKED, IN THE ENGINE'S WORDS (ADR-0122, ADR-0144 §1 and its erratum of 2026-09-26, ADR-0155).
+ * A game's preset may not name `start` or `select` (ADR-0144 §4, ADR-0155 §4 — refused at boot), so a wizard that asked only
+ * what the game names never asked them, and every pad it mapped had no quick pause and no menus: the pause no game may decline,
+ * declined by the pad. They are the system's, and `core/actions` (`SYSTEM`) says the engine may name them — the legend printed
+ * on the pad. The host's labeller is not asked about them.
+ */
+const SYSTEM_QUESTION: Readonly<Record<(typeof SYSTEM)[number], string>> = {
+  start: 'pad.wiz.stepStart',
+  select: 'pad.wiz.stepSelect',
+};
+const systemQuestion = (action: string): string | null =>
+  ((SYSTEM as readonly string[]).includes(action) ? SYSTEM_QUESTION[action as (typeof SYSTEM)[number]] : null);
 
 /** What this module reads and writes the maps through: the page's store, built by the root (ADR-0232, issue #207). */
 export type PadMapStore = Pick<Store, 'getJSON' | 'setJSON'>;
@@ -100,7 +116,10 @@ export interface PadWizardCtx {
    *  the child the fourteen questions again at every visit, in silence. */
   maps: PadMaps;
   getGamepads: GetGamepads;
-  /** The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped). */
+  /**
+   * The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped).
+   * ⚠️ Not asked about `start` and `select`: the wizard always asks them, in the engine's words (`SYSTEM_QUESTION`).
+   */
   actionLabel: (action: string) => string | null;
   /** Shows and says the wizard's sentence. */
   say: (phrase: string) => void;
@@ -129,13 +148,15 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   const { t } = ctx;
   let padWiz: WizState | null = null;
 
+  /** Is this step asked? The game's positions when it names them; the system's two always (`SYSTEM_QUESTION`). */
+  const asked = (action: string): boolean => systemQuestion(action) !== null || !!ctx.actionLabel(action);
   /**
-   * Walks to the next step THIS game uses, or closes if there is none left. ONE function: after the last named step the
-   * wizard does not stay open pointing at a position the game does not use.
+   * Walks to the next step asked, or closes if there is none left. ONE function: after the last step the wizard does not stay
+   * open pointing at a position nobody asks.
    */
   function advance(): void {
     if (!padWiz) return;
-    while (padWiz.step < PADWIZ_ORDER.length && !ctx.actionLabel(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
+    while (padWiz.step < PADWIZ_ORDER.length && !asked(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
     if (padWiz.step >= PADWIZ_ORDER.length) closeWizard(true);
   }
   function ask(): void {
@@ -143,7 +164,9 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     advance();
     if (!padWiz) return; // it closed while advancing
     const action = PADWIZ_ORDER[padWiz.step]!;
-    ctx.say(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: ctx.actionLabel(action)! }));
+    const n = padWiz.step + 1, total = PADWIZ_ORDER.length;
+    const system = systemQuestion(action);
+    ctx.say(t(system ?? 'pad.wiz.step', { n, total, acao: system ? '' : ctx.actionLabel(action)! }));
     ctx.onStep?.(action);
     // The empty list's dash stays raw on purpose: it is punctuation, not language.
     ctx.progress(t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' }));

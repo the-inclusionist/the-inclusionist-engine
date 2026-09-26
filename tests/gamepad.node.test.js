@@ -79,10 +79,11 @@ function buildCtx(over = {}) {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
     // ⚠️ THE LABEL COMES FROM THE 'GAME', and in a test the game is the fixture: the wizard asks, and this object is the
-    // answer. `leftShoulder` is left out on purpose: it proves an unnamed position is SKIPPED.
+    // answer. `leftShoulder` is left out on purpose: it proves an unnamed position is SKIPPED. `start` and `select` are left
+    // out because a game may not name them (ADR-0144 §4, ADR-0155 §4): the wizard asks them in the engine's words.
     actionLabel: (a) => ({
       up: 'CIMA', down: 'BAIXO', left: 'ESQUERDA', right: 'DIREITA',
-      action1: 'CORRER', action2: 'PULAR', action3: 'ESPECIAL', action4: 'TROCAR', start: 'START',
+      action1: 'CORRER', action2: 'PULAR', action3: 'ESPECIAL', action4: 'TROCAR',
     })[a] || null,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
@@ -309,10 +310,11 @@ describe('initGamepad — wizard: fluxo completo', () => {
     expect(api.getPadWiz().baseWait).toBe(false);
     expect(api.getPadWiz().step).toBe(0);
 
-    // ⚠️ IT WALKS THE POSITIONS THE GAME NAMES, not the whole list. This file's fake preset names nine of the fourteen,
-    // and the wizard SKIPS the five this game does not use — asking for them would produce a mute step.
-    const NOMEADAS = PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null);
-    expect(NOMEADAS).toHaveLength(9);
+    // ⚠️ IT WALKS THE POSITIONS THE GAME NAMES, not the whole list, and then the system's two. This file's fake preset names
+    // eight of the twelve game positions, and the wizard SKIPS the four this game does not use — asking for them would produce
+    // a mute step; START and SELECT it always asks (ADR-0144, erratum of 2026-09-26).
+    const NOMEADAS = [...PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null), 'start', 'select'];
+    expect(NOMEADAS).toHaveLength(10);
     for (let i = 0; i < NOMEADAS.length; i++) {
       ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [i] })]);
       api.padWizTick(); // captures button i for the current step
@@ -322,12 +324,13 @@ describe('initGamepad — wizard: fluxo completo', () => {
         api.padWizTick(); // release -> frees the next prompt
       }
     }
-    // the last step (start) closes and SAVES by itself (closePadWiz(true))
+    // the last step (select) closes and SAVES by itself (closePadWiz(true))
     expect(api.getPadWiz()).toBeNull();
     expect(ctx.alerted.some((m) => m.includes('Mapeamento salvo'))).toBe(true);
     const saved = api.padMapFor('DirectInput X');
     expect(saved.up).toEqual({ b: 0 });
     expect(saved.start).toEqual({ b: 8 });
+    expect(saved.select).toEqual({ b: 9 });
   });
 });
 
@@ -1093,21 +1096,20 @@ describe('initGamepad — with one-button scanning on, a button that goes down i
  * a saved map (`input/pad-reading`, `actionsFromTheSavedMap`) read `start` only as the derived `_pause` and never read `select` at
  * all. A pad the child had mapped had no SELECT: with one-button scanning on the button did not count as the switch (nothing
  * «went down»), and with it off it opened no menu. The table's reading already carried both, as positions.
- * 📌 The map is made BY THE WIZARD, with a host whose labeller names the system positions — `GamepadCtx.actionLabel` is the host's.
- * ⚠️ The engine's own root never names them (its labeller is the cartridge's preset, and a preset may not declare `start` or
- * `select`, ADR-0144 §4 / ADR-0155 §4), so through `createGame` the wizard never asks them: that is a decision left to the Dev.
+ * 📌 The map is made BY THE WIZARD, with a host whose labeller names only the game's positions — a preset may not declare `start`
+ * or `select` (ADR-0144 §4 / ADR-0155 §4); the wizard asks them anyway, in the engine's words (ADR-0144 erratum of 2026-09-26,
+ * held in `mapping-a-pad-follows-the-hand.node` and `a-mapped-pad-has-start-and-select.browser`).
  * 📏 Mutations (2026-09-26, `scratchpad/pad-seat-select/mutate.mjs select`, restored by SHA-256): the reading before the fix, the
  * map read with no SELECT, SELECT read from START's binding → the three 🔴 cases each.
  */
 describe('initGamepad — a pad mapped by the wizard keeps its SELECT', () => {
   const ID = 'DirectInput mapeado';
-  const SISTEMA = { start: 'START', select: 'SELECT' };
-  /** Walks the wizard on a DirectInput pad: button i for the i-th named step, pressed and released. Returns the stored map. */
+  /** Walks the wizard on a DirectInput pad: button i for the i-th asked step, pressed and released. Returns the stored map. */
   function mapear(ctx, api) {
     api.openPadWizFor(makePad({ id: ID, index: 0, mapping: '' }));
     ctx.setPads([makePad({ id: ID, index: 0, mapping: '' })]);
     api.padWizTick(); // the resting pose -> step 0
-    const nomeadas = PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null);
+    const nomeadas = [...PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null), 'start', 'select'];
     for (let i = 0; i < nomeadas.length; i++) {
       ctx.setPads([makePad({ id: ID, index: 0, mapping: '', pressed: [i] })]);
       api.padWizTick();
@@ -1119,22 +1121,17 @@ describe('initGamepad — a pad mapped by the wizard keeps its SELECT', () => {
     api.pollPads();
     return { map: api.padMapFor(ID), nomeadas };
   }
-  const ctxComSistema = (over = {}) => {
-    const base = buildCtx({ players: [makePlayer({ pad: 0 })], ...over });
-    const doJogo = base.actionLabel;
-    base.actionLabel = (a) => SISTEMA[a] ?? doJogo(a);
-    return base;
-  };
+  const ctxSentado = (over = {}) => buildCtx({ players: [makePlayer({ pad: 0 })], ...over });
 
   it('🔴 [Right] the premise: the wizard asked SELECT and stored its button', () => {
-    const ctx = ctxComSistema(); const api = initGamepad(ctx);
+    const ctx = ctxSentado(); const api = initGamepad(ctx);
     const { map, nomeadas } = mapear(ctx, api);
     expect(nomeadas.at(-1), 'the wizard did not ask SELECT last').toBe('select');
     expect(map.select, 'the stored map has no SELECT').toEqual({ b: nomeadas.length - 1 });
   });
 
   it('🔴 [Right] with scanning OFF, the mapped SELECT button is PRESSED for the pad\'s seat, once', () => {
-    const ctx = ctxComSistema(); const api = initGamepad(ctx);
+    const ctx = ctxSentado(); const api = initGamepad(ctx);
     const { map } = mapear(ctx, api);
     ctx.calls.pressionadas.length = 0;
     ctx.setPads([makePad({ id: ID, index: 0, mapping: '', pressed: [map.select.b] })]);
@@ -1145,7 +1142,7 @@ describe('initGamepad — a pad mapped by the wizard keeps its SELECT', () => {
 
   it('🔴 [Right] with scanning ON, the mapped SELECT button is the switch — it takes the one shown', () => {
     const asked = [];
-    const ctx = ctxComSistema({ takeShown: () => { asked.push('asked'); return true; } }); const api = initGamepad(ctx);
+    const ctx = ctxSentado({ takeShown: () => { asked.push('asked'); return true; } }); const api = initGamepad(ctx);
     const { map } = mapear(ctx, api);
     ctx.setPads([makePad({ id: ID, index: 0, mapping: '', pressed: [map.select.b] })]);
     api.pollPads();
@@ -1157,7 +1154,7 @@ describe('initGamepad — a pad mapped by the wizard keeps its SELECT', () => {
   // take its door away.
   it('[Right] and START, mapped the same way, is still the scan\'s switch', () => {
     const asked = [];
-    const ctx = ctxComSistema({ takeShown: () => { asked.push('asked'); return true; } }); const api = initGamepad(ctx);
+    const ctx = ctxSentado({ takeShown: () => { asked.push('asked'); return true; } }); const api = initGamepad(ctx);
     const { map } = mapear(ctx, api);
     ctx.setPads([makePad({ id: ID, index: 0, mapping: '', pressed: [map.start.b] })]);
     api.pollPads();

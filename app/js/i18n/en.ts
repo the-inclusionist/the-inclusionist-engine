@@ -300,6 +300,8 @@ const en: Record<string, string> = {
   'pad.glyph.square': 'square',
   'pad.glyph.triangle': 'triangle',
   'pad.wiz.step': '{n} of {total} — press: {acao}',
+  'pad.wiz.stepStart': '{n} of {total} — press the button you want as START (it pauses the game)',
+  'pad.wiz.stepSelect': '{n} of {total} — press the button you want as SELECT (it opens the menus)',
   'pad.wiz.mapped': 'Mapped: {lista}',
   'pad.wiz.pressAny': 'Press ANY button on the controller you want to map.',
   'pad.wiz.detected': 'New controller detected: {id}. The game paused so you can set it up. RELEASE everything to start.',
