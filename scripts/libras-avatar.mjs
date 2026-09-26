@@ -15,6 +15,11 @@
 // the sign itself. It is not trimmed out of the file (its bytes are the export's, pinned); the pins say where the sign starts,
 // with why, and the player plays from there (`ClipWindow.from`). `--pins-from` writes that into the pins it regenerates.
 //
+// WHERE A LETTER IS HELD UP (the Dev, 2026-09-26: a spelled word is signed with the hand held up between its letters): each
+// letter's and digit's clip rises from the arms-down pose, holds its handshape and falls back. `--pins-from` MEASURES, on the
+// export's own clips, where the hand is up (`held`, `[up, down]`; the rule and its numbers are `libras-export.mjs`
+// `heldWindow`), and the manifest hands it to the player, which chains a word's letters through it (`ui/libras-avatar-plan`).
+//
 // OFFLINE (ADR-0234, phase B3; pillar 8): none of these files is in the precache — they are written after the build, with the
 // glosses — and neither is the stage chunk that carries three.js, which the precache leaves out on purpose. `writeAvatarList` names them all in
 // `libras/offline-avatar.json` with the sha256 of what is on the disk, and a device with deaf mode on keeps each file only if its
@@ -49,16 +54,26 @@ export const WINDOWS = Object.freeze({
 });
 
 /**
- * The pins, from a B1 export's `manifest.json`: the commit and tools that made it, the avatar and every clip with its bytes,
- * sha256 and length, and `from` for the clips `windows` names.
+ * THE CLIPS A WORD IS SPELLED WITH: a letter of the manual alphabet or a digit, named by its one character — what
+ * `ui/libras-avatar-plan` `planSigns` fingerspells a word with no sign from. 📏 The export's ten digit clips are made as its
+ * letters are (the right wrist up from the arms-down pose in 0.45–0.48 s, a handshape held 0.65–0.70 s, down in 0.48–0.50 s),
+ * so a number is chained like a word.
  */
-export function avatarPinsFromExport(exported, windows = WINDOWS) {
+export const isSpelledClip = (name) => /^[A-ZÇ0-9]$/u.test(name);
+
+/**
+ * The pins, from a B1 export's `manifest.json`: the commit and tools that made it, the avatar and every clip with its bytes,
+ * sha256 and length, `from` for the clips `windows` names, and `held` — where the hand is held up, `[up, down]` in seconds —
+ * for the spelled clips `held` measures (`heldWindowsOf`, the export's own forward kinematics).
+ */
+export function avatarPinsFromExport(exported, windows = WINDOWS, held = {}) {
   const clips = {};
   for (const name of Object.keys(exported.clips).sort()) {
     const c = exported.clips[name];
     if (c.file !== clipFile(name)) throw new Error(`the export names ${name}'s clip ${c.file}, not ${clipFile(name)}`);
     const w = windows[name];
-    clips[name] = { bytes: c.bytes, sha256: c.sha256, duration: c.duration, ...(w ? { from: Math.round((w.frame / c.fps) * 1e4) / 1e4 } : {}) };
+    clips[name] = { bytes: c.bytes, sha256: c.sha256, duration: c.duration, ...(w ? { from: Math.round((w.frame / c.fps) * 1e4) / 1e4 } : {}),
+      ...(held[name] ? { held: held[name] } : {}) };
   }
   return {
     comment: [
@@ -66,7 +81,9 @@ export function avatarPinsFromExport(exported, windows = WINDOWS) {
       'exported by scripts/libras-export.mjs from LAViD-UFPB vlibras-dictionary-sources (GPL-3.0) at `commit`, each pinned by sha256',
       'and byte count. Their Corresponding Source is each sign\'s .blend (scripts/libras-export/sources.json) plus the two export',
       'scripts, run with the Blender named here. `from` is where a sign starts in a clip whose export does not start with it',
-      '(`windows`, and why). Written by `node scripts/libras-avatar.mjs --pins-from <export>`.',
+      '(`windows`, and why). `held` is where a letter\'s or digit\'s hand is held up, [up, down] in seconds, measured on the clip',
+      '(libras-export.mjs `heldWindow`): the player chains a spelled word\'s letters through it.',
+      'Written by `node scripts/libras-avatar.mjs --pins-from <export>`.',
     ],
     commit: exported.commit,
     blender: exported.blender,
@@ -96,11 +113,23 @@ export function avatarSourceOf(pins, base = '') {
   return `${base.replace(/[/\\]+$/, '')}/${pins.mirror}`;
 }
 
+/**
+ * WHERE EACH SPELLED CLIP'S HAND IS HELD UP, measured on the export in `folder` (its `avatar.glb` and `clips/`): `{ NAME: [up,
+ * down] }` for every clip of `names` that `isSpelledClip`. The measure is the export's (`scripts/libras-export.mjs`), which the
+ * package does not ship — it is imported here only when the pins are regenerated.
+ */
+export async function heldWindowsOf(folder, names, read = (p) => readFileSync(p)) {
+  const { heldWindow, parseGlb } = await import('./libras-export.mjs');
+  const gltf = parseGlb(read(join(folder, AVATAR_FILE))).json;
+  return Object.fromEntries(names.filter(isSpelledClip).sort()
+    .map((name) => [name, heldWindow(gltf, JSON.parse(read(join(folder, clipFile(name))).toString('utf8')))]));
+}
+
 /** The manifest the player reads (`ui/libras-avatar-plan` `avatarManifestOf`): the avatar's file and each clip with its window. */
 export function deliveredManifest(pins) {
   const clips = {};
   for (const [name, c] of Object.entries(pins.clips)) {
-    clips[name] = { file: clipFile(name), duration: c.duration, ...(c.from ? { from: c.from } : {}) };
+    clips[name] = { file: clipFile(name), duration: c.duration, ...(c.from ? { from: c.from } : {}), ...(c.held ? { held: c.held } : {}) };
   }
   return { format: 1, commit: pins.commit, avatar: AVATAR_FILE, clips };
 }
@@ -211,6 +240,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     process.exit(2);
   }
   const exported = JSON.parse(readFileSync(join(process.argv[at + 1], 'manifest.json'), 'utf8'));
-  writeFileSync(AVATAR_PINS, avatarPinsText(avatarPinsFromExport(exported)));
-  console.log(`${AVATAR_PINS}: the avatar and ${Object.keys(exported.clips).length} clips`);
+  const held = await heldWindowsOf(process.argv[at + 1], Object.keys(exported.clips));
+  writeFileSync(AVATAR_PINS, avatarPinsText(avatarPinsFromExport(exported, WINDOWS, held)));
+  console.log(`${AVATAR_PINS}: the avatar and ${Object.keys(exported.clips).length} clips, ${Object.keys(held).length} of them spelled, with where each is held up`);
 }

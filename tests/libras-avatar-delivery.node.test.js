@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
   avatarPinsFromExport, avatarPinsText, avatarSourceOf, deliverLibrasAvatar, deliveredManifest, readAvatarPins, WINDOWS,
-  stageChunkOf, writeAvatarList, avatarListPaths, writeDeliveryList,
+  stageChunkOf, writeAvatarList, avatarListPaths, writeDeliveryList, heldWindowsOf, isSpelledClip,
 } from '../scripts/libras-avatar.mjs';
 import { avatarPlace, prepareClips } from '../app/js/ui/libras-avatar-load.js';
 import { LIBRAS_GLOSSES_FILE } from '../app/js/ui/libras-glosses.js';
@@ -271,15 +271,77 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
   it('[Right] regenerated from an export\'s manifest, the pins carry the window at the clip\'s own rate, as text one clip a line', () => {
     const exported = { commit: COMMIT, blender: 'b', exporter: 'e', avatar: { bytes: 1, sha256: 'a' }, clips: {
       FALA: { file: 'clips/FALA.json', bytes: 2, sha256: 'f', duration: 48.8, fps: 30 },
-      GATO: { file: 'clips/GATO.json', bytes: 3, sha256: 'g', duration: 2, fps: 30 } } };
-    const made = avatarPinsFromExport(exported, WINDOWS);
+      GATO: { file: 'clips/GATO.json', bytes: 3, sha256: 'g', duration: 2, fps: 30 },
+      A: { file: 'clips/A.json', bytes: 4, sha256: 'h', duration: 1.5667, fps: 30 } } };
+    const made = avatarPinsFromExport(exported, WINDOWS, { A: [0.42, 1.15] });
     expect(made.clips.FALA.from).toBe(46.8);
     expect(made.clips.GATO.from).toBeUndefined();
+    expect(made.clips.A.held, 'the measured window did not reach the pins').toEqual([0.42, 1.15]);
+    expect(made.clips.GATO.held).toBeUndefined();
     const text = avatarPinsText(made);
     expect(JSON.parse(text)).toEqual(made);
     expect(text).toMatch(/\n {4}"GATO": \{"bytes": 3, "sha256": "g", "duration": 2\}/);
   });
 });
+
+/**
+ * 🔴 WHERE A LETTER'S HAND IS HELD UP, CARRIED FROM THE EXPORT TO THE PLAYER (the Dev, 2026-09-26: a spelled word is signed with
+ * the hand held up between its letters). The pins hold it for every clip a word is spelled with, measured on the clip
+ * (`heldWindow`, `tests/libras-export.node.test.js`), and the delivered manifest hands it to the player that chains the letters.
+ */
+describe('scripts/libras-avatar — where each letter and digit is held up', () => {
+  const pins = readAvatarPins();
+  const spelled = Object.keys(pins.clips).filter(isSpelledClip);
+
+  it('🔴 [Right] every letter of the manual alphabet and every digit carries its window, inside its clip; no sign does', () => {
+    expect(spelled.sort()).toEqual([...'0123456789', ...MANUAL_ALPHABET].sort());
+    for (const name of spelled) {
+      const [up, down] = pins.clips[name].held ?? [];
+      expect(up, `${name} has no window`).toBeGreaterThanOrEqual(0);
+      expect(down, name).toBeGreaterThan(up);
+      expect(down, name).toBeLessThanOrEqual(pins.clips[name].duration);
+    }
+    expect(Object.entries(pins.clips).filter(([n, c]) => c.held && !isSpelledClip(n)).map(([n]) => n), 'a sign was given a window').toEqual([]);
+  });
+
+  it('🎯 [Right] E is still — held up from its first frame to its last — and the rest rise and fall around their window', () => {
+    expect(pins.clips.E.held).toEqual([0, pins.clips.E.duration]);
+    for (const name of spelled.filter((n) => n !== 'E')) {
+      const [up, down] = pins.clips[name].held;
+      expect(up, `${name} has no rise`).toBeGreaterThan(0.25);
+      expect(pins.clips[name].duration - down, `${name} has no fall`).toBeGreaterThan(0.25);
+    }
+  });
+
+  it('🔴 [Right] the delivered manifest carries each window', () => {
+    const { clips } = deliveredManifest(pins);
+    expect(clips.P.held, 'the window did not reach the delivery').toEqual(pins.clips.P.held);
+    expect(clips.E.held).toEqual([0, pins.clips.E.duration]);
+    expect(clips.GATO.held).toBeUndefined();
+  });
+
+  it('🔴 [Right] regenerating the pins measures the spelled clips of the export folder, and only them', async () => {
+    const read = (path) => {
+      const rel = path.split(/[\\/]export[\\/]/)[1].split('\\').join('/');
+      if (rel === 'avatar.glb') return jsonGlb({ asset: { version: '2.0' }, nodes: [{ name: 'BnMao.R', translation: [0.3, -0.8, 0] }, { name: 'BnMao.L' }] });
+      const name = rel.slice('clips/'.length, -'.json'.length);
+      const still = name === 'E';
+      return Buffer.from(JSON.stringify({ name, duration: 1.9, tracks: [{ name: 'BnMaoR.position', type: 'vector', times: [0, 0.4, 1.5, 1.9],
+        values: [0.3, still ? 2 : -0.8, 0, 0.3, 2, 0, 0.3, 2, 0, 0.3, still ? 2 : -0.8, 0] }] }));
+    };
+    expect(await heldWindowsOf('D:\\x\\export', ['GATO', 'A', 'E', '7', 'NÃO'], read)).toEqual({ 7: [0.37, 1.53], A: [0.37, 1.53], E: [0, 1.9] });
+  });
+});
+
+/** A `.glb` holding only a JSON chunk: enough for the export's forward kinematics, which reads the nodes. */
+function jsonGlb(json) {
+  let text = Buffer.from(JSON.stringify(json));
+  text = Buffer.concat([text, Buffer.alloc((4 - (text.length % 4)) % 4, 0x20)]);
+  const header = Buffer.alloc(20);
+  header.writeUInt32LE(0x46546c67, 0); header.writeUInt32LE(2, 4); header.writeUInt32LE(20 + text.length, 8);
+  header.writeUInt32LE(text.length, 12); header.writeUInt32LE(0x4e4f534a, 16);
+  return Buffer.concat([header, text]);
+}
 
 // ========================= MUTATIONS CHECKED =========================
 // (2026-09-25, scripted: each applied to `scripts/libras-avatar.mjs`, this file run, the script restored from a copy — all 5 red)
