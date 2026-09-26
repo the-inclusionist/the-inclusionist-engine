@@ -63,8 +63,9 @@ request `g` of the filing asks to be put on record: the itemized list of those e
 - **Third-party code** — eSpeak NG (GPL-3.0). Clarity (MIT) left this repository with the platformer, and its
   credit travels with `game-platformer`; Piper and sherpa-onnx left (ADR-0207). Detail and attribution in
   [`CREDITS.md`](CREDITS.md).
-  The engine itself loads the neural voice's runtime (ADR-0216): `espeak-ng` 1.0.2 (eSpeak NG in WebAssembly,
-  **GPL-3.0-or-later**, compatible with the AGPL-3.0-or-later) and `onnxruntime-web` 1.27.0 (**MIT**) are catalogued
+  The engine itself loads the neural voice's runtime (ADR-0216): eSpeak NG in WebAssembly (**GPL-3.0-or-later**,
+  compatible with the AGPL-3.0-or-later; built by the project from commit `530bf0ab` with `scripts/models/build-espeak-ng.ps1`,
+  which with that commit is its Corresponding Source, issue #192) and `onnxruntime-web` 1.27.0 (**MIT**) are catalogued
   heavy files (`app/js/platform/heavy-catalogue.ts`), fetched by the build into the delivery's `heavy/` folder and read
   from the page's own origin — only for a game that declares `uses: { neuralVoice: true }`. The published npm package
   carries neither. The other runtimes and models in the same catalogue, each credited in `CREDITS.md`:

@@ -155,10 +155,72 @@ runs the second half alone. Credentials live in the rclone remote, never in a re
 
 - **What:** `onnx-community/Kokoro-82M-v1.0-ONNX`, fp32 `onnx/model.onnx` (325 532 232 bytes), `tokenizer.json`, 34 voice tables
   (pt, es, en-US, en-GB). Apache-2.0.
-- **Engine use:** `CreateGameOptions.carregarKokoro` returns a `ModuloKokoro` (`fonemizar`, `vocabulario`, `voz`, `sessao`). The quiz
-  demo's port: `app/js/consumer-quiz/kokoro-porta.ts` (testable half) and `kokoro-carregar.ts` (espeak-ng 1.0.2, GPL-3.0-or-later;
-  onnxruntime-web 1.27.0, whose thread workers are pointed at its own `.mjs` with `env.wasm.wasmPaths`).
-- **Rebuild:** upstream files, pinned by sha256 in `platform/kokoro.ts`.
+- **Engine use:** `platform/kokoro-runtime` loads the phonemizer (eSpeak NG, the project's own build, below) and onnxruntime-web
+  1.27.0 from `heavy/` on the page's own origin, and `platform/kokoro-port` puts them together: `phonemize`, `vocabulary`,
+  `voice`, `session` (ADR-0216).
+- **Rebuild:** upstream files, pinned by sha256 in `platform/heavy-catalogue.ts`.
+
+## eSpeak NG for the browser — the neural voice's phonemizer (project-built)
+
+- **What:** `espeak-ng.js` (an ES module whose default export is the factory `ESpeakNG`) and `espeak-ng.wasm` — the eSpeak NG
+  command-line program in WebAssembly, with its phoneme data and dictionaries inside the wasm. GPL-3.0-or-later. Catalogue ids
+  `voz:runtime:fonemas` and `voz:runtime:fonemas:wasm`, folder `espeak-ng-530bf0a/` of the mirror.
+- **Why built here:** the npm package the engine used, `espeak-ng@1.0.2`, names no eSpeak NG revision (its binary says only
+  «1.52-dev»), so no delivery could name the Corresponding Source the GPL asks for beside the binary. The Dev chose to compile
+  it here from a pinned commit (ADR-0203 erratum, 2026-09-26; issue #192).
+- **Which commit, and why:** `530bf0abf4174dc9ca28dbacc11bd5e9ae6152cd`, eSpeak NG's master of 2023-09-27. The package's
+  repository (`github.com/ianmarmour/espeak-ng.js`) holds only the two built files and a README whose recipe clones master
+  with no revision; its commits and the npm publication are all of 2023-11-24, and master's head that day was `530bf0ab` —
+  the next commit on master's first-parent line is of 2023-12-11. ⚠️ GitHub's commit list «until 2023-11-24» answers
+  `f9976e8f` (2023-10-07) instead: that commit sat on a pull-request branch and reached master only with the 2023-12-11
+  merge, and it differs from `530bf0ab` by two lines of `pl_rules`. 📏 The package's own data decides, read through each
+  module's file system: of the 355 data files an `-AllLanguages` build of `530bf0ab` embeds, **352 are byte-identical to the
+  package's**, `pl_dict` among them — `f9976e8f`'s `pl_dict` is not. The other three are `fa_dict`, `th_dict` and `ur_dict`,
+  which this CMake build does not reproduce from the package's autotools build (for `fa`, CMake never copies `fa_extra`;
+  `th` and `ur` were not traced); none of the three is in the build the engine ships, whose 126 files are all the package's. The package also
+  holds 90 MBROLA voice files, which a build without MBROLA does not make. The 1.52.0 tag (`4870adfa`, 2024-12-12) exists
+  but is fourteen months later and does not give the package's phonemes (below), so it is not the closest match.
+  ⚠️ `--version` says `1.52.0.1` where the package said `1.52-dev`: that is the CMake build's version number for the same
+  tree, not another source.
+- **Rebuild from zero** (git and Docker with Linux containers; nothing else is downloaded):
+
+  ```powershell
+  pwsh scripts/models/build-espeak-ng.ps1 -Out C:\Users\candi\Claude\the-inclusionist-lfs\espeak-ng-530bf0a
+  ```
+
+  The script pins the commit and the toolchain, `emscripten/emsdk:3.1.49` by digest (the «latest» Emscripten on the day the
+  package was built; the image carries the compilers and CMake, and nothing is installed in it). In the image it builds
+  eSpeak NG natively to compile the data, cuts the data (below), then builds the program with `emcmake` and links it with
+  the package's flags — `-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=ESpeakNG -sINITIAL_MEMORY=32MB` and `--embed-file` at
+  `/usr/local/share/espeak-ng-data`, the path the program reads — plus `-O2`, `-sEXPORTED_RUNTIME_METHODS=FS` and
+  `-sDYNAMIC_EXECUTION=0`, which makes Emscripten refuse to emit `eval` or `new Function`. It fails if the glue still holds
+  either, and prints each file's sha256 and size. Two things the recipe works around, each found by a failed build: CMake
+  would fetch libsonic from GitHub (the build does not use it), and Emscripten's `<wchar.h>`, read after eSpeak NG's
+  `<wctype.h>`, redeclares `ucd_isalnum` with another type — the C library's header is included first. 📏 Run twice, it wrote
+  the same bytes both times.
+- **The data it carries:** the voices the engine speaks (`pt`, `pt-BR`, `es`, `es-419`, and the eight `en` voices), their
+  dictionaries, and `de` and `fr` — the two dictionaries Portuguese hands a word to («ß», «Feuerbach», «Louis»): 📏 without
+  them those words come out spelled letter by letter. `-AllLanguages` embeds every language, as the package did. 📏 Sizes:
+  the package 178,386 + 18,485,010 bytes (17.8 MiB); this build 70,951 + 1,493,661 (1.5 MiB); with `-AllLanguages`
+  70,952 + 18,330,283. Most of the difference is the data; the rest is `-O2` in place of the package's unoptimised link.
+- **Check — the phonemes:** every string of the engine's three dictionaries (`app/js/i18n/{pt,en,es}.ts`, the quiz's questions
+  among them) and nine sentences written for the language switches, numbers and punctuation, phonemized as
+  `platform/kokoro-port` asks (`-q --ipa --phonout … -v <voice> -f …`) by the package and by this build, in Node, with pt-br,
+  es-419, en-us and en-gb: 📏 **2,590 of 2,590 phoneme strings identical, and the Kokoro token ids of all 2,590 identical**
+  (tokenizer of `kokoro-82m-v1.0-onnx`). The same comparison against a 1.52.0 build (this recipe with the tag's commit):
+  **36 differ**, and their token ids with them — 35 in en-us, where 1.52.0 writes `ɔːɹ` for the package's `oːɹ` («keyboard»,
+  «more», «four», «restore», «Kokoro»…), and one in pt-br, where 1.52.0 no longer hands «Louis» to French.
+- **Check — the browser:** 📏 2026-09-26, `npm run build` then `inclusionist-heavy dist --base <the staging tree> --kokoro`,
+  served with the rules of `_headers` (`script-src 'self' 'wasm-unsafe-eval'`, cross-origin isolated), in headless Chromium
+  with no GPU adapter, so on WASM with 4 threads: the quiz with narration turned on and Kokoro chosen imported the build,
+  compiled its wasm, phonemized, and played the pt-BR sentence «Voz neural pronta, em … segundos.» (a 117,644-byte WAV)
+  6.1 s after the page loaded, with **zero CSP violations** and no page error. The engine's loader called step by step in the
+  same page phonemized the quiz's question «Qual animal põe ovos e tem bico?» as `kwˈaʊ ˌænimˈaʊ pˈõj ˈɔvʊz i teɪŋ bˈikʊ`.
+  ⚠️ Narration is born off (`platform/audio-mixer`), so a check that does not turn it on hears nothing and proves nothing.
+- **The GPL:** the Corresponding Source is the commit plus this recipe. The staged folder carries both in `corresponding-source/` — the
+  commit as `espeak-ng-530bf0a.tar.gz` (`git archive`) and `build-espeak-ng.ps1` — with `LICENSE` (GPL-3.0), `NOTICE` and a
+  `LICENSE.md` naming them, and every delivery's folder gets a `SOURCE` note saying the same
+  (`scripts/licences/third-party.mjs`).
 
 ## Whisper small — Portuguese reading fallback (project-exported)
 
@@ -268,6 +330,8 @@ runs the second half alone. Credentials live in the rclone remote, never in a re
 ```
 the-inclusionist-lfs/
   vosk-browser-dynamic-execution-0/   vosk.worker.js  vosk.wasm.js  vosk.wasm  LICENSE  NOTICE  SHA256SUMS
+  espeak-ng-530bf0a/                  espeak-ng.js  espeak-ng.wasm  LICENSE  NOTICE  SOURCE  LICENSE.md  SHA256SUMS
+                                      corresponding-source/  espeak-ng-530bf0a.tar.gz  build-espeak-ng.ps1
   vosk-models/                        vosk-model-small-{pt-0.3,es-0.42,en-us-0.15}.tar.gz  SHA256SUMS
   moonshine-streaming-small-es-onnx/  onnx/…  config.json  tokenizer.json …  LICENSE  SHA256SUMS
 ```

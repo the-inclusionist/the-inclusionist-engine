@@ -61,10 +61,7 @@ Credit follows what was used. Until that date neural narration relied on:
   **Fangjun Kuang** ([@csukuangfj](https://github.com/csukuangfj)), who packaged Piper voices in the sherpa format.
 - **[Piper](https://github.com/rhasspy/piper)** (Michael Hansen / rhasspy, **MIT**) and the `@mintplex-labs/piper-tts-web` runtime (MIT).
 - **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)** (**GPL-3.0**) — the voices' phonemization (`piper_phonemize`).
-  ⚠️ **Staged for the mirror on 2026-09-22 and ON HOLD** (issue #192): the WebAssembly build of `espeak-ng` 1.0.2 sits in
-  `the-inclusionist-lfs/espeak-ng-1.0.2/`, but the **matching source** the GPL requires beside it (`espeak-ng-1.0.2/source/`)
-  has not been staged, so the upload script skips the folder. A binary served without its source would breach the licence,
-  and a mirror is distribution. What `source/` needs is written in that folder's `LICENSE.md`.
+  It still phonemizes the neural voice, now in the project's own build (under Kokoro, below).
 - **The voices and their dataset licences**, read on 2026-09-14: `pt_BR-faber-medium` (NabuCasa/voice-datasets, CC0),
   `es_MX-claude-high` (HirCoir/Piper-TTS-Spanish, Apache-2.0), `en_US-amy-medium` (MycroftAI/mimic3-voices, «See URL»),
   `en_US-ryan-medium` (roholazandie/ryanspeech, CC BY-NC-SA 4.0). The Dev's answer on Ryan — «nosso projeto não tem fins
@@ -76,16 +73,21 @@ The weights are **Apache-2.0** (`huggingface.co/hexgrad/Kokoro-82M`), trained on
 audio: **Koniwa** (CC BY 3.0) and **SIWIS** (CC BY 4.0), credited here. The ONNX export used is `onnx-community/Kokoro-82M-v1.0-ONNX`.
 
 What speaks it, fetched by the engine beside the model: **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)**
-(`espeak-ng` 1.0.2, **GPL-3.0-or-later**) turns the sentence into phonemes, and
+(by Jonathan Duddington, Reece H. Dunn and its contributors; **GPL-3.0-or-later**) turns the sentence into phonemes, and
 **[ONNX Runtime Web](https://github.com/microsoft/onnxruntime)** (`onnxruntime-web` 1.27.0, **MIT**, Microsoft) runs the graph.
 
 - **Kokoro-82M** (catalogue `voz:kokoro:*`: the fp32 model, the tokenizer and one style table per voice) — **Apache-2.0**.
   Licence statement and NOTICE: `the-inclusionist-lfs/kokoro-82m-v1.0-onnx/LICENSE.md` and `NOTICE.md`; the Apache-2.0 text
   itself is upstream (`huggingface.co/hexgrad/Kokoro-82M`), not held in that folder.
-- **eSpeak NG in WebAssembly** (catalogue `voz:runtime:fonemas*`: `espeak-ng.js` and `espeak-ng.wasm` from the npm package
-  `espeak-ng` 1.0.2, built by the `ianmarmour/espeak-ng.js` repository) — **GPL-3.0-or-later**, as its `package.json`
-  declares. The package carries the GPL-3.0 text (`LICENSE`) and no copyright line of its own; the eSpeak NG revision the
-  build was made from is not stated in the package. The source obligation is the one written under Piper above.
+- **eSpeak NG in WebAssembly** (catalogue `voz:runtime:fonemas*`: `espeak-ng.js` and `espeak-ng.wasm`) — **GPL-3.0-or-later**,
+  **built by the project** from eSpeak NG commit `530bf0ab` (issue #192) with `scripts/models/build-espeak-ng.ps1`, which pins
+  that commit, the Emscripten image and every flag; its data is cut to the pt, es and en voices (and the de and fr
+  dictionaries Portuguese hands words to). It replaces the npm package `espeak-ng` 1.0.2 (`ianmarmour/espeak-ng.js`), whose
+  eSpeak NG revision the package never stated: built from `530bf0ab`, the project's build carries that package's data byte for
+  byte and gives the same phonemes (`docs/6-DevOps-SRE/models.md`). **Corresponding Source** (GPL-3.0 §6): the commit and the
+  recipe, both staged beside the build in `the-inclusionist-lfs/espeak-ng-530bf0a/corresponding-source/` with `LICENSE`, `NOTICE` and a
+  `LICENSE.md` naming them; every delivery's folder carries a `SOURCE` note saying where they are
+  (`scripts/licences/third-party.mjs`). The copyright lines are those of the C files compiled into it, listed in its `NOTICE`.
 - **ONNX Runtime Web** (catalogue `voz:runtime:onnx*`: `ort.webgpu.bundle.min.mjs` and the `ort-wasm-simd-threaded.jsep` pair)
   — **MIT**. The bundle's own header: «Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT
   License.» Mirror notice: `the-inclusionist-lfs/onnxruntime-web-1.27.0/LICENSE.md`; the MIT text itself is upstream
