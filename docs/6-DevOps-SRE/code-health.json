@@ -38,10 +38,10 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 248,
-      "decisionNodes": 35,
+      "codeLines": 255,
+      "decisionNodes": 36,
       "maxDepth": 2,
-      "fanOut": 6,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
@@ -1565,7 +1565,7 @@
       "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 1
     },
     "ui/libras-avatar-stage.ts": {
       "codeLines": 165,

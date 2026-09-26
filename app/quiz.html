@@ -94,7 +94,8 @@
        inline script (the CSP's `script-src 'self'`). -->
   <script type="module">
     import { bootQuiz } from './js/consumer-quiz/main-quiz.ts';
-    bootQuiz({ doc: document, win: window });
+    // `?libras=avatar` lends the engine the free Libras player (ADR-0234, route B) in place of the VLibras one (route A)
+    bootQuiz({ doc: document, win: window, librasAvatar: new URLSearchParams(location.search).get('libras') === 'avatar' });
   </script>
 </body>
 </html>

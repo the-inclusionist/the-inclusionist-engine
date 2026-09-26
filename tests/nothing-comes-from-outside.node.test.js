@@ -173,6 +173,8 @@ const TOCAM_NA_REDE = {
     + 'question «did the delivery ship the avatar?» first — and to `ui/libras-glosses` (the glosses route A\'s delivery writes '
     + 'beside its player); and `import(\'./libras-avatar-stage.js\')`, a chunk of this same package that carries three.js, loaded '
     + 'when the avatar is first opened (ADR-0234, route B)',
+  'consumer-quiz/main-quiz.ts': 'LOCAL. It names its window\'s `fetch` only to lend it to the free Libras player it builds for '
+    + '`?libras=avatar` (`ui/libras-avatar-player` above), which reads the delivery\'s own `libras/avatar/` with it',
   'platform/tts.ts': 'LOCAL. `el.src = som.url`, a `blob:` URL of the WAV the neural voice just synthesised here, played '
     + 'through a media element so the speech rate keeps the pitch (ADR-0183 §1); it never leaves the machine. The '
     + '`import()` of the neural runtime moved into the root with ADR-0232 D4',
