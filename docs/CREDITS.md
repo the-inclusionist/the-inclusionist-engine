@@ -232,7 +232,7 @@ the Dev's permission («Autorizo»); none is committed to this repository.
 - **Changed by this project:** nothing — the files are carried byte for byte.
 - **Copyright line: UNVERIFIED** — the bundles carry none, and the repository's own `LICENSE` and README were not read.
 
-## VLibras sign sources — LAViD-UFPB `vlibras-dictionary-sources`, `.blend` files — GPL-3.0 — EXPORTED, NOT YET DISTRIBUTED
+## VLibras sign sources — LAViD-UFPB `vlibras-dictionary-sources`, `.blend` files — GPL-3.0 — EXPORTED, DISTRIBUTED BY `--libras-avatar`
 
 What the free player of route B is built from (ADR-0234, route B, phase B1): each sign's Blender 2.79 source,
 `FILES/BLENDS/BR/<NAME>.blend` of the same repository at the same commit `f8ddb378affd0d6da42f04c9fc888dafe1cc1299` — the whole
@@ -252,7 +252,11 @@ the Dev's permission (route B's first step) into a folder outside the repository
   no file carries, and two secondary texture slots are left out; the sign's constraints baked into bone tracks and its face's
   driver-moved shape keys sampled into morph tracks; keys reduced within a stated tolerance; node names as three.js's glTF
   loader renames them.
-- **Distributed: nothing yet** — no delivery and no package carries an export until the player of phase B2 exists.
+- **Distributed: by a delivery built with `inclusionist-heavy --libras-avatar`** (phase B2): the avatar and the 632 clips of
+  the first export, **33,699,157 bytes**, each pinned by sha256 in `scripts/libras-avatar.json`, into `libras/avatar/` with the
+  GPL-3.0 text and a NOTICE naming LAViD, the pinned commit and where the Corresponding Source is (`scripts/libras-avatar.mjs`).
+  The npm package carries none of them. One clip is played from a later point than its file starts: FALA's `.blend` action
+  begins at a stray keyframe 1404 frames before the sign, and the pins name the sign's start (46.8 s) with why.
 - **Copyright line: UNVERIFIED** — the `.blend` files carry none that was read, and the repository's own `LICENSE` and README
   were not read.
 

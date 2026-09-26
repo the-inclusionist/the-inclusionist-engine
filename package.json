@@ -116,7 +116,9 @@
     "scripts/libras-glosses/pyproject.toml",
     "scripts/libras-glosses/uv.lock",
     "scripts/libras-glosses/gloss.py",
-    "scripts/libras-signs.json"
+    "scripts/libras-signs.json",
+    "scripts/libras-avatar.mjs",
+    "scripts/libras-avatar.json"
   ],
   "bin": {
     "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"

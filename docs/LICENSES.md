@@ -91,8 +91,12 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     source beside them (`libras/signs/`). See `CREDITS.md`.
     **Route B** (the free player that replaces the Unity one) is built from the same dictionary's `.blend` sources
     (**GPL-3.0**, pinned in `scripts/libras-export/sources.json`): `scripts/libras-export.mjs` exports one avatar and one clip
-    per sign, **GPL-3.0 derivatives** whose Corresponding Source is those `.blend` files plus the two export scripts. No
-    delivery carries them yet.
+    per sign, **GPL-3.0 derivatives** whose Corresponding Source is those `.blend` files plus the two export scripts. A
+    delivery built with `inclusionist-heavy --libras-avatar` carries them (`libras/avatar/`, pinned in
+    `scripts/libras-avatar.json`) with the GPL-3.0 text and a NOTICE naming that source; the npm package carries none.
+    The player that draws them runs on **three.js** 0.186.1 (**MIT**), the engine's one run-time npm `dependency`, pinned
+    exactly and reached only by a dynamic `import()` at the first sign in deaf mode (ADR-0234 errata). ⚠️ The built chunk
+    that carries it keeps no licence comment — the MIT notice a delivery owes beside it is **not yet given** (`CREDITS.md`).
 
   ⚠️ For most of these the project holds a statement of the licence, not its upstream text, and several copyright
   lines are marked **UNVERIFIED** in `CREDITS.md`, which says what each line rests on.

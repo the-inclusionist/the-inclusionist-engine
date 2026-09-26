@@ -27,6 +27,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
 import { deliverLibrasPlayer, writeDeliveryList, librasListPaths } from './vlibras-player.mjs';
 import { deliverLibrasGlosses, readSignPins, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
+import { deliverLibrasAvatar, readAvatarPins } from './libras-avatar.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
@@ -115,6 +116,10 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   with nothing to sign but letters. Last, it writes `libras/offline.json`, the list of the page, glosses and signs with their
  *   sha256, by which a device with deaf mode on keeps the player for the days without a network.
  * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
+ * · `--libras-avatar`: the FREE player's files (ADR-0234, route B, phase B2) — the avatar and the 632 sign clips of the B1 export,
+ *   32.1 MiB, into `libras/avatar/`, each checked against `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`). Beside route
+ *   A, not instead of it: a host lends the free player through `EngineHost.interpreter`. It reads the glosses `--libras` writes,
+ *   so the two go together. Read here, apart from the answers above, so this list's shape stays route A's until phase B3.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
@@ -173,7 +178,7 @@ if (executado) {
     try { console.log(`the Libras glosser's environment is ready: ${setUpGlosser()}`); process.exit(0); }
     catch (e) { console.error(e instanceof Error ? e.message : String(e)); process.exit(1); }
   }
-  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… | --libras-setup'); process.exit(2); }
+  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… [--libras-avatar] | --libras-setup'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
@@ -232,6 +237,17 @@ if (executado) {
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
       console.error('the Libras player was not delivered: this delivery cannot sign');
+      process.exit(1);
+    }
+  }
+  if (process.argv.includes('--libras-avatar')) {
+    const { LIBRAS_AVATAR_FOLDER } = await import(new URL('../dist-pkg/ui/libras-avatar-plan.js', import.meta.url).href);
+    try {
+      const { files, bytes } = await deliverLibrasAvatar({ destino, folder: LIBRAS_AVATAR_FOLDER, pins: readAvatarPins(), base });
+      console.log(`avatar    ${LIBRAS_AVATAR_FOLDER} — ${files} files, ${(bytes / 1048576).toFixed(1)} MiB (ADR-0234, route B)`);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      console.error('the Libras avatar was not delivered: the free player cannot sign in this delivery');
       process.exit(1);
     }
   }
