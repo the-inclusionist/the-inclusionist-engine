@@ -76,7 +76,7 @@ describe('the neural voice, loaded by the engine', () => {
     await kokoro.phonemize('uma', 'pt-br');
     await kokoro.phonemize('duas', 'pt-br');
     await kokoro.phonemize('três', 'pt-br');
-    expect(fetched.filter((u) => u.endsWith('espeak-ng.wasm')), 'the 18 MiB wasm was fetched again for each sentence').toHaveLength(1);
+    expect(fetched.filter((u) => u.endsWith('espeak-ng.wasm')), 'the phonemizer wasm was fetched again for each sentence').toHaveLength(1);
   });
 
   it('🔴 [Right] espeak-ng is instantiated through the injected `instantiateWasm`, with its own imports (ADR-0232 D4)', async () => {
@@ -124,7 +124,7 @@ describe('the neural voice, loaded by the engine', () => {
    * 🔴 AND NOBODY MAY IMPORT IT STATICALLY (ADR-0216 §5: «everything heavy loads late»). This module is the one that names
    * espeak-ng and onnxruntime, so a single `import … from './kokoro-runtime.js'` anywhere in the engine puts them in the chunk of
    * every game that merely links it — the very cost the erratum measured away. Nothing in the reading of a `problems` line or a
-   * type check would show it: the page would just be 45 MiB heavier for a game that never speaks.
+   * type check would show it: the page would just be 28 MiB heavier for a game that never speaks.
    *
    * ⚠️ It is asserted over the WHOLE tree and not over `platform/tts` alone, because the next module to want the voice would be
    * the one to pay the cost, and it would not be reading this file.

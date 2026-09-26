@@ -91,13 +91,26 @@ describe('the licences travel with the heavy files', () => {
     }
   });
 
-  it('🔴 [Right] eSpeak NG (GPL-3.0) carries a SOURCE note that says where the source is, and what is unverified', () => {
-    const folder = folderOf(WITH_URL.find((p) => p.id === 'voz:runtime:fonemas:wasm'));
-    const source = readFileSync(join(destino, folder, 'SOURCE'), 'utf8');
+  it('🔴 [Right] eSpeak NG (GPL-3.0) carries a SOURCE note naming its Corresponding Source: the commit the recipe pins, and the recipe', () => {
+    /*
+     * GPL-3.0 §6(d): object code offered from a place carries «clear directions next to the object code saying where to find the
+     * Corresponding Source». The build is the project's own (issue #192), so the source is a COMMIT and a RECIPE — and the three
+     * places that name them (the recipe, the catalogue's folder, this note) must name the same ones, or the directions point at
+     * a source that did not make these bytes.
+     */
+    const wasm = WITH_URL.find((p) => p.id === 'voz:runtime:fonemas:wasm');
+    const source = readFileSync(join(destino, folderOf(wasm), 'SOURCE'), 'utf8');
+    const recipe = readFileSync(join(ROOT, 'scripts', 'models', 'build-espeak-ng.ps1'), 'utf8').replaceAll('\r\n', '\n');
+    const commit = recipe.match(/^\$commit = '([0-9a-f]{40})'$/m)?.[1];
+    expect(commit, 'the recipe no longer pins a full commit').toBeTruthy();
+    expect(recipe, 'the recipe links without refusing eval — the policy has no unsafe-eval').toContain('-sDYNAMIC_EXECUTION=0');
+    const folder = wasm.url.slice(0, wasm.url.lastIndexOf('/'));
+    expect(folder.endsWith(`/espeak-ng-${commit.slice(0, 7)}`), `the catalogue's folder ${folder} is not the recipe's commit`).toBe(true);
+    expect(source).toContain(`commit ${commit}`);
     expect(source).toContain('https://github.com/espeak-ng/espeak-ng.git');
-    expect(source).toContain('git+https://github.com/ianmarmour/espeak-ng.js.git');
-    expect(source).toContain('1.0.2');
-    expect(source).toMatch(/exact eSpeak NG revision .* is UNVERIFIED/);
+    expect(source).toContain('scripts/models/build-espeak-ng.ps1');
+    expect(source).toContain(`${folder}/corresponding-source/`);
+    expect(source, 'the source is named now: nothing about it is unverified').not.toMatch(/UNVERIFIED/);
   });
 
   it('🔴 [Right] MIT carries its copyright line, or says it is unverified; the Vosk NOTICE is the upstream one, whole', () => {
@@ -153,3 +166,6 @@ describe('the licences travel with the heavy files', () => {
 //   L4 the one-folder-one-project check removed                     🔴 two projects in one folder fail
 //   L5 `scripts/licences` left out of `files`                       🔴 the package ships them
 //   L6 no LICENSE written for the MIT groups                        🔴 every folder holds LICENSE · MIT carries its copyright line
+//   L7 the SOURCE note names another commit than the recipe         🔴 eSpeak NG carries a SOURCE note naming its source
+//   L8 the catalogue's eSpeak NG folder names another commit         🔴 eSpeak NG carries a SOURCE note naming its source
+//   L9 the recipe's -sDYNAMIC_EXECUTION=0 removed                   🔴 eSpeak NG carries a SOURCE note naming its source

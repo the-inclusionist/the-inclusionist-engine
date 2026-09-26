@@ -97,15 +97,16 @@ describe('o buscador das coisas pesadas', () => {
   it('📏 o peso por baixar é o das que TÊM fonte e ainda não desceram', async () => {
     const semNada = bytesLeftToDownload([]);
     // The vision runtime and models, Kokoro (ADR-0198: the 325 532 232-byte model, its tokenizer and 34 voice tables of 522 240
-    // bytes) and, since ADR-0216, the runtime that SPEAKS it — espeak-ng and onnxruntime-web, 45.5 MiB, which used to be a
+    // bytes) and, since ADR-0216, the runtime that SPEAKS it — eSpeak NG and onnxruntime-web, 27.2 MiB, which used to be a
     // dependency of each game — plus the three reading models, 850 MiB (pt 378, en 162, es 310). ADR-0207 took out the earlier
-    // neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer (−1.8 MiB). What has no source adds nothing.
+    // neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer (−1.8 MiB), and the project's own eSpeak NG build, its
+    // data cut to the languages spoken, 16.3 MiB of the npm build's 17.8 (issue #192). What has no source adds nothing.
     //
     // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
     // a device actually fetches is `heavyAtBoot`, which asks for what the game declared and what the delivery serves.
     // The Libras player has no catalogue entry: its files are the delivery's own, kept by its list (ADR-0234, phase B3 took the
     // Unity build's 19.7 MiB out of this total).
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1363);
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1347);
     const f = cacheFalsa();
     const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
     expect(bytesLeftToDownload(r), 'depois de tudo descer não falta nada').toBe(0);

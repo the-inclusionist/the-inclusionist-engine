@@ -64,16 +64,18 @@ const BUSCAS_A_MAO = {
     // mirror table AND in `NOT_MIRRORED`, because the folder exists in the staging tree and is ON HOLD until the GPL source is
     // published beside the build. The duplicate IS the decision — mirrored in principle, upstream until the obligation is met.
     // 11 → 12 with the Libras player (ADR-0234, route A), and 12 → 11 when it left (phase B3): the Unity build's folder went with it.
-    urls: 11,
+    // 11 → 10 when the engine pinned its own eSpeak NG build (issue #192): the jsDelivr address left BOTH lists, and the build's
+    // folder on the project's mirror took one line.
+    urls: 10,
     porque:
       'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
       + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '
       + 'server). The module is pure — it returns a string. Every one is already in `pesados-catalogo`, and an address here that '
       + 'is not there would be a mirror of something nobody catalogued. 📌 THREE are the reading models (ADR-0201 erratum, issue '
       + '#185), folder by folder, and their upstream IS the project\'s own mirror because both exports were made here — listing '
-      + 'them is what lets a build read 850 MiB from the staging tree instead of over a school\'s link. 📌 The other TWO are what '
-      + 'the project does NOT mirror and why (the voice runtime: espeak-ng is GPL and a mirror obliges publishing its source, '
-      + 'issue #192) — named so that «fetched upstream even with a base» is a written decision and not an omission',
+      + 'them is what lets a build read 850 MiB from the staging tree instead of over a school\'s link. 📌 THREE more have no '
+      + 'upstream either, being builds and repacks made here: the Vosk runtime and its models, and eSpeak NG built from a pinned '
+      + 'commit so its GPL source can be named (issue #192)',
   },
   'platform/heavy-catalogue.ts': {
     urls: 5,
@@ -85,10 +87,13 @@ const BUSCAS_A_MAO = {
       'em jsDelivr — o runtime de visão; (2) `storage.googleapis.com/mediapipe-models` — os modelos `.task`, ' +
       'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada. ' +
       'WebGazer (`webgazer.cs.brown.edu`) left with ADR-0214. ' +
-      '📌 TWO are the voice runtime (ADR-0216): espeak-ng and onnxruntime-web, both on jsDelivr — the ' +
+      '📌 ONE is the voice runtime\'s graph runner (ADR-0216): onnxruntime-web on jsDelivr — the ' +
       'same origin already defended above, and written here so the engine imports nothing from npm at run time. ' +
-      '📌 The FIFTH is the project\'s own mirror (ADR-0203), which is not a third party: the reading models live there because ' +
-      'both ONNX exports were made by this project and have no upstream to point at (ADR-0201 erratum, issue #185). ' +
+      '📌 The FOURTH is the project\'s own mirror (ADR-0203), which is not a third party: the reading models live there because ' +
+      'both ONNX exports were made by this project and have no upstream to point at (ADR-0201 erratum, issue #185), and so does ' +
+      'the Vosk runtime built here. 📌 The FIFTH is a folder of that same mirror, written whole: eSpeak NG, the voice\'s ' +
+      'phonemizer, built here from a pinned commit so its GPL source can be named (issue #192). Its constant sits above the ' +
+      'reading models\' and cannot borrow theirs, and it is not a new supplier. ' +
       'The VLibras Unity player (ADR-0234, route A) was a sixth and left in phase B3: the Libras player is the project\'s own ' +
       'export now, pinned outside this catalogue. ' +
       'A SIXTH address, or a new origin, is a supplier entering without a decision. They leave this list when the bytes are ' +

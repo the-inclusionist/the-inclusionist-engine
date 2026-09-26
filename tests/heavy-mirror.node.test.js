@@ -33,27 +33,25 @@ describe('the base of the heavy files', () => {
     }
   });
 
-  it('🔴 [Right] only espeak-ng stays outside the mirror, with its reason — with a base, every other file comes from it', () => {
+  it('🔴 [Right] nothing stays outside the mirror, and espeak-ng is read from the folder of the project\'s own build', () => {
     /*
-     * 🔴 ONE file stays outside the mirror: `espeak-ng`, fetched from jsDelivr even with a base. It is GPL, and mirroring
-     * is distributing, which obliges publishing the SOURCE beside the binary (issue #192); until then its mirror folder
-     * is «🔴 ON HOLD» and the upload script skips it. 📏 Measured on the bucket: `espeak-ng` answers **404** while the
-     * three `onnxruntime-web` files answer 200 with the catalogue's exact bytes — an empty list would have pointed every
-     * school at a 404.
+     * 📌 The list of what stays upstream is EMPTY. Its last line was the npm build of eSpeak NG, kept on jsDelivr because the
+     * project could not name the source it was built from, and mirroring a GPL binary is distributing it. The engine now pins its
+     * own build (issue #192, `scripts/models/build-espeak-ng.ps1`), whose folder carries that source — so a base serves it like
+     * any other file, from that folder, and a local base (the staging tree) is how a delivery is built before the upload.
      *
      * 🎯 What the case holds is the RULE, not the number: whatever stays outside the mirror carries a written REASON, and
      * everything not on that list must have a path in the mirror.
      */
-    expect(NOT_MIRRORED.map(([prefixo]) => prefixo), 'a lista de quem fica fora mudou sem a razão mudar com ela')
-      .toEqual(['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2']);
-    for (const [, porque] of NOT_MIRRORED) expect(porque.length, 'um ficheiro fora do espelho sem razão é um buraco').toBeGreaterThan(20);
+    expect(NOT_MIRRORED, 'something left the mirror: write it here with its reason, and check what the bucket serves').toEqual([]);
     const foraDoEspelho = HEAVY_FILES.filter((p) => p.url && !mirrorPathOf(p.url))
       .filter((p) => !NOT_MIRRORED.some(([prefixo]) => p.url.startsWith(prefixo))).map((p) => p.id);
     expect(foraDoEspelho, 'um pesado sem caminho no espelho e sem razão para isso').toEqual([]);
     const ort = HEAVY_FILES.find((p) => p.id === 'voz:runtime:onnx').url;
     expect(heavySourceOf(ort, BASE)).toBe(`${BASE}/onnxruntime-web-1.27.0/dist/ort.webgpu.bundle.min.mjs`);
-    const espeak = HEAVY_FILES.find((p) => p.id === 'voz:runtime:fonemas').url;
-    expect(heavySourceOf(espeak, BASE), 'o espeak foi ao espelho antes de a fonte estar publicada').toBe(espeak);
+    const espeak = (id) => heavySourceOf(HEAVY_FILES.find((p) => p.id === id).url, 'C:\\lfs');
+    expect(espeak('voz:runtime:fonemas')).toBe('C:\\lfs/espeak-ng-530bf0a/espeak-ng.js');
+    expect(espeak('voz:runtime:fonemas:wasm')).toBe('C:\\lfs/espeak-ng-530bf0a/espeak-ng.wasm');
   });
 
   it('🔴 [Right] the path is the one the staging tree uses, folder by folder', () => {
@@ -92,3 +90,6 @@ describe('the base of the heavy files', () => {
 //   · the upstream prefix kept in the mirror path        → «the path is the one the staging tree uses»
 //   · the trailing slash not trimmed                     → «a base with a trailing slash»
 //   · a folder on the machine read as an address         → «a folder on the machine is a base too»
+// MUTATIONS CHECKED (2026-09-26, issue #192) — `scratchpad/espeak-own/mutate.mjs`:
+//   · eSpeak NG put back in `NOT_MIRRORED`               → «nothing stays outside the mirror»
+//   · the build's folder mapped to `espeak-ng-1.0.2`     → «nothing stays outside the mirror» (the path under a local base)

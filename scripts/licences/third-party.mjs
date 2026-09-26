@@ -23,13 +23,20 @@ import { dirname, join } from 'node:path';
 
 const HERE = new URL('./', import.meta.url);
 
+// The eSpeak NG build the catalogue pins (`voz:runtime:fonemas`), made by `scripts/models/build-espeak-ng.ps1` (issue #192). The
+// catalogue's address names the same folder, and `tests/heavy-licences.node.test.js` holds the two together.
+const ESPEAK_NG_COMMIT = '530bf0abf4174dc9ca28dbacc11bd5e9ae6152cd';
+const ESPEAK_NG_FOLDER = 'espeak-ng-530bf0a';
+const ESPEAK_NG_MIRROR = `https://lfs-oinclusionista.jrocha.dev.br/${ESPEAK_NG_FOLDER}`;
+
 /**
  * The licence texts, each copied byte for byte from a local file (sha256 of the copy, with CRLF read as LF).
  * · Apache-2.0: the vosk-browser upstream text as the mirror holds it; its terms match, word for word, the Apache-2.0 text of
  *   `node_modules/detect-libc/LICENSE` up to «END OF TERMS AND CONDITIONS» (the appendix, a how-to, is not in it).
  * · MIT: the permission notice and disclaimer only — from «Permission is hereby granted» to the end — of
  *   `node_modules/pixi.js/LICENSE`. The copyright line above it is each project's own, written per group below.
- * · GPL-3.0: the licence file of the `espeak-ng` 1.0.2 npm package itself.
+ * · GPL-3.0: the licence file of the `espeak-ng` 1.0.2 npm package, the build the engine used before its own (the FSF's current
+ *   text; eSpeak NG's `COPYING` is the same licence in the FSF's earlier wording, with `http://` addresses).
  */
 export const LICENCE_TEXTS = Object.freeze({
   'Apache-2.0': { file: 'Apache-2.0.txt', sha256: 'bb618af833c817ab01c1564bd3ec75ba4b4f9cf30910a4a2168e30a674ee8cc6',
@@ -69,34 +76,41 @@ export const THIRD_PARTY = Object.freeze([
   {
     key: 'espeak-ng',
     ids: ['voz:runtime:fonemas'],
-    project: 'eSpeak NG, WebAssembly build (npm package espeak-ng)',
-    version: 'espeak-ng 1.0.2 (npm); the binary reports eSpeak NG 1.52-dev',
+    project: 'eSpeak NG, built for the browser (WebAssembly) by The Inclusionist',
+    version: `eSpeak NG commit ${ESPEAK_NG_COMMIT} (master of 2023-09-27, between the releases 1.51 and 1.52.0), Emscripten 3.1.49`,
     spdx: 'GPL-3.0-or-later',
     licence: 'GPL-3.0',
-    copyright: [],
-    copyrightUnverified: 'the npm package carries the GPL-3.0 text and no copyright line of its own, and the two files carry no licence header',
+    copyright: [
+      'Copyright (C) 2005 to 2007 by Jonathan Duddington', 'Copyright (C) 2005 to 2011 by Jonathan Duddington',
+      'Copyright (C) 2005 to 2013 by Jonathan Duddington', 'Copyright (C) 2005 to 2014 by Jonathan Duddington',
+      'Copyright (C) 2005 to 2015 by Jonathan Duddington', 'Copyright (C) 2006 to 2013 by Jonathan Duddington',
+      'Copyright (C) 2012-2018 Reece H. Dunn', 'Copyright (C) 2012-2018, 2021 Reece H. Dunn', 'Copyright (C) 2013-2016 Reece H. Dunn',
+      'Copyright (C) 2013-2017 Reece H. Dunn', 'Copyright (C) 2015-2016 Reece H. Dunn', 'Copyright (C) 2015-2016, 2020 Reece H. Dunn',
+      'Copyright (C) 2015-2017 Reece H. Dunn', 'Copyright (C) 2016 Reece H. Dunn', 'Copyright (C) 2017 Reece H. Dunn',
+      'Copyright (C) 2017-2018 Reece H. Dunn', 'Copyright (C) 2018 Juho Hiltunen', 'Copyright (C) 2021 Juho Hiltunen',
+      'Copyright (C) 2022 Juho Hiltunen', 'Copyright (C) 2022 Ulrich Müller <ulm@gentoo.org>',
+    ],
+    copyrightFrom: 'the headers of the C files compiled into the binary at that commit — src/espeak-ng.c, the libespeak-ng files the build compiles and src/ucd-tools/src/*.c — each distinct line as written',
     notice: [
-      'dist/espeak-ng.js and dist/espeak-ng.wasm of the npm package espeak-ng 1.0.2, unchanged (https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2).',
-      'The package declares GPL-3.0-or-later (package.json "license"). Where its source is: SOURCE, beside this file.',
+      `CHANGED by The Inclusionist: the eSpeak NG command-line program compiled to WebAssembly from commit ${ESPEAK_NG_COMMIT} of https://github.com/espeak-ng/espeak-ng.git, unchanged, with the phoneme data and the pt, es, en, de and fr dictionaries embedded, and linked so that it never evaluates text as code (-s DYNAMIC_EXECUTION=0). Recipe: the engine's scripts/models/build-espeak-ng.ps1.`,
+      'The binary also contains ucd-tools (GPL-3.0-or-later) with tables generated from the Unicode Character Database (the Unicode licence, COPYING.UCD in the source), and the Emscripten runtime and musl (MIT).',
+      'Where its Corresponding Source is: SOURCE, beside this file.',
     ],
     source: [
-      'eSpeak NG in WebAssembly: where the source of the files in this folder is',
+      'eSpeak NG in WebAssembly: where the Corresponding Source of the files in this folder is',
       '',
-      'The files here are dist/espeak-ng.js and dist/espeak-ng.wasm of the npm package espeak-ng, version 1.0.2, unchanged: the',
-      'build checks each against the sha256 pinned in The Inclusionist engine\'s heavy-file catalogue before writing it. They are',
-      'licensed under the GNU General Public License, version 3 or later: the full text is LICENSE, beside this file.',
+      'The files here, espeak-ng.js and espeak-ng.wasm, are eSpeak NG built for the browser by The Inclusionist. They are licensed',
+      'under the GNU General Public License, version 3 or later: the full text is LICENSE, beside this file.',
       '',
-      'What the package itself states about its origin:',
-      '- the package\'s repository: git+https://github.com/ianmarmour/espeak-ng.js.git (package.json "repository"); the package',
-      '  names no commit of it;',
-      '- the eSpeak NG source it compiles: https://github.com/espeak-ng/espeak-ng.git, cloned by the build recipe in the package\'s',
-      '  README, which names no tag and no commit;',
-      '- the version the binary reports: the string "1.52-dev", read from espeak-ng.wasm.',
+      'Their Corresponding Source (GPL-3.0, section 6) is:',
+      `- eSpeak NG at commit ${ESPEAK_NG_COMMIT}, unchanged: https://github.com/espeak-ng/espeak-ng.git;`,
+      '- the build recipe, scripts/models/build-espeak-ng.ps1 in The Inclusionist engine, which pins that commit, the Emscripten',
+      '  toolchain (the emscripten/emsdk 3.1.49 image, by digest), the data it embeds and every flag. Run as it is, it writes these',
+      '  two files byte for byte: the build checks each against the sha256 in the engine\'s heavy-file catalogue before writing it.',
       '',
-      'The exact eSpeak NG revision these files were built from is UNVERIFIED.',
-      '',
-      'This delivery does not include the Corresponding Source, and The Inclusionist does not host it yet. How the project provides',
-      'it is an open decision, recorded in engine issue #192.',
+      'A copy of both is published beside the build, in',
+      `${ESPEAK_NG_MIRROR}/corresponding-source/ :`,
+      `the source at that commit (${ESPEAK_NG_FOLDER}.tar.gz, made with git archive) and the recipe (build-espeak-ng.ps1).`,
     ],
   },
   {

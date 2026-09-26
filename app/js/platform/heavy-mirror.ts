@@ -30,10 +30,11 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   // `vosk-browser` evaluates text as code, so this one was rebuilt with `-s DYNAMIC_EXECUTION=0` to run under the policy.
   ['https://lfs-oinclusionista.jrocha.dev.br/vosk-browser-dynamic-execution-0', 'vosk-browser-dynamic-execution-0'],
   ['https://lfs-oinclusionista.jrocha.dev.br/vosk-models', 'vosk-models'],
-  // The neural voice's phonemizer and the graph runtime it shares with the reading models (issue #192, the Dev on 2026-09-22).
-  // ⚠️ espeak-ng is GPL-3.0-or-later: the folder must carry the matching SOURCE beside the binary, and `docs/CREDITS.md` says
-  // where. The version is in the folder name on purpose — a mirror that drops it cannot serve two versions during an upgrade.
-  ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2', 'espeak-ng-1.0.2'],
+  // The neural voice's phonemizer, the project's own build of eSpeak NG (issue #192): it has no upstream either, and its folder
+  // carries the Corresponding Source the GPL asks for — the pinned commit and the recipe, in `corresponding-source/`. The commit is in the folder
+  // name on purpose: a mirror that drops it cannot serve two builds during an upgrade.
+  ['https://lfs-oinclusionista.jrocha.dev.br/espeak-ng-530bf0a', 'espeak-ng-530bf0a'],
+  // The graph runtime the neural voice shares with the reading models (the Dev on 2026-09-22).
   ['https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0', 'onnxruntime-web-1.27.0'],
   // 📌 The Libras player's avatar and clips are not catalogue files: `--libras` reads them from `<base>/vlibras-avatar-<commit>/`
   // by their own pins (`scripts/libras-avatar.mjs`), so no mapping for them lives here.
@@ -42,20 +43,11 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
 /**
  * Addresses the project does NOT mirror, each with why — they go on being fetched upstream even when a base is set.
  *
- * 🔴 AND THE ENTRY BELOW CAME BACK THE SAME DAY IT LEFT, which is worth writing rather than hiding. The Dev decided to mirror
- * both of the last two third-party addresses («Ok, vamos espelhar»), so this list was emptied — and 📏 measuring the bucket
- * after the upload showed `espeak-ng` answering **404** while the three `onnxruntime-web` files answer 200 with exactly the
- * catalogued byte counts. Nothing failed: the staging folder is marked «🔴 ON HOLD» and `upload-to-r2.ps1` skips it, because
- * espeak-ng is GPL-3.0-or-later and serving the binary obliges publishing the matching SOURCE beside it (ADR-0203 erratum,
- * issue #192). Emptying the list without checking what the bucket serves would have pointed every school at a 404.
- *
- * ⚠️ So it stays upstream until `espeak-ng-1.0.2/source/` exists. The decision to mirror it is unchanged; what is missing is
- * the obligation that decision carries, and a mirror is distribution.
+ * 📌 EMPTY, and a line here is a written decision, never an omission. The last one was the npm build of eSpeak NG, kept upstream
+ * because the project could not name the source it was built from; the engine now pins its own build, whose folder carries that
+ * source (issue #192). ⚠️ Before adding a line, check what the bucket serves: the mirror answers 404 for a folder not uploaded.
  */
-export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [
-  ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2',
-    'GPL: the mirror folder is ON HOLD until the matching source is published beside the build (issue #192)'],
-];
+export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [];
 
 /** The path a mirror serves this upstream address under, or `null` when no mirror of this project holds it. */
 export function mirrorPathOf(url: string): string | null {

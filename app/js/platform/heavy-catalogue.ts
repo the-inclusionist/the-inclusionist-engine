@@ -75,21 +75,23 @@ const MEDIAPIPE: readonly HeavyFile[] = Object.freeze([
  * same reason — the engine imports nothing from npm at run time, so a game that never asks for this voice carries none of it, and
  * the published package stays free of a bundler-only import.
  *
- * · espeak-ng turns a sentence into phonemes, in every language the project speaks. GPL-3.0-or-later, compatible with the engine's
- *   AGPL-3.0 (LICENSES.md); the source travels beside the mirror (ADR-0203 erratum).
+ * · eSpeak NG turns a sentence into phonemes, in every language the project speaks. GPL-3.0-or-later, compatible with the engine's
+ *   AGPL-3.0 (LICENSES.md). It is the PROJECT'S OWN BUILD (issue #192): the npm build named no source, so the engine compiles it
+ *   from a pinned commit (`scripts/models/build-espeak-ng.ps1`), and that commit and that recipe travel beside the mirror's copy.
+ *   Its address is the project's mirror because nothing upstream holds these bytes.
  * · onnxruntime-web runs Kokoro's graph. The `jsep` pair is what its own threads load, which is why both are here: a worker that
  *   cannot find them answers nothing, and the child hears silence (measured in the quiz demo, #181).
  *
- * ⚠️ sha256 MEASURED on the files the dev dependency already put on the build machine, not taken from a page; the first delivery run
- * is what proves jsDelivr serves the same bytes, because it refuses to write anything else.
+ * ⚠️ sha256 MEASURED on the files, not taken from a page: onnxruntime-web's on those the dev dependency put on the build machine,
+ * which the first delivery run proved jsDelivr serves; eSpeak NG's on two runs of its recipe, which wrote the same bytes.
  */
-const ESPEAK = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2';
+const ESPEAK = 'https://lfs-oinclusionista.jrocha.dev.br/espeak-ng-530bf0a';
 const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0';
 const VOICE_RUNTIME: readonly HeavyFile[] = Object.freeze([
-  { id: 'voz:runtime:fonemas', url: `${ESPEAK}/dist/espeak-ng.js`, bytes: 178_386,
-    sha256: '406c6655a6cacf34d84fc69dc4478c81b71518809080ce2d05df1b706d76429d' },
-  { id: 'voz:runtime:fonemas:wasm', url: `${ESPEAK}/dist/espeak-ng.wasm`, bytes: 18_485_010,
-    sha256: '10d24bb7e4124e983aa9cd8cd96c52c8ea4b607d81956ec70846684e2827d532' },
+  { id: 'voz:runtime:fonemas', url: `${ESPEAK}/espeak-ng.js`, bytes: 70_951,
+    sha256: 'd2f7cea5ed29daed420a05271a48e5b7ab5315b1f4b33fa04ea54014c155889e' },
+  { id: 'voz:runtime:fonemas:wasm', url: `${ESPEAK}/espeak-ng.wasm`, bytes: 1_493_661,
+    sha256: '44e0cc6accb436880d1d52d2dd7b69a72f8f6a8c8f2cdb3dcf00e3914db4eb05' },
   { id: 'voz:runtime:onnx', url: `${ORT}/dist/ort.webgpu.bundle.min.mjs`, bytes: 113_035,
     sha256: '3a18c7f261e05d44a15b2eef18a28e5f53c044d5d140bcea6066baf1f09c8b53' },
   { id: 'voz:runtime:onnx:cola', url: `${ORT}/dist/ort-wasm-simd-threaded.jsep.mjs`, bytes: 46_614,

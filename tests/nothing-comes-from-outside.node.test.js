@@ -61,10 +61,6 @@ const DECLARADAS = {
     + 'and the voice tables, named once in `platform/kokoro` and fetched by the BUILD into the delivery with their sha256 (ADR-0177); '
     + 'the page asks for them at `heavy/` on its own origin. An address, not a fetch: the module is pure',
   'http://www.w3.org/2000/svg': 'NAMESPACE XML, não um endereço: o `createElementNS` exige-o para criar nós SVG, e ele nunca sai da máquina. Aparece no `render/cvd-matrices` e no `render/lq-filter`, que montam os filtros de daltonismo',
-  'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2': 'THE PHONEMIZER OF THE NEURAL VOICE (ADR-0216, issue #200): espeak-ng turns a '
-    + 'sentence into phonemes in every language the project speaks. Fetched at BUILD time into the delivery like the vision runtime '
-    + '(ADR-0177) — the engine imports nothing from npm at run time, so a game that does not declare the neural voice carries none '
-    + 'of it. GPL-3.0-or-later, compatible with the AGPL (LICENSES.md)',
   'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0': 'WHAT RUNS KOKORO\'S GRAPH (ADR-0216, issue #200), fetched the same way. '
     + 'The `jsep` pair is what onnxruntime\'s own threads load: a worker that cannot find them answers nothing and the child hears '
     + 'silence (measured in the quiz demo, #181)',
@@ -86,6 +82,10 @@ const DECLARADAS = {
     + 'exists NOWHERE ELSE (issue #184): every published `vosk-browser` evaluates text as code, which this engine\'s policy '
     + 'refuses (ADR-0193 — never `unsafe-eval`, never a patch), so it was rebuilt with `-s DYNAMIC_EXECUTION=0`. Fetched by the '
     + 'BUILD into the delivery with its sha256',
+  'https://lfs-oinclusionista.jrocha.dev.br/espeak-ng-530bf0a': 'THE MIRROR ABOVE, and the phonemizer of the neural voice '
+    + '(ADR-0216, issue #192): eSpeak NG built HERE from a pinned commit (`scripts/models/build-espeak-ng.ps1`), because the npm '
+    + 'build named no source and eSpeak NG is GPL-3.0-or-later — the folder carries that source beside the binary. Fetched by the '
+    + 'BUILD into the delivery with its sha256, only for a game that declares the neural voice',
   'https://lfs-oinclusionista.jrocha.dev.br/vosk-models': 'THE MIRROR ABOVE, the three command models — alphacephei\'s small '
     + 'ones (Apache-2.0) repacked deterministically as the `.tar.gz` that build loads. 31–39 MiB a language, and a device asks '
     + 'for the child\'s',
