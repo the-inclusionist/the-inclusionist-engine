@@ -19,7 +19,10 @@ metadata:
     - tests/voice-choice.node.test.js
     - tests/voice-choice.browser.test.js
     - tests/a-language-with-no-voice.browser.test.js
+    - tests/voices-that-arrive-late.browser.test.js
   errata:
+    - date: 2026-09-26
+      what: "🔴 §4's LOCK FOLLOWS THE DEVICE'S VOICES, BOTH WAYS, WHILE THE CHILD LOOKS (branch `late-voices-unlock`: `engine:da718c2a`, with `engine:c1f205df` and `engine:4e207e4e`). §4 said when the rows are locked and not WHEN that is decided, and the code decided it only when the panel was drawn and the bar synced. 📏 A device may list its voices a moment after load — `getVoices()` empty, then full, with `voiceschanged` (headless Chromium on Windows, some Chromebooks) — and a panel opened in that moment kept the five speech rows locked, and the 🗣 greyed out, on a device that has a voice. Now every change of the voices evaluates the lock again: the rows are unlocked or locked again with the reason IN PLACE, the focus kept; the bars' 🗣 is reflected; nothing is said unless the lock flips on the row under the focus — then its footer shows what focusing it shows now, and an unlock also says «Agora há uma voz que fala este idioma.», because the footer's explanation does not say the state changed. Gated by `voices-that-arrive-late.browser` (15 mutations, all red)."
     - date: 2026-09-13
       what: "✅ CONFIRMED IN PART, pushed (issue #180 closed, `engine:9d0f5e5`): the list holds the Piper voices of the language, the choice is stored and speaks, and a language with no voice locks the four rows and the bar's button with the reason. ⚠️ No Kokoro voice is listed yet: that half is issue #181 (ADR-0186)."
   date: 2026-09-13
