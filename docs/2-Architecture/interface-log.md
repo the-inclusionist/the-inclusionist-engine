@@ -320,3 +320,14 @@ text size, and the statement drops to text size while it shows. A tried option i
 the answer to copy gets an outline and «➜». After the explanation every option comes back, or with five options the three
 more attempts could never all fail and the copy step would be unreachable. Leaving a skill and coming back resumes its
 question and pass. The HUD's one learning bar is the open skill's — on the start screen, the skill under the cursor.
+
+## 2026-09-26 · A margin between the game's edge and every text and button but the quick bar
+
+The Dev, after playing the test bench: «Os textos estão tocando na borda do jogo, é necessário haver uma margem mínima entre o
+texto, botões (exceto botões da barra de acessibilidade rápida) e a borda do jogo.» The margin is 4 logical pixels — 8 px at
+the 640×360 minimum — and grows with the integer scale like every other measure of the region; the quick bar keeps its place
+at the edge (ADR-0180 put it there). Chosen here: the value, which is the smallest that reads as a margin at the minimum
+screen without costing the quiz's five options a line.
+
+And the same day, «Ao clicar em menu e "Quit/Sair do Jogo" eu deveria ir para a tela de seleção de habilidades, a primeira do
+jogo»: the demo quiz answers the engine's `setPhase('title')` — the quit of ADR-0147's erratum — with its start screen.
