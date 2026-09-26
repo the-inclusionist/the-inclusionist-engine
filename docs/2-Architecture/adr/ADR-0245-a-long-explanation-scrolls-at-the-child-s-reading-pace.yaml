@@ -1,0 +1,66 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0164, ADR-0244]
+  date: 2026-09-26
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-26, verbatim, on the BNCC texts cut at two lines in the demo quiz's footer: «Explicações com mais de duas linhas poderia rolar para baixo numa velocidade lenta o suficiente para leitores iniciantes ou com dificuldade de visão puderem enxergar.»"
+    - "ADR-0164 — SUPERSEDED IN PART: the footer is two lines, and a longer text was CLAMPED with an ellipsis; the two lines, the place at the bottom and the dark band stand"
+    - "ADR-0244 §3 — SUPERSEDED IN PART: «a longer text is clamped there, and the game says it whole through narration»"
+    - "ADR-0183 §4 and `core/caption-duration` — the caption rate the child chooses: 125, 145 or 175 words a minute, 500 ms a word at the slowest"
+    - "WCAG 2.2 success criterion 2.2.2 Pause, Stop, Hide (A): moving information that starts automatically and lasts more than five seconds can be paused"
+  informed: []
+
+title: An explanation longer than the footer scrolls, at the child's reading pace
+
+context-and-problem-statement: |
+  The footer shows two lines (ADR-0164). A longer explanation — the BNCC text of a skill in the demo quiz, a long reason
+  on a locked item — was cut with an ellipsis, and only narration carried the rest. A child who reads but does not listen
+  (deaf mode, narration off) never saw the end of it.
+
+decision-drivers:
+  - "What the footer explains must be readable whole, by eye, not only by ear"
+  - "Beginning readers and low-vision readers set the speed, not the text's length"
+  - "Moving text must not take control away (WCAG 2.2.2), nor move for a child who asked for reduced motion"
+
+considered-options:
+  - "A · Clamp at two lines, as today"
+  - "B · The footer grows to fit the text"
+  - "C · The text scrolls up inside the two lines, at the child's caption rate"
+
+pros-and-cons-of-the-options: |
+  **A.** ❌ The end of the text is never seen. **B.** ❌ A growing footer covers the game and moves what is above it.
+  **C.** ✅ The footer keeps its place and size, and the whole text passes. ❌ Moving text: it needs a pace, a pause and a
+  still form.
+
+decision-outcome:
+  chosen-option:
+    link: "C — the text scrolls inside the two lines"
+    justification: |
+      §1 · WHEN THE TEXT DOES NOT FIT, IT SCROLLS. It waits first — two lines' worth of reading — then moves up line by line,
+      each line staying as long as its words take at the child's caption rate (ADR-0183 §4: 125, 145 or 175 words a minute),
+      holds at the end, and starts again from the top while the item is still pointed. A text that fits never moves.
+
+      §2 · REDUCED MOTION: NO GLIDE. With reduced motion on, the text does not slide: it turns like pages, two lines at a
+      time, at the same pace.
+
+      §3 · IT CAN BE HELD. The footer's text stops moving while the pointer is over it or while it has focus, and resumes
+      when they leave (WCAG 2.2.2).
+
+      §4 · THE WHOLE TEXT IS STILL SAID. Narration and the live region carry the whole text once, as before; the scrolling is
+      for the eye.
+
+  consequences:
+    positive:
+      - "A deaf child, or one with narration off, reads the whole explanation"
+    negative:
+      - "Moving text on screen, which some children find distracting; reduced motion is the way out"
+
+  confirmation: |
+    Debt until the gate lands (issue to be opened with the implementation): a text that fits does not move; a longer one
+    reaches its last line at the pace set; reduced motion turns pages instead of gliding; pointer over it holds it.
+
+more-information: |
+  The pace is the caption rate because it is the one reading speed the child already chose; a second speed setting would
+  be a second answer to the same question.

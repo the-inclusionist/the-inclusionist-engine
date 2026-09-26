@@ -1,6 +1,9 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0245
+      what: "only the CLAMP: a text longer than the two lines no longer ends in an ellipsis, it scrolls inside them at the child's caption rate. The two lines, the place at the bottom and the dark band stand"
   confirmed-by:
     - tests/bar-caption-and-footer.browser.test.js
     - tests/the-panel-footer-is-the-screens.browser.test.js

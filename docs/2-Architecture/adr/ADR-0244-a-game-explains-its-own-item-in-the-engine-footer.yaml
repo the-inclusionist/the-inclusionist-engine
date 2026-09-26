@@ -1,6 +1,9 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0245
+      what: "§3's «a longer text is clamped there»: it scrolls instead, at the child's caption rate. Everything else stands"
   confirmed-by:
     - tests/a-game-explains-its-own-item.browser.test.js
   errata:
