@@ -2,13 +2,13 @@
 // ui/libras-avatar-load — WHAT THE DELIVERY SHIPPED FOR THE FREE PLAYER, AND OPENING IT (ADR-0234, route B, phase B2).
 //
 // The half of `ui/libras-avatar-player` that talks to the delivery: where its files are, whether it shipped the avatar at all
-// (its manifest, which only `inclusionist-heavy --libras-avatar` writes), the canvas the avatar is drawn on, the stage built on
-// it from the avatar's bytes — within a time, or not at all — and the clips, each fetched and prepared once. Every answer is a
-// value, never a throw: a delivery without the avatar, a device without WebGL and a clip that cannot be read are reasons, which
-// the player hands to deaf mode and deaf mode to `problems` (ADR-0169).
+// (its manifest, which only `inclusionist-heavy --libras` writes), the canvas the avatar is drawn on, the stage built on it from
+// the avatar's bytes — within a time, or not at all — and the clips, each fetched and prepared once. Every answer is a value,
+// never a throw: a delivery without the avatar, a device without WebGL and a clip that cannot be read are reasons, which the
+// player hands to deaf mode and deaf mode to `problems` (ADR-0169).
 
-import { LIBRAS_PLAYER_FOLDER } from '../platform/heavy-catalogue.js';
 import { LIBRAS_GLOSSES_FILE } from './libras-glosses.js';
+import { LIBRAS_NOT_INSTALLED } from './vlibras.js';
 import { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, avatarManifestOf, type AvatarManifest } from './libras-avatar-plan.js';
 import type { ClipJson } from './libras-avatar-clip.js';
 import type { AvatarStage } from './libras-avatar-stage.js';
@@ -16,12 +16,15 @@ import type { AvatarStage } from './libras-avatar-stage.js';
 /** The host's `fetch`, lent unbound — and called bare, never as a method of what carries it. */
 export type FetchFile = ((url: string) => Promise<Response>) | undefined;
 
-/** Why a delivery with no avatar cannot sign, and the fix (ADR-0169). */
-export const NOT_SHIPPED = 'the Libras avatar is not installed in this delivery — build it with `inclusionist-heavy <folder> --libras-avatar`';
+/**
+ * Why a delivery with no avatar cannot sign, and the fix (ADR-0169): the reason `NO_INTERPRETER` gives, word for word — the
+ * root's interpreter answers a delivery built without `--libras` exactly as a root with no player would.
+ */
+export const NOT_SHIPPED = LIBRAS_NOT_INSTALLED;
 /** Why a request that waited across a `hide()` or the root's end was not signed. */
 export const RELEASED = 'the interpreter was taken off the screen before it signed';
 
-/** Where the delivery's files are: the avatar's folder, its manifest, and the glosses `--libras` writes beside route A's page. */
+/** Where the delivery's files are: the avatar's folder, its manifest, and the glosses `--libras` writes beside them. */
 export interface AvatarPlace {
   readonly folder: string;
   readonly manifest: string;
@@ -29,11 +32,10 @@ export interface AvatarPlace {
 }
 
 /** The addresses under `base`, or `null` where it resolves nothing — a host whose document has no address finds no avatar. */
-export function avatarPlace(base: string, folder = LIBRAS_AVATAR_FOLDER, glossesFolder = LIBRAS_PLAYER_FOLDER): AvatarPlace | null {
+export function avatarPlace(base: string, folder = LIBRAS_AVATAR_FOLDER): AvatarPlace | null {
   try {
     const at = new URL(folder, base);
-    return { folder: at.href, manifest: new URL(LIBRAS_AVATAR_MANIFEST, at).href,
-      glosses: new URL(LIBRAS_GLOSSES_FILE, new URL(glossesFolder, base)).href };
+    return { folder: at.href, manifest: new URL(LIBRAS_AVATAR_MANIFEST, at).href, glosses: new URL(LIBRAS_GLOSSES_FILE, at).href };
   } catch {
     return null;
   }
@@ -54,7 +56,7 @@ async function readJson(fetchFile: FetchFile, url: string): Promise<unknown> {
 export const readManifest = async (fetchFile: FetchFile, place: AvatarPlace): Promise<AvatarManifest | null> =>
   avatarManifestOf(await readJson(fetchFile, place.manifest));
 
-/** The canvas the avatar is drawn on: route A's place and size, in front of the screen, watched and never operated. */
+/** The canvas the avatar is drawn on: the bottom right, in front of the screen, watched and never operated. */
 export function avatarCanvas(doc: Document, title: string): HTMLCanvasElement {
   const canvas = doc.createElement('canvas');
   canvas.setAttribute('role', 'img');
@@ -90,7 +92,7 @@ async function build(canvas: HTMLCanvasElement, o: AvatarOpening, wanted: () => 
     const resp = await fetchFile(o.avatarUrl);
     if (!resp.ok) {
       return { reason: `the Libras avatar could not be read from the delivery (HTTP ${resp.status}) — build it again with `
-        + '`inclusionist-heavy <folder> --libras-avatar`' };
+        + '`inclusionist-heavy <folder> --libras`' };
     }
     const stage = await o.loadStage(canvas, await resp.arrayBuffer());
     if (!wanted()) { stage.dispose(); return { reason: RELEASED }; } // given up on or released meanwhile: nothing is kept

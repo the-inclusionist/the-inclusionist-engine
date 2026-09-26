@@ -92,7 +92,6 @@
     "interface QuizHost": [
       "doc",
       "interpreter?",
-      "librasAvatar?",
       "win"
     ]
   },
@@ -1413,7 +1412,6 @@
     "interface HeavyFile": [
       "bytes?",
       "id",
-      "madeFrom?",
       "sha256?",
       "url",
       "whyNoSource?"
@@ -2550,7 +2548,6 @@
       "base",
       "doc",
       "fetch",
-      "glossesFolder?",
       "leaveAfterMs?",
       "loadStage?",
       "loadTimeoutMs?",
@@ -3344,18 +3341,6 @@
   },
   "ui/visual-choices.ts": {
     "type RGB": "readonly [number, number, number]"
-  },
-  "ui/vlibras-player.ts": {
-    "interface VlibrasPlayerPorts": [
-      "base",
-      "doc",
-      "fetch",
-      "leaveAfterMs?",
-      "loadTimeoutMs?",
-      "playerFolder?",
-      "title",
-      "win"
-    ]
   },
   "ui/vlibras.ts": {
     "interface Interpreter": [

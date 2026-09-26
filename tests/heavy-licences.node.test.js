@@ -37,9 +37,6 @@ const MARKERS = {
   'Apache-2.0': ['Apache License', 'Version 2.0, January 2004', 'END OF TERMS AND CONDITIONS'],
   MIT: ['Permission is hereby granted, free of charge', 'THE SOFTWARE IS PROVIDED "AS IS"'],
   'GPL-3.0-or-later': ['GNU GENERAL PUBLIC LICENSE', 'Version 3, 29 June 2007', 'Corresponding Source'],
-  // the LGPL-3.0 is the GPL-3.0 plus permissions, and its §4(b) asks for both texts: both must be in the one LICENSE
-  'LGPL-3.0 AND LicenseRef-Unity-Runtime': ['GNU LESSER GENERAL PUBLIC LICENSE', 'additional permissions', 'GNU GENERAL PUBLIC LICENSE',
-    'Corresponding Source'],
 };
 
 describe('the licences travel with the heavy files', () => {
@@ -70,7 +67,7 @@ describe('the licences travel with the heavy files', () => {
     const { ok, linhas, licences } = entrega;
     expect(ok, linhas.filter((l) => l.error).map((l) => `${l.id}: ${l.error}`).join('\n')).toBe(true);
     expect(licences.map((l) => l.key).sort()).toEqual(['espeak-ng', 'kokoro', 'mediapipe-tasks-vision', 'moonshine-streaming-small-en',
-      'moonshine-streaming-small-es', 'onnxruntime-web', 'vlibras-player', 'vosk-browser', 'vosk-models', 'whisper-small']);
+      'moonshine-streaming-small-es', 'onnxruntime-web', 'vosk-browser', 'vosk-models', 'whisper-small']);
 
     const notices = join(destino, 'heavy', 'THIRD-PARTY-NOTICES.md');
     expect(existsSync(notices), 'heavy/THIRD-PARTY-NOTICES.md was not written').toBe(true);
@@ -110,18 +107,6 @@ describe('the licences travel with the heavy files', () => {
     const upstream = readFileSync(join(ROOT, 'scripts', 'licences', 'vosk-browser.NOTICE.txt'), 'utf8').trimEnd();
     expect(read('commands:runtime', 'NOTICE').startsWith(upstream), 'the Vosk runtime NOTICE is not the upstream one').toBe(true);
     expect(read('commands:runtime', 'NOTICE')).toContain('DYNAMIC_EXECUTION=0');
-  });
-
-  it('🔴 [Right] the VLibras player says what its LGPL does NOT cover — Unity\'s closed runtime — and what was changed', () => {
-    const read = (name) => readFileSync(join(destino, folderOf(WITH_URL.find((p) => p.id === 'libras:player:framework')), name), 'utf8');
-    const notice = read('NOTICE');
-    expect(notice, 'the closed runtime inside the build is not named').toMatch(/Unity Technologies' proprietary runtime/);
-    expect(notice, 'the undetermined redistribution terms are not said').toMatch(/redistributed have NOT been determined/);
-    expect(notice, 'the patched file beside the original is not declared as changed').toMatch(/CHANGED by The Inclusionist: playerweb\.framework\.noeval\.js/);
-    const licence = read('LICENSE');
-    const lesser = licence.indexOf('GNU LESSER GENERAL PUBLIC LICENSE');
-    expect(lesser, 'the LGPL text is not in the LICENSE').toBeGreaterThanOrEqual(0);
-    expect(licence.indexOf('GNU GENERAL PUBLIC LICENSE'), 'the GPL the LGPL incorporates does not follow it').toBeGreaterThan(lesser);
   });
 
   it('🔴 [Right] a file whose licence nobody recorded is NOT written, and the run fails', async () => {

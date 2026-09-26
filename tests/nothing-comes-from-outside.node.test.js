@@ -89,11 +89,6 @@ const DECLARADAS = {
   'https://lfs-oinclusionista.jrocha.dev.br/vosk-models': 'THE MIRROR ABOVE, the three command models — alphacephei\'s small '
     + 'ones (Apache-2.0) repacked deterministically as the `.tar.gz` that build loads. 31–39 MiB a language, and a device asks '
     + 'for the child\'s',
-  'https://raw.githubusercontent.com/spbgovbr-vlibras/vlibras-web-browsers/9d093f259ac732d755a19e80cd03c8233c70435d/public/unity':
-    'THE LIBRAS PLAYER (ADR-0234, route A): the VLibras Unity build at a pinned commit of its repository, named in '
-    + '`platform/heavy-catalogue` and mapped to a local folder in `platform/heavy-mirror`. Fetched by the BUILD with '
-    + '`inclusionist-heavy --libras` into the delivery with its sha256 (ADR-0177); the page opens the player from `heavy/` and '
-    + '`libras/player/` on its own origin, and no VLibras host is ever contacted by the device',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/heavy`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };
@@ -163,18 +158,11 @@ const TOCAM_NA_REDE = {
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `heavy/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `deliveryPath`, never an upstream host, and only '
     + 'after the checked cache holds every file',
-  'ui/vlibras-player.ts': 'LOCAL. The host\'s `fetch` of the player\'s Unity configuration at `libras/player/` on the page\'s own '
-    + 'origin — the question «did the delivery ship the player?» — handed on to `ui/libras-glosses` for the build-time glosses '
-    + 'written beside it (`glosses.json`), and `frame.src` of the player page beside it (ADR-0234, '
-    + 'route A). The page loads the VLibras files from `heavy/` on the same origin and fetches signs from `libras/signs/`, told so '
-    + 'by `setBaseUrl` before its first word: the hosted dictionary the player would otherwise ask is never reached',
   'ui/libras-avatar-player.ts': 'LOCAL. It takes the host\'s `fetch` out of its ports and hands it to `ui/libras-avatar-load`, '
-    + 'which reads the free player\'s manifest, avatar and sign clips with it at `libras/avatar/` on the page\'s own origin — the '
-    + 'question «did the delivery ship the avatar?» first — and to `ui/libras-glosses` (the glosses route A\'s delivery writes '
-    + 'beside its player); and `import(\'./libras-avatar-stage.js\')`, a chunk of this same package that carries three.js, loaded '
+    + 'which reads the player\'s manifest, avatar and sign clips with it at `libras/avatar/` on the page\'s own origin — the '
+    + 'question «did the delivery ship the avatar?» first — and to `ui/libras-glosses` (the glosses the delivery writes beside '
+    + 'the avatar); and `import(\'./libras-avatar-stage.js\')`, a chunk of this same package that carries three.js, loaded '
     + 'when the avatar is first opened (ADR-0234, route B)',
-  'consumer-quiz/main-quiz.ts': 'LOCAL. It names its window\'s `fetch` only to lend it to the free Libras player it builds for '
-    + '`?libras=avatar` (`ui/libras-avatar-player` above), which reads the delivery\'s own `libras/avatar/` with it',
   'platform/tts.ts': 'LOCAL. `el.src = som.url`, a `blob:` URL of the WAV the neural voice just synthesised here, played '
     + 'through a media element so the speech rate keeps the pitch (ADR-0183 §1); it never leaves the machine. The '
     + '`import()` of the neural runtime moved into the root with ADR-0232 D4',

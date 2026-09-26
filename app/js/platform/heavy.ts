@@ -76,11 +76,11 @@ export interface HeavyOptions {
  *   every language the page can switch to, the child's first, because a language changed mid-game must find its model already
  *   kept (ADR-0225 erratum, the Dev: «A entrega leva as três línguas.»). The delivery carries the three unless its
  *   `--commands` list narrows it; a language it did not carry is a quiet 404 here and a line of `problems` when she speaks.
- * · The Libras player (ADR-0234, route A), 19.7 MiB, and the delivery's list of its page and signs (15.2 MB in the engine's
- *   delivery), only with `libras`: the root asks for them while deaf mode is on, so a device whose child never asks for signing
- *   never downloads them. No game declares it either — deaf mode is the person's (ADR-0111) — and a delivery built without
- *   `--libras` simply has none, the same quiet 404 as a missing command model. The free player's list (route B: its avatar,
- *   clips and three.js chunk, 32.7 MiB) comes with it, by the same rule: what the delivery carries, deaf mode keeps.
+ * · The Libras player (ADR-0234): the delivery's list of its avatar, clips, glosses and three.js chunk (34.9 MB in the engine's
+ *   delivery), only with `libras`: the root asks for it while deaf mode is on, so a device whose child never asks for signing
+ *   never downloads it. No game declares it either — deaf mode is the person's (ADR-0111) — and a delivery built without
+ *   `--libras` simply has none, the same quiet 404 as a missing command model. No catalogue file is the player's: it is all the
+ *   delivery's own, kept by what the delivery carries.
  * The ids are the catalogue's files, then the delivery lists (`DELIVERY_LISTS`), by one rule.
  */
 export function heavyAtBoot(

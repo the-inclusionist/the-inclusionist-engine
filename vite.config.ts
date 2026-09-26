@@ -115,16 +115,16 @@ export default defineConfig({
               plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: deliveryCacheKey as unknown as (p: { request: Request }) => Promise<string> }],
             },
           },
-          // The Libras players' files a delivery writes after the build, outside the precache (ADR-0234, pillar 8): route A's page
-          // and signs (`--libras`), route B's avatar and clips (`--libras-avatar`), and route B's stage chunk with three.js, which
-          // the precache leaves out on purpose. Answered from the checked cache, where the start keeps each file the delivery's
-          // lists name, checked, under its own address — the key is the request's. On a miss the request goes to this origin, so
-          // a player works online before its list has come down; nothing is written here. The lists themselves
-          // (`libras/offline*.json`) are outside every folder and always go to the network. ⚠️ The chunk is matched by its NAME
-          // alone, never by `assets/`: every other asset is the precache's, and its route answers them first. The places are
-          // `DELIVERY_LISTS`'s, written out because the plugin copies this function's source into `sw.js`, where no import exists.
+          // The Libras player's files a delivery writes after the build, outside the precache (ADR-0234, pillar 8): the avatar, its
+          // clips, their manifest and the glosses (`--libras`), and the stage chunk with three.js, which the precache leaves out on
+          // purpose. Answered from the checked cache, where the start keeps each file the delivery's list names, checked, under its
+          // own address — the key is the request's. On a miss the request goes to this origin, so the player works online before
+          // its list has come down; nothing is written here. The list itself (`libras/offline-avatar.json`) is outside the folder
+          // and always goes to the network. ⚠️ The chunk is matched by its NAME alone, never by `assets/`: every other asset is the
+          // precache's, and its route answers them first. The places are `DELIVERY_LISTS`'s, written out because the plugin copies
+          // this function's source into `sw.js`, where no import exists.
           {
-            urlPattern: ({ sameOrigin, url }) => sameOrigin && (/\/libras\/(player|signs|avatar)\/[^/]/.test(url.pathname) || /\/assets\/libras-avatar-stage-[\w-]+\.js$/.test(url.pathname)),
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && (/\/libras\/avatar\/[^/]/.test(url.pathname) || /\/assets\/libras-avatar-stage-[\w-]+\.js$/.test(url.pathname)),
             handler: 'CacheFirst',
             options: {
               cacheName: 'incl-pesados-v2',
@@ -164,10 +164,11 @@ export default defineConfig({
         // 2026-09-13: the models' `CacheOnly` route let a request reach Hugging Face). A cartridge that builds its own
         // single-page shell sets its own fallback. Gate: `tests/service-worker-registers-its-routes.node.test.js`.
         navigateFallback: null,
-        // THE DEMO'S OWN QUERY IS NOT ANOTHER PAGE: `quiz.html?libras=avatar` lends the free Libras player (ADR-0234, route B), and
-        // the precache matches a navigation by its whole address — so the page it is precached under, `quiz.html`, was never
-        // found for it, and offline it did not open (📏 measured 2026-09-25: `ERR_INTERNET_DISCONNECTED`). `libras` is ignored
-        // when matching, beside Workbox's own two defaults, which setting this replaces and so are written again.
+        // AN OLD DEMO LINK IS NOT ANOTHER PAGE: `quiz.html?libras=avatar` chose the free Libras player while it was not yet the
+        // engine's (ADR-0234, route B); the page now ignores it, and the precache matches a navigation by its whole address — so
+        // without this the page it is precached under, `quiz.html`, is never found for such a link, and offline it does not open
+        // (📏 measured 2026-09-25: `ERR_INTERNET_DISCONNECTED`). `libras` is ignored when matching, beside Workbox's own two
+        // defaults, which setting this replaces and so are written again.
         ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^libras$/],
       },
       // The PWA is OFF in dev (the default) — no service worker or cache getting in the HMR's way; test with `npm run build` + `preview`.

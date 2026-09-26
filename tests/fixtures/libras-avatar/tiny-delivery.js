@@ -121,7 +121,7 @@ export async function tinyDelivery(base, { drop = [], glosses = [] } = {}) {
       Object.entries(CLIPS).map(([n, c]) => [n, { file: `clips/${n}.json`, duration: c.duration }])) })],
     ['libras/avatar/avatar.glb', avatar],
     ...Object.entries(CLIPS).map(([n, c]) => [`libras/avatar/clips/${encodeURIComponent(n)}.json`, JSON.stringify(c)]),
-    ['libras/player/glosses.json', JSON.stringify({ format: 1, made: 'test', glosses })],
+    ['libras/avatar/glosses.json', JSON.stringify({ format: 1, made: 'test', glosses })],
   ]);
   const asked = [];
   // behaves as the host's `window.fetch` does when lent unbound: called as a method of anything else, it refuses

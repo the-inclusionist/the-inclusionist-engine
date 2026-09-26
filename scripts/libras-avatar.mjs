@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// THE FREE PLAYER'S FILES INTO A DELIVERY (ADR-0234, route B, phase B2): `inclusionist-heavy <folder> --libras-avatar` puts the
-// avatar and every sign clip of the B1 export (`scripts/libras-export.mjs`) into `<folder>/libras/avatar/`, each checked by
+// THE LIBRAS PLAYER'S FILES INTO A DELIVERY (ADR-0234, route B): `inclusionist-heavy <folder> --libras` puts the avatar and
+// every sign clip of the B1 export (`scripts/libras-export.mjs`) into `<folder>/libras/avatar/`, each checked by
 // sha256 against `libras-avatar.json`, and writes the manifest the player reads (`ui/libras-avatar-plan`), the GPL-3.0 text
 // and the notice beside them. Nothing unchecked is written: a file whose bytes differ stops the delivery by name.
 //
@@ -15,8 +15,8 @@
 // the sign itself. It is not trimmed out of the file (its bytes are the export's, pinned); the pins say where the sign starts,
 // with why, and the player plays from there (`ClipWindow.from`). `--pins-from` writes that into the pins it regenerates.
 //
-// OFFLINE (ADR-0234, phase B3; pillar 8): none of these files is in the precache — they are written after the build — and neither
-// is the stage chunk that carries three.js, which the precache leaves out on purpose. `writeAvatarList` names them all in
+// OFFLINE (ADR-0234, phase B3; pillar 8): none of these files is in the precache — they are written after the build, with the
+// glosses — and neither is the stage chunk that carries three.js, which the precache leaves out on purpose. `writeAvatarList` names them all in
 // `libras/offline-avatar.json` with the sha256 of what is on the disk, and a device with deaf mode on keeps each file only if its
 // bytes are the listed ones (`platform/heavy`), where the service worker answers the free player from offline.
 //
@@ -159,16 +159,21 @@ export function stageChunkOf(destino, start, list = (dir) => readdirSync(dir)) {
   const found = names.filter((name) => name.startsWith(begins) && name.endsWith('.js') && name.length > begins.length + 3);
   if (found.length !== 1) {
     throw new Error(`the free Libras player's stage chunk (${start}<hash>.js) was found ${found.length} times in ${join(destino, folder)}`
-      + `${found.length ? `: ${found.join(', ')}` : ''} — build the page again (with an emptied output folder) before \`--libras-avatar\`, `
+      + `${found.length ? `: ${found.join(', ')}` : ''} — build the page again (with an emptied output folder) before \`--libras\`, `
       + 'so the delivery can list the one chunk the page loads');
   }
   return `${folder}/${found[0]}`;
 }
 
-/** What the free player's list names, in the order it opens them: the manifest, the avatar, every clip, then the stage chunk. */
-export function avatarListPaths({ folder, pins, stageChunk }) {
-  return [`${folder}${MANIFEST_FILE}`, `${folder}${AVATAR_FILE}`, ...Object.keys(pins.clips).map((name) => `${folder}${clipFile(name)}`),
-    stageChunk];
+/**
+ * What the player's list names, in the order it opens them: the manifest, the avatar, the glosses (`glosses`, the path the
+ * glossing step wrote, relative to the delivery), every clip, then the stage chunk.
+ */
+export function avatarListPaths({ folder, pins, stageChunk, glosses }) {
+  // without the glosses kept, offline the avatar would fingerspell every word: the list is not written without them
+  if (!glosses) throw new Error('the Libras list names no glosses: run the glossing step of `--libras` before the list is written');
+  return [`${folder}${MANIFEST_FILE}`, `${folder}${AVATAR_FILE}`, glosses,
+    ...Object.keys(pins.clips).map((name) => `${folder}${clipFile(name)}`), stageChunk];
 }
 
 /**
@@ -191,12 +196,12 @@ export function writeDeliveryList({ destino, list, paths, read = (p) => readFile
 }
 
 /**
- * WRITES THE LIST A DEVICE KEEPS THE FREE PLAYER OFFLINE BY (`list`, the catalogue's `libras:avatar:delivery`): each file of
+ * WRITES THE LIST A DEVICE KEEPS THE PLAYER OFFLINE BY (`list`, the catalogue's `libras:avatar:delivery`): each file of
  * `avatarListPaths` with the sha256 and size of the bytes on the disk (`writeDeliveryList`). `stageChunk` is found first
  * (`stageChunkOf`), so a build with no chunk stops the step before any list is written.
  */
-export function writeAvatarList({ destino, list, folder, pins, stageStart, stageChunk = stageChunkOf(destino, stageStart), read }) {
-  return writeDeliveryList({ destino, list, paths: avatarListPaths({ folder, pins, stageChunk }), ...(read ? { read } : {}) });
+export function writeAvatarList({ destino, list, folder, pins, glosses, stageStart, stageChunk = stageChunkOf(destino, stageStart), read }) {
+  return writeDeliveryList({ destino, list, paths: avatarListPaths({ folder, pins, stageChunk, glosses }), ...(read ? { read } : {}) });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

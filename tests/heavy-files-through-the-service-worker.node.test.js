@@ -35,13 +35,13 @@ describe('heavy files, from the delivery', () => {
 });
 
 /**
- * 🔴 THE PLAYER'S PAGE AND THE SIGNS ARE SERVED FROM WHAT THE START KEPT (ADR-0234, pillar 8). 📏 Measured on a served delivery
- * (2026-09-25): no route matched `libras/`, so the frame's page, its scripts and every sign went to the network even with all
- * of them kept, and offline the frame never loaded. The route's own function is evaluated here from the configuration's source,
- * which is what the PWA plugin copies into `sw.js`.
+ * 🔴 THE PLAYER'S FILES ARE SERVED FROM WHAT THE START KEPT (ADR-0234, pillar 8). 📏 Measured on a served delivery (2026-09-25):
+ * no route matched `libras/`, so the player's files went to the network even with all of them kept, and offline the player never
+ * loaded. The route's own function is evaluated here from the configuration's source, which is what the PWA plugin copies into
+ * `sw.js`. Since phase B3 the route serves the player's list alone: route A's `libras/player/` and `libras/signs/` left with it.
  */
-describe('the Libras player\'s page and signs, from the delivery\'s list', () => {
-  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+describe('the Libras player\'s files, from the delivery\'s list — the route itself', () => {
+  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
   const rota = CONFIG_LIMPA.match(/\{[^{}]*urlPattern:[^\n]*libras[\s\S]*?\n\s{10}\},/)?.[0];
   const source = rota?.match(/urlPattern:\s*(\(\{[^)]*\}\)\s*=>[^\n]*),\n/)?.[1];
   // the configuration's own text, evaluated as the plugin serializes it — never input from anywhere else
@@ -49,26 +49,27 @@ describe('the Libras player\'s page and signs, from the delivery\'s list', () =>
   const page = 'https://escola.example/jogo/';
   const asked = (path, sameOrigin = true) => matches({ sameOrigin, url: new URL(path, page) });
 
-  it('🔴 [Right] the route answers every file the list may name from the checked cache, and never writes it', () => {
-    expect(rota, 'no service worker route for the player\'s page and signs').toBeTruthy();
+  it('🔴 [Right] the route answers the player\'s files from the checked cache, and never writes it — the glosses among them', () => {
+    expect(rota, 'no service worker route for the player\'s files').toBeTruthy();
     expect(rota).toMatch(/handler:\s*'CacheFirst'/);
     expect(rota).toMatch(/cacheName:\s*'incl-pesados-v2'/);
     expect(rota, 'the route would cache an unchecked body').toMatch(/cacheWillUpdate:\s*async \(\) => null/);
     expect(rota, 'the key is the address itself: the list keeps each file under it').not.toMatch(/cacheKeyWillBeUsed/);
-    for (const folder of LIST.folders) {
-      for (const name of ['index.html', 'playerweb.json', 'A%C3%87%C3%83O', 'PRIMEIRO&ORDINAL']) {
-        expect(asked(`${folder}${name}`), `${folder}${name} goes to the network offline`).toBe(true);
-      }
+    for (const name of ['glosses.json', 'manifest.json', 'clips/A%C3%87%C3%83O.json', 'clips/PRIMEIRO&ORDINAL.json']) {
+      expect(asked(`${LIST.folders[0]}${name}`), `${LIST.folders[0]}${name} goes to the network offline`).toBe(true);
     }
   });
 
-  it('📌 [Boundary] the list itself, the folders, `heavy/`, the game\'s page and another origin are left alone', () => {
+  it('📌 [Boundary] the list itself, the folder, route A\'s old folders, `heavy/`, the game\'s page and another origin are left alone', () => {
     expect(source, 'the route\'s function was not found: the cases below would measure nothing').toBeTruthy();
     expect(asked(LIST.path), 'an old list would be served from the cache, and the device would never learn of a new delivery').toBe(false);
-    for (const folder of LIST.folders) expect(asked(folder), folder).toBe(false);
+    expect(asked(LIST.folders[0]), LIST.folders[0]).toBe(false);
+    // what a device may still hold from a delivery before phase B3 is never answered: nothing asks for it any more
+    expect(asked('libras/player/index.html'), 'route A\'s page is still served').toBe(false);
+    expect(asked('libras/signs/CASA'), 'route A\'s signs are still served').toBe(false);
     expect(asked('heavy/raw.githubusercontent.com/x/playerweb.data.unityweb')).toBe(false);
     expect(asked('quiz.html')).toBe(false);
-    expect(asked(`${LIST.folders[0]}index.html`, false), 'a route that may answer another origin').toBe(false);
+    expect(asked(`${LIST.folders[0]}glosses.json`, false), 'a route that may answer another origin').toBe(false);
   });
 });
 
@@ -130,3 +131,6 @@ describe('the free Libras player\'s avatar, clips and stage chunk, from the deli
 //   W3 the chunk matched by `assets/` (precache shadowed)        🔴 [Boundary] the precache's own assets
 //   W4 the chunk's name not anchored at its end (`.js.map`)      🔴 [Boundary] the precache's own assets
 //   W5 any origin                                                🔴 [Boundary] both describes
+//   (2026-09-26, phase B3: the first describe moved from route A's list to the player's; L2, L3, L5, L6, L7 re-run against it,
+//   scripted, restored and checked by sha256 — 5 of 5 red. L4 left with the signs; in its place S1, route A's two folders back in
+//   the route — 🔴 [Boundary] «route A's old folders … are left alone».)

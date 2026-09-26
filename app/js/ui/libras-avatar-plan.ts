@@ -6,10 +6,10 @@
 // timing and the fingerspelling are held in node (`tests/libras-avatar-plan.node.test.js`); `ui/libras-avatar-stage` plays what
 // it decides and `ui/libras-avatar-player` puts it behind the `Interpreter` port.
 //
-// THE GLOSS IS THE ONE ROUTE A PLAYS: the delivery's build-time glosses (`ui/libras-glosses`), where a word with no sign is
-// already written as the child reads it on the screen. A token the delivery carries a clip for is signed; any other is
-// FINGERSPELLED letter by letter from the clips named by a single letter or digit — the word as written, capitals, accents
-// stripped but Ç kept, a letter of the manual alphabet with a clip of its own (`provisionalGloss`), which is route A's rule.
+// THE GLOSS IS THE DELIVERY'S: its build-time glosses (`ui/libras-glosses`), where a word with no clip is already written as
+// the child reads it on the screen. A token the delivery carries a clip for is signed; any other is FINGERSPELLED letter by
+// letter from the clips named by a single letter or digit — the word as written, capitals, accents stripped but Ç kept, a letter
+// of the manual alphabet with a clip of its own (`provisionalGloss`, the build's own spelling rule).
 // 📌 A word whose letters the avatar does not all carry is LEFT OUT WHOLE, and said: spelling only the letters it has would
 // show the child another word («ENTROU» with only its O is «O»).
 //
@@ -22,7 +22,7 @@
 import { provisionalGloss } from './libras-glosses.js';
 
 /**
- * Where the delivery puts the free player's avatar, clips and manifest, beside the game's page (`inclusionist-heavy --libras-avatar`):
+ * Where the delivery puts the free player's avatar, clips, manifest and glosses, beside the game's page (`inclusionist-heavy --libras`):
  * written in the catalogue, whose delivery list keeps these files offline (ADR-0234, phase B3), and re-exported here where the
  * player and the delivery script already read it.
  */

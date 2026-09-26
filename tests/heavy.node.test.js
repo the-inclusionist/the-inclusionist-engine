@@ -103,8 +103,9 @@ describe('o buscador das coisas pesadas', () => {
     //
     // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
     // a device actually fetches is `heavyAtBoot`, which asks for one language and for what the game declared.
-    // And since ADR-0234's route A, the Libras player: the four VLibras files and the patched framework the page runs, 19.7 MiB.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1383);
+    // The Libras player has no catalogue entry: its files are the delivery's own, kept by its list (ADR-0234, phase B3 took the
+    // Unity build's 19.7 MiB out of this total).
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1363);
     const f = cacheFalsa();
     const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
     expect(bytesLeftToDownload(r), 'depois de tudo descer não falta nada').toBe(0);
@@ -444,42 +445,15 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
   // on 2026-09-21 all six files were written into `dist` from the staging tree, which is the six hashes proved against the
   // real bytes. A case that asserted the constant against itself would be the gate reading its own answer.
   /**
-   * 🔴 THE LIBRAS PLAYER ONLY WHILE DEAF MODE IS ON (ADR-0234, route A): 19.3 MiB of Unity build that a device whose child never
-   * asks for signing never pays — and all four files together, since the page cannot load without any of them.
+   * 🔴 THE LIBRAS PLAYER ONLY WHILE DEAF MODE IS ON (ADR-0234): a device whose child never asks for signing pays nothing of it.
+   * Since phase B3 no catalogue file is the player's — the Unity build left — so what `libras` adds is the delivery's list alone.
    */
-  it('🔴 [Right] the Libras player comes whole with `libras`, and never without it', () => {
-    const player = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:'));
-    expect(player.length, 'the catalogue has no Libras player: the case would pass empty').toBe(5);
-    // the five files, then the delivery's list of the player's page and signs, then its list of the free player's files
-    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:')))
-      .toEqual([...player, 'libras:delivery', 'libras:avatar:delivery']);
+  it('🔴 [Right] with `libras` the start asks for the Libras list alone — no catalogue file is the player\'s, and nothing of it without `libras`', () => {
+    expect(HEAVY_FILES.filter((p) => p.id.startsWith('libras:')), 'a catalogue file is the Libras player\'s again').toEqual([]);
+    expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:'))).toEqual(['libras:avatar:delivery']);
     for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, libras: false }, { kokoro: false, commands: 'pt', reading: 'pt' }]) {
       expect(heavyAtBoot(portas).filter((id) => id.startsWith('libras:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
     }
-  });
-
-  /**
-   * 🔴 THE FILE THE PLAYER RUNS IS CHECKED LIKE THE FILES IT READS (ADR-0234). 📏 Measured on a served delivery (2026-09-25): the
-   * loader reads the published framework, kept and checked, and then the page runs `playerweb.framework.noeval.js`, which no entry
-   * named — the service worker fetched it from the network each time, kept nothing, and offline the player never started.
-   */
-  it('🔴 [Right] with `libras`, the patched framework is fetched from the delivery, checked against its pin, and kept — or refused', async () => {
-    const patched = HEAVY_FILES.find((p) => p.madeFrom);
-    expect(patched?.id, 'no entry is made by the delivery: the file the player runs is fetched by nobody').toBe('libras:player:framework:noeval');
-    expect(HEAVY_FILES.some((p) => p.id === patched.madeFrom), 'it is made from an entry the catalogue does not have').toBe(true);
-    expect(heavyAtBoot({ kokoro: false, libras: true })).toContain(patched.id);
-    const pedidos = [];
-    const f = cacheFalsa();
-    const [kept] = await downloadHeavy({ cacheStorage: f.cacheStorage, digest: digestPelaUrl, only: [patched.id],
-      fetch: async (u) => { pedidos.push(u); return resposta(urlDe(u)); } });
-    expect(pedidos).toEqual([`${BASE}${deliveryPath(patched.url)}`]);
-    expect(kept.outcome).toBe('baixado');
-    expect(f.postos).toEqual([patched.url]);
-    const g = cacheFalsa();
-    const [refused] = await downloadHeavy({ cacheStorage: g.cacheStorage, digest: digestPelaUrl, only: [patched.id],
-      fetch: async () => resposta('the unpatched framework') });
-    expect(refused).toEqual(expect.objectContaining({ outcome: 'falhou', error: expect.stringMatching(/sha256 mismatch/) }));
-    expect(g.postos, 'bytes that are not the pinned patch were kept').toEqual([]);
   });
 
   it('📌 [Boundary] the region is not the language: `es-MX` asks for the Spanish model', () => {
@@ -489,15 +463,15 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
 
 /**
  * 🔴 WHAT A DELIVERY MAKES IS KEPT BY ITS LIST (ADR-0234, pillar 8). 📏 Measured on a served delivery (2026-09-25): the player's
- * page, glue and glosses and the signs came from the network on every use — no precache entry, no route — and offline the frame
- * never loaded and the interpreter told the child signing was unavailable. The delivery now lists them with their sha256, and
- * the start keeps each, checked, under its own address, while deaf mode is on.
+ * files came from the network on every use — no precache entry, no route — and offline the interpreter told the child signing
+ * was unavailable. The delivery lists them with their sha256, and the start keeps each, checked, under its own address, while
+ * deaf mode is on. These cases hold the list-keeping rule itself, over the Libras player's list (the only one since phase B3).
  */
-describe('a delivery\'s list: the Libras player\'s page and signs, kept checked (ADR-0234, pillar 8)', () => {
-  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+describe('a delivery\'s list: the Libras player\'s files, kept checked (ADR-0234, pillar 8)', () => {
+  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
   const digest = sha256With(webcrypto.subtle);
   const hex = (text) => createHash('sha256').update(text).digest('hex');
-  const FILES = { 'libras/player/index.html': '<!doctype html>', 'libras/signs/AÇÃO': 'the sign', 'libras/player/glosses.json': '[]' };
+  const FILES = { 'libras/avatar/manifest.json': '{"format":1}', 'libras/avatar/clips/AÇÃO.json': '{"tracks":[]}', 'libras/avatar/glosses.json': '[]' };
   const listOf = (files, extra = []) => ({ format: 1, files: [...Object.entries(files).map(([path, text]) => ({ path, sha256: hex(text), bytes: text.length })), ...extra] });
   /** A Cache Storage holding real `Response`s, so the listed hash a kept file carries can be read back. */
   function cacheWithResponses(held = new Map()) {
@@ -513,7 +487,7 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
       const url = new URL(u);
       const path = decodeURIComponent(url.pathname.slice(1));
       if (path === LIST.path) return new Response(JSON.stringify(list));
-      return path in served ? new Response(served[path], { headers: { 'content-type': 'text/html' } }) : new Response('', { status: 404 });
+      return path in served ? new Response(served[path], { headers: { 'content-type': 'application/json' } }) : new Response('', { status: 404 });
     };
     return { asked, fetch };
   }
@@ -524,22 +498,22 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
     const d = delivery(listOf(FILES));
     const [r] = await keep(c, d);
     expect(r).toEqual({ id: LIST.id, outcome: 'baixado', bytes: Object.values(FILES).reduce((s, t) => s + Buffer.byteLength(t), 0) });
-    // 📏 the player asks `libras/signs/A%C3%87%C3%83O` (measured): the key is the address as a URL spells it
+    // the player asks a clip at its address as a URL spells it: the key is that address
     expect(c.put).toEqual(Object.keys(FILES).map((p) => new URL(p, BASE).href));
-    expect(c.put).toContain(`${BASE}libras/signs/A%C3%87%C3%83O`);
+    expect(c.put).toContain(`${BASE}libras/avatar/clips/A%C3%87%C3%83O.json`);
     expect(d.asked[0], 'the list may come from a stale HTTP cache').toEqual({ u: `${BASE}${LIST.path}`, init: { cache: 'no-store' } });
     expect(d.asked.slice(1).map((a) => new URL(a.u).origin)).toEqual(Object.keys(FILES).map(() => new URL(BASE).origin));
-    const kept = c.held.get(`${BASE}libras/player/index.html`);
-    expect(await kept.text()).toBe('<!doctype html>');
-    expect(kept.headers.get('content-type'), 'a page kept without its type does not open as a page').toBe('text/html');
+    const kept = c.held.get(`${BASE}libras/avatar/manifest.json`);
+    expect(await kept.text()).toBe('{"format":1}');
+    expect(kept.headers.get('content-type'), 'a file kept without its type is not read as what it is').toBe('application/json');
   });
 
   it('🔴 [Right] a body that is not the listed one is NOT kept — the others are, and the report says which and why', async () => {
     const c = cacheWithResponses();
-    const [r] = await keep(c, delivery(listOf(FILES), { ...FILES, 'libras/signs/AÇÃO': 'another sign' }));
+    const [r] = await keep(c, delivery(listOf(FILES), { ...FILES, 'libras/avatar/clips/AÇÃO.json': '{"tracks":["other"]}' }));
     expect(r.outcome).toBe('falhou');
-    expect(r.error).toMatch(/1 of 3 files of libras\/offline\.json not kept: libras\/signs\/AÇÃO: sha256 mismatch: expected [0-9a-f]{64}, got [0-9a-f]{64}/);
-    expect(c.put, 'the altered sign was kept').not.toContain(`${BASE}libras/signs/A%C3%87%C3%83O`);
+    expect(r.error).toMatch(/1 of 3 files of libras\/offline-avatar\.json not kept: libras\/avatar\/clips\/AÇÃO\.json: sha256 mismatch: expected [0-9a-f]{64}, got [0-9a-f]{64}/);
+    expect(c.put, 'the altered clip was kept').not.toContain(`${BASE}libras/avatar/clips/A%C3%87%C3%83O.json`);
     expect(c.put.length, 'one bad file stopped the good ones').toBe(2);
   });
 
@@ -549,18 +523,18 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
     const again = delivery(listOf(FILES));
     expect((await keep(c, again))[0]).toEqual({ id: LIST.id, outcome: 'ja-tinha' });
     expect(again.asked.map((a) => a.u), 'a kept file was fetched again').toEqual([`${BASE}${LIST.path}`]);
-    // a new delivery changed the page, and a service worker would answer its old address from the cache: the hash is in the query
-    const changed = { ...FILES, 'libras/player/index.html': '<!doctype html><meta name="libras-sign-set" content="2">' };
-    const refreshed = delivery(listOf(changed), { ...changed, 'libras/player/index.html': 'truncated' });
+    // a new delivery changed the manifest, and a service worker would answer its old address from the cache: the hash is in the query
+    const changed = { ...FILES, 'libras/avatar/manifest.json': '{"format":1,"commit":"2"}' };
+    const refreshed = delivery(listOf(changed), { ...changed, 'libras/avatar/manifest.json': 'truncated' });
     await keep(c, refreshed);
-    expect(refreshed.asked[1].u).toBe(`${BASE}libras/player/index.html?sha256=${hex(changed['libras/player/index.html'])}`);
-    expect(await c.held.get(`${BASE}libras/player/index.html`).text(), 'the old page was lost to a body that failed its check').toBe('<!doctype html>');
+    expect(refreshed.asked[1].u).toBe(`${BASE}libras/avatar/manifest.json?sha256=${hex(changed['libras/avatar/manifest.json'])}`);
+    expect(await c.held.get(`${BASE}libras/avatar/manifest.json`).text(), 'the old manifest was lost to a body that failed its check').toBe('{"format":1}');
     expect((await keep(c, delivery(listOf(changed), changed)))[0].outcome).toBe('baixado');
-    expect(await c.held.get(`${BASE}libras/player/index.html`).text()).toBe(changed['libras/player/index.html']);
+    expect(await c.held.get(`${BASE}libras/avatar/manifest.json`).text()).toBe(changed['libras/avatar/manifest.json']);
   });
 
   it('🔴 [Right] a list naming anything outside the player\'s folders is refused WHOLE — nothing of it is kept', async () => {
-    for (const path of ['quiz.html', 'libras/player/../../quiz.html', 'https://other.example/libras/player/x.js', 'libras/player/x.js?y=1', 'libras/player/', 'heavy/a/b.js']) {
+    for (const path of ['quiz.html', 'libras/avatar/../../quiz.html', 'https://other.example/libras/avatar/x.json', 'libras/avatar/x.json?y=1', 'libras/avatar/', 'heavy/a/b.js']) {
       const c = cacheWithResponses();
       const [r] = await keep(c, delivery(listOf(FILES, [{ path, sha256: hex('x'), bytes: 1 }])));
       expect(r.outcome, path).toBe('falhou');
@@ -568,15 +542,8 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
       expect(c.put, `${path}: a file of a refused list was kept`).toEqual([]);
     }
     const c = cacheWithResponses();
-    expect((await keep(c, delivery({ files: [{ path: 'libras/signs/X', sha256: 'abc' }] })))[0].error).toMatch(/is refused: a listed file is malformed/);
+    expect((await keep(c, delivery({ files: [{ path: 'libras/avatar/X.json', sha256: 'abc' }] })))[0].error).toMatch(/is refused: a listed file is malformed/);
     expect((await keep(c, delivery({ nothing: [] })))[0].error).toMatch(/is refused: its `files` is missing/);
-  });
-
-  it('🎯 [Zero] a delivery without the player answers 404 for the list: reported, and nothing else is asked', async () => {
-    const c = cacheWithResponses();
-    const d = { asked: [], fetch: async (u) => { d.asked.push(u); return new Response('', { status: 404 }); } };
-    expect((await keep(c, d))[0]).toEqual({ id: LIST.id, outcome: 'falhou', error: `HTTP 404 — ${LIST.path}` });
-    expect(d.asked).toEqual([`${BASE}${LIST.path}`]);
   });
 
   it('🎯 [Zero] a host that cannot hash keeps nothing of the list — and does not even ask for it', async () => {
@@ -587,23 +554,13 @@ describe('a delivery\'s list: the Libras player\'s page and signs, kept checked 
     expect(c.put).toEqual([]);
     expect(d.asked).toEqual([]);
   });
-
-  it('🔴 [Zero] without deaf mode the list is not asked for — a child who never asks for signing downloads none of it', async () => {
-    expect(heavyAtBoot({ kokoro: false, libras: true })).toContain(LIST.id);
-    for (const portas of [{ kokoro: false }, { kokoro: true, reading: 'pt', commands: 'pt' }, { kokoro: false, libras: false }]) {
-      expect(heavyAtBoot(portas), JSON.stringify(portas)).not.toContain(LIST.id);
-    }
-    const d = delivery(listOf(FILES));
-    await downloadHeavy({ cacheStorage: cacheWithResponses().cacheStorage, fetch: d.fetch, digest, only: heavyAtBoot({ kokoro: false }) });
-    expect(d.asked.filter((a) => a.u.includes('/libras/')), 'the player\'s page or signs came down with deaf mode off').toEqual([]);
-  });
 });
 
 /**
- * 🔴 THE FREE PLAYER IS KEPT BY ITS OWN LIST (ADR-0234, route B, phase B3). 📏 Measured on a served delivery built with
- * `--libras --libras-avatar` (2026-09-25): with deaf mode on the start kept route A's 636 files and none of route B's — no
- * avatar, no clip, no three.js chunk in the checked cache — so offline the free player had nothing to draw. `--libras-avatar`
- * now writes `libras/offline-avatar.json`, and the start keeps it by the same rule as route A's.
+ * 🔴 THE PLAYER'S AVATAR, CLIPS AND STAGE CHUNK ARE ALL IN THE LIST (ADR-0234, phase B3). 📏 Measured on a served delivery built
+ * with `--libras --libras-avatar` (2026-09-25): with deaf mode on the start kept route A's 636 files and none of route B's — no
+ * avatar, no clip, no three.js chunk in the checked cache — so offline the free player had nothing to draw. `--libras` writes
+ * `libras/offline-avatar.json`, and the start keeps it by the list rule above.
  */
 describe('a delivery\'s list: the free Libras player\'s avatar, clips and stage, kept checked (ADR-0234, phase B3)', () => {
   const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
@@ -668,7 +625,7 @@ describe('a delivery\'s list: the free Libras player\'s avatar, clips and stage,
     }
   });
 
-  it('🎯 [Zero] a delivery built without `--libras-avatar` answers 404 for the list: reported, and nothing else is asked', async () => {
+  it('🎯 [Zero] a delivery built without `--libras` answers 404 for the list: reported, and nothing else is asked', async () => {
     const c = cacheWithResponses();
     const d = delivery(null, {});
     d.fetch = async (u) => { d.asked.push(u); return new Response('', { status: 404 }); };
@@ -698,8 +655,10 @@ describe('a delivery\'s list: the free Libras player\'s avatar, clips and stage,
 // whatever `only` says · the start asking for the list without deaf mode · the list read without `no-store` · a malformed
 // sha256 admitted · the list read by a host that cannot hash.
 
-// MUTATIONS CHECKED for the patched VLibras framework (2026-09-25), 2 of 2 red: its entry removed from the catalogue · the start
-// leaving an entry the delivery makes out of `libras` (🔴 «comes whole» and «fetched from the delivery, checked»).
+// (2026-09-26, phase B3: the list cases above moved from route A's list to the player's, and the 12 were run again against them,
+// scripted, each restored from a copy and checked by sha256 — 12 of 12 red.) The two cases of the patched VLibras framework left
+// with route A's catalogue entries; in their place, 2 of 2 red: a `libras:` file back in the catalogue (C1) · route A's list back
+// in `DELIVERY_LISTS` (C2) — both 🔴 «the start asks for the Libras list alone».
 
 // MUTATIONS CHECKED for ADR-0198 §5 (2026-09-14): Kokoro always fetched · every entry filtered out with the port · the start
 // passing no `apenas` (🔴 kokoro-na-voz.browser «a game without the port»).

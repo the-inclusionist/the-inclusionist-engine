@@ -94,8 +94,9 @@
        inline script (the CSP's `script-src 'self'`). -->
   <script type="module">
     import { bootQuiz } from './js/consumer-quiz/main-quiz.ts';
-    // `?libras=avatar` lends the engine the free Libras player (ADR-0234, route B) in place of the VLibras one (route A)
-    bootQuiz({ doc: document, win: window, librasAvatar: new URLSearchParams(location.search).get('libras') === 'avatar' });
+    // deaf mode signs with the engine's own interpreter, the free Libras player the delivery carries (ADR-0234); an old
+    // `?libras=avatar` link is ignored, and still opens offline (`vite.config.ts`, `ignoreURLParametersMatching`)
+    bootQuiz({ doc: document, win: window });
   </script>
 </body>
 </html>

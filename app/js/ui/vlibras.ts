@@ -12,10 +12,9 @@
 // THE STATE IS OURS. The mode is the person's choice, persisted, and never a reading of a third party's rectangle: it was
 // once inferred from a widget's geometry, and when the widget moved its markup the mode answered "on" forever.
 //
-// 📌 THE INTERPRETER IS A PORT, text in and a result out, the same shape whichever player signs. The Dev chose route A and then
-// route B (ADR-0234 errata): the VLibras player served from the delivery's own origin now (`ui/vlibras-player`, which the root
-// uses when the host lends no interpreter of its own — `EngineHost.interpreter`), a free player after it — only the port's
-// implementation changes. The free player (`ui/libras-avatar-player`, route B) stands beside it, lent by a host that asks for it.
+// 📌 THE INTERPRETER IS A PORT, text in and a result out, the same shape whichever player signs. The root's is the FREE player
+// (`ui/libras-avatar-player`, ADR-0234 route B: LAViD-UFPB's GPL signs on a three.js avatar, served by the delivery from the page's
+// own origin), used when the host lends no interpreter of its own (`EngineHost.interpreter`, which always wins).
 // Where the delivery shipped no player, that interpreter answers as `NO_INTERPRETER` does: «signing unavailable», which goes to
 // `problems` and to the child (ADR-0169). A player that fails at run time (no WebGL, never loads) takes the same path; the
 // captions and the text never depend on it. A player that signed the text but LEFT PART OF IT OUT says what (`unsigned`), and
@@ -41,12 +40,15 @@ export interface Interpreter {
   readonly dispose: () => void;
 }
 
+/**
+ * Why a delivery that carries no Libras player cannot sign, and the fix — the ONE reason both `NO_INTERPRETER` and the free
+ * player give for it, so `problems` says the same thing whichever of them answered.
+ */
+export const LIBRAS_NOT_INSTALLED = 'a Libras player is not installed in this delivery — build it with `inclusionist-heavy <folder> --libras`';
+
 /** The interpreter of a delivery that carries no Libras player (ADR-0234): it signs nothing and says why, and how to fix it. */
 export const NO_INTERPRETER: Interpreter = {
-  sign: () => Promise.resolve({
-    signed: false,
-    reason: 'a Libras player is not installed in this delivery — build it with `inclusionist-heavy <folder> --libras`',
-  }),
+  sign: () => Promise.resolve({ signed: false, reason: LIBRAS_NOT_INSTALLED }),
   hide: () => { /* nothing on screen */ },
   dispose: () => { /* nothing held */ },
 };

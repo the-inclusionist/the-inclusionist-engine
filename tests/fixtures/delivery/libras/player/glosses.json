@@ -1,8 +1,0 @@
-{
- "format": 1,
- "made": "vlibras-translator 1.3.3 (rules) · pt_core_news_md 3.8.0 · spaCy 3.8.16 — the glosses a delivery built with --libras writes (tests/vlibras-player.browser.test.js), copied from a real run",
- "glosses": [
-  ["Bem-vindo à escola.", "BEM VIR ESCOLA [PONTO]"],
-  ["Jogador {n} entrou!", "JOGADOR {n} ENTRAR [EXCLAMAÇÃO]"]
- ]
-}

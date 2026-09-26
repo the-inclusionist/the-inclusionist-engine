@@ -1,5 +1,0 @@
-{
-  "comment": "The marker a delivery built with --libras carries (tests/vlibras-player.browser.test.js): the interpreter opens a player only where this answers as Unity's configuration.",
-  "dataUrl": "fake.data",
-  "wasmCodeUrl": "fake.wasm"
-}

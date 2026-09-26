@@ -711,8 +711,6 @@
     "HeavyFile",
     "LIBRAS_AVATAR_FOLDER",
     "LIBRAS_AVATAR_STAGE_CHUNK",
-    "LIBRAS_PLAYER_FOLDER",
-    "LIBRAS_SIGNS_FOLDER",
     "commandsLanguageOf",
     "readingLanguageOf"
   ],
@@ -1739,15 +1737,12 @@
     "resolveVisualMode",
     "rgbToHex"
   ],
-  "ui/vlibras-player.ts": [
-    "VlibrasPlayerPorts",
-    "createVlibrasInterpreter"
-  ],
   "ui/vlibras.ts": [
     "DeafMode",
     "DeafModePorts",
     "DeafModeStore",
     "Interpreter",
+    "LIBRAS_NOT_INSTALLED",
     "NO_INTERPRETER",
     "SignResult",
     "createDeafMode",

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/libras-glosses — WHAT THE INTERPRETER HANDS THE PLAYER: the Libras gloss of the text the sonar found (ADR-0234, route A,
-// plan item 5b).
+// ui/libras-glosses — WHAT THE INTERPRETER HANDS THE PLAYER: the Libras gloss of the text the sonar found (ADR-0234, plan
+// item 5b).
 //
 // The player signs a GLOSS — Libras word order, in sign names — and the sonar finds Portuguese. Translating needs spaCy's full
 // Portuguese parser, which does not run in a browser, and it does not have to: the text a child can be shown is AUTHORED, so the
 // delivery glosses it once, at build time, with LAViD's rule-based `vlibras-translator` (`scripts/libras-glosses.mjs`, run by
-// `inclusionist-heavy --libras`), and writes `glosses.json` beside the player's page. At run time nothing is translated: the
-// text is LOOKED UP here.
+// `inclusionist-heavy --libras`), and writes `glosses.json` beside the avatar. At run time nothing is translated: the text is
+// LOOKED UP here.
 //
 // WHAT IS IN THE FILE: the engine's own Portuguese dictionary, and the game's when its delivery names it (`--libras-texts`).
 // A string with `{param}` holes is kept as a TEMPLATE, glossed with its holes in place (`JOGADOR {n} ENTRAR [EXCLAMAÇÃO]`),
@@ -20,14 +20,13 @@
 //
 // 📌 TODAY'S RULE (`provisionalGloss`), which stays the fallback: the words in capitals with the accents stripped, anything that
 // is not a letter or a digit a separator. Not a gloss — the player fingerspells it — and the accents go because the player has
-// no clip for an accented letter (📏 `Ã` measured: «Clip Ã não foi encontrado»). Ç IS KEPT: it is a letter of the Libras
-// manual alphabet, with its own handshape and movement, and both routes carry it (📏 route A spells «CAÇA» C-A-Ç-A from its
-// own clip; route B exports `Ç`). The build spells with the same rule (`scripts/libras-glosses.mjs` `spelledWord`, ADR-0234
-// erratum «A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN»).
+// no clip for an accented letter (the avatar's alphabet is A–Z and Ç, `scripts/libras-avatar.json`). Ç IS KEPT: it is a letter of
+// the Libras manual alphabet, with its own handshape and movement, and the avatar carries its clip. The build spells with the same
+// rule (`scripts/libras-glosses.mjs` `spelledWord`, ADR-0234 erratum «A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN»).
 //
 // It reaches no global: the file comes through the fetch the interpreter was given (ADR-0232).
 
-/** The file the delivery writes beside the player's page (`LIBRAS_PLAYER_FOLDER`), read by the interpreter. */
+/** The file the delivery writes beside the avatar (`LIBRAS_AVATAR_FOLDER`), read by the interpreter. */
 export const LIBRAS_GLOSSES_FILE = 'glosses.json';
 
 /** The file's shape. `glosses` holds `[text, gloss]` pairs; a text with `{name}` holes is a template, its gloss has them too. */

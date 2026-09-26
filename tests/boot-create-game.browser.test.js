@@ -1633,10 +1633,10 @@ describe('createGame num documento de verdade', () => {
 
   /*
    * DEAF MODE IS THE ROOT'S (ADR-0234): sounds get captions, and the sonar hands its text to the interpreter. The root's
-   * interpreter is the VLibras player the delivery shipped, and this test page ships none, so what a root shows here is the
+   * interpreter is the free Libras player the delivery shipped, and this test page ships none, so what a root shows here is the
    * `NO_INTERPRETER` path: the sonar's text written, «signing unavailable» in `problems` and to the child. Handing the EXACT
-   * text to a player that signs is measured with a double of the port, in `tests/vlibras.node.test.js`, and the player's
-   * protocol with a fake player, in `tests/vlibras-player.browser.test.js`.
+   * text to a player that signs is measured with a double of the port, in `tests/vlibras.node.test.js`, and the player itself
+   * against a tiny delivery in `tests/libras-avatar.browser.test.js`; a root over that delivery is the case below.
    */
   const soundCaption = () => document.querySelector('.legenda-de-som');
   /** The interpreter's answer arrives on a promise: one macrotask lets it land. */
@@ -1701,54 +1701,77 @@ describe('createGame num documento de verdade', () => {
   });
 
   /**
-   * 🔴 AND WHERE THE DELIVERY SHIPPED A PLAYER, THE ROOT OPENS IT (ADR-0234, route A). The page is given a `<base>` at a fixture
-   * shaped like a delivery (`tests/fixtures/delivery/`, whose `libras/player/` is the fake player of
-   * `tests/vlibras-player.browser.test.js`) while the root is built — the root reads its address then — and the sonar's text
-   * reaches that player as the provisional gloss, after the signs' address, with nothing in `problems`.
+   * 🔴 AND WHERE THE DELIVERY SHIPPED THE PLAYER, THE ROOT OPENS IT (ADR-0234, the free player since phase B3). The page is given
+   * a `<base>` at an address shaped like a delivery while the root is built — the root reads its address then — and the window's
+   * `fetch` answers that address with the TINY delivery of `tests/fixtures/libras-avatar/` (a real glTF avatar and real clips),
+   * its glosses mapping the sonar's text to two clips it carries. The avatar is drawn by the real stage, with three.js.
    */
-  it('🔴 [Right] where the delivery shipped the player, the sonar in deaf mode reaches it — and `dispose()` removes it', async () => {
+  async function deliveredRoot(extraHost = {}) {
     const { vi } = await import('vitest');
-    const pt = (await import('../app/js/i18n/pt.js')).default;
+    const { tinyDelivery } = await import('./fixtures/libras-avatar/tiny-delivery.js');
+    const at = `${location.origin}/tests/fixtures/delivery/`;
+    const served = await tinyDelivery(at);
+    const state = { glosses: [] };
+    const passThrough = window.fetch;
+    const spy = vi.spyOn(window, 'fetch').mockImplementation((url, init) => {
+      const u = String(url);
+      if (u === `${at}libras/avatar/glosses.json`) {
+        served.asked.push('libras/avatar/glosses.json');
+        return Promise.resolve(new Response(JSON.stringify({ format: 1, made: 'test', glosses: state.glosses })));
+      }
+      const fetchFile = served.fetch; // called bare, as the host's own is
+      return u.startsWith(at) ? fetchFile(u) : passThrough(url, init);
+    });
     const base = document.createElement('base');
-    base.href = `${location.origin}/tests/fixtures/delivery/`;
+    base.href = at;
     document.head.prepend(base);
     let motor;
-    try { motor = abrir(); } finally { base.remove(); }
-    const frame = () => document.querySelector(`iframe[title="${pt['sr.deaf.interpreter']}"]`);
+    try { motor = abrir(extraHost.interpreter ? { host: { doc: document, win: window, ...extraHost } } : undefined); } finally { base.remove(); }
+    return { motor, served, state, restore: () => spy.mockRestore() };
+  }
+
+  it('🔴 [Right] where the delivery shipped the player, the sonar in deaf mode signs with the free avatar — and `dispose()` removes it', async () => {
+    const { vi } = await import('vitest');
+    const pt = (await import('../app/js/i18n/pt.js')).default;
+    const { motor, served, state, restore } = await deliveredRoot();
+    const avatar = () => document.querySelector(`canvas[aria-label="${pt['sr.deaf.interpreter']}"]`);
     try {
       motor.deafMode.toggle();
       motor.sonar.sonar({ i: 0, x: 0, y: 0 });
-      const received = () => frame()?.contentWindow?.received ?? [];
-      await vi.waitFor(() => { expect(received().map((m) => m.method)).toEqual(['setBaseUrl', 'playNow']); }, { timeout: 10_000 });
-      expect(frame().src).toBe(`${location.origin}/tests/fixtures/delivery/libras/player/index.html`);
-      expect(received()[0].params).toBe(`${location.origin}/tests/fixtures/delivery/libras/signs/`);
-      expect(received()[1].params, 'the sonar\'s text did not reach the player').toMatch(/^[A-Z0-9 ]+$/);
-      expect(motor.problems.join('\n'), 'the root answered «unavailable» with a player shipped').not.toMatch(/could not sign/);
+      const written = soundCaption()?.textContent ?? '';
+      expect(written, 'the sonar wrote nothing: the case would sign nothing').not.toBe('');
+      state.glosses = [[written, 'GATO GALINHA']];
+      await vi.waitFor(() => { expect(avatar()?.hidden, 'the free avatar never came on the screen').toBe(false); }, { timeout: 15_000 });
+      expect(served.asked[0], 'the root did not ask the delivery for the avatar\'s manifest first').toBe('libras/avatar/manifest.json');
+      expect(served.asked).toEqual(expect.arrayContaining(['libras/avatar/avatar.glb', 'libras/avatar/glosses.json',
+        'libras/avatar/clips/GATO.json', 'libras/avatar/clips/GALINHA.json']));
+      expect(document.querySelector('iframe'), 'a frame opened beside the avatar').toBeNull();
+      await vi.waitFor(() => { expect(avatar()?.hidden, 'the avatar did not leave after signing').toBe(true); }, { timeout: 15_000 });
+      expect(motor.problems.join('\n'), 'the root answered «unavailable» with a player shipped').not.toMatch(/could not sign|signed only part/);
     } finally {
       if (motor.deafMode.isOn()) motor.deafMode.toggle();
       motor.dispose();
+      restore();
     }
-    expect(frame(), 'a disposed root left its interpreter on the page').toBeNull();
+    expect(avatar(), 'a disposed root left its interpreter on the page').toBeNull();
   });
 
   it('🎯 [Right] ONE seam: the host\'s own interpreter wins even where the delivery shipped the player, which is never opened', async () => {
     const { vi } = await import('vitest');
     const signed = [];
     const own = { sign: async (text) => { signed.push(text); return { signed: true }; }, hide: () => {}, dispose: () => {} };
-    const base = document.createElement('base');
-    base.href = `${location.origin}/tests/fixtures/delivery/`;
-    document.head.prepend(base);
-    let motor;
-    try { motor = abrir({ host: { doc: document, win: window, interpreter: own } }); } finally { base.remove(); }
+    const { motor, served, restore } = await deliveredRoot({ interpreter: own });
     try {
       motor.deafMode.toggle();
       motor.sonar.sonar({ i: 0, x: 0, y: 0 });
       await vi.waitFor(() => { expect(signed.length, 'the host\'s interpreter was not asked').toBe(1); });
       await new Promise((r) => { setTimeout(r, 100); });
-      expect(document.querySelector('iframe[src*="libras/player/"]'), 'the delivered player opened beside the host\'s own').toBeNull();
+      expect(served.asked, 'the delivered player was asked for beside the host\'s own').toEqual([]);
+      expect(document.querySelector('canvas[role="img"]'), 'the delivered avatar opened beside the host\'s own').toBeNull();
     } finally {
       if (motor.deafMode.isOn()) motor.deafMode.toggle();
       motor.dispose();
+      restore();
     }
   });
 
@@ -1763,7 +1786,7 @@ describe('createGame num documento de verdade', () => {
       motor.deafMode.toggle(); // the choice stored off for the next case — and on again, so the answer would be heard
       motor.deafMode.toggle();
       motor.dispose();
-      await vi.waitFor(() => { expect(asked.mock.calls.some(([u]) => String(u).includes('libras/player/'))).toBe(true); }, { timeout: 5000 });
+      await vi.waitFor(() => { expect(asked.mock.calls.some(([u]) => String(u).includes('libras/avatar/'))).toBe(true); }, { timeout: 5000 });
       await Promise.allSettled(asked.mock.results.map((r) => r.value));
     } finally { asked.mockRestore(); }
     await settle();
@@ -2107,12 +2130,13 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 //   S7 the FIRST open dialog · S8 the LAST, the focus not asked · S9 an `inert` layer counted as shown  🔴 «of a game's own dialogs…»
 //      ⚠️ S7 and S9 each SURVIVED the quiz file alone: the engine makes the layers under the front card `inert`, so either rule
 //      held the other there. A game's own dialogs, which nobody inerts, are what tells them apart.
-// ---- ADR-0234 route A, the root's interpreter (2026-09-25, each run on `boot/create-game.ts` and restored — all red) ----
-//   V1 the interpreter pointed at a folder the delivery never writes  🔴 «where the delivery shipped the player» · «`dispose()` releases»
-//   V2 its base address not the page's own (`doc.baseURI`)            🔴 «where the delivery shipped the player»
-//   V3 the boot's download never asking for the player (node file)    🔴 «the boot asks for the Libras player only when deaf mode is on»
-//   V4 the delivered player taking the place of the host's own        🔴 «ONE seam» (and the screen sonar's deaf-mode case)
-//   V5 the seam never reaching the delivered player (a fixed «no»)     🔴 «where the delivery shipped the player» · «`dispose()` releases»
+// ---- ADR-0234, the root's interpreter — re-run on 2026-09-26 when phase B3 made it the free player (scripted, each applied to
+//      `boot/create-game.ts`, this file run, restored from a copy and checked by sha256 — 4 of 4 red) ----
+//   V1 the interpreter pointed at a folder the delivery never writes  🔴 «signs with the free avatar» · «`dispose()` releases»
+//   V2 its base address not the page's own (`doc.baseURI`)            🔴 «signs with the free avatar»
+//   V3 the seam never reaching the delivered player (a fixed «no»)     🔴 «signs with the free avatar» · «`dispose()` releases»
+//   V4 the delivered player taking the place of the host's own        🔴 «ONE seam»
+//   (the boot's download asking for the player only in deaf mode is held in `tests/heavy.node.test.js`, H9 there)
 // ---- the spoken state follows the control (2026-09-25, each alone on `ui/pause-icons.ts` / `boot/create-game.ts`, restored — all 8 red) ----
 //   A1 the bar's 👄 announcing «ligado» again · A2 the bar's 📷 announcing the mode   🔴 «the bar's 👄 / 📷 …» (and the pause-icons pair)
 //   A3 the panel's voice row announcing the state it reads after the write           🔴 «the panel's microphone row» — the state still reads

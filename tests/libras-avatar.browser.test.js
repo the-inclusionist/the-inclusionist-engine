@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE FREE INTERPRETER (ADR-0234, route B, phase B2; `ui/libras-avatar-player`) — the `Interpreter` port route A implements,
-// held against a TINY delivery (`tests/fixtures/libras-avatar/tiny-delivery.js`): a real glTF avatar and real three.js clips,
-// drawn by the real stage in this browser, served through the `fetch` the interpreter is given. What is held is route A's
-// behaviour, rule for rule: the avatar appears at the bottom right when a request is played, signs the gloss's clips in order
+// THE INTERPRETER THAT SIGNS (ADR-0234, route B; `ui/libras-avatar-player`, the root's own since phase B3) — the `Interpreter`
+// port, held against a TINY delivery (`tests/fixtures/libras-avatar/tiny-delivery.js`): a real glTF avatar and real three.js clips,
+// drawn by the real stage in this browser, served through the `fetch` the interpreter is given. What is held is the Dev's
+// rules for the interpreter: the avatar appears at the bottom right when a request is played, signs the gloss's clips in order
 // (a word with no clip fingerspelled from the digit and letter clips), answers when the last clip ends, LEAVES the screen some
 // seconds after it stopped — five by default — unless a new press comes first, and leaves at once when deaf mode or the root
 // does. And the two things the export hands over that the stage must answer: the face's track reaches both meshes of the head,
@@ -11,6 +11,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createLibrasAvatarInterpreter } from '../app/js/ui/libras-avatar-player.js';
+import { NO_INTERPRETER } from '../app/js/ui/vlibras.js';
 import { createAvatarStage } from '../app/js/ui/libras-avatar-stage.js';
 import { tinyDelivery, HAND_REST_Y } from './fixtures/libras-avatar/tiny-delivery.js';
 
@@ -47,7 +48,7 @@ afterEach(() => {
   for (const it of made.splice(0)) it.dispose();
 });
 
-describe('ui/libras-avatar-player — the port, as route A holds it', () => {
+describe('ui/libras-avatar-player — the port, by the Dev\'s rules', () => {
   it('🔴 [Right] a request makes the avatar appear at the bottom right, in front of the screen, never taking the keyboard', async () => {
     const { it: vl } = await interpreter();
     const answer = vl.sign('gato');
@@ -146,10 +147,12 @@ describe('ui/libras-avatar-player — what it reports (ADR-0169)', () => {
     expect(answer.reason).toMatch(/^none of the text could be signed: «BEBE» lacks a sign/);
   });
 
-  it('🔴 [Right] a delivery that did not ship the avatar answers «unavailable» with the flag that ships it — and downloads nothing more', async () => {
+  it('🔴 [Right] a delivery that did not ship the avatar answers EXACTLY as `NO_INTERPRETER` does, the flag that ships it named — and downloads nothing more', async () => {
     const { it: vl, asked } = await interpreter({ delivery: { drop: ['libras/avatar/manifest.json'] } });
     const answer = await vl.sign('gato');
-    expect(answer).toEqual({ signed: false, reason: expect.stringMatching(/Libras avatar is not installed .*--libras-avatar/) });
+    // the root's interpreter since phase B3: a delivery built without `--libras` must read as a root with no player at all
+    expect(answer).toEqual(await NO_INTERPRETER.sign('gato'));
+    expect(answer).toEqual({ signed: false, reason: expect.stringMatching(/not installed in this delivery .*inclusionist-heavy <folder> --libras`$/) });
     expect(asked, 'the avatar was fetched from a delivery that did not ship it').toEqual(['libras/avatar/manifest.json']);
     expect(avatar()).toBeNull();
   });
@@ -209,3 +212,6 @@ describe('ui/libras-avatar-stage — what the export hands over, answered', () =
 //   B9 `hide()` leaving its request unanswered                           🔴 «`hide()` takes it off at once»
 //   B10 a replaced request never answered                                🔴 «REPLACES what is being signed»
 //   B12 a device without WebGL never tried again                         🔴 «no WebGL»
+// (2026-09-26, phase B3; scripted the same way, the module restored from a copy and checked by sha256 — 2 of 2 red)
+//   P1 the not-shipped answer its own text again, not `NO_INTERPRETER`'s  🔴 «answers EXACTLY as `NO_INTERPRETER` does»
+//   P3 the glosses read at route A's old place (`libras/player/`)         🔴 «IN ORDER» (the gloss never found, the text spelled)

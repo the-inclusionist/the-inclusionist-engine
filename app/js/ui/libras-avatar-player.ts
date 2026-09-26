@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/libras-avatar-player.ts — THE FREE INTERPRETER: LAViD-UFPB's signs on a three.js avatar, behind the same `Interpreter` port
-// route A's VLibras player implements (ADR-0234, route B, phase B2).
+// ui/libras-avatar-player.ts — THE INTERPRETER THAT SIGNS: LAViD-UFPB's signs on a three.js avatar, behind the `Interpreter`
+// port (ADR-0234, route B).
 //
-// 📌 BESIDE ROUTE A, NOT INSTEAD OF IT (phase B3 swaps them): the root still builds the VLibras player when the host lends no
-// interpreter, and a host that wants this one lends it through `EngineHost.interpreter` — the quiz demo does with
-// `?libras=avatar`.
+// 📌 THE ROOT'S OWN (phase B3): `createGame` builds this one when the host lends no interpreter (`EngineHost.interpreter`
+// always wins), over the page's own address.
 //
-// WHAT IT KEEPS FROM ROUTE A, rule for rule (`ui/vlibras-player`): the gloss is the delivery's (`glosses.json`, beside route A's
-// player page, where a word with no sign is written as the child reads it), and a text it does not cover is its words in
-// capitals, accents stripped, Ç kept; the avatar appears at the bottom right when a request is played, in front of the screen,
-// never taking the keyboard; a new press replaces what was being signed; the avatar LEAVES the screen `leaveAfterMs` after it stopped
-// signing — hidden, kept loaded for the next press — and a press in those seconds cancels the leaving; `hide()` takes it off at
-// once and `dispose()` releases it. A delivery that did not ship it answers «signing unavailable» with the flag that ships it,
-// and so does a device that cannot draw it (no WebGL) or a load that never ends (`ui/libras-avatar-load`).
+// THE RULES, as the Dev set them for the interpreter: the gloss is the delivery's (`glosses.json`, beside the avatar, where a
+// word with no sign is written as the child reads it), and a text it does not cover is its words in capitals, accents stripped,
+// Ç kept; the avatar appears at the bottom right when a request is played, in front of the screen, never taking the keyboard; a
+// new press replaces what was being signed; the avatar LEAVES the screen `leaveAfterMs` after it stopped signing — hidden, kept
+// loaded for the next press — and a press in those seconds cancels the leaving; `hide()` takes it off at once and `dispose()`
+// releases it. A delivery that did not ship it answers exactly as `NO_INTERPRETER` does («signing unavailable», with the flag
+// that ships it), and a device that cannot draw it (no WebGL) or a load that never ends answers «unavailable» with its own
+// reason (`ui/libras-avatar-load`).
 //
 // WHAT IS ITS OWN: the player is this engine's code, so «stopped» is not a message to wait for — it is the moment the last clip
 // reaches its end (`ui/libras-avatar-plan`'s sequencer), its final pose held. And a word it can neither sign nor fingerspell is
@@ -45,10 +45,8 @@ export interface LibrasAvatarPorts {
   readonly base: string;
   /** The avatar's accessible name, read when its canvas is made — the page's language at that moment. */
   readonly title: () => string;
-  /** Where the avatar, the clips and the manifest are, under `base`. The delivery's folder unless a test points elsewhere. */
+  /** Where the avatar, the clips, the manifest and the glosses are, under `base`. The delivery's folder unless a test points elsewhere. */
   readonly avatarFolder?: string;
-  /** Where the delivery's `glosses.json` is, under `base`: beside route A's player page, where `--libras` writes it. */
-  readonly glossesFolder?: string;
   /** How long the avatar may take to load before the request is answered «unavailable». */
   readonly loadTimeoutMs?: number;
   /** How long the avatar stays after it stopped signing before it leaves. `LEAVE_AFTER_MS` unless a test says. */
@@ -57,7 +55,7 @@ export interface LibrasAvatarPorts {
   readonly loadStage?: (canvas: HTMLCanvasElement, avatar: ArrayBuffer) => Promise<AvatarStage>;
 }
 
-/** Route A's patience (`ui/vlibras-player`): a school machine gets many times a fast one's load before it is given up on. */
+/** A school machine gets many times a fast one's load before it is given up on. */
 const LOAD_TIMEOUT_MS = 60_000;
 /** The Dev's five seconds (interface log, «The interpreter leaves 5 s after the player itself says it stopped»). */
 const LEAVE_AFTER_MS = 5000;
@@ -176,7 +174,7 @@ export function createLibrasAvatarInterpreter(ports: LibrasAvatarPorts): Interpr
 
   /** The delivery's avatar, ready to sign: its place and manifest — or the answer the request gets instead. */
   const reach = async (asked: number): Promise<{ at: AvatarPlace; m: AvatarManifest } | SignResult> => {
-    const at = (place ??= avatarPlace(ports.base, ports.avatarFolder, ports.glossesFolder));
+    const at = (place ??= avatarPlace(ports.base, ports.avatarFolder));
     const m = at ? await (shipped ??= readManifest(fetchFile, at)) : null;
     if (!at || !m) return { signed: false, reason: NOT_SHIPPED };
     manifest = m;
@@ -200,7 +198,7 @@ export function createLibrasAvatarInterpreter(ports: LibrasAvatarPorts): Interpr
   /** Puts the avatar in front of the screen and signs `steps`; answered when the last one reached its end. */
   const perform = (on: AvatarStage, shown: HTMLCanvasElement, steps: readonly SignStep[], leftOut: string | undefined):
     Promise<SignResult> => {
-    // 📌 A new press replaces what was being signed — the sonar signs what is on screen, not a queue (route A's rule). The one
+    // 📌 A new press replaces what was being signed — the sonar signs what is on screen, not a queue (the Dev's rule). The one
     // it replaced is not a failure: the child asked again.
     answerPlaying(signedWith(playingLeftOut));
     shown.hidden = false;

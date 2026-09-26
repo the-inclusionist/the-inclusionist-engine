@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// WHAT THE INTERPRETER HANDS THE PLAYER (ADR-0234, route A — plan item 5b; `ui/libras-glosses`): the gloss the delivery wrote for
+// WHAT THE INTERPRETER HANDS THE PLAYER (ADR-0234, plan item 5b; `ui/libras-glosses`): the gloss the delivery wrote for
 // the text on screen, looked up — and today's rule (capitals, accents stripped, fingerspelled) for whatever the file does not
 // cover. The glosses below are the real translator's (vlibras-translator 1.3.3, rules, pt_core_news_md 3.8.0), copied from a run
 // over the engine's dictionary; the screen texts are shaped as `ui/screen-text` reads them: one sentence per line, joined.
@@ -93,8 +93,8 @@ describe('ui/libras-glosses — what the file does not cover falls back, alone',
 describe('ui/libras-glosses — reading the delivered file', () => {
   it('🔴 [Right] read through the fetch it is given, at the address it is given', async () => {
     const fetchFile = vi.fn(async () => ({ ok: true, json: async () => FILE }));
-    const gloss = await loadGlosser(fetchFile, 'https://x.example/libras/player/glosses.json');
-    expect(fetchFile).toHaveBeenCalledWith('https://x.example/libras/player/glosses.json');
+    const gloss = await loadGlosser(fetchFile, 'https://x.example/libras/avatar/glosses.json');
+    expect(fetchFile).toHaveBeenCalledWith('https://x.example/libras/avatar/glosses.json');
     expect(gloss('Olhe aqui')).toBe('OLHE AQUI');
     expect(LIBRAS_GLOSSES_FILE).toBe('glosses.json');
   });

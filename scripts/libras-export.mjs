@@ -470,7 +470,7 @@ export function manifest({ blender, exporter, avatar, clips, failed = {} }) {
   };
 }
 
-/** `libras-export/sources.json`: the pinned commit and one line per `.blend` (bytes, sha256), in the shape of libras-signs.json. */
+/** `libras-export/sources.json`: the pinned commit and one line per `.blend` (bytes, sha256), each under `signs`. */
 export function pinsText(signs) {
   const head = {
     comment: [

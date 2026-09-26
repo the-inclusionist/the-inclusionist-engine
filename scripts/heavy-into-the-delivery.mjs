@@ -25,9 +25,8 @@ import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
-import { deliverLibrasPlayer, librasListPaths } from './vlibras-player.mjs';
-import { deliverLibrasGlosses, readSignPins, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
-import { deliverLibrasAvatar, readAvatarPins, stageChunkOf, writeAvatarList, writeDeliveryList } from './libras-avatar.mjs';
+import { deliverLibrasGlosses, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
+import { deliverLibrasAvatar, readAvatarPins, stageChunkOf, writeAvatarList } from './libras-avatar.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
@@ -47,8 +46,6 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
   const present = [];
   for (const p of pesados) {
     if (!p.url) { linhas.push({ id: p.id, outcome: 'sem-fonte' }); continue; }
-    // made HERE from another entry, after this loop (the patched VLibras framework): nothing upstream serves its address
-    if (p.madeFrom) { linhas.push({ id: p.id, outcome: 'derived', note: `made by the delivery from ${p.madeFrom}` }); continue; }
     if (!groupOf(p.id, thirdParty)) {
       linhas.push({ id: p.id, outcome: 'falhou', error: 'no licence recorded for it in scripts/licences/third-party.mjs — not written' });
       continue;
@@ -83,12 +80,12 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
       linhas.push({ id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
     }
   }
-  // 📌 THE NOTICES SPEAK FOR THE WHOLE DELIVERY, not for this run: a delivery is built by several runs (`--libras`, then
-  // `--libras-avatar`), and `THIRD-PARTY-NOTICES.md` is rewritten each time. So every catalogue file ALREADY in the delivery with
-  // its pinned bytes keeps its notice; a file whose bytes are not the pinned ones gets none from here.
+  // 📌 THE NOTICES SPEAK FOR THE WHOLE DELIVERY, not for this run: a delivery may be built by several runs (`--reading pt`, then
+  // `--kokoro`), and `THIRD-PARTY-NOTICES.md` is rewritten each time. So every catalogue file ALREADY in the delivery with its
+  // pinned bytes keeps its notice; a file whose bytes are not the pinned ones gets none from here.
   const listed = new Set(present.map((f) => f.id));
   for (const p of catalogue) {
-    if (listed.has(p.id) || !p.url || p.madeFrom || !p.sha256 || !groupOf(p.id, thirdParty)) continue;
+    if (listed.has(p.id) || !p.url || !p.sha256 || !groupOf(p.id, thirdParty)) continue;
     const alvo = join(destino, deliveryPath(p.url));
     if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) present.push({ id: p.id, path: deliveryPath(p.url) });
   }
@@ -114,23 +111,18 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   leva as três línguas.») — because the child can switch language mid-game and her model must already be there. The flag
  *   NARROWS: the languages named, and only those; `--commands none` carries no command model at all. A language left out is
  *   said to the child who speaks it, and named in `problems` with this fix.
- * · `--libras`: the Libras player deaf mode's interpreter drives (ADR-0234, route A) — the four published VLibras files, 19.3 MiB,
- *   and then the player page with the patched framework (`scripts/vlibras-player.mjs`). No game declares it: deaf mode is the
- *   person's, like speaking is, so the DELIVERY says whether it can sign. Without it the sonar in deaf mode says «signing
- *   unavailable», as it always did. The same step GLOSSES the text a child can be shown (`scripts/libras-glosses.mjs`): the engine's
- *   Portuguese dictionary, always, and the game's own with `--libras-texts <file>`, repeatable (which implies `--libras`) — and
- *   delivers the signs those glosses use that `scripts/libras-signs.json` pins (the engine's: 632, 15.1 MB), from LAViD's
- *   dictionary at a pinned commit or from the pins' `mirror` folder under `--base`, each checked by sha256. It
- *   needs the glosser's environment, built once by `--libras-setup`; without it the delivery STOPS instead of shipping a player
- *   with nothing to sign but letters. Last, it writes `libras/offline.json`, the list of the page, glosses and signs with their
- *   sha256, by which a device with deaf mode on keeps the player for the days without a network.
+ * · `--libras`: the Libras player deaf mode's interpreter signs with (ADR-0234, route B) — LAViD-UFPB's signs exported to one
+ *   avatar and 655 clips, the whole manual alphabet among them, 32.7 MiB, into `libras/avatar/`, each checked against
+ *   `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`), from the pins' `source` or from their `mirror` folder under
+ *   `--base`. No game declares it: deaf mode is the person's, like speaking is, so the DELIVERY says whether it can sign. Without
+ *   it the sonar in deaf mode says «signing unavailable». The same step GLOSSES the text a child can be shown
+ *   (`scripts/libras-glosses.mjs`): the engine's Portuguese dictionary, always, and the game's own with `--libras-texts <file>`,
+ *   repeatable (which implies `--libras`); a token the avatar carries no clip for is fingerspelled as written. It needs the
+ *   glosser's environment, built once by `--libras-setup`; without it the delivery STOPS instead of shipping a player with nothing
+ *   to sign but letters. Last, it writes `libras/offline-avatar.json`, the list of the avatar, clips, manifest, glosses and the
+ *   build's three.js chunk with their sha256, by which a device with deaf mode on keeps the player for the days without a
+ *   network — run after the build, which is what names the chunk.
  * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
- * · `--libras-avatar`: the FREE player's files (ADR-0234, route B, phase B2) — the avatar and the 655 sign clips of the B1 export,
- *   the whole manual alphabet among them, 32.7 MiB, into `libras/avatar/`, each checked against `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`). Beside route
- *   A, not instead of it: a host lends the free player through `EngineHost.interpreter`. It reads the glosses `--libras` writes,
- *   so the two go together. Last, it writes `libras/offline-avatar.json` (phase B3), the list of those files and of the build's
- *   three.js chunk with their sha256, by which a device with deaf mode on keeps the free player for the days without a network —
- *   run after the build, which is what names the chunk. Read here, apart from the answers above, so this list's shape stays route A's until phase B3.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
@@ -189,33 +181,34 @@ if (executado) {
     try { console.log(`the Libras glosser's environment is ready: ${setUpGlosser()}`); process.exit(0); }
     catch (e) { console.error(e instanceof Error ? e.message : String(e)); process.exit(1); }
   }
-  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… [--libras-avatar] | --libras-setup'); process.exit(2); }
+  if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… | --libras-setup'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
-  // 📌 THE GLOSSES FIRST, before a byte is downloaded: a build machine with no glosser learns it in a second, not after 19 MiB
-  const { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER, DELIVERY_LISTS, commandsLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
-  let librasSigns = [];
+  const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK, DELIVERY_LISTS, commandsLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
   let librasGlosses = '';
+  let stageChunk = '';
   if (libras) {
     const { LIBRAS_GLOSSES_FILE } = await import(new URL('../dist-pkg/ui/libras-glosses.js', import.meta.url).href);
     const { default: enginePt } = await import(new URL('../dist-pkg/i18n/pt.js', import.meta.url).href);
     try {
+      // 📌 THE STAGE CHUNK AND THE GLOSSES FIRST, before a byte is downloaded: a build that never emitted the player, or a build
+      // machine with no glosser, learns it in a second, not after 32 MiB
+      stageChunk = stageChunkOf(destino, LIBRAS_AVATAR_STAGE_CHUNK);
       const games = await Promise.all(librasTexts.map((file) => readTexts(file)));
       const made = await deliverLibrasGlosses({
-        destino, playerFolder: LIBRAS_PLAYER_FOLDER, signsFolder: LIBRAS_SIGNS_FOLDER, glossesFile: LIBRAS_GLOSSES_FILE,
-        dictionaries: [enginePt, ...games], translate: (inputs) => runGlosser(inputs), pins: readSignPins(), base,
+        destino, folder: LIBRAS_AVATAR_FOLDER, glossesFile: LIBRAS_GLOSSES_FILE, dictionaries: [enginePt, ...games],
+        translate: (inputs) => runGlosser(inputs),
       });
       console.log(`glosses   ${made.path} — ${made.texts} texts (the engine's${games.length ? ` and ${games.length} of the game's` : ''}), `
         + `${made.tokens} sign names`);
-      console.log(`signs     ${made.signs.length} carried; ${made.unpinned.length} with no pinned sign are fingerspelled `
-        + '(scripts/libras-signs.json)');
+      console.log(`signs     ${made.signed.length} signed by the avatar's clips; ${made.fingerspelled.length} with no clip are fingerspelled `
+        + '(scripts/libras-avatar.json)');
       const { spelled } = made;
       console.log(`spelled   ${spelled.tokens} tokens: ${spelled.asWritten} as written on the screen (${spelled.ambiguous} of them `
         + `chosen by sentence order among several spellings, ${spelled.byStem} by the word's start), ${spelled.asTranslated} `
         + 'as the translator wrote them (no written word gives them)');
-      librasSigns = made.signs;
       librasGlosses = made.path;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
@@ -237,35 +230,16 @@ if (executado) {
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
   if (libras) {
     try {
-      const written = deliverLibrasPlayer({ destino, catalogue: HEAVY_FILES, deliveryPath, playerFolder: LIBRAS_PLAYER_FOLDER,
-        signs: librasSigns });
-      for (const path of written) console.log(`player    ${path}`);
-      // LAST, so it names what is really on the disk: the list a device keeps the player offline by (pillar 8)
-      const list = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
-      const listed = writeDeliveryList({ destino, list, paths: librasListPaths({ written, glosses: librasGlosses, signs: librasSigns,
-        playerFolder: LIBRAS_PLAYER_FOLDER, signsFolder: LIBRAS_SIGNS_FOLDER }) });
-      console.log(`offline   ${listed.path} — ${listed.files} files, ${listed.bytes} bytes, each with its sha256`);
-    } catch (e) {
-      console.error(e instanceof Error ? e.message : String(e));
-      console.error('the Libras player was not delivered: this delivery cannot sign');
-      process.exit(1);
-    }
-  }
-  if (process.argv.includes('--libras-avatar')) {
-    const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
-    try {
-      // 📌 THE STAGE CHUNK FIRST, before a byte is downloaded: a build that never emitted the free player learns it in a second
-      const stageChunk = stageChunkOf(destino, LIBRAS_AVATAR_STAGE_CHUNK);
       const pins = readAvatarPins();
       const { files, bytes } = await deliverLibrasAvatar({ destino, folder: LIBRAS_AVATAR_FOLDER, pins, base });
-      console.log(`avatar    ${LIBRAS_AVATAR_FOLDER} — ${files} files, ${(bytes / 1048576).toFixed(1)} MiB (ADR-0234, route B)`);
-      // LAST, so it names what is really on the disk: the list a device keeps the free player offline by (pillar 8)
+      console.log(`avatar    ${LIBRAS_AVATAR_FOLDER} — ${files} files, ${(bytes / 1048576).toFixed(1)} MiB (ADR-0234)`);
+      // LAST, so it names what is really on the disk: the list a device keeps the player offline by (pillar 8)
       const list = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
-      const listed = writeAvatarList({ destino, list, folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk });
+      const listed = writeAvatarList({ destino, list, folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk, glosses: librasGlosses });
       console.log(`offline   ${listed.path} — ${listed.files} files (${stageChunk} among them), ${listed.bytes} bytes, each with its sha256`);
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
-      console.error('the Libras avatar was not delivered: the free player cannot sign in this delivery');
+      console.error('the Libras player was not delivered: this delivery cannot sign');
       process.exit(1);
     }
   }

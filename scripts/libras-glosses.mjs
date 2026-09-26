@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// THE BUILD-TIME GLOSSES (ADR-0234, route A — plan item 5b): run by `inclusionist-heavy --libras`, before the player is written.
+// THE BUILD-TIME GLOSSES (ADR-0234, plan item 5b): run by `inclusionist-heavy --libras`, before the avatar is written.
 // The player signs a GLOSS, and the text a child is shown is Portuguese; translating it needs spaCy's Portuguese parser, which
 // does not run in a browser. It does not have to: that text is AUTHORED, so it is glossed here, once, on the build machine, and
-// written beside the player as `glosses.json` (`ui/libras-glosses` reads it).
+// written beside the avatar as `glosses.json` (`ui/libras-glosses` reads it).
 //
 // WHICH TEXTS, and why these:
 //   · THE ENGINE'S OWN PORTUGUESE DICTIONARY, all of it (`dist-pkg/i18n/pt.js`). The sonar reads what is on the screen — a
@@ -28,10 +28,9 @@
 // built from `libras-glosses/uv.lock` by `inclusionist-heavy --libras-setup` — which needs `uv` and Python 3.12 on this machine,
 // and never downloads a Python.
 //
-// THE SIGNS those glosses use are delivered here too, into `libras/signs/`, but ONLY the ones pinned by sha256 in
-// `libras-signs.json` (the Dev authorised the download: «Autorizo»): LAViD's dictionary repository at a pinned commit, fetched
-// from there or from `--base`, and a byte that differs from the pin is REFUSED. The GPL-3.0 and a NOTICE naming the source are
-// written beside them.
+// WHICH TOKENS HAVE A SIGN is the avatar's answer: a token the delivery carries a clip for (`scripts/libras-avatar.json`, the
+// names the free player signs) stays a sign; any other is fingerspelled. The clips themselves are delivered by
+// `scripts/libras-avatar.mjs`, in the same `--libras` step.
 //
 // 🔴 A WORD WITH NO SIGN IS SPELLED AS IT IS WRITTEN (ADR-0234 erratum; the Dev: «Soletra-se a palavra escrita»). The translator
 // returns LEMMAS, and a token the delivery carries no sign for is fingerspelled — so «entrou» would be spelled E-N-T-R-A-R. So
@@ -45,8 +44,8 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readAvatarPins } from './libras-avatar.mjs';
 
 /** The uv project that pins the glosser's environment (`pyproject.toml`, `uv.lock`, `gloss.py`). */
 export const GLOSSER_PROJECT = fileURLToPath(new URL('./libras-glosses/', import.meta.url));
@@ -57,7 +56,6 @@ export const PINNED = Object.freeze({ translator: '1.3.3', model: 'pt_core_news_
 /** The one command that builds the environment, as a game's delivery and this repository each run it. */
 export const SETUP_COMMAND = '`npx inclusionist-heavy --libras-setup` (in this repository: `npm run libras:setup`)';
 
-const sha256OfNode = (bytes) => createHash('sha256').update(Buffer.from(bytes)).digest('hex');
 
 /** Where the glosser's environment lives: never inside the repository or `node_modules`. */
 export function glosserEnvironment(env = process.env, home = homedir()) {
@@ -286,11 +284,10 @@ export function glossTokens(file) {
 
 /**
  * A word as the player fingerspells it — the run-time fallback's rule (`ui/libras-glosses` `provisionalGloss`), so a word is
- * spelled the same whether the build or the run time spelled it: capitals, and every mark stripped but Ç's. The player has no
- * clip for an accented vowel (📏 `Ã` measured: «Clip Ã não foi encontrado»), so it is spelled as its base letter (Ã → A,
- * É → E); Ç is a letter of the Libras manual alphabet, with its own handshape and movement, and both routes carry it (📏 route
- * A spells «CAÇA» C-A-Ç-A from its own clip), so it stays Ç: the marks are stripped from each run with no Ç in it. Anything
- * that is not a letter or a digit separates.
+ * spelled the same whether the build or the run time spelled it: capitals, and every mark stripped but Ç's. The avatar has no
+ * clip for an accented vowel (its alphabet is A–Z and Ç, `scripts/libras-avatar.json`), so it is spelled as its base letter
+ * (Ã → A, É → E); Ç is a letter of the Libras manual alphabet, with its own handshape and movement, and the avatar carries its
+ * clip, so it stays Ç: the marks are stripped from each run with no Ç in it. Anything that is not a letter or a digit separates.
  */
 export function spelledWord(word) {
   return word.normalize('NFC').replace(/[^Çç]+/gu, (run) => run.normalize('NFD').replace(/\p{M}+/gu, '')).toUpperCase()
@@ -324,68 +321,6 @@ export function spellable(file, carried) {
   return { file: { format: file.format, made: file.made, glosses }, spelled };
 }
 
-/**
- * The sign pins: `{ commit, source, signs: { NAME: { sha256, bytes } } }` — `source` is the dictionary repository's folder at
- * `commit`, and a sign's address is `source` + its name, encoded.
- */
-export function readSignPins(path = fileURLToPath(new URL('./libras-signs.json', import.meta.url))) {
-  return JSON.parse(readFileSync(path, 'utf8'));
-}
-
-const GPL_3 = new URL('./licences/GPL-3.0.txt', import.meta.url);
-
-/**
- * Where the signs are read from: the pins' `source` upstream, or — with a delivery's `--base` (an address or a folder) — the
- * folder `pins.mirror` names under it, laid out as `platform/heavy-mirror` lays out the other heavy files (the short commit in
- * the folder's name). Pins with no `mirror` are read from the base itself.
- */
-export function signsSourceOf(pins, base = '') {
-  if (!base) return pins.source;
-  return pins.mirror ? `${base.replace(/[/\\]+$/, '')}/${pins.mirror}` : base;
-}
-
-/**
- * Puts into `<destino>/<folder>` the sign of every token that has a pin, checked by sha256 — from `base` (see `signsSourceOf`)
- * when one is given, else from the pins' `source`. Returns `{ carried: [{ name, sha256 }], unpinned: [names] }`.
- * THROWS on a sign whose bytes are not the pinned ones: nothing unchecked reaches a delivery.
- */
-export async function deliverLibrasSigns({ destino, folder, tokens, pins, base = '', fetch: fetchFile = fetch,
-  read = (p) => readFileSync(p), sha256 = sha256OfNode }) {
-  const carried = [];
-  const unpinned = [];
-  const from = signsSourceOf(pins, base);
-  for (const name of tokens) {
-    const pin = pins.signs?.[name];
-    if (!pin) { unpinned.push(name); continue; }
-    const target = join(destino, folder, name);
-    if (existsSync(target) && sha256(readFileSync(target)) === pin.sha256) { carried.push({ name, sha256: pin.sha256 }); continue; }
-    let bytes;
-    if (/^https?:\/\//i.test(from)) {
-      const address = `${from.replace(/\/?$/, '/')}${encodeURIComponent(name)}`;
-      const resp = await fetchFile(address);
-      if (!resp.ok) throw new Error(`the sign ${name} could not be fetched: HTTP ${resp.status} — ${address}`);
-      bytes = Buffer.from(await resp.arrayBuffer());
-    } else {
-      bytes = read(join(from, name));
-    }
-    const got = sha256(bytes);
-    if (got !== pin.sha256) {
-      throw new Error(`REFUSED the sign ${name}: sha256 ${got}, pinned ${pin.sha256} — not written`);
-    }
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, bytes);
-    carried.push({ name, sha256: got });
-  }
-  if (carried.length) {
-    writeFileSync(join(destino, folder, 'LICENSE'), readFileSync(GPL_3));
-    writeFileSync(join(destino, folder, 'NOTICE'), 'The sign bundles in this folder are LAViD-UFPB\'s VLibras dictionary '
-      + `(vlibras-dictionary-sources, GPL-3.0), unchanged: each file is the one at ${pins.source}<NAME>, checked by sha256; their `
-      + 'sources are the .blend files of the same repository, '
-      + `https://gitlab.lavid.ufpb.br/vlibras-public/vlibras-dictionary/vlibras-dictionary-sources${pins.commit ? ` (commit ${pins.commit})` : ''}\n`);
-  }
-  return { carried, unpinned };
-}
-
 /** Reads one `--libras-texts` file: JSON (object or array), or an ES module whose default export is one. */
 export async function readTexts(path) {
   if (/\.(m?js)$/i.test(path)) return (await import(pathToFileURL(path).href)).default;
@@ -393,23 +328,24 @@ export async function readTexts(path) {
 }
 
 /**
- * THE STEP `--libras` RUNS: glosses the dictionaries, delivers the pinned signs they use, and writes `glosses.json` into the
- * player's folder, every token with no sign carried spelled as written (`spellable`). Returns what the player needs (`signs`,
- * for its sign-set revision) and what the build prints (`spelled`: how the spelled tokens were found). THROWS — and
- * writes nothing — when the glosses cannot be made.
+ * THE GLOSSES `--libras` WRITES: glosses the dictionaries and writes `glosses.json` into `folder` (the avatar's), every token
+ * the avatar carries no clip for (`carried`: by default the clip names `scripts/libras-avatar.json` pins, which is what the
+ * delivery ships) spelled as written (`spellable`). Returns what the build prints: the tokens signed and the tokens
+ * fingerspelled (each sorted), and `spelled` — how the spelled tokens were found. THROWS — and writes nothing — when the glosses
+ * cannot be made.
  */
-export async function deliverLibrasGlosses({ destino, playerFolder, signsFolder, glossesFile, dictionaries, translate,
-  pins = { source: '', signs: {} }, base = '', fetch: fetchFile, read }) {
+export async function deliverLibrasGlosses({ destino, folder, glossesFile, dictionaries, translate,
+  carried = Object.keys(readAvatarPins().clips) }) {
   const texts = textsToGloss(dictionaries);
   if (!texts.length) throw new Error('there is no text to gloss: the engine\'s Portuguese dictionary was not found');
+  const signs = new Set(carried);
+  if (!signs.size) throw new Error('the avatar carries no clip: every word would be fingerspelled, and there are no letters to spell with');
   const file = await glossTexts(texts, translate);
   const tokens = glossTokens(file);
-  const { carried, unpinned } = await deliverLibrasSigns({
-    destino, folder: signsFolder, tokens, pins, base, ...(fetchFile ? { fetch: fetchFile } : {}), ...(read ? { read } : {}),
-  });
-  const path = `${playerFolder}${glossesFile}`;
+  const path = `${folder}${glossesFile}`;
   mkdirSync(dirname(join(destino, path)), { recursive: true });
-  const { file: playable, spelled } = spellable(file, new Set(carried.map((s) => s.name)));
+  const { file: playable, spelled } = spellable(file, signs);
   writeFileSync(join(destino, path), `${JSON.stringify(playable, null, 1)}\n`);
-  return { path, texts: texts.length, tokens: tokens.length, signs: carried, unpinned, spelled };
+  return { path, texts: texts.length, tokens: tokens.length, signed: tokens.filter((t) => signs.has(t)),
+    fingerspelled: tokens.filter((t) => !signs.has(t)), spelled };
 }

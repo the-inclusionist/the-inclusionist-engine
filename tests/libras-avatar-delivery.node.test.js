@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE FREE PLAYER'S FILES INTO A DELIVERY (ADR-0234, route B, phase B2; `scripts/libras-avatar.mjs`, run by
-// `inclusionist-heavy <folder> --libras-avatar`). No network and no export here: the files are fakes whose sha256 the case pins
+// THE LIBRAS PLAYER'S FILES INTO A DELIVERY (ADR-0234, route B; `scripts/libras-avatar.mjs`, run by
+// `inclusionist-heavy <folder> --libras`). No network and no export here: the files are fakes whose sha256 the case pins
 // itself, and the real pins (`scripts/libras-avatar.json`) are held for their shape and for the one window they declare.
 //
 // MUTATIONS CHECKED — at the end of the file.
@@ -14,6 +14,7 @@ import {
   stageChunkOf, writeAvatarList, avatarListPaths, writeDeliveryList,
 } from '../scripts/libras-avatar.mjs';
 import { avatarPlace, prepareClips } from '../app/js/ui/libras-avatar-load.js';
+import { LIBRAS_GLOSSES_FILE } from '../app/js/ui/libras-glosses.js';
 import { DELIVERY_LISTS, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
 import { COMMIT, MANUAL_ALPHABET, PINS as SOURCE_PINS } from '../scripts/libras-export.mjs';
 import {
@@ -108,21 +109,24 @@ describe('scripts/libras-avatar — the avatar and the clips, checked, into `lib
 describe('scripts/libras-avatar — the list of the free player\'s files, the stage chunk among them', () => {
   const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
   const STAGE = 'libras-avatar-stage-fyxZVSPc.js';
+  const GLOSSES = `${LIBRAS_AVATAR_FOLDER}glosses.json`;
   const withFiles = (extra = {}) => {
     const d = delivery();
     const all = { ...Object.fromEntries(Object.entries(FILES).map(([rel, b]) => [`${LIBRAS_AVATAR_FOLDER}${rel}`, b])),
-      [`${LIBRAS_AVATAR_FOLDER}manifest.json`]: Buffer.from('{"format":1}'), [`assets/${STAGE}`]: Buffer.from('three'),
+      [`${LIBRAS_AVATAR_FOLDER}manifest.json`]: Buffer.from('{"format":1}'), [GLOSSES]: Buffer.from('{"format":1,"glosses":[]}'),
+      [`assets/${STAGE}`]: Buffer.from('three'),
       'assets/pixi-X1y2Z3w4.js': Buffer.from('the page'), ...extra };
     for (const [rel, b] of Object.entries(all)) { mkdirSync(dirname(join(d.destino, rel)), { recursive: true }); writeFileSync(join(d.destino, rel), b); }
     return { ...d, all };
   };
 
-  it('🔴 [Right] it names the manifest, the avatar, every clip and the ONE stage chunk the build emitted, each with the sha256 on the disk', () => {
+  it('🔴 [Right] it names the manifest, the avatar, the glosses, every clip and the ONE stage chunk the build emitted, each with the sha256 on the disk', () => {
     const d = withFiles();
     try {
-      const made = writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, stageStart: LIBRAS_AVATAR_STAGE_CHUNK });
+      const made = writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, glosses: GLOSSES,
+        stageStart: LIBRAS_AVATAR_STAGE_CHUNK });
       const written = JSON.parse(readFileSync(join(d.destino, LIST.path), 'utf8'));
-      const paths = [`${LIBRAS_AVATAR_FOLDER}manifest.json`, `${LIBRAS_AVATAR_FOLDER}avatar.glb`,
+      const paths = [`${LIBRAS_AVATAR_FOLDER}manifest.json`, `${LIBRAS_AVATAR_FOLDER}avatar.glb`, GLOSSES,
         ...Object.keys(PINS.clips).map((n) => `${LIBRAS_AVATAR_FOLDER}clips/${n}.json`), `assets/${STAGE}`];
       expect(written).toEqual({ format: 1, files: paths.map((path) => ({ path, sha256: sha(d.all[path]), bytes: d.all[path].length })) });
       expect(made).toEqual({ path: LIST.path, files: paths.length, bytes: paths.reduce((s, p) => s + d.all[p].length, 0) });
@@ -135,11 +139,25 @@ describe('scripts/libras-avatar — the list of the free player\'s files, the st
       const d = withFiles(extra ?? {});
       try {
         if (!extra) rmSync(join(d.destino, 'assets', STAGE));
-        expect(() => writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, stageStart: LIBRAS_AVATAR_STAGE_CHUNK }), what)
+        expect(() => writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, glosses: GLOSSES,
+          stageStart: LIBRAS_AVATAR_STAGE_CHUNK }), what)
           .toThrow(new RegExp(`stage chunk \\(assets/libras-avatar-stage-<hash>\\.js\\) was found ${extra ? 2 : 0} times`));
         expect(existsSync(join(d.destino, LIST.path)), `${what}: a list was written`).toBe(false);
       } finally { d.done(); }
     }
+  });
+
+  /**
+   * 🔴 THE GLOSSES ARE KEPT WITH THE AVATAR (ADR-0234, phase B3): they live beside it now, and without them kept a device offline
+   * would fingerspell every word the build glossed. A list with no glosses named is not written.
+   */
+  it('🔴 [Right] no glosses named stops the step — and no list is written', () => {
+    const d = withFiles();
+    try {
+      expect(() => writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, stageStart: LIBRAS_AVATAR_STAGE_CHUNK }))
+        .toThrow(/names no glosses/);
+      expect(existsSync(join(d.destino, LIST.path))).toBe(false);
+    } finally { d.done(); }
   });
 
   it('🔴 [Right] a path outside the list\'s folders is refused, and no list is written — the device would never keep it', () => {
@@ -180,12 +198,25 @@ describe('the free player asks every clip where the delivery\'s list keeps it', 
     const stage = { prepare: () => {} };
     const names = Object.keys(pins.clips);
     expect(await prepareClips(stage, names, manifest, place, fetchFile, new Map())).toEqual([]);
-    const kept = avatarListPaths({ folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk: 'assets/x.js' })
+    const kept = avatarListPaths({ folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk: 'assets/x.js', glosses: `${LIBRAS_AVATAR_FOLDER}glosses.json` })
       .filter((p) => p.includes('/clips/')).map((p) => new URL(p, BASE).href);
     expect(fetched.length).toBe(655); // the 632 signs the glosses use and the manual alphabet's 23 missing letters
     expect(fetched.filter((u) => !kept.includes(u)), 'the player asks these where the checked cache holds nothing').toEqual([]);
     expect(fetched).toContain('https://escola.example/jogo/libras/avatar/clips/PRIMEIRO&ORDINAL.json');
     expect(fetched).toContain('https://escola.example/jogo/libras/avatar/clips/N%C3%83O.json');
+  });
+
+  /**
+   * 🔴 THE GLOSSES MOVED BESIDE THE AVATAR (ADR-0234, phase B3), and three sides must agree on where: the player reads them
+   * (`avatarPlace`), the delivery writes them (`deliverLibrasGlosses` into `LIBRAS_AVATAR_FOLDER`), and the list keeps them under
+   * a folder it may name. A player reading the old place online would get a 404 and fingerspell every word.
+   */
+  it('🔴 [Right] the player reads the glosses at the address the list keeps them under, inside the avatar\'s folder', () => {
+    const glosses = `${LIBRAS_AVATAR_FOLDER}${LIBRAS_GLOSSES_FILE}`;
+    expect(avatarPlace(BASE).glosses).toBe(new URL(glosses, BASE).href);
+    expect(avatarListPaths({ folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk: 'assets/x.js', glosses })).toContain(glosses);
+    const list = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
+    expect(list.folders.some((f) => glosses.startsWith(f)), 'the list may not name the glosses: the device would refuse it').toBe(true);
   });
 
   it('📌 [Boundary] no real clip name carries `%`, `#`, `?` or `\\` — a URL reads them as something other than a name, and the player asks the name as a URL spells it', () => {
@@ -267,6 +298,10 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
 //   W1 the list's folder check removed                                    🔴 «a path outside the list's folders is refused»
 //   W2 its `..` check removed                                             🔴 same case (`libras/avatar/../../quiz.html`)
 //   W3 the listed hash taken from the path, not the bytes                 🔴 «the sha256 on the disk»
+// (2026-09-26, phase B3: the glosses beside the avatar; scripted the same way — 3 of 3 red)
+//   L1 a list written with no glosses named                               🔴 «no glosses named stops the step»
+//   L2 the glosses left out of the list                                   🔴 «the glosses, every clip…» · «reads the glosses at the address…»
+//   P2 the player reading the glosses at route A's old place (`ui/libras-avatar-load`)  🔴 «reads the glosses at the address…»
 //   K1 the player encoding each clip name with encodeURIComponent again  🔴 «the address fetched is the address kept» (in `ui/libras-avatar-load`)
 //   K2 a pinned clip whose name carries a `#`                              🔴 «no real clip name carries…» (in `scripts/libras-avatar.json`)
 // (2026-09-25, the manual alphabet; scripted the same way, the pins or the plan restored from a copy — all 4 red)

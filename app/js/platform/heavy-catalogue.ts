@@ -25,12 +25,6 @@ export interface HeavyFile {
   readonly sha256?: string;
   /** Required when `url` is `null`: an absence without a written reason becomes a forgotten absence. */
   readonly whyNoSource?: string;
-  /**
-   * The id of the entry the DELIVERY makes this file from, when the build never fetches it: it writes it beside that entry's
-   * file, and `url` is then only the address the device keeps it under — nothing is served there upstream. `sha256` is still
-   * the pin of the bytes the device may keep (ADR-0234: the patched VLibras framework).
-   */
-  readonly madeFrom?: string;
 }
 
 /** The Cache Storage name. Versioned: changing the catalogue's content must not serve old bytes. */
@@ -218,61 +212,13 @@ export function commandsLanguageOf(id: string): string | null {
 }
 
 /**
- * THE LIBRAS PLAYER (ADR-0234, route A — the Dev: «Então coloque no plano a rota A seguida pela B.»): the avatar that signs, the
- * VLibras Unity 2018 WebGL build, served from the delivery's own origin and driven through its `postMessage` API
- * (`ui/vlibras-player`).
+ * WHERE THE DELIVERY PUTS THE LIBRAS PLAYER'S FILES (ADR-0234, route B, the engine's interpreter since phase B3): the avatar, its
+ * clips, their manifest and the build-time glosses, beside the game's page (`inclusionist-heavy --libras`). Written here, below
+ * the player that reads it (`ui/libras-avatar-plan` re-exports it), because the delivery's list of those files names it too.
  *
- * 🎯 THE ADDRESS IS THE REPOSITORY'S, AT A PINNED COMMIT: `spbgovbr-vlibras/vlibras-web-browsers`, `public/unity/`, at `9d093f2`
- * («feat: update unity build (28-08-26)», the last commit that touched the folder). 📏 Each file's git blob id there was read
- * with `gh api` and matches the local copy the measurement of route A downloaded; the sha256 and the sizes are measured on that
- * copy (2026-09-25).
- *
- * ⚠️ WHAT THESE FILES ARE, said where they enter: the repository is LGPL-3.0, but the build is Unity's — the wasm, the data file
- * and the framework JavaScript carry Unity Technologies' closed runtime, with no corresponding source and redistribution terms
- * nobody has determined (ADR-0234; `docs/LICENSES.md`, `docs/CREDITS.md`). Route B, a free player, replaces them.
- *
- * 🔴 THE FRAMEWORK IS NOT RUN AS PUBLISHED: Unity 2018 answers the player's calls to the page with `eval`, which the delivery's
- * policy refuses. The delivery rewrites that one `eval(str)` into a parser of plain calls (`scripts/vlibras-player.mjs`), after
- * checking this file's sha256 — a declared, temporary exception that ends with route B, and never an `unsafe-eval`.
- *
- * 🔴 AND THE PATCHED FILE IS WHAT RUNS, so it is pinned here too (`madeFrom`): the loader still reads the published framework, but
- * the page runs `playerweb.framework.noeval.js`, which the delivery writes beside it. Unpinned, the device ran it unchecked and
- * kept no copy, so the player could not start offline; pinned, it is fetched, checked and kept like the other four, and the
- * delivery refuses to write any other bytes under that name. 📏 Its sha256 is the patch of the pinned input: the bytes that ran
- * under the delivery's policy with zero violations in route A's measurement (2026-09-25).
- *
- * 📌 A DELIVERY CARRIES THESE ONLY WHEN IT IS BUILT WITH `--libras` (`inclusionist-heavy`), and a device fetches them at boot only
- * while deaf mode is on (`heavyAtBoot`): 19.7 MiB that a child who never asks for signing never pays.
- */
-const VLIBRAS_UNITY = 'https://raw.githubusercontent.com/spbgovbr-vlibras/vlibras-web-browsers/9d093f259ac732d755a19e80cd03c8233c70435d/public/unity';
-const LIBRAS_PLAYER: readonly HeavyFile[] = Object.freeze([
-  { id: 'libras:player:loader', url: `${VLIBRAS_UNITY}/unity-loader.js`, bytes: 150_016,
-    sha256: 'c1845b1e35a2784f237391802e36009872d9ae587a94c2ee5a66546696af4a88' },
-  { id: 'libras:player:framework', url: `${VLIBRAS_UNITY}/playerweb.wasm.framework.unityweb`, bytes: 76_883,
-    sha256: '7177d7748ffd7715e1150e202924f3d502df7531b672ccf6a39291cf8ccba3fb' },
-  { id: 'libras:player:code', url: `${VLIBRAS_UNITY}/playerweb.wasm.code.unityweb`, bytes: 2_996_753,
-    sha256: '4005cfe27f5252c8dafaccbca4c1338de9491c5076a62da8df2bfd036d6eeb4e' },
-  { id: 'libras:player:data', url: `${VLIBRAS_UNITY}/playerweb.data.unityweb`, bytes: 16_992_528,
-    sha256: '0c9897ea830739a09a8a2d132e219761d7017b22feae5ec9b2feb4ed075b1256' },
-  { id: 'libras:player:framework:noeval', url: `${VLIBRAS_UNITY}/playerweb.framework.noeval.js`, bytes: 478_335,
-    sha256: '4621a32c6d2abd1d0e00a2114405514c9623db59d608aabfb3bf6fefa93911af', madeFrom: 'libras:player:framework' },
-]);
-
-/**
- * WHERE THE DELIVERY PUTS THE PLAYER'S PAGE, beside the game's page: the engine's own small page, glue and CSP shim, which load
- * the files above from `heavy/`. Written by `inclusionist-heavy --libras`; the interpreter opens it and nothing else.
- */
-export const LIBRAS_PLAYER_FOLDER = 'libras/player/';
-/**
- * Where the player is told to fetch sign bundles (`setBaseUrl`), on the page's own origin. The delivery puts here the signs the
- * build-time glosses use that `scripts/libras-signs.json` pins; a word with no sign here 404s and the player fingerspells it with
- * the letters it carries.
- */
-export const LIBRAS_SIGNS_FOLDER = 'libras/signs/';
-/**
- * Where the delivery puts the FREE player's avatar, clips and manifest, beside the game's page (ADR-0234, route B;
- * `inclusionist-heavy --libras-avatar`). Written here, below the player that reads it (`ui/libras-avatar-plan` re-exports it),
- * because the delivery's list of those files names it too.
+ * 📌 THERE IS NO CATALOGUE ENTRY FOR IT: the avatar and the clips are this project's own export of LAViD-UFPB's GPL-3.0 sign
+ * sources, pinned by sha256 in `scripts/libras-avatar.json`, and each delivery lists what it wrote (`DELIVERY_LISTS`). Nothing
+ * closed and nothing patched is served for it.
  */
 export const LIBRAS_AVATAR_FOLDER = 'libras/avatar/';
 /**
@@ -285,14 +231,14 @@ export const LIBRAS_AVATAR_STAGE_CHUNK = 'assets/libras-avatar-stage-';
 
 /**
  * A LIST THE DELIVERY WRITES OF ITS OWN FILES, each with its sha256 — for what no catalogue entry can pin because each delivery
- * makes it: the Libras player's page (its sign-set revision), the glosses of the game's texts, and the signs those glosses use
- * (ADR-0234, route A; pillar 8). The device reads the list and keeps each file only if its bytes are the listed ones, in the
+ * makes it: the Libras player's avatar, clips and manifest, the glosses of the engine's and the game's texts, and the build's
+ * stage chunk (ADR-0234, pillar 8). The device reads the list and keeps each file only if its bytes are the listed ones, in the
  * checked cache, under the file's own address, where the service worker answers the player from offline.
  *
  * ⚠️ WHAT THE LIST PROVES, AND WHAT IT DOES NOT: it comes from the page's own origin, like the page's code, so it is exactly as
  * trusted as the page — it is not a pin. What it guarantees is that what is kept is what this delivery wrote: never a truncated
- * body, a fallback page served for a missing file, or a file of the previous delivery. The signs' hashes in it are the ones
- * `scripts/libras-signs.json` pins, checked when the delivery wrote them.
+ * body, a fallback page served for a missing file, or a file of the previous delivery. The avatar's and the clips' hashes in it
+ * are the ones `scripts/libras-avatar.json` pins, checked when the delivery wrote them.
  */
 export interface DeliveryList {
   readonly id: string;
@@ -306,16 +252,13 @@ export interface DeliveryList {
 }
 
 /**
- * The lists a device may read, each asked for with deaf mode (`heavyAtBoot`) — ONE PER DELIVERY STEP, so each step writes its own
- * and a delivery that ran one of them keeps exactly what it carries:
- * · `libras:delivery`, route A's page, glosses and signs, written by `--libras`;
- * · `libras:avatar:delivery`, route B's avatar, clips and manifest and the stage chunk with three.js, written by `--libras-avatar`
- *   (ADR-0234, phase B3). A delivery without that step has no such list: the same quiet 404 as a delivery without `--libras`.
- * 📌 THE RULE IS «WHAT THE DELIVERY CARRIES, DEAF MODE KEEPS»: a device keeps both players' files when its delivery carries both,
- * whichever interpreter the host lends.
+ * The lists a device may read, each asked for with deaf mode (`heavyAtBoot`) — one per delivery step that writes files of its own:
+ * · `libras:avatar:delivery`, the Libras player's avatar, clips, manifest and glosses and the stage chunk with three.js, written by
+ *   `--libras` (ADR-0234, phase B3). A delivery built without it has no such list: a quiet 404, and deaf mode says «signing
+ *   unavailable» when the sonar is pressed.
+ * 📌 THE RULE IS «WHAT THE DELIVERY CARRIES, DEAF MODE KEEPS»: the files are kept whichever interpreter the host lends.
  */
 export const DELIVERY_LISTS: readonly DeliveryList[] = Object.freeze([
-  Object.freeze({ id: 'libras:delivery', path: 'libras/offline.json', folders: Object.freeze([LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER]) }),
   Object.freeze({ id: 'libras:avatar:delivery', path: 'libras/offline-avatar.json',
     folders: Object.freeze([LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK]) }),
 ]);
@@ -347,9 +290,6 @@ export const HEAVY_FILES: readonly HeavyFile[] = Object.freeze([
 
   // the vision runtime and its models: eye control reads the face (ADR-0213); WebGazer left (ADR-0214)
   ...MEDIAPIPE,
-
-  // the Libras player deaf mode's interpreter drives (ADR-0234, route A), only in a delivery built with `--libras`
-  ...LIBRAS_PLAYER,
 
   /*
    * 🔴 THE ART COLLECTION — the fourth heavy thing of ADR-0119, and the only one WITHOUT A SOURCE. Measured: `art/` has

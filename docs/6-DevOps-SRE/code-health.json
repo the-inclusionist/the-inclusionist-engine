@@ -38,10 +38,10 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 255,
-      "decisionNodes": 36,
+      "codeLines": 251,
+      "decisionNodes": 35,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
@@ -858,17 +858,17 @@
       "fanIn": 1
     },
     "platform/heavy-catalogue.ts": {
-      "codeLines": 151,
+      "codeLines": 133,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 6
+      "fanIn": 4
     },
     "platform/heavy-mirror.ts": {
-      "codeLines": 29,
+      "codeLines": 27,
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,
@@ -1538,7 +1538,7 @@
       "fanIn": 1
     },
     "ui/libras-avatar-load.ts": {
-      "codeLines": 103,
+      "codeLines": 102,
       "decisionNodes": 13,
       "maxDepth": 1,
       "fanOut": 3,
@@ -1558,7 +1558,7 @@
       "fanIn": 2
     },
     "ui/libras-avatar-player.ts": {
-      "codeLines": 175,
+      "codeLines": 174,
       "decisionNodes": 26,
       "maxDepth": 2,
       "fanOut": 4,
@@ -1585,7 +1585,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 4
+      "fanIn": 3
     },
     "ui/locale-flags.ts": {
       "codeLines": 20,
@@ -1967,18 +1967,8 @@
       "statefulEdges": 0,
       "fanIn": 1
     },
-    "ui/vlibras-player.ts": {
-      "codeLines": 182,
-      "decisionNodes": 28,
-      "maxDepth": 2,
-      "fanOut": 3,
-      "globalReach": 0,
-      "worstFunction": 11,
-      "statefulEdges": 0,
-      "fanIn": 1
-    },
     "ui/vlibras.ts": {
-      "codeLines": 90,
+      "codeLines": 88,
       "decisionNodes": 10,
       "maxDepth": 1,
       "fanOut": 0,

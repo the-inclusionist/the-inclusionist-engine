@@ -55,12 +55,23 @@ describe('o consumidor obedece à própria regra', () => {
   it('🔴 [Right] it boots only when the PAGE calls it, with the page\'s document and window — never at import (ADR-0232 D4)', () => {
     expect(FONTE, 'the module boots itself at import again').not.toMatch(/^\s*if\s*\(.*\bdocument\b.*\)\s*bootQuiz\(/m);
     expect(typeof bootQuiz, 'the page has no entry to call').toBe('function');
-    // the page's document and window, the optional interpreter a test lends and the page's choice of the free Libras player
-    // (ADR-0234, route B) — nothing read from a global
-    expect(FONTE).toMatch(/export function bootQuiz\(\{ doc, win, interpreter, librasAvatar = false \}: QuizHost\): Engine/);
+    // the page's document and window and the optional interpreter a test lends — nothing read from a global
+    expect(FONTE).toMatch(/export function bootQuiz\(\{ doc, win, interpreter \}: QuizHost\): Engine/);
     const pagina = readFileSync(join(process.cwd(), 'app', 'quiz.html'), 'utf8');
     expect(pagina, 'the page does not hand the quiz its document and window')
-      .toMatch(/import \{ bootQuiz \} from '\.\/js\/consumer-quiz\/main-quiz\.ts';[^]*?bootQuiz\(\{ doc: document, win: window, librasAvatar: /);
+      .toMatch(/import \{ bootQuiz \} from '\.\/js\/consumer-quiz\/main-quiz\.ts';[^]*?bootQuiz\(\{ doc: document, win: window \}\);/);
+  });
+
+  /**
+   * 📌 `?libras=avatar` IS A NO-OP SINCE PHASE B3 (ADR-0234): the free player is the engine's own interpreter, so the quiz no
+   * longer builds one or reads its address for it. An old link still opens — offline too, by the service worker's rule.
+   */
+  it('📌 [Right] the quiz builds no interpreter of its own and reads nothing from its address for Libras', () => {
+    expect(FONTE, 'the quiz builds its own Libras player beside the engine\'s').not.toMatch(/createLibrasAvatarInterpreter/);
+    const pagina = readFileSync(join(process.cwd(), 'app', 'quiz.html'), 'utf8');
+    expect(pagina, 'the page reads `?libras` again').not.toMatch(/URLSearchParams\(location\.search\)\.get\('libras'\)/);
+    const config = readFileSync(join(process.cwd(), 'vite.config.ts'), 'utf8');
+    expect(config, 'an old `?libras=avatar` link no longer finds the precached page offline').toMatch(/ignoreURLParametersMatching:[^\n]*\/\^libras\$\//);
   });
 });
 
@@ -239,3 +250,6 @@ describe('alternativaOuvida — what the child SAID, when she answers out loud (
 // 🔴 THREE OF THEM SURVIVED FIRST. Two were holes in the GATE — the demo's declaration and its `listen()` could both be deleted
 // with the case still green, because the comment beside each one quotes it, so the gate now strips comments before reading. The
 // third was a hole in the CASES: every accent case had the accent on BOTH sides, where the rule is symmetric and proves nothing.
+// MUTATIONS CHECKED (2026-09-26, ADR-0234 phase B3; scripted, restored from a copy and checked by sha256): Q1 the service worker
+// no longer ignoring `?libras` when matching (an old `quiz.html?libras=avatar` link dead offline) — 🔴 «builds no interpreter of
+// its own and reads nothing from its address».

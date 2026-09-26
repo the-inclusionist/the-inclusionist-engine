@@ -110,13 +110,10 @@
     "docs/CREDITS.md",
     "scripts/heavy-into-the-delivery.mjs",
     "scripts/licences",
-    "scripts/vlibras-player.mjs",
-    "scripts/vlibras-player",
     "scripts/libras-glosses.mjs",
     "scripts/libras-glosses/pyproject.toml",
     "scripts/libras-glosses/uv.lock",
     "scripts/libras-glosses/gloss.py",
-    "scripts/libras-signs.json",
     "scripts/libras-avatar.mjs",
     "scripts/libras-avatar.json"
   ],

@@ -131,7 +131,6 @@ import { captionDuration } from '../core/caption-duration.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { announceItem } from '../ui/item-announcement.js';
 import { createGame, type Engine, type EngineHost, type VirtualCommand } from '../boot/create-game.js';
-import { createLibrasAvatarInterpreter } from '../ui/libras-avatar-player.js';
 import { QUIZ_DICTIONARIES } from './quiz-words.js';
 import type { GameDeclaration } from '../core/contract.js';
 
@@ -267,18 +266,15 @@ export function endText(t: Translate, gotItRight: number, total: number): string
 export interface QuizHost {
   readonly doc: Document;
   readonly win: Window;
-  /** Who signs in deaf mode, lent to the engine (`EngineHost.interpreter`); absent, the engine's own answer. A test's double. */
-  readonly interpreter?: EngineHost['interpreter'];
   /**
-   * Lend the engine the FREE Libras player (ADR-0234, route B, `ui/libras-avatar-player`) instead of leaving it the VLibras one
-   * (route A, still the engine's default until phase B3). The page sets it from `?libras=avatar`, so the two can be compared in
-   * one delivery built with `--libras --libras-avatar`. An `interpreter` given above wins.
+   * Who signs in deaf mode, lent to the engine (`EngineHost.interpreter`); absent, the engine's own — the free Libras player the
+   * delivery carries (ADR-0234). A test's double.
    */
-  readonly librasAvatar?: boolean;
+  readonly interpreter?: EngineHost['interpreter'];
 }
 
 /** Boot. The page calls it; a test calls it over the page it built. Returns the engine it mounted. */
-export function bootQuiz({ doc, win, interpreter, librasAvatar = false }: QuizHost): Engine {
+export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
   let atual = 0;
   let foco = 0;
   let correctCount = 0;
@@ -425,9 +421,7 @@ export function bootQuiz({ doc, win, interpreter, librasAvatar = false }: QuizHo
     declaration: declareQuiz(QUESTIONS, { current: () => atual, focus: () => foco, correct: () => correctCount }),
     host: {
       doc, win, cvdHost: $<SVGElement>('#q-cvd'),
-      interpreter: interpreter ?? (librasAvatar ? createLibrasAvatarInterpreter({
-        doc, win, fetch: win.fetch, base: doc.baseURI, title: () => translate('sr.deaf.interpreter'),
-      }) : undefined),
+      interpreter,
     },
     // Um quiz não tem ator de pausa. Declarado, e não deduzido de getters que devolvem null — ver o achado 10 e o
     // cabeçalho do `boot/create-game`. (O assistente de mapear controle não se declina: ADR-0231.)

@@ -192,7 +192,7 @@ const FORA_DO_PRECACHE = [
   {
     padrao: /^assets\/libras-avatar-stage-[A-Za-z0-9_-]+\.js$/,
     porque: 'three.js for the free Libras player (ADR-0234 errata): only a child in deaf mode may download it, so no install '
-      + 'takes it; deaf mode keeps it for offline days instead — `inclusionist-heavy --libras-avatar` lists it in '
+      + 'takes it; deaf mode keeps it for offline days instead — `inclusionist-heavy --libras` lists it in '
       + '`libras/offline-avatar.json` and the service worker\'s Libras route answers it from the checked cache (phase B3)',
   },
   {

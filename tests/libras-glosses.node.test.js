@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE BUILD-TIME GLOSSES (ADR-0234, route A — plan item 5b; `scripts/libras-glosses.mjs`), with a FAKE translator: no Python runs
-// here. What is held: which texts are glossed (the engine's and the game's Portuguese, each once, holes kept), that a hole comes
-// back as a hole even when the translator drops its placeholder, that the written glosses are what the player can sign from THIS
-// delivery (a token with no sign spelled as the word is WRITTEN on the screen, not as the translator's lemma), that the pinned
-// signs are checked by sha256, and — the reason the step exists as a step — that a delivery with `--libras` is NEVER written
-// without its glosses: no environment, no model, another translator, each stops it by name.
+// THE BUILD-TIME GLOSSES (ADR-0234, plan item 5b; `scripts/libras-glosses.mjs`), with a FAKE translator: no Python runs here.
+// What is held: which texts are glossed (the engine's and the game's Portuguese, each once, holes kept), that a hole comes back
+// as a hole even when the translator drops its placeholder, that the written glosses are what the player can sign from THIS
+// delivery (a token the avatar carries no clip for spelled as the word is WRITTEN on the screen, not as the translator's lemma),
+// and — the reason the step exists as a step — that a delivery with `--libras` is NEVER written without its glosses: no
+// environment, no model, another translator, each stops it by name.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi } from 'vitest';
-import { mkdtempSync, readFileSync, existsSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createHash } from 'node:crypto';
 import {
   textsToGloss, glossTexts, glossTokens, spellable, placeholderWord, runGlosser, setUpGlosser, deliverLibrasGlosses,
-  deliverLibrasSigns, signsSourceOf, glosserEnvironment, glosserPython, readSignPins, PINNED, GLOSSER_PROJECT, writtenWords,
-  spelledWord,
+  glosserEnvironment, glosserPython, PINNED, GLOSSER_PROJECT, writtenWords, spelledWord,
 } from '../scripts/libras-glosses.mjs';
+import { readAvatarPins } from '../scripts/libras-avatar.mjs';
 import { provisionalGloss } from '../app/js/ui/libras-glosses.ts';
 import { argumentosDaEntrega } from '../scripts/heavy-into-the-delivery.mjs';
 
-const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const MADE = 'vlibras-translator 1.3.3 (rules) · pt_core_news_md 3.8.0 · spaCy 3.8.16';
 /** A translator double: capitals, and the placeholder words through untouched — what the real one does with them. */
 const upper = (inputs) => ({ glosses: inputs.map((t) => t.toUpperCase().replace(/[.!]/g, ' [PONTO]').trim()), made: MADE });
@@ -104,9 +102,8 @@ describe('a word with no sign is spelled AS IT IS WRITTEN (ADR-0234 erratum; the
   it('🔴 [Right] the whole step writes the written word into `glosses.json`', async () => {
     const destino = tmp();
     try {
-      const pins = { source: '', signs: {} };
-      await deliverLibrasGlosses({ destino, playerFolder: 'p/', signsFolder: 's/', glossesFile: 'g.json',
-        dictionaries: [{ k: 'Jogador {n} entrou!' }], translate: translator(ENTROU), pins });
+      await deliverLibrasGlosses({ destino, folder: 'p/', glossesFile: 'g.json',
+        dictionaries: [{ k: 'Jogador {n} entrou!' }], translate: translator(ENTROU), carried: ['CASA'] });
       expect(JSON.parse(readFileSync(join(destino, 'p/g.json'), 'utf8')).glosses)
         .toEqual([['Jogador {n} entrou!', 'JOGADOR {n} ENTROU [EXCLAMAÇÃO]']]);
     } finally { rmSync(destino, { recursive: true, force: true }); }
@@ -123,7 +120,7 @@ describe('a word with no sign is spelled AS IT IS WRITTEN (ADR-0234 erratum; the
     }
   });
 
-  it('🔴 [Right] ROUTE A — «caça» and «espaço» with no sign carried are spelled CAÇA and ESPAÇO: Ç is a letter the player signs', async () => {
+  it('🔴 [Right] «caça» and «espaço» with no sign carried are spelled CAÇA and ESPAÇO: Ç is a letter the avatar signs', async () => {
     const text = 'A caça no espaço';
     const file = await glossTexts([text], translator({ [text]: {
       gloss: 'CAÇAR ESPAÇO', words: [['A', ['A', 'O']], ['caça', ['CAÇA', 'CAÇAR']], ['no', ['NO', 'EM']], ['espaço', ['ESPAÇO']]] } }));
@@ -170,18 +167,47 @@ describe('a word with no sign is spelled AS IT IS WRITTEN (ADR-0234 erratum; the
 });
 
 describe('the step `--libras` runs', () => {
-  it('🔴 [Right] writes `glosses.json` into the player\'s folder, from the engine\'s and the game\'s texts', async () => {
+  it('🔴 [Right] writes `glosses.json` into the avatar\'s folder, from the engine\'s and the game\'s texts — a token the avatar carries stays a sign', async () => {
     const destino = tmp();
     try {
       const made = await deliverLibrasGlosses({
-        destino, playerFolder: 'libras/player/', signsFolder: 'libras/signs/', glossesFile: 'glosses.json',
-        dictionaries: [{ k: 'Olá, Maria.' }, ['Pontos: {n}']], translate: upper,
+        destino, folder: 'libras/avatar/', glossesFile: 'glosses.json',
+        dictionaries: [{ k: 'Olá, Maria.' }, ['Pontos: {n}']], translate: upper, carried: ['MARIA', 'CASA'],
       });
-      expect(made).toEqual({ path: 'libras/player/glosses.json', texts: 2, tokens: 3, signs: [], unpinned: ['MARIA', 'OLÁ,', 'PONTOS:'],
-        spelled: { tokens: 3, asWritten: 0, ambiguous: 0, byStem: 0, asTranslated: 3 } });
-      const written = JSON.parse(readFileSync(join(destino, 'libras/player/glosses.json'), 'utf8'));
+      expect(made).toEqual({ path: 'libras/avatar/glosses.json', texts: 2, tokens: 3, signed: ['MARIA'], fingerspelled: ['OLÁ,', 'PONTOS:'],
+        spelled: { tokens: 2, asWritten: 0, ambiguous: 0, byStem: 0, asTranslated: 2 } });
+      const written = JSON.parse(readFileSync(join(destino, 'libras/avatar/glosses.json'), 'utf8'));
       expect(written, 'the file carries anything but the pairs the run time reads')
         .toEqual({ format: 1, made: MADE, glosses: [['Olá, Maria.', 'OLA MARIA [PONTO]'], ['Pontos: {n}', 'PONTOS {n}']] });
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  /**
+   * 🔴 «HAS A SIGN» IS THE AVATAR'S ANSWER (ADR-0234, phase B3): with no `carried` handed in, the step reads the clip names the
+   * delivery ships (`scripts/libras-avatar.json`). A sign is kept as its name, the alphabet's letters are signs too, and a word
+   * the avatar has no clip for is fingerspelled as written — the free player then plays exactly those clips.
+   */
+  it('🔴 [Right] by default a token is a sign exactly when the avatar\'s pins carry its clip', async () => {
+    const clips = readAvatarPins().clips;
+    expect(clips.CASA && clips.ESCOLA, 'the case needs two signs the avatar carries').toBeTruthy();
+    expect(clips['ÔNIBUS'], 'the case needs a word the avatar does not carry').toBeUndefined();
+    const destino = tmp();
+    try {
+      const made = await deliverLibrasGlosses({ destino, folder: 'a/', glossesFile: 'g.json',
+        dictionaries: [{ k: 'casa escola ônibus' }], translate: (inputs) => ({ made: MADE, glosses: inputs.map(() => 'CASA ESCOLA ÔNIBUS'),
+          words: inputs.map(() => [['casa', ['CASA']], ['escola', ['ESCOLA']], ['ônibus', ['ÔNIBUS']]]) }) });
+      expect(made.signed).toEqual(['CASA', 'ESCOLA']);
+      expect(made.fingerspelled).toEqual(['ÔNIBUS']);
+      expect(JSON.parse(readFileSync(join(destino, 'a/g.json'), 'utf8')).glosses).toEqual([['casa escola ônibus', 'CASA ESCOLA ONIBUS']]);
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  it('🎯 [Zero] an avatar with no clip is refused: every word would be spelled, with no letters to spell it', async () => {
+    const destino = tmp();
+    try {
+      await expect(deliverLibrasGlosses({ destino, folder: 'a/', glossesFile: 'g.json', dictionaries: [{ k: 'Olhe aqui' }], translate: upper,
+        carried: [] })).rejects.toThrow(/carries no clip/);
+      expect(existsSync(join(destino, 'a')), 'glosses were written for an avatar with nothing to sign').toBe(false);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
@@ -189,20 +215,20 @@ describe('the step `--libras` runs', () => {
     const destino = tmp();
     try {
       const failing = () => { throw new Error('the Libras glosser\'s environment is missing'); };
-      await expect(deliverLibrasGlosses({ destino, playerFolder: 'libras/player/', signsFolder: 'libras/signs/',
-        glossesFile: 'glosses.json', dictionaries: [{ k: 'Olhe aqui' }], translate: failing })).rejects.toThrow(/environment is missing/);
+      await expect(deliverLibrasGlosses({ destino, folder: 'libras/avatar/', glossesFile: 'glosses.json',
+        dictionaries: [{ k: 'Olhe aqui' }], translate: failing, carried: ['CASA'] })).rejects.toThrow(/environment is missing/);
       expect(existsSync(join(destino, 'libras')), 'a delivery got a Libras folder from a glosser that failed').toBe(false);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
   it('🎯 [Zero] no text at all is refused: the engine\'s dictionary was not found, and an empty file would read as glossed', async () => {
-    await expect(deliverLibrasGlosses({ destino: tmp(), playerFolder: 'p/', signsFolder: 's/', glossesFile: 'g.json',
-      dictionaries: [{}], translate: upper })).rejects.toThrow(/no text to gloss/);
+    await expect(deliverLibrasGlosses({ destino: tmp(), folder: 'p/', glossesFile: 'g.json',
+      dictionaries: [{}], translate: upper, carried: ['CASA'] })).rejects.toThrow(/no text to gloss/);
   });
 });
 
 describe('the glosser fails LOUDLY', () => {
-  const answer = (out, status = 0, stderr = '') => () => ({ status, stdout: JSON.stringify(out), stderr });
+  const answer =(out, status = 0, stderr = '') => () => ({ status, stdout: JSON.stringify(out), stderr });
   const good = { translator: '1.3.3', spacy: '3.8.16', model: 'pt_core_news_md', modelVersion: '3.8.0', mode: 'rules' };
   const opts = (run) => ({ envDir: 'ENV', run, exists: () => true });
 
@@ -274,84 +300,6 @@ describe('the pins: rule-based only, and reproducible', () => {
     expect(glosser).toMatch(/translate\(text, neural=False\)/);
     expect(glosser).not.toMatch(/neural\s*=\s*True/);
   });
-
-  it('🔴 [Right] the signs are pinned at a COMMIT of LAViD\'s dictionary, WebGL 2018.3.1, each by sha256 and byte count', () => {
-    const pins = readSignPins();
-    const at = /^https:\/\/gitlab\.lavid\.ufpb\.br\/vlibras-public\/vlibras-dictionary\/vlibras-dictionary-sources\/-\/raw\/([0-9a-f]{40})\/FILES\/BUNDLES\/2018\.3\.1\/WEBGL\/BR\/$/
-      .exec(pins.source);
-    expect(at, `the source is not the dictionary at a pinned commit: ${pins.source}`).not.toBeNull();
-    expect(at[1], 'the source and the commit it names disagree').toBe(pins.commit);
-    const signs = Object.entries(pins.signs);
-    expect(signs.length, 'the Dev authorised the signs the engine\'s glosses use; none is pinned').toBeGreaterThan(0);
-    for (const [name, pin] of signs) {
-      expect(pin.sha256, name).toMatch(/^[0-9a-f]{64}$/);
-      expect(Number.isInteger(pin.bytes) && pin.bytes > 0, name).toBe(true);
-    }
-  });
-});
-
-describe('the signs, pinned by sha256', () => {
-  const CASA = Buffer.from('UnityFS casa');
-  const pins = { commit: 'c0ffee', source: 'https://dicionario.example/BR/', signs: { CASA: { sha256: sha(CASA), bytes: CASA.length } } };
-
-  it('🔴 [Right] from a local base: a pinned sign is written and carried, one with no pin is listed, and the licence travels', async () => {
-    const destino = tmp();
-    const base = tmp();
-    try {
-      writeFileSync(join(base, 'CASA'), CASA);
-      const out = await deliverLibrasSigns({ destino, folder: 'libras/signs/', tokens: ['CASA', 'XPTO'], pins, base });
-      expect(out).toEqual({ carried: [{ name: 'CASA', sha256: sha(CASA) }], unpinned: ['XPTO'] });
-      expect(readFileSync(join(destino, 'libras/signs/CASA'))).toEqual(CASA);
-      expect(readFileSync(join(destino, 'libras/signs/LICENSE'), 'utf8')).toMatch(/GNU GENERAL PUBLIC LICENSE\s+Version 3/);
-      expect(readFileSync(join(destino, 'libras/signs/NOTICE'), 'utf8'), 'the NOTICE does not say where the signs came from')
-        .toMatch(/LAViD-UFPB.*GPL-3\.0.*https:\/\/dicionario\.example\/BR\/<NAME>.*commit c0ffee/s);
-      expect(existsSync(join(destino, 'libras/signs/XPTO')), 'a sign with no pin was fetched').toBe(false);
-    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
-  });
-
-  it('🔴 [Right] a sign whose bytes are not the pinned ones is REFUSED, and not written', async () => {
-    const destino = tmp();
-    const base = tmp();
-    try {
-      writeFileSync(join(base, 'CASA'), 'other bytes');
-      await expect(deliverLibrasSigns({ destino, folder: 'libras/signs/', tokens: ['CASA'], pins, base })).rejects.toThrow(/REFUSED the sign CASA/);
-      expect(existsSync(join(destino, 'libras/signs/CASA'))).toBe(false);
-    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
-  });
-
-  it('🔴 [Right] with the delivery\'s `--base`, the signs are read from the pins\' `mirror` folder under it, never upstream', async () => {
-    const destino = tmp();
-    const base = tmp();
-    try {
-      mkdirSync(join(base, 'dict-c0ffee', 'BR'), { recursive: true });
-      writeFileSync(join(base, 'dict-c0ffee', 'BR', 'CASA'), CASA);
-      const upstream = vi.fn();
-      const out = await deliverLibrasSigns({ destino, folder: 's/', tokens: ['CASA'], pins: { ...pins, mirror: 'dict-c0ffee/BR/' },
-        base: `${base}/`, fetch: upstream });
-      expect(out.carried).toEqual([{ name: 'CASA', sha256: sha(CASA) }]);
-      expect(upstream).not.toHaveBeenCalled();
-      expect(signsSourceOf({ ...pins, mirror: 'dict-c0ffee/BR/' }, 'https://mirror.example/')).toBe('https://mirror.example/dict-c0ffee/BR/');
-      expect(signsSourceOf(pins, '')).toBe(pins.source);
-    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
-  });
-
-  it('📌 [Boundary] the real pins\' mirror folder carries the short commit, as the other mirrored heavy files do', () => {
-    const real = readSignPins();
-    expect(real.mirror).toBe(`vlibras-dictionary-sources-${real.commit.slice(0, 7)}/FILES/BUNDLES/2018.3.1/WEBGL/BR/`);
-  });
-
-  it('📌 [Boundary] with no base, from the pins\' source, the name encoded; nothing pinned, nothing fetched and no licence', async () => {
-    const destino = tmp();
-    try {
-      const fetchFile = vi.fn(async () => ({ ok: true, arrayBuffer: async () => CASA }));
-      await deliverLibrasSigns({ destino, folder: 's/', tokens: ['CASA'], pins, fetch: fetchFile });
-      expect(fetchFile).toHaveBeenCalledWith('https://dicionario.example/BR/CASA');
-      const none = vi.fn();
-      expect(await deliverLibrasSigns({ destino: tmp(), folder: 's/', tokens: ['PAPELÃO'], pins: { source: '', signs: {} }, fetch: none }))
-        .toEqual({ carried: [], unpinned: ['PAPELÃO'] });
-      expect(none).not.toHaveBeenCalled();
-    } finally { rmSync(destino, { recursive: true, force: true }); }
-  });
 });
 
 describe('the delivery\'s arguments', () => {
@@ -375,16 +323,15 @@ describe('the delivery\'s arguments', () => {
 //   M4 the placeholder words not put back as holes        🔴 each hole comes back as the hole · writes `glosses.json`
 //   M5 no second pass in pieces                           🔴 a template whose placeholder the translator DROPPED
 //   M6 accents kept on a token with no sign carried       🔴 a token with no sign carried loses its accents · writes `glosses.json`
-//   M7 a sign's sha256 not checked                        🔴 a sign whose bytes are not the pinned ones is REFUSED
+//   M7 a sign's sha256 not checked — LEFT with route A's sign bundles (phase B3); the clips' check is `libras-avatar-delivery`'s D1
 //   M8 the player's folder made before glossing           🔴 a translator that fails stops the step, and NOTHING is written
 //   M9 `--no-python-downloads` dropped from the setup     🔴 setup: … it runs locked, and never downloads a Python
 //   M10 hole-only strings glossed                         🎯 a string with no letter outside its holes is not glossed
 //   M11 `gloss.py` asks for `neural=True`                 🔴 never the neural mode
 //   M12 `--libras-texts` not skipping its value (heavy-into-the-delivery.mjs)  🔴 `--libras-texts <file>` … never taken for the folder
 //   M13 a missing `uv` not said by name                   🔴 setup: no `uv` is said by name
-//   M14 `libras-signs.json` source on a branch (`/-/raw/main/`)  🔴 the signs are pinned at a COMMIT of LAViD's dictionary
-//   M15 the NOTICE without the pinned source              🔴 from a local base: … the licence travels
-//   M16 `--base` read as the signs' folder, `mirror` ignored   🔴 with the delivery's `--base`, … the pins' `mirror` folder
+//   M14–M16 (the sign bundles' commit, NOTICE and `--base` mirror) LEFT with `libras-signs.json` in phase B3; the avatar's own
+//       equivalents are `libras-avatar-delivery`'s D5 (NOTICE) and its «a base reads the mirror's folder» case
 //   M17 `spellable` spells the token (the lemma), not the written word   🔴 «entrou» is spelled ENTROU · the whole step writes the
 //       written word · an accented letter … word for word · a template glossed again in PIECES
 //   M18 an ambiguous token takes the first match, not the next in order  🔴 AMBIGUOUS — two words share the lemma
@@ -394,5 +341,10 @@ describe('the delivery\'s arguments', () => {
 //   M22 the glosser's answer accepted without `words`     🔴 the glosser's answer without the written words is REFUSED
 //   M23 `spelledWord` keeps the accents                   🔴 an accented vowel is spelled as its base letter, Ç as Ç · loses its
 //       accents · writes `glosses.json` (2026-09-25, re-run scripted after Ç: restored from a copy, checked by sha256)
-//   M24 `spelledWord` strips Ç's cedilla (the old rule)   🔴 ROUTE A — «caça» and «espaço» … spelled CAÇA and ESPAÇO · … Ç as Ç
+//   M24 `spelledWord` strips Ç's cedilla (the old rule)   🔴 «caça» and «espaço» … spelled CAÇA and ESPAÇO · … Ç as Ç
 //       (the agreement with `provisionalGloss`)
+// (2026-09-26, phase B3: «has a sign» is the avatar's; scripted, each applied, this file run, restored from a copy and checked by sha256)
+//   G1 the default `carried` read as no clip at all                  🔴 «by default a token is a sign exactly when the avatar's pins…»
+//   G2 the default `carried` read from a stale sign list (CASA only)  🔴 same case
+//   G3 an avatar with no clip accepted                                🔴 «an avatar with no clip is refused»
+//   G4 the glosses written outside `folder` (`libras/player/`)        🔴 «writes `glosses.json` into the avatar's folder»

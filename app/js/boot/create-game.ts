@@ -81,7 +81,7 @@ import { createSettingsStore, type SettingsStore, type LetterCase } from '../cor
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
 import { createDeafMode, type Interpreter } from '../ui/vlibras.js';
-import { createVlibrasInterpreter } from '../ui/vlibras-player.js';
+import { createLibrasAvatarInterpreter } from '../ui/libras-avatar-player.js';
 import { screenText, unreadableWorldProblems, menuSonarPress, type ScreenTextCtx } from '../ui/screen-text.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
@@ -207,9 +207,9 @@ export interface EngineHost {
   readonly storage?: StorageLike;
   /**
    * WHO SIGNS IN DEAF MODE (ADR-0234): the Libras player behind the `Interpreter` port, handed the text the sonar reads. Absent:
-   * the VLibras player the delivery shipped (`ui/vlibras-player`, `inclusionist-heavy --libras`); and where it shipped none, the
-   * answer `NO_INTERPRETER` gives — «signing unavailable», a line of `problems` and a notice to the child, with the captions and
-   * the text intact. A host's own interpreter always wins; a test hands its double here.
+   * the free player the delivery shipped (`ui/libras-avatar-player`, `inclusionist-heavy --libras`); and where it shipped none,
+   * the answer `NO_INTERPRETER` gives — «signing unavailable», a line of `problems` and a notice to the child, with the captions
+   * and the text intact. A host's own interpreter always wins; a test hands its double here.
    */
   readonly interpreter?: Interpreter;
 }
@@ -225,7 +225,7 @@ function hostStorage(host: EngineHost): StorageLike | null {
 
 /**
  * The interpreter the host lent — it always wins — else the one the DELIVERY carries (`delivered`, built only when needed): the
- * VLibras player where the delivery was built with `--libras`, which answers as `NO_INTERPRETER` where it was not.
+ * free Libras player where the delivery was built with `--libras`, which answers as `NO_INTERPRETER` where it was not.
  */
 function hostInterpreter(host: EngineHost, delivered: () => Interpreter): Interpreter {
   return host.interpreter ?? delivered();
@@ -941,10 +941,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * THIS ROOT'S ANNOUNCER AND DEAF MODE (ADR-0232 D4, ADR-0234): the screen reader's two regions written in the HOST's
    * document on the host's frames, and deaf mode over its store. A window with no frames (a test double) is the announcer's to answer.
    * 📌 Deaf mode hands the interpreter what the SONAR reads — the text on screen (`ui/screen-text`) — never the announcements,
-   * and that text is spoken with the mode off. The interpreter is the host's; else the VLibras player the DELIVERY shipped
-   * (`ui/vlibras-player`, ADR-0234 route A), opened from the page's own origin at the first request; and where the delivery
-   * shipped none, that player answers as `NO_INTERPRETER` does — the sonar's text is captioned, and «signing unavailable» goes
-   * to `problems` and to the child. The ports it calls later (`tts`, the caption, `measuredProblems`) are read when it calls.
+   * and that text is spoken with the mode off. The interpreter is the host's; else the free Libras player the DELIVERY shipped
+   * (`ui/libras-avatar-player`, ADR-0234 route B), opened from the page's own origin at the first request — three.js arrives
+   * with it, never before; and where the delivery shipped none, that player answers as `NO_INTERPRETER` does — the sonar's text
+   * is captioned, and «signing unavailable» goes to `problems` and to the child. The ports it calls later (`tts`, the caption,
+   * `measuredProblems`) are read when it calls.
    */
   const announcer = createAnnouncer({
     doc,
@@ -955,7 +956,7 @@ export function createGame(o: CreateGameOptions): Engine {
     store,
     captionsSetting: () => state.captionsOn,
     t: translator.t,
-    interpreter: hostInterpreter(o.host, () => createVlibrasInterpreter({
+    interpreter: hostInterpreter(o.host, () => createLibrasAvatarInterpreter({
       doc, win, fetch: win.fetch, base: doc.baseURI, title: () => t('sr.deaf.interpreter'),
     })),
     speak: (text) => { tts.narrate(text); },
@@ -3783,7 +3784,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). ONE PER LANGUAGE THE PAGE
       // CAN SWITCH TO, the child's first (ADR-0225 erratum): a language changed mid-game, offline the next day, must find its
       // model kept. A language the delivery's `--commands` left out fails quietly here, and the transport says so when she speaks.
-      // 📌 The Libras player only while deaf mode is on (ADR-0234): its 19.7 MiB and the delivery's list of its page and signs,
+      // 📌 The Libras player only while deaf mode is on (ADR-0234): the delivery's list of its avatar, clips, glosses and three.js,
       // which a child who never asks for signing does not pay — and which keep it signing on the days without a network.
       only: heavyAtBoot({
         kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null,
