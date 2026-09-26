@@ -110,6 +110,21 @@ export default defineConfig({
               plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: deliveryCacheKey as unknown as (p: { request: Request }) => Promise<string> }],
             },
           },
+          // The Libras player's page and the signs a delivery built with `--libras` writes after the build, outside the precache
+          // (ADR-0234, pillar 8): answered from the checked cache, where the start keeps each file the delivery's list names,
+          // checked, under its own address — the key is the request's. On a miss the request goes to this origin, so the player
+          // works online before the list has come down; nothing is written here. The list itself (`libras/offline.json`) is outside
+          // both folders and always goes to the network. The folders are `DELIVERY_LISTS`'s, written out because the plugin copies
+          // this function's source into `sw.js`, where no import exists.
+          {
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && /\/libras\/(player|signs)\/[^/]/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'incl-pesados-v2',
+              cacheableResponse: { statuses: [200] },
+              plugins: [{ cacheWillUpdate: async () => null }],
+            },
+          },
           // The pinned RUNTIME (MediaPipe), for the same reason and with the same cache: the fetcher brings it down at install,
 // and without a route its `import()` would go to the network again. ⚠️ The reach is by PACKAGE and not by domain — the
 // whole of `cdn.jsdelivr.net` would be the wide door #119 closed.
