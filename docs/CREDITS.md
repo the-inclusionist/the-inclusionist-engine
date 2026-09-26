@@ -256,6 +256,24 @@ the Dev's permission (route B's first step) into a folder outside the repository
 - **Copyright line: UNVERIFIED** — the `.blend` files carry none that was read, and the repository's own `LICENSE` and README
   were not read.
 
+## three.js 0.186.1 — mrdoob and the three.js authors — MIT
+
+What the free Libras player of route B draws with (ADR-0234 errata, route B, phase B2; the Dev decided it on 2026-09-25): the
+`three` npm package, the one run-time `dependency` of the engine, pinned to exactly `0.186.1`. Only `app/js/ui/libras-avatar-stage.ts`
+imports it — `three` and its glTF loader, `three/addons/loaders/GLTFLoader.js` — and only the player's dynamic `import()` reaches
+that module, at the first sign in deaf mode; a bundler cuts it into a chunk of its own (627 KB, 158 KB gzip), which the service
+worker does not precache.
+
+- **Licence:** **MIT** («Copyright © 2010-2026 three.js authors», the package's `LICENSE`). The npm package names it as a
+  dependency, so a consumer's `node_modules/three` carries that `LICENSE`. ⚠️ **The built chunk does not carry the notice:** 📏
+  the minified `assets/libras-avatar-stage-<hash>.js` of this repository's build holds no `@license` comment (three.js's own
+  header is stripped, as every bundled package's is in this build) — so a delivery that ships the chunk owes the MIT notice
+  beside it, and does not yet give it. Named here, not solved: the fix is a build setting that keeps legal comments
+  (`output.comments.legal`) or a notices file the build writes, and either changes every chunk of the build.
+- **Types:** not `@types/three` (not authorised); `app/js/ui/three-subset.d.ts` declares the few classes the stage uses, written
+  here from three.js's documentation.
+- **Changed by this project:** nothing.
+
 ## spaCy and its Portuguese model `pt_core_news_md` 3.8.0 — MIT and CC BY-SA 4.0 — BUILD TIME ONLY
 
 The Portuguese pipeline the translator's rules read (part of speech, morphology, dependencies, entities): spaCy 3.8 (Explosion,

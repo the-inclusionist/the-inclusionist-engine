@@ -91,6 +91,11 @@ export default defineConfig({
         // from `heavy/`, which the delivery fills and the rule below caches — but the extension stays: a page that emits one and
         // leaves it outside the precache loses it offline, and the symptom is a feature that simply never starts.
         globPatterns: ['**/*.{js,mjs,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
+        // 🔴 NOT the free Libras player's stage (ADR-0234 errata, route B): it carries three.js, 627 KB, and the decision that let
+        // three.js in is that only a child whose deaf mode signs downloads it — a precache entry is downloaded by every install.
+        // `tests/three-arrives-late.node.test.js` holds this line. Keeping it offline once fetched is the offline work of
+        // phase B3.
+        globIgnores: ['**/libras-avatar-stage-*.js'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: room for a 25.6 MB runtime with margin
         cleanupOutdatedCaches: true,
         // The precache keeps a page's whole response, headers included (measured: COOP, COEP and CSP on the cached `quiz.html`);

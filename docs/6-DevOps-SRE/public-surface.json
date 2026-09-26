@@ -1322,6 +1322,19 @@
     "clipFrom",
     "valueAt"
   ],
+  "ui/libras-avatar-load.ts": [
+    "AvatarOpening",
+    "AvatarPlace",
+    "FetchFile",
+    "NOT_SHIPPED",
+    "Opened",
+    "RELEASED",
+    "avatarCanvas",
+    "avatarPlace",
+    "openAvatar",
+    "prepareClips",
+    "readManifest"
+  ],
   "ui/libras-avatar-plan.ts": [
     "AvatarManifest",
     "CROSS_FADE_S",
@@ -1340,6 +1353,15 @@
     "planSigns",
     "playedLength",
     "unsignedText"
+  ],
+  "ui/libras-avatar-player.ts": [
+    "LibrasAvatarPorts",
+    "createLibrasAvatarInterpreter"
+  ],
+  "ui/libras-avatar-stage.ts": [
+    "AvatarStage",
+    "AvatarStageOptions",
+    "createAvatarStage"
   ],
   "ui/libras-glosses.ts": [
     "GlossFile",

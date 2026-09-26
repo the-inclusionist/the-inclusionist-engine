@@ -121,16 +121,22 @@
   "bin": {
     "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"
   },
-  "comment:no-dependencies": [
-    "⚠️ THIS PACKAGE HAS NO `dependencies`, AND THAT IS A MEASURED DECISION (ADR-0094), not an accident.",
+  "comment:dependencies": [
+    "⚠️ THIS PACKAGE HAS ONE `dependency`, AND EACH ONE IS A RECORDED DECISION (ADR-0094), never an accident.",
     "Embedded code that names a package the consumer's npm does not install publishes an engine that does not compile (ADR-0093);",
     "a neural provider in `dependencies` lands its runtime in every consumer, a game that never speaks neurally included.",
-    "The engine now LOADS that voice itself (ADR-0216) and still declares nothing: espeak-ng and onnxruntime-web are catalogued heavy",
+    "The engine LOADS that voice itself (ADR-0216) and declares nothing for it: espeak-ng and onnxruntime-web are catalogued heavy",
     "files, fetched by the build into `heavy/` and read from the page's own origin — so they are in nobody's `node_modules`, here",
     "included. A game says `uses: { neuralVoice: true }`, and a game that does not say it downloads none of it.",
-    "`tests/engine-package.node.test.js` holds both directions: no embedded module names an undeclared package, and nothing declared",
-    "is left without a module naming it."
+    "THE ONE: three.js 0.186.1 (MIT), pinned exactly — the free Libras player draws with it (ADR-0234 errata, route B). It is",
+    "reached only by the dynamic `import()` of `ui/libras-avatar-stage` at the first sign in deaf mode, so a bundler cuts it into",
+    "a chunk of its own and a child who never turns deaf mode on never downloads it.",
+    "`tests/engine-package.node.test.js` holds both directions — no embedded module names an undeclared package, and nothing declared",
+    "is left without a module naming it — and that no dependency enters without a recorded reason, at an exact version."
   ],
+  "dependencies": {
+    "three": "0.186.1"
+  },
   "comment:peerDependencies": [
     "PixiJS is a PEER, not a dependency. Measured on the emitted package (2026-09-05): exactly TWO shipped",
     "modules import it — `render/canvas` and `render/minimap` — plus their two `.d.ts`. A consumer that",

@@ -2494,6 +2494,22 @@
       "tracks"
     ]
   },
+  "ui/libras-avatar-load.ts": {
+    "interface AvatarPlace": [
+      "folder",
+      "glosses",
+      "manifest"
+    ],
+    "interface AvatarOpening": [
+      "avatarUrl",
+      "fetchFile",
+      "loadStage",
+      "timeoutMs",
+      "win"
+    ],
+    "type FetchFile": "((url: string) => Promise<Response>) | undefined",
+    "type Opened": "{ readonly stage: AvatarStage } | { readonly reason: string }"
+  },
   "ui/libras-avatar-plan.ts": {
     "interface ClipWindow": [
       "duration",
@@ -2525,6 +2541,37 @@
       "play",
       "stop",
       "tick"
+    ]
+  },
+  "ui/libras-avatar-player.ts": {
+    "interface LibrasAvatarPorts": [
+      "avatarFolder?",
+      "base",
+      "doc",
+      "fetch",
+      "glossesFolder?",
+      "leaveAfterMs?",
+      "loadStage?",
+      "loadTimeoutMs?",
+      "title",
+      "win"
+    ]
+  },
+  "ui/libras-avatar-stage.ts": {
+    "interface AvatarStage": [
+      "advance",
+      "dispose",
+      "has",
+      "prepare",
+      "resize",
+      "scene",
+      "start",
+      "stats"
+    ],
+    "interface AvatarStageOptions": [
+      "avatar",
+      "canvas",
+      "textureSize?"
     ]
   },
   "ui/libras-glosses.ts": {

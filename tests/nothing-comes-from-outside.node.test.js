@@ -168,6 +168,11 @@ const TOCAM_NA_REDE = {
     + 'written beside it (`glosses.json`), and `frame.src` of the player page beside it (ADR-0234, '
     + 'route A). The page loads the VLibras files from `heavy/` on the same origin and fetches signs from `libras/signs/`, told so '
     + 'by `setBaseUrl` before its first word: the hosted dictionary the player would otherwise ask is never reached',
+  'ui/libras-avatar-player.ts': 'LOCAL. It takes the host\'s `fetch` out of its ports and hands it to `ui/libras-avatar-load`, '
+    + 'which reads the free player\'s manifest, avatar and sign clips with it at `libras/avatar/` on the page\'s own origin — the '
+    + 'question «did the delivery ship the avatar?» first — and to `ui/libras-glosses` (the glosses route A\'s delivery writes '
+    + 'beside its player); and `import(\'./libras-avatar-stage.js\')`, a chunk of this same package that carries three.js, loaded '
+    + 'when the avatar is first opened (ADR-0234, route B)',
   'platform/tts.ts': 'LOCAL. `el.src = som.url`, a `blob:` URL of the WAV the neural voice just synthesised here, played '
     + 'through a media element so the speech rate keeps the pitch (ADR-0183 §1); it never leaves the machine. The '
     + '`import()` of the neural runtime moved into the root with ADR-0232 D4',

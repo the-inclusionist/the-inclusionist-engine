@@ -276,14 +276,31 @@ describe('ADR-0119 · a engine não ganha dependência de execução, e cada `pe
       'que ele não é uma dependência normal. Sai daqui no dia em que a engine deixar de desenhar.',
   };
 
-  it('🎯 [Zero] a engine não tem NENHUMA dependência de execução', () => {
+  /**
+   * THE RUN-TIME DEPENDENCIES A RECORD DECIDED, each with its reason — and nothing else. The list was empty, and the door
+   * stays narrow: an entry here is a decision the Dev took, not a convenience.
+   */
+  const DEPENDENCIAS_COM_RAZAO = {
+    three:
+      'THE FREE LIBRAS PLAYER DRAWS WITH IT (ADR-0234 errata, route B): three.js 0.186.1, MIT, decided by the Dev on 2026-09-25. ' +
+      'It is reached ONLY by the dynamic `import()` of `ui/libras-avatar-stage` at the first sign in deaf mode, so a game ' +
+      'whose child never turns deaf mode on never downloads it — the gate below holds that reach.',
+  };
+
+  it('🎯 [Zero] a engine não ganha dependência de execução que um registo não decidiu', () => {
     const deps = Object.keys(PKG.dependencies ?? {});
     expect(
-      deps,
-      'a engine ganhou uma dependência de execução: cada `npm ci` de trezentos repositórios passa a pagá-la, ' +
+      deps.filter((d) => !(d in DEPENDENCIAS_COM_RAZAO)),
+      'a engine ganhou uma dependência de execução: cada `npm ci` de quem a consome passa a pagá-la, ' +
         'e é por essa porta que o ADR-0094 seria revertido sem ninguém decidir. Coisa pesada vai pela ' +
         `PLATAFORMA (ADR-0117/0119), nunca pelo pacote. Achado: ${deps.join(', ')}`,
     ).toEqual([]);
+    expect(Object.keys(DEPENDENCIAS_COM_RAZAO).filter((d) => !deps.includes(d)), 'razão sem dependência; apague a entrada')
+      .toEqual([]);
+  });
+
+  it('🔴 [Right] a dependência decidida vai FIXA na versão exacta — sem `^` nem `~`, o `npm ci` de quem consome traz outra', () => {
+    expect(PKG.dependencies?.three, 'three.js was declared with a range, not the exact version ADR-0234 decided').toBe('0.186.1');
   });
 
   it('⚠️ [Interface] cada `peerDependency` carrega a razão, e a lista não cresce sozinha', () => {
@@ -301,8 +318,9 @@ describe('ADR-0119 · a engine não ganha dependência de execução, e cada `pe
   });
 
   /* 🎯 AND THE CIRCLE CLOSES WITH THE SIEVE ABOVE, without repeating it. It asserts «nenhum módulo embarcado nomeia
-   * pacote fora de `dependencies`/`peerDependencies`»; with `dependencies` proven EMPTY here, the declarable set is only
-   * the `peers` — and importing something heavy has no legal way out, exactly what the four records want. 📌 A third
+   * pacote fora de `dependencies`/`peerDependencies`»; with `dependencies` held to the ones a record decided here, the
+   * declarable set is those and the `peers` — and importing something heavy has no legal way out without a decision, exactly
+   * what the four records want. (three.js is the one the Dev decided, ADR-0234 errata: reached late, by one module.) 📌 A third
    * copy of `nomeados()` would be the duplication this file refuses; the pair lives in reading the two sieves together,
    * and is written here. */
 });
