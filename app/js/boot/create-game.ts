@@ -1673,7 +1673,9 @@ export function createGame(o: CreateGameOptions): Engine {
      * `aria-pressed=false` after the child had turned it on — the control lying about its state.
      *
      * 📌 ONLY THE STATES WITH AN EVENT that can change elsewhere: blind mode, the camera control and the voice control
-     * (`GameEvent`). The other icons reflect themselves on the click, which is the path by which they change.
+     * (`GameEvent`). NARRATION changes elsewhere too, but it is the mixer's category and has no event: the hearing panel's
+     * `setCatGain`, further below, reflects the bar. The other icons reflect themselves on the click, which is the path by
+     * which they change.
      */
     stateOn('blindMode', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
@@ -2344,7 +2346,18 @@ export function createGame(o: CreateGameOptions): Engine {
       getVolume: () => mixer.volume,
       setVolume,
       getAudioCat: () => mixer.audioCat,
-      setCatGain,
+      /*
+       * 🔴 THE PANEL IS THE OTHER WRITER OF NARRATION, and the bar's 🗣 has to follow it. Narration is the mixer's `tts`
+       * category, not a setting of the store, so there is no `stateOn` for it beside the three the bar subscribes to above;
+       * but every writer commits a category through `setCatGain`, and here the panel's do — the switch, the volume slider that
+       * turns narration on, the reset. Without this, the child who turned narration on here heard the 🗣 under the bar's cursor
+       * say «desligado» (ADR-0159 rule 10: the state is said in words, and a stale word is a lie). The other direction is
+       * `reflectTtsPanel`, handed to the bar.
+       */
+      setCatGain: (k) => {
+        setCatGain(k);
+        if (k === 'tts' && a11yBar && barUsable) pauseIcons.reflectIconsIn(a11yBar, 0);
+      },
       tts,
       getBlindMode: readBlindMode,
       // 📌 The `core/state` pattern: store, persist, notify. The game effects are a REACTION, and whoever reacts
