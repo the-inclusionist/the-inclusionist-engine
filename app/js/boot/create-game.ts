@@ -3379,6 +3379,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ IT EXISTS ONLY WHERE THERE IS A TOUCH HOST: without one there is no pad size to choose, and the submenu's door
    * falls away by itself (`engineActions.motora` is not defined).
    */
+  /** The motor panel's mapping wizard, once mounted: declared out here because the pad's poll below stands aside while it maps. */
+  let padWizard: ReturnType<typeof createPadWizard> | null = null;
   if (pauseMountPoint && pauseUsable && touchUsable) {
     const mobilityCtx = {
       find: (sel: string) => $<HTMLElement>(sel),
@@ -3591,8 +3593,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * preset's, which may not name them), and storing the map `initGamepad` reads — one cache for the page. It reads the pads
      * only while it is open. «Voltar» cancels; SELECT, the last step, saves and closes. The shell's «restore» is hidden: a
      * pad's map is replaced by mapping again.
+     * 🔴 ONE WIZARD OWNS THE PAD: the gamepad transport builds its own wizard too (the one that opens by itself on a DirectInput
+     * pad with no map), and each asks only about itself. So the root, which holds both, keeps them apart: while this one maps,
+     * the pad's poll does not run (below), and while that one maps, this row does not open a second.
      */
-    let padWizard: ReturnType<typeof createPadWizard> | null = null;
     /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */
     const closeControl = (): void => {
       if (padWizard?.state()) { padWizard.close(false); return; }
@@ -3646,6 +3650,7 @@ export function createGame(o: CreateGameOptions): Engine {
     controlButton.setAttribute('type', 'button');
     controlButton.id = 'opt-controle';
     controlButton.addEventListener('click', () => {
+      if (gamepad.getPadWiz()) return; // the transport's own wizard is mapping a pad: it keeps it
       controlPanel.open();
       padWizard?.open();
     });
@@ -4387,7 +4392,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    */
   let padFrameHandle = 0;
   const anyPadConnected = (): boolean => (win.navigator?.getGamepads?.() ?? []).some(Boolean);
-  const pollPad = (): void => { gamepad.pollPads(); padFrameHandle = win.requestAnimationFrame(pollPad); };
+  // 📌 While the motor panel's wizard maps, the pads talk only to it (the transport asks only about its own wizard): read
+  // under it, an unmapped DirectInput pad opened a second wizard on the same pad, and a standard pad steered the menus.
+  const pollPad = (): void => { if (!padWizard?.state()) gamepad.pollPads(); padFrameHandle = win.requestAnimationFrame(pollPad); };
   const stopPollingPad = (): void => { if (padFrameHandle) win.cancelAnimationFrame(padFrameHandle); padFrameHandle = 0; };
   /*
    * ⚠️ THE LOOP EXISTS ONLY WHILE A GAMEPAD IS CONNECTED, and that is pillar 1 deciding: a `requestAnimationFrame` that
