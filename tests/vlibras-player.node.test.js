@@ -14,12 +14,12 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { brotliCompressSync } from 'node:zlib';
 import {
-  patchFramework, deliverLibrasPlayer, signSetRevision, LIBRAS_PLAYER_IDS, PATCHED_FRAMEWORK,
+  patchFramework, deliverLibrasPlayer, signSetRevision, LIBRAS_PLAYER_IDS, PATCHED_FRAMEWORK, writeDeliveryList, librasListPaths,
 } from '../scripts/vlibras-player.mjs';
 import { parseExternalCall, PLAYER_CALLS } from '../scripts/vlibras-player/external-call.js';
 import { installCspShim, PATCHED_FRAMEWORK as SHIM_PATCHED_FRAMEWORK, FRAMEWORK_GLOBAL } from '../scripts/vlibras-player/csp-shim.js';
 import { deliveryPath } from '../app/js/platform/heavy.js';
-import { HEAVY_FILES, LIBRAS_PLAYER_FOLDER } from '../app/js/platform/heavy-catalogue.js';
+import { HEAVY_FILES, LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER, DELIVERY_LISTS } from '../app/js/platform/heavy-catalogue.js';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const EVAL_CALL = 'try{eval(str)}catch(exception){console.error(exception)}';
@@ -228,6 +228,45 @@ describe('the player, written into a delivery', () => {
     } finally { rmSync(d.destino, { recursive: true, force: true }); }
   });
 
+  it('🔴 [Right] the offline list names each file with the sha256 and size of the bytes the delivery wrote', () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-lista-'));
+    const list = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+    try {
+      const files = { [`${LIBRAS_PLAYER_FOLDER}index.html`]: '<!doctype html>', [`${LIBRAS_SIGNS_FOLDER}AÇÃO`]: 'sign bytes' };
+      for (const [path, text] of Object.entries(files)) { mkdirSync(dirname(join(destino, path)), { recursive: true }); writeFileSync(join(destino, path), text); }
+      const made = writeDeliveryList({ destino, list, paths: Object.keys(files) });
+      const written = JSON.parse(readFileSync(join(destino, list.path), 'utf8'));
+      expect(written).toEqual({ format: 1, files: Object.entries(files).map(([path, text]) => ({ path, sha256: sha(text), bytes: Buffer.byteLength(text) })) });
+      expect(made).toEqual({ path: list.path, files: 2, bytes: Buffer.byteLength('<!doctype html>') + Buffer.byteLength('sign bytes') });
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] a path outside the list\'s folders is refused, and no list is written — the device would never keep it', () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-lista-'));
+    const list = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+    try {
+      writeFileSync(join(destino, 'quiz.html'), 'the game');
+      for (const path of ['quiz.html', 'heavy/x/playerweb.framework.noeval.js', `${LIBRAS_PLAYER_FOLDER}../../quiz.html`]) {
+        expect(() => writeDeliveryList({ destino, list, paths: [path], read: () => Buffer.from('x') }), path).toThrow(/cannot name/);
+      }
+      expect(existsSync(join(destino, list.path))).toBe(false);
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] the Libras list names the page this step wrote, the glosses and every sign carried — never the pinned patch', () => {
+    const written = [`heavy/h/public/unity/${PATCHED_FRAMEWORK}`, `${LIBRAS_PLAYER_FOLDER}playerweb.json`, `${LIBRAS_PLAYER_FOLDER}index.html`];
+    expect(librasListPaths({ written, glosses: `${LIBRAS_PLAYER_FOLDER}glosses.json`, signs: [{ name: 'CASA', sha256: sha('c') }, { name: 'AÇÃO', sha256: sha('a') }],
+      playerFolder: LIBRAS_PLAYER_FOLDER, signsFolder: LIBRAS_SIGNS_FOLDER }))
+      .toEqual([`${LIBRAS_PLAYER_FOLDER}playerweb.json`, `${LIBRAS_PLAYER_FOLDER}index.html`, `${LIBRAS_PLAYER_FOLDER}glosses.json`,
+        `${LIBRAS_SIGNS_FOLDER}CASA`, `${LIBRAS_SIGNS_FOLDER}AÇÃO`]);
+  });
+
+  it('📌 [Boundary] the list lies OUTSIDE the folders it names: it is never kept, so no cache can serve an old one', () => {
+    const list = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+    expect(list.folders).toEqual([LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER]);
+    for (const folder of list.folders) expect(list.path.startsWith(folder), `${list.path} is inside ${folder}`).toBe(false);
+  });
+
   it('📌 [Boundary] the sign set\'s revision changes when a sign\'s bytes change under the same name — what clears the player\'s cache', () => {
     const one = signSetRevision([{ name: 'CASA', sha256: sha('a') }]);
     expect(signSetRevision([{ name: 'CASA', sha256: sha('b') }])).not.toBe(one);
@@ -262,6 +301,12 @@ describe('the player, written into a delivery', () => {
 //   P6 the patched file checked only when a hash is handed in             🔴 checks against the CATALOGUE's pin (2026-09-25)
 //   P7 the check that the catalogue keeps the patch where it is written   🔴 same case
 //   P8 the patched framework's entry removed from the catalogue           🔴 the real catalogue carries … (and `heavy.node`)
+//   L1 the list's folder check removed                                    🔴 a path outside the list's folders is refused
+//   L2 its `..` check removed                                             🔴 same case (`libras/player/../../quiz.html`)
+//   L3 the listed hash taken from the path, not the bytes                 🔴 names each file with the sha256 … of the bytes
+//   L4 the signs left out of the Libras list                              🔴 names the page …, the glosses and every sign
+//   L5 the pinned patch named in the list as well                         🔴 same case
+//   L6 the list written inside the player's folder                        🔴 the list lies OUTSIDE the folders it names
 //   X1 the allowed-name check removed from the parser                    🔴 rejects anything else (`alert(1);`)
 //   X2 the name pattern admitting dots                                   ✅ SURVIVED, equivalent: no allowed name has a dot, so the
 //      allow-list already refuses every dotted path. The pattern stays as a second wall, not as the one that holds.

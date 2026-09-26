@@ -1416,6 +1416,11 @@
       "sha256?",
       "url",
       "whyNoSource?"
+    ],
+    "interface DeliveryList": [
+      "folders",
+      "id",
+      "path"
     ]
   },
   "platform/heavy.ts": {

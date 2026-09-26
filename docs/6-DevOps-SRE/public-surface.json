@@ -705,6 +705,8 @@
   ],
   "platform/heavy-catalogue.ts": [
     "CACHE_HEAVY",
+    "DELIVERY_LISTS",
+    "DeliveryList",
     "HEAVY_FILES",
     "HeavyFile",
     "LIBRAS_PLAYER_FOLDER",

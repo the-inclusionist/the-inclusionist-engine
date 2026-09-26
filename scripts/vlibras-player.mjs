@@ -18,6 +18,10 @@
 //
 // THE PAGE AROUND IT IS OURS (AGPL): `vlibras-player/index.html`, `player.js`, `csp-shim.js` and `external-call.js`, written to
 // `libras/player/` beside the game's page together with the `playerweb.json` that points Unity at `heavy/`.
+//
+// AND THE DEVICE KEEPS IT OFFLINE BY A LIST (pillar 8): none of the page, the glosses or the signs is in the precache — they are
+// written after the build — and each delivery makes them, so no catalogue can pin them. `libras/offline.json` names each with the
+// sha256 of what was written (`writeDeliveryList`), and the device keeps a file only if its bytes are the listed ones.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -82,6 +86,32 @@ export function patchFramework(compressed, { expectedSha256, sha256 = sha256OfNo
  */
 export function signSetRevision(signs, sha256 = sha256OfNode) {
   return sha256(signs.map((s) => `${s.name} ${s.sha256}`).sort().join('\n'));
+}
+
+/**
+ * WRITES THE LIST A DEVICE KEEPS THE PLAYER OFFLINE BY (`platform/heavy-catalogue.DELIVERY_LISTS`): each of `paths`, relative to
+ * `destino`, with the sha256 and size of the bytes on the disk — what this delivery wrote, read back. Returns the list's path, the
+ * number of files and their bytes. THROWS, writing nothing, on a path outside the list's folders: the device would refuse it.
+ */
+export function writeDeliveryList({ destino, list, paths, read = (p) => readFileSync(p), sha256 = sha256OfNode }) {
+  const files = paths.map((path) => {
+    if (!list.folders.some((folder) => path.startsWith(folder)) || path.split('/').includes('..')) {
+      throw new Error(`the list ${list.path} cannot name ${path}: only files under ${list.folders.join(', ')} are kept from it`);
+    }
+    const bytes = read(join(destino, path));
+    return { path, sha256: sha256(bytes), bytes: bytes.length };
+  });
+  mkdirSync(dirname(join(destino, list.path)), { recursive: true });
+  writeFileSync(join(destino, list.path), `${JSON.stringify({ format: 1, files }, null, 1)}\n`);
+  return { path: list.path, files: files.length, bytes: files.reduce((sum, f) => sum + f.bytes, 0) };
+}
+
+/**
+ * What the Libras list names: the player's page files this step wrote (not the patched framework, which the catalogue pins), the
+ * glosses, and every sign the delivery carries — in that order, the page first.
+ */
+export function librasListPaths({ written, glosses, signs, playerFolder, signsFolder }) {
+  return [...written.filter((path) => path.startsWith(playerFolder)), glosses, ...signs.map((s) => `${signsFolder}${s.name}`)];
 }
 
 /**

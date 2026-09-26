@@ -25,7 +25,7 @@ import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
-import { deliverLibrasPlayer } from './vlibras-player.mjs';
+import { deliverLibrasPlayer, writeDeliveryList, librasListPaths } from './vlibras-player.mjs';
 import { deliverLibrasGlosses, readSignPins, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
@@ -112,7 +112,8 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   delivers the signs those glosses use that `scripts/libras-signs.json` pins (the engine's: 632, 15.1 MB), from LAViD's
  *   dictionary at a pinned commit or from the pins' `mirror` folder under `--base`, each checked by sha256. It
  *   needs the glosser's environment, built once by `--libras-setup`; without it the delivery STOPS instead of shipping a player
- *   with nothing to sign but letters.
+ *   with nothing to sign but letters. Last, it writes `libras/offline.json`, the list of the page, glosses and signs with their
+ *   sha256, by which a device with deaf mode on keeps the player for the days without a network.
  * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
@@ -178,8 +179,9 @@ if (executado) {
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
   // 📌 THE GLOSSES FIRST, before a byte is downloaded: a build machine with no glosser learns it in a second, not after 19 MiB
-  const { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER, commandsLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
+  const { LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER, DELIVERY_LISTS, commandsLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
   let librasSigns = [];
+  let librasGlosses = '';
   if (libras) {
     const { LIBRAS_GLOSSES_FILE } = await import(new URL('../dist-pkg/ui/libras-glosses.js', import.meta.url).href);
     const { default: enginePt } = await import(new URL('../dist-pkg/i18n/pt.js', import.meta.url).href);
@@ -198,6 +200,7 @@ if (executado) {
         + `chosen by sentence order among several spellings, ${spelled.byStem} by the word's start), ${spelled.asTranslated} `
         + 'as the translator wrote them (no written word gives them)');
       librasSigns = made.signs;
+      librasGlosses = made.path;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
       console.error('the Libras glosses were not made: a delivery built with --libras is not written without them');
@@ -221,6 +224,11 @@ if (executado) {
       const written = deliverLibrasPlayer({ destino, catalogue: HEAVY_FILES, deliveryPath, playerFolder: LIBRAS_PLAYER_FOLDER,
         signs: librasSigns });
       for (const path of written) console.log(`player    ${path}`);
+      // LAST, so it names what is really on the disk: the list a device keeps the player offline by (pillar 8)
+      const list = DELIVERY_LISTS.find((l) => l.id === 'libras:delivery');
+      const listed = writeDeliveryList({ destino, list, paths: librasListPaths({ written, glosses: librasGlosses, signs: librasSigns,
+        playerFolder: LIBRAS_PLAYER_FOLDER, signsFolder: LIBRAS_SIGNS_FOLDER }) });
+      console.log(`offline   ${listed.path} — ${listed.files} files, ${listed.bytes} bytes, each with its sha256`);
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
       console.error('the Libras player was not delivered: this delivery cannot sign');

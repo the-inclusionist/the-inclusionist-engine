@@ -271,6 +271,30 @@ export const LIBRAS_PLAYER_FOLDER = 'libras/player/';
 export const LIBRAS_SIGNS_FOLDER = 'libras/signs/';
 
 /**
+ * A LIST THE DELIVERY WRITES OF ITS OWN FILES, each with its sha256 — for what no catalogue entry can pin because each delivery
+ * makes it: the Libras player's page (its sign-set revision), the glosses of the game's texts, and the signs those glosses use
+ * (ADR-0234, route A; pillar 8). The device reads the list and keeps each file only if its bytes are the listed ones, in the
+ * checked cache, under the file's own address, where the service worker answers the player from offline.
+ *
+ * ⚠️ WHAT THE LIST PROVES, AND WHAT IT DOES NOT: it comes from the page's own origin, like the page's code, so it is exactly as
+ * trusted as the page — it is not a pin. What it guarantees is that what is kept is what this delivery wrote: never a truncated
+ * body, a fallback page served for a missing file, or a file of the previous delivery. The signs' hashes in it are the ones
+ * `scripts/libras-signs.json` pins, checked when the delivery wrote them.
+ */
+export interface DeliveryList {
+  readonly id: string;
+  /** Where the delivery writes the list, relative to the page. */
+  readonly path: string;
+  /** The only folders the list may name, relative to the page: a listed file outside them is refused, never kept. */
+  readonly folders: readonly string[];
+}
+
+/** The lists a device may read: the Libras player's, only in a delivery built with `--libras`, asked for with the player. */
+export const DELIVERY_LISTS: readonly DeliveryList[] = Object.freeze([
+  Object.freeze({ id: 'libras:delivery', path: 'libras/offline.json', folders: Object.freeze([LIBRAS_PLAYER_FOLDER, LIBRAS_SIGNS_FOLDER]) }),
+]);
+
+/**
  * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
  * languages. The engine loads them itself when a game declares `uses.neuralVoice` (ADR-0216); the phonemizer and the runtime that
  * speak them are `VOICE_RUNTIME`, above.
