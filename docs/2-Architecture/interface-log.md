@@ -288,3 +288,23 @@ child leave one-button mode and that 📷 and 👄 keep working; the choice here
 itself — every icon, and the bar's own gaps, so a finger that misses ☝️ by a few pixels means nothing instead of taking the item
 shown. Everything else in the game region and the on-screen pad is the switch: the game's own buttons, a panel's controls, the
 pad's face buttons and its START and SELECT pills. A touch outside the game region is the page's. Engine `5f3e3732`.
+
+## 2026-09-26 · The demo quiz becomes a test bench: fifteen skills picked by BNCC code
+
+The Dev: «O quiz está ineficiente para teste.» — three questions at 5th-grade level for «português, arte, educação física,
+língua inglesa, língua espanhola, matemática, ciências, geografia, história e ensino religioso», and the five «campos de
+experiência» of early childhood; «Cinco itens, três chances de acertos, barra de ZDP conforme nos ADRs a respeito»; «Tela
+inicial para escolher a habilidade via sigla da BNCC (explicação no rodapé).»
+
+What follows from those words and the records, chosen here: the start screen lists fifteen skills by code — five EI03
+objectives, then the ten components in the Dev's order — and the footer shows component, grade and the BNCC text (ADR-0244).
+Five options per question, three attempts, then the explanation, three more attempts and the answer to copy (ADR-0049 §6).
+One learning bar for the skill in play, bottom left (ADR-0239), nothing stored (ADR-0103). After the third question the round
+starts again with the options rotated one place, so the ten-question window and its thresholds can be reached in a test;
+«voltar» returns to the start screen.
+
+Measured in the official BNCC (MEC's final PDF) and not chosen: the BNCC has NO Spanish skills (Lei 13.415/2017 revoked the
+mandatory offer), so the Spanish entry shows the component's name and the footer says why; English starts in 6th grade, so the
+English entry is EF06LI17, labelled 6th grade, with questions at a 5th-grade difficulty; Arte (EF15AR) and Educação Física
+(EF35EF) are multi-year blocks and are labelled so. Codes: EI03EO01, EI03CG04, EI03TS03, EI03EF02, EI03ET07, EF05LP05,
+EF15AR02, EF35EF05, EF06LI17, —, EF05MA08, EF05CI11, EF05GE06, EF05HI08, EF05ER01. To swap any of them, name the code.
