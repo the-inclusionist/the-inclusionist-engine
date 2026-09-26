@@ -290,6 +290,9 @@ describe('where a spelled letter\'s hand is held up', () => {
   it('🎯 [Boundary] a hand that does not move is a still pose, held for the whole clip — E, held up from its first frame to its last', () => {
     expect(heldWindow(hands, lift('BnMao.R', [[0, 1.98], [1.6667, 1.98]]))).toEqual([0, 1.6667]);
     expect(heldWindow(hands, { name: 'E', duration: 1.2, tracks: [] }), 'no track at all is no rise').toEqual([0, 1.2]);
+    // a tremor of 5 mm while it holds is not a rise: the window is still the whole clip
+    const tremor = lift('BnMao.R', [[0, 1.98], [0.5, 1.985], [1, 1.98], [1.6667, 1.98]]);
+    expect(heldWindow(hands, tremor), 'a still letter\'s tremor was taken for a rise').toEqual([0, 1.6667]);
   });
 
   it('[Boundary] the edges are hundredths, and never past the clip\'s end', () => {
@@ -380,3 +383,10 @@ describe('the safety of running Blender on these files', () => {
 //   the default names not deduplicated.
 // And for the default names read from the export's own source pins (2026-09-26, phase B3; scripted, restored and checked by sha256):
 //   E1 the default names read from no pins (the alphabet alone) · E2 a pinned sign dropped from the defaults — both red
+// And for where a spelled letter's hand is held up (2026-09-26, `heldWindow`; scripted, CRLF normalised, each pattern required
+// exactly once, the file restored from a copy and checked by sha256 — all 5 red):
+//   X1 measured against the PEAK, not the height held                  🔴 «overshoots while up stays INSIDE the window»
+//   X2 the right hand only                                               🔴 «the hand measured is the one that rises»
+//   X3 no still threshold (a tremor taken for a rise)                    🔴 «a hand that does not move is a still pose»
+//   X4 the share at 80 %                                                 🔴 «90 % of the rise» and 4 more
+//   X5 an edge rounded past the clip's end                               🔴 «the edges are hundredths»
