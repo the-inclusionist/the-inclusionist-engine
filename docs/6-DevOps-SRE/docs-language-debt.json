@@ -1,8 +1,9 @@
 {
   "about": "Portuguese prose lines per Markdown file, and the Markdown files whose NAME carries a Portuguese word (scripts/docs-language.mjs). Both only shrink; a new file starts at zero. A heuristic that undercounts — a ratchet, never a verdict.",
-  "total": 50,
+  "total": 51,
   "files": {
     "docs/1-Discovery/study-accommodations-by-genre.md": 1,
+    "docs/2-Architecture/adr/README.md": 1,
     "docs/3-Sprint-Design/Field-Test-M7.md": 44,
     "docs/game-design/typography.md": 2,
     "docs/INVENTORY.md": 2,
