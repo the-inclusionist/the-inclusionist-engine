@@ -371,6 +371,27 @@ export function bootQuiz({ doc, win, interpreter }: QuizHost): Engine {
     if (alvo && !outsideQuiz) alvo.focus();
   }
 
+  /**
+   * 🔴 WHAT HAS THE FOCUS IS WHAT SPACE ANSWERS (ADR-0111 erratum of 2026-09-26). Tab, or a screen reader moving the focus with
+   * its own cursor, put the focus on an option and left the quiz's cursor behind: 📏 on the served quiz, with the focus on
+   * «Quatro», Space answered «Três», the cursor. So the cursor follows the focus, and `aria-checked` moves with it — the option
+   * a screen reader announces is the one Space answers. (A screen reader that activates from its browse cursor clicks the
+   * option it is on, and the click listener answers that option directly.)
+   * 📌 No redraw: the focus is already where it should be, and a redraw would re-focus it and narrate the option again over
+   * the screen reader, which has just announced it.
+   */
+  function cursorFollowsFocus(e: FocusEvent): void {
+    const alt = (e.target as Element | null)?.closest?.<HTMLElement>('#quiz-app button[data-alt]');
+    if (!alt || Number(alt.dataset.alt) === foco) return;
+    foco = Number(alt.dataset.alt);
+    alt.parentElement?.querySelectorAll<HTMLElement>('button[data-alt]').forEach((b) => {
+      const on = b === alt;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+  }
+  $<HTMLElement>('#quiz-app')?.addEventListener('focusin', cursorFollowsFocus);
+
   /** Puts a line where the statement is — the same box, so nothing below it moves — and gives the statement back after it is read. */
   function sayInStatement(texto: string, backToStatement = true): void {
     const h2 = $<HTMLElement>('#quiz-app .quiz-pergunta');

@@ -89,6 +89,27 @@ describe('the quiz demo, by real key', () => {
     expect(document.activeElement, 'Tab was swallowed on the option: the keyboard cannot leave the quiz').not.toBe(opcao);
     expect(alertas, 'Tab answered').toHaveLength(0);
   });
+
+  it('🔴 [Right] what has the focus is what Space answers — the focus moved by a screen reader, then by Shift+Tab', async () => {
+    // 📏 On the served quiz (2026-09-26), with the focus on «Quatro», Space answered «Três» — the quiz's cursor, which Tab had
+    // left behind. Here the focus moves twice, the way the two kinds of reader move it: a screen reader's own cursor puts the
+    // focus on an option (`focus()`), and the keyboard steps back one (Shift+Tab). What it ends on is what it hears, and what
+    // Space must answer. (Question 3 by now: the right option, «Banana», is neither the first nor the last.)
+    const opcoes = [...document.querySelectorAll('#quiz-app button[data-alt]')];
+    expect(opcoes, 'not four options on screen: the case would measure nothing').toHaveLength(4);
+    const marcada = () => document.querySelector('#quiz-app [aria-checked="true"]');
+    opcoes[0].focus();
+    expect(marcada(), 'the cursor did not start on the first option: the case would measure less').toBe(opcoes[0]);
+    opcoes[3].focus();
+    expect(marcada(), 'the screen reader put the focus on the last option and the cursor stayed behind').toBe(opcoes[3]);
+    await userEvent.keyboard('{Shift>}[Tab]{/Shift}');
+    expect(document.activeElement, 'Shift+Tab did not step back one option').toBe(opcoes[2]);
+    expect(marcada(), 'Shift+Tab moved the focus and the cursor stayed behind').toBe(opcoes[2]);
+    expect([...document.querySelectorAll('#quiz-app .is-on')], 'the cursor a sighted child sees stayed behind').toEqual([opcoes[2]]);
+    const certa = engine.t('quiz.resposta.certa', { certa: opcoes[2].textContent });
+    await pressAndWait('Space');
+    expect(alertas, 'Space on the focused option answered another one').toEqual([certa]);
+  });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
@@ -100,3 +121,6 @@ describe('the quiz demo, by real key', () => {
 //   welcome case RED again; it cancels every key it sees → the Tab case RED. See `a-delivered-key-does-not-also-click`.
 //   · B1 the welcome goes back to a fixed sentence naming Enter → the welcome case RED: Enter is not a key of `action2`.
 //   · B2 the welcome reads `start` as the answering position (names H) → the welcome case RED.
+// The cursor follows the focus (ADR-0111 erratum of 2026-09-26), each alone, CRLF normalised, one occurrence required, restored
+// and verified by hash: Q1 the `focusin` listener not registered, Q2 `foco` not updated, Q3 `aria-checked` not moved, Q4 the
+// early return always leaving, Q5 the visible `is-on` not moved → the focus case RED under each.
