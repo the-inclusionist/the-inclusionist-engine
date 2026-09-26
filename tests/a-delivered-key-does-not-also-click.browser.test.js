@@ -190,16 +190,48 @@ describe("the engine's own menus and controls keep their behaviour", () => {
     expect(document.getElementById('vp-pause-0').hidden, 'the arrow pressed ☰').toBe(true);
   });
 
-  it('🔴 [Right] Enter on ☰ is not played either: the game hears no `start`', async () => {
-    // What Enter DOES there is the quick pause (`start`), as with the focus anywhere in play — the case pins only that the game
-    // does not ALSO hear it. See the report: whether Enter on ☰ should press ☰ instead is an open question.
+  it('🔴 [Right] Enter on ☰ presses ☰ as Space does — the menus open, the quick pause does not, and the game hears nothing', async () => {
+    // 📏 On the served quiz (2026-09-26) Enter on ☰ opened the quick pause instead, and Space pressed ☰: `Enter` is `start`, and
+    // START's listener took the key from the focused button. A focused button is activated by Enter as well as Space.
+    const cartao = document.getElementById('vp-pause-0');
+    const pausado = () => document.querySelector('#game-region .pausa-rapida');
+    expect(cartao.hidden, 'the card was already open: the case would measure nothing').toBe(true);
     menuIcon().focus();
     try {
       await userEvent.keyboard('[Enter]');
+      expect(pausado()?.hidden ?? true, 'Enter on ☰ opened the quick pause instead of pressing ☰').toBe(true);
+      expect(cartao.hidden, 'Enter on ☰ did not press it: the menus did not open').toBe(false);
+      expect(cancelada('Enter'), 'the engine cancelled Enter on its own control: the button has no Enter left').toBe(false);
       expect(comandos, 'Enter on ☰ reached the game').toEqual([]);
     } finally {
-      await userEvent.keyboard('[Escape]');
       motor.pause.hide(0);
+      if (pausado() && !pausado().hidden) await userEvent.keyboard('[Escape]');
+    }
+  });
+
+  it('🔴 [Right] on the quick pause\'s bar Enter is still the bar\'s: it confirms the icon under the cursor, and nothing else', async () => {
+    // The bar is navigated by `ui/menu-nav`, which consumes Enter as «confirm» before START's listener could see it. This case
+    // pins that the guard for a FOCUSED control did not reach the bar's own cursor.
+    const pausado = () => document.querySelector('#game-region .pausa-rapida');
+    const clicados = [];
+    const bar = document.getElementById('title-icons');
+    const ouvir = (e) => { const b = e.target.closest?.('.pi-btn'); if (b) clicados.push(b.dataset.pi); };
+    botao().focus();
+    await userEvent.keyboard('[Enter]');
+    bar.addEventListener('click', ouvir, true);
+    try {
+      expect(pausado()?.hidden, 'Enter did not open the quick pause: the case would measure nothing').toBe(false);
+      const sob = bar.querySelector('.pi-sel')?.dataset.pi;
+      expect(sob, 'no icon under the bar\'s cursor: the case would measure nothing').toBeTruthy();
+      comandos.length = 0;
+      await userEvent.keyboard('[Enter]');
+      expect(clicados, 'Enter on the bar did not confirm the icon under the cursor').toEqual([sob]);
+      expect(cancelada('Enter'), 'the bar stopped consuming its Enter').toBe(true);
+      expect(comandos, 'Enter on the bar reached the game').toEqual([]);
+    } finally {
+      bar.removeEventListener('click', ouvir, true);
+      motor.pause.hide(0);
+      if (pausado() && !pausado().hidden) await userEvent.keyboard('[Escape]');
     }
   });
 
@@ -387,3 +419,11 @@ describe('the system positions are the engine\'s: the game never hears START or 
 //   S2 only `start` in the rule                                  🔴 F here, and the five `select` node cases
 //   S3 only `select` in the rule                                 🔴 Enter and KeyH here, and the five `start` node cases
 //   S4 `action4` joins the rule / S5 the rule before the menu    🔴 node only (the verb beside them; START as the menu's key)
+// Fifth pass (2026-09-26, Enter on the engine's focused control presses it), with `key-default.node`:
+//   G1 START's listener does not ask about the focused control  🔴 Enter on ☰
+//   G2 it asks about the game's button instead                  🔴 Enter on ☰
+//   K1 every key on the engine's control presses it              🔴 the arrow on ☰, and two node cases
+//   K2 an activation key presses it wherever the focus is        🔴 eight cases here (Space and Enter in play), three node cases
+//   K3 no focused element counts as the engine's control         🔴 node only: a browser key always has an element target
+//   G4 (the pin) `ui/menu-nav` stops consuming Enter on the bar  🔴 the bar's Enter case — no mutation of this change reaches
+//                                                                  the bar, whose Enter the menus consume before START sees it

@@ -34,11 +34,23 @@ const EDITABLE = 'input, textarea, select';
 export const BUTTON_ACTIVATION_KEYS: ReadonlySet<string> = new Set(['Space', 'Enter', 'NumpadEnter']);
 
 /**
+ * Whether the key `code` presses the engine's own control that has the focus (`ownControls`, a selector): Space or Enter on it.
+ *
+ * 📌 ASKED BY THE QUICK PAUSE TOO, and not only by the delivery. `Enter` is `start`, and START in play opens the quick pause — so
+ * Enter on a focused ☰ paused instead of pressing ☰, while Space pressed it (📏 measured on the served quiz). A focused button is
+ * activated by Enter as well as Space; that press is the button's, and the pause does not take it.
+ */
+export function keyPressesOwnControl(code: string, target: KeyTargetLike | null, ownControls: string): boolean {
+  if (!target || typeof target.closest !== 'function') return false;
+  return BUTTON_ACTIVATION_KEYS.has(code) && !!target.closest(ownControls);
+}
+
+/**
  * Whether the key `code`, pressed with the focus on `target`, is play's to hear. `false`: it belongs to what has the focus — a
  * field, or the engine's own control it activates (`ownControls`, a selector) — and keeps its default.
  */
 export function keyGoesToGame(code: string, target: KeyTargetLike | null, ownControls: string): boolean {
   if (!target || typeof target.closest !== 'function') return true; // no element had the focus: nothing else to go to
   if (target.isContentEditable || target.closest(EDITABLE)) return false;
-  return !(BUTTON_ACTIVATION_KEYS.has(code) && target.closest(ownControls));
+  return !keyPressesOwnControl(code, target, ownControls);
 }

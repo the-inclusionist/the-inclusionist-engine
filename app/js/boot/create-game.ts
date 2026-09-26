@@ -116,7 +116,7 @@ import { mountPanel } from '../ui/mount-panel.js';
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
-import { keyGoesToGame } from '../input/key-default.js';
+import { keyGoesToGame, keyPressesOwnControl } from '../input/key-default.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
@@ -2992,6 +2992,11 @@ export function createGame(o: CreateGameOptions): Engine {
     // lets it through. Closing the card belongs to «Voltar ao jogo» and to Escape.
     const findPauseCard = $<HTMLElement>(`#vp-pause-${seat}`);
     if (findPauseCard && findPauseCard.hidden === false) return;
+
+    // GUARD 3 — THE KEY PRESSES THE ENGINE'S FOCUSED CONTROL. `Enter` is «start», and a focused button is activated by Enter as
+    // well as Space: on ☰ it is ☰'s press, not the pause (ADR-0111 erratum of 2026-09-26, one key one action). Left undecided
+    // here, so the browser clicks it. Only on the way IN: on the quick pause's own bar the leave above keeps its meaning.
+    if (keyPressesOwnControl(e.code, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY)) return;
 
     enterQuickPause(seat);
     // 📌 AND ONLY HERE, once the key was in fact OURS. `Enter` is «start» by default (`input/default-bindings`), and

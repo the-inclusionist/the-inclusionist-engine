@@ -402,7 +402,8 @@
   "input/key-default.ts": [
     "BUTTON_ACTIVATION_KEYS",
     "KeyTargetLike",
-    "keyGoesToGame"
+    "keyGoesToGame",
+    "keyPressesOwnControl"
   ],
   "input/keyboard-runtime.ts": [
     "ControlsState",
