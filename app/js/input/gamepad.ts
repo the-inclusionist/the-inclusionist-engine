@@ -276,7 +276,7 @@ export interface GamepadCtx {
    * 📌 REQUIRED, and ADR-0223's erratum says why: an optional door is one more field a game can forget, and forgetting
    * it brings back the silence this work exists to end. The root passes its virtual controller's `press`.
    */
-  press: (action: ActionKey, source: 'gamepad', player: number) => boolean;
+  press: (action: ActionKey | 'select', source: 'gamepad', player: number) => boolean;
   /** Release the POSITION. The controller lets go of the key it held and delivers the release — only for a press the game heard. */
   release: (action: ActionKey, source: 'gamepad', player: number) => void;
   /**
@@ -336,6 +336,8 @@ interface PadFrame {
   readonly startEdge: boolean;
   /** Only the START that went down — pause and resume. */
   readonly pauseEdge: boolean;
+  /** Only the SELECT that went down — the menus (ADR-0155). */
+  readonly selectEdge: boolean;
   readonly edge: (k: ActionKey) => boolean;
   /**
    * THE RELEASE EDGE: the button that was down on the previous frame and is not now.
@@ -430,6 +432,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     );
     const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;
     const pauseEdge = cur._pause && !prev._pause;
+    const selectEdge = !!cur.select && !prev.select;
     const edge = (k: ActionKey): boolean => cur[k] && !prev[k];
     const released = (k: ActionKey): boolean => !!prev[k] && !cur[k];
     padCur[gi] = cur; padPrevAct[gi] = cur;
@@ -439,7 +442,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       yes: edge('action2') || (withStart && startEdge), no: edge('action3'),
       up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right'),
     });
-    return { gp, gi, owner, players, cur, startEdge, pauseEdge, edge, released, navKeys };
+    return { gp, gi, owner, players, cur, startEdge, pauseEdge, selectEdge, edge, released, navKeys };
   }
 
   /** Did any of the six menu intents happen this frame? */
@@ -591,6 +594,10 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
    * screen), the pad should navigate as on the title — the safe behaviour — instead of doing nothing.
    */
   function steerFrame(f: PadFrame): void {
+    // SELECT OPENS THE MENUS wherever the keyboard's F does — in play and in the quick pause (ADR-0155) — and it is PRESSED,
+    // not decided here: the virtual controller hands the position to the engine, which answers it as F (ADR-0144 §1). An open
+    // card or panel refuses it there. A pad nobody has seated yet is seat 0's, as on the pause card below.
+    if (f.selectEdge) { ctx.press('select', 'gamepad', f.owner < 0 ? 0 : f.owner); return; }
     if (ctx.pauseMenu()) steerPause(f);
     else if (ctx.worldRunning()) steerGame(f);
     else steerTitle(f);

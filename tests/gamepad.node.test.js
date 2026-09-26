@@ -939,6 +939,46 @@ describe('initGamepad — pollPads', () => {
     expect(p.jumpEdge, 'o mesmo botão dirigiu a barra E fez o personagem saltar').toBe(false);
   });
 
+  /*
+   * 🔴 THE PAD'S SELECT (ADR-0155, ADR-0144 §1 «from any transport»). `input/pad-reading` read the button — `select` is button 8
+   * in the standard table — and nothing acted on it: the keyboard's F opened the menus and the pad's SELECT did nothing. It is
+   * PRESSED on the virtual controller now, which hands it to the engine; what it opens is decided there, as for F.
+   * 📏 Mutations (2026-09-26, `scratchpad/scan-doors/mutate.mjs`, restored by SHA-256): the press removed → the three SELECT cases;
+   * the edge read as the state → the two «once» cases; the seat not forwarded → the two «once» cases (the pad is on seat 1).
+   */
+  for (const fase of ['playing', 'paused']) {
+    it(`🔴 [Right] SELECT (button 8) ${fase === 'playing' ? 'in play' : 'in the quick pause'} is PRESSED on the virtual controller, once, for the pad's seat`, () => {
+      const ctx = buildCtx({ players: [makePlayer(), makePlayer({ pad: 0 })] });
+      const api = initGamepad(ctx);
+      ctx.setPhaseValue(fase);
+      ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [8] })]);
+      api.pollPads();
+      api.pollPads(); // held: still ONE press — an edge, not a state
+      expect(ctx.calls.pressionadas, 'the SELECT button reached nothing').toEqual([['select', 'gamepad', 1]]);
+      expect(ctx.calls.setPhase, 'SELECT acted as START').toEqual([]);
+      expect(ctx.calls.navPause, 'SELECT moved a menu').toEqual([]);
+    });
+  }
+
+  it('🔴 [Boundary] a pad nobody has seated yet presses for seat 0, as the keyboard\'s F does in solo', () => {
+    const p = makePlayer();
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [8] })]);
+    api.pollPads();
+    expect(ctx.calls.pressionadas).toEqual([['select', 'gamepad', 0]]);
+  });
+
+  it('🔴 [Zero] no SELECT, no SELECT: START does not press it', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [9] })]);
+    api.pollPads();
+    expect(ctx.calls.pressionadas.filter(([a]) => a === 'select')).toEqual([]);
+  });
+
   it('🔴 [Right] a jogar, o START pausa e diz QUEM pausou', () => {
     const p = makePlayer({ pad: 0 });
     const ctx = buildCtx({ players: [p] });
