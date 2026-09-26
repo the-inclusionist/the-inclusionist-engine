@@ -107,9 +107,12 @@ describe('ui/settings-audio — pickVoicesFor', () => {
     const voices = [{ name: 'B', lang: 'pt-BR' }, { name: 'D', lang: 'es-ES' }];
     expect(pickVoicesFor(voices, 'es').map((v) => v.name)).toEqual(['D']);
   });
-  it('[Boundary] sem nenhuma voz no idioma cai de volta na lista inteira', () => {
+  // 🔴 ADR-0185: the list offers ONLY the voices of the interface's language. It fell back to the whole list, so a device with
+  // no Portuguese voice offered a Portuguese page English and Spanish voices to read Portuguese text (ADR-0243 §3: a wrong
+  // voice is worse than none).
+  it('🔴 [Boundary] with no voice of the language it offers NONE — never the voices of another language', () => {
     const voices = [{ name: 'A', lang: 'en-US' }, { name: 'D', lang: 'es-ES' }];
-    expect(pickVoicesFor(voices, 'pt-BR')).toEqual(voices);
+    expect(pickVoicesFor(voices, 'pt-BR')).toEqual([]);
   });
   it('[Zero] lista vazia -> lista vazia (não a lista inteira "de volta")', () => {
     expect(pickVoicesFor([], 'pt-BR')).toEqual([]);

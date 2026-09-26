@@ -1308,8 +1308,8 @@
       "fanIn": 2
     },
     "ui/audio-choices.ts": {
-      "codeLines": 45,
-      "decisionNodes": 3,
+      "codeLines": 44,
+      "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,

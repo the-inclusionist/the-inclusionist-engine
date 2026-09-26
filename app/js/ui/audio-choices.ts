@@ -78,19 +78,20 @@ export function voiceEngineOptions(neuralAvailable: boolean): readonly (readonly
 export interface VoiceLike { name: string; lang: string; }
 
 /**
- * The system voices in the language asked for; with none of them, the whole list.
+ * The system voices in the language asked for, and ONLY those (ADR-0185): with none of them, none — the list then says there is
+ * no voice, and the speech rows lock.
  *
  * It was called `pickPtVoices` and filtered a hard-coded `/^pt/i`, so a game in English offered a child a list of PORTUGUESE
  * voices to read English text. The name told the truth about what it did and lied about what it should do.
  *
  * The comparison is by language PREFIX and not by the whole tag: a child playing in pt-BR should also be able to choose a
- * pt-PT voice if that is the only one installed, and a school's browser rarely has the exact variant. The fallback to the
- * whole list stays: an empty list would be worse than a list in the wrong language, which at least she can hear and reject.
+ * pt-PT voice if that is the only one installed, and a school's browser rarely has the exact variant. 🔴 There is no fallback
+ * to the whole list: a voice of another language reads the text with the wrong phonetics, and ADR-0243 §3 decided that a wrong
+ * voice is worse than none — silence is noticed, a wrong accent is learned.
  */
 export function pickVoicesFor<T extends VoiceLike>(voices: readonly T[], lang: string): readonly T[] {
   const pref = lang.slice(0, 2).toLowerCase();
-  const sameTag = voices.filter((v) => v.lang.slice(0, 2).toLowerCase() === pref);
-  return sameTag.length ? sameTag : voices;
+  return voices.filter((v) => v.lang.slice(0, 2).toLowerCase() === pref);
 }
 
 /** "<name> (<lang>)" option label. */
