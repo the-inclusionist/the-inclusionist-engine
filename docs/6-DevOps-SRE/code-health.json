@@ -1548,7 +1548,7 @@
       "fanIn": 2
     },
     "ui/layout.ts": {
-      "codeLines": 79,
+      "codeLines": 80,
       "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 1,

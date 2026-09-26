@@ -130,6 +130,9 @@ export function applyScale(region: HTMLElement, e: Scale): void {
   // from `minimumTarget`, so a display scale that gives k under 2 (Windows 110%) no longer drops `--tap` under 44 px.
   region.style.setProperty('--tap', minimumTarget(e.k) + 'px');
   region.style.setProperty('--alvo-min', minimumTarget(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
+  // THE EDGE MARGIN (interface log 2026-09-26): 4 logical px between the region's edge and every text and button but the quick
+  // bar's — 8 px at 640×360, growing with k like the text. The stylesheet reads it; the quick bar keeps the edge (ADR-0180).
+  region.style.setProperty('--margem-borda', (4 * e.k) + 'px');
 }
 
 export interface LayoutCtx {

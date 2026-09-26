@@ -136,7 +136,7 @@ export const QUIZ_SKILLS: readonly QuizSkill[] = [
         statement: {
           pt: 'Antes de comer, o que fazemos para não levar sujeira à boca?',
           en: 'Before eating, what do we do so we don\'t put dirt in our mouth?',
-          es: '¿Qué hacemos antes de comer para no llevar suciedad a la boca?',
+          es: 'Antes de comer, ¿qué hacemos para no tragar suciedad?',
         },
         options: [
           { pt: '🎨 pintar as mãos de tinta', en: '🎨 paint our hands', es: '🎨 pintarnos las manos' },
@@ -1010,7 +1010,7 @@ export const QUIZ_SKILLS: readonly QuizSkill[] = [
         explanation: {
           pt: 'Celular, e-mail e redes sociais dependem da internet, que é uma invenção recente. Pense em qual meio já existia muito antes dela.',
           en: 'Cell phones, email and social media depend on the internet, which is a recent invention. Think about which one existed long before it.',
-          es: 'El celular, el correo electrónico y las redes sociales dependen de internet, que es un invento reciente. Piensa cuál existía mucho antes.',
+          es: 'El celular, el correo electrónico y las redes sociales dependen de internet, un invento reciente. Piensa cuál existía antes.',
         },
       },
     ],
@@ -1105,7 +1105,7 @@ export const QUIZ_SKILLS: readonly QuizSkill[] = [
         statement: {
           pt: 'No judaísmo, a festa de Pessach relembra qual acontecimento?',
           en: 'In Judaism, what event does Passover (Pesach) recall?',
-          es: 'En el judaísmo, ¿qué acontecimiento recuerda la fiesta de Pésaj?',
+          es: 'En el judaísmo, ¿qué recuerda la fiesta de Pésaj?',
         },
         options: [
           { pt: 'O nascimento de Jesus', en: 'The birth of Jesus', es: 'El nacimiento de Jesús' },

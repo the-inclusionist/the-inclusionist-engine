@@ -108,7 +108,9 @@ describe('Engine.explain — the game\'s text is the footer\'s resting text (ADR
     const b = banda();
     const linha = parseFloat(getComputedStyle(b).lineHeight);
     const s = getComputedStyle(b);
-    const altura = b.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+    // the box less its padding and borders — the edge margin under the words is a transparent border (interface log 2026-09-26)
+    const altura = b.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom)
+      - parseFloat(s.borderTopWidth) - parseFloat(s.borderBottomWidth);
     expect(b.scrollHeight, 'the text is not long enough to measure the cut').toBeGreaterThan(2 * linha + 0.5);
     expect(altura, 'the game\'s text runs past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
     const regiao = raiz.querySelector('#game-region').getBoundingClientRect();

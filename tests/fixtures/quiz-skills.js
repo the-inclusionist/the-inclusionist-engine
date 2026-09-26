@@ -22,8 +22,9 @@ function questions(topic, { content = false, longStatement = false } = {}) {
         ? [['sister', 'pencil', 'Monday', 'kitchen', 'rainy'], ['soccer', 'breakfast', 'teacher', 'homework', 'Tuesday'], ['book', 'grandmother', 'dinner', 'swimming', 'Sunday']][n]
         : ['Alfa', 'Bravo', 'Charlie', 'Delta', 'Eco'].map((o) => w(`${o} ${n + 1}`)),
       correct: [1, 0, 2][n],
-      // two lines at 640 px: the longest an explanation should run, since it stands between the statement and the options
-      explanation: w(`${topic}: a ideia da pergunta ${n + 1}, explicada em duas linhas inteiras de texto, sem nunca dizer qual das cinco alternativas é a certa.`),
+      // two lines at 640 px less the edge margins (interface log 2026-09-26): the longest an explanation should run, since it
+      // stands between the statement and the options
+      explanation: w(`${topic}: a ideia da pergunta ${n + 1}, explicada em duas linhas de texto, sem nunca dizer qual das cinco alternativas é a certa.`),
     };
   });
 }

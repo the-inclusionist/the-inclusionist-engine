@@ -19,10 +19,14 @@ const barra = () => raiz.querySelector('#title-icons');
 const legenda = () => barra().querySelector('.pause-icons-cap');
 const explicacao = () => raiz.querySelector('#game-region .barra-explicacao');
 const icone = (k) => barra().querySelector(`.pi-btn[data-pi="${k}"]`);
-/** The height of an element's TEXT: its box without the vertical padding (the band's padding is not a line). */
+/**
+ * The height of an element's TEXT: its box without the vertical padding and borders (the band's padding is not a line, nor the
+ * transparent border that keeps its words the edge margin off the bottom — interface log 2026-09-26).
+ */
 const alturaDoTexto = (el) => {
   const s = getComputedStyle(el);
-  return el.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+  return el.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom)
+    - parseFloat(s.borderTopWidth) - parseFloat(s.borderBottomWidth);
 };
 
 beforeAll(async () => {

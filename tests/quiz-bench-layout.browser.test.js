@@ -35,7 +35,10 @@ function startProblems() {
   const band = document.querySelector('#game-region .barra-explicacao');
   if (buttons.length !== 15) out.push(`${buttons.length} skills on screen, not 15`);
   if (!band || band.hidden) out.push('no explanation in the footer — the case would not see it');
-  const lines = band ? Math.round((box(band).height - 8) / parseFloat(getComputedStyle(band).lineHeight)) : 0;
+  // the band's own height less its padding and borders (the edge margin under the words is a border): its lines of text
+  const bs = band ? getComputedStyle(band) : null;
+  const frame = bs ? ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((s, p) => s + parseFloat(bs[p]), 0) : 0;
+  const lines = band ? Math.round((box(band).height - frame) / parseFloat(bs.lineHeight)) : 0;
   if (lines !== 2) out.push(`the footer holds ${lines} lines — the case wants the tallest, two`);
   const first = box(document.querySelector('#quiz-app .quiz-stage-name'));
   if (first.top < bar.bottom - 0.5) out.push(`the first group at ${Math.round(first.top - r.top)} is under the quick bar (ends ${Math.round(bar.bottom - r.top)})`);
@@ -172,3 +175,5 @@ describe('the quiz\'s own data fits the smallest screen, explanation shown, in e
 //   M24 the start screen's title drawn as a line (fifteen skills under the footer at 1.25)
 //   C1 the statement keeps its heading size while the explanation shows   C2 skill buttons under 44 px
 //   R17 three codes to a row   R18 the options in one column
+// (2026-09-26, the edge margin) L1 the options' padding back to .4em/.9em   W1–W3 each of the three Spanish texts tightened
+//   for the margin back to its old wording (EF05ER01 q1, EI03CG04 q1, EF05GE06 q3)

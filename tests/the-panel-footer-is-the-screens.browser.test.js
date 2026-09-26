@@ -65,7 +65,9 @@ describe('the explanation of an open panel', () => {
   it('⚠️ [Boundary] two lines at most, whatever the row explains', () => {
     const f = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden).querySelector('.opt-explain');
     const s = getComputedStyle(f);
-    const texto = f.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+    // the box less its padding and borders — the edge margin under the words is a transparent border (interface log 2026-09-26)
+    const texto = f.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom)
+      - parseFloat(s.borderTopWidth) - parseFloat(s.borderBottomWidth);
     expect(texto).toBeLessThanOrEqual(2 * parseFloat(s.lineHeight) + 0.5);
   });
 });

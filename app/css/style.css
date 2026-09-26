@@ -271,6 +271,12 @@ body:not(.dbg) .topbar{display:none} /* the PAGE title only under ?debug=true (t
    six items fitted and its card shrank to them, 46 px shorter than the submenu at 640×360 (measured); it now holds the whole
    height too, its items from the top, as a panel's rows are. */
 .screen-pause .pause-card{height:100%;box-sizing:border-box}
+/* THE EDGE MARGIN (interface log 2026-09-26): the card's CONTENT starts at the margin — its 2 px border just above it, no
+   padding under the border — so neither its title nor an item scrolled up under its top edge comes nearer the region's edge
+   than the margin (a padding inside the card would not do: a scrolled list shows through its own padding). 📏 The card had
+   3 px to spare at 640×360 (pause-target-44px); the border and the old .25rem padding give back what the margin takes. */
+.screen-pause{padding-top:calc(var(--margem-borda,8px) - 2px)}
+.screen-pause .pause-card{padding-top:0}
 /* THE CARD RUNS UNDER THE BUTTON LEGEND AT THE FOOT OF THE SCREEN, as a panel runs under its explanation (issue #134): the
    room at its end and the scroll padding let its LAST item, and the one under the cursor, come to rest above the band —
    and above the HUD row under it (`--rodape-h`), which is drawn over the card too. Measured at 640×360 before: «Sair do jogo»
@@ -564,6 +570,9 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    10 px from the top (`#title-icons`), and the statement was drawn behind it — measured on a screenshot of the Dev's. */
 /* Since issue #160 the variable is the WHOLE room (the bar's offset, the bar, the icon name line and a light gap): read as is. */
 .quiz-app{padding-top:var(--barra-a11y-h,0px);padding-bottom:var(--rodape-h,0px)} /* the HUD row is always there; the footer bands overlay (ADR-0239 erratum) */
+/* THE EDGE MARGIN (interface log 2026-09-26; `--margem-borda`, written by `ui/layout` from k): the Dev, «os textos estão tocando
+   na borda do jogo». The sides get it here; the top is the quick bar's room and the bottom the HUD row's, which keeps its own. */
+.quiz-app{padding-left:var(--margem-borda,8px);padding-right:var(--margem-borda,8px)}
 /* ADR-0163: at 640×360 the bar, the statement, four 44 px options and the footer band had 404 px to fit in 360 (measured).
    The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
 .quiz-pergunta{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25}
@@ -606,7 +615,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    height plus how far the pad lifts it. The caption, the legend and the explanation are MOMENTARY and overlay the workspace
    while they show: «a legenda é momentânea» (the Dev). Counting them made a band that is off most of the time take the
    game's floor for good (the demo quiz lost its last option at 640×360). */
-#game-region{--footer-band-h:calc(var(--ui-fs,16px) * 2.6 + 8px);--rodape-h:calc(var(--hud-row-bottom,0px) + var(--hud-row-h,0px))}
+#game-region{--footer-band-h:calc(var(--ui-fs,16px) * 2.6 + 4px + var(--margem-borda,8px));--rodape-h:calc(var(--hud-row-bottom,0px) + var(--hud-row-h,0px))}
 /* ADR-0163 rule 3: the region's text grows with the scale the engine forces — 16 px at 640×360, 32 at 1280×720 — times the
    communication cycle's type scale, which the root size also carries. Without it everything in the region read the ROOT
    16 px: measured at 1280×720, quiz options at 16 px and the bar's emoji at 20 px under a `--ui-fs` of 32. */
@@ -651,7 +660,8 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    clock is at the true centre; `minmax(0,…)` so a long cell never pushes it off. No pointer events: a finger passes through
    to the game. Empty — no clock, no band, no map — it is not drawn. */
 .hud-row{position:absolute;left:0;right:0;bottom:var(--hud-row-bottom,0px);z-index:12;pointer-events:none;box-sizing:border-box;
-  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;column-gap:8px;padding:0 4px 4px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;column-gap:8px;
+  padding:0 var(--margem-borda,8px) var(--margem-borda,8px); /* the edge margin (interface log 2026-09-26) */
   font-family:var(--font);font-size:var(--ui-fs,16px)}
 .hud-row:not(:has(.session-clock, .hud-faixa:not([hidden]), .hud-map > *)){display:none}
 .hud-row-learning{justify-self:start;min-width:0}
@@ -702,7 +712,11 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
 .pausa-legenda,.barra-explicacao{color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);
   line-height:1.3;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.barra-explicacao{order:2;padding:4px .6em;background:rgba(0,0,0,.82)}
+/* The band reaches the edges; its WORDS stand the edge margin off them (interface log 2026-09-26) — `--footer-band-h` counts it.
+   At the sides .6em is already more than the margin (4.8·k against 4·k); under them the margin is a transparent BORDER the
+   band's colour shows through, not padding: the two-line clamp clips at the padding box, and a padding there would show the
+   top of a third line. */
+.barra-explicacao{order:2;padding:4px .6em 0;border-bottom:var(--margem-borda,8px) solid transparent;background:rgba(0,0,0,.82)}
 .pausa-legenda{order:1;padding:0 .6em}
 .rodape-da-tela:not(:has(> .barra-explicacao:not([hidden]))) > .pausa-legenda{padding-bottom:8px}
 .pausa-legenda .lg-nome{background:rgba(0,0,0,.82);padding:0 .35em;border-radius:4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
@@ -767,9 +781,12 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    canvas», the Dev on a screenshot. The card sets no position, so the overlay (the region's size) is the containing block:
    the band lands at the region's lowest edge, side to side, and does not scroll with the card. The card runs under it,
    the pause card's height (see the panel rules above). */
-#game-region .opt-explain{position:absolute;left:0;right:0;bottom:0;z-index:1;margin:0;padding:4px .6em;min-height:0;
-  border:0;border-radius:0;text-align:center;line-height:1.3;font-size:var(--ui-fs,16px)}
-#game-region .overlay{padding:0}
+#game-region .opt-explain{position:absolute;left:0;right:0;bottom:0;z-index:1;margin:0;padding:4px .6em 0;min-height:0;
+  border:0;border-bottom:var(--margem-borda,8px) solid transparent;border-radius:0;text-align:center;line-height:1.3;font-size:var(--ui-fs,16px)}
+/* ↑ the transparent bottom border is the edge margin under the words, as the footer band's (interface log 2026-09-26) */
+/* the card's content from the edge margin down, as the pause card's (interface log 2026-09-26) */
+#game-region .overlay{padding:calc(var(--margem-borda,8px) - 2px) 0 0}
+#game-region .overlay__card{padding-top:0}
 #game-region .overlay__actions{position:static;background:transparent;padding:.5rem 0 0;margin:0}
 #visual{background:rgba(0,0,0,.28)} /* colour: a translucent background, to see the effect on the game at once */
 
@@ -799,7 +816,9 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
    spelling letter by letter, which is what real ALL CAPS causes in NVDA/JAWS. */
 /* Quiz options take the ENGINE's target floor (ADR-0163 rule 2): 44 px at 640×360, growing with the scale. They had
    9 mm computed by the quiz (54 px on a desktop), and four of them pushed the last one out of a 360 px region. */
-.quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0;padding:calc(var(--ui-fs,16px) * .4) calc(var(--ui-fs,16px) * .9)} /* the list gap spaces them (#160); padding in `--ui-fs`, so a larger face grows the text only (#172) */
+.quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0;padding:calc(var(--ui-fs,16px) * .25) calc(var(--ui-fs,16px) * .5)} /* the list gap spaces them (#160); padding in `--ui-fs`, so a larger face grows the text only (#172) */
+/* 📏 .25/.5 and not .4/.9 since the edge margin (interface log 2026-09-26): with 16 px less width and a HUD row 4 px taller, the
+   quiz's own questions ended under the row at 640×360 (quiz-bench-layout); the 44 px floor is `min-height`, untouched. */
 /* the marked option is not colour alone either (ADR-0159 rule 10): the same base stripe as an icon switched on */
 .quiz-alt.is-on{box-shadow:inset 0 0 0 3px var(--accent-ink)} /* a ring, not a bottom strip: the strip left the fill looking shifted up (#166) */
 /* FIVE OPTIONS IN THREE COLUMNS — «1 2 3» over «4 5», read left to right (`quiz-round.OPTION_COLUMNS`, written as `--quiz-cols`).
