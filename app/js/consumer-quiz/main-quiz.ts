@@ -570,16 +570,23 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     try {
       const heard = await motor.reading.listen();
       listening = false;
-      // the options' WORDS as they are shown — the page's language, or the content's own: she says «galinha», not a key
-      const chosenOption = heardAlternative(heard.text, view.options.map((o) => o.text));
-      if (chosenOption !== null) { render(false); answer(chosenOption); return; }
-      const said = heard.text.trim();
-      sayInStatement(said ? translate('quiz.notAnOption', { heard: said }) : translate('quiz.ouviNada'));
+      answerByVoice(view, heard.text);
     } catch {
-      // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
+      // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows —
+      // unless she has already left the question («Sair do jogo» stops the microphone, `onPhase`).
       listening = false;
-      sayInStatement(translate('quiz.semLeitura'));
+      if (screen === 'question') sayInStatement(translate('quiz.semLeitura'));
     }
+  }
+
+  /** What she said, as an answer — or nothing at all when she left the question while it listened («Sair do jogo», `onPhase`). */
+  function answerByVoice(view: QuestionView, text: string): void {
+    if (screen !== 'question') return;
+    // the options' WORDS as they are shown — the page's language, or the content's own: she says «galinha», not a key
+    const chosenOption = heardAlternative(text, view.options.map((o) => o.text));
+    if (chosenOption !== null) { render(false); answer(chosenOption); return; }
+    const said = text.trim();
+    sayInStatement(said ? translate('quiz.notAnOption', { heard: said }) : translate('quiz.ouviNada'));
   }
 
   /** A result lands on the open skill's bar. */
@@ -655,6 +662,18 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     narrated = '';
     motor.scenes.replace(startScene);
     motor.scenes.draw();
+  }
+
+  /**
+   * «SAIR DO JOGO» IS THIS QUIZ'S START SCREEN (interface log 2026-09-26; the Dev: «eu deveria ir para a tela de seleção de
+   * habilidades, a primeira do jogo»). The engine hides its card and asks for `'title'` (ADR-0144 §5 erratum); `'playing'` and
+   * `'paused'` change nothing here — the quiz has no world to freeze or unfreeze. An open microphone is given back first: she
+   * left, and nothing she says on the start screen is an answer.
+   */
+  function onPhase(phase: 'title' | 'playing' | 'paused'): void {
+    if (phase !== 'title') return;
+    if (listening) motor?.reading.stop();
+    backToStart();
   }
 
   /** Moves the cursor of the screen that is open, over its grid. */
@@ -754,6 +773,8 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     uses: { neuralVoice: true, reading: true },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
+    // the pause card's «Sair do jogo» asks for `'title'`: this quiz's start screen (`onPhase`)
+    setPhase: onPhase,
     /*
      * THE WORDS THIS QUIZ DECLARES live in its own dictionary, one per language (ADR-0232 D3): every `…Key` below is a key of
      * these, and a key they lack would be a line of `problems`, never a key on screen.
