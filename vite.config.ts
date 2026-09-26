@@ -228,7 +228,13 @@ export default defineConfig({
           setupFiles: ['./vitest.setup.browser.js'],
           browser: {
             enabled: true,
-            provider: playwright(),
+            // 🔴 THE BROWSER SPEAKS THE BASE LANGUAGE ON EVERY MACHINE. With nothing stored, a root takes the language the
+            // browser reports (`platform/locale-host` → `navigator.language`), and an unpinned Chromium reports the HOST's:
+            // pt-BR on the Dev's Windows, en-US on GitHub's runner. The suite's expectations are written in pt-BR, the base
+            // language, so the same tree was green here and red in CI (45 cases in 19 files, «expected 'Hearing comfort' to
+            // contain 'Conforto auditivo'»). A case that means another language switches it through its engine. Gate:
+            // `tests/the-suite-speaks-the-base-language.browser.test.js`.
+            provider: playwright({ contextOptions: { locale: 'pt-BR' } }),
             headless: true,
             instances: [{ browser: 'chromium' }],
           },
