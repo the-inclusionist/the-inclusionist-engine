@@ -24,3 +24,20 @@ condition = "AND"
 paths = ['''^app/js/platform/kokoro\.ts$''']
 regexTarget = "line"
 regexes = ['''(?i)\b\w*sha256\w*\s*=\s*'[0-9a-f]{64}';''']
+
+# 📌 THE SECOND FALSE POSITIVE, which the first one hid. `generic-api-key` also fires on a line of prose added when the
+# modularisation plan was translated to English (commit ae676c33, 2026-09-24):
+#   ├─ storage.js         # the ONLY access to localStorage: keys+defaults+validation
+# «access» is a keyword of the rule, «: » reads as an assignment, and `keys+defaults+validation` clears the entropy floor
+# (3.80 > 3.5). No run between 2026-09-24 and 2026-09-26 had a `secrets` job (the workflow file itself failed), so the
+# count went from «1» (the digest) to «2» unseen, and the allowance above took it back to «1» — the finding CI run
+# 36248801374 still reports. Found by replaying 8.30.1's default rules over the history, which matched every run on
+# record: 0 at 4822c8cb, 1 at f8fa77d4 and c01e33c1, 1 at 08c6b96d with the allowance above.
+# The allowance covers only `generic-api-key`, only that secret string, and only the plan under either of its names
+# (renamed to `plan-modularization.md` in 02ebc9ea, where the line lives today).
+[[allowlists]]
+description = "A line of prose in the modularisation plan: «access to localStorage: keys+defaults+validation» is not a key"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^docs/5-Refactoring/(?:plano-modularizacao|plan-modularization)\.md$''']
+regexes = ['''^keys\+defaults\+validation$''']
