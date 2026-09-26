@@ -2,7 +2,9 @@
 // A LANGUAGE NO VOICE SPEAKS, MOUNTED (ADR-0185 §4; issue #180): in a real `createGame`, the four speech rows of the hearing
 // panel and the narration button of the quick bar are locked with the reason, never hidden.
 //
-// 📌 The engine's three languages all have a voice, and in the browser project `core/i18n` is loaded by the setup before any`n// `vi.mock` could replace it. So the engine's own `tts` object — the one the root and the panel both ask — is told it has no`n// voice for the language, before the pause opens. The narration's side of the lock is in `fala-sem-voz.node`.
+// 📌 The engine's three languages all have a voice, and in the browser project `core/i18n` is loaded by the setup before any
+// `vi.mock` could replace it. So the engine's own `tts` object — the one the root and the panel both ask — is told it has no
+// voice for the language, before the pause opens. The narration's side of the lock is in `fala-sem-voz.node`.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 

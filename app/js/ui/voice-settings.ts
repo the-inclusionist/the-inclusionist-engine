@@ -65,7 +65,7 @@ export interface VoicePorts {
   /** Speak the sample through the BROWSER's own synthesiser — the neural engine speaks through `tts` instead. */
   readonly speakSample: (text: string, chosen: SpeechSynthesisVoice | null) => void;
   /** Called again whenever the browser finishes loading its voice list: they arrive late, and often empty first.
-   *  ⚠️ The parameter is gain and not un, which is a GAME ACTION word this layer does not say (the boundary of 2026-09-06). */
+   *  ⚠️ The parameter is `again` and not `run`, which is a GAME ACTION word this layer does not say (the boundary of 2026-09-06). */
   readonly whenVoicesChange: (again: () => void) => void;
 }
 
