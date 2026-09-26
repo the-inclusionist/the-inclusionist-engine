@@ -241,3 +241,9 @@ describe('in play, the engine\'s doors come after the game\'s positions', () => 
 //   · SELECT offered with no card             → «a game with no quick pause … no SELECT»
 //   · START offered with no quick pause       → the same case
 //   · the doors left out of the engine's words → «the chip says the ENGINE's word for a door»
+// And (2026-09-26, the sideways step) — `scratchpad/scan-rest/mutate.mjs`, restored and checked by SHA-256:
+//   · `menuScanFor` always the plain list                → the four lists-and-order cases
+//   · «confirm» kept on a value                          → «on a slider or a ⯇ ⯈ row», «in that order», «a new one»
+//   · «increase» and «decrease» swapped                  → ««increase» is the RIGHT key's intent»
+//   · the sideways step put before «next»                → the four lists-and-order cases
+//   · the step words left out of the engine's words      → «the chip says the engine's word for them»

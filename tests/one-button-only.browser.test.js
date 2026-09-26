@@ -469,3 +469,9 @@ describe('in play, the scan offers the engine\'s doors after the game\'s words',
 //   D2 «pause» before «menu»                                   🔴 «the pass in play … in that order» (and 2 in node)
 //   D5 the quick pause taken as having no bar                  🔴 3: no «pause», and the child never reaches the quick pause
 //   D6 the card taken as not mounted                           🔴 3: no «menu»
+// And (2026-09-26, THE SIDEWAYS STEP) — `scratchpad/scan-rest/mutate.mjs`, same discipline, each red on «with the cursor on a
+// panel's SLIDER»:
+//   P1 the plain list on every control · P3 «increase» and «decrease» swapped · P5 a slider taken for an item
+//   P6 the focus ignored · P8 the pass never rebuilt when the cursor reaches a control of another kind (red once the case moved
+//   the cursor onto the slider AFTER the pass began; the first run of it hung and was killed) · P9 the menu list not asked of
+//   the cursor

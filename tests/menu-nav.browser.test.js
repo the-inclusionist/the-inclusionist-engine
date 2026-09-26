@@ -1026,3 +1026,8 @@ describe('underCursor — the kind of control a sideways step would reach', () =
 //   NI3 the remap guard removed                                       🔴 «a remap in progress»
 //   NI4 the mapping panel's guard removed                             🔴 «the controller-mapping panel»
 //   NI5 the answer always «taken»                                     🔴 «with NO menu to move», «a card shown while … NOT navigable»
+// And (2026-09-26, `underCursor`, the sideways step) — `scratchpad/scan-rest/mutate.mjs`, same discipline:
+//   P5 a slider taken for an item                         🔴 5 here (and the slider case of `one-button-only.browser`)
+//   P6 the focus ignored (always the first item)          🔴 «in a panel», «a ⯇ ⯈ steps control is a value»
+//   P7 no guards (only the panel on top asked)            🔴 «the quick bar, a pause card, no menu, a remap and the mapping panel»
+//   P11 left/right on a button no longer walk the ring    🔴 «esquerda/direita num BOTÃO andam no anel»
