@@ -12,7 +12,7 @@
 // the root puts in the utterance. The engine's own panel does not build `#opt-tts-test` (the SAIRAM list of
 // `tests/panel-widgets.browser.test.js`); a page that carries it, as this host does, gets it wired by the root.
 //
-// ⚠️ `gameSay` (platform/speech) is NOT this: it is the LITERACY voice, Portuguese by design, because literacy content is.
+// ⚠️ `gameSay` (platform/speech) is NOT this: it is the LITERACY voice, in the language the game says its word is in (ADR-0243 §4).
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

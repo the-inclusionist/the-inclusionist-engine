@@ -1038,12 +1038,12 @@
       "fanIn": 3
     },
     "platform/speech.ts": {
-      "codeLines": 21,
+      "codeLines": 24,
       "decisionNodes": 6,
       "maxDepth": 1,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 7,
+      "worstFunction": 8,
       "statefulEdges": 0,
       "fanIn": 0
     },
@@ -1115,7 +1115,7 @@
       "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "platform/vosk-runtime.ts": {
       "codeLines": 80,

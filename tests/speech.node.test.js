@@ -9,9 +9,9 @@
 // (`soundOn`, `volume`). The module reads no window and no `platform/audio` binding, so each case builds the voice it speaks
 // through — nothing is left on `globalThis` for the next file.
 //
-// ⚠️ AND WHAT THIS FILE DOES **NOT** ASSERT, so it does not look decided: the module forces `pt-BR` everywhere, while
-// ADR-0065 gives the engine THREE languages. That comes from its original design (it is the voice of a Brazilian
-// literacy game) and changing it is behaviour, not coverage. It stays measured and named, not fixed in passing.
+// 📌 THE LANGUAGE IS THE GAME'S, AND REQUIRED (ADR-0243 §4): the module forced `pt-BR` whatever the page said; now the game
+// says which language its word is in, and the voice is chosen by the rule narration's parts use (§2). That `gameSay` without
+// a language does not COMPILE is held by `tests/a-spoken-text-carries-its-language.types.node.test.ts`.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { gameSay as sayWith } from '../app/js/platform/speech.js';
 
@@ -35,7 +35,8 @@ const voice = {
   soundOn: () => som,
   volume: () => volume,
 };
-const gameSay = (text) => sayWith(voice, text);
+/** The platformer's literacy words are Brazilian Portuguese: the language it passes. */
+const gameSay = (text, language = 'pt-BR') => sayWith(voice, text, language);
 const setSoundOn = (v) => { som = v; };
 const setVolume = (v) => { volume = v; };
 
@@ -48,11 +49,18 @@ beforeEach(() => {
   };
 });
 describe('platform/speech · gameSay só fala quando há o que dizer e o som está ligado', () => {
-  it('[Feliz] fala o texto, forçando pt-BR', () => {
+  it('[Feliz] fala o texto, na língua que o jogo disse', () => {
     gameSay('lata é metal');
     expect(spoke).toHaveLength(1);
     expect(spoke[0].text).toBe('lata é metal');
     expect(spoke[0].lang).toBe('pt-BR');
+  });
+
+  it('🔴 [Right] an English word is asked of the browser in English, with the English voice — not the forced pt-BR', () => {
+    vozes = [PT_BR, EN];
+    gameSay('apple', 'en-US');
+    expect(spoke[0].lang).toBe('en-US');
+    expect(spoke[0].voice).toBe(EN);
   });
 
   it('[Fronteira] texto vazio não fala', () => {
@@ -90,35 +98,33 @@ describe('platform/speech · gameSay só fala quando há o que dizer e o som est
   });
 });
 
-describe('platform/speech · a escolha da voz evita pt-PT, e a ORDEM é a regra', () => {
+// ADR-0243 §2 is the rule, and it supersedes this module's own ladder (pt-BR, then a `pt` voice whose NAME says Brasil, then a
+// region-less `pt`, never pt-PT): the exact tag first, then the FIRST voice of the same language, and never another language.
+describe('platform/speech · the voice of the language (ADR-0243 §2)', () => {
   it('[Feliz] pt-BR exacto ganha de tudo', () => {
     vozes = [EN, PT_PT, PT_SEM_REGIAO_BR, PT_BR];
     gameSay('lata');
     expect(spoke[0].voice).toBe(PT_BR);
   });
 
-  // 📌 The second step exists because some browsers report `lang: 'pt'` and hide the region in the NAME.
-  it('[Fronteira] sem pt-BR, aceita pt cujo NOME diz Brasil', () => {
+  it('🔴 [Right] with no exact tag, the first voice of the language reads it — pt-PT when it comes first', () => {
     vozes = [EN, PT_PT, PT_SEM_REGIAO_BR, PT_SEM_REGIAO];
     gameSay('lata');
-    expect(spoke[0].voice).toBe(PT_SEM_REGIAO_BR);
+    expect(spoke[0].voice).toBe(PT_PT);
   });
 
-  it('[Fronteira] no último degrau, um pt sem região serve — pt-PT nunca', () => {
-    vozes = [EN, PT_PT, PT_SEM_REGIAO];
-    gameSay('lata');
-    expect(spoke[0].voice).toBe(PT_SEM_REGIAO);
-  });
-
-  // 🎯 THE CASE THAT GIVES THE MODULE ITS NAME: with pt-PT as the only Portuguese voice installed, the choice is NONE.
-  // Speaking European Portuguese to a Brazilian child learning to read teaches the wrong spelling — the system's default
-  // voice, which `lang: 'pt-BR'` still steers, is preferable.
-  it('[Fronteira] com só pt-PT instalada, não escolhe voz nenhuma — mas fala', () => {
+  it('🔴 [Right] with pt-PT the only Portuguese voice installed, it reads the Portuguese word — not the system default', () => {
     vozes = [EN, PT_PT];
     gameSay('lata');
     expect(spoke).toHaveLength(1);
-    expect(spoke[0].voice).toBeNull();
+    expect(spoke[0].voice).toBe(PT_PT);
     expect(spoke[0].lang).toBe('pt-BR');
+  });
+
+  it('🔴 [Right] §3 · a device that lists voices and none of the language says nothing — no voice of another language', () => {
+    vozes = [EN];
+    gameSay('lata');
+    expect(spoke, 'a Portuguese word read by an English voice').toEqual([]);
   });
 
   it('[Fronteira] lista de vozes vazia: fala na mesma, sem voz escolhida', () => {
@@ -152,3 +158,11 @@ describe('platform/speech · o volume sobe acima dos efeitos, mas com tecto', ()
     expect(spoke[0].volume).toBe(1);
   });
 });
+
+// ===== MUTATIONS CHECKED (ADR-0243 §4, 2026-09-26) =====
+// Applied one at a time to `platform/speech.ts` by a script that counts the occurrences, restored from a copy, checked by SHA-256:
+// 1. `u.lang = 'pt-BR'` again (the forced tag)                 → red: the English word
+// 2. the §3 guard removed (a device with voices, none of the language) → red: §3
+// 3. the guard applied to a device that lists no voice yet       → red: seven cases, the empty list and the throwing one among them
+// 4. the chosen voice never set on the utterance                 → red: the English word, pt-BR exact, the two pt-PT cases
+// (A default language in the signature is red in `tsc`: `tests/a-spoken-text-carries-its-language.types.node.test.ts`.)
