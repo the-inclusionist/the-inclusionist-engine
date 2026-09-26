@@ -21,12 +21,11 @@
 # And it is where the shared things already are, by ADR-0068 §5's own reasoning: the ADR validator and the
 # eight gate checks live in the engine, and a game inherits them. This is the same sentence applied to CI.
 #
-# 🔴 ONE HALF OF THAT SENTENCE STOPPED BEING TRUE ON 2026-09-09 and is corrected here rather than left to
-# mislead: the RECORDS no longer stay in the engine — ADR-0123 moved them to `the-inclusionist-docs`, and §5's
-# argument («one place») is what that move executes. What did NOT move is the tooling: «cada repositório
-# precisa ter seus validadores e gates para ADRs», so the engine keeps its own `adr` job and this file keeps
-# being the one gate five games call. 📌 A GAME repository still has no `adr/` folder and never will — that
-# half of §5 is untouched.
+# 📌 AND THE RECORDS ARE HERE AGAIN (ADR-0242). ADR-0123 had moved every record to `the-inclusionist-docs`;
+# ADR-0226 gave each repository the records about itself, so a GAME repository may keep an `adr/` tree of its own
+# (the opposite of ADR-0068 §5's «never»); and ADR-0242 brought the engine's records home, leaving in
+# `the-inclusionist-docs` only what belongs to the whole project. The engine's index keeps a row for every record
+# of the project, local or pointing across, which is why a game's records are checked against this repository.
 #
 # ⚠️ THE ENGINE ITSELF DOES NOT USE THIS FILE, and the reason changed on 2026-09-06. It used to be that the
 # engine's gates ran on GitLab; they now run beside this file, in `ci.yml`, and `.gitlab-ci.yml` was deleted
@@ -67,13 +66,15 @@ on:
         type: number
         default: 4173
       adr-records:
-        description: "Validate this game's own ADR tree (ADR-0229). Requires the `records-token` secret."
+        description: "Validate this game's own ADR tree (ADR-0226, ADR-0242). Requires the `records-token` secret."
         required: false
         type: boolean
         default: false
     secrets:
-      # Read access to `the-inclusionist-docs`, which is private: the game's records cite the ones that stayed
-      # home, and without that tree every such citation fails on purpose (ADR-0229).
+      # Read access to `the-inclusionist/the-inclusionist-engine`, which is private: the game's records cite the
+      # engine's and the project's, the engine's tree and index answer for every number, and without them each such
+      # citation fails on purpose. The game's own `GITHUB_TOKEN` does not reach another repository. It no longer
+      # needs `the-inclusionist-docs`: the engine's index carries a row for every record kept there (ADR-0242).
       records-token:
         required: false
 
@@ -133,18 +134,19 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://localhost:${{ inputs.preview-port }}/ >/dev/null && break; sleep 1; done
           AXE_URL=http://localhost:${{ inputs.preview-port }}/ npm run test:a11y
 
-      # 🔴 A GAME'S OWN RECORDS (ADR-0229). Only a game's own decisions move to its tree, and they cite the records
-      # that stayed in `the-inclusionist-docs` — so the check needs that tree beside it, and runs the validator
-      # FROM it: the gate lives once, in the records' home, and this step borrows it instead of copying it.
+      # 🔴 A GAME'S OWN RECORDS (ADR-0226 §1). They cite the engine's records and the project's, so the check needs
+      # the ENGINE beside it (ADR-0242): its tree holds the engine's records, its index answers for every number in
+      # the project — the ones kept in `the-inclusionist-docs` included, by rows that name that repository — and it
+      # carries the validator. The step borrows the validator instead of copying it.
       # ⚠️ Off by default and not `if: hashFiles(...)`: the checkout needs a token, and a step that switched itself
       # on when the folder appeared would go red in every game that has records and no secret yet.
-      - name: checkout the records' home (ADR-0229)
+      - name: checkout the engine, the home of the records a game cites (ADR-0242)
         if: ${{ inputs.adr-records }}
         uses: actions/checkout@v7
         with:
-          repository: the-inclusionist/the-inclusionist-docs
+          repository: the-inclusionist/the-inclusionist-engine
           token: ${{ secrets.records-token }}
-          path: .records-home
+          path: .engine-records
 
       # The same setup the records' own CI uses: the runner's system Python refuses a global `pip install`.
       - if: ${{ inputs.adr-records }}
@@ -152,8 +154,10 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: adr records (this game's tree, citations resolved against the home tree)
+      # `--repo engine=` also OPENS a game record's `engine:` confirmations against the engine's code. A number the
+      # game's records cite in `the-inclusionist-docs` is answered by the engine's index row that names that repository.
+      - name: adr records (this game's tree, citations resolved against the engine's)
         if: ${{ inputs.adr-records }}
         run: |
           pip install pyyaml
-          python .records-home/scripts/validate-adr.py docs/2-Architecture/adr --repo docs=.records-home --root=.
+          python .engine-records/scripts/validate-adr.py docs/2-Architecture/adr --repo engine=.engine-records --root=.
