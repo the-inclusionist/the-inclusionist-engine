@@ -279,4 +279,12 @@ one step of a slider, the ⯈ of a steps row. On a list the pass goes on «confi
 the list, as the keys' «yes» does); on a slider or a steps row it goes on «voltar · anterior» — «confirmar» does nothing there,
 and a cycle never stops on a position that does nothing (ADR-0155). On a button, a switch, the quick bar or the pause card the
 pass is the four steps above, unchanged. When the cursor reaches a control of another kind the pass starts again from
-«cancelar», as it does when a menu opens. Engine: the sideways step on `scan-sideways-and-any-input`.
+«cancelar», as it does when a menu opens. Engine: the sideways step on `scan-sideways-and-any-input`, `22c23e8b`.
+
+## 2026-09-26 · With one button only, a touch anywhere on the game region takes the item shown — except on the quick bar
+
+⚠️ Chosen while building ADR-0218 §4 and NOT YET SEEN by the Dev — no Dev words to quote. The Dev asked that ☝️ still let the
+child leave one-button mode and that 📷 and 👄 keep working; the choice here is how far that reaches. The WHOLE quick bar stays
+itself — every icon, and the bar's own gaps, so a finger that misses ☝️ by a few pixels means nothing instead of taking the item
+shown. Everything else in the game region and the on-screen pad is the switch: the game's own buttons, a panel's controls, the
+pad's face buttons and its START and SELECT pills. A touch outside the game region is the page's. Engine `aceae03e`.
