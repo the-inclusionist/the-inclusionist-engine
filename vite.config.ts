@@ -93,8 +93,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,mjs,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         // 🔴 NOT the free Libras player's stage (ADR-0234 errata, route B): it carries three.js, 627 KB, and the decision that let
         // three.js in is that only a child whose deaf mode signs downloads it — a precache entry is downloaded by every install.
-        // `tests/three-arrives-late.node.test.js` holds this line. Keeping it offline once fetched is the offline work of
-        // phase B3.
+        // `tests/three-arrives-late.node.test.js` holds this line. Deaf mode keeps it offline instead: the delivery lists it
+        // (`libras/offline-avatar.json`) and the Libras route below answers it from the checked cache (phase B3).
         globIgnores: ['**/libras-avatar-stage-*.js'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: room for a 25.6 MB runtime with margin
         cleanupOutdatedCaches: true,
@@ -115,14 +115,16 @@ export default defineConfig({
               plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: deliveryCacheKey as unknown as (p: { request: Request }) => Promise<string> }],
             },
           },
-          // The Libras player's page and the signs a delivery built with `--libras` writes after the build, outside the precache
-          // (ADR-0234, pillar 8): answered from the checked cache, where the start keeps each file the delivery's list names,
-          // checked, under its own address — the key is the request's. On a miss the request goes to this origin, so the player
-          // works online before the list has come down; nothing is written here. The list itself (`libras/offline.json`) is outside
-          // both folders and always goes to the network. The folders are `DELIVERY_LISTS`'s, written out because the plugin copies
-          // this function's source into `sw.js`, where no import exists.
+          // The Libras players' files a delivery writes after the build, outside the precache (ADR-0234, pillar 8): route A's page
+          // and signs (`--libras`), route B's avatar and clips (`--libras-avatar`), and route B's stage chunk with three.js, which
+          // the precache leaves out on purpose. Answered from the checked cache, where the start keeps each file the delivery's
+          // lists name, checked, under its own address — the key is the request's. On a miss the request goes to this origin, so
+          // a player works online before its list has come down; nothing is written here. The lists themselves
+          // (`libras/offline*.json`) are outside every folder and always go to the network. ⚠️ The chunk is matched by its NAME
+          // alone, never by `assets/`: every other asset is the precache's, and its route answers them first. The places are
+          // `DELIVERY_LISTS`'s, written out because the plugin copies this function's source into `sw.js`, where no import exists.
           {
-            urlPattern: ({ sameOrigin, url }) => sameOrigin && /\/libras\/(player|signs)\/[^/]/.test(url.pathname),
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && (/\/libras\/(player|signs|avatar)\/[^/]/.test(url.pathname) || /\/assets\/libras-avatar-stage-[\w-]+\.js$/.test(url.pathname)),
             handler: 'CacheFirst',
             options: {
               cacheName: 'incl-pesados-v2',
