@@ -73,7 +73,7 @@ import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js';
 import { navigableItems } from './menu-items.js';
 import type { Translate } from '../core/i18n.js';
-import { menuKeyIntent, selectStep, selectWrap, rangeStep, stepInPause } from './menu-intent.js';
+import { menuKeyIntent, selectStep, selectWrap, rangeStep, stepInPause, type MenuCursor } from './menu-intent.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 // The ring's arithmetic lives in `core/ring`: `ui/pause-icons` needs it too, and this module imports that one, so keeping
@@ -184,6 +184,13 @@ export interface MenuNavApi {
    */
   navIntent: (playerIndex: number, keys: NavKeys) => boolean;
   /**
+   * WHAT A SIDEWAYS STEP OF PLAYER `playerIndex` WOULD DO NOW (ADR-0218 erratum; one-button scanning offers «increase» and
+   * «decrease» only where they act): the kind of the control under the cursor of the panel on top — the focused item, or the
+   * first, where a step enters — under the guards a name said by voice has; `item` wherever a step would adjust nothing: the
+   * quick bar, a pause card, no menu, a remap, the controller-mapping panel.
+   */
+  underCursor: (playerIndex: number) => MenuCursor;
+  /**
    * THE NAMES A CHILD CAN SAY (ADR-0194 §1): the accessible names of the items a key of player `playerIndex` would move now —
    * the dialog on top, else that player's open pause card — and none while a key would move no menu. LOCKED items are in it
    * (ADR-0194 §5): saying one confirms it like any transport, and a locked item confirmed says its reason and does nothing.
@@ -246,6 +253,17 @@ const CONTROL_KINDS: readonly (readonly [(el: HTMLElement) => boolean, string, C
 
 /** Where the items live: the dialog's card (`.overlay__card`) or the pause card (`.pause-card`). */
 const CARD_SELECTOR = '.overlay__card, .pause-card';
+
+/**
+ * WHAT LEFT AND RIGHT DO TO A PANEL'S CONTROL — ONE answer, read by the keys (`sideways`, `confirm`) and by one-button scanning
+ * (`underCursor`), so a scan never offers «increase» where the right key would walk the ring instead: a `<select>` is a list, a
+ * slider (the only `<input>` an item can be, `ui/menu-items`) or a ⯇ ⯈ steps control (ADR-0151) is a value, anything else
+ * is an item.
+ */
+function cursorKind(el: HTMLElement): MenuCursor {
+  if (el.tagName === 'SELECT') return 'list';
+  return el.tagName === 'INPUT' || el.hasAttribute('data-passos') ? 'value' : 'item';
+}
 
 export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   const { t } = ctx;
@@ -317,6 +335,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
    */
   function sideways(items: readonly HTMLElement[], idx: number, d: 1 | -1): void {
     const cur = items[idx]!;
+    if (cursorKind(cur) === 'item') { focusAndSay(items, stepInRing(items.length, idx, d)); return; }
     if (cur.tagName === 'SELECT') {
       const before = (cur as HTMLSelectElement).value;
       tweakSelect(cur as HTMLSelectElement, d);
@@ -326,16 +345,15 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     }
     if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); sayItem(items, idx); return; }
     // A steps control ⯇ ⯈ (ADR-0151): left and right are the adjustment itself; its owner listens to `passo` (and announces).
-    if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
-    focusAndSay(items, stepInRing(items.length, idx, d));
+    cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true }));
   }
 
   /** «Yes»: a list goes round and says the new option; a slider or a steps control has nothing to confirm; anything else is clicked. */
   function confirm(items: readonly HTMLElement[], idx: number): void {
     const cur = items[idx]!;
-    if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); sayItem(items, idx); return; }
-    if (cur.tagName === 'INPUT' || cur.hasAttribute('data-passos')) return;
-    cur.click();
+    const kind = cursorKind(cur);
+    if (kind === 'list') { tweakSelect(cur as HTMLSelectElement, 'wrap'); sayItem(items, idx); return; }
+    if (kind === 'item') cur.click();
   }
 
   function navDialog(menu: HTMLElement, k: NavKeys): void {
@@ -503,6 +521,15 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     return (sayableItems(pi)?.items ?? []).map((el) => accessibleLabel(el)).filter(Boolean);
   }
 
+  /** A panel's control under the cursor — where `navDialog` would put a step: the focused item, else the first (`cursorIn`). */
+  function underCursor(pi: number): MenuCursor {
+    const open = sayableItems(pi);
+    if (!open || open.inPause) return 'item';
+    const at = open.items.indexOf(ctx.getActiveElement() as HTMLElement);
+    const el = open.items[at >= 0 ? at : 0];
+    return el ? cursorKind(el) : 'item';
+  }
+
   function pointAt(name: string, pi: number): boolean {
     const open = sayableItems(pi);
     const el = open?.items.find((it) => accessibleLabel(it) === name);
@@ -583,5 +610,5 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   const consumed = (e: object): boolean => consumedKeys.has(e);
 
-  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, consumed, navIntent, itemNames, pointAt, attach };
+  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, consumed, navIntent, underCursor, itemNames, pointAt, attach };
 }

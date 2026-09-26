@@ -949,6 +949,77 @@ describe('navIntent — a menu step with no key goes the way a key\'s would', ()
   });
 });
 
+/*
+ * ===================== WHAT A SIDEWAYS STEP WOULD DO — `underCursor` (ADR-0218 erratum; interface log, the sideways step) ====
+ * One-button scanning offers «increase» and «decrease» only on a control they act on. The question is answered HERE, by the rule
+ * the left and right keys follow, so the scan and the keys cannot disagree about which controls have a value.
+ */
+describe('underCursor — the kind of control a sideways step would reach', () => {
+  it('🔴 [Right] in a panel: a button is an item, a list is a list, a slider is a value', () => {
+    const { nav, openAudio } = boot();
+    openAudio();
+    $('#a-first').focus();
+    expect(nav.underCursor(0)).toBe('item');
+    $('#a-voz').focus();
+    expect(nav.underCursor(0)).toBe('list');
+    $('#a-vol').focus();
+    expect(nav.underCursor(0)).toBe('value');
+  });
+
+  it('🔴 [Right] a ⯇ ⯈ steps control is a value (ADR-0151)', async () => {
+    const { mountSteps } = await import('../app/js/ui/panel-widgets.js');
+    const { nav, openAudio } = boot();
+    openAudio();
+    const passos = mountSteps({ find: (s) => $(s), create: (t) => document.createElement(t) },
+      { label: 'Cantos', values: ['off', 'small', 'large'], current: 1 });
+    $('#a-voz').after(passos);
+    passos.focus();
+    expect(nav.underCursor(0)).toBe('value');
+  });
+
+  it('🔴 [Boundary] with the focus OUTSIDE the panel it answers for the first item — where a step enters — and moves nothing', () => {
+    const { nav, openAudio } = boot();
+    openAudio();
+    // the first item a step would enter by is a slider, so the answer can only come from where the step would land
+    $('#a-vol').parentElement.prepend($('#a-vol'));
+    document.activeElement.blur();
+    expect(nav.underCursor(0), 'the answer is not the first item\'s').toBe('value');
+    expect(document.activeElement, 'asking moved the cursor').toBe(document.body);
+  });
+
+  it('🔴 [Zero] the quick bar, a pause card, no menu, a remap and the mapping panel have nothing a sideways step adjusts', () => {
+    let r = boot({ naBarra: new Set([0]) });
+    r.openAudio(); $('#a-vol').focus();
+    expect(r.nav.underCursor(0), 'on the quick bar').toBe('item');
+    r = boot();
+    showPauses();
+    expect(r.nav.underCursor(0), 'on a pause card').toBe('item');
+    r = boot();
+    setPhaseValue('playing');
+    expect(r.nav.underCursor(0), 'with no menu').toBe('item');
+    r = boot({ isCapturing: () => true });
+    r.openAudio(); $('#a-vol').focus();
+    expect(r.nav.underCursor(0), 'during a remap').toBe('item');
+    r = boot();
+    r.openAudio(); $('#a-vol').focus();
+    $('#padwiz').hidden = false;
+    expect(r.nav.underCursor(0), 'under the controller-mapping panel').toBe('item');
+  });
+
+  it('🔴 [Right] and the scan\'s «increase» and «decrease» go the right and left keys\' way: the slider moves one step each', () => {
+    const { nav, openAudio } = boot();
+    openAudio();
+    const vol = $('#a-vol');
+    vol.focus();
+    expect(nav.navIntent(0, { right: true })).toBe(true);
+    expect(vol.value, '«increase» did not move the slider one step up').toBe('6');
+    expect(nav.navIntent(0, { left: true })).toBe(true);
+    expect(nav.navIntent(0, { left: true })).toBe(true);
+    expect(vol.value, '«decrease» did not move it down').toBe('2');
+    expect(document.activeElement, 'the step left the slider').toBe(vol);
+  });
+});
+
 // MUTATIONS CHECKED (2026-09-26, `scratchpad/scan-doors/mutate.mjs`, restored and checked by SHA-256) on `navIntent`:
 //   NI1 the bar not asked first (the card is moved under it)          🔴 «on the quick bar», and the two key cases of the bar (shared path)
 //   NI2 no «navigable» guard (a card is moved that no key could move) 🔴 «with NO menu to move», and three key cases (shared path)

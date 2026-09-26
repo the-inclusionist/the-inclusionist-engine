@@ -307,6 +307,62 @@ describe('inside the engine\'s menus, the scan steps the menu', () => {
     apertar(SWITCH);
     expect(painel.hidden, '«back» did not close the panel').toBe(true);
   }, LIMITE);
+
+  /*
+   * THE SIDEWAYS STEP (ADR-0218 erratum; interface log, the sideways step). 📏 Measured before: with the cursor on a panel's slider
+   * the pass was «cancel · next · confirm · back · previous», and none of them moves a value — a child scanning could reach the
+   * volume and never change it.
+   */
+  it('🔴 [Right] with the cursor on a panel\'s SLIDER, one key alone raises and lowers it — «aumentar», «diminuir»', async () => {
+    const slider = document.querySelector('#game-region .overlay input[type=range]');
+    expect(slider, 'the root mounted no panel with a slider: the case would measure nothing').not.toBeNull();
+    const painel = slider.closest('.overlay');
+    const botao = painel.querySelector('.overlay__card button');
+    expect(botao, 'the slider\'s panel has no button to start from').not.toBeNull();
+    painel.hidden = false;
+    botao.focus();
+    await quadro();
+    // the pass on the button has begun; the cursor then reaches the slider, as «next» would put it there
+    await quandoOferecer(pt['scan.menu.next']);
+    slider.focus();
+    await quadro();
+    expect(chip().textContent, 'the pass did not start again at «cancel» on a control of another kind').toBe(pt['scan.nothing']);
+    const vistos = [];
+    const fim = performance.now() + PASSO * 5 + 200;
+    while (performance.now() < fim) {
+      const agora = chip().textContent;
+      if (vistos.at(-1) !== agora) vistos.push(agora);
+      await quadro();
+    }
+    expect(vistos.slice(0, 5), 'on a slider the pass is not «next», the sideways step, «back», «previous»')
+      .toEqual([pt['scan.nothing'], pt['scan.menu.next'], pt['scan.menu.increase'], pt['scan.menu.decrease'], pt['scan.menu.back']]);
+    const antes = Number(slider.value);
+    const passo = Number(slider.step) || 1;
+    await quandoOferecer(pt['scan.menu.increase']);
+    apertar(SWITCH);
+    expect(Number(slider.value), '«aumentar» did not move the slider one step up').toBe(Math.min(Number(slider.max), antes + passo));
+    await quandoOferecer(pt['scan.menu.decrease']);
+    apertar(SWITCH);
+    expect(Number(slider.value), '«diminuir» did not bring it back').toBe(antes);
+    expect(document.activeElement, 'the step took the cursor off the slider').toBe(slider);
+    expect(comandos, 'the game heard the steps of a menu').toEqual([]);
+    painel.hidden = true;
+  }, LIMITE);
+
+  it('🔴 [Zero] on a panel\'s BUTTON the pass offers no sideways step — a cycle never stops where nothing happens (ADR-0155)', async () => {
+    const botao = document.querySelector('#game-region .overlay .overlay__card button');
+    expect(botao, 'the root mounted no panel with a button').not.toBeNull();
+    const painel = botao.closest('.overlay');
+    painel.hidden = false;
+    botao.focus();
+    await quadro();
+    const vistos = new Set();
+    const fim = performance.now() + PASSO * 5 + 200;
+    while (performance.now() < fim) { vistos.add(chip().textContent); await quadro(); }
+    expect(vistos.has(pt['scan.menu.next']), 'the case never saw the menu\'s pass').toBe(true);
+    expect(vistos.has(pt['scan.menu.increase']) || vistos.has(pt['scan.menu.decrease']), 'a sideways step offered on a button').toBe(false);
+    painel.hidden = true;
+  }, LIMITE);
 });
 
 /*

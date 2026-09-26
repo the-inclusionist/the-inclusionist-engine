@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2278,
+      "codeLines": 2281,
       "decisionNodes": 289,
       "maxDepth": 4,
       "fanOut": 97,
@@ -408,7 +408,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 656,
+      "codeLines": 658,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 656,
+      "codeLines": 658,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -428,7 +428,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 656,
+      "codeLines": 658,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1618,8 +1618,8 @@
       "fanIn": 1
     },
     "ui/menu-intent.ts": {
-      "codeLines": 44,
-      "decisionNodes": 2,
+      "codeLines": 51,
+      "decisionNodes": 4,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
@@ -1638,8 +1638,8 @@
       "fanIn": 5
     },
     "ui/menu-nav.ts": {
-      "codeLines": 287,
-      "decisionNodes": 62,
+      "codeLines": 299,
+      "decisionNodes": 67,
       "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,
@@ -1748,7 +1748,7 @@
       "fanIn": 1
     },
     "ui/scan-overlay.ts": {
-      "codeLines": 37,
+      "codeLines": 38,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,

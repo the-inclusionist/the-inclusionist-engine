@@ -118,7 +118,7 @@ import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
 import { keyGoesToGame, keyPressesOwnControl } from '../input/key-default.js';
 import { createSwitchScan, playScanList, SWITCH_SCAN_DEFAULTS, type SwitchScan } from '../input/switch-scan.js';
-import { MENU_SCAN, menuStepKeys, type MenuStep } from '../ui/menu-intent.js';
+import { menuScanFor, menuStepKeys, type MenuCursor, type MenuStep } from '../ui/menu-intent.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
@@ -4067,19 +4067,23 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * 🔴 AND INSIDE A MENU THE LIST IS THAT MENU'S STEPS (ADR-0218 erratum of 2026-09-26). The switch's key is stopped before any
    * listener, so no menu ever saw it: 📏 a child who opened the quick pause by scanning was left in it, every press doing nothing.
    * With the quick bar, the card or a panel in front, the scan offers «cancel · next · confirm · back · previous» and a press
-   * moves the menu through `ui/menu-nav`, the path the keys and the pad take.
+   * moves the menu through `ui/menu-nav`, the path the keys and the pad take. On a panel's control with a value — a slider, a
+   * list, a ⯇ ⯈ row — the pass also offers «increase» and «decrease», the right and left keys' step (`menuScanFor`).
    */
   const gameRegion = $<HTMLElement>('#game-region');
   const scanChip = gameRegion ? mountScanOverlay(doc, gameRegion) : null;
   /** The pass going on: the game's positions in play, a menu's steps in a menu — typed by what a press does with each. */
   type Scanning =
     | { readonly inMenu: false; readonly pass: SwitchScan<Action> }
-    | { readonly inMenu: true; readonly pass: SwitchScan<MenuStep> };
+    | { readonly inMenu: true; readonly cursor: MenuCursor; readonly pass: SwitchScan<MenuStep> };
   let scanning: Scanning | null = null;
   let scanFrame = 0;
   // «Is a menu in front?» is the question the virtual controller asks (`menuWithDpad`): the quick pause, the card or a panel.
   const freshScan = (): Scanning => {
-    if (menuWithDpad()) return { inMenu: true, pass: createSwitchScan(MENU_SCAN) };
+    if (menuWithDpad()) {
+      const cursor = nav.underCursor(0);
+      return { inMenu: true, cursor, pass: createSwitchScan(menuScanFor(cursor)) };
+    }
     const words = actionWords();
     const names = labellerFrom(words);
     // the ENGINE'S DOORS after the game's words (ADR-0218 §3): the card where it is mounted, the quick pause where it has its bar
@@ -4091,9 +4095,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const scanShow = (item: string): void => { if (scanChip?.showing(scanWord(item))) reserveBarBand(); };
   const scanTick = (): void => {
     if (!scanning) return;
-    // 📌 A MENU OPENED OR CLOSED: the pass becomes the other list, from «cancel», which is also what a press does — so the first
-    // thing offered in a menu just opened is the item that takes nothing.
-    if (scanning.inMenu !== menuWithDpad()) scanning = freshScan();
+    // 📌 A MENU OPENED OR CLOSED, OR ITS CURSOR REACHED A CONTROL OF ANOTHER KIND: the pass becomes the other list, from
+    // «cancel», which is also what a press does — so the first thing offered in a menu just opened is the item that takes nothing.
+    if (scanning.inMenu !== menuWithDpad() || (scanning.inMenu && scanning.cursor !== nav.underCursor(0))) scanning = freshScan();
     scanShow(scanning.pass(win.performance.now()).showing.item);
     scanFrame = win.requestAnimationFrame(scanTick);
   };

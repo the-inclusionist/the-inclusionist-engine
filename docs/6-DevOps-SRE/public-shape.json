@@ -2611,7 +2611,8 @@
     ]
   },
   "ui/menu-intent.ts": {
-    "type MenuStep": "'next' | 'previous' | 'confirm' | 'back'"
+    "type MenuStep": "'next' | 'previous' | 'confirm' | 'back' | 'increase' | 'decrease'",
+    "type MenuCursor": "'item' | 'list' | 'value'"
   },
   "ui/menu-nav.ts": {
     "interface NavKeyEvent": [
@@ -2653,7 +2654,8 @@
       "navPause",
       "pauseSetSel",
       "pointAt",
-      "sharedDialogOpen"
+      "sharedDialogOpen",
+      "underCursor"
     ]
   },
   "ui/motion-scene.ts": {

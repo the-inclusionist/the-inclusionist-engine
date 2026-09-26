@@ -8,14 +8,12 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createSwitchScan, playScanList, SCAN_CANCEL, SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
-import { MENU_SCAN, menuStepKeys } from '../app/js/ui/menu-intent.js';
+import { MENU_SCAN, menuScanFor, menuStepKeys } from '../app/js/ui/menu-intent.js';
 import { scanItemText } from '../app/js/ui/scan-overlay.js';
 import { createTranslator } from '../app/js/core/i18n.js';
 import pt from '../app/js/i18n/pt.js';
-import { MENU_SCAN, menuStepKeys } from '../app/js/ui/menu-intent.js';
-import { scanItemText } from '../app/js/ui/scan-overlay.js';
-import { createTranslator } from '../app/js/core/i18n.js';
-import pt from '../app/js/i18n/pt.js';
+import en from '../app/js/i18n/en.js';
+import es from '../app/js/i18n/es.js';
 
 const DECLARED = ['up', 'down', 'action2', 'action3'];
 const passo = SWITCH_SCAN_DEFAULTS.stepMs;
@@ -138,6 +136,58 @@ describe('inside a menu, the scan offers the menu\'s own steps', () => {
       .toEqual([pt['scan.menu.next'], pt['scan.menu.confirm'], pt['scan.menu.back'], pt['scan.menu.previous']]);
     expect(scanItemText('up', gameWord, t), 'a position lost the game\'s own word').toBe('Cima');
     expect(scanItemText('action4', gameWord, t), 'a position nobody named got a word').toBe('');
+  });
+});
+
+/*
+ * ===================== THE SIDEWAYS STEP (ADR-0218 erratum; interface log, the sideways step) =====================
+ * A slider, a list or a ⯇ ⯈ row in a panel is adjusted by the left and right keys, and the menu steps above had neither — so a
+ * child scanning could reach a slider and never move it. On a control with a value the pass offers «increase» and «decrease»,
+ * which are the right and left keys' intents; anywhere else it does not, because a cycle never stops on a position that does
+ * nothing (ADR-0155) — and for the same reason «confirm», which does nothing on a slider or a steps control, leaves there.
+ */
+describe('on a control with a value, the scan offers the sideways step', () => {
+  it('🔴 [Right] on a plain item the pass is the menu\'s four steps — no sideways step where nothing is adjusted', () => {
+    expect(menuScanFor('item')).toEqual(['next', 'confirm', 'back', 'previous']);
+    expect(menuScanFor('item')).toBe(MENU_SCAN);
+  });
+
+  it('🔴 [Right] on a list: «next», then «increase» and «decrease», then the rest — «confirm» stays, it goes round the list', () => {
+    expect(menuScanFor('list')).toEqual(['next', 'increase', 'decrease', 'confirm', 'back', 'previous']);
+  });
+
+  it('🔴 [Right] on a slider or a ⯇ ⯈ row: the same, without «confirm», which does nothing there (ADR-0155)', () => {
+    expect(menuScanFor('value')).toEqual(['next', 'increase', 'decrease', 'back', 'previous']);
+  });
+
+  it('🔴 [Right] and the scan offers them in that order after «cancel», and a press on «increase» takes «increase»', () => {
+    const scan = createSwitchScan(menuScanFor('value'));
+    const seen = [0, 1, 2, 3, 4, 5].map((i) => scan(i * passo).showing.item);
+    expect(seen).toEqual([SCAN_CANCEL, 'next', 'increase', 'decrease', 'back', 'previous']);
+    expect(scan(2 * passo + 6 * passo, { press: true }).commanded, 'a press on «increase» took something else').toBe('increase');
+  });
+
+  it('🔴 [Right] «increase» is the RIGHT key\'s intent and «decrease» the LEFT one\'s — the keyboard\'s own adjustment', () => {
+    expect(menuStepKeys('increase')).toEqual({ right: true });
+    expect(menuStepKeys('decrease')).toEqual({ left: true });
+  });
+
+  it('[Interface] the list handed out for a value is a new one: writing into it changes neither the next nor the plain list', () => {
+    const first = menuScanFor('value');
+    first.push('confirm');
+    expect(menuScanFor('value')).toEqual(['next', 'increase', 'decrease', 'back', 'previous']);
+    expect(MENU_SCAN).toEqual(['next', 'confirm', 'back', 'previous']);
+  });
+
+  it('🔴 [Right] the chip says the engine\'s word for them, in the three languages', () => {
+    for (const [locale, dict, up, down] of [['pt', pt, 'aumentar', 'diminuir'], ['en', en, 'increase', 'decrease'], ['es', es, 'aumentar', 'disminuir']]) {
+      const t = (key) => dict[key] ?? key; // the dictionary itself, so each language is read without switching the page's
+      expect(dict['scan.menu.increase'], `${locale} has no word for «increase»`).toBe(up);
+      expect(dict['scan.menu.decrease'], `${locale} has no word for «decrease»`).toBe(down);
+      // the game named `right` «Pular»: in a menu, «increase» must not read as the game's verb
+      expect(scanItemText('increase', () => 'Pular', t)).toBe(up);
+      expect(scanItemText('decrease', () => 'Pular', t)).toBe(down);
+    }
   });
 });
 

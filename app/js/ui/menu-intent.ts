@@ -44,7 +44,7 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 }
 
 /** A step of a menu one-button scanning offers — what a menu does, not a key (ADR-0218 erratum of 2026-09-26). */
-export type MenuStep = 'next' | 'previous' | 'confirm' | 'back';
+export type MenuStep = 'next' | 'previous' | 'confirm' | 'back' | 'increase' | 'decrease';
 
 /**
  * WHAT ONE-BUTTON SCANNING OFFERS INSIDE A MENU, in order after «cancel» (interface log 2026-09-26). By how often a child needs
@@ -53,9 +53,33 @@ export type MenuStep = 'next' | 'previous' | 'confirm' | 'back';
  */
 export const MENU_SCAN: readonly MenuStep[] = ['next', 'confirm', 'back', 'previous'];
 
-/** The intent a step is — the one a key with that meaning would carry, so it moves a menu the way the key does. */
+/**
+ * WHAT THE CONTROL UNDER A MENU'S CURSOR LETS A SIDEWAYS STEP DO — the question `ui/menu-nav` answers with the rule its left
+ * and right keys follow: `item` has no value (a button, a switch, the quick bar, the pause card); `list` is a `<select>`, whose
+ * value left and right step and whose «confirm» goes round; `value` is a slider or a ⯇ ⯈ steps control, which left and right
+ * adjust and «confirm» leaves untouched.
+ */
+export type MenuCursor = 'item' | 'list' | 'value';
+
+/**
+ * THE PASS IN A MENU, for the control under its cursor (ADR-0218 erratum; interface log 2026-09-26, the sideways step). Only a
+ * control with a value offers «increase» and «decrease» — they come right after «next», which keeps its place as the first
+ * step of every menu — and a slider or a steps control does not offer «confirm», which does nothing there: a cycle never
+ * stops on a position that does nothing (ADR-0155).
+ */
+export function menuScanFor(cursor: MenuCursor): readonly MenuStep[] {
+  if (cursor === 'item') return MENU_SCAN;
+  const sideways: readonly MenuStep[] = ['next', 'increase', 'decrease'];
+  return cursor === 'list' ? [...sideways, 'confirm', 'back', 'previous'] : [...sideways, 'back', 'previous'];
+}
+
+/**
+ * The intent a step is — the one a key with that meaning would carry, so it moves a menu the way the key does. «increase» is the
+ * right key and «decrease» the left one: the same step a keyboard adjusts a value with.
+ */
 const STEP_INTENT: Readonly<Record<MenuStep, NavKeys>> = {
   next: { down: true }, previous: { up: true }, confirm: { yes: true }, back: { no: true },
+  increase: { right: true }, decrease: { left: true },
 };
 export function menuStepKeys(step: MenuStep): NavKeys {
   return { ...STEP_INTENT[step] };

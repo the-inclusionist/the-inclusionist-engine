@@ -23,6 +23,7 @@ const ENGINE_WORDS: ReadonlyMap<string, string> = new Map([
   [SCAN_CANCEL, 'scan.nothing'],
   ['select', 'scan.door.menus'], ['start', 'scan.door.pause'],
   ['next', 'scan.menu.next'], ['confirm', 'scan.menu.confirm'], ['back', 'scan.menu.back'], ['previous', 'scan.menu.previous'],
+  ['increase', 'scan.menu.increase'], ['decrease', 'scan.menu.decrease'],
 ]);
 
 /** What the chip reads for one item. Pure: the engine's word where the item is the engine's, else the game's own word. */

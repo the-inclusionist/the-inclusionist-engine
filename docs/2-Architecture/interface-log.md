@@ -267,3 +267,16 @@ positions, the scan offers the engine's doors in the order ADR-0218 §3 names th
 (START, the quick pause; English «menu», «pause», Spanish «menú», «pausar»), each only where it has something behind it.
 The chip's words for both lists are lower case, like «cancelar», so they read as the engine's and not as a game's own words.
 Engine `dcae9422` (the menus), `66342f10` (the doors).
+
+## 2026-09-26 · One-button scanning adjusts a slider, a list or a ⯇ ⯈ row: «aumentar» and «diminuir»
+
+⚠️ Chosen while building the sideways step ADR-0218 left partial and NOT YET SEEN by the Dev — no Dev words to quote. With a
+panel's cursor on a control that has a value, the menu's pass is «cancelar · próximo · aumentar · diminuir · …» (English
+«increase · decrease», Spanish «aumentar · disminuir»): the two come right after «próximo», which keeps its place as the first
+step of every menu, so walking a panel costs what it did and the adjustment is the next thing offered once the cursor lands on
+a value. «aumentar» is the right key's step and «diminuir» the left one's, whatever the control — the next option of a list,
+one step of a slider, the ⯈ of a steps row. On a list the pass goes on «confirmar · voltar · anterior» («confirmar» goes round
+the list, as the keys' «yes» does); on a slider or a steps row it goes on «voltar · anterior» — «confirmar» does nothing there,
+and a cycle never stops on a position that does nothing (ADR-0155). On a button, a switch, the quick bar or the pause card the
+pass is the four steps above, unchanged. When the cursor reaches a control of another kind the pass starts again from
+«cancelar», as it does when a menu opens. Engine: the sideways step on `scan-sideways-and-any-input`.

@@ -179,6 +179,9 @@ const en: Record<string, string> = {
   'scan.menu.confirm': 'confirm',
   'scan.menu.back': 'back',
   'scan.menu.previous': 'previous',
+  // ...and, on a control with a value, the sideways step (the interface log's entry on the sideways step).
+  'scan.menu.increase': 'increase',
+  'scan.menu.decrease': 'decrease',
   // ...and the engine's two doors, offered in play after the game's own words (ADR-0218 §3).
   'scan.door.menus': 'menu',
   'scan.door.pause': 'pause',
