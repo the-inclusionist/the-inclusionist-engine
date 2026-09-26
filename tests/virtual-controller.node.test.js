@@ -115,11 +115,21 @@ describe('with a menu open', () => {
     expect(vc.press('down', 'olhos', 0, false)).toBe(false);
     expect(log).toEqual([['menu', 'KeyS', 'olhos']]);
   });
-  it('START is still the menu\'s key there — the way a camera\'s START leaves the quick pause', () => {
+  // 🔴 A SYSTEM POSITION IS NEVER TRANSLATED INTO A KEY (ADR-0144 erratum of 2026-09-26). This scheme's `start` is `Enter`, which on
+  // the quick pause's bar is «confirm»: handed to the menu as its first key, a camera's START confirmed the icon under the cursor
+  // instead of leaving. The engine is told the POSITION, as in play, and answers it the way its own START and SELECT keys do.
+  for (const action of ['start', 'select']) {
+    it(`${action.toUpperCase()} with a menu open goes to the ENGINE as the position — never as its first key — and answers false`, () => {
+      const { vc, log } = make({ menu: true });
+      expect(vc.press(action, 'olhos', 1)).toBe(false);
+      vc.release(action, 'olhos', 1);
+      expect(log).toEqual([['system', action, 1]]);
+    });
+  }
+  it('[Right] with a menu open even a press held back from play (`toPlay` false) reaches the engine: the menu is the press\'s', () => {
     const { vc, log } = make({ menu: true });
-    expect(vc.press('start', 'olhos')).toBe(false);
-    // and ONLY the menu's: the engine's pause is not asked on top of it (the quick pause's own key leaves it)
-    expect(log).toEqual([['menu', 'Enter', 'olhos']]);
+    vc.press('start', 'olhos', 0, false);
+    expect(log).toEqual([['system', 'start', 0]]);
   });
   it('a press the game heard is released to it even if a menu opened meanwhile', () => {
     const { vc, log, setMenu } = make();
@@ -144,4 +154,9 @@ describe('with a menu open', () => {
 //   · `systemPress` never called                                → the sixteen «goes to the ENGINE» cases
 //   · the seat not forwarded (always 0)                        → «the engine is told the SEAT»
 //   · `systemPress` asked before `toPlay`                       → «held back from play reaches nobody»
-//   · `systemPress` asked with a menu open too                  → «START is still the menu's key there»
+//   · `systemPress` asked with a menu open too                  → «START is still the menu's key there» (a case the erratum below retired)
+// And (2026-09-26, a system position is never a key) — `scratchpad/scan-doors/mutate-vc.mjs`, restored and checked by SHA-256:
+//   · with a menu open, the system position handed to the menu as its first key again → the two «never as its first key» cases
+//     and «even a press held back» (3 red; 1 red in `start-and-select-from-every-transport.browser`)
+//   · with a menu open, `systemPress` asked only when `toPlay`  → «even a press held back from play reaches the engine»
+//   · `systemPress` asked in play whatever `toPlay` says        → «held back from play reaches nobody»

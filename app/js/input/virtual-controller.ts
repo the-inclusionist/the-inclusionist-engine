@@ -12,9 +12,12 @@
 // 🔴 EXCEPT THE TWO SYSTEM POSITIONS, which never reach play (ADR-0144 §4, ADR-0155 §4): `start` is the quick pause and `select`
 // opens the menus, a cartridge may not declare either, so the game has no word for them and nothing to do with them. 📏 Before
 // this, Enter in play opened the quick pause AND the quiz's `onCommand` heard `start`; F opened the card AND it heard `select`.
-// In play they go to the ENGINE instead (`systemPress`), so START and SELECT open the pause «from any transport» (ADR-0144 §1):
-// the eyes, the face, the hands, the voice and the scan press here and have no key in the world for the engine to hear.
-// With a menu open they are the menu's key like any other position — that is how a camera's START leaves the quick pause.
+// They go to the ENGINE instead (`systemPress`), so START and SELECT open the pause «from any transport» (ADR-0144 §1): the eyes,
+// the face, the hands, the voice and the scan press here and have no key in the world for the engine to hear.
+// 🔴 AND WITH A MENU OPEN TOO, never as a key (ADR-0144 erratum of 2026-09-26). The first key of `start` is whatever the child put
+// first: with `start` remapped to `Enter`, a camera's START on the quick pause's bar was the bar's «confirm» and not the way out.
+// The engine answers the POSITION the same way its key listeners do — START again leaves the quick pause, SELECT goes on to the
+// card, and an open card or panel refuses both.
 
 import { SYSTEM, type Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -55,8 +58,9 @@ export interface VirtualControllerDeps {
    */
   readonly menuAnswers?: (action: Action, player: number) => boolean;
   /**
-   * A SYSTEM position pressed in play: the engine opens its pause for that seat — `start` the quick pause, `select` the menus
-   * (ADR-0144 §1, ADR-0155). Absent: it does nothing, as before.
+   * A SYSTEM position pressed, in play or with a menu open: the engine answers it for that seat as its keys do — `start` the
+   * quick pause (again: leaves it), `select` the menus (ADR-0144 §1 and its erratum of 2026-09-26, ADR-0155). Absent: it does
+   * nothing.
    *
    * ⚠️ The keyboard does not come here: its key is already in the world, and the engine's own key listeners answer it even for
    * a cartridge with no `onCommand` — the host's keyboard conductor does not press these two, or one key would pause twice.
@@ -77,8 +81,8 @@ export interface VirtualController {
    * into or the engine's own control being pressed (`input/key-default`) — so it reaches nobody: nothing held, nothing delivered.
    * With a menu open it is the menu's all the same, as every press is (ADR-0111 erratum of 2026-09-26: one press, one action).
    *
-   * A system position (`start`, `select`) never reaches play, whatever `toPlay` says: it is the engine's (ADR-0144 §4), and in
-   * play it goes to `systemPress` — unless `toPlay` is false, when the press belongs to something else and reaches nobody.
+   * A system position (`start`, `select`) never reaches play and never becomes a menu key: it is the engine's (ADR-0144 §4), and
+   * it goes to `systemPress` — unless, in play, `toPlay` is false, when the press belongs to something else and reaches nobody.
    */
   press(action: Action, source: TransportName | undefined, player?: number, toPlay?: boolean): boolean;
   release(action: Action, source: TransportName | undefined, player?: number): void;
@@ -93,13 +97,15 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
   const held = new Map<string, string | null>();
   return {
     press(action, source, player = 0, toPlay = true) {
+      const menu = d.menuOpen();
+      // the POSITION, not its first key: a key means what the child bound to it, and `Enter` on a menu is «confirm»
+      if (ENGINE_POSITIONS.has(action)) { if (menu || toPlay) d.systemPress?.(action, player); return false; }
       const code = d.scheme(player)[action]?.[0];
-      if (d.menuOpen()) {
+      if (menu) {
         if (!d.menuAnswers?.(action, player) && code) d.menuKey(code, source);
         return false;
       }
       if (!toPlay) return false;
-      if (ENGINE_POSITIONS.has(action)) { d.systemPress?.(action, player); return false; }
       if (code) d.holdKey(code, source);
       held.set(`${player}:${action}`, code ?? null);
       d.deliver({ action, pressed: true, source, player });

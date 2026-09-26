@@ -4114,8 +4114,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // With a menu open the game hears no press, so the engine answers the sonar there: R1 reads the menu in front, spoken or,
     // in deaf mode, captioned and signed — the same two doors the play sonar's words take (ADR-0234).
     menuAnswers: (action) => menuSonarPress(action, screen, (text) => { srSay(text); deafMode.sonar(text); }),
-    // START and SELECT in play from a transport with no key in the world — the eyes, the face, the hands, the voice, the scan —
-    // open the same pause the keys open, for the seat that pressed (ADR-0144 §1, ADR-0155).
+    // START and SELECT from a transport with no key in the world — the eyes, the face, the hands, the voice, the scan — do what
+    // the keys do, for the seat that pressed (ADR-0144 §1, ADR-0155): in play and in the quick pause alike, so START there
+    // always LEAVES, whatever key the child bound first to `start` (ADR-0144 erratum of 2026-09-26).
     systemPress: (action, seat) => { if (action === 'start') startForSeat(seat); else openSeatMenus(seat); },
   });
   /*

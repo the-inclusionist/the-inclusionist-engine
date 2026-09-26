@@ -15,7 +15,7 @@
 // ⚠️ ONE ROOT for the file: `createGame` hangs listeners on the window, so a second root would answer the same keys.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { keyed } from './fixtures/declared-words.js';
 import { detection as gaze } from './fixtures/synthetic-face.js';
@@ -178,6 +178,52 @@ describe('the card\'s own rules, and the doors the keyboard already had', () => 
   });
 });
 
+/*
+ * ===================== A START REMAPPED TO ENTER (ADR-0144 erratum of 2026-09-26) =====================
+ * 🔴 MEASURED before the fix: with a menu open the controller handed START to the menu as the FIRST key of `start`. In the solo
+ * scheme that is `KeyH`, which means nothing to a menu, so it reached START's own listener and left. A child who remapped her first
+ * START key to `Enter` got the bar's «confirm» instead: the icon under the cursor was pressed and the game stayed frozen.
+ */
+describe('START from a transport inside the quick pause, with `start` bound to Enter only', () => {
+  let antes;
+  beforeEach(() => { antes = motor.keyboardConfig.kb().solo.start; motor.keyboardConfig.kb().solo.start = ['Enter']; });
+  afterEach(() => { motor.keyboardConfig.kb().solo.start = antes; });
+
+  it('🔴 [Right] START again LEAVES the quick pause — it does not confirm the bar\'s icon', () => {
+    tocar('start', 'olhos');
+    expect(pausadoAVista(), 'the case would measure nothing: START did not open the quick pause').toBe(true);
+    const cursorAntes = document.querySelector('.pi-sel');
+    const clicados = [];
+    const ouvir = (e) => clicados.push(e.target);
+    document.addEventListener('click', ouvir, true);
+    try {
+      tocar('start', 'olhos');
+    } finally { document.removeEventListener('click', ouvir, true); }
+    expect(clicados, `START pressed the icon under the cursor (${cursorAntes?.getAttribute('aria-label') ?? '?'}) as «confirm»`).toEqual([]);
+    expect(pausadoAVista(), 'START from the camera did not leave the quick pause').toBe(false);
+    expect(cartaoAberto(), 'START opened the menus').toBe(false);
+    expect(fases).toEqual(['paused', 'playing']);
+  });
+
+  it('🔴 [Right] and SELECT there still goes on to the card, as F does', () => {
+    tocar('start', 'fala');
+    tocar('select', 'fala');
+    expect(cartaoAberto(), 'SELECT in the quick pause did not open the menus').toBe(true);
+    expect(pausadoAVista()).toBe(false);
+  });
+
+  it('🔴 [CrossCheck] the KEYBOARD\'s Enter on the bar stays the bar\'s «confirm»: the key means what the child bound, the position what the engine owns', () => {
+    tocar('start', 'olhos');
+    const clicados = [];
+    const ouvir = (e) => clicados.push(e.target);
+    document.addEventListener('click', ouvir, true);
+    try { tecla('Enter'); } finally { document.removeEventListener('click', ouvir, true); }
+    expect(clicados.length, 'Enter on the bar no longer presses the icon under the cursor').toBe(1);
+    motor.pause.hide(0);
+    for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
+  });
+});
+
 /* ===================== THROUGH EACH TRANSPORT'S OWN MODULE ===================== */
 // The doubles are the ones each transport's own file uses; what changes is that the presses go to the REAL root.
 describe('the gesture a child makes, through its transport, reaches the pause', () => {
@@ -290,3 +336,6 @@ describe('the gesture a child makes, through its transport, reaches the pause', 
 //   H4 the keyboard conductor presses START/SELECT again          🔴 «THE KEYBOARD still pauses ONCE» (H opened and closed at once)
 //   H5 `startForSeat` ignores the open card                       🔴 «with the CARD open»
 //   H6 `startForSeat` ignores an open panel                       🔴 «with a PANEL open»
+// And (2026-09-26, a START remapped to Enter) — `scratchpad/scan-doors/mutate.mjs`, same discipline:
+//   V6 with a menu open, the controller hands START to the menu as its first key again   🔴 «START again LEAVES» (the icon
+//      under the cursor was pressed); «SELECT there still goes on to the card» stays green, as it should: F means SELECT anyway

@@ -758,12 +758,12 @@
       "fanIn": 1
     },
     "input/virtual-controller.ts": {
-      "codeLines": 50,
-      "decisionNodes": 7,
+      "codeLines": 51,
+      "decisionNodes": 8,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 8,
+      "worstFunction": 10,
       "statefulEdges": 0,
       "fanIn": 1
     },
