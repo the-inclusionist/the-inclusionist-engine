@@ -6,12 +6,14 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, existsSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   avatarPinsFromExport, avatarPinsText, avatarSourceOf, deliverLibrasAvatar, deliveredManifest, readAvatarPins, WINDOWS,
+  stageChunkOf, writeAvatarList,
 } from '../scripts/libras-avatar.mjs';
+import { DELIVERY_LISTS, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
 import { COMMIT } from '../scripts/libras-export.mjs';
 import { avatarManifestOf, LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_MANIFEST, playedLength } from '../app/js/ui/libras-avatar-plan.js';
 
@@ -95,6 +97,56 @@ describe('scripts/libras-avatar — the avatar and the clips, checked, into `lib
   });
 });
 
+/**
+ * 🔴 THE LIST A DEVICE KEEPS THE FREE PLAYER OFFLINE BY (ADR-0234, phase B3). 📏 Measured on a served delivery (2026-09-25): with
+ * deaf mode on, nothing of route B reached the checked cache — the delivery named none of it — and the stage chunk, left out of
+ * the precache on purpose, was fetched from the network at the first sign.
+ */
+describe('scripts/libras-avatar — the list of the free player\'s files, the stage chunk among them', () => {
+  const LIST = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
+  const STAGE = 'libras-avatar-stage-fyxZVSPc.js';
+  const withFiles = (extra = {}) => {
+    const d = delivery();
+    const all = { ...Object.fromEntries(Object.entries(FILES).map(([rel, b]) => [`${LIBRAS_AVATAR_FOLDER}${rel}`, b])),
+      [`${LIBRAS_AVATAR_FOLDER}manifest.json`]: Buffer.from('{"format":1}'), [`assets/${STAGE}`]: Buffer.from('three'),
+      'assets/pixi-X1y2Z3w4.js': Buffer.from('the page'), ...extra };
+    for (const [rel, b] of Object.entries(all)) { mkdirSync(dirname(join(d.destino, rel)), { recursive: true }); writeFileSync(join(d.destino, rel), b); }
+    return { ...d, all };
+  };
+
+  it('🔴 [Right] it names the manifest, the avatar, every clip and the ONE stage chunk the build emitted, each with the sha256 on the disk', () => {
+    const d = withFiles();
+    try {
+      const made = writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, stageStart: LIBRAS_AVATAR_STAGE_CHUNK });
+      const written = JSON.parse(readFileSync(join(d.destino, LIST.path), 'utf8'));
+      const paths = [`${LIBRAS_AVATAR_FOLDER}manifest.json`, `${LIBRAS_AVATAR_FOLDER}avatar.glb`,
+        ...Object.keys(PINS.clips).map((n) => `${LIBRAS_AVATAR_FOLDER}clips/${n}.json`), `assets/${STAGE}`];
+      expect(written).toEqual({ format: 1, files: paths.map((path) => ({ path, sha256: sha(d.all[path]), bytes: d.all[path].length })) });
+      expect(made).toEqual({ path: LIST.path, files: paths.length, bytes: paths.reduce((s, p) => s + d.all[p].length, 0) });
+      expect(written.files.map((f) => f.path), 'a precached asset of the page was listed').not.toContain('assets/pixi-X1y2Z3w4.js');
+    } finally { d.done(); }
+  });
+
+  it('🔴 [Right] no stage chunk, or two, stops the step by name — and no list is written', () => {
+    for (const [what, extra] of [['none', null], ['two', { [`assets/libras-avatar-stage-0ld0ne12.js`]: Buffer.from('stale') }]]) {
+      const d = withFiles(extra ?? {});
+      try {
+        if (!extra) rmSync(join(d.destino, 'assets', STAGE));
+        expect(() => writeAvatarList({ destino: d.destino, list: LIST, folder: LIBRAS_AVATAR_FOLDER, pins: PINS, stageStart: LIBRAS_AVATAR_STAGE_CHUNK }), what)
+          .toThrow(new RegExp(`stage chunk \\(assets/libras-avatar-stage-<hash>\\.js\\) was found ${extra ? 2 : 0} times`));
+        expect(existsSync(join(d.destino, LIST.path)), `${what}: a list was written`).toBe(false);
+      } finally { d.done(); }
+    }
+  });
+
+  it('📌 [Boundary] only a `.js` whose name carries more than the start counts: a map, a bare name or another folder do not', () => {
+    const names = ['libras-avatar-stage-.js', 'libras-avatar-stage-abc.js.map', 'libras-avatar-stage-abc.css', 'other-libras-avatar-stage-abc.js',
+      'libras-avatar-stage-abc.js'];
+    expect(stageChunkOf('D:\\x', LIBRAS_AVATAR_STAGE_CHUNK, () => names)).toBe('assets/libras-avatar-stage-abc.js');
+    expect(() => stageChunkOf('D:\\x', LIBRAS_AVATAR_STAGE_CHUNK, () => { throw new Error('ENOENT'); })).toThrow(/found 0 times/);
+  });
+});
+
 describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
   const pins = readAvatarPins();
 
@@ -137,3 +189,9 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
 //   D3 the regenerated pins without FALA's window                        🔴 «regenerated from an export»
 //   D4 the delivered manifest without `from`                             🔴 «every pinned file is written»
 //   D5 the notice without the Corresponding Source                       🔴 «every pinned file is written»
+// (2026-09-25, phase B3, the same script: each applied, this file run, the file restored from a copy and checked by hash — 5 of 5 red)
+//   L1 the stage chunk left out of the list                              🔴 «the ONE stage chunk the build emitted»
+//   L2 two stage chunks accepted, the first one listed                   🔴 «no stage chunk, or two»
+//   L3 the manifest left out of the list                                 🔴 «the ONE stage chunk the build emitted»
+//   L4 any file with the chunk's start taken, not only a .js             🔴 «only a `.js`»
+//   L5 the list hashing something other than the bytes on the disk      🔴 «the sha256 on the disk» (in `scripts/vlibras-player.mjs`)

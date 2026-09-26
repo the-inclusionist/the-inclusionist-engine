@@ -15,13 +15,19 @@
 // the sign itself. It is not trimmed out of the file (its bytes are the export's, pinned); the pins say where the sign starts,
 // with why, and the player plays from there (`ClipWindow.from`). `--pins-from` writes that into the pins it regenerates.
 //
+// OFFLINE (ADR-0234, phase B3; pillar 8): none of these files is in the precache — they are written after the build — and neither
+// is the stage chunk that carries three.js, which the precache leaves out on purpose. `writeAvatarList` names them all in
+// `libras/offline-avatar.json` with the sha256 of what is on the disk, and a device with deaf mode on keeps each file only if its
+// bytes are the listed ones (`platform/heavy`), where the service worker answers the free player from offline.
+//
 // USAGE (regenerating the pins from an export; the repository never holds the export itself):
 //   node scripts/libras-avatar.mjs --pins-from <the export's --out folder>
 
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeDeliveryList } from './vlibras-player.mjs';
 
 export const AVATAR_PINS = fileURLToPath(new URL('./libras-avatar.json', import.meta.url));
 const GPL_3 = new URL('./licences/GPL-3.0.txt', import.meta.url);
@@ -29,6 +35,8 @@ const sha256OfNode = (bytes) => createHash('sha256').update(bytes).digest('hex')
 
 /** The avatar's file in the delivery's folder, as the manifest names it. */
 export const AVATAR_FILE = 'avatar.glb';
+/** The manifest the player reads in the delivery's folder (`ui/libras-avatar-plan.LIBRAS_AVATAR_MANIFEST`). */
+const MANIFEST_FILE = 'manifest.json';
 /** A clip's file in the delivery's folder: the sign's name as the export wrote it. */
 export const clipFile = (name) => `clips/${name}.json`;
 
@@ -126,7 +134,7 @@ export async function deliverLibrasAvatar({ destino, folder, pins, base = '', fe
     writeFileSync(target, body);
     bytes += body.length;
   }
-  writeFileSync(join(destino, folder, 'manifest.json'), `${JSON.stringify(deliveredManifest(pins), null, 1)}\n`);
+  writeFileSync(join(destino, folder, MANIFEST_FILE), `${JSON.stringify(deliveredManifest(pins), null, 1)}\n`);
   writeFileSync(join(destino, folder, 'LICENSE'), readFileSync(GPL_3));
   writeFileSync(join(destino, folder, 'NOTICE'), 'The avatar (avatar.glb) and the sign clips (clips/) in this folder are derived from '
     + 'LAViD-UFPB\'s VLibras dictionary sources (vlibras-dictionary-sources, GPL-3.0, '
@@ -136,6 +144,41 @@ export async function deliverLibrasAvatar({ destino, folder, pins, base = '', fe
     + 'scripts/libras-export/sources.json) and the two scripts, in the engine\'s repository, '
     + 'https://github.com/the-inclusionist/the-inclusionist-engine. Licensed under the GPL-3.0, whose text is LICENSE, beside this file.\n');
   return { files: files.length, bytes };
+}
+
+/**
+ * THE STAGE CHUNK THE BUILD EMITTED, relative to the delivery: the one file under `start`'s folder whose name begins with `start`'s
+ * last segment and ends in `.js` (`platform/heavy-catalogue.LIBRAS_AVATAR_STAGE_CHUNK`; the bundler adds a content hash). THROWS
+ * when there is none — this build never emitted the free player, or put it elsewhere — or more than one, left by an earlier build:
+ * listing a stale chunk would keep bytes the page never asks for, and guessing would keep the wrong one.
+ */
+export function stageChunkOf(destino, start, list = (dir) => readdirSync(dir)) {
+  const folder = posix.dirname(start);
+  const begins = posix.basename(start);
+  let names = [];
+  try { names = list(join(destino, folder)); } catch { /* no such folder: none found, said below */ }
+  const found = names.filter((name) => name.startsWith(begins) && name.endsWith('.js') && name.length > begins.length + 3);
+  if (found.length !== 1) {
+    throw new Error(`the free Libras player's stage chunk (${start}<hash>.js) was found ${found.length} times in ${join(destino, folder)}`
+      + `${found.length ? `: ${found.join(', ')}` : ''} — build the page again (with an emptied output folder) before \`--libras-avatar\`, `
+      + 'so the delivery can list the one chunk the page loads');
+  }
+  return `${folder}/${found[0]}`;
+}
+
+/** What the free player's list names, in the order it opens them: the manifest, the avatar, every clip, then the stage chunk. */
+export function avatarListPaths({ folder, pins, stageChunk }) {
+  return [`${folder}${MANIFEST_FILE}`, `${folder}${AVATAR_FILE}`, ...Object.keys(pins.clips).map((name) => `${folder}${clipFile(name)}`),
+    stageChunk];
+}
+
+/**
+ * WRITES THE LIST A DEVICE KEEPS THE FREE PLAYER OFFLINE BY (`list`, the catalogue's `libras:avatar:delivery`): each file of
+ * `avatarListPaths` with the sha256 and size of the bytes on the disk (`vlibras-player.writeDeliveryList`). `stageChunk` is found
+ * first (`stageChunkOf`), so a build with no chunk stops the step before any list is written.
+ */
+export function writeAvatarList({ destino, list, folder, pins, stageStart, stageChunk = stageChunkOf(destino, stageStart), read }) {
+  return writeDeliveryList({ destino, list, paths: avatarListPaths({ folder, pins, stageChunk }), ...(read ? { read } : {}) });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

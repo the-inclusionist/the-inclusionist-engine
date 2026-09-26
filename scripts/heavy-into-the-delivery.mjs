@@ -27,7 +27,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
 import { deliverLibrasPlayer, writeDeliveryList, librasListPaths } from './vlibras-player.mjs';
 import { deliverLibrasGlosses, readSignPins, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
-import { deliverLibrasAvatar, readAvatarPins } from './libras-avatar.mjs';
+import { deliverLibrasAvatar, readAvatarPins, stageChunkOf, writeAvatarList } from './libras-avatar.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
@@ -119,7 +119,9 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  * · `--libras-avatar`: the FREE player's files (ADR-0234, route B, phase B2) — the avatar and the 632 sign clips of the B1 export,
  *   32.1 MiB, into `libras/avatar/`, each checked against `scripts/libras-avatar.json` (`scripts/libras-avatar.mjs`). Beside route
  *   A, not instead of it: a host lends the free player through `EngineHost.interpreter`. It reads the glosses `--libras` writes,
- *   so the two go together. Read here, apart from the answers above, so this list's shape stays route A's until phase B3.
+ *   so the two go together. Last, it writes `libras/offline-avatar.json` (phase B3), the list of those files and of the build's
+ *   three.js chunk with their sha256, by which a device with deaf mode on keeps the free player for the days without a network —
+ *   run after the build, which is what names the chunk. Read here, apart from the answers above, so this list's shape stays route A's until phase B3.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
@@ -241,10 +243,17 @@ if (executado) {
     }
   }
   if (process.argv.includes('--libras-avatar')) {
-    const { LIBRAS_AVATAR_FOLDER } = await import(new URL('../dist-pkg/ui/libras-avatar-plan.js', import.meta.url).href);
+    const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
     try {
-      const { files, bytes } = await deliverLibrasAvatar({ destino, folder: LIBRAS_AVATAR_FOLDER, pins: readAvatarPins(), base });
+      // 📌 THE STAGE CHUNK FIRST, before a byte is downloaded: a build that never emitted the free player learns it in a second
+      const stageChunk = stageChunkOf(destino, LIBRAS_AVATAR_STAGE_CHUNK);
+      const pins = readAvatarPins();
+      const { files, bytes } = await deliverLibrasAvatar({ destino, folder: LIBRAS_AVATAR_FOLDER, pins, base });
       console.log(`avatar    ${LIBRAS_AVATAR_FOLDER} — ${files} files, ${(bytes / 1048576).toFixed(1)} MiB (ADR-0234, route B)`);
+      // LAST, so it names what is really on the disk: the list a device keeps the free player offline by (pillar 8)
+      const list = DELIVERY_LISTS.find((l) => l.id === 'libras:avatar:delivery');
+      const listed = writeAvatarList({ destino, list, folder: LIBRAS_AVATAR_FOLDER, pins, stageChunk });
+      console.log(`offline   ${listed.path} — ${listed.files} files (${stageChunk} among them), ${listed.bytes} bytes, each with its sha256`);
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
       console.error('the Libras avatar was not delivered: the free player cannot sign in this delivery');
