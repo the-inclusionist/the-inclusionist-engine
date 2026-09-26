@@ -1068,8 +1068,8 @@
       "fanIn": 1
     },
     "platform/tts.ts": {
-      "codeLines": 203,
-      "decisionNodes": 37,
+      "codeLines": 207,
+      "decisionNodes": 38,
       "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,
@@ -1108,7 +1108,7 @@
       "fanIn": 1
     },
     "platform/voice-plan.ts": {
-      "codeLines": 9,
+      "codeLines": 12,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,

@@ -923,6 +923,7 @@
   ],
   "platform/voice-plan.ts": [
     "NeuralVoice",
+    "speaksLanguageOf",
     "voicesForLocale"
   ],
   "platform/vosk-runtime.ts": [

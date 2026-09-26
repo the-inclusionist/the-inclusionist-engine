@@ -9,7 +9,7 @@ import type { Store } from './storage.js';
 import { KEYS } from './storage-keys.js';
 import type { Translator } from '../core/i18n.js';
 import { createInterruptibleSpeech } from './interruptible-speech.js';
-import { voicesForLocale, type NeuralVoice } from './voice-plan.js';
+import { voicesForLocale, speaksLanguageOf, type NeuralVoice } from './voice-plan.js';
 import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
 import {
   KOKORO_VOICES, tokenize, sentenceStyle, eFala, wavDe,
@@ -157,13 +157,22 @@ export function createTts(ctx: TtsCtx): Tts {
     return true;
   }
 
+  /**
+   * NARRATION FOLLOWS THE LANGUAGE OF NOW (ADR-0243 §5): the page's voice object when it speaks the language of now; one picked in
+   * another language is dropped at the first utterance after the switch, and the voice in use for the new language speaks instead.
+   */
+  function voiceObjectOfNow(): SpeechSynthesisVoice | null {
+    if (_ttsVoiceObj && !speaksLanguageOf(_ttsVoiceObj.lang.replace('_', '-'), bcp47())) _ttsVoiceObj = null;
+    return _ttsVoiceObj;
+  }
+
   function speakWebSpeech(text: string): boolean {
     try {
       const ss = ctx.speech.synth(); if (!ss) return false; ss.cancel();
       // `u.lang` follows the game's language. Fixed at pt-BR, a game in English or Spanish would ask the browser for a
       // PORTUGUESE voice for a text that is not Portuguese — and the result is not an accent, it is unintelligible: the
       // wrong phonetics applied to the wrong letters.
-      const voiceName = _ttsVoiceObj ?? browserVoice(voiceInUse()?.voice);
+      const voiceName = voiceObjectOfNow() ?? browserVoice(voiceInUse()?.voice);
       const u = ctx.speech.utterance(text); u.lang = bcp47(); if (voiceName) u.voice = voiceName; u.volume = Math.min(1, ctx.getVolume() * 1.4);
       // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
       // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.

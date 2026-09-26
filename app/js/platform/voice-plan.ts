@@ -17,6 +17,13 @@ export interface NeuralVoice {
  * is not offered: Portuguese text through English phonemes is noise.
  */
 export function voicesForLocale(tag: string, catalogue: readonly NeuralVoice[]): readonly NeuralVoice[] {
-  const language = (tag.split('-')[0] ?? '').toLowerCase();
-  return catalogue.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === language);
+  return catalogue.filter((v) => speaksLanguageOf(v.locale, tag));
+}
+
+/** The primary language of a BCP-47 tag, lower case: `pt` of `pt-BR`. A browser's `en_US` is normalised by whoever reads it. */
+const primaryLanguage = (tag: string): string => (tag.split('-')[0] ?? '').toLowerCase();
+
+/** Does a voice tagged `locale` speak the language of `tag`? By the primary language, as `voicesForLocale` matches. */
+export function speaksLanguageOf(locale: string, tag: string): boolean {
+  return primaryLanguage(locale) === primaryLanguage(tag);
 }
