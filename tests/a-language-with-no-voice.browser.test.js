@@ -2,12 +2,26 @@
 // A LANGUAGE NO VOICE SPEAKS, MOUNTED (ADR-0185 §4; issue #180): in a real `createGame`, the four speech rows of the hearing
 // panel and the narration button of the quick bar are locked with the reason, never hidden.
 //
-// 📌 The engine's three languages all have a voice, and in the browser project `core/i18n` is loaded by the setup before any
-// `vi.mock` could replace it. So the engine's own `tts` object — the one the root and the panel both ask — is told it has no
-// voice for the language, before the pause opens. The narration's side of the lock is in `fala-sem-voz.node`.
+// 📌 THE VOICES ARE THE DEVICE'S (ADR-0200): the engine lists the browser's voices for the page's language, and Kokoro's only
+// where the game declares a neural voice. So «a language no voice speaks» is a device that lists none for it — GitHub's Linux
+// runner lists none at all, headless Chromium on Windows two for pt-BR — and the case lends a host whose speech engine lists
+// none, instead of reading the machine's. Voices that arrive or leave while the panel is open are
+// `voices-that-arrive-late.browser`; the narration's side of the lock is in `voice-per-language.node`.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
+class HostUtterance { constructor(text) { this.text = text; this.lang = ''; this.voice = null; this.volume = 0; this.rate = 0; } }
+/** The real window, with a speech engine that lists no voice answering first; every other method bound to the window. */
+const voicelessHost = () => {
+  const own = { speechSynthesis: { cancel() {}, speak() {}, getVoices: () => [], onvoiceschanged: null }, SpeechSynthesisUtterance: HostUtterance };
+  return new Proxy(window, {
+    get(target, prop) {
+      if (Object.hasOwn(own, prop)) return own[prop];
+      const v = Reflect.get(target, prop);
+      return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(target) : v;
+    },
+  });
+};
 
 let motor;
 const declaracao = () => ({
@@ -22,9 +36,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
-  motor.tts.voices = () => [];
-  motor.tts.currentVoice = () => null;
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: voicelessHost() }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 
 describe('a language no voice speaks', () => {
@@ -51,3 +63,7 @@ describe('a language no voice speaks', () => {
     expect(dito, 'refused in silence').toMatch(/Não há voz/);
   });
 });
+
+// ============================== MUTATIONS CHECKED ==============================
+// With the voiceless host lent instead of the engine's `tts` patched (2026-09-26), each case still goes red on its own: the
+// panel's `noVoice` answering `false` reddens the rows, the root's `noVoice` for the bar answering `false` reddens the button.
