@@ -214,6 +214,62 @@ describe('§2 · the voice of a language', () => {
   });
 });
 
+describe('§3 · no voice for it, no wrong voice', () => {
+  /** A `tts` whose reported `problems` lines are kept. */
+  function setupReporting(over = {}) {
+    const reported = [];
+    const { t } = createTranslator();
+    const tts = createTts({
+      store: createStorage(memoryBackend()),
+      translator: { t, bcp47: () => language },
+      srSay: () => {}, srAlert: () => {},
+      ensureAC: () => null, catNode: () => null, audioOut: () => null,
+      getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }),
+      speech, now: () => 0, createAudio: () => { throw new Error('no neural utterance plays here'); },
+      loadKokoro: () => new Promise(() => {}),
+      report: (line) => reported.push(line),
+      ...over,
+    });
+    return { tts, reported };
+  }
+  const notice = (name) => createTranslator().t('sr.tts.noVoiceForLanguage', { language: name });
+
+  it('🔴 [Right] the part is not spoken; the interface\'s voice says, in its place, that the device has no voice for it', () => {
+    const { tts } = setupReporting();
+    tts.narrate([{ text: 'Leia:' }, { text: 'bonjour', language: 'fr-FR' }, { text: 'agora' }]);
+    expect(texts()).toEqual(['Leia:', notice('francês'), 'agora']);
+    expect(spoke[1].voice, 'the notice is the interface\'s, in its voice').toBe(LUCIANA);
+    expect(spoke[1].lang).toBe('pt-BR');
+  });
+
+  it('🔴 [Right] one `problems` line naming the language, the cost for the child and the fix', () => {
+    const { tts, reported } = setupReporting();
+    tts.narrate([{ text: 'bonjour', language: 'fr' }]);
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toMatch(/lacks a voice for French \(fr\)/);
+    expect(reported[0]).toMatch(/child who listens does not hear it/);
+    expect(reported[0]).toMatch(/install a voice for French on the device/);
+  });
+
+  it('🔴 [Cardinality] ONCE per language: said and written the first time, silent after; another language is said too', () => {
+    const { tts, reported } = setupReporting();
+    tts.narrate([{ text: 'bonjour', language: 'fr-FR' }]);
+    tts.narrate([{ text: 'merci', language: 'fr-CA' }]);
+    tts.narrate([{ text: 'danke', language: 'de' }]);
+    expect(texts()).toEqual([notice('francês'), notice('alemão')]);
+    expect(reported).toHaveLength(2);
+  });
+
+  it('🎯 [Right] a neural voice still loading is not «no voice»: nothing is said and nothing is written', async () => {
+    const record = { voices: [], phonemized: [] };
+    const { tts, reported } = setupReporting({ neuralVoice: true, loadKokoro: fakeKokoro(record) });
+    voices = [LUCIANA]; // no English browser voice; Kokoro has English ones
+    tts.narrate([{ text: 'apple', language: 'en' }]);
+    expect(texts()).toEqual([]);
+    expect(reported).toEqual([]);
+  });
+});
+
 // ===== MUTATIONS CHECKED (2026-09-26) =====
 // Applied one at a time to `platform/tts.ts` by a script that counts the occurrences before replacing, each restored from a copy
 // and verified by SHA-256:
@@ -232,3 +288,10 @@ describe('§2 · the voice of a language', () => {
 // 9. every part styled by the loaded voice's table                          → red: the same case
 // 12. a text alone not ending an older list's parts                         → red: the newer narration
 // (10 and 11 are `finished` in `tests/interruptible-speech.node.test.js`.)
+// §3, in `platform/tts.ts`:
+// 1. the line not reported                                  → red: the `problems` line, once per language
+// 3. said and written at every part, not once               → red: once per language
+// 4. the notice not said                                    → red: the part not spoken, once per language
+// 5. the language named in English whatever the interface   → red: the part not spoken, once per language
+// 6. a part with no voice read by the interface's voice     → red: no French voice, and the three §3 cases
+// (2, the root not wiring `report`, is red in the browser file.)

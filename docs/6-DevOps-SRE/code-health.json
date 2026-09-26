@@ -28,8 +28,8 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2313,
-      "decisionNodes": 296,
+      "codeLines": 2314,
+      "decisionNodes": 297,
       "maxDepth": 4,
       "fanOut": 97,
       "globalReach": 0,
@@ -408,7 +408,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 659,
+      "codeLines": 660,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 659,
+      "codeLines": 660,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -428,7 +428,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 659,
+      "codeLines": 660,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1068,8 +1068,8 @@
       "fanIn": 1
     },
     "platform/tts.ts": {
-      "codeLines": 292,
-      "decisionNodes": 61,
+      "codeLines": 304,
+      "decisionNodes": 62,
       "maxDepth": 2,
       "fanOut": 5,
       "globalReach": 0,
@@ -1108,8 +1108,8 @@
       "fanIn": 1
     },
     "platform/voice-plan.ts": {
-      "codeLines": 23,
-      "decisionNodes": 3,
+      "codeLines": 27,
+      "decisionNodes": 4,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,

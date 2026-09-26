@@ -99,8 +99,37 @@ describe('Engine.tts.narrate speaks parts, each in its own language', () => {
   });
 });
 
+describe('§3 · a language the device has no voice for', () => {
+  const noVoiceLines = () => motor.problems.filter((l) => /lacks a voice for/.test(l));
+
+  it('🔴 [Right] the part is not spoken, the interface says so in its language and voice, and `problems` gets ONE line', async () => {
+    const host = await open([LUCIANA, SAMANTHA]); // no Spanish voice
+    motor.tts.narrate([{ text: 'Leia' }, { text: 'manzana', language: 'es' }]);
+    expect(host.spoken.map((u) => u.text)).toEqual(['Leia', motor.t('sr.tts.noVoiceForLanguage', { language: 'espanhol' })]);
+    expect(host.spoken[1].voice).toBe(LUCIANA);
+    expect(noVoiceLines(), 'the root did not write the line').toHaveLength(1);
+    expect(noVoiceLines()[0]).toMatch(/Spanish \(es\).*install a voice for Spanish on the device/);
+    motor.tts.narrate([{ text: 'pera', language: 'es-MX' }]);
+    expect(host.spoken).toHaveLength(2);
+    expect(noVoiceLines(), 'the line was written twice').toHaveLength(1);
+  });
+
+  it('🔴 [Right] in an English interface the notice is English, naming the language in English', async () => {
+    localStorage.setItem('incl_lang', 'en');
+    const host = await open([LUCIANA, SAMANTHA]);
+    expect(motor.locale()).toBe('en');
+    motor.tts.narrate([{ text: 'manzana', language: 'es' }]);
+    expect(host.spoken.map((u) => u.text)).toEqual([motor.t('sr.tts.noVoiceForLanguage', { language: 'Spanish' })]);
+    expect(host.spoken[0].text).toMatch(/Spanish/);
+    expect(host.spoken[0].voice).toBe(SAMANTHA);
+  });
+});
+
 // ===== MUTATIONS CHECKED (2026-09-26) =====
 // Applied one at a time by a script that counts the occurrences before replacing, each restored from a copy and checked by SHA-256:
 // 1. every part read as frame (`platform/tts.ts`)                      → red: the English word, the Portuguese literacy word
 // 2. the stale voice object kept after a switch (the §5 defect)        → red: the switch
 // 3. `voiceOfLanguage` without the language filter                     → red: the English word
+// §3: 4. the line not reported · 5. the root not wiring `report` (`boot/create-game.ts`) · 6. said and written at every part
+//     → red: the ONE line. 7. the notice not said · 8. a part with no voice read by the interface's voice → red: both §3 cases.
+//     9. the language named in English whatever the interface → red: the Portuguese notice.

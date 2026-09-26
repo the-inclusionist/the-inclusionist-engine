@@ -1086,6 +1086,8 @@ export function createGame(o: CreateGameOptions): Engine {
     createAudio: () => doc.createElement('audio'),
     speech,
     now: () => win.performance.now(),
+    // a part in a language the device has no voice for (ADR-0243 §3); `measuredProblems` is declared below and read when it calls
+    report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
   });
   // 📌 The neural-voice line lives in `measureCartridgeProblems()`: the decline that silences it is the game's.
 

@@ -348,6 +348,7 @@ const es: Record<string, string> = {
   'audio.noSystemVoices': '(sin voces del sistema)',
   'sr.tts.engineNoLanguage': 'Este motor todavía no habla este idioma — por ahora, usa la voz del navegador.',
   'sr.tts.noNeuralForLanguage': 'Todavía no hay voz neuronal para este idioma — seguimos con la voz del navegador, que sí lo habla.',
+  'sr.tts.noVoiceForLanguage': 'Este dispositivo no tiene voz en {language}: esa parte no se lee en voz alta, pero sigue en la pantalla.',
   'sr.tts.neuralNotBundled': 'Esta versión del juego no trae voz neuronal — seguimos con la voz del navegador.',
   'sr.tts.downloading': 'Descargando la voz neuronal (necesita internet solo en el 1.er uso)…',
   'sr.tts.ready': 'Voz neuronal lista, en {s} segundos.',

@@ -23,6 +23,15 @@ export function voicesForLocale(tag: string, catalogue: readonly NeuralVoice[]):
 /** The primary language of a BCP-47 tag, lower case: `pt` of `pt-BR`. A browser's `en_US` is normalised by whoever reads it. */
 const primaryLanguage = (tag: string): string => (tag.split('-')[0] ?? '').toLowerCase();
 
+/**
+ * A language's name, written in another language: `languageName('en-GB', 'pt-BR')` is «inglês» — the primary language, because a
+ * voice of the same language would have read the part (ADR-0243 §3). Where the platform cannot name it, the tag's language code.
+ */
+export function languageName(tag: string, inLanguage: string): string {
+  const code = primaryLanguage(tag);
+  try { return new Intl.DisplayNames([inLanguage], { type: 'language' }).of(code) ?? code; } catch { return code; }
+}
+
 /** Does a voice tagged `locale` speak the language of `tag`? By the primary language, as `voicesForLocale` matches. */
 export function speaksLanguageOf(locale: string, tag: string): boolean {
   return primaryLanguage(locale) === primaryLanguage(tag);

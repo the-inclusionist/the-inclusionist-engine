@@ -455,6 +455,7 @@ const pt: Record<string, string> = {
   'audio.noSystemVoices': '(sem vozes do sistema)',
   'sr.tts.engineNoLanguage': 'Este motor ainda não fala este idioma — por enquanto, use a voz do navegador.',
   'sr.tts.noNeuralForLanguage': 'Ainda não há voz neural para este idioma — seguindo com a voz do navegador, que fala a língua certa.',
+  'sr.tts.noVoiceForLanguage': 'Este aparelho não tem voz em {language}: essa parte não é lida em voz alta, mas continua na tela.',
   // ⚠️ NÃO diz «para este idioma» (ADR-0094): sem motor neural nesta montagem, não há voz neural em idioma
   // nenhum, e a outra frase faria a criança trocar de idioma à procura do que não está lá.
   'sr.tts.neuralNotBundled': 'Esta versão do jogo não traz voz neural — seguindo com a voz do navegador.',

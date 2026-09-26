@@ -12,7 +12,7 @@ import type { Store } from './storage.js';
 import { KEYS } from './storage-keys.js';
 import type { Translator } from '../core/i18n.js';
 import { createInterruptibleSpeech, type InterruptibleSpeech } from './interruptible-speech.js';
-import { voicesForLocale, voiceOfLanguage, speaksLanguageOf, type NeuralVoice } from './voice-plan.js';
+import { voicesForLocale, voiceOfLanguage, speaksLanguageOf, languageName, type NeuralVoice } from './voice-plan.js';
 import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
 import {
   KOKORO_VOICES, tokenize, sentenceStyle, eFala, wavDe,
@@ -88,6 +88,11 @@ export interface TtsCtx {
   speech: SpeechPort;
   /** The clock a browser utterance and a neural load are timed with: the root's `performance.now`. REQUIRED (ADR-0232 D4). */
   now: () => number;
+  /**
+   * Where a line of `problems` goes (ADR-0169): the root's list. Written once per language a part asked for and the device has no
+   * voice for (ADR-0243 §3). Absent, nothing is reported — a `tts` built outside a root has no `problems` to write to.
+   */
+  report?: (line: string) => void;
 }
 
 export interface Tts {
@@ -357,9 +362,26 @@ export function createTts(ctx: TtsCtx): Tts {
     const chosen = chosenVoices();
     const neuralVoices = ctx.neuralVoice && !ttsFailed ? KOKORO_VOICES : [];
     const best = voiceOfLanguage(language, [...deviceVoices(), ...neuralVoices], chosen);
-    const kokoro = KOKORO_VOICES.find((v) => v.voice === best?.voice);
-    if (kokoro) return neuralSegment(text, language, kokoro, chosen);
-    return best ? browserSegment(text, language, best) : null;
+    if (!best) return noVoiceSegment(language);
+    const kokoro = KOKORO_VOICES.find((v) => v.voice === best.voice);
+    return kokoro ? neuralSegment(text, language, kokoro, chosen) : browserSegment(text, language, best);
+  }
+
+  /** The languages this root has already said it has no voice for, by primary language (ADR-0243 §3). */
+  const toldNoVoice = new Set<string>();
+  /**
+   * NO VOICE FOR IT, NO WRONG VOICE (ADR-0243 §3): the part is not spoken — the text stays on the screen. Once per language, the
+   * interface's voice says so in its place, and `problems` gets one line naming the language and the fix.
+   */
+  function noVoiceSegment(language: string): Segment | null {
+    const english = languageName(language, 'en');
+    const code = language.split('-')[0]!.toLowerCase();
+    if (toldNoVoice.has(code)) return null;
+    toldNoVoice.add(code);
+    ctx.report?.(`narration: the device lacks a voice for ${english} (${code}), so a part a game gave in ${english} is not read aloud `
+      + `and a child who listens does not hear it (the text stays on the screen) — install a voice for ${english} on the device, `
+      + `in its text-to-speech settings`);
+    return frameSegment(t('sr.tts.noVoiceForLanguage', { language: languageName(language, bcp47()) }));
   }
 
   /** The voices the child chose, in order of precedence: the page's voice object, then the stored choice (ADR-0243 §2). */

@@ -348,6 +348,7 @@ const en: Record<string, string> = {
   'audio.noSystemVoices': '(no system voices)',
   'sr.tts.engineNoLanguage': 'This engine does not speak this language yet — for now, use the browser voice.',
   'sr.tts.noNeuralForLanguage': 'There is no neural voice for this language yet — carrying on with the browser voice, which speaks it.',
+  'sr.tts.noVoiceForLanguage': 'This device has no voice in {language}: that part is not read aloud, but it stays on the screen.',
   'sr.tts.neuralNotBundled': 'This build of the game ships no neural voice — carrying on with the browser voice.',
   'sr.tts.downloading': 'Downloading the neural voice (needs the internet on the first use only)…',
   'sr.tts.ready': 'Neural voice ready, in {s} seconds.',

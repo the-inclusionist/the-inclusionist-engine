@@ -1741,6 +1741,7 @@
       "loadKokoro",
       "neuralVoice?",
       "now",
+      "report?",
       "speech",
       "srAlert",
       "srSay",
