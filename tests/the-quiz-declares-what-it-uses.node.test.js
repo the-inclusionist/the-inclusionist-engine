@@ -43,7 +43,8 @@ describe('the quiz demo declares what it uses', () => {
 
   it('🎯 [Zero] and it names no microphone, no model and no language of its own — that is the engine\'s half', () => {
     // The promise of ADR-0216 read as a measurement: what a game may NOT need to know in order to hear a child.
-    const acusados = ficheiros().filter((f) => /getUserMedia|AudioContext|Float32Array|whisper|moonshine|16000|sampleRate/i.test(fonte(f)));
+    // The model names are WHOLE words: an option «someone whispering» is a sound question, not the Whisper model.
+    const acusados = ficheiros().filter((f) => /getUserMedia|AudioContext|Float32Array|\bwhisper\b|\bmoonshine\b|16000|sampleRate/i.test(fonte(f)));
     expect(acusados, 'a file of the demo took the microphone or the model back').toEqual([]);
   });
 

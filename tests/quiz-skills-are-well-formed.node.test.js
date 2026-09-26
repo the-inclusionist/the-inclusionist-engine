@@ -83,7 +83,10 @@ describe('the demo quiz\'s skills are well formed', () => {
   it('🔴 [Right] the sieve refuses what it exists to refuse — each rule red on a malformed skill', () => {
     // The checker is this file's own code: a rule that could never fire would pass the data above for nothing.
     const base = QUIZ_SKILLS.find((s) => s.contentLanguage === undefined);
-    const lingua = QUIZ_SKILLS.find((s) => s.contentLanguage !== undefined);
+    // Two language disciplines, because the data has both shapes in different skills: questions with no `content` (sentences to
+    // judge, words to pick) and questions whose statement carries `{content}` (a word to rhyme with).
+    const lingua = QUIZ_SKILLS.find((s) => s.contentLanguage !== undefined && s.questions.every((q) => q.content === undefined));
+    const slotted = QUIZ_SKILLS.find((s) => s.contentLanguage !== undefined && s.questions.every((q) => q.content !== undefined));
     const withQuestion = (s, n, patch) => ({ ...s, questions: s.questions.map((q, i) => (i === n ? { ...q, ...patch } : q)) });
     const cases = [
       [{ ...base, questions: base.questions.slice(0, 2) }, /2 questions, not 3/],
@@ -92,7 +95,7 @@ describe('the demo quiz\'s skills are well formed', () => {
       [{ ...base, component: { ...base.component, es: ' ' } }, /component: empty in es/],
       [withQuestion(base, 1, { options: ['a', ...base.questions[1].options.slice(1)] }), /a string option where nothing is content/],
       [withQuestion(lingua, 0, { content: 'x' }), /content, and the pt statement has 0 \{content\}/],
-      [withQuestion(lingua, 1, { content: undefined }), /\{content\} in the pt statement with no content/],
+      [withQuestion(slotted, 1, { content: undefined }), /\{content\} in the pt statement with no content/],
       [withQuestion(base, 0, { explanation: { ...base.questions[0].explanation, en: `It is ${base.questions[0].options[base.questions[0].correct].en}.` } }), /the en explanation names the answer/],
       [{ ...base, code: '' }, /neither a BNCC code nor null/],
       [{ ...base, stage: 'ef9' }, /stage is not infantil or ef5/],
