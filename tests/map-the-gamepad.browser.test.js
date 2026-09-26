@@ -82,6 +82,10 @@ describe('«Mapear controle»', () => {
     await aperta(5);
     expect(prompt(), 'SELECT was not asked, in the engine\'s words, after START')
       .toBe(t('pad.wiz.stepSelect', { n: PADWIZ_ORDER.indexOf('select') + 1, total }));
+    // 🔴 WHAT IS MAPPED, IN THE WORDS IT WAS ASKED WITH (ADR-0074): the game's for its positions, the engine's for START —
+    // measured 2026-09-26 as «Mapeados: left · action2 · start», the position ids
+    expect(document.querySelector('#padwiz-progress').textContent, 'the progress line shows position ids, not words')
+      .toBe(t('pad.wiz.mapped', { lista: ['Esquerda', 'Pular', t('touch.start')].join(' · ') }));
     await aperta(6);
     const guardado = JSON.parse(localStorage.getItem('incl_padmap_' + pad.id) ?? 'null');
     expect(guardado, 'the map was not stored').toEqual({ left: { b: 7 }, action2: { b: 1 }, start: { b: 5 }, select: { b: 6 } });
@@ -161,3 +165,5 @@ describe('«Mapear controle»', () => {
 //   K8 the root's wizard and its gamepad on two caches of stored maps (ADR-0232 D4)                        🔴
 //   K9 the START step dropped · K10 the SELECT step dropped · K11 START and SELECT asked from the preset
 //      (2026-09-26, `scratchpad/wizard-start-select/mutate.mjs`, restored by SHA-256)                    🔴 both mapping cases, each
+//   K12 the progress line listing the map's keys · K13 START by its id · K14 the game's positions by their ids
+//      (2026-09-26, `scratchpad/wizard-words-single/mutate.mjs`, restored by SHA-256)                   🔴 the mapping case, each

@@ -231,6 +231,39 @@ describe('START and SELECT: always asked, last, in the engine\'s words', () => {
 });
 
 /*
+ * THE PROGRESS LINE NAMES EACH POSITION BY THE WORD IT WAS ASKED WITH (ADR-0074: no abstract name reaches a person).
+ * 🔴 MEASURED on 2026-09-26: «Mapeados: up · action2 · start» — the line listed the map's KEYS, the engine's position ids, under
+ * a question the child had just heard in the game's words. Each position is shown as it was asked: the game's word for the
+ * game's positions (the host's labeller), the engine's word for START and SELECT.
+ */
+describe('the progress line: each position in the word it was asked with', () => {
+  function answer(wiz, pad, b) {
+    pad.buttons[b].pressed = true; wiz.tick();
+    pad.buttons[b].pressed = false; wiz.tick();
+  }
+  const WORDS = { up: 'Subir', down: 'Descer', left: 'Esquerda' };
+  const t = translate; // named `t`: its `{param}` keys are the dictionary's, not members (`scripts/apply-member-rename.mjs`)
+
+  it('🔴 [Right] after up, down, left and START, the line is the game\'s three words and the engine\'s START', () => {
+    const pad = mkPad('p', 0);
+    const { ctx, progress } = mkCtx([pad]);
+    ctx.actionLabel = (a) => WORDS[a] ?? null;
+    const wiz = createPadWizard(ctx);
+    upToTheFirstQuestion(wiz, pad);
+    answer(wiz, pad, 4); answer(wiz, pad, 5); answer(wiz, pad, 6); answer(wiz, pad, 7); // up, down, left, START
+    expect(progress.at(-1), 'the progress line does not name what was mapped in the words it was asked with')
+      .toBe(t('pad.wiz.mapped', { lista: ['Subir', 'Descer', 'Esquerda', t('touch.start')].join(' · ') }));
+    expect(progress.at(-1), 'a position id reached the child').not.toMatch(/\b(up|down|left|start)\b/);
+  });
+
+  it('🔴 [CrossCheck] the word for START and SELECT is the one their questions say', () => {
+    const start = translate('pad.wiz.stepStart', { n: 1, total: 1 }), select = translate('pad.wiz.stepSelect', { n: 1, total: 1 });
+    expect(start, 'START\'s question does not say the word the progress line shows').toContain(translate('touch.start'));
+    expect(select, 'SELECT\'s question does not say the word the progress line shows').toContain(translate('touch.select'));
+  });
+});
+
+/*
  * THE STORED MAPS ARE ONE ROOT'S (ADR-0232 D4). As a module cache they were one for the page: two roots on two stores read
  * each other's map, and a pad a child in one root never recorded answered with the map another child saved.
  */
@@ -275,6 +308,9 @@ describe('the stored maps, one cache per root', () => {
 //   · the START step dropped                         → «after the game's last named position» and «[Zero]»
 //   · the SELECT step dropped                        → the same two
 //   · START and SELECT asked from the host's labeller → all three (the preset cannot name them: the steps vanish)
+// and (2026-09-26, `scratchpad/wizard-words-single/mutate.mjs`, restored by SHA-256):
+//   · the progress line listing the map's keys       → «after up, down, left and START»
+//   · START named by its id · the game's positions named by their ids → the same case, each
 //
 // 🟡 AND THREE SURVIVORS ARE DECLARED, because two of them are the same fact: **the baseline's button array is all
 // false by construction.** It is captured in the one frame where `!gp.buttons.some(pressed)` holds, so

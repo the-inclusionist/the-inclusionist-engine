@@ -49,6 +49,8 @@ const cartaoAberto = () => document.getElementById('vp-pause-0')?.hidden === fal
 const pausado = () => document.querySelector('#game-region .pausa-rapida');
 const pausadoAVista = () => !!pausado() && pausado().hidden === false;
 const perguntas = [];
+/** The progress line under each question, as the child saw it. */
+const progressos = [];
 
 beforeAll(async () => {
   localStorage.removeItem('incl_padmap_' + ID);
@@ -68,6 +70,7 @@ beforeAll(async () => {
   botoes = [7]; await quadro(); await esperar(); botoes = []; await quadro(); await esperar();
   for (const passo of ['up', 'down', 'action2', 'start', 'select']) {
     perguntas.push(prompt());
+    progressos.push(document.querySelector('#padwiz-progress')?.textContent ?? '');
     await apertar(B[passo]);
   }
 });
@@ -84,6 +87,13 @@ describe('the wizard that opened by itself asks START and SELECT', () => {
     expect(JSON.parse(localStorage.getItem('incl_padmap_' + ID) ?? 'null'), 'the stored map').toEqual({
       up: { b: B.up }, down: { b: B.down }, action2: { b: B.action2 }, start: { b: B.start }, select: { b: B.select },
     });
+  });
+
+  it('🔴 [Right] what is mapped is listed in the words it was asked with — the game\'s, then the engine\'s START (ADR-0074)', () => {
+    // measured 2026-09-26 as «Mapeados: up · down · action2 · start»: the position ids, under questions in words
+    expect(progressos.at(-1), 'the progress line under SELECT\'s question').toBe(
+      t('pad.wiz.mapped', { lista: ['Up', 'Down', 'Confirm', t('touch.start')].join(' · ') }),
+    );
   });
 });
 
@@ -111,3 +121,6 @@ describe('and afterwards, that pad has a pause', () => {
 //   W1 the START step dropped                                    🔴 all three cases here
 //   W2 the SELECT step dropped                                   🔴 the order and SELECT cases; START's stays green, as it should
 //   W3 START and SELECT asked from the host's labeller (the preset) 🔴 all three: the preset cannot name them, so the steps vanish
+// and `scratchpad/wizard-words-single/mutate.mjs` (the same checks), 2026-09-26:
+//   W4 the progress line listing the map's keys · W5 START by its id · W6 the game's positions by their ids
+//                                                                🔴 «what is mapped is listed in the words», each

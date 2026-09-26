@@ -60,13 +60,15 @@ export const PADWIZ_ORDER: readonly string[] = [
  * what the game names never asked them, and every pad it mapped had no quick pause and no menus: the pause no game may decline,
  * declined by the pad. They are the system's, and `core/actions` (`SYSTEM`) says the engine may name them — the legend printed
  * on the pad. The host's labeller is not asked about them.
+ * 📌 Each carries its QUESTION and its NAME: the name is the word the question says (START, SELECT), and it is how the progress
+ * line lists the position once mapped — never its id (ADR-0074: no abstract name reaches a person).
  */
-const SYSTEM_QUESTION: Readonly<Record<(typeof SYSTEM)[number], string>> = {
-  start: 'pad.wiz.stepStart',
-  select: 'pad.wiz.stepSelect',
+const SYSTEM_WORDS: Readonly<Record<(typeof SYSTEM)[number], { readonly question: string; readonly name: string }>> = {
+  start: { question: 'pad.wiz.stepStart', name: 'touch.start' },
+  select: { question: 'pad.wiz.stepSelect', name: 'touch.select' },
 };
-const systemQuestion = (action: string): string | null =>
-  ((SYSTEM as readonly string[]).includes(action) ? SYSTEM_QUESTION[action as (typeof SYSTEM)[number]] : null);
+const systemWords = (action: string): { readonly question: string; readonly name: string } | null =>
+  ((SYSTEM as readonly string[]).includes(action) ? SYSTEM_WORDS[action as (typeof SYSTEM)[number]] : null);
 
 /** What this module reads and writes the maps through: the page's store, built by the root (ADR-0232, issue #207). */
 export type PadMapStore = Pick<Store, 'getJSON' | 'setJSON'>;
@@ -118,7 +120,7 @@ export interface PadWizardCtx {
   getGamepads: GetGamepads;
   /**
    * The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped).
-   * ⚠️ Not asked about `start` and `select`: the wizard always asks them, in the engine's words (`SYSTEM_QUESTION`).
+   * ⚠️ Not asked about `start` and `select`: the wizard always asks them, in the engine's words (`SYSTEM_WORDS`).
    */
   actionLabel: (action: string) => string | null;
   /** Shows and says the wizard's sentence. */
@@ -148,8 +150,16 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   const { t } = ctx;
   let padWiz: WizState | null = null;
 
-  /** Is this step asked? The game's positions when it names them; the system's two always (`SYSTEM_QUESTION`). */
-  const asked = (action: string): boolean => systemQuestion(action) !== null || !!ctx.actionLabel(action);
+  /** Is this step asked? The game's positions when it names them; the system's two always (`SYSTEM_WORDS`). */
+  const asked = (action: string): boolean => systemWords(action) !== null || !!ctx.actionLabel(action);
+  /**
+   * A position's word, the one its question said: the engine's for START and SELECT, the game's for the rest. ⚠️ A position
+   * the game no longer names (a cartridge mounted mid-wizard) has no word, and is left out rather than shown by its id.
+   */
+  const wordFor = (action: string): string | null => {
+    const system = systemWords(action);
+    return system ? t(system.name) : ctx.actionLabel(action);
+  };
   /**
    * Walks to the next step asked, or closes if there is none left. ONE function: after the last step the wizard does not stay
    * open pointing at a position nobody asks.
@@ -165,11 +175,13 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     if (!padWiz) return; // it closed while advancing
     const action = PADWIZ_ORDER[padWiz.step]!;
     const n = padWiz.step + 1, total = PADWIZ_ORDER.length;
-    const system = systemQuestion(action);
-    ctx.say(t(system ?? 'pad.wiz.step', { n, total, acao: system ? '' : ctx.actionLabel(action)! }));
+    const system = systemWords(action);
+    ctx.say(t(system?.question ?? 'pad.wiz.step', { n, total, acao: system ? '' : ctx.actionLabel(action)! }));
     ctx.onStep?.(action);
-    // The empty list's dash stays raw on purpose: it is punctuation, not language.
-    ctx.progress(t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' }));
+    // What is mapped, in the words it was asked with (ADR-0074) — the map's keys are position ids. The empty list's dash stays
+    // raw on purpose: it is punctuation, not language.
+    const words = Object.keys(padWiz.map).map(wordFor).filter((word): word is string => !!word);
+    ctx.progress(t('pad.wiz.mapped', { lista: words.join(' · ') || '—' }));
   }
   function wire(bd: PadBinding): void {
     if (!padWiz) return;
