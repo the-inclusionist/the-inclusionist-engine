@@ -1,6 +1,12 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/virtual-controller.node.test.js
+    - tests/touch-bindings.node.test.js
+    - tests/touch-bindings.browser.test.js
+    - tests/gamepad.node.test.js
+    - tests/virtual-controller-at-boot.browser.test.js
   superseded-in-part:
     - by: ADR-0224
       what: "ONLY who ASSEMBLES the gamepad, and with it the shape of the door reaching it. The second erratum below made `GamepadCtx.press`/`release` the final answer, because the cartridge mounts that transport; the Dev then decided that `createGame` mounts it, like the other five. The decision of this record — every transport presses the virtual controller — is unchanged, and `press`/`release` keep working for a cartridge that assembles a transport of its own"
@@ -171,12 +177,6 @@ decision-outcome:
     61 commits). The «after» has one commit. ⚠️ And the first readings will be pessimistic by construction: the three
     commits of the unification touch several of these files at once, which is precisely what the abstraction exists to
     stop happening afterwards.
-  confirmed-by:
-    - tests/virtual-controller.node.test.js
-    - tests/touch-bindings.node.test.js
-    - tests/touch-bindings.browser.test.js
-    - tests/gamepad.node.test.js
-    - tests/virtual-controller-at-boot.browser.test.js
 
 more-information: |
   📌 What this record does NOT decide: whether the cartridge keeps receiving keys at all. It does — `holdKey` stays, because

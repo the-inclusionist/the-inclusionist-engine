@@ -1,6 +1,9 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-engine-mounts-the-gamepad.browser.test.js
+    - tests/gamepad.node.test.js
   date: 2026-09-22
   decision-makers: [Dev]
   supersedes-in-part: [ADR-0223]
@@ -101,9 +104,6 @@ decision-outcome:
     The controller was simulated through `navigator.getGamepads`; ⏸ **a physical one is the Dev's run.**
     📏 The closing number is the one ADR-0223 fixed and it is not readable yet: 36% co-change before the single door,
     one commit after.
-  confirmed-by:
-    - tests/the-engine-mounts-the-gamepad.browser.test.js
-    - tests/gamepad.node.test.js
 
 more-information: |
   📌 What this record does NOT decide: whether `initGamepad` should eventually stop being published. It stays, because a

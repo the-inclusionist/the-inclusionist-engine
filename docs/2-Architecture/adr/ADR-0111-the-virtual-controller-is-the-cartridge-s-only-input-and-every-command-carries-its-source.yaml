@@ -2,12 +2,25 @@
 metadata:
   status: "accepted"
   confirmed-by:
+    - tests/a-delivered-key-does-not-also-click.browser.test.js
+    - tests/key-default.node.test.js
     - tests/engine-boundary.node.test.js
     - tests/the-keys-source-survives-the-door.node.test.js
     - tests/no-abstract-name-reaches-a-person.node.test.js
     - app/js/input/synthetic-source.ts
     - tests/virtual-controller.node.test.js
   errata:
+    - date: 2026-09-26
+      what: >-
+        ✅ THE ENGINE CANCELS THE DEFAULT OF A KEY IT DELIVERED. «a engine leva o evento para o jogo» makes a delivered
+        key the game's, so it must not ALSO do the browser's default. 📏 Measured before the change (engine, a minimal
+        game with a focusable button, Space = `action2`, real keys): one Space was two actions — `onCommand` heard
+        `action2`, and on the release the browser clicked the focused button; on the served demo quiz it answered two
+        questions. Built in engine `f294c522`: the keyboard conductor cancels the default when `press()` answers that
+        the position reached play, and `input/key-default` keeps it for a key not delivered (unmapped — Tab, Escape —,
+        refused by an open menu, signed by another transport), for a key typed into input, textarea, select or
+        contenteditable, and for the engine's own accessibility bar. The demo quiz's local guard left in `c439d549`.
+        📏 On the served dist after: one Space, one answer; Tab moves and answers nothing; ☰ still opens by Space.
     - date: 2026-09-09
       what: >-
         the confirmation opened with «NOT YET BUILT» and all four gates are built. MEASURED against the tree:

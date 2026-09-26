@@ -1,6 +1,9 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/voice-control.node.test.js
+    - tests/boot-create-game.node.test.js
   errata:
     - date: 2026-09-26
       what: >-
@@ -128,9 +131,6 @@ decision-outcome:
     ⏸ **What is NOT built**: the delivery half. The heavy files are still chosen at boot for the boot language, so a
     school that wants two languages passes `--commands`/`--reading` twice; what changed is that the gap is now SAID
     instead of being a microphone listening in the wrong language.
-  confirmed-by:
-    - tests/voice-control.node.test.js
-    - tests/boot-create-game.node.test.js
 
 more-information: |
   📌 What this record does NOT decide: whether a cartridge's own drawn text is the engine's problem. It is not — the
