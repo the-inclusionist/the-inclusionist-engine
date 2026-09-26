@@ -25,6 +25,25 @@ metadata:
         same words, so a false «reduced» costs nothing); the same text written again is not a new text; beside another
         footer line (ADR-0164: one line each) the view is one line. The text moves by `scrollTop`, so the live region is
         never rewritten (§4). Measured at 640×360: all fifteen BNCC texts of the demo quiz overflow two lines (3 to 7).
+    - date: 2026-09-26
+      what: >-
+        THE GLIDE IS BUILT (`engine:edfc912c`), correcting `engine:b2ff44e6`, whose driver moved `scrollTop` a line per step
+        — measured on EF35EF05 at 125 ppm, sampled every 500 ms on real time: 0 px until 9.2 s, then 21, 42, 62 and 83 px,
+        each held for seconds. Now, after the first view's wait, the words rise at ONE speed until the last line is in view:
+        the distance from the first line to the top of the last view, in the time the words BELOW the first view take at
+        60 000 / ppm ms a word, so the last line is whole in view when every word has been read; the last view is held for
+        its words; then again from the top, measured again. Chosen in building it: the plan is `{ waitMs, travelMs, holdMs,
+        toLine }`; the footer's text node — the one the game wrote, moved and not copied — goes into one
+        `.footer-scroll-text` block in the same task as the write, before a frame is drawn, and a Web Animation translates
+        the block with linear timing (sub-pixel and on the compositor, where `scrollTop` stands on whole pixels); §3 is
+        `Animation.pause()` where it stands and leaving plays on from there, and a text that arrives under the pointer waits;
+        §2 is unchanged — pages by `scrollTop` and a timer —, and a page without Web Animations turns pages too. §4: nothing
+        is written into the live region after the text arrives, measured with a MutationObserver over a whole round and into
+        the next; ⚠️ NOT measured with a screen reader — that one move into the block, before the first frame, is announced
+        once is the reading of how Chromium builds its accessibility tree, not a listening. Measured at 640×360, EF35EF05 at
+        125 ppm (lines of 10, 9, 6, 7, 7 and 4 words), every 500 ms on real time: still to 9.12 s, then 0.45, 4.19, 7.80,
+        11.53 … 77.36, 80.97 and 83.19 px at 20.64 s — 7.2 px a second, 0.12 px a 60 Hz frame —, held to 25.92 s, again
+        from the top. The confirmation below is rewritten for these gates.
   supersedes-in-part: [ADR-0164, ADR-0244]
   date: 2026-09-26
   decision-makers: [Dev]
@@ -82,14 +101,17 @@ decision-outcome:
       - "Moving text on screen, which some children find distracting; reduced motion is the way out"
 
   confirmation: |
-    ✅ The gates in confirmed-by, on the real stylesheet at 640×360 with faked timers: a text that fits gets no mark and no
-    timer and has not moved a minute later; a longer one reaches each line, and its last, when the words before it are read,
-    at 125, 145 and 175 words a minute, shows its last two lines whole and no slice of another, holds, and starts again from
-    the top; reduced motion (the system's, and the calm icon's) turns pages of two, in place at once, with no smooth scroll;
-    a pointer over it or focus in it holds it with no timer left, and leaving lets it go on; a new text starts from the top,
-    the same text written again does not; hiding the band or closing a panel leaves no timer; the scrolling band's box is the
-    clamped one to the pixel and `--footer-band-h`; beside the sound caption it scrolls through one line; the live region
-    keeps one text node. 27 mutations red.
+    ✅ The gates in confirmed-by, on the real stylesheet at 640×360 (erratum of the glide, 2026-09-26): a text that fits gets
+    no mark, no timer and no animation, and its DOM is untouched; a longer one is still while its first view is read, then
+    rises — sampled on the glide's own clock a 60 Hz frame apart — by the same fraction of a pixel every frame, and on real
+    frames by under a pixel each at the planned speed; its last line comes whole into view exactly when every word is read,
+    at 125, 145 and 175 words a minute, with its last two lines whole and no slice of another, is held for them, and starts
+    again from the top; reduced motion (the system's, and the calm icon's) turns pages of two, in place at once, with no
+    animation; a pointer over it or focus in it holds it where it is, a text arriving under the pointer waits, and leaving
+    lets it go on from there; a new text starts from the top, the same text written again goes on where it was; hiding the
+    band or closing a panel leaves no animation and no timer; the moving band's box is the clamped one to the pixel and
+    `--footer-band-h`; beside the sound caption it glides through one line; the live region keeps the text node it was
+    written as, and the motion writes nothing into it. 20 mutations red.
 
 more-information: |
   The pace is the caption rate because it is the one reading speed the child already chose; a second speed setting would
