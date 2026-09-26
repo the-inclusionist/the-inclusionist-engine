@@ -104,6 +104,32 @@ project's own mirror because neither export has an upstream: `whisper-small-onnx
 here). 📏 Measured on 2026-09-21: a delivery with `--reading en --base <the staging tree>` wrote the 161.7 MiB of the English model
 from disk, with no network, each file checked against its sha256.
 
+### What the host that serves a delivery must do with `.tar.gz`
+
+🔴 **The command models must reach the browser as the bytes the catalogue pins, so the host must serve `heavy/**/*.tar.gz` with no
+`Content-Encoding`.** A `.tar.gz` is a file whose format is gzip, not a response compressed for transport: served with
+`Content-Encoding: gzip`, the browser undoes the gzip before the engine sees a byte, the sha256 of what arrives is the `.tar`'s, and
+the checked cache refuses the model — the child's voice commands never start. 📏 **Measured on 2026-09-26** with the engine's `dist`
+and `vosk-model-small-pt-0.3.tar.gz`: `vite preview` answers it with `Content-Encoding: gzip` and an empty `Content-Type` (its static
+server, `sirv` 3.0.2, maps any name ending in `.gz` to that encoding); a client that decodes as a browser does ends with 53,565,440
+bytes instead of the 32,358,733 pinned, and the sha256 no longer matches. The same file from a server that applies
+`app/public/_headers` and adds no encoding arrives whole and matches.
+
+⚠️ **`_headers` is not the fix, and no rule for it was added.** `vite preview` never reads `_headers` — the same measurement found
+none of its `/*` headers (no COEP, no CSP) on the response —, so no rule there can reach it. On a host that honours `_headers`
+(Cloudflare Pages), a detach rule (`! Content-Encoding`) is documented, but whether that host adds the header to a `.tar.gz` at all,
+and whether the rule would take it off, **could not be measured from here**: no Pages project is connected, the tree carries no
+local emulator of it, and fetching one is out of bounds. A rule written without that measurement would be one the next reader
+trusts. So the constraint is on the host, and it is checked on the host:
+
+```powershell
+curl.exe -sI -H "Accept-Encoding: gzip, br" https://<the delivery>/heavy/lfs-oinclusionista.jrocha.dev.br/vosk-models/vosk-model-small-pt-0.3.tar.gz
+# no `Content-Encoding` line; `Content-Length: 32358733`
+```
+
+For a local served run, use a server that applies `_headers` and adds no encoding — never `vite preview`, which also leaves out
+the `Cross-Origin-Embedder-Policy` the runtimes' threads need (ADR-0192).
+
 ### Uploading the staging tree (the Dev runs it)
 
 ```powershell
