@@ -1,6 +1,24 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/a-spoken-text-carries-its-language.node.test.js
+    - tests/a-spoken-text-carries-its-language.browser.test.js
+    - tests/a-spoken-text-carries-its-language.types.node.test.ts
+    - tests/speech.node.test.js
+    - tests/interruptible-speech.node.test.js
+  errata:
+    - date: 2026-09-26
+      what: >-
+        CONFIRMED (`engine:f64c0c42` §5, `engine:5821f453` §1 and §2, `engine:ac57f820` §3, `engine:410d37f4` §4, note DS;
+        branch `speech-language`). §2 was read as the ORDER of the list the exact tag and then the language are looked for in —
+        the browser's voices first, the neural after — so a neural voice of the exact tag is chosen over a browser voice that only
+        shares the language, for a part and for the interface alike. §4 replaced `ptbrVoice`'s ladder with §2: with no pt-BR
+        voice, the first Portuguese voice (pt-PT included) now reads a pt-BR word; a device that lists no voice yet is still asked
+        by the tag alone. Found on the way and fixed (`engine:464debd7`, `engine:a8351884`, ADR-0185 §4): the page's system-voice
+        list fell back to every voice when none spoke the language, and the «test voice» button stayed usable when the speech
+        rows locked. §6 needed nothing in the engine: no engine widget draws a game's content with a language of its own —
+        `core/contract.Speakable` carries none —, so the engine has no `lang` to pass through yet.
   date: 2026-09-26
   decision-makers: [Dev]
   consulted:
@@ -84,9 +102,12 @@ decision-outcome:
       - "A game that mixes frame and content in one sentence must split it into parts"
 
   confirmation: |
-    Debt until the gates land (issue to be opened with the implementation): parts spoken in order with their own voices; a
-    part with no voice for its language is not spoken and becomes one `problems` line; `gameSay` without a language does
-    not compile; narration after a language switch uses the new language's voice.
+    ✅ The gates in confirmed-by: parts are spoken in order with their own voices, through Web Speech (one utterance per part,
+    each with its tag and voice, also through `createGame`) and through one loaded Kokoro model (each part with its voice's
+    phonemizer and style table, a neural part waiting for the parts before it); a part with no voice for its language is not
+    spoken, is said once per language in the interface's language and voice, and becomes one `problems` line; `gameSay`
+    without a language does not compile (a `@ts-expect-error` that `tsc` refuses once the language is optional); narration
+    after a language switch uses the new language's voice. 26 mutations red, listed at the end of each file.
 
 more-information: |
   Speech recognition is not touched here: what the child says is heard in the language the game asks for, already.
