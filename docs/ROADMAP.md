@@ -19,7 +19,7 @@
 
 ## Phases and why this order (by dependency)
 
-`0 (deploy, standalone)` → `1 (level format: unlocks the editor + tile materials)` → `2 (engine: unlocks
+`0 (deploy, standalone)` → `1 (level format — left the engine, see below)` → `2 (engine: unlocks
 render/physics/input/art)` → `3 (art: depends on the engine's render/state)` → `4 (editors: consume the finished
 subsystems — they validate the boundaries)` → `5 (i18n finalizes what was localized per module)` → `6 (features on a
 clean base)`.
@@ -35,15 +35,17 @@ any repository**, and the organisation is private (ADR-0066 — now superseded b
 goes public). What Phase 0 did deliver, and still delivers, is the **published package** on npmjs
 (`@the-inclusionist/engine`, ADR-0072); the page deploy did not happen.
 
-### Phase 1 — Level subsystem: glyph map format + editor
+### Phase 1 — Level subsystem — **LEFT THE ENGINE (2026-09-23, ADR-0228)**
 
-`core/tiles` (glyph legend) + `parseLevel` + bit-exact round-trip test vs `CLARITY_MAP`; explicit async boot;
-migrate `CLARITY_MAP` → `assets/levels/ludico.map.txt`; `tools/map-editor.html`.
-**Done when:** the game loads the `.map.txt` (world identical) and a map can be edited and validated.
-Detail: `plan-map-editor`, `plan-engine`.
+It asked for a glyph map format (`core/tiles`, `parseLevel`), the `CLARITY_MAP` migration and a map editor. All
+of it describes a tile world, and the tile-world stack left `app/js` for `game-platformer` (ADR-0228, engine
+`87b6cdbe`): `core/tiles`, `core/world`, `core/collision` and the rest now live in that repository, which owns
+its levels and whatever editor it builds. The engine has no level format and does not need one — a cartridge
+answers `topology()` and `roleOf` through the contract, and the engine reads roles, never tile numbers.
 
-📌 The `CLARITY_MAP` migration is now the **cartridge's**, not the engine's — the whole game left for
-`game-platformer` in `b55b88e` (issue #111).
+⚠️ `tools/map-editor.html` is still in this tree and reads nothing that exists here; it is one of the dead tools
+awaiting the Dev's authorisation to delete (with `scripts/check-extraction.py`, `tools/build-hc.py` and
+`scripts/measure-layers.py`).
 
 ### Phase 2 — Engine spine (modularization) — **DONE (2026-09-07)**
 
