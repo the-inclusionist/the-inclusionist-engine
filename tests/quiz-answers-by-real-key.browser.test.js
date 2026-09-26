@@ -114,7 +114,10 @@ describe('the quiz demo, by real key', () => {
     await userEvent.keyboard('{Shift>}[Tab]{/Shift}');
     expect(document.activeElement, 'Shift+Tab did not step back one option').toBe(opcoes[3]);
     expect(marcada(), 'Shift+Tab moved the focus and the cursor stayed behind').toBe(opcoes[3]);
-    expect([...document.querySelectorAll('#quiz-app .is-on')], 'the cursor a sighted child sees stayed behind').toEqual([opcoes[3]]);
+    // by IDENTITY: `toEqual` compares DOM nodes with `isEqualNode`, and a rebuilt option passes it
+    const acesos = [...document.querySelectorAll('#quiz-app .is-on')];
+    expect(acesos, 'the cursor a sighted child sees stayed behind').toHaveLength(1);
+    expect(acesos[0], 'the cursor a sighted child sees stayed behind').toBe(opcoes[3]);
     // a wrong option (the right one is the third): the answer said names the option that was answered
     const dita = engine.t('quiz.wrong', { option: opcoes[3].textContent });
     await pressAndWait('Space');

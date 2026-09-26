@@ -141,7 +141,9 @@ describe('ui/settings-empathy', () => {
     const api = initSettingsEmpathy(ctx);
     api.open();
     expect($('#empathy').hidden).toBe(false);
-    expect(ctx.calls.frontOverlay).toEqual([$('#empathy')]);
+    // by IDENTITY: `toEqual` compares DOM nodes with `isEqualNode`, and a copy of the panel passes it (measured)
+    expect(ctx.calls.frontOverlay).toHaveLength(1);
+    expect(ctx.calls.frontOverlay[0], 'what was brought to the front is not the panel').toBe($('#empathy'));
     expect(ctx.calls.renderVizGroup.length).toBeGreaterThan(0);
     expect(document.activeElement.tagName).toBe('BUTTON');
     expect(document.activeElement.closest('#empathy')).not.toBeNull();

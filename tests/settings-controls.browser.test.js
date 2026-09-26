@@ -723,7 +723,9 @@ describe('ui/settings-controls — o que a sonda achou sem caso (23/09)', () => 
     const api = initSettingsControls(buildCtx({ fillExplain: (card) => chamados.push(card) }));
     api.render(0);
     api.render(1);
-    expect(chamados).toEqual([$('#cartao'), $('#cartao')]);
+    // by IDENTITY: `toEqual` compares DOM nodes with `isEqualNode`, and a copy of the card passes it
+    expect(chamados).toHaveLength(2);
+    for (const c of chamados) expect(c, 'the prose went to a card that is not the one with the list').toBe($('#cartao'));
   });
 
   it('🔴 [Right] cancelar a captura redesenha o jogador que estava ABERTO, e nao o primeiro', () => {

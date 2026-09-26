@@ -203,7 +203,9 @@ describe('with one-button scanning ON, a press from any transport takes the item
       resposta().dispatchEvent(new PointerEvent('pointercancel', at)); // ...and the finger slides off: no click follows
       await quandoOferecer(pt['scan.menu.confirm']);
       document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', bubbles: true, cancelable: true }));
-      expect(apertados, '«confirmar» did not press the item under the cursor: its click was swallowed').toEqual([botao]);
+      // by IDENTITY: `toEqual` compares DOM nodes with `isEqualNode`, and a copy of the button passes it
+      expect(apertados, '«confirmar» did not press the item under the cursor: its click was swallowed').toHaveLength(1);
+      expect(apertados[0], '«confirmar» pressed another node than the item under the cursor').toBe(botao);
     } finally { botao.removeEventListener('click', ouvir); painel.hidden = true; }
   }, LIMITE);
 

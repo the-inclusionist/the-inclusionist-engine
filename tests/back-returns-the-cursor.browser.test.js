@@ -164,7 +164,9 @@ describe('the stack: each layer in front, and the modal boundary at the front on
     expect(card().inert, 'the pause card under both panels is still reachable').toBe(true);
     expect(ctrl.inert, 'the front layer itself was made inert').toBe(false);
     const liveModals = [...document.querySelectorAll('[aria-modal="true"]')].filter(reachable);
-    expect(liveModals, 'more than one modal dialog is alive at once').toEqual([dialogOf(ctrl)]);
+    // by IDENTITY: `toEqual` compares DOM nodes with `isEqualNode`, and a copy of the dialog passes it
+    expect(liveModals, 'more than one modal dialog is alive at once').toHaveLength(1);
+    expect(liveModals[0], 'the modal dialog alive is not the front layer\'s').toBe(dialogOf(ctrl));
     // an inert layer refuses the focus, which is what keeps a Tab or a virtual cursor from falling behind the front card
     document.getElementById('opt-teclado-1').focus();
     expect(ctrl.contains(document.activeElement), 'the focus went behind the front card').toBe(true);

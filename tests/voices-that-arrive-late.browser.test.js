@@ -197,8 +197,10 @@ describe('what the child hears when the lock changes', () => {
     expect(document.activeElement).toBe(tts);
     expect(options.map((o) => o.value), 'the second voice is not offered').toEqual(['webspeech:' + MARIA.name, 'webspeech:' + DANIEL.name]);
     // the same voices draw nothing: the options the child may be reading stay the same nodes
-    expect([...row('#tts-voz').options], 'the same voices drew the «Voz» list again').toEqual(options);
-    expect(row('#tts-voz').options[0], 'the same voices drew the «Voz» list again').toBe(options[0]);
+    // by IDENTITY, every option: `toEqual` compares DOM nodes with `isEqualNode`, and a redrawn list passes it
+    const agora = [...row('#tts-voz').options];
+    expect(agora, 'the same voices changed the «Voz» list').toHaveLength(options.length);
+    agora.forEach((o, i) => expect(o, `the same voices drew option ${i} of the «Voz» list again`).toBe(options[i]));
   });
 
   it('🔴 [Right] a row that locks under the cursor gives its reason ONCE — through the footer, not a second time aloud', async () => {
