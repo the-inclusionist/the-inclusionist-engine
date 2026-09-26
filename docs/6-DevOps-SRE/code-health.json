@@ -105,7 +105,7 @@
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
-      "fanIn": 8
+      "fanIn": 9
     },
     "core/calm-mode.ts": {
       "codeLines": 14,
@@ -758,12 +758,12 @@
       "fanIn": 1
     },
     "input/virtual-controller.ts": {
-      "codeLines": 47,
+      "codeLines": 48,
       "decisionNodes": 6,
       "maxDepth": 2,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 7,
+      "worstFunction": 8,
       "statefulEdges": 0,
       "fanIn": 1
     },

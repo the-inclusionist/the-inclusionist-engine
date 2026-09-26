@@ -312,6 +312,46 @@ describe('Escape and the pause are unchanged', () => {
   });
 });
 
+describe('the system positions are the engine\'s: the game never hears START or SELECT (ADR-0144 §4, ADR-0155 §4)', () => {
+  // 📏 On the served quiz (2026-09-26), Enter in play opened the quick pause AND the quiz's `onCommand` heard `start` (press and
+  // release); F opened the card AND it heard `select`. A cartridge may not declare either, so no game has a word for them.
+  const pausado = () => document.querySelector('#game-region .pausa-rapida');
+  const cartao = () => document.getElementById('vp-pause-0');
+
+  for (const code of ['Enter', 'KeyH']) {
+    it(`🔴 [Right] ${code} (start) in play opens the quick pause, and the game hears neither its press nor its release`, async () => {
+      expect(motor.keyboard.actionOf(code, 0), `${code} is not \`start\`: the case would measure nothing`).toBe('start');
+      botao().focus();
+      await userEvent.keyboard(`[${code}]`);
+      try {
+        expect(pausado()?.hidden, `${code} did not open the quick pause`).toBe(false);
+        expect(comandos, `${code} paused AND the game heard \`start\`: one press, two actions`).toEqual([]);
+      } finally { await userEvent.keyboard('[Escape]'); }
+      expect(pausado().hidden, 'Escape did not leave the quick pause').toBe(true);
+      expect(comandos, 'leaving the quick pause reached the game').toEqual([]);
+    });
+  }
+
+  it('🔴 [Right] F (select) in play opens the menus, and the game does not hear `select`', async () => {
+    expect(motor.keyboard.actionOf('KeyF', 0), 'KeyF is not `select`: the case would measure nothing').toBe('select');
+    botao().focus();
+    await userEvent.keyboard('[KeyF]');
+    try {
+      expect(cartao().hidden, 'F did not open the card').toBe(false);
+      expect(comandos, 'F opened the card AND the game heard `select`').toEqual([]);
+    } finally { motor.pause.hide(0); }
+  });
+
+  it('🔴 [Boundary] the verb pressed right after the quick pause closed is the game\'s again', async () => {
+    botao().focus();
+    await userEvent.keyboard('[Enter]');
+    await userEvent.keyboard('[Escape]');
+    botao().focus();
+    await userEvent.keyboard('[ArrowDown]');
+    expect(presses('down'), 'play did not come back after START and Escape').toHaveLength(1);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 // `mutate.mjs` (scratchpad), each alone, CRLF normalised, exactly one occurrence required, restored from a copy and verified
 // by hash. Run with this file, `key-default.node`, `virtual-controller.node` and `quiz-answers-by-real-key`.
@@ -342,3 +382,8 @@ describe('Escape and the pause are unchanged', () => {
 //                                                                  next press
 //   📌 C1 first SURVIVED for Space and Enter: an earlier case left the focus on ☰, where those two are held back as ☰'s own
 //   activation keys. The resume cases now put the focus in the game first.
+// Fourth pass (2026-09-26, the system positions are the engine's), `scratchpad/keys-start/mutate.mjs`, restored by SHA-256:
+//   S1 the controller ignores the system positions              🔴 Enter, KeyH and F here, and the ten node cases
+//   S2 only `start` in the rule                                  🔴 F here, and the five `select` node cases
+//   S3 only `select` in the rule                                 🔴 Enter and KeyH here, and the five `start` node cases
+//   S4 `action4` joins the rule / S5 the rule before the menu    🔴 node only (the verb beside them; START as the menu's key)

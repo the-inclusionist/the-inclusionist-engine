@@ -63,6 +63,23 @@ describe('in play', () => {
     vc.release('action2', undefined, 0);
     expect(log).toEqual([]);
   });
+  // 🔴 THE SYSTEM POSITIONS ARE THE ENGINE'S (ADR-0144 §4, ADR-0155 §4): START is the quick pause, SELECT the menus, and a cartridge
+  // may not declare either — so play never hears them, from any transport, whatever the keyboard says about the focus.
+  for (const action of ['start', 'select']) {
+    for (const source of [undefined, 'teclado', 'olhos', 'toque', 'gamepad']) {
+      it(`${action} from ${source ?? 'an unsigned key'} in play holds nothing, delivers nothing, answers false — nor its release`, () => {
+        const { vc, log } = make();
+        expect(vc.press(action, source, 0, true)).toBe(false);
+        vc.release(action, source, 0);
+        expect(log).toEqual([]);
+      });
+    }
+  }
+  it('[Boundary] the rule names the two system positions only: a verb beside them in play still reaches the game', () => {
+    const { vc, log } = make();
+    expect(vc.press('action4', undefined, 0, true)).toBe(true);
+    expect(log.at(-1)).toEqual(['deliver', { action: 'action4', pressed: true, source: undefined, player: 0 }]);
+  });
 });
 
 describe('with a menu open', () => {
@@ -85,6 +102,11 @@ describe('with a menu open', () => {
     expect(vc.press('down', 'olhos', 0, false)).toBe(false);
     expect(log).toEqual([['menu', 'KeyS', 'olhos']]);
   });
+  it('START is still the menu\'s key there — the way a camera\'s START leaves the quick pause', () => {
+    const { vc, log } = make({ menu: true });
+    expect(vc.press('start', 'olhos')).toBe(false);
+    expect(log).toEqual([['menu', 'Enter', 'olhos']]);
+  });
   it('a press the game heard is released to it even if a menu opened meanwhile', () => {
     const { vc, log, setMenu } = make();
     vc.press('up', 'olhos'); setMenu(true); log.length = 0;
@@ -99,3 +121,8 @@ describe('with a menu open', () => {
 //   · the release looking up the key again instead of the held → «remapped while held» (survived until that case existed)
 //   · no delivery without a key                                → «still reaches the game»
 //   · the source not carried                                   → «with its source»
+// And (2026-09-26, the system positions are the engine's) — `scratchpad/keys-start/spec1.mjs`, restored and checked by SHA-256:
+//   · the system rule removed                                  → the ten system cases (and three real-key cases in the browser)
+//   · only `start` in the rule / only `select` in the rule     → the five cases of the one left out
+//   · `action4` added to the rule                              → «[Boundary] … a verb beside them»
+//   · the rule asked before the menu                           → «START is still the menu's key there»

@@ -9,8 +9,12 @@
 // · in play, the child's key for that position is held (games that ask what is held keep answering), and the command is delivered to the
 //   cartridge: the position, pressed or released, the source, the seat. The cartridge's map (its `preset`) says what it executes.
 // A position the child's scheme gives no key is still delivered: the map belongs to the game, not to the keyboard.
+// 🔴 EXCEPT THE TWO SYSTEM POSITIONS, which never reach play (ADR-0144 §4, ADR-0155 §4): `start` is the quick pause and `select`
+// opens the menus, a cartridge may not declare either, so the game has no word for them and nothing to do with them. 📏 Before
+// this, Enter in play opened the quick pause AND the quiz's `onCommand` heard `start`; F opened the card AND it heard `select`.
+// With a menu open they are the menu's key like any other position — that is how a camera's START leaves the quick pause.
 
-import type { Action } from '../core/actions.js';
+import { SYSTEM, type Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import type { TransportName } from './transport-in-use.js';
 
@@ -62,10 +66,15 @@ export interface VirtualController {
    * `toPlay` false: in play the press belongs to something else — the keyboard knows what has the focus, a field being typed
    * into or the engine's own control being pressed (`input/key-default`) — so it reaches nobody: nothing held, nothing delivered.
    * With a menu open it is the menu's all the same, as every press is (ADR-0111 erratum of 2026-09-26: one press, one action).
+   *
+   * A system position (`start`, `select`) never reaches play, whatever `toPlay` says: it is the engine's (ADR-0144 §4).
    */
   press(action: Action, source: TransportName | undefined, player?: number, toPlay?: boolean): boolean;
   release(action: Action, source: TransportName | undefined, player?: number): void;
 }
+
+/** The positions that are the engine's and never the game's (`core/actions.SYSTEM`). */
+const ENGINE_POSITIONS: ReadonlySet<Action> = new Set(SYSTEM);
 
 export function createVirtualController(d: VirtualControllerDeps): VirtualController {
   // `${player}:${action}` → the key held for a press the game received (or null when the scheme has none), so the release lets go of the
@@ -78,7 +87,7 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
         if (!d.menuAnswers?.(action, player) && code) d.menuKey(code, source);
         return false;
       }
-      if (!toPlay) return false;
+      if (!toPlay || ENGINE_POSITIONS.has(action)) return false;
       if (code) d.holdKey(code, source);
       held.set(`${player}:${action}`, code ?? null);
       d.deliver({ action, pressed: true, source, player });
