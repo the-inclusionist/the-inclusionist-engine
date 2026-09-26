@@ -74,7 +74,7 @@ export interface HeavyOptions {
  *   every language the page can switch to, the child's first, because a language changed mid-game must find its model already
  *   kept (ADR-0225 erratum, the Dev: «A entrega leva as três línguas.»). The delivery carries the three unless its
  *   `--commands` list narrows it; a language it did not carry is a quiet 404 here and a line of `problems` when she speaks.
- * · The Libras player (ADR-0234, route A), 19.3 MiB, only with `libras`: the root asks for it while deaf mode is on, so a device
+ * · The Libras player (ADR-0234, route A), 19.7 MiB, only with `libras`: the root asks for it while deaf mode is on, so a device
  *   whose child never asks for signing never downloads it. No game declares it either — deaf mode is the person's (ADR-0111) —
  *   and a delivery built without `--libras` simply has none, the same quiet 404 as a missing command model.
  */

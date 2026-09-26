@@ -100,8 +100,8 @@ describe('o buscador das coisas pesadas', () => {
     //
     // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
     // a device actually fetches is `heavyAtBoot`, which asks for one language and for what the game declared.
-    // And since ADR-0234's route A, the Libras player: the four VLibras files, 19.3 MiB.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1382);
+    // And since ADR-0234's route A, the Libras player: the four VLibras files and the patched framework the page runs, 19.7 MiB.
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1383);
     const f = cacheFalsa();
     const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
     expect(bytesLeftToDownload(r), 'depois de tudo descer não falta nada').toBe(0);
@@ -446,17 +446,44 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
    */
   it('🔴 [Right] the Libras player comes whole with `libras`, and never without it', () => {
     const player = HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:'));
-    expect(player.length, 'the catalogue has no Libras player: the case would pass empty').toBe(4);
+    expect(player.length, 'the catalogue has no Libras player: the case would pass empty').toBe(5);
     expect(heavyAtBoot({ kokoro: false, libras: true }).filter((id) => id.startsWith('libras:'))).toEqual(player);
     for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, libras: false }, { kokoro: false, commands: 'pt', reading: 'pt' }]) {
       expect(heavyAtBoot(portas).filter((id) => id.startsWith('libras:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
     }
   });
 
+  /**
+   * 🔴 THE FILE THE PLAYER RUNS IS CHECKED LIKE THE FILES IT READS (ADR-0234). 📏 Measured on a served delivery (2026-09-25): the
+   * loader reads the published framework, kept and checked, and then the page runs `playerweb.framework.noeval.js`, which no entry
+   * named — the service worker fetched it from the network each time, kept nothing, and offline the player never started.
+   */
+  it('🔴 [Right] with `libras`, the patched framework is fetched from the delivery, checked against its pin, and kept — or refused', async () => {
+    const patched = HEAVY_FILES.find((p) => p.madeFrom);
+    expect(patched?.id, 'no entry is made by the delivery: the file the player runs is fetched by nobody').toBe('libras:player:framework:noeval');
+    expect(HEAVY_FILES.some((p) => p.id === patched.madeFrom), 'it is made from an entry the catalogue does not have').toBe(true);
+    expect(heavyAtBoot({ kokoro: false, libras: true })).toContain(patched.id);
+    const pedidos = [];
+    const f = cacheFalsa();
+    const [kept] = await downloadHeavy({ cacheStorage: f.cacheStorage, digest: digestPelaUrl, only: [patched.id],
+      fetch: async (u) => { pedidos.push(u); return resposta(urlDe(u)); } });
+    expect(pedidos).toEqual([`${BASE}${deliveryPath(patched.url)}`]);
+    expect(kept.outcome).toBe('baixado');
+    expect(f.postos).toEqual([patched.url]);
+    const g = cacheFalsa();
+    const [refused] = await downloadHeavy({ cacheStorage: g.cacheStorage, digest: digestPelaUrl, only: [patched.id],
+      fetch: async () => resposta('the unpatched framework') });
+    expect(refused).toEqual(expect.objectContaining({ outcome: 'falhou', error: expect.stringMatching(/sha256 mismatch/) }));
+    expect(g.postos, 'bytes that are not the pinned patch were kept').toEqual([]);
+  });
+
   it('📌 [Boundary] the region is not the language: `es-MX` asks for the Spanish model', () => {
     expect(heavyAtBoot({ kokoro: false, reading: 'es-MX' }).filter((id) => id.startsWith('reading:'))).toEqual(doIdioma('es'));
   });
 });
+
+// MUTATIONS CHECKED for the patched VLibras framework (2026-09-25), 2 of 2 red: its entry removed from the catalogue · the start
+// leaving an entry the delivery makes out of `libras` (🔴 «comes whole» and «fetched from the delivery, checked»).
 
 // MUTATIONS CHECKED for ADR-0198 §5 (2026-09-14): Kokoro always fetched · every entry filtered out with the port · the start
 // passing no `apenas` (🔴 kokoro-na-voz.browser «a game without the port»).

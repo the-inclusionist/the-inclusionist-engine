@@ -1412,6 +1412,7 @@
     "interface HeavyFile": [
       "bytes?",
       "id",
+      "madeFrom?",
       "sha256?",
       "url",
       "whyNoSource?"

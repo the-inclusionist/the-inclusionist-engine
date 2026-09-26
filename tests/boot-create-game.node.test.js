@@ -904,7 +904,7 @@ describe('createGame em execução', () => {
   });
 
   /**
-   * 🔴 THE LIBRAS PLAYER COMES DOWN ONLY WHILE DEAF MODE IS ON (ADR-0234, route A): 19.3 MiB of Unity build, asked for by the
+   * 🔴 THE LIBRAS PLAYER COMES DOWN ONLY WHILE DEAF MODE IS ON (ADR-0234, route A): 19.7 MiB of Unity build, asked for by the
    * person's stored choice and never by the game — so a child who left deaf mode on finds the player kept for her, and one who
    * never turned it on never pays for it.
    */
@@ -922,8 +922,10 @@ describe('createGame em execução', () => {
       createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(),
         host: { ...domFalso(), storage: memoryBackend([['incl_libras', '1']]) } });
       const [ouvinte, surda] = pedidos.map((ids) => ids.filter((id) => id.startsWith('libras:')));
+      const { HEAVY_FILES } = await import('../app/js/platform/heavy-catalogue.js');
       expect(ouvinte, 'deaf mode is off and the Libras player came down').toEqual([]);
-      expect(surda, 'deaf mode is on and the Libras player did not come down').toHaveLength(4);
+      expect(surda, 'deaf mode is on and the Libras player did not come down, whole')
+        .toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => id.startsWith('libras:')));
     } finally {
       vi.doUnmock('../app/js/platform/heavy.js');
       vi.resetModules();

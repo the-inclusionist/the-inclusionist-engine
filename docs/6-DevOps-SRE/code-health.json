@@ -858,7 +858,7 @@
       "fanIn": 1
     },
     "platform/heavy-catalogue.ts": {
-      "codeLines": 136,
+      "codeLines": 139,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,

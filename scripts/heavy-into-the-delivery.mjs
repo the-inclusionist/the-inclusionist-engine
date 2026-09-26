@@ -46,6 +46,8 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
   const present = [];
   for (const p of pesados) {
     if (!p.url) { linhas.push({ id: p.id, outcome: 'sem-fonte' }); continue; }
+    // made HERE from another entry, after this loop (the patched VLibras framework): nothing upstream serves its address
+    if (p.madeFrom) { linhas.push({ id: p.id, outcome: 'derived', note: `made by the delivery from ${p.madeFrom}` }); continue; }
     if (!groupOf(p.id, thirdParty)) {
       linhas.push({ id: p.id, outcome: 'falhou', error: 'no licence recorded for it in scripts/licences/third-party.mjs — not written' });
       continue;
@@ -210,7 +212,7 @@ if (executado) {
   const { ok, linhas, licences } = await levarPesadosParaEntrega({
     destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf,
   });
-  for (const l of linhas) console.log(`${l.outcome.padEnd(9)} ${l.id}${l.error ? ` — ${l.error}` : ''}`);
+  for (const l of linhas) console.log(`${l.outcome.padEnd(9)} ${l.id}${(l.error ?? l.note) ? ` — ${l.error ?? l.note}` : ''}`);
   for (const l of licences) console.log(`licence   ${l.key} — ${l.folders.length} folder(s)`);
   if (licences.length) console.log('notices   heavy/THIRD-PARTY-NOTICES.md');
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }

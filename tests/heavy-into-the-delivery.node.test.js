@@ -110,6 +110,20 @@ describe('the heavy files, put into the delivery by the build', () => {
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
+  it('🔴 [Right] an entry the delivery MAKES is never downloaded — nothing upstream serves it — and does not fail the run', async () => {
+    // the patched VLibras framework (ADR-0234): its address is the key the device keeps it under, and `vlibras-player` writes it
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    try {
+      const feito = { id: 'libras:player:framework:noeval', url: 'https://example.org/unity/x.noeval.js', sha256: hash('x'), madeFrom: 'libras:player:framework' };
+      const pedidos = [];
+      const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: [...ENTRADAS, feito], deliveryPath,
+        fetch: async (u) => { pedidos.push(u); return u in CORPOS ? resposta(CORPOS[u]) : { ok: false, status: 404 }; } });
+      expect(pedidos, 'the build asked upstream for a file only the delivery makes').not.toContain(feito.url);
+      expect(ok, linhas.map((l) => l.error).join(' ')).toBe(true);
+      expect(linhas.find((l) => l.id === feito.id)).toEqual(expect.objectContaining({ outcome: 'derived', note: expect.stringContaining(feito.madeFrom) }));
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
   it('🎯 [Zero] package.json runs it after building the package', () => {
     const script = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts['heavy:delivery'];
     // `--kokoro`: the engine's quiz demo fills the Kokoro port (ADR-0198 erratum)
@@ -242,6 +256,7 @@ describe('the script, reachable by a cartridge', () => {
 //   E1 the sha256 check removed                          🔴 not written on mismatch
 //   E2 `ok` ignores failures                             🔴 reports failure
 //   E3 the existing-file shortcut removed                🔴 not fetched again
+//   E4 an entry the delivery makes downloaded like any   🔴 never downloaded (2026-09-25)
 //   N1 the script left out of `files`                    🔴 published
 //   N2 no `bin`                                          🔴 published
 //   N3 the catalogue read from the caller's folder       🔴 beside itself

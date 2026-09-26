@@ -12,7 +12,8 @@
 //   3. its single `eval(str)` — exactly one, or the step refuses — becomes `window.__vlExternalCall(str)`, a parser of plain
 //      `name(JSON arguments)` calls (`vlibras-player/external-call.js`) that evaluates nothing;
 //   4. the result is checked to evaluate no string anywhere, prefixed so it assigns itself to `UnityLoader.__vlFramework`, its
-//      sha256 checked against the one measured here, and written beside the original as `playerweb.framework.noeval.js`.
+//      sha256 checked against the catalogue's pin of the patched file (`libras:player:framework:noeval`, the same pin the
+//      device checks before keeping it), and written beside the original as `playerweb.framework.noeval.js`.
 // It sits in the same `heavy/` folder as the file it came from, under that project's LICENSE and a NOTICE that says what changed.
 //
 // THE PAGE AROUND IT IS OURS (AGPL): `vlibras-player/index.html`, `player.js`, `csp-shim.js` and `external-call.js`, written to
@@ -25,12 +26,16 @@ import { brotliDecompressSync } from 'node:zlib';
 
 const HERE = new URL('./vlibras-player/', import.meta.url);
 
-/** The catalogue ids of the four published files (`app/js/platform/heavy-catalogue.ts`). */
+/**
+ * The catalogue ids of the four published files and of the patched framework the delivery makes from one of them
+ * (`app/js/platform/heavy-catalogue.ts`).
+ */
 export const LIBRAS_PLAYER_IDS = Object.freeze({
   loader: 'libras:player:loader',
   framework: 'libras:player:framework',
   code: 'libras:player:code',
   data: 'libras:player:data',
+  patched: 'libras:player:framework:noeval',
 });
 
 /** The one statement rewritten, exactly as Unity 2018 wrote it in `_JS_Eval_EvalJS`, and what it becomes. */
@@ -40,11 +45,6 @@ const PARSED_CALL = 'try{window.__vlExternalCall(str)}catch(exception){console.e
 /** The file written beside the original, and the `UnityLoader` name it assigns itself to — both `csp-shim.js`'s too. */
 export const PATCHED_FRAMEWORK = 'playerweb.framework.noeval.js';
 const FRAMEWORK_GLOBAL = '__vlFramework';
-/**
- * The sha256 of what the patch writes from the pinned framework. 📏 Measured 2026-09-25: the same bytes as the variant that ran
- * under the delivery's policy with zero violations in route A's measurement.
- */
-export const PATCHED_FRAMEWORK_SHA256 = '4621a32c6d2abd1d0e00a2114405514c9623db59d608aabfb3bf6fefa93911af';
 
 /** Our own files, copied into the player's folder as they are (`index.html` is filled first). */
 const PAGE_FILES = Object.freeze(['player.js', 'csp-shim.js', 'external-call.js']);
@@ -85,13 +85,27 @@ export function signSetRevision(signs, sha256 = sha256OfNode) {
 }
 
 /**
+ * The catalogue's pin of the patched framework — which is also what the device checks before keeping it — after checking that
+ * the catalogue's address for it is where this step writes it: an entry pointing elsewhere would have the device ask for a file
+ * no delivery holds, and the player could never start offline.
+ */
+function pinnedPatch(entry, writtenAt, deliveryPath) {
+  if (!entry.sha256) throw new Error(`the catalogue pins no sha256 for ${entry.id}: the patched framework cannot be checked`);
+  if (deliveryPath(entry.url) !== writtenAt) {
+    throw new Error(`the catalogue keeps ${entry.id} at ${deliveryPath(entry.url)}, but the patch is written to ${writtenAt}`);
+  }
+  return entry.sha256;
+}
+
+/**
  * Writes the player into the delivery `destino`, whose `heavy/` already holds the four published files: the patched framework
  * beside them, and the page, glue, shim, parser and Unity configuration in `playerFolder`. Returns the paths written, relative to
- * `destino`. THROWS on a missing catalogue entry, a refused patch, or a patched file whose sha256 is not the measured one.
- * `signs` is the sign set the delivery carries (`deliverLibrasSigns`).
+ * `destino`. THROWS on a missing catalogue entry, a refused patch, or a patched file whose sha256 is not the catalogue's pin.
+ * `signs` is the sign set the delivery carries (`deliverLibrasSigns`). `patchedSha256` defaults to that pin, and a test that
+ * brings its own framework brings its own.
  */
 export function deliverLibrasPlayer({ destino, catalogue, deliveryPath, playerFolder, signs = [], read = (p) => readFileSync(p),
-  sha256 = sha256OfNode, patchedSha256 = PATCHED_FRAMEWORK_SHA256, pageSource = HERE }) {
+  sha256 = sha256OfNode, patchedSha256, pageSource = HERE }) {
   const entry = (id) => {
     const found = catalogue.find((p) => p.id === id);
     if (!found || !found.url) throw new Error(`the catalogue has no address for ${id}: this package cannot deliver the Libras player`);
@@ -99,11 +113,12 @@ export function deliverLibrasPlayer({ destino, catalogue, deliveryPath, playerFo
   };
   const framework = entry(LIBRAS_PLAYER_IDS.framework);
   const heavyFolder = dirname(deliveryPath(framework.url)).replaceAll('\\', '/');
+  const expectedPatched = patchedSha256 ?? pinnedPatch(entry(LIBRAS_PLAYER_IDS.patched), `${heavyFolder}/${PATCHED_FRAMEWORK}`, deliveryPath);
 
   const patched = patchFramework(read(join(destino, deliveryPath(framework.url))), { expectedSha256: framework.sha256, sha256 });
   const patchedGot = sha256(Buffer.from(patched, 'utf8'));
-  if (patchedGot !== patchedSha256) {
-    throw new Error(`REFUSED to write the patched VLibras framework: sha256 ${patchedGot}, expected ${patchedSha256}`);
+  if (patchedGot !== expectedPatched) {
+    throw new Error(`REFUSED to write the patched VLibras framework: sha256 ${patchedGot}, expected ${expectedPatched}`);
   }
   const written = [];
   const write = (relative, text) => {

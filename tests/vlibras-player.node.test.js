@@ -206,6 +206,28 @@ describe('the player, written into a delivery', () => {
     } finally { rmSync(d.destino, { recursive: true, force: true }); }
   });
 
+  /**
+   * 🔴 THE PIN THE DELIVERY CHECKS IS THE CATALOGUE'S, the one the device checks before keeping the file. Two copies of one hash
+   * would drift apart, and the first sign of it would be a device refusing the file every delivery writes.
+   */
+  it('🔴 [Right] without a hash of its own, the step checks the patched file against the CATALOGUE\'s pin, at the catalogue\'s address', () => {
+    const d = delivery();
+    const patchedAt = `${d.catalogue[1].url.slice(0, d.catalogue[1].url.lastIndexOf('/'))}/${PATCHED_FRAMEWORK}`;
+    const pinned = (sha256, url = patchedAt) => [...d.catalogue,
+      { id: LIBRAS_PLAYER_IDS.patched, url, sha256, madeFrom: LIBRAS_PLAYER_IDS.framework }];
+    const deliver = (catalogue) => deliverLibrasPlayer({ destino: d.destino, catalogue, deliveryPath, playerFolder: LIBRAS_PLAYER_FOLDER });
+    try {
+      expect(() => deliver(pinned('0'.repeat(64))), 'the step wrote a patch the catalogue does not pin')
+        .toThrow(/REFUSED to write the patched VLibras framework: sha256 [0-9a-f]{64}, expected 0{64}/);
+      expect(existsSync(join(d.destino, d.heavyFolder, PATCHED_FRAMEWORK))).toBe(false);
+      expect(() => deliver(pinned(d.patchedSha256, `${patchedAt}.elsewhere.js`)), 'the device would ask for a file no delivery holds')
+        .toThrow(/keeps libras:player:framework:noeval at .*\.elsewhere\.js, but the patch is written to/);
+      expect(() => deliver(d.catalogue), 'a catalogue with no pin for the patch let it through').toThrow(/no address for libras:player:framework:noeval/);
+      expect(deliver(pinned(d.patchedSha256))).toContain(`${d.heavyFolder}/${PATCHED_FRAMEWORK}`);
+      expect(sha(readFileSync(join(d.destino, d.heavyFolder, PATCHED_FRAMEWORK)))).toBe(d.patchedSha256);
+    } finally { rmSync(d.destino, { recursive: true, force: true }); }
+  });
+
   it('📌 [Boundary] the sign set\'s revision changes when a sign\'s bytes change under the same name — what clears the player\'s cache', () => {
     const one = signSetRevision([{ name: 'CASA', sha256: sha('a') }]);
     expect(signSetRevision([{ name: 'CASA', sha256: sha('b') }])).not.toBe(one);
@@ -220,6 +242,11 @@ describe('the player, written into a delivery', () => {
     expect(entries.every(Boolean), 'a player file left the catalogue').toBe(true);
     expect(new Set(entries.map((p) => posix.dirname(p.url))).size, 'the player files are not one folder: the page cannot find them').toBe(1);
     expect(entries[0].url, 'the address is not pinned to a commit').toMatch(/\/[0-9a-f]{40}\/public\/unity\//);
+    // the file the page RUNS is where the shim asks for it and the step writes it, and it is made, never fetched upstream
+    const patched = HEAVY_FILES.find((p) => p.id === LIBRAS_PLAYER_IDS.patched);
+    expect(posix.basename(patched.url), 'the device keeps the patch under another name than the one the shim loads').toBe(SHIM_PATCHED_FRAMEWORK);
+    expect(patched.madeFrom, 'the build would try to download the patch from upstream').toBe(LIBRAS_PLAYER_IDS.framework);
+    expect(patched.sha256).toMatch(/^[0-9a-f]{64}$/);
     const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
     expect(pkg.files).toEqual(expect.arrayContaining(['scripts/vlibras-player.mjs', 'scripts/vlibras-player']));
   });
@@ -232,6 +259,9 @@ describe('the player, written into a delivery', () => {
 //   P3 the exactly-once count removed (replace whatever is there)        🔴 none or two is refused
 //   P4 the «still evaluates text» check removed                          🔴 refused: it would fail under the policy
 //   P5 the patched-file sha256 check removed from `deliverLibrasPlayer`  🔴 a patched file whose sha256 is not the measured one
+//   P6 the patched file checked only when a hash is handed in             🔴 checks against the CATALOGUE's pin (2026-09-25)
+//   P7 the check that the catalogue keeps the patch where it is written   🔴 same case
+//   P8 the patched framework's entry removed from the catalogue           🔴 the real catalogue carries … (and `heavy.node`)
 //   X1 the allowed-name check removed from the parser                    🔴 rejects anything else (`alert(1);`)
 //   X2 the name pattern admitting dots                                   ✅ SURVIVED, equivalent: no allowed name has a dot, so the
 //      allow-list already refuses every dotted path. The pattern stays as a second wall, not as the one that holds.

@@ -25,6 +25,12 @@ export interface HeavyFile {
   readonly sha256?: string;
   /** Required when `url` is `null`: an absence without a written reason becomes a forgotten absence. */
   readonly whyNoSource?: string;
+  /**
+   * The id of the entry the DELIVERY makes this file from, when the build never fetches it: it writes it beside that entry's
+   * file, and `url` is then only the address the device keeps it under — nothing is served there upstream. `sha256` is still
+   * the pin of the bytes the device may keep (ADR-0234: the patched VLibras framework).
+   */
+  readonly madeFrom?: string;
 }
 
 /** The Cache Storage name. Versioned: changing the catalogue's content must not serve old bytes. */
@@ -229,8 +235,14 @@ export function commandsLanguageOf(id: string): string | null {
  * policy refuses. The delivery rewrites that one `eval(str)` into a parser of plain calls (`scripts/vlibras-player.mjs`), after
  * checking this file's sha256 — a declared, temporary exception that ends with route B, and never an `unsafe-eval`.
  *
+ * 🔴 AND THE PATCHED FILE IS WHAT RUNS, so it is pinned here too (`madeFrom`): the loader still reads the published framework, but
+ * the page runs `playerweb.framework.noeval.js`, which the delivery writes beside it. Unpinned, the device ran it unchecked and
+ * kept no copy, so the player could not start offline; pinned, it is fetched, checked and kept like the other four, and the
+ * delivery refuses to write any other bytes under that name. 📏 Its sha256 is the patch of the pinned input: the bytes that ran
+ * under the delivery's policy with zero violations in route A's measurement (2026-09-25).
+ *
  * 📌 A DELIVERY CARRIES THESE ONLY WHEN IT IS BUILT WITH `--libras` (`inclusionist-heavy`), and a device fetches them at boot only
- * while deaf mode is on (`heavyAtBoot`): 19.3 MiB that a child who never asks for signing never pays.
+ * while deaf mode is on (`heavyAtBoot`): 19.7 MiB that a child who never asks for signing never pays.
  */
 const VLIBRAS_UNITY = 'https://raw.githubusercontent.com/spbgovbr-vlibras/vlibras-web-browsers/9d093f259ac732d755a19e80cd03c8233c70435d/public/unity';
 const LIBRAS_PLAYER: readonly HeavyFile[] = Object.freeze([
@@ -242,6 +254,8 @@ const LIBRAS_PLAYER: readonly HeavyFile[] = Object.freeze([
     sha256: '4005cfe27f5252c8dafaccbca4c1338de9491c5076a62da8df2bfd036d6eeb4e' },
   { id: 'libras:player:data', url: `${VLIBRAS_UNITY}/playerweb.data.unityweb`, bytes: 16_992_528,
     sha256: '0c9897ea830739a09a8a2d132e219761d7017b22feae5ec9b2feb4ed075b1256' },
+  { id: 'libras:player:framework:noeval', url: `${VLIBRAS_UNITY}/playerweb.framework.noeval.js`, bytes: 478_335,
+    sha256: '4621a32c6d2abd1d0e00a2114405514c9623db59d608aabfb3bf6fefa93911af', madeFrom: 'libras:player:framework' },
 ]);
 
 /**
