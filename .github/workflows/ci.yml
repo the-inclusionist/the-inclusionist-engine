@@ -230,10 +230,16 @@ jobs:
           fetch-depth: 0
       # ⚠️ The message TEACHES rather than scolds. A rejected first contribution is often the last one,
       # and the fix is one flag most people have never needed.
+      # 🔴 THE RANGE ENDS AT THE PULL REQUEST'S HEAD, NOT AT `HEAD`. On `pull_request` the checkout is
+      # `refs/pull/N/merge`, a merge commit GitHub makes («Merge <head> into <base>») that nobody signs, so
+      # `origin/<base>..HEAD` failed every pull request, however signed. Measured on a simulated merge ref: the old
+      # range reported the synthetic merge; this one reports exactly the contributor's commits, an unsigned one included.
       - name: every commit is signed off
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           faltando=$(git log --format='%H %s' --grep='^Signed-off-by:' --invert-grep \
-            "origin/${{ github.base_ref }}..HEAD")
+            "origin/${{ github.base_ref }}..${PR_HEAD}")
           if [ -n "$faltando" ]; then
             echo "::error::These commits have no 'Signed-off-by' trailer:"
             echo "$faltando"
