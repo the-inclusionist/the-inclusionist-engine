@@ -308,3 +308,15 @@ mandatory offer), so the Spanish entry shows the component's name and the footer
 English entry is EF06LI17, labelled 6th grade, with questions at a 5th-grade difficulty; Arte (EF15AR) and Educação Física
 (EF35EF) are multi-year blocks and are labelled so. Codes: EI03EO01, EI03CG04, EI03TS03, EI03EF02, EI03ET07, EF05LP05,
 EF15AR02, EF35EF05, EF06LI17, —, EF05MA08, EF05CI11, EF05GE06, EF05HI08, EF05ER01. To swap any of them, name the code.
+
+## 2026-09-26 · The test bench's screens: codes five to a row, options in three columns
+
+⚠️ Chosen while building the entry above and NOT YET SEEN by the Dev — no Dev words to quote. The start screen groups the
+codes as «Educação Infantil» then «Ensino Fundamental» (not «5º ano»: EF06LI17 is 6th grade), five 44 px buttons to a row;
+its title is a screen-reader heading and the voice's first words, not a drawn line — drawn, it pushed the fifteen codes under
+the footer at the larger face. Left and right move in reading order, up and down down a column and on into the next, both
+wrapping. A question's five options sit in three columns, «1 2 3» over «4 5»; the explanation appears under the statement at
+text size, and the statement drops to text size while it shows. A tried option is dimmed, struck through and `aria-disabled`;
+the answer to copy gets an outline and «➜». After the explanation every option comes back, or with five options the three
+more attempts could never all fail and the copy step would be unreachable. Leaving a skill and coming back resumes its
+question and pass. The HUD's one learning bar is the open skill's — on the start screen, the skill under the cursor.
