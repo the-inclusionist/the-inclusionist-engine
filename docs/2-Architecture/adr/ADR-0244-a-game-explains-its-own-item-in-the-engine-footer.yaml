@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/a-game-explains-its-own-item.browser.test.js
+  errata:
+    - date: 2026-09-26
+      what: >-
+        CONFIRMED (`engine:3f832def`): `Engine.explain(text | null)` writes the game's text into the same band the engine's
+        items use, so the two-line clamp of §3 holds for it by construction and is measured. Beyond §1–§2, releasing the
+        cartridge clears its text — `unmount()`, and `mount()` of another — since a text left by a game that is gone would
+        explain nothing on screen; and a game explaining again while an engine item is pointed waits under it until the item
+        leaves. The confirmation below replaces the debt it declared.
   date: 2026-09-26
   decision-makers: [Dev]
   consulted:
@@ -56,8 +66,9 @@ decision-outcome:
       - "A game that forgets `explain(null)` when it leaves its screen leaves the text over the play"
 
   confirmation: |
-    Debt until the gate lands (issue to be opened with the implementation): `explain` shows the text; a quick-bar icon
-    pointed and left gives the footer back to it; `explain(null)` empties it.
+    ✅ The gate in confirmed-by: `explain` shows the text; a quick-bar icon pointed and left, and a pause-card item's reason
+    reached and left, give the footer back to it; `explain(null)` empties it; two lines at most; releasing the cartridge
+    clears it; 8 mutations red.
 
 more-information: |
   The demo quiz's start screen is the first consumer: each BNCC code is an item, and its official text is the explanation.
