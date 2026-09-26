@@ -52,7 +52,7 @@
 - **Histórico do ADR-0107: não se reescreve** — o dado era a relação de família com a pessoa dona e autora da arte (uma das que farão as imagens), sem nome nem contato; regra do Dev: só se reescreve havendo PII.
 - **Espelho:** o onnxruntime já está no balde (200). O player do VLibras e os 632 sinais estão preparados em `the-inclusionist-lfs` (`vlibras-web-browsers-9d093f2/`, `vlibras-dictionary-sources-f8ddb37/`, com SHA256SUMS e licenças) — o envio é do Dev. O espeak-ng continua parado pela fonte GPL (#192), não pelo envio.
 - **Ainda do Dev:** push (engine 76, docs 66 commits) · `records-token` (F11).
-- **Meu, sem perguntar:** os sinais e o player do VLibras entrarem na cópia offline (pilar 8) · ✅ #191 fechada 25/09 (a #199 já estava) · ✅ a fase 1 do `ROADMAP` corrigida (`418643a1`: saiu da engine com a pilha de tiles, ADR-0228).
+- **Meu, sem perguntar:** ✅ os sinais e o player do VLibras na cópia offline (pilar 8): `15db99c8`…`62a4a598` + `fe84acfe`, `docs:f029aab` (errata do ADR-0234). Antes, o framework remendado corria sem ninguém conferir os bytes e a página, as glosas e os sinais iam à rede a cada arranque; agora, com o modo pessoa surda ligado, um arranque online guarda tudo conferido por sha256 e o service worker responde da cache. Medido na `main` integrada: offline o player carregou e sinalizou 2 de 2 glosas; um sinal adulterado não é guardado; com o modo desligado nada é pedido · ✅ #191 fechada 25/09 (a #199 já estava) · ✅ a fase 1 do `ROADMAP` corrigida (`418643a1`: saiu da engine com a pilha de tiles, ADR-0228).
 
 **Só o tempo:** F4/R5 (o veredito do co-change) · Fase 6 (cada acomodação entra quando o eixo dela existir).
 
