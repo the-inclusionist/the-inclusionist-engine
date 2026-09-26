@@ -172,11 +172,11 @@ decision-outcome:
     commits of the unification touch several of these files at once, which is precisely what the abstraction exists to
     stop happening afterwards.
   confirmed-by:
-    - engine:tests/virtual-controller.node.test.js
-    - engine:tests/touch-bindings.node.test.js
-    - engine:tests/touch-bindings.browser.test.js
-    - engine:tests/gamepad.node.test.js
-    - engine:tests/virtual-controller-at-boot.browser.test.js
+    - tests/virtual-controller.node.test.js
+    - tests/touch-bindings.node.test.js
+    - tests/touch-bindings.browser.test.js
+    - tests/gamepad.node.test.js
+    - tests/virtual-controller-at-boot.browser.test.js
 
 more-information: |
   📌 What this record does NOT decide: whether the cartridge keeps receiving keys at all. It does — `holdKey` stays, because

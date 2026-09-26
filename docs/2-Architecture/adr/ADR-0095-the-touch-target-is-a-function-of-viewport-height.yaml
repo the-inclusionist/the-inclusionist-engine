@@ -9,8 +9,8 @@ metadata:
   # it cannot be failed by lowering the ruler, because the item's real height comes from the `padding` and the
   # line height. What it guards is the `gap`, and that is written in the case instead of assumed.
   confirmed-by:
-    - engine:app/js/ui/layout.ts
-    - engine:tests/pause-target-44px.browser.test.js
+    - app/js/ui/layout.ts
+    - tests/pause-target-44px.browser.test.js
   date: 2026-09-06
   supersedes-in-part: [ADR-0044]
   decision-makers: [Dev]

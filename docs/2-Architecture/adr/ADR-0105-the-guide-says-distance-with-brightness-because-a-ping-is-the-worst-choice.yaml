@@ -2,10 +2,10 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - "engine:app/js/platform/guide-intensity.ts"
-    - "engine:app/js/platform/audio-sonar.ts"
-    - "engine:tests/guide-intensity.node.test.js"
-    - "engine:tests/audio-sonar.node.test.js"
+    - "app/js/platform/guide-intensity.ts"
+    - "app/js/platform/audio-sonar.ts"
+    - "tests/guide-intensity.node.test.js"
+    - "tests/audio-sonar.node.test.js"
   date: 2026-09-07
   decision-makers: [Dev]
   consulted:

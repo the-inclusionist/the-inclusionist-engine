@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/help-panel.browser.test.js
-    - engine:tests/boot-create-game.browser.test.js
+    - tests/help-panel.browser.test.js
+    - tests/boot-create-game.browser.test.js
   errata:
     - date: 2026-09-14
       what: '✅ CONFIRMED, pushed (issue #188 closed, `engine:a85bfee`): a cartridge''s slides show before the button slides, a figure stands still under reduced motion, a slide without text refuses the boot; the quiz demo declares two.'

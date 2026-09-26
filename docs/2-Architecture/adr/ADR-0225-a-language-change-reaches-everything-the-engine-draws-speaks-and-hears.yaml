@@ -129,8 +129,8 @@ decision-outcome:
     school that wants two languages passes `--commands`/`--reading` twice; what changed is that the gap is now SAID
     instead of being a microphone listening in the wrong language.
   confirmed-by:
-    - engine:tests/voice-control.node.test.js
-    - engine:tests/boot-create-game.node.test.js
+    - tests/voice-control.node.test.js
+    - tests/boot-create-game.node.test.js
 
 more-information: |
   📌 What this record does NOT decide: whether a cartridge's own drawn text is the engine's problem. It is not — the

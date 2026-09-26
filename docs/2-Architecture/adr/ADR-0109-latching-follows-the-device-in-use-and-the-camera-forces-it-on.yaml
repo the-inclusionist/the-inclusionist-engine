@@ -2,12 +2,12 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/transport-in-use.node.test.js
-    - engine:tests/the-keys-source-survives-the-door.node.test.js
-    - engine:tests/latch-scope.node.test.js
-    - engine:tests/latch-sync.node.test.js
-    - engine:tests/latch-edge.node.test.js
-    - engine:app/js/input/transport-in-use.ts
+    - tests/transport-in-use.node.test.js
+    - tests/the-keys-source-survives-the-door.node.test.js
+    - tests/latch-scope.node.test.js
+    - tests/latch-sync.node.test.js
+    - tests/latch-edge.node.test.js
+    - app/js/input/transport-in-use.ts
   errata:
     - date: 2026-09-09
       what: >-

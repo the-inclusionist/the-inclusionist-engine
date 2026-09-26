@@ -2,9 +2,9 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/a-disposed-root-stops-listening.browser.test.js
-    - engine:tests/boot-create-game.browser.test.js
-    - engine:tests/public-surface-shrinks-by-declaration.node.test.js
+    - tests/a-disposed-root-stops-listening.browser.test.js
+    - tests/boot-create-game.browser.test.js
+    - tests/public-surface-shrinks-by-declaration.node.test.js
   date: 2026-09-22
   decision-makers: [Dev]
   consulted:

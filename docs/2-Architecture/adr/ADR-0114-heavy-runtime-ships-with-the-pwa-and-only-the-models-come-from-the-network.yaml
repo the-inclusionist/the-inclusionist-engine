@@ -2,9 +2,9 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/no-voice-model-in-the-package.node.test.js
-    - engine:tests/no-hand-written-cdn.node.test.js
-    - engine:scripts/check-precache.mjs
+    - tests/no-voice-model-in-the-package.node.test.js
+    - tests/no-hand-written-cdn.node.test.js
+    - scripts/check-precache.mjs
   errata:
     - date: 2026-09-14
       what: '📌 CONFIRMATION PATHS THAT LEFT WITH PIPER: `tests/voice-plan.node.test.js` and `tests/vozes-prontas.node.test.js` confirmed the Piper voice catalogue and its readiness; both left the engine with that catalogue (ADR-0207, `engine:913051b`), so they leave `confirmed-by`. The paths that remain still hold.'

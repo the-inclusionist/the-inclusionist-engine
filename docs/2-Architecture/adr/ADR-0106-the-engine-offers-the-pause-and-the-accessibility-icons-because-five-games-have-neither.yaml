@@ -14,8 +14,8 @@ metadata:
         away — the default `.pm-btn` list (`001b185`) and the mounting of the card (`092a670`). Everything
         else here stands.
   confirmed-by:
-    - "engine:app/js/boot/create-game.ts"
-    - "engine:tests/boot-create-game.node.test.js"
+    - "app/js/boot/create-game.ts"
+    - "tests/boot-create-game.node.test.js"
   date: 2026-09-08
   decision-makers: [Dev]
   consulted:

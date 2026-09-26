@@ -2,7 +2,7 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/virtual-controller-at-boot.browser.test.js
+    - tests/virtual-controller-at-boot.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED IN PART, pushed (issue #151 closed, `engine:254864b`): a press on the pad reaches an open menu as

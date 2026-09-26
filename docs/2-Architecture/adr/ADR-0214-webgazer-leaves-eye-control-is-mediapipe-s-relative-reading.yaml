@@ -2,7 +2,7 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/webgazer-left-the-engine.node.test.js
+    - tests/webgazer-left-the-engine.node.test.js
   supersedes-in-part: [ADR-0132]
   errata:
     - date: 2026-09-16

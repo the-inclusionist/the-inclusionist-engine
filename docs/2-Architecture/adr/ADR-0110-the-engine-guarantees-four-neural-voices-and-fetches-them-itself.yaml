@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/no-voice-model-in-the-package.node.test.js
-    - engine:tests/heavy.node.test.js
+    - tests/no-voice-model-in-the-package.node.test.js
+    - tests/heavy.node.test.js
   superseded-in-part:
     - by: ADR-0207
       what: >-

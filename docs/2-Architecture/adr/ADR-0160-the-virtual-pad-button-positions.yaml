@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/virtual-controller-at-boot.browser.test.js
-    - engine:tests/touch.browser.test.js
+    - tests/virtual-controller-at-boot.browser.test.js
+    - tests/touch.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #154 closed): the actions sit 1 4 over 2 3 (`engine:7981f6c`); the shoulders in the

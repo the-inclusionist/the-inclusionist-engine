@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/piper-left-the-engine.node.test.js
-    - engine:docs/notices/2026-09-14-piper-voices-withdrawn.md
+    - tests/piper-left-the-engine.node.test.js
+    - docs/notices/2026-09-14-piper-voices-withdrawn.md
   supersedes: [ADR-0127]
   errata:
     - date: 2026-09-16

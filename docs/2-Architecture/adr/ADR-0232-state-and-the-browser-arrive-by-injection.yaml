@@ -3,7 +3,7 @@ metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0221]
   confirmed-by:
-    - engine:tests/code-health.node.test.js
+    - tests/code-health.node.test.js
   errata:
     - date: 2026-09-25
       what: >-

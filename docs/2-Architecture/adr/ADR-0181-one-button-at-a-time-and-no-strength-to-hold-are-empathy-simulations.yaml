@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/empathy-filter.node.test.js
-    - engine:tests/empathy-simulations-mounted.browser.test.js
+    - tests/empathy-filter.node.test.js
+    - tests/empathy-simulations-mounted.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #177 closed, `engine:caf2ce1`): both rows are in the empathy panel; the keyboard passes through them. ⚠️ The touch pad and the gamepad do not pass through the filter."

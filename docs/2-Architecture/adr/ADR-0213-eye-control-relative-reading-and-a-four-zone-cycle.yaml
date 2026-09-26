@@ -2,14 +2,14 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/face-signals.node.test.js
-    - engine:tests/gaze-relative.node.test.js
-    - engine:tests/gaze-cycle.node.test.js
-    - engine:tests/gaze-overlay.node.test.js
-    - engine:tests/gaze-overlay.browser.test.js
-    - engine:tests/eye-control.browser.test.js
-    - engine:tests/vision.node.test.js
-    - engine:tests/vision-loop.node.test.js
+    - tests/face-signals.node.test.js
+    - tests/gaze-relative.node.test.js
+    - tests/gaze-cycle.node.test.js
+    - tests/gaze-overlay.node.test.js
+    - tests/gaze-overlay.browser.test.js
+    - tests/eye-control.browser.test.js
+    - tests/vision.node.test.js
+    - tests/vision-loop.node.test.js
   supersedes-in-part: [ADR-0210, ADR-0212]
   superseded-in-part:
     - by: ADR-0215

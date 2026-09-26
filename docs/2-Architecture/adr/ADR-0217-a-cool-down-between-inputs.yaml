@@ -2,10 +2,10 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/input-cooldown.node.test.js
-    - engine:tests/no-need-to-hold.browser.test.js
-    - engine:tests/input-boundary.node.test.js
-    - engine:tests/virtual-controller-at-boot.browser.test.js
+    - tests/input-cooldown.node.test.js
+    - tests/no-need-to-hold.browser.test.js
+    - tests/input-boundary.node.test.js
+    - tests/virtual-controller-at-boot.browser.test.js
   date: 2026-09-21
   decision-makers: [Dev]
   consulted:

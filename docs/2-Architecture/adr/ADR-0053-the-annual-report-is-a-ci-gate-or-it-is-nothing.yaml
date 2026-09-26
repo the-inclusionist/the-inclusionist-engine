@@ -5,9 +5,9 @@ metadata:
   # that day's facts, would have written the same) nor supersession (the decision did not change). It is a STATUS
   # line that aged, and this key is the form ADR-0057 did not have. The prose is history; this is today's fact.
   confirmed-by:
-    - engine:scripts/check-annual-report.mjs
-    - engine:tests/annual-report.node.test.js
-    - engine:docs/compliance/README.md
+    - scripts/check-annual-report.mjs
+    - tests/annual-report.node.test.js
+    - docs/compliance/README.md
   errata:
     - date: 2026-09-04
       what: "cited the annual public report as `requerimento §49.j` in eight places. Item 49 ends at alínea `i`;

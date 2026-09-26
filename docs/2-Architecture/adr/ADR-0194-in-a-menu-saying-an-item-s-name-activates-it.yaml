@@ -2,13 +2,13 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/vosk-vocabulary.node.test.js
-    - engine:tests/vosk-vocabulary.browser.test.js
-    - engine:tests/vosk-runtime.node.test.js
-    - engine:tests/voice-control.node.test.js
-    - engine:tests/voice-map.node.test.js
-    - engine:tests/a-name-said-activates-its-item.browser.test.js
-    - engine:tests/menu-nav.browser.test.js
+    - tests/vosk-vocabulary.node.test.js
+    - tests/vosk-vocabulary.browser.test.js
+    - tests/vosk-runtime.node.test.js
+    - tests/voice-control.node.test.js
+    - tests/voice-map.node.test.js
+    - tests/a-name-said-activates-its-item.browser.test.js
+    - tests/menu-nav.browser.test.js
   errata:
     - date: 2026-09-25
       what: >-

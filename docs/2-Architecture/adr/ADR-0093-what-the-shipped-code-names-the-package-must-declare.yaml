@@ -6,7 +6,7 @@ metadata:
   # the gate on THIS side, the one with the twelve assertions that were born red over `@mintplex-labs/piper-tts-web`,
   # is `engine-package`. Without this key, the pointer a reader meets first points to another tree.
   confirmed-by:
-    - engine:tests/engine-package.node.test.js
+    - tests/engine-package.node.test.js
   date: 2026-09-06
   superseded-in-part:
     - by: ADR-0094

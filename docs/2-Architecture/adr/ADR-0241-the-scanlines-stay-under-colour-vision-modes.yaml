@@ -2,7 +2,7 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/the-crt-under-each-visual-mode.browser.test.js
+    - tests/the-crt-under-each-visual-mode.browser.test.js
   errata:
     - date: 2026-09-25
       what: >-

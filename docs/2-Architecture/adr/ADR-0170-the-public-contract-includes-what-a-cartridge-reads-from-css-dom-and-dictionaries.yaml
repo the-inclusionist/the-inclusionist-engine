@@ -2,10 +2,10 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/public-page-surface.node.test.js
-    - engine:tests/exports-without-consumer.node.test.js
-    - engine:docs/6-DevOps-SRE/public-page-surface.json
-    - engine:docs/6-DevOps-SRE/exports-without-consumer.json
+    - tests/public-page-surface.node.test.js
+    - tests/exports-without-consumer.node.test.js
+    - docs/6-DevOps-SRE/public-page-surface.json
+    - docs/6-DevOps-SRE/exports-without-consumer.json
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (`engine:79814bf`, issue #164). Two readings the record left open, filled as built: TYPES are

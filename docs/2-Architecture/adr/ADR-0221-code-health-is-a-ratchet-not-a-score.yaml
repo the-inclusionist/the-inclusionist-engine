@@ -9,7 +9,7 @@ metadata:
         module that holds state), with the same ratchet. The other five measures, the exemptions and the co-change
         criterion stand.
   confirmed-by:
-    - engine:tests/code-health.node.test.js
+    - tests/code-health.node.test.js
   date: 2026-09-22
   decision-makers: [Dev]
   consulted:

@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/cross-origin-isolation.node.test.js
-    - engine:tests/page-revisions.node.test.js
+    - tests/cross-origin-isolation.node.test.js
+    - tests/page-revisions.node.test.js
   errata:
     - date: 2026-09-14
       what: '✅ CONFIRMED, pushed (issue #186 closed, `engine:e8a3bd6`, `engine:4822c8c`): `_headers` sends COOP same-origin and COEP require-corp to every page; a precache stored before a header change is refreshed; the quiz demo, served with them, is cross-origin isolated and onnxruntime ran three worker threads on a Kokoro synthesis (`engine:f8fa77d`).'

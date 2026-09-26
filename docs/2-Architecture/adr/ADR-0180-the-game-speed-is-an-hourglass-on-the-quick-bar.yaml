@@ -2,9 +2,9 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/game-speed.node.test.js
-    - engine:tests/hourglass-on-the-bar.node.test.js
-    - engine:tests/hourglass-on-the-bar.browser.test.js
+    - tests/game-speed.node.test.js
+    - tests/hourglass-on-the-bar.node.test.js
+    - tests/hourglass-on-the-bar.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #176 closed, `engine:d65f111`): the ⏳ button is on the bar in a clock game and absent in a turn game; `startLoop` hands out the frame time times the speed; the choice is stored and published."

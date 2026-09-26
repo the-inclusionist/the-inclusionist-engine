@@ -2,7 +2,7 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/owner-colours-and-outlines.browser.test.js
+    - tests/owner-colours-and-outlines.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #183 closed, `engine:04f1e34`): an answer without the two refuses the boot; answered with a word, each row is in the visual panel with that word; answered «not here», no row."

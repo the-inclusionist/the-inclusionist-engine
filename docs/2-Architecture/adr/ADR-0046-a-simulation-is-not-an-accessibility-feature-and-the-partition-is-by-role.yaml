@@ -5,9 +5,9 @@ metadata:
   # experience INSIDE it, because a gate on the control side only would approve emptying the other.
   # `alcanceDoModo` (§ of the same record) is still checked in `viz-setters`, and that is why it is here.
   confirmed-by:
-    - engine:app/js/ui/hud.ts
-    - engine:tests/hud.browser.test.js
-    - engine:tests/viz-setters.node.test.js
+    - app/js/ui/hud.ts
+    - tests/hud.browser.test.js
+    - tests/viz-setters.node.test.js
   supersedes-in-part: [ADR-0020]
   date: 2026-08-26
   decision-makers: [Dev]

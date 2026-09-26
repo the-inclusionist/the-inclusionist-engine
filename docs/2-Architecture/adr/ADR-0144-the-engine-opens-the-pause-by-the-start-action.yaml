@@ -9,11 +9,11 @@ metadata:
         `start` belongs to the engine and a cartridge may not take it (§4), and the ask for `setPhase('paused')`
         (§2), stand.
   confirmed-by:
-    - engine:app/js/boot/create-game.ts
-    - engine:app/js/core/actions.ts
-    - engine:tests/the-two-doors-of-the-pause.browser.test.js
-    - engine:tests/boot-create-game.node.test.js
-    - engine:tests/the-pause-card-does-not-eat-keys.browser.test.js
+    - app/js/boot/create-game.ts
+    - app/js/core/actions.ts
+    - tests/the-two-doors-of-the-pause.browser.test.js
+    - tests/boot-create-game.node.test.js
+    - tests/the-pause-card-does-not-eat-keys.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:

@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/kokoro.node.test.js
-    - engine:tests/kokoro-in-the-voice.browser.test.js
+    - tests/kokoro.node.test.js
+    - tests/kokoro-in-the-voice.browser.test.js
   errata:
     - date: 2026-09-14
       what: '✅ CONFIRMED IN PART, pushed (issue #181 closed): Kokoro is back beside Piper, its model and voices in the catalogue with sha256, and a Kokoro voice picked speaks through the Kokoro runtime. The listing condition (model cached and WebGPU) was superseded by ADR-0198 and is not built.'

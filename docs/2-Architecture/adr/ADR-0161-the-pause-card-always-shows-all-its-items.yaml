@@ -2,8 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/boot-create-game.browser.test.js
-    - engine:tests/pause-icons.browser.test.js
+    - tests/boot-create-game.browser.test.js
+    - tests/pause-icons.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #155 closed): a game that declares nothing gets the six root items and the seven of

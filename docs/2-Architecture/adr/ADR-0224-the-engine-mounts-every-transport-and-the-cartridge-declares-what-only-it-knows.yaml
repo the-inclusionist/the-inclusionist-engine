@@ -102,8 +102,8 @@ decision-outcome:
     📏 The closing number is the one ADR-0223 fixed and it is not readable yet: 36% co-change before the single door,
     one commit after.
   confirmed-by:
-    - engine:tests/the-engine-mounts-the-gamepad.browser.test.js
-    - engine:tests/gamepad.node.test.js
+    - tests/the-engine-mounts-the-gamepad.browser.test.js
+    - tests/gamepad.node.test.js
 
 more-information: |
   📌 What this record does NOT decide: whether `initGamepad` should eventually stop being published. It stays, because a

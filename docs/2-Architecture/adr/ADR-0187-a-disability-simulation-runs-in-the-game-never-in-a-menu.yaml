@@ -2,7 +2,7 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/simulation-only-in-the-game.browser.test.js
+    - tests/simulation-only-in-the-game.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (`engine:f04b55c`): with the pause card, a panel or the quick pause open nothing is simulated, and it returns in play; the bar and a `data-incl-menu` element are never simulated. Issue #182 stays open for the rows it still lists."

@@ -7,18 +7,18 @@ metadata:
              options are read «Gato, 1 de 4», the rule-1 form"
   date: 2026-09-12
   confirmed-by:
-    - engine:tests/menu-nav.browser.test.js
-    - engine:tests/holding-places-the-cursor.browser.test.js
-    - engine:tests/menus-announce-context.browser.test.js
-    - engine:tests/the-quiz-reads-its-options.browser.test.js
-    - engine:tests/items-without-numbers.browser.test.js
-    - engine:tests/labels-without-parentheses.node.test.js
-    - engine:tests/settings-empathy.browser.test.js
-    - engine:tests/menu-contrast-floors.browser.test.js
-    - engine:tests/visible-focus.browser.test.js
-    - engine:tests/state-never-by-colour-alone.browser.test.js
-    - engine:tests/forced-resolution.browser.test.js
-    - engine:tests/a-glyph-is-not-part-of-the-name.browser.test.js
+    - tests/menu-nav.browser.test.js
+    - tests/holding-places-the-cursor.browser.test.js
+    - tests/menus-announce-context.browser.test.js
+    - tests/the-quiz-reads-its-options.browser.test.js
+    - tests/items-without-numbers.browser.test.js
+    - tests/labels-without-parentheses.node.test.js
+    - tests/settings-empathy.browser.test.js
+    - tests/menu-contrast-floors.browser.test.js
+    - tests/visible-focus.browser.test.js
+    - tests/state-never-by-colour-alone.browser.test.js
+    - tests/forced-resolution.browser.test.js
+    - tests/a-glyph-is-not-part-of-the-name.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #153 closed): one gate per rule — 1 and 5 `menu-nav` (label, role, value, «N de M»

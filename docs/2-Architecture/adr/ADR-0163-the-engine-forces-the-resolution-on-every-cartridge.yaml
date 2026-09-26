@@ -3,13 +3,13 @@ metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0095]
   confirmed-by:
-    - engine:tests/forced-resolution.browser.test.js
-    - engine:tests/pause-target-44px.browser.test.js
-    - engine:tests/text-grows-with-the-scale.browser.test.js
-    - engine:tests/no-text-under-16px.node.test.js
-    - engine:tests/font-size-floor.node.test.js
-    - engine:tests/below-the-floor.node.test.js
-    - engine:tests/quiz-below-the-bar.browser.test.js
+    - tests/forced-resolution.browser.test.js
+    - tests/pause-target-44px.browser.test.js
+    - tests/text-grows-with-the-scale.browser.test.js
+    - tests/no-text-under-16px.node.test.js
+    - tests/font-size-floor.node.test.js
+    - tests/below-the-floor.node.test.js
+    - tests/quiz-below-the-bar.browser.test.js
   date: 2026-09-12
   errata:
     - date: 2026-09-13

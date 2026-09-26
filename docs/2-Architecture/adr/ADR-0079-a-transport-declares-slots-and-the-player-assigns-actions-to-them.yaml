@@ -2,11 +2,11 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:app/js/input/transports.ts
-    - engine:tests/transports.node.test.js
-    - engine:app/js/ui/reach-notice.ts
-    - engine:tests/reach-notice.node.test.js
-    - engine:tests/reach-notice.browser.test.js
+    - app/js/input/transports.ts
+    - tests/transports.node.test.js
+    - app/js/ui/reach-notice.ts
+    - tests/reach-notice.node.test.js
+    - tests/reach-notice.browser.test.js
   errata:
     - date: 2026-09-09
       what: >-

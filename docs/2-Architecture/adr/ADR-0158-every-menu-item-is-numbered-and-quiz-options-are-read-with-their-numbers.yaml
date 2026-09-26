@@ -2,9 +2,9 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/panel-shell.browser.test.js
-    - engine:tests/the-quiz-reads-its-options.browser.test.js
-    - engine:tests/labels-without-parentheses.node.test.js
+    - tests/panel-shell.browser.test.js
+    - tests/the-quiz-reads-its-options.browser.test.js
+    - tests/labels-without-parentheses.node.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED IN PART, pushed (issue #152 closed; `engine:e2d3225`, `d662f52`, `5196de7`, `ab7ffa7`): «Voltar» is

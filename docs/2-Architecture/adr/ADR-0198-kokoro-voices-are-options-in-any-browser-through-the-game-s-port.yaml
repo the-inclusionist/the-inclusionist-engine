@@ -10,10 +10,10 @@ metadata:
       what: >-
         Piper first in Portuguese and Spanish and the 🪶 mark: Piper leaves the engine.
   confirmed-by:
-    - engine:tests/kokoro.node.test.js
-    - engine:tests/kokoro-in-the-voice.browser.test.js
-    - engine:tests/the-quiz-declares-what-it-uses.node.test.js
-    - engine:tests/heavy.node.test.js
+    - tests/kokoro.node.test.js
+    - tests/kokoro-in-the-voice.browser.test.js
+    - tests/the-quiz-declares-what-it-uses.node.test.js
+    - tests/heavy.node.test.js
   supersedes-in-part: [ADR-0185, ADR-0186]
   errata:
     - date: 2026-09-14

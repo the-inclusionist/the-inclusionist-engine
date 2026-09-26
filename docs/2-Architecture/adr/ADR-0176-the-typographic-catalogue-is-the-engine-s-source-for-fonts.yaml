@@ -9,10 +9,10 @@ metadata:
   supersedes-in-part: [ADR-0150]
   date: 2026-09-13
   confirmed-by:
-    - engine:tests/faces-answer-to-the-type-catalogue.node.test.js
-    - engine:tests/what-fonts-the-package-carries.node.test.js
-    - engine:tests/font-size-floor.node.test.js
-    - engine:tests/an-offered-font-loads.node.test.js
+    - tests/faces-answer-to-the-type-catalogue.node.test.js
+    - tests/what-fonts-the-package-carries.node.test.js
+    - tests/font-size-floor.node.test.js
+    - tests/an-offered-font-loads.node.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #172 closed; `engine:a5e8534`, `192f777`, `0223db1`): every offered face is an active catalogue entry, the floors hold, and every active family is packaged. The catalogue's place is `research/` since ADR-0191."

@@ -15,10 +15,10 @@ metadata:
         where it runs (§2 stands).
   supersedes-in-part: [ADR-0151, ADR-0183]
   confirmed-by:
-    - engine:tests/voice-per-language.node.test.js
-    - engine:tests/voice-choice.node.test.js
-    - engine:tests/voice-choice.browser.test.js
-    - engine:tests/a-language-with-no-voice.browser.test.js
+    - tests/voice-per-language.node.test.js
+    - tests/voice-choice.node.test.js
+    - tests/voice-choice.browser.test.js
+    - tests/a-language-with-no-voice.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED IN PART, pushed (issue #180 closed, `engine:9d0f5e5`): the list holds the Piper voices of the language, the choice is stored and speaks, and a language with no voice locks the four rows and the bar's button with the reason. ⚠️ No Kokoro voice is listed yet: that half is issue #181 (ADR-0186)."

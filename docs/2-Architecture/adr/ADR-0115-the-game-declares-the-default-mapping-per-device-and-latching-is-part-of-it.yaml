@@ -2,10 +2,10 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/contract.node.test.js
-    - engine:tests/the-game-declares-its-keyboard.node.test.js
-    - engine:tests/the-game-declares-its-pad.node.test.js
-    - engine:app/js/core/contract.ts
+    - tests/contract.node.test.js
+    - tests/the-game-declares-its-keyboard.node.test.js
+    - tests/the-game-declares-its-pad.node.test.js
+    - app/js/core/contract.ts
   errata:
     - date: 2026-09-09
       what: >-

@@ -14,9 +14,9 @@ metadata:
         arrives on INSTALL like everything else, and the defect goes while the capability stays.
   date: 2026-09-09
   confirmed-by:
-    - engine:app/js/platform/heavy-catalogue.ts
-    - engine:tests/heavy.node.test.js
-    - engine:tests/nothing-comes-from-outside.node.test.js
+    - app/js/platform/heavy-catalogue.ts
+    - tests/heavy.node.test.js
+    - tests/nothing-comes-from-outside.node.test.js
   errata:
     - date: 2026-09-09
       what: >-

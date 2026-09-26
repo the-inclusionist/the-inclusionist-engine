@@ -2,12 +2,12 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/latching-per-transport.node.test.js
-    - engine:tests/latch-scope.node.test.js
-    - engine:tests/latch-sync.node.test.js
-    - engine:tests/settings-mobility.browser.test.js
-    - engine:tests/transport-per-player.node.test.js
-    - engine:app/js/input/latch-sync.ts
+    - tests/latching-per-transport.node.test.js
+    - tests/latch-scope.node.test.js
+    - tests/latch-sync.node.test.js
+    - tests/settings-mobility.browser.test.js
+    - tests/transport-per-player.node.test.js
+    - app/js/input/latch-sync.ts
   errata:
     - date: 2026-09-09
       what: >-

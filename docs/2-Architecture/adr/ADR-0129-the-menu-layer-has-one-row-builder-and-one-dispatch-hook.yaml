@@ -3,9 +3,9 @@ metadata:
   status: "accepted"
   supersedes-in-part: []
   confirmed-by:
-    - engine:tests/mount-panel.browser.test.js
-    - engine:tests/panel-widgets.browser.test.js
-    - engine:tests/a-panel-re-explains.node.test.js
+    - tests/mount-panel.browser.test.js
+    - tests/panel-widgets.browser.test.js
+    - tests/a-panel-re-explains.node.test.js
   errata:
     - date: 2026-09-25
       what: >-

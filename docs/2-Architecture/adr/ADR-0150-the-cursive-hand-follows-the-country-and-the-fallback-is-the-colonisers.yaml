@@ -5,10 +5,10 @@ metadata:
     - by: ADR-0176
       what: "ONLY what is packaged: its erratum of 2026-09-13 («Engine empacota tudo por enquanto») packages every active family of the typographic catalogue — the Guides this record kept out and every Playwrite beyond its fifteen (engine:192f777). The fallback by the coloniser's language stands"
   confirmed-by:
-    - engine:app/public/vendor/fonts.css
-    - engine:app/js/ui/fonts.ts
-    - engine:tests/what-fonts-the-package-carries.node.test.js
-    - engine:tests/settings-typo.node.test.js
+    - app/public/vendor/fonts.css
+    - app/js/ui/fonts.ts
+    - tests/what-fonts-the-package-carries.node.test.js
+    - tests/settings-typo.node.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:

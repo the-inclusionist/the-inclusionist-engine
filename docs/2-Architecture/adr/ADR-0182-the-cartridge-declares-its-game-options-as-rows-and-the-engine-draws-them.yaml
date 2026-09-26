@@ -3,8 +3,8 @@ metadata:
   status: "accepted"
   date: 2026-09-13
   confirmed-by:
-    - engine:tests/game-options.node.test.js
-    - engine:tests/game-options.browser.test.js
+    - tests/game-options.node.test.js
+    - tests/game-options.browser.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #178 closed, `engine:16e6bda`): declared rows get the door and are drawn in the cartridge's words; none keeps the door locked with its reason (ADR-0161, the erratum below); a malformed row refuses the boot."

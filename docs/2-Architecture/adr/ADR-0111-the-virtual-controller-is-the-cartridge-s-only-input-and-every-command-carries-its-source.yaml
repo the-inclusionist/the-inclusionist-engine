@@ -2,11 +2,11 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/engine-boundary.node.test.js
-    - engine:tests/the-keys-source-survives-the-door.node.test.js
-    - engine:tests/no-abstract-name-reaches-a-person.node.test.js
-    - engine:app/js/input/synthetic-source.ts
-    - engine:tests/virtual-controller.node.test.js
+    - tests/engine-boundary.node.test.js
+    - tests/the-keys-source-survives-the-door.node.test.js
+    - tests/no-abstract-name-reaches-a-person.node.test.js
+    - app/js/input/synthetic-source.ts
+    - tests/virtual-controller.node.test.js
   errata:
     - date: 2026-09-09
       what: >-

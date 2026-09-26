@@ -3,7 +3,7 @@ metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0001]
   confirmed-by:
-    - engine:tests/fractional-scale.node.test.js
+    - tests/fractional-scale.node.test.js
   errata:
     - date: 2026-09-13
       what: "✅ CONFIRMED, pushed (issue #175 closed, `engine:e038a18`): on a fractional display scale the region never goes under 2 CSS px a pixel, `--ui-fs` holds 16 px."

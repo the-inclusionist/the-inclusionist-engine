@@ -2,10 +2,10 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - engine:tests/face-map.node.test.js
-    - engine:tests/hand-map.node.test.js
-    - engine:tests/face-control.browser.test.js
-    - engine:tests/hand-control.browser.test.js
+    - tests/face-map.node.test.js
+    - tests/hand-map.node.test.js
+    - tests/face-control.browser.test.js
+    - tests/hand-control.browser.test.js
   superseded-in-part:
     - by: ADR-0213
       what: >-

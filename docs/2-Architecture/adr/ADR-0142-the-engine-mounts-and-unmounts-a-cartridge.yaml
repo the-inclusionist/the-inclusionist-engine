@@ -24,8 +24,8 @@ metadata:
        cartridge reaches shared state, here the engine holds it"
   informed: []
   confirmed-by:
-    - engine:app/js/boot/create-game.ts
-    - engine:tests/boot-create-game.node.test.js
+    - app/js/boot/create-game.ts
+    - tests/boot-create-game.node.test.js
   errata:
     - date: 2026-09-11
       what: "`more-information` said the frozen `seguraTeclas` in the pause-icons context «goes to the engine
