@@ -88,6 +88,7 @@ import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts, type LoadKokoro } from '../platform/tts.js';
 import type { SpeechPort } from '../platform/speech.js';
 import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
+import type { ReadingThreads, ReadingInWorker } from '../platform/reading-in-worker.js';
 import { createAudio, type Audio } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // The root is the layer that MAY know both axes: `render/` is below it, and it is the root's job to answer
@@ -3916,8 +3917,12 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const reading: Reading = (() => {
     const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown; Worker?: typeof Worker };
     let microphone: { record(o: ListenOptions): Promise<Float32Array>; stop(): void } | null = null;
-    /** The reading thread, kept between readings (opening it compiles the model again) and let go with the game. */
-    let readingThread: { transcribe(samples: Float32Array): Promise<string>; close(): void } | null = null;
+    /**
+     * The reading thread, ONE PER LANGUAGE and kept between readings — opening it compiles the model again, up to 378 MiB — and let
+     * go with the game (`platform/reading-in-worker.keepOneThreadPerLanguage`, built at the first reading with the module).
+     */
+    let readingThreads: ReadingThreads<ReadingInWorker> | null = null;
+    closeReadingThread = () => readingThreads?.close();
     const listener = createReading({
       language: () => bcp47(),
       api: (browserApis.SpeechRecognition ?? browserApis.webkitSpeechRecognition ?? null) as never,
@@ -3948,24 +3953,28 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
            */
           const Worker = browserApis.Worker;
           if (typeof Worker === 'function') {
-            const { createReadingInWorker } = await import('../platform/reading-in-worker.js');
-            readingThread?.close();
-            readingThread = createReadingInWorker({
+            const { createReadingInWorker, keepOneThreadPerLanguage } = await import('../platform/reading-in-worker.js');
+            // 🔴 THE SAME LANGUAGE REUSES ITS THREAD: this port is asked at EVERY `listen()`, and it used to close and reopen the
+            // thread each time — recompiling up to 378 MiB per reading. Another language closes the old one and opens hers.
+            readingThreads ??= keepOneThreadPerLanguage<ReadingInWorker>();
+            return readingThreads.forLanguage(language, (failed) => createReadingInWorker({
               base: doc.baseURI,
               language,
               spawn: () => new Worker(new URL('../platform/reading-worker.js', import.meta.url), { type: 'module' }) as never,
               // 📌 THE SENTENCE IS WRITTEN HERE and the module hands over only the REASON: a thread that fails to open when
               // nobody is waiting for the answer had nowhere to be said (ADR-0169), and whoever knows what the child loses
-              // is the diagnostic channel, not a thread's protocol.
+              // is the diagnostic channel, not a thread's protocol. It names BOTH fixes, since `--reading <language>` alone
+              // would now narrow the delivery (ADR-0225 erratum) — and the child is told too, not only the adult.
               report: (reason) => {
-                const line = `reading: the transcription thread could not open — ${reason}; a child who reads aloud `
-                  + 'gets no answer, and nothing else in the page will say so — check that the reading model for this '
-                  + 'language reached `heavy/` (npx inclusionist-heavy --reading <language>)';
+                failed(); // forgotten: the next reading opens it again, the model may have come down since
+                const line = `reading: the transcription thread could not open for ${language} — ${reason}; a child who reads `
+                  + 'aloud in this language gets no answer — build the delivery with `npx inclusionist-heavy --reading` alone (it '
+                  + `carries every language) or with \`--reading ${language.split('-')[0]!.toLowerCase()}\` in its list, and open `
+                  + 'the game once online so the install fetches it';
                 if (!measuredProblems.includes(line)) measuredProblems.push(line);
+                srAlert(t('sr.reading.failed'));
               },
-            });
-            closeReadingThread = () => { readingThread?.close(); readingThread = null; };
-            return readingThread;
+            }));
           }
           measuredProblems.push('reading: this browser has no `Worker`, so the transcription runs on the same thread that '
             + 'draws the game and feeds the microphone — measured, that cuts the recording in gaps of seconds and the child '

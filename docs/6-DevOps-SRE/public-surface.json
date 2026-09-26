@@ -807,8 +807,10 @@
   "platform/reading-in-worker.ts": [
     "ReadingInWorker",
     "ReadingInWorkerDeps",
+    "ReadingThreads",
     "ReadingWorkerLike",
-    "createReadingInWorker"
+    "createReadingInWorker",
+    "keepOneThreadPerLanguage"
   ],
   "platform/reading-model.ts": [
     "GenerationConfig",

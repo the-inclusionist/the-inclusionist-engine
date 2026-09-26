@@ -14,7 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createReadingInWorker } from '../app/js/platform/reading-in-worker.js';
+import { createReadingInWorker, keepOneThreadPerLanguage } from '../app/js/platform/reading-in-worker.js';
 import { serveReading } from '../app/js/platform/reading-worker.js';
 
 /** The fake thread: delivers messages both ways, and records what went through it. */
@@ -198,4 +198,75 @@ describe('o cliente e o worker falam a mesma língua', () => {
     await new Promise((r) => { setTimeout(r, 0); });
     expect(respostas).toEqual([{ kind: 'failed', id: 7, message: expect.stringContaining('before the model was opened') }]);
   });
+});
+
+/**
+ * 🔴 ONE THREAD PER LANGUAGE, KEPT (issue #185; ADR-0225 erratum). 📏 The defect it closes was read in the root: the `model` port
+ * is asked at EVERY `listen()`, and it closed and reopened the thread each time — up to 378 MiB compiled again per reading.
+ */
+describe('one reading thread per language', () => {
+  /** A thread double: records its language and whether it was let go; `falha` calls `failed` as a thread that cannot open does. */
+  const abridor = (log, { falha = false, jaFalhou = false } = {}) => (language) => (failed) => {
+    const fio = { language, fechado: false, close() { fio.fechado = true; } };
+    log.push(fio);
+    if (jaFalhou) failed();
+    else if (falha) log.falhar = failed;
+    return fio;
+  };
+
+  it('🔴 [Right] the same language reuses its thread — `pt-BR` and `pt` are one model', () => {
+    const log = [];
+    const fios = keepOneThreadPerLanguage();
+    const primeiro = fios.forLanguage('pt-BR', abridor(log)('pt-BR'));
+    expect(fios.forLanguage('pt-BR', abridor(log)('pt-BR')), 'a second reading opened the thread again').toBe(primeiro);
+    expect(fios.forLanguage('pt', abridor(log)('pt'))).toBe(primeiro);
+    expect(log, 'more than one thread was opened for one language').toHaveLength(1);
+    expect(primeiro.fechado).toBe(false);
+  });
+
+  it('🔴 [Right] another language closes the old thread and opens hers — one model in memory at a time', () => {
+    const log = [];
+    const fios = keepOneThreadPerLanguage();
+    const pt = fios.forLanguage('pt-BR', abridor(log)('pt-BR'));
+    const en = fios.forLanguage('en', abridor(log)('en'));
+    expect(en, 'the child switched to English and got the Portuguese thread').not.toBe(pt);
+    expect(en.language).toBe('en');
+    expect(pt.fechado, 'the Portuguese thread stayed open beside the English one').toBe(true);
+    expect(fios.forLanguage('en-US', abridor(log)('en-US')), 'the English thread was not kept').toBe(en);
+    fios.close();
+    expect(en.fechado, 'the game left and the thread stayed').toBe(true);
+    expect(fios.forLanguage('en', abridor(log)('en')), 'after the game let it go, the old thread came back').not.toBe(en);
+  });
+
+  it('🔴 [Right] a thread whose opening failed is forgotten, and the next reading opens it again', () => {
+    const log = [];
+    const fios = keepOneThreadPerLanguage();
+    const primeiro = fios.forLanguage('es', abridor(log, { falha: true })('es'));
+    log.falhar();
+    expect(primeiro.fechado, 'the dead thread was not let go').toBe(true);
+    const segundo = fios.forLanguage('es', abridor(log)('es'));
+    expect(segundo, 'the dead thread answered the next reading').not.toBe(primeiro);
+    expect(fios.forLanguage('es', abridor(log)('es')), 'the thread that opened was not kept').toBe(segundo);
+    // failing while it opens, before `open` returned: answered once, and never kept
+    const fios2 = keepOneThreadPerLanguage();
+    const log2 = [];
+    const cedo = fios2.forLanguage('pt', abridor(log2, { jaFalhou: true })('pt'));
+    expect(cedo.fechado).toBe(true);
+    expect(fios2.forLanguage('pt', abridor(log2)('pt'))).not.toBe(cedo);
+  });
+
+  it('⚠️ [Boundary] a thread closed because the child switched is not reported as failed — its late failure forgets nothing newer', () => {
+    const log = [];
+    const fios = keepOneThreadPerLanguage();
+    fios.forLanguage('pt', abridor(log, { falha: true })('pt'));
+    const falharPt = log.falhar;
+    const en = fios.forLanguage('en', abridor(log)('en'));
+    falharPt(); // the old thread's failure arrives after the switch
+    expect(fios.forLanguage('en', abridor(log)('en')), 'the old thread\'s failure made the new one be forgotten').toBe(en);
+  });
+
+  // MUTATIONS CHECKED for the kept thread (2026-09-26), all red: the same language never reused · the whole tag compared, not the
+  // base language · the old thread left open on a switch · a failed thread kept · any late failure forgetting the kept thread · a
+  // thread that failed while opening kept. In the root (`boot-create-game.node.test.js`): the keeper rebuilt at every reading ·
+  // `failed` never called · the child not told · the old single-fix line. The key missing in one dictionary: `i18n-dicts`.
 });

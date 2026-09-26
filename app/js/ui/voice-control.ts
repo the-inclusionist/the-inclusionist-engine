@@ -186,7 +186,7 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
        * 📌 ONE LINE PER LANGUAGE, NAMING THAT LANGUAGE'S FIX (ADR-0225 and its erratum, ADR-0169). The delivery carries every
        * language unless its `--commands` list narrowed it, and the install fetches every one the delivery carries — so a model
        * missing here was left out of the delivery or has not come down yet, and «open it online» alone sends the adult after a
-       * download that cannot happen in the first case. The reading's line names `--reading <language>` the same way.
+       * download that cannot happen in the first case. The reading's line names its two fixes the same way.
        */
       const lang = language.split('-')[0]!.toLowerCase();
       failed(`files:${lang}`, `voice control: ${load.missing.join(', ')} not on this device for ${language} — the child cannot play `

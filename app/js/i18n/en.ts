@@ -202,6 +202,7 @@ const en: Record<string, string> = {
   'sr.voice.noMicrophone': 'Voice control needs the microphone, and it did not open. Allow the microphone for this page.',
   'sr.voice.failed': 'Voice control could not start on this device.',
   'sr.voice.needsInternet': 'Voice control has not reached this device yet: it comes down the first time the game opens online.',
+  'sr.reading.failed': 'Reading aloud could not start in this language on this device.',
   'sr.hands.ready': 'Ready: you can play with hand gestures.',
   'sr.hands.noCamera': 'Gesture control needs the camera, and it did not open. Allow the camera for this page.',
   'sr.hands.needsInternet': 'Gesture control has not reached this device yet: it comes down the first time the game opens online.',

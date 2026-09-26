@@ -1148,6 +1148,86 @@ describe('D4-B5 · the root lends the heavy files and the recognisers the host\'
     motor.dispose();
   });
 
+  /** A host `Worker` that answers the thread's `load` with `answer(language)`, and records each thread opened and let go. */
+  const workerAnswering = (answer, opened) => class {
+    constructor() { opened.push(this); this.onmessage = null; this.onerror = null; this.terminated = false; }
+    postMessage(m) {
+      if (m.kind !== 'load') return;
+      this.language = m.language;
+      setTimeout(() => this.onmessage?.({ data: answer(m.language) }), 0);
+    }
+    terminate() { this.terminated = true; }
+  };
+  /** The host that reads with no microphone: `listen()` rejects at once, and the model port is still asked (the thread opens). */
+  const hostThatReads = (win, Worker) => ({
+    ...win, Worker, removeEventListener: () => {}, dispatchEvent: () => true, // `setLocale` announces the switch on the window
+    navigator: { mediaDevices: { getUserMedia: async () => { throw new Error('no microphone in this case'); } } },
+  });
+
+  /**
+   * 🔴 ONE THREAD PER LANGUAGE, KEPT (issue #185; ADR-0225 erratum). The `model` port is asked at EVERY `listen()`, and the root
+   * used to close and reopen the thread each time — up to 378 MiB compiled again per reading. And the child switches language
+   * (the Dev: «Toda criança vai experimentar as três línguas imediatamente.»): her next reading must open HER language's model.
+   */
+  it('🔴 [Right] a second reading reuses the thread; after a language switch the next reading opens the new language\'s, and the old one goes', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    doc.baseURI = 'https://escola.example/jogo/';
+    const abertas = [];
+    const host = hostThatReads(win, workerAnswering(() => ({ kind: 'ready' }), abertas));
+    doc.defaultView = host;
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false, uses: { reading: true } });
+    const base = (tag) => tag.split('-')[0].toLowerCase();
+    await motor.reading.listen().catch(() => {});
+    await until(() => abertas.length);
+    await motor.reading.listen().catch(() => {});
+    await motor.reading.listen().catch(() => {});
+    await new Promise((r) => { setTimeout(r, 30); });
+    expect(abertas, 'each reading opened the thread again — the model compiled once per reading').toHaveLength(1);
+    expect(abertas[0].terminated, 'the thread of the language being read in was let go').toBe(false);
+
+    const dela = base(motor.locale());
+    const outra = dela === 'en' ? 'es' : 'en';
+    await motor.setLocale(outra);
+    await motor.reading.listen().catch(() => {});
+    await until(() => abertas.length > 1);
+    expect(abertas.map((w) => base(w.language)), `a reading after switching to ${outra} did not open ${outra}'s model`).toEqual([dela, outra]);
+    expect(abertas[0].terminated, 'the old language\'s thread stayed open beside the new one').toBe(true);
+    await motor.reading.listen().catch(() => {});
+    await new Promise((r) => { setTimeout(r, 30); });
+    expect(abertas, 'the new language\'s thread was not kept').toHaveLength(2);
+    motor.dispose();
+    expect(abertas[1].terminated, 'the game left and the thread stayed').toBe(true);
+  });
+
+  /**
+   * 🔴 A THREAD THAT FAILS TO OPEN IS SAID TO THE CHILD AND TO THE ADULT, AND FORGOTTEN (ADR-0169; ADR-0225 erratum). A delivery
+   * built with `--reading pt` has no English model: the adult reads BOTH fixes — `--reading <language>` alone would now narrow the
+   * delivery —, the child hears that reading could not start, and her next reading tries again (the model may have come down).
+   */
+  it('🔴 [Right] a thread that cannot open: `problems` names both fixes, the child is told, and the next reading opens it again', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const alerta = { textContent: '' };
+    const { doc, win } = domFalso({ map: { '#sr-alert': alerta } });
+    doc.baseURI = 'https://escola.example/jogo/';
+    const abertas = [];
+    const host = hostThatReads(win, workerAnswering(() => ({ kind: 'failed', message: 'HTTP 404 — heavy/moonshine' }), abertas));
+    doc.defaultView = host;
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false, uses: { reading: true } });
+    await motor.reading.listen().catch(() => {});
+    const daThread = () => motor.problems.find((l) => l.includes('the transcription thread could not open'));
+    await until(() => daThread() && alerta.textContent);
+    const lingua = motor.locale().split('-')[0].toLowerCase();
+    expect(daThread(), 'the line does not name the reason, or both fixes')
+      .toMatch(new RegExp(`HTTP 404.*\`npx inclusionist-heavy --reading\` alone.*\`--reading ${lingua}\` in its list`));
+    expect(alerta.textContent, 'the child was not told that reading could not start').toBe(motor.t('sr.reading.failed'));
+    expect(abertas[0].terminated, 'the dead thread was not let go').toBe(true);
+    await motor.reading.listen().catch(() => {});
+    await until(() => abertas.length > 1);
+    expect(abertas, 'the dead thread answered the next reading instead of a new one').toHaveLength(2);
+    motor.dispose();
+  });
+
   it('🔴 [Right] where the host has no Worker, the model on this thread fetches through the host\'s fetch — and `problems` says so', async () => {
     let recebido = null;
     vi.doMock('../app/js/platform/reading-runtime.js', async (original) => ({

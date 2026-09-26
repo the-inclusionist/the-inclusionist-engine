@@ -298,6 +298,7 @@ const pt: Record<string, string> = {
   'sr.voice.noMicrophone': 'O controle por voz precisa do microfone, e ele não abriu. Permita o microfone para esta página.',
   'sr.voice.failed': 'O comando de voz não conseguiu começar neste aparelho.',
   'sr.voice.needsInternet': 'O controle por voz ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
+  'sr.reading.failed': 'A leitura em voz alta não conseguiu começar neste idioma, neste aparelho.',
   'sr.hands.ready': 'Pronto: já pode jogar com gestos das mãos.',
   'sr.hands.noCamera': 'O controle por gestos precisa da câmera, e ela não abriu. Permita a câmera para esta página.',
   'sr.hands.needsInternet': 'O controle por gestos ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',

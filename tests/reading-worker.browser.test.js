@@ -81,8 +81,8 @@ function hostThatReads() {
 }
 
 describe('the root opens the reading thread (ADR-0232 D4)', () => {
-  it('🔴 [Right] the thread the ROOT\'s literal opens exists, runs, and its failure to open reaches `problems`', async () => {
-    document.body.innerHTML = '<div id="game-region"></div>';
+  it('🔴 [Right] the thread the ROOT\'s literal opens exists, runs, and its failure to open reaches `problems` and the child', async () => {
+    document.body.innerHTML = '<p id="sr-alert" role="alert"></p><div id="game-region"></div>';
     const motor = createGame({
       accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: hostThatReads() },
       downloadHeavy: false, uses: { reading: true },
@@ -90,10 +90,14 @@ describe('the root opens the reading thread (ADR-0232 D4)', () => {
     try {
       await motor.reading.listen().catch(() => {}); // the microphone refuses: nobody waits on the thread
       const daThread = () => motor.problems.find((l) => l.includes('the transcription thread could not open'));
-      for (let i = 0; i < 400 && !daThread(); i++) await new Promise((r) => { setTimeout(r, 25); });
+      const alerta = () => document.querySelector('#sr-alert').textContent;
+      for (let i = 0; i < 400 && !(daThread() && alerta()); i++) await new Promise((r) => { setTimeout(r, 25); });
       // 📌 The reason came from INSIDE the thread: the model's runtime was asked of this test server's delivery, which has none.
       expect(daThread(), 'no answer came back from the thread the root opened — the worker file did not open')
-        .toMatch(/could not open — .*(HTTP|delivery|fetch|Failed|import)/i);
+        .toMatch(/could not open for [a-z]{2}(-[A-Z]{2})? — .*(HTTP|delivery|fetch|Failed|import)/i);
+      // and BOTH fixes (ADR-0225 erratum): `--reading <language>` alone would now narrow the delivery to that one language
+      expect(daThread()).toMatch(/`npx inclusionist-heavy --reading` alone .* or with `--reading [a-z]{2}` in its list/);
+      expect(alerta(), 'the child who pressed «read» was not told it could not start').toBe(motor.t('sr.reading.failed'));
     } finally {
       motor.dispose();
       document.body.innerHTML = '';

@@ -553,7 +553,7 @@ describe('the language changed', () => {
    * every language unless a `--commands` list narrowed it, so a model missing after a switch is one that list left out — and a
    * line that only said «open the game once online» sent the adult after a download that cannot happen. The fix it names is
    * both halves of the flag: the default (no `--commands`), or that language in the list — `--commands <lang>` ALONE would
-   * narrow the delivery to it and drop the language the school had. The reading's line names `--reading <language>` the same way.
+   * narrow the delivery to it and drop the language the school had. The reading's line names its two fixes the same way.
    */
   const switchedTo = (models) => {
     let lang = 'pt-BR';

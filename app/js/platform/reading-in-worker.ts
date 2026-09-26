@@ -49,6 +49,52 @@ export interface ReadingInWorker {
   close(): void;
 }
 
+/** The reading thread of the language being read in, kept between readings; see `keepOneThreadPerLanguage`. */
+export interface ReadingThreads<T extends { close(): void }> {
+  /**
+   * The thread for this language: the one kept when its base language is the same, else a new one from `open` — handed a
+   * `failed` to call when its opening fails. `open` is given at each call because the one form a bundler recognises for the
+   * thread's file has to sit where the host's `Worker` is (ADR-0232 D4), which is the caller's scope and not this module's.
+   */
+  forLanguage(language: string, open: (failed: () => void) => T): T;
+  /** Lets the kept thread go (the game left); the next `forLanguage` opens one again. */
+  close(): void;
+}
+
+/**
+ * ONE READING THREAD PER LANGUAGE, KEPT (issue #185; ADR-0225 erratum). Opening a thread compiles a model of up to 378 MiB, so a
+ * reading in the language already open reuses its thread, and a reading in another language (a child who switched: `pt-BR` and
+ * `pt-PT` are one model, `pt` and `en` are two) closes the old thread and opens the new one — one compiled model in memory at a
+ * time, which is what a school machine can hold.
+ * 🔴 A THREAD WHOSE OPENING FAILED IS FORGOTTEN: the next reading opens it again — the model may have come down since, and a
+ * thread kept dead would answer every later reading with the first one's failure.
+ */
+export function keepOneThreadPerLanguage<T extends { close(): void }>(): ReadingThreads<T> {
+  let kept: { readonly base: string; thread: T | null; dead: boolean } | null = null;
+  const baseOf = (tag: string): string => tag.split('-')[0]!.toLowerCase();
+  return {
+    forLanguage(language, open) {
+      const base = baseOf(language);
+      if (kept?.base === base && kept.thread) return kept.thread;
+      kept?.thread?.close();
+      const mine: { readonly base: string; thread: T | null; dead: boolean } = { base, thread: null, dead: false };
+      kept = mine;
+      const thread = open(() => {
+        mine.dead = true;
+        if (kept === mine) kept = null;
+        mine.thread?.close();
+      });
+      if (mine.dead) { thread.close(); return thread; }   // it failed while opening: answered, and not kept
+      mine.thread = thread;
+      return thread;
+    },
+    close() {
+      kept?.thread?.close();
+      kept = null;
+    },
+  };
+}
+
 export function createReadingInWorker(d: ReadingInWorkerDeps): ReadingInWorker {
   const worker = d.spawn();
   let nextId = 1;

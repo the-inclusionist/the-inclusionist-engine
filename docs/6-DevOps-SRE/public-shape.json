@@ -1576,6 +1576,9 @@
     "interface ReadingInWorker": [
       "close",
       "transcribe"
+    ],
+    "interface ReadingThreads": [
+      "close"
     ]
   },
   "platform/reading-model.ts": {
