@@ -51,3 +51,6 @@ __pycache__/
 # the Libras glosser's uv environment, if someone syncs it in place: it belongs outside the repository
 # (INCLUSIONIST_LIBRAS_ENV, scripts/libras-glosses.mjs)
 scripts/libras-glosses/.venv/
+
+# the working copies of subagents: each is a branch of this repository, never content of it
+.claude/worktrees/
