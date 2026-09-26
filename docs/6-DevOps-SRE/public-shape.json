@@ -2366,6 +2366,31 @@
     "type FontItem": "{ id: string",
     "type FontGroup": "{ g: string"
   },
+  "ui/footer-scroll-driver.ts": {
+    "interface FooterScrollHost": [
+      "MutationObserver",
+      "clearTimeout",
+      "doc",
+      "getComputedStyle",
+      "ppm",
+      "reduced",
+      "setTimeout"
+    ]
+  },
+  "ui/footer-scroll.ts": {
+    "interface FooterScrollStep": [
+      "holdMs",
+      "line"
+    ],
+    "interface FooterScrollPlan": [
+      "mode",
+      "steps"
+    ],
+    "interface FooterLines": [
+      "starts",
+      "words"
+    ]
+  },
   "ui/game-options.ts": {
     "interface GameOptionValue": [
       "labelKey",

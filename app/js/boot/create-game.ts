@@ -126,7 +126,8 @@ import { mountSteps, updateSteps, nextStep, controlRow, labelRow, mountChoice } 
 import { PERSONAS_DO_PAD, closestPersona } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
-import { readStoredScene, storeScene } from '../ui/motion-scene.js';
+import { readStoredScene, storeScene, SCENE_KEYS } from '../ui/motion-scene.js';
+import { watchFooterScroll } from '../ui/footer-scroll-driver.js';
 import { initSettingsVisual } from '../ui/settings-visual.js';
 import { initSettingsEmpathy } from '../ui/settings-empathy.js';
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
@@ -2951,6 +2952,16 @@ export function createGame(o: CreateGameOptions): Engine {
         // a simulation stops while a menu is open and comes back with the game (issue #182)
         if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) recomposeWorldFilter();
       }).observe(regionEl, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+    }
+    // ADR-0245: a footer explanation longer than its lines scrolls inside them, at the child's caption rate; reduced motion is the
+    // system's or the child's (any scene switch reduced: pages carry the same words, so a false «reduced» costs nothing)
+    if (regionEl && Observer && typeof win.getComputedStyle === 'function' && typeof doc.createRange === 'function') {
+      watchFooterScroll(regionEl, {
+        doc, getComputedStyle: (el) => win.getComputedStyle(el), MutationObserver: Observer,
+        setTimeout: (fn, ms) => win.setTimeout(fn, ms), clearTimeout: (id) => win.clearTimeout(id),
+        ppm: () => state.captionPpm,
+        reduced: () => defaultReducedMotion(win.matchMedia) || SCENE_KEYS.some((k) => sceneMotion[k]),
+      });
     }
   }
 

@@ -28,12 +28,12 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2329,
-      "decisionNodes": 297,
+      "codeLines": 2338,
+      "decisionNodes": 298,
       "maxDepth": 4,
-      "fanOut": 97,
+      "fanOut": 98,
       "globalReach": 0,
-      "worstFunction": 72,
+      "worstFunction": 76,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -155,7 +155,7 @@
       "globalReach": 0,
       "worstFunction": 2,
       "statefulEdges": 0,
-      "fanIn": 3
+      "fanIn": 4
     },
     "core/cartridge-problems.ts": {
       "codeLines": 41,
@@ -1456,6 +1456,26 @@
       "worstFunction": 7,
       "statefulEdges": 0,
       "fanIn": 3
+    },
+    "ui/footer-scroll-driver.ts": {
+      "codeLines": 109,
+      "decisionNodes": 22,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "globalReach": 0,
+      "worstFunction": 6,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
+    "ui/footer-scroll.ts": {
+      "codeLines": 38,
+      "decisionNodes": 7,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "globalReach": 0,
+      "worstFunction": 7,
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/game-options.ts": {
       "codeLines": 164,

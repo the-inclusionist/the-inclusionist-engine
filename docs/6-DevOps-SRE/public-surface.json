@@ -1274,6 +1274,17 @@
     "resolveFontKey",
     "typographyCycle"
   ],
+  "ui/footer-scroll-driver.ts": [
+    "FooterScrollHost",
+    "watchFooterScroll"
+  ],
+  "ui/footer-scroll.ts": [
+    "FooterLines",
+    "FooterScrollPlan",
+    "FooterScrollStep",
+    "footerScrollPlan",
+    "readLines"
+  ],
   "ui/game-options.ts": [
     "GameOption",
     "GameOptionValue",

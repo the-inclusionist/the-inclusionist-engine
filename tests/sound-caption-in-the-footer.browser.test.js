@@ -83,7 +83,10 @@ describe('the sound caption', () => {
     await esperar();
     for (const el of [legenda(), document.querySelector('#game-region .rodape-da-tela .barra-explicacao:not([hidden])')]) {
       const cs = getComputedStyle(el);
-      const linhas = (el.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight);
+      // the box less its padding AND borders: the band's edge margin is a transparent border, and while a long explanation
+      // scrolls (ADR-0245) the 4 px over its words is one too — neither is a line of text
+      const linhas = (el.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth)) / parseFloat(cs.lineHeight);
       expect(Math.round(linhas), `${el.className} takes more than one line beside another`).toBe(1);
     }
     icone.blur();

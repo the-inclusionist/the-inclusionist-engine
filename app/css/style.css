@@ -710,8 +710,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 #game-region:has(> .hud-row) .rodape-da-tela{bottom:calc(var(--hud-row-bottom,0px) + var(--hud-row-h,0px))}
 #game-region:has(> .hud-row) .rodape-da-tela:has(> .barra-explicacao:not([hidden])){bottom:var(--hud-row-bottom,0px)}
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
-.pausa-legenda,.barra-explicacao{color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);
-  line-height:1.3;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* `--footer-lines` is how many lines a footer text shows (ADR-0164): the clamp reads it, and so do the scrolling box below and
+   `ui/footer-scroll-driver`, which must know the view it scrolls a longer text through (ADR-0245). */
+.pausa-legenda,.barra-explicacao{color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);--footer-lines:2;
+  line-height:1.3;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:var(--footer-lines);overflow:hidden}
 /* The band reaches the edges; its WORDS stand the edge margin off them (interface log 2026-09-26) — `--footer-band-h` counts it.
    At the sides .6em is already more than the margin (4.8·k against 4·k); under them the margin is a transparent BORDER the
    band's colour shows through, not padding: the two-line clamp clips at the padding box, and a padding there would show the
@@ -724,10 +726,19 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    it» — on a dark background behind its words only, two lines at most (rule 5). */
 .legenda-de-som{order:0;align-self:center;max-width:100%;box-sizing:border-box;margin:0 0 4px;padding:2px .6em;border-radius:6px;
   background:rgba(0,0,0,.82);color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);line-height:1.3;
-  text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  text-align:center;display:-webkit-box;-webkit-box-orient:vertical;--footer-lines:2;-webkit-line-clamp:var(--footer-lines);overflow:hidden}
 /* two or more lines of the footer showing at once: one line each, so the footer does not climb into the workspace */
-.rodape-da-tela:has(> :not([hidden]) ~ :not([hidden])) > *{-webkit-line-clamp:1}
+.rodape-da-tela:has(> :not([hidden]) ~ :not([hidden])) > *{--footer-lines:1}
 .pausa-legenda[hidden],.barra-explicacao[hidden],.legenda-de-som[hidden]{display:none}
+/* ADR-0245: AN EXPLANATION LONGER THAN ITS LINES SCROLLS INSIDE THEM. `ui/footer-scroll-driver` marks it `data-scroll` and moves
+   it by `scrollTop`. The box stays the clamped one to the pixel: a block of exactly its lines (`1lh` each, no clamp and so no
+   ellipsis), with the 4 px over the words as a transparent BORDER instead of padding — a padding scrolls with the text and would
+   show a slice of the next line. `smooth` is the glide; reduced motion turns pages, so nothing slides. Pointer events come
+   back to the band while it moves, so a pointer over it can hold it (WCAG 2.2.2). */
+.barra-explicacao[data-scroll],#game-region .opt-explain[data-scroll]{display:block;-webkit-line-clamp:none;box-sizing:content-box;
+  height:calc(var(--footer-lines,2) * 1lh);padding-top:0;border-top:4px solid transparent;scroll-behavior:smooth;pointer-events:auto}
+.barra-explicacao[data-scroll="pages"],#game-region .opt-explain[data-scroll="pages"]{scroll-behavior:auto}
+@media (prefers-reduced-motion: reduce){ .barra-explicacao[data-scroll],#game-region .opt-explain[data-scroll]{scroll-behavior:auto} }
 /* A PANEL WEARS THE PAUSE CARD (interface log, 2026-09-13). The Dev: the settings submenu «mantém a mesma altura e identidade
    visual», and every panel it opens had «outra identidade visual, com alturas menores, título maior e cores diferentes».
    So a panel in the region takes `.screen-pause .pause-card` as it is: the whole height, the same dark card and gold border,
@@ -775,8 +786,8 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    (composition: 1-0.82=0.18 → L≈0.027 → ~13:1), without being 100% opaque. Fixed at the card's foot. */
 .opt-explain{position:sticky;bottom:calc(-1 * var(--card-pad,1.5rem));margin:.8rem calc(-1 * var(--card-pad,1.5rem)) calc(-1 * var(--card-pad,1.5rem));padding:.6rem .9rem;min-height:2.8rem;text-align:left;
   background:rgba(0,0,0,.82);color:#fff;font-size:1em;line-height:1.35;border-top:1px solid rgba(255,255,255,.18);border-radius:0 0 9px 9px;backdrop-filter:blur(1px);
-  /* ADR-0164: two lines at most — a longer explanation is cut here and has to be rewritten to fit */
-  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  /* ADR-0164: two lines at most — in the region a longer explanation scrolls through them (ADR-0245, below) */
+  display:-webkit-box;-webkit-box-orient:vertical;--footer-lines:2;-webkit-line-clamp:var(--footer-lines);overflow:hidden}
 /* ADR-0164 rule 1: a panel's explanation is a footer of the SCREEN, not of the card — «está ajustado ao menu, não ao
    canvas», the Dev on a screenshot. The card sets no position, so the overlay (the region's size) is the containing block:
    the band lands at the region's lowest edge, side to side, and does not scroll with the card. The card runs under it,
