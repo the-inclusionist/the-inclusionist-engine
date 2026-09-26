@@ -20,6 +20,13 @@
     "questionNarration",
     "welcomeText"
   ],
+  "consumer-quiz/quiz-skills.ts": [
+    "QUIZ_SKILLS",
+    "QuizOption",
+    "QuizQuestion",
+    "QuizSkill",
+    "Words"
+  ],
   "consumer-quiz/quiz-words.ts": [
     "QUIZ_DICTIONARIES"
   ],

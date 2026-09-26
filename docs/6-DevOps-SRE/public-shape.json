@@ -96,6 +96,27 @@
       "win"
     ]
   },
+  "consumer-quiz/quiz-skills.ts": {
+    "interface QuizQuestion": [
+      "content?",
+      "correct",
+      "explanation",
+      "options",
+      "statement"
+    ],
+    "interface QuizSkill": [
+      "code",
+      "component",
+      "contentLanguage?",
+      "grade",
+      "questions",
+      "skillText",
+      "source",
+      "stage"
+    ],
+    "type Words": "Readonly<{ pt: string",
+    "type QuizOption": "Words | string"
+  },
   "core/a11y-sr.ts": {
     "interface AnnouncerPorts": [
       "doc",

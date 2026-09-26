@@ -47,6 +47,16 @@
       "statefulEdges": 0,
       "fanIn": 0
     },
+    "consumer-quiz/quiz-skills.ts": {
+      "codeLines": 143,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 1,
+      "statefulEdges": 0,
+      "fanIn": 0
+    },
     "consumer-quiz/quiz-words.ts": {
       "codeLines": 44,
       "decisionNodes": 0,
