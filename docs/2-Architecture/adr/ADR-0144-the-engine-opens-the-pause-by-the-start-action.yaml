@@ -14,6 +14,9 @@ metadata:
     - tests/the-two-doors-of-the-pause.browser.test.js
     - tests/boot-create-game.node.test.js
     - tests/the-pause-card-does-not-eat-keys.browser.test.js
+    - app/js/input/virtual-controller.ts
+    - tests/virtual-controller.node.test.js
+    - tests/start-and-select-from-every-transport.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
@@ -32,6 +35,24 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        ✅ START AND SELECT NOW REACH THE PAUSE FROM EVERY TRANSPORT — §1 said «from any transport», and it was true only for the
+        ones with a door of their own: the keyboard (Enter/H, F), the gamepad's START and the touch pills. The transports that
+        press the virtual controller directly — the eyes (both closed for 2 s), the face (a long squeeze), the hands (🤟, the dog),
+        the voice («start», «select») and the scan — never paused: until engine `e7cccc29` the controller handed `start`/`select`
+        to the game's `onCommand`, which ignored them, and after it the controller dropped them in play. Now the controller hands
+        a system position pressed in play to the ENGINE (`VirtualControllerDeps.systemPress`, with the seat that pressed), and
+        the root runs the code the keys run: START is `startForSeat` (a panel or an open card refuses it, START again leaves the
+        quick pause), SELECT is `openSeatMenus`. The game still hears neither; with a menu open the position is still the menu's
+        key, so the quick pause bar's handling is unchanged; the keyboard conductor no longer presses the two, whose keys the
+        engine's own listeners answer. 📏 Measured on the served dist (`quiz.html`, service worker blocked, the bundle's
+        controller exposed in flight), for `olhos`, `rosto`, `gestos` and `fala`: with `systemPress` unwired START, START again
+        and SELECT changed nothing; wired, PAUSADO with the bar cursor, back to play, the card — and H, H, F on the keyboard the
+        same in both runs. Gated by `tests/start-and-select-from-every-transport.browser.test.js` (18 of its 25 red before) and
+        `tests/virtual-controller.node.test.js`; eleven mutations, all red. ⚠️ Two transports are still short of it, not by this
+        rule: the scan offers only the game's named positions, so START and SELECT are never on its list (ADR-0218 §3's «the
+        engine's own doors» are unbuilt), and the gamepad reads its SELECT button and does nothing with it. Engine `70c5e2b2`.
     - date: 2026-09-12
       what: "§5 said this record «adds a way IN; it re-decides nothing about what is found there». 🔴 MEASURED
              while building it, and the sentence was wrong in a way that would have trapped a child: THERE WAS
