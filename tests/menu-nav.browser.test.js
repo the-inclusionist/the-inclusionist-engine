@@ -879,3 +879,79 @@ describe('itemNames / pointAt — the names a child can say, and the cursor put 
 //   MN4 locked items left out (the filter §5 retired)             🔴 «a LOCKED item is offered and can be pointed at»
 //   MN5 the card answers under a panel (shared with the keys)    🔴 «with a panel on top» (and two DEFECT-2 cases)
 //   (the cursor itself — W4, W4b — is held end to end by `a-name-said-activates-its-item.browser.test.js`)
+
+/*
+ * ===================== AN INTENT WITH NO KEY — `navIntent` (ADR-0218 erratum of 2026-09-26) =====================
+ * One-button scanning offers a menu's own steps and takes one with a press that is not a menu key: the switch's key is stopped
+ * before any listener, so `menuNavKey` never sees it. It asks `navIntent`, and the step must go where a key's would, under the
+ * same guards — or scanning moves a menu a key could not, or none at all.
+ */
+describe('navIntent — a menu step with no key goes the way a key\'s would', () => {
+  it('🔴 [Right] on the quick bar the step goes to the BAR, and the answer is «taken»', () => {
+    const { nav, log } = boot({ naBarra: new Set([0]) });
+    showPauses();
+    expect(nav.navIntent(0, { down: true })).toBe(true);
+    expect(log.bar, 'the step did not reach the bar').toEqual([[0, { down: true }]]);
+    expect($('#sp0 .pm-sel'), 'the step moved the card under the bar').toBeNull();
+  });
+
+  it('🔴 [Right] with a PANEL on top, «next» moves its focus and «back» closes it', () => {
+    const { nav, openAudio } = boot();
+    openAudio();
+    expect(nav.navIntent(0, { down: true })).toBe(true);
+    expect(document.activeElement?.id, '«next» did not move the panel\'s focus').toBe('a-voz');
+    expect(nav.navIntent(0, { no: true })).toBe(true);
+    expect($('#audio').hidden, '«back» did not close the panel').toBe(true);
+  });
+
+  it('🔴 [Right] on the player\'s open CARD, «next» moves the cursor and «confirm» presses the item, for that player', () => {
+    const { nav, log } = boot();
+    showPauses();
+    expect(nav.navIntent(0, { down: true })).toBe(true);
+    expect($('#sp0 .pm-sel')?.dataset.act, '«next» did not move the card\'s cursor').toBe('letra');
+    let clicked = null;
+    $('#sp0 [data-act="letra"]').addEventListener('click', () => { clicked = 'letra'; });
+    expect(nav.navIntent(0, { yes: true })).toBe(true);
+    expect(clicked, '«confirm» did not press the item under the cursor').toBe('letra');
+    expect(log.actor, 'the item was pressed for nobody').toEqual([0]);
+  });
+
+  it('🔴 [Zero] with NO menu to move, nothing moves and the answer is «not taken»', () => {
+    const { nav, log } = boot();
+    setPhaseValue('playing'); // no card shown, no panel, and not navigable
+    expect(nav.navIntent(0, { down: true })).toBe(false);
+    expect(nav.navIntent(0, {}), 'an empty intent was taken').toBe(false);
+    expect(log.bar).toEqual([]);
+    expect(log.phase).toEqual([]);
+  });
+
+  it('🔴 [Boundary] a card shown while menus are NOT navigable is not moved — the key\'s guard, not a second rule', () => {
+    const { nav } = boot();
+    showPauses();
+    setPhaseValue('playing');
+    expect(nav.navIntent(0, { down: true })).toBe(false);
+    expect($('#sp0 .pm-sel'), 'the step moved a card no key could move now').toBeNull();
+  });
+
+  it('🔴 [Boundary] a remap in progress owns the input: the step is not taken', () => {
+    const { nav, log } = boot({ isCapturing: () => true, naBarra: new Set([0]) });
+    expect(nav.navIntent(0, { down: true })).toBe(false);
+    expect(log.bar).toEqual([]);
+  });
+
+  it('🔴 [Right] the controller-mapping panel on top takes only «back», which cancels it without saving', () => {
+    const { nav, log } = boot();
+    $('#padwiz').hidden = false;
+    expect(nav.navIntent(0, { down: true }), 'a step under the mapping panel reached a menu beneath it').toBe(true);
+    expect(log.padWiz).toEqual([]);
+    expect(nav.navIntent(0, { no: true })).toBe(true);
+    expect(log.padWiz, '«back» did not cancel the mapping').toEqual([false]);
+  });
+});
+
+// MUTATIONS CHECKED (2026-09-26, `scratchpad/scan-doors/mutate.mjs`, restored and checked by SHA-256) on `navIntent`:
+//   NI1 the bar not asked first (the card is moved under it)          🔴 «on the quick bar», and the two key cases of the bar (shared path)
+//   NI2 no «navigable» guard (a card is moved that no key could move) 🔴 «with NO menu to move», and three key cases (shared path)
+//   NI3 the remap guard removed                                       🔴 «a remap in progress»
+//   NI4 the mapping panel's guard removed                             🔴 «the controller-mapping panel»
+//   NI5 the answer always «taken»                                     🔴 «with NO menu to move», «a card shown while … NOT navigable»

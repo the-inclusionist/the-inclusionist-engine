@@ -43,6 +43,24 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
   };
 }
 
+/** A step of a menu one-button scanning offers — what a menu does, not a key (ADR-0218 erratum of 2026-09-26). */
+export type MenuStep = 'next' | 'previous' | 'confirm' | 'back';
+
+/**
+ * WHAT ONE-BUTTON SCANNING OFFERS INSIDE A MENU, in order after «cancel» (interface log 2026-09-26). By how often a child needs
+ * each: every menu here is a ring, so «next» alone reaches every item, and it comes first; «confirm» ends every choice; «back»
+ * leaves — the quick pause, a sub-list, a panel, the card —; «previous» is a shortcut the ring already covers, so it waits last.
+ */
+export const MENU_SCAN: readonly MenuStep[] = ['next', 'confirm', 'back', 'previous'];
+
+/** The intent a step is — the one a key with that meaning would carry, so it moves a menu the way the key does. */
+const STEP_INTENT: Readonly<Record<MenuStep, NavKeys>> = {
+  next: { down: true }, previous: { up: true }, confirm: { yes: true }, back: { no: true },
+};
+export function menuStepKeys(step: MenuStep): NavKeys {
+  return { ...STEP_INTENT[step] };
+}
+
 /** `select` with left/right: one step, WITHOUT wrapping — adjusting a VALUE is not navigating a list. */
 export function selectStep(selectedIndex: number, optionsLen: number, delta: number): number {
   return Math.max(0, Math.min(optionsLen - 1, selectedIndex + delta));

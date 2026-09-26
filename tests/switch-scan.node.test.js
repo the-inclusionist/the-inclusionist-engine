@@ -8,6 +8,14 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createSwitchScan, SCAN_CANCEL, SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
+import { MENU_SCAN, menuStepKeys } from '../app/js/ui/menu-intent.js';
+import { scanItemText } from '../app/js/ui/scan-overlay.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+import pt from '../app/js/i18n/pt.js';
+import { MENU_SCAN, menuStepKeys } from '../app/js/ui/menu-intent.js';
+import { scanItemText } from '../app/js/ui/scan-overlay.js';
+import { createTranslator } from '../app/js/core/i18n.js';
+import pt from '../app/js/i18n/pt.js';
 
 const DECLARED = ['up', 'down', 'action2', 'action3'];
 const passo = SWITCH_SCAN_DEFAULTS.stepMs;
@@ -95,6 +103,44 @@ describe('what a press takes', () => {
   });
 });
 
+/*
+ * ===================== INSIDE A MENU (ADR-0218 erratum of 2026-09-26) =====================
+ * With a menu in front, the scan offers that menu's own steps, and a step is the INTENT a key with that meaning carries — so it
+ * moves the menu the way the key does (`ui/menu-nav.navIntent`). The order and the words are an interface choice, recorded in
+ * the interface log; what is held here is that each step is exactly one intent and that the chip says the engine's word.
+ */
+describe('inside a menu, the scan offers the menu\'s own steps', () => {
+  it('🔴 [Right] after «cancel» the pass is «next · confirm · back · previous» — the order of the interface log', () => {
+    const scan = createSwitchScan(MENU_SCAN);
+    const seen = [0, 1, 2, 3, 4].map((i) => scan(i * passo).showing.item);
+    expect(seen).toEqual([SCAN_CANCEL, 'next', 'confirm', 'back', 'previous']);
+    expect(scan(2 * passo, { press: true }).commanded, 'a press on «confirm» took something else').toBe('confirm');
+  });
+
+  it('🔴 [Right] each step is ONE intent, the one a key with that meaning carries', () => {
+    expect(menuStepKeys('next')).toEqual({ down: true });
+    expect(menuStepKeys('previous')).toEqual({ up: true });
+    expect(menuStepKeys('confirm')).toEqual({ yes: true });
+    expect(menuStepKeys('back')).toEqual({ no: true });
+  });
+
+  it('[Interface] a step handed out is a copy: a caller that writes into it does not change the next one', () => {
+    menuStepKeys('next').up = true;
+    expect(menuStepKeys('next')).toEqual({ down: true });
+  });
+
+  it('🔴 [Right] the chip says the ENGINE\'s word for «cancel» and for a menu\'s step — never the game\'s word for a position', () => {
+    const { t } = createTranslator();
+    // the game named `down` «Pular»: in a menu, «next» must not read as the game's verb
+    const gameWord = (a) => ({ down: 'Pular', up: 'Cima' })[a] ?? null;
+    expect(scanItemText(SCAN_CANCEL, gameWord, t)).toBe(pt['scan.nothing']);
+    expect(MENU_SCAN.map((s) => scanItemText(s, gameWord, t)))
+      .toEqual([pt['scan.menu.next'], pt['scan.menu.confirm'], pt['scan.menu.back'], pt['scan.menu.previous']]);
+    expect(scanItemText('up', gameWord, t), 'a position lost the game\'s own word').toBe('Cima');
+    expect(scanItemText('action4', gameWord, t), 'a position nobody named got a word').toBe('');
+  });
+});
+
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-varredura.py`:
 //   · cancel put LAST instead of first          → «the first thing offered is cancel» / «a press on cancel takes nothing»
 //   · a press no longer restarts the pass       → «every press restarts the pass»
@@ -105,3 +151,7 @@ describe('what a press takes', () => {
 //   · «cancel» commanded like any other item    → «a press on cancel takes nothing»
 //   · the pulse never released                  → «holds it pressed for the pulse»
 //   · the empty-list guard removed              → «a game that declares nothing»
+// And (2026-09-26, inside a menu) — `scratchpad/scan-doors/mutate.mjs`, restored and checked by SHA-256:
+//   · the order of `MENU_SCAN` changed        → «after cancel the pass is …», «the chip says the ENGINE's word»
+//   · «next» and «previous» swapped           → «each step is ONE intent», «a step handed out is a copy»
+//   · the menu steps left out of the engine's words → «the chip says the ENGINE's word»

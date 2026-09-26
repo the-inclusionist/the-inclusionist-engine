@@ -175,6 +175,11 @@ const es: Record<string, string> = {
   'input.standard': 'estándar',
   'input.sticky': 'no hace falta mantener',
   'scan.nothing': 'cancelar',
+  // One-button scanning inside a menu: that menu's own steps (ADR-0218 erratum of 2026-09-26, interface log).
+  'scan.menu.next': 'siguiente',
+  'scan.menu.confirm': 'confirmar',
+  'scan.menu.back': 'volver',
+  'scan.menu.previous': 'anterior',
   'input.scan': 'un botón solo',
   'icon.contrast': 'Alto contraste',
   'icon.cvd': 'Corrección de daltonismo',

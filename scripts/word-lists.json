@@ -3242,6 +3242,8 @@
     "uri",
     "uuid",
     "warp",
-    "weight"
+    "weight",
+    "pass",
+    "scanning"
   ]
 }

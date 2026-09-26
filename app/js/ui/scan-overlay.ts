@@ -9,12 +9,24 @@
 // «Confirmar» or «Dizer a resposta», never `action2` (ADR-0074). A position the game did not name is not offered at all — the
 // list is built from the named ones — because a scan that stopped on a word nobody wrote would cost the child a full pass.
 
-import type { Action } from '../core/actions.js';
-import { SCAN_CANCEL, type ScanItem } from '../input/switch-scan.js';
+//
+// 📌 AND THE WORDS THAT ARE THE ENGINE'S ARE THE ENGINE'S: «take nothing», and inside a menu that menu's own steps (ADR-0218
+// erratum of 2026-09-26) — a game named «up» for its character, and in a menu the chip must say «next», not «Pular».
 
-/** What the chip reads for one item. Pure: the caller brings the game's labeller and the word for «take nothing». */
-export function scanItemText(item: ScanItem, label: (a: Action) => string | null, cancelWord: string): string {
-  return item === SCAN_CANCEL ? cancelWord : (label(item) ?? '');
+import type { Action } from '../core/actions.js';
+import type { Translate } from '../core/i18n.js';
+import { SCAN_CANCEL } from '../input/switch-scan.js';
+
+/** The ENGINE's words, by dictionary key — the wording is an interface choice (interface log 2026-09-26). */
+const ENGINE_WORDS: ReadonlyMap<string, string> = new Map([
+  [SCAN_CANCEL, 'scan.nothing'],
+  ['next', 'scan.menu.next'], ['confirm', 'scan.menu.confirm'], ['back', 'scan.menu.back'], ['previous', 'scan.menu.previous'],
+]);
+
+/** What the chip reads for one item. Pure: the engine's word where the item is the engine's, else the game's own word. */
+export function scanItemText(item: string, label: (a: Action) => string | null, t: Translate): string {
+  const key = ENGINE_WORDS.get(item);
+  return key ? t(key) : (label(item as Action) ?? '');
 }
 
 export interface ScanOverlay {

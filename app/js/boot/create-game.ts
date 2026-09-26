@@ -117,7 +117,8 @@ import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
 import { keyGoesToGame, keyPressesOwnControl } from '../input/key-default.js';
-import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
+import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan } from '../input/switch-scan.js';
+import { MENU_SCAN, menuStepKeys, type MenuStep } from '../ui/menu-intent.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
@@ -4061,43 +4062,64 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * THE SCAN ITSELF (ADR-0218): the list is the positions this cartridge declared AND NAMED, because the chip says the game's
    * own words and a position nobody named would cost the child a pass of silence (ADR-0074). It is rebuilt every time the scan
    * starts, so a `mount()` of another cartridge scans ITS positions and not the ones that booted first (ADR-0142).
+   *
+   * 🔴 AND INSIDE A MENU THE LIST IS THAT MENU'S STEPS (ADR-0218 erratum of 2026-09-26). The switch's key is stopped before any
+   * listener, so no menu ever saw it: 📏 a child who opened the quick pause by scanning was left in it, every press doing nothing.
+   * With the quick bar, the card or a panel in front, the scan offers «cancel · next · confirm · back · previous» and a press
+   * moves the menu through `ui/menu-nav`, the path the keys and the pad take.
    */
   const gameRegion = $<HTMLElement>('#game-region');
   const scanChip = gameRegion ? mountScanOverlay(doc, gameRegion) : null;
-  let scanner: SwitchScan | null = null;
+  /** The pass going on: the game's positions in play, a menu's steps in a menu — typed by what a press does with each. */
+  type Scanning =
+    | { readonly inMenu: false; readonly pass: SwitchScan<Action> }
+    | { readonly inMenu: true; readonly pass: SwitchScan<MenuStep> };
+  let scanning: Scanning | null = null;
   let scanFrame = 0;
-  const scanWord = (item: ScanItem): string =>
-    scanItemText(item, labellerFrom(actionWords()), t('scan.nothing'));
+  // «Is a menu in front?» is the question the virtual controller asks (`menuWithDpad`): the quick pause, the card or a panel.
+  const freshScan = (): Scanning => {
+    if (menuWithDpad()) return { inMenu: true, pass: createSwitchScan(MENU_SCAN) };
+    const words = actionWords();
+    const names = labellerFrom(words);
+    return { inMenu: false, pass: createSwitchScan(presetActions(words).filter((a) => !!names(a))) };
+  };
+  const scanWord = (item: string): string => scanItemText(item, labellerFrom(actionWords()), t);
   // A word of a different length is a different amount of room to keep free, so the band is measured again — and only then.
-  const scanShow = (item: ScanItem): void => { if (scanChip?.showing(scanWord(item))) reserveBarBand(); };
+  const scanShow = (item: string): void => { if (scanChip?.showing(scanWord(item))) reserveBarBand(); };
   const scanTick = (): void => {
-    if (!scanner) return;
-    scanShow(scanner(win.performance.now()).showing.item);
+    if (!scanning) return;
+    // 📌 A MENU OPENED OR CLOSED: the pass becomes the other list, from «cancel», which is also what a press does — so the first
+    // thing offered in a menu just opened is the item that takes nothing.
+    if (scanning.inMenu !== menuWithDpad()) scanning = freshScan();
+    scanShow(scanning.pass(win.performance.now()).showing.item);
     scanFrame = win.requestAnimationFrame(scanTick);
   };
   const stopScan = (): void => {
     if (scanFrame) win.cancelAnimationFrame(scanFrame);
-    scanFrame = 0; scanner = null; scanChip?.hide();
+    scanFrame = 0; scanning = null; scanChip?.hide();
     reserveBarBand(); // the room the chip was keeping goes back to the game
   };
   const startScan = (): void => {
-    if (scanner) return;
-    const words = actionWords();
-    const names = labellerFrom(words);
-    const offered = presetActions(words).filter((a) => !!names(a));
-    scanner = createSwitchScan(offered);
+    if (scanning) return;
+    scanning = freshScan();
     scanTick();
   };
   scanPress = (source) => {
-    if (!scanner) return;
+    if (!scanning) return;
     // 📌 THE CHIP IS NOT REDRAWN HERE, and a surviving mutation is why: the frame loop above draws every frame, so a second
     // drawing path only saved the sixteen milliseconds until the next one — a line that could disagree with the loop and could
     // never be seen doing it.
-    const out = scanner(win.performance.now(), { press: true });
-    const action = out.commanded;
+    const now = win.performance.now();
+    if (scanning.inMenu) {
+      // THE MENU MOVES BY ITS OWN PATH: the step is the intent a key with that meaning carries, handed to `ui/menu-nav` as seat 0.
+      const step = scanning.pass(now, { press: true }).commanded;
+      if (step) nav.navIntent(0, menuStepKeys(step));
+      return;
+    }
+    const action = scanning.pass(now, { press: true }).commanded;
     if (!action) return;
-    // 📌 THROUGH THE VIRTUAL CONTROLLER, like every other transport (ADR-0111): in a menu it becomes that menu's key, in play it
-    // holds the child's key and reaches the cartridge. The scan decides WHICH position; it does not decide what a position does.
+    // 📌 THROUGH THE VIRTUAL CONTROLLER, like every other transport (ADR-0111): in play it holds the child's key and reaches the
+    // cartridge. The scan decides WHICH position; it does not decide what a position does.
     virtualController.press(action, source, 0);
     win.setTimeout(() => virtualController.release(action, source, 0), SWITCH_SCAN_DEFAULTS.pulseMs);
   };

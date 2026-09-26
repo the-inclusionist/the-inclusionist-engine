@@ -268,6 +268,11 @@ const pt: Record<string, string> = {
   'input.standard': 'padrão',
   'input.sticky': 'não precisa segurar',
   'scan.nothing': 'cancelar',
+  // One-button scanning inside a menu: that menu's own steps (ADR-0218 erratum of 2026-09-26, interface log).
+  'scan.menu.next': 'próximo',
+  'scan.menu.confirm': 'confirmar',
+  'scan.menu.back': 'voltar',
+  'scan.menu.previous': 'anterior',
   'input.scan': 'um botão só',
   'icon.contrast': 'Alto contraste',
   'icon.cvd': 'Correção de daltonismo',

@@ -191,6 +191,122 @@ describe('with one button only, every press takes what is showing', () => {
   });
 });
 
+/*
+ * ===================== INSIDE THE ENGINE'S MENUS (ADR-0218 erratum of 2026-09-26) =====================
+ * 🔴 MEASURED before this: inside the quick pause, the card or a panel, a scan press did NOTHING. The switch's key is stopped dead
+ * before any listener (above), and the press was handed to the virtual controller stamped `teclado`, which the menu-key
+ * translator treats as a key already in the world and never re-sends. A child who opened the quick pause by scanning was
+ * left in it. Now, with a menu in front, the pass is that menu's steps, and a press moves it through `ui/menu-nav`.
+ *
+ * 📌 The menus are opened here by the eyes (`motor.controller`), because this commit adds no door to the play list: the doors
+ * are measured in their own cases below. The WAIT is real — the scan's clock is the page's — so each case waits for the word it
+ * needs on the chip instead of counting steps.
+ */
+describe('inside the engine\'s menus, the scan steps the menu', () => {
+  const LIMITE = 20_000;
+  const pausadoAVista = () => { const w = document.querySelector('#game-region .pausa-rapida'); return !!w && w.hidden === false; };
+  const cartaoAberto = () => document.getElementById('vp-pause-0')?.hidden === false;
+  const icones = () => [...document.querySelectorAll('#title-icons .pi-btn')];
+  const cursor = () => icones().findIndex((b) => b.classList.contains('pi-sel'));
+  const tocar = (action) => { motor.controller.press(action, 'olhos', 0); motor.controller.release(action, 'olhos', 0); };
+  const quadro = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+  /** Waits until the chip OFFERS `texto`, frame by frame, and fails naming the last word seen. */
+  const quandoOferecer = async (texto) => {
+    const fim = performance.now() + PASSO * 8;
+    while (chip().textContent !== texto) {
+      if (performance.now() > fim) throw new Error(`the chip never offered «${texto}» (last: «${chip().textContent}»)`);
+      await quadro();
+    }
+  };
+  const SWITCH = TECLA.up; // her one key: which one it is means nothing while scanning
+
+  beforeEach(async () => {
+    estado.setSwitchScanValue(true);
+    motor.pause.hide(0);
+    for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
+    if (pausadoAVista()) tocar('start');
+    await quadro();
+    comandos.length = 0;
+  });
+  afterAll(() => {
+    estado.setSwitchScanValue(false);
+    motor.pause.hide(0);
+    if (pausadoAVista()) tocar('start');
+  });
+
+  it('🔴 [Right] in the QUICK PAUSE the pass is the menu\'s steps, from «cancel», in the engine\'s words', async () => {
+    tocar('start');
+    expect(pausadoAVista(), 'the case would measure nothing: the quick pause did not open').toBe(true);
+    await quadro();
+    expect(chip().textContent, 'a menu just opened did not start at «cancel»').toBe(pt['scan.nothing']);
+    const vistos = [];
+    const fim = performance.now() + PASSO * 5 + 200;
+    while (performance.now() < fim) {
+      const agora = chip().textContent;
+      if (vistos.at(-1) !== agora) vistos.push(agora);
+      await quadro();
+    }
+    expect(vistos.slice(0, 5), 'the quick pause did not offer its own steps, in order')
+      .toEqual([pt['scan.nothing'], pt['scan.menu.next'], pt['scan.menu.confirm'], pt['scan.menu.back'], pt['scan.menu.previous']]);
+  }, LIMITE);
+
+  it('🔴 [Right] «next» moves the bar\'s cursor one icon on, and «previous» moves it back', async () => {
+    tocar('start');
+    const antes = cursor();
+    expect(antes, 'the quick pause put no cursor on the bar').toBeGreaterThanOrEqual(0);
+    await quandoOferecer(pt['scan.menu.next']);
+    apertar(SWITCH);
+    expect(cursor(), '«next» did not move the bar').toBe((antes + 1) % icones().length);
+    await quandoOferecer(pt['scan.menu.previous']);
+    apertar(SWITCH);
+    expect(cursor(), '«previous» did not move it back').toBe(antes);
+    expect(comandos, 'the game heard the steps of a menu').toEqual([]);
+  }, LIMITE);
+
+  it('🔴 [Right] «back» LEAVES the quick pause — the trap measured before — and the pass is the game\'s again', async () => {
+    tocar('start');
+    await quandoOferecer(pt['scan.menu.back']);
+    apertar(SWITCH);
+    expect(pausadoAVista(), 'the child who opened the quick pause cannot leave it').toBe(false);
+    await quadro();
+    expect(chip().textContent, 'back in play, the pass did not start again at «cancel»').toBe(pt['scan.nothing']);
+    await quandoOferecer('Cima'); // the game's own word: the play list is back
+    expect(comandos).toEqual([]);
+  }, LIMITE);
+
+  it('🔴 [Right] «confirm» presses the icon under the cursor — ☰ opens the card — and on the card «back» closes it', async () => {
+    tocar('start');
+    expect(icones()[cursor()]?.dataset.pi, 'the cursor did not land on ☰, the bar\'s first icon: the case needs another route')
+      .toBe('menu');
+    await quandoOferecer(pt['scan.menu.confirm']);
+    apertar(SWITCH);
+    expect(cartaoAberto(), '«confirm» on ☰ did not open the menus').toBe(true);
+    await quadro();
+    await quandoOferecer(pt['scan.menu.next']);
+    apertar(SWITCH);
+    const sel = () => document.querySelector('#vp-pause-0 .pm-sel');
+    expect(sel(), '«next» did not move the card\'s cursor').not.toBeNull();
+    expect([...document.querySelectorAll('#vp-pause-0 .pause-menu:not([hidden]) .pm-btn:not([hidden])')].indexOf(sel()), 'the cursor is not on item 2')
+      .toBe(1);
+    await quandoOferecer(pt['scan.menu.back']);
+    apertar(SWITCH);
+    expect(cartaoAberto(), '«back» at the card\'s root did not close it').toBe(false);
+  }, LIMITE);
+
+  it('🔴 [Right] with a PANEL in front, «next» moves its focus and «back» closes it', async () => {
+    const painel = document.querySelector('#game-region .overlay');
+    expect(painel, 'the root mounted no panel: the case would measure nothing').not.toBeNull();
+    painel.hidden = false;
+    await quadro();
+    await quandoOferecer(pt['scan.menu.next']);
+    apertar(SWITCH);
+    expect(painel.contains(document.activeElement), '«next» did not put the focus on the panel').toBe(true);
+    await quandoOferecer(pt['scan.menu.back']);
+    apertar(SWITCH);
+    expect(painel.hidden, '«back» did not close the panel').toBe(true);
+  }, LIMITE);
+});
+
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-condutor-da-varredura.py` and `mutar-captura-da-varredura.py`, 8 of 8 red:
 //   · the key no longer intercepted: the scan never sees it   · the key read but let through: one press doing two things
 //   · every repeat of a held key takes an item                · the listener out of the CAPTURE phase
@@ -200,3 +316,11 @@ describe('with one button only, every press takes what is showing', () => {
 // capture and bubble are the same order — a real key is born on the focused element and rises, which is the only way the phase
 // can be seen. And one mutation was EQUIVALENT: redrawing the chip inside the press saved the sixteen milliseconds to the next
 // frame, and the frame loop draws anyway, so the line was deleted rather than kept with a case built around it.
+// And (2026-09-26, INSIDE THE ENGINE'S MENUS) — `scratchpad/scan-doors/mutate.mjs`, CRLF normalised, one occurrence required,
+// restored and checked by SHA-256:
+//   S1 the list never changes when a menu opens or closes      🔴 5 of the menu cases
+//   S2 a menu step taken and never handed to `ui/menu-nav`      🔴 4 (the steps, «back», «confirm», the panel)
+//   S3 the menu list never chosen                              🔴 5
+//   S4 the order of the steps changed                          🔴 «in the QUICK PAUSE the pass is the menu's steps» (and 2 in node)
+//   S5 «next» and «previous» swapped                           🔴 «next moves the bar's cursor», «confirm … on the card» (and 2 in node)
+//   S6 the menu steps read with no engine word                 🔴 5 (and 1 in node)

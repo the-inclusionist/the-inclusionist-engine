@@ -178,6 +178,12 @@ export interface MenuNavApi {
    */
   consumed: (e: object) => boolean;
   /**
+   * ONE STEP OF A MENU WITH NO KEY: the intents move the menu a key of player `playerIndex` would move now — the quick bar,
+   * the dialog on top or that player's open pause card — through the same path and guards as `menuNavKey`. Answers whether a
+   * menu took it. One-button scanning is the caller (ADR-0218 erratum of 2026-09-26): its press is not a menu key.
+   */
+  navIntent: (playerIndex: number, keys: NavKeys) => boolean;
+  /**
    * THE NAMES A CHILD CAN SAY (ADR-0194 §1): the accessible names of the items a key of player `playerIndex` would move now —
    * the dialog on top, else that player's open pause card — and none while a key would move no menu. LOCKED items are in it
    * (ADR-0194 §5): saying one confirms it like any transport, and a locked item confirmed says its reason and does nothing.
@@ -421,13 +427,44 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // through `input/gamepad`; the keyboard has no pair of its own for it, because Enter is already «confirm» and taking
     // it would leave the child no way to ACTIVATE the icon under the cursor.
     const { player, keys } = intentOf(e.code);
-    if (ctx.onBar(player)) {
-      if (hasIntent(keys)) { consume(e); ctx.navBar(player, keys); }
-      return; // on the bar, a menu key belongs to the bar — with or without an intent, it does not reach the character
-    }
+    // on the bar, a key with no intent is not consumed either — it simply moves nothing
+    if (!hasIntent(keys) || !menusTake(player)) return;
+    // THE KEY IS CONSUMED BEFORE THE MENU MOVES: a step that closes the last menu leaves no menu for a later listener to see
+    consume(e);
+    steerMenus(player, keys);
+  }
 
-    if (!ctx.isNavigable() || !hasIntent(keys)) return;
-    navOpenMenu(e, player, keys);
+  /**
+   * Would a key of player `pi` with an intent move a menu now? The quick bar first — it works with the game RUNNING — then the
+   * dialog on top or that player's open pause card, and only where a menu may be navigated.
+   *
+   * 📌 THE KEY IS CONSUMED ONLY IF THERE IS SOMETHING TO NAVIGATE. A game whose settings are always open answers
+   * `isNavigable(): true`, and consuming before knowing would swallow every key with a menu intent — the arrows that choose
+   * an answer in the quiz, for one. DEFECT 2's safety net stays: with a dialog open the key IS consumed, so one Escape closes
+   * the dialog and no later listener sees it.
+   */
+  function menusTake(pi: number): boolean {
+    return ctx.onBar(pi) || (ctx.isNavigable() && !!menuUnderKeys(pi));
+  }
+
+  /** One step of the menu a key of `pi` moves: the bar, else the dialog on top, else that player's own pause card. */
+  function steerMenus(pi: number, k: NavKeys): void {
+    if (ctx.onBar(pi)) { ctx.navBar(pi, k); return; }
+    const open = menuUnderKeys(pi);
+    if (open?.inPause) navPause(open.menu, pi, k); else if (open) navDialog(open.menu, k);
+  }
+
+  /**
+   * AN INTENT WITH NO KEY (ADR-0218 erratum of 2026-09-26): one-button scanning offers a menu's own steps and takes one with a
+   * press that is not a menu key — so it asks here, and the step goes the way a key's would, under the same guards.
+   * The controller-mapping panel on top takes only «back», which cancels it, as Escape does.
+   */
+  function navIntent(pi: number, k: NavKeys): boolean {
+    if (ctx.isCapturing()) return false;
+    if (padWizOpen()) { if (k.no) ctx.closePadWiz(false); return true; }
+    if (!hasIntent(k) || !menusTake(pi)) return false;
+    steerMenus(pi, k);
+    return true;
   }
 
   /** Whose key this is — a key no player owns is Player 1's — and what it asks of a menu. */
@@ -435,20 +472,6 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     const owner = ctx.whichPlayer(code);
     const player = owner < 0 ? 0 : owner;
     return { player, keys: menuKeyIntent(code, owner >= 0 ? ctx.actionOf(code, player) : null) };
-  }
-
-  /** The key moves the dialog on top if there is one, else the player's own pause card if it is open, else nothing. */
-  function navOpenMenu(e: NavKeyEvent, pi: number, k: NavKeys): void {
-    // THE KEY IS CONSUMED ONLY IF THERE IS SOMETHING TO NAVIGATE. A game whose settings are always open answers
-    // `isNavigable(): true`, and consuming before knowing would swallow every key with a menu intent — the arrows that
-    // choose an answer in the quiz, for one.
-    //
-    // DEFECT 2's safety net stays: with a dialog open the key IS consumed, so one Escape closes the dialog and no later
-    // listener sees it.
-    const open = menuUnderKeys(pi);
-    if (!open) return; // No dialog and no card: the key is NOT ours. It goes on to whoever owns it.
-    consume(e);
-    if (open.inPause) navPause(open.menu, pi, k); else navDialog(open.menu, k);
   }
 
   /** The menu a key of player `pi` moves: the dialog on top if there is one, else that player's OWN open pause card. */
@@ -560,5 +583,5 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   const consumed = (e: object): boolean => consumedKeys.has(e);
 
-  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, consumed, itemNames, pointAt, attach };
+  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, consumed, navIntent, itemNames, pointAt, attach };
 }

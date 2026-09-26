@@ -1038,7 +1038,7 @@
       "showing"
     ],
     "interface SwitchScan": [],
-    "type ScanItem": "Action | typeof SCAN_CANCEL"
+    "type ScanItem": "Action> = T | typeof SCAN_CANCEL"
   },
   "input/synthetic-source.ts": {
     "interface KeyEventLike": [
@@ -2606,6 +2606,9 @@
       "t"
     ]
   },
+  "ui/menu-intent.ts": {
+    "type MenuStep": "'next' | 'previous' | 'confirm' | 'back'"
+  },
   "ui/menu-nav.ts": {
     "interface NavKeyEvent": [
       "code",
@@ -2642,6 +2645,7 @@
       "menuItems",
       "menuNavKey",
       "navDialog",
+      "navIntent",
       "navPause",
       "pauseSetSel",
       "pointAt",

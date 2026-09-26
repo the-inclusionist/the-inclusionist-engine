@@ -20,7 +20,8 @@ import type { Action } from '../core/actions.js';
 
 /** The safe item: taking it commands nothing. Same word the gaze cycle uses, and the same job. */
 export const SCAN_CANCEL = 'cancel';
-export type ScanItem = Action | typeof SCAN_CANCEL;
+/** What a scan offers: the items it was given — positions in play, a menu's steps in a menu — and «cancel» in front. */
+export type ScanItem<T extends string = Action> = T | typeof SCAN_CANCEL;
 
 export interface SwitchScanOptions {
   /** How long each item is offered. 1 s is the gaze cycle's step, which the Dev ran for a day (ADR-0213). */
@@ -38,42 +39,42 @@ export interface ScanFrame {
   readonly press?: boolean;
 }
 
-export interface ScanOutput {
-  /** The action being pressed, for `pulseMs` after it was taken. */
-  readonly pressed: Action | null;
-  /** The action taken on THIS frame — what a caller turns into a press. */
-  readonly commanded: Action | null;
+export interface ScanOutput<T extends string = Action> {
+  /** The item being pressed, for `pulseMs` after it was taken. */
+  readonly pressed: T | null;
+  /** The item taken on THIS frame — what a caller turns into a press. */
+  readonly commanded: T | null;
   /** What is being offered right now, and where it sits in the list. Never `null`: something is always showing. */
-  readonly showing: { readonly item: ScanItem; readonly index: number };
+  readonly showing: { readonly item: ScanItem<T>; readonly index: number };
 }
 
-export interface SwitchScan {
-  (nowMs: number, frame?: ScanFrame): ScanOutput;
+export interface SwitchScan<T extends string = Action> {
+  (nowMs: number, frame?: ScanFrame): ScanOutput<T>;
 }
 
 /**
- * The scanner. `actions` is what THIS game offers — its declared positions and the engine's own doors — and `cancel` is put in
- * front of them.
+ * The scanner. `actions` is what is offered now — in play this game's declared positions and the engine's own doors, in a menu
+ * that menu's steps — and `cancel` is put in front of them.
  *
  * ⚠️ An empty list is not an error: a game that declared nothing leaves a scan of one item, `cancel`, and a press takes nothing.
  * The alternative — offering the whole controller to a game that reads none of it — is the dead button ADR-0106 §5 refuses, and
  * here it would cost a child a full pass of fourteen items to reach the one thing that works.
  */
-export function createSwitchScan(actions: readonly Action[], options: SwitchScanOptions = {}): SwitchScan {
+export function createSwitchScan<T extends string = Action>(actions: readonly T[], options: SwitchScanOptions = {}): SwitchScan<T> {
   const o = { ...SWITCH_SCAN_DEFAULTS, ...options };
-  const items: readonly ScanItem[] = [SCAN_CANCEL, ...actions];
+  const items: readonly ScanItem<T>[] = [SCAN_CANCEL, ...actions];
   let startedAt: number | null = null;
-  let pressed: Action | null = null, pressedAt = 0;
+  let pressed: T | null = null, pressedAt = 0;
 
   return (now, frame = {}) => {
     startedAt ??= now;
     const stepMs = Math.max(1, o.stepMs);
     const index = items.length < 2 ? 0 : Math.floor((now - startedAt) / stepMs) % items.length;
-    let commanded: Action | null = null;
+    let commanded: T | null = null;
 
     if (frame.press) {
       const item = items[index]!;
-      if (item !== SCAN_CANCEL) { commanded = item; pressed = item; pressedAt = now; }
+      if (item !== SCAN_CANCEL) { commanded = item as T; pressed = item as T; pressedAt = now; }
       // 📌 EVERY PRESS RESTARTS THE PASS, taken or not: the next thing offered is «cancel», never the neighbour of what she just
       // took. Without it a second bounce of the same hand would take the item beside the one she chose.
       startedAt = now;
