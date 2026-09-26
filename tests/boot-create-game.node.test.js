@@ -1255,6 +1255,88 @@ describe('D4-B5 · the root lends the heavy files and the recognisers the host\'
       vi.resetModules();
     }
   });
+
+  /**
+   * 🔴 AND WITHOUT A `Worker`, ONE RUNTIME PER LANGUAGE TOO (issue #185). The port is asked at every `listen()`, and this path
+   * used to load the runtime again each time — up to 378 MiB fetched and compiled per reading, on the thread that draws the
+   * game — and to push its `problems` line again with it. The worker path keeps one per language; so does this one now, and
+   * the line is written once. A language switch loads the new language's runtime, and the game leaving lets it go.
+   * MUTATIONS (2026-09-26, `scratchpad/moonshine-fix/plan-noworker.json`), 4 of 4 red with this case and the next: a new keeper
+   * at each reading, the line pushed at each reading, a failed load kept, the runtime kept past the cartridge.
+   */
+  it('🔴 [Right] where the host has no Worker, a second reading reuses the runtime, the line is written once, and a switch loads hers', async () => {
+    const carregadas = [];
+    vi.doMock('../app/js/platform/reading-runtime.js', async (original) => ({
+      ...(await original()),
+      loadReadingRuntime: async (d) => { carregadas.push(d.language); return { transcribe: async () => '' }; },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { doc, win } = domFalso();
+      doc.baseURI = 'https://escola.example/jogo/';
+      const host = hostThatReads(win, undefined);
+      doc.defaultView = host;
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false, uses: { reading: true } });
+      const base = (tag) => tag.split('-')[0].toLowerCase();
+      await motor.reading.listen().catch(() => {});
+      await until(() => carregadas.length);
+      await motor.reading.listen().catch(() => {});
+      await motor.reading.listen().catch(() => {});
+      await new Promise((r) => { setTimeout(r, 30); });
+      expect(carregadas, 'each reading loaded the runtime again, on the thread that draws the game').toHaveLength(1);
+      const linhas = () => motor.problems.filter((l) => l.includes('has no `Worker`'));
+      expect(linhas(), 'the line was written again at each reading').toHaveLength(1);
+
+      const dela = base(motor.locale());
+      const outra = dela === 'en' ? 'es' : 'en';
+      await motor.setLocale(outra);
+      await motor.reading.listen().catch(() => {});
+      await until(() => carregadas.length > 1);
+      await motor.reading.listen().catch(() => {});
+      await new Promise((r) => { setTimeout(r, 30); });
+      expect(carregadas.map(base), `a reading after switching to ${outra} did not load ${outra}'s runtime, once`).toEqual([dela, outra]);
+      expect(linhas(), 'the switch wrote the line again').toHaveLength(1);
+      // the cartridge leaves and another mounts: the runtime went with the first, as the worker's thread does
+      motor.unmount();
+      motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
+      await motor.reading.listen().catch(() => {});
+      await until(() => carregadas.length > 2);
+      expect(carregadas, 'the runtime of the cartridge that left answered the next one').toHaveLength(3);
+      motor.dispose();
+    } finally {
+      vi.doUnmock('../app/js/platform/reading-runtime.js');
+      vi.resetModules();
+    }
+  });
+
+  /** 🔴 A RUNTIME THAT FAILED TO LOAD IS FORGOTTEN: the next reading loads it again — the model may have come down since. */
+  it('🔴 [Right] where the host has no Worker, a runtime that failed to load is loaded again at the next reading', async () => {
+    let tentativas = 0;
+    vi.doMock('../app/js/platform/reading-runtime.js', async (original) => ({
+      ...(await original()),
+      loadReadingRuntime: async () => { tentativas++; throw new Error('reading: HTTP 404 for reading:pt:encoder'); },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { doc, win } = domFalso();
+      doc.baseURI = 'https://escola.example/jogo/';
+      const host = hostThatReads(win, undefined);
+      doc.defaultView = host;
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win: host }, downloadHeavy: false, uses: { reading: true } });
+      await motor.reading.listen().catch(() => {});
+      await until(() => tentativas);
+      await new Promise((r) => { setTimeout(r, 10); });
+      await motor.reading.listen().catch(() => {});
+      await until(() => tentativas > 1);
+      expect(tentativas, 'the failed runtime answered the next reading instead of a new load').toBe(2);
+      motor.dispose();
+    } finally {
+      vi.doUnmock('../app/js/platform/reading-runtime.js');
+      vi.resetModules();
+    }
+  });
 });
 
 /*

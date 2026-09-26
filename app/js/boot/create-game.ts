@@ -3923,7 +3923,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
      * go with the game (`platform/reading-in-worker.keepOneThreadPerLanguage`, built at the first reading with the module).
      */
     let readingThreads: ReadingThreads<ReadingInWorker> | null = null;
-    closeReadingThread = () => readingThreads?.close();
+    /** And where there is no `Worker`, the runtime on this thread, kept by the same rule: one per language, forgotten on failure. */
+    type KeptRuntime = { readonly runtime: Promise<{ transcribe(samples: Float32Array): Promise<string> }>; close(): void };
+    let readingRuntimes: ReadingThreads<KeptRuntime> | null = null;
+    closeReadingThread = () => { readingThreads?.close(); readingRuntimes?.close(); };
     const listener = createReading({
       language: () => bcp47(),
       api: (browserApis.SpeechRecognition ?? browserApis.webkitSpeechRecognition ?? null) as never,
@@ -3977,11 +3980,20 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
               },
             }));
           }
-          measuredProblems.push('reading: this browser has no `Worker`, so the transcription runs on the same thread that '
+          const sameThreadLine = 'reading: this browser has no `Worker`, so the transcription runs on the same thread that '
             + 'draws the game and feeds the microphone — measured, that cuts the recording in gaps of seconds and the child '
-            + 'loses the words she said meanwhile; serve the game where workers are available');
-          const { loadReadingRuntime } = await import('../platform/reading-runtime.js');
-          return loadReadingRuntime({ base: doc.baseURI, language, fetch: (url) => win.fetch(url) });
+            + 'loses the words she said meanwhile; serve the game where workers are available';
+          if (!measuredProblems.includes(sameThreadLine)) measuredProblems.push(sameThreadLine);
+          // 🔴 ONE RUNTIME PER LANGUAGE HERE TOO (issue #185): loading it at every `listen()` fetched and compiled up to 378 MiB per
+          // reading, on the very thread that draws the game. A switch loads hers; a load that failed is forgotten and tried again.
+          const { keepOneThreadPerLanguage } = await import('../platform/reading-in-worker.js');
+          readingRuntimes ??= keepOneThreadPerLanguage();
+          return readingRuntimes.forLanguage(language, (failed) => {
+            const runtime = import('../platform/reading-runtime.js')
+              .then(({ loadReadingRuntime }) => loadReadingRuntime({ base: doc.baseURI, language, fetch: (url) => win.fetch(url) }));
+            runtime.catch(() => failed()); // the reading that asked still hears the reason: it awaits this same promise
+            return { runtime, close: () => {} };
+          }).runtime;
         }
         : undefined,
       /**
