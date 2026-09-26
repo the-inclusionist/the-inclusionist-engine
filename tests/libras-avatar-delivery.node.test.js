@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
   avatarPinsFromExport, avatarPinsText, avatarSourceOf, deliverLibrasAvatar, deliveredManifest, readAvatarPins, WINDOWS,
-  stageChunkOf, writeAvatarList, avatarListPaths,
+  stageChunkOf, writeAvatarList, avatarListPaths, writeDeliveryList,
 } from '../scripts/libras-avatar.mjs';
 import { avatarPlace, prepareClips } from '../app/js/ui/libras-avatar-load.js';
 import { DELIVERY_LISTS, LIBRAS_AVATAR_STAGE_CHUNK } from '../app/js/platform/heavy-catalogue.js';
@@ -142,6 +142,17 @@ describe('scripts/libras-avatar — the list of the free player\'s files, the st
     }
   });
 
+  it('🔴 [Right] a path outside the list\'s folders is refused, and no list is written — the device would never keep it', () => {
+    const { destino, done } = delivery();
+    try {
+      writeFileSync(join(destino, 'quiz.html'), 'the game');
+      for (const path of ['quiz.html', 'assets/pixi-X1y2Z3w4.js', 'heavy/x/avatar.glb', `${LIBRAS_AVATAR_FOLDER}../../quiz.html`]) {
+        expect(() => writeDeliveryList({ destino, list: LIST, paths: [path], read: () => Buffer.from('x') }), path).toThrow(/cannot name/);
+      }
+      expect(existsSync(join(destino, LIST.path))).toBe(false);
+    } finally { done(); }
+  });
+
   it('📌 [Boundary] only a `.js` whose name carries more than the start counts: a map, a bare name or another folder do not', () => {
     const names = ['libras-avatar-stage-.js', 'libras-avatar-stage-abc.js.map', 'libras-avatar-stage-abc.css', 'other-libras-avatar-stage-abc.js',
       'libras-avatar-stage-abc.js'];
@@ -251,7 +262,11 @@ describe('scripts/libras-avatar.json — the pins the repository keeps', () => {
 //   L2 two stage chunks accepted, the first one listed                   🔴 «no stage chunk, or two»
 //   L3 the manifest left out of the list                                 🔴 «the ONE stage chunk the build emitted»
 //   L4 any file with the chunk's start taken, not only a .js             🔴 «only a `.js`»
-//   L5 the list hashing something other than the bytes on the disk      🔴 «the sha256 on the disk» (in `scripts/vlibras-player.mjs`)
+//   L5 the list hashing something other than the bytes on the disk      🔴 «the sha256 on the disk» (then in `scripts/vlibras-player.mjs`)
+// (2026-09-26, phase B3: `writeDeliveryList` moved here from `scripts/vlibras-player.mjs`, its cases with it; scripted the same way)
+//   W1 the list's folder check removed                                    🔴 «a path outside the list's folders is refused»
+//   W2 its `..` check removed                                             🔴 same case (`libras/avatar/../../quiz.html`)
+//   W3 the listed hash taken from the path, not the bytes                 🔴 «the sha256 on the disk»
 //   K1 the player encoding each clip name with encodeURIComponent again  🔴 «the address fetched is the address kept» (in `ui/libras-avatar-load`)
 //   K2 a pinned clip whose name carries a `#`                              🔴 «no real clip name carries…» (in `scripts/libras-avatar.json`)
 // (2026-09-25, the manual alphabet; scripted the same way, the pins or the plan restored from a copy — all 4 red)

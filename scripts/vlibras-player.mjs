@@ -88,23 +88,8 @@ export function signSetRevision(signs, sha256 = sha256OfNode) {
   return sha256(signs.map((s) => `${s.name} ${s.sha256}`).sort().join('\n'));
 }
 
-/**
- * WRITES THE LIST A DEVICE KEEPS THE PLAYER OFFLINE BY (`platform/heavy-catalogue.DELIVERY_LISTS`): each of `paths`, relative to
- * `destino`, with the sha256 and size of the bytes on the disk — what this delivery wrote, read back. Returns the list's path, the
- * number of files and their bytes. THROWS, writing nothing, on a path outside the list's folders: the device would refuse it.
- */
-export function writeDeliveryList({ destino, list, paths, read = (p) => readFileSync(p), sha256 = sha256OfNode }) {
-  const files = paths.map((path) => {
-    if (!list.folders.some((folder) => path.startsWith(folder)) || path.split('/').includes('..')) {
-      throw new Error(`the list ${list.path} cannot name ${path}: only files under ${list.folders.join(', ')} are kept from it`);
-    }
-    const bytes = read(join(destino, path));
-    return { path, sha256: sha256(bytes), bytes: bytes.length };
-  });
-  mkdirSync(dirname(join(destino, list.path)), { recursive: true });
-  writeFileSync(join(destino, list.path), `${JSON.stringify({ format: 1, files }, null, 1)}\n`);
-  return { path: list.path, files: files.length, bytes: files.reduce((sum, f) => sum + f.bytes, 0) };
-}
+/** The list writer is the free player's script's (`scripts/libras-avatar.mjs`); re-exported for this step's callers. */
+export { writeDeliveryList } from './libras-avatar.mjs';
 
 /**
  * What the Libras list names: the player's page files this step wrote (not the patched framework, which the catalogue pins), the

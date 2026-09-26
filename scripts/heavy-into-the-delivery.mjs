@@ -25,9 +25,9 @@ import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
-import { deliverLibrasPlayer, writeDeliveryList, librasListPaths } from './vlibras-player.mjs';
+import { deliverLibrasPlayer, librasListPaths } from './vlibras-player.mjs';
 import { deliverLibrasGlosses, readSignPins, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
-import { deliverLibrasAvatar, readAvatarPins, stageChunkOf, writeAvatarList } from './libras-avatar.mjs';
+import { deliverLibrasAvatar, readAvatarPins, stageChunkOf, writeAvatarList, writeDeliveryList } from './libras-avatar.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
