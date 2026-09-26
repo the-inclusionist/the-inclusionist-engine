@@ -38,8 +38,8 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 251,
-      "decisionNodes": 35,
+      "codeLines": 255,
+      "decisionNodes": 36,
       "maxDepth": 2,
       "fanOut": 6,
       "globalReach": 0,
