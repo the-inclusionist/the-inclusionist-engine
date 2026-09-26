@@ -218,6 +218,68 @@ describe("the engine's own menus and controls keep their behaviour", () => {
   });
 });
 
+describe("a key the engine's menus consumed is not also played — even when it CLOSED the menu", () => {
+  // 📏 On the served quiz, Space on «Voltar» (resume) closed the card and answered a question: `ui/menu-nav` consumes the key in
+  // the window's capture and closes the card; the conductor, after it on the same node, then saw no menu open and delivered.
+  const cartao = () => document.getElementById('vp-pause-0');
+  const pausado = () => document.querySelector('#game-region .pausa-rapida');
+
+  // ⚠️ THE FOCUS IS PUT IN THE GAME FIRST. Left on ☰ by an earlier case, Space and Enter there are ☰'s activation keys and are
+  // held back for THAT reason — and the case would pass without measuring the menus at all (found by mutation: it did).
+  for (const code of ['Space', 'Enter', 'KeyJ']) {
+    it(`🔴 [Right] ${code} on «resume» resumes, and the game hears nothing`, async () => {
+      expect(motor.keyboard.actionOf(code, 0), `${code} has no position: the case would measure nothing`).toBeTruthy();
+      botao().focus();
+      motor.pause.show(0);
+      try {
+        expect(cartao().querySelector('.pm-sel')?.dataset.act, 'the card does not open on «resume»: the case would measure another item')
+          .toBe('resume');
+        await userEvent.keyboard(`[${code}]`);
+        expect(cartao().hidden, `${code} on «resume» did not close the card`).toBe(true);
+        expect(comandos, `${code} resumed AND reached the game: one press, two actions`).toEqual([]);
+      } finally { motor.pause.hide(0); }
+    });
+  }
+
+  it('🔴 [Right] «no» (action3) at the card\'s root goes back to the game, and the game does not hear it', async () => {
+    const code = motor.keyboard.kbFor(0).action3?.[0];
+    expect(code, 'no key for action3: the case would measure nothing').toBeTruthy();
+    botao().focus();
+    motor.pause.show(0);
+    try {
+      await userEvent.keyboard(`[${code}]`);
+      expect(cartao().hidden, '«no» at the root did not close the card').toBe(true);
+      expect(comandos, '«no» closed the card AND reached the game').toEqual([]);
+    } finally { motor.pause.hide(0); }
+  });
+
+  it('🔴 [Right] «no» (action3) on the quick pause\'s bar leaves it, and the game does not hear it', async () => {
+    const code = motor.keyboard.kbFor(0).action3?.[0];
+    botao().focus();
+    await userEvent.keyboard('[Enter]');
+    try {
+      expect(pausado()?.hidden, 'Enter did not open the quick pause: the case would measure nothing').toBe(false);
+      comandos.length = 0;
+      await userEvent.keyboard(`[${code}]`);
+      expect(pausado().hidden, '«no» did not leave the quick pause').toBe(true);
+      expect(comandos, '«no» left the quick pause AND reached the game').toEqual([]);
+    } finally {
+      if (pausado() && !pausado().hidden) await userEvent.keyboard('[Escape]');
+    }
+  });
+
+  it('🔴 [Boundary] after the menu closed, the NEXT press is the game\'s again', async () => {
+    botao().focus();
+    motor.pause.show(0);
+    try {
+      await userEvent.keyboard('[Space]');
+      expect(cartao().hidden).toBe(true);
+      await userEvent.keyboard('[Space]');
+      expect(presses('action2'), 'the press after the menu closed did not reach the game').toHaveLength(1);
+    } finally { motor.pause.hide(0); }
+  });
+});
+
 describe('Escape and the pause are unchanged', () => {
   const pausado = () => document.querySelector('#game-region .pausa-rapida');
 
@@ -269,3 +331,14 @@ describe('Escape and the pause are unchanged', () => {
 //   E1 the conductor does not pass `toPlay`                     🔴 the fields, ☰ (Space and Enter)
 //   E2 the conductor never cancels                              🔴 both Space cases, the arrow on ☰, and the quiz's three cases
 //   E3 the conductor cancels every key it sees                  🔴 the fields, the refused key, Space on ☰
+// Third pass (2026-09-26, a key the engine's menus consumed is not also played), with `menu-nav.browser`:
+//   N1 `consume` does not mark the key                          🔴 the three resume keys, «no» on the card and on the bar, the
+//                                                                  next press, and the three `consumed` cases in menu-nav
+//   N2 Escape on the mapping panel consumed without the mark    🔴 menu-nav's bar-and-padwiz case only (Escape is mapped to no
+//                                                                  position, so no key test here can see it)
+//   N3 `consumed` always false                                  🔴 as N1
+//   N4 `consumed` always true                                   🔴 every case where the game must hear the key, and the [Zero] case
+//   C1 the conductor ignores the mark                           🔴 the three resume keys, «no» on the card and on the bar, the
+//                                                                  next press
+//   📌 C1 first SURVIVED for Space and Enter: an earlier case left the focus on ☰, where those two are held back as ☰'s own
+//   activation keys. The resume cases now put the focus in the game first.

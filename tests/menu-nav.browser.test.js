@@ -588,6 +588,53 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 });
 
+describe('consumed — what a listener after the menus, on the same window, asks (ADR-0111 erratum of 2026-09-26)', () => {
+  // `stopPropagation()` does not reach a sibling listener on the window's capture, and the keyboard conductor is one: it asks
+  // this, so a key that moved, confirmed or CLOSED a menu is not also played. `a-delivered-key-does-not-also-click` has the real keys.
+  it('🔴 [Right] a key the pause card consumed is marked; one it let through is not', () => {
+    const { nav } = boot({ isNavigable: () => true });
+    showPauses();
+    const moved = key('ArrowDown');
+    nav.menuNavKey(moved);
+    expect(nav.consumed(moved), 'the card moved and the key is not marked consumed').toBe(true);
+    const other = key('KeyZ');
+    nav.menuNavKey(other);
+    expect(nav.consumed(other), 'a key with no intent was marked consumed').toBe(false);
+  });
+
+  it('🔴 [Right] «yes» that closes the card is marked too — the mark is the key, not whether a menu is left open', () => {
+    const { nav } = boot({ isNavigable: () => true });
+    showPauses();
+    const sp = $('#sp0');
+    sp.querySelector('[data-act]')?.addEventListener('click', () => { sp.hidden = true; });
+    const yes = key('Space');
+    nav.menuNavKey(yes);
+    expect(sp.hidden, 'the first item did not act: the case would measure nothing').toBe(true);
+    expect(nav.consumed(yes)).toBe(true);
+  });
+
+  it('🔴 [Boundary] a key on the quick bar and Escape on the controller-mapping panel are marked', () => {
+    const { nav, naBarra, log } = boot();
+    naBarra.add(0);
+    const onBar = key('ArrowRight');
+    nav.menuNavKey(onBar);
+    expect(nav.consumed(onBar), 'the bar consumed the key and it is not marked').toBe(true);
+    naBarra.delete(0);
+    $('#padwiz').hidden = false;
+    const esc = key('Escape');
+    nav.menuNavKey(esc);
+    expect(log.padWiz, 'Escape did not reach the mapping panel: the case would measure another branch').toEqual([false]);
+    expect(nav.consumed(esc), 'Escape closed the mapping panel and is not marked').toBe(true);
+  });
+
+  it('🔴 [Zero] with nothing open, no key is marked', () => {
+    const { nav } = boot({ isNavigable: () => true, getPauseMenu: () => null });
+    const e = key('Space');
+    nav.menuNavKey(e);
+    expect(nav.consumed(e)).toBe(false);
+  });
+});
+
 describe('menuNavKey — o tradutor de teclado', () => {
   it('fora da pausa, não faz nada (nem consome a tecla)', () => {
     const { nav } = boot();

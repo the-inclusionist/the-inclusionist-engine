@@ -4112,6 +4112,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       const action = keyboard.actionOf(e.code, seat) as Action | null;
       if (!action) return;
       if (kind === 'keyup') { virtualController.release(action, source, seat); return; }
+      // 🔴 A KEY THE MENUS CONSUMED IS NOT ALSO PLAYED (ADR-0111 erratum of 2026-09-26). `nav.attach()` put `menuNavKey` on this
+      // window's capture first, so it has already decided — and a key that CLOSED the last menu (resume, «no» at the card's
+      // root, a panel's «Voltar») leaves the controller no menu to see: 📏 Space on resume resumed AND answered the quiz.
+      if (nav.consumed(e)) return;
       const toPlay = keyGoesToGame(e.code, e.target as Element | null, ENGINE_CONTROLS_IN_PLAY);
       if (virtualController.press(action, source, seat, toPlay)) e.preventDefault();
     }, true);

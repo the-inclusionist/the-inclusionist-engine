@@ -1282,6 +1282,7 @@
     "constants",
     "constraints",
     "consume",
+    "consumed",
     "consumer",
     "container",
     "content",

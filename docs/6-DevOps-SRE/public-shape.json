@@ -2631,6 +2631,7 @@
     ],
     "interface MenuNavApi": [
       "attach",
+      "consumed",
       "dialogBack",
       "itemNames",
       "menuFocus",

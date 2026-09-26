@@ -171,6 +171,13 @@ export interface MenuNavApi {
   /** The keyboard translator. Exported on its own so a test can fire it without depending on the propagation phase. */
   menuNavKey: (e: NavKeyEvent) => void;
   /**
+   * Did the menus CONSUME this key event? `stopPropagation()` keeps it from the nodes further on, not from the listeners after
+   * `menuNavKey` on the same window capture — and the keyboard conductor is one. It asks here, so a key that moved, confirmed
+   * or CLOSED a menu is never also played in the same event (ADR-0111 erratum of 2026-09-26): with the menu already closed,
+   * «is a menu open?» answers no, and resume was answering a question too.
+   */
+  consumed: (e: object) => boolean;
+  /**
    * THE NAMES A CHILD CAN SAY (ADR-0194 §1): the accessible names of the items a key of player `playerIndex` would move now —
    * the dialog on top, else that player's open pause card — and none while a key would move no menu. LOCKED items are in it
    * (ADR-0194 §5): saying one confirms it like any transport, and a locked item confirmed says its reason and does nothing.
@@ -392,12 +399,14 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   /** The controller-mapping panel sits ON TOP of everything: while it is open, only Escape gets through (and cancels). */
   function padWizKey(e: NavKeyEvent): boolean {
     if (!padWizOpen()) return false;
-    if (e.code === 'Escape') { ctx.closePadWiz(false); e.preventDefault(); e.stopPropagation(); }
+    if (e.code === 'Escape') { ctx.closePadWiz(false); consume(e); }
     return true; // open = consumed (even when it is not Escape: no menu underneath navigates while it is open)
   }
 
-  /** Consumes the key: it was ours, and nobody else should see it. One function, so the pair never comes apart. */
-  const consume = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); };
+  /** The key events the menus consumed, for `consumed` — weak, so an event is forgotten with it. */
+  const consumedKeys = new WeakSet<object>();
+  /** Consumes the key: it was ours, and nobody else should see it. One function, so the three never come apart. */
+  const consume = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); consumedKeys.add(e); };
 
   function menuNavKey(e: NavKeyEvent): void {
     if (ctx.isCapturing()) return;   // a remap in progress: the key is its
@@ -549,5 +558,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     ctx.win.addEventListener('click', onClick, true);
   }
 
-  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, itemNames, pointAt, attach };
+  const consumed = (e: object): boolean => consumedKeys.has(e);
+
+  return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, consumed, itemNames, pointAt, attach };
 }
