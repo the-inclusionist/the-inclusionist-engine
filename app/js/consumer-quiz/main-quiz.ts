@@ -529,7 +529,10 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     try {
       // 📌 THE OPTIONS AS SHOWN, and the engine hears only those (ADR-0256): an option is one or two words, which a closed grammar
       // hears and a free transcription invents. The answer is which one — never text to compare.
-      const heard = await motor.reading.choose(view.options.map((o) => o.text));
+      // 📌 AN OPTION THAT IS CONTENT IS SAID IN ITS OWN LANGUAGE (item 22, ADR-0225): «apple» in an English skill is heard by the
+      // English model, whatever the interface speaks; options that translate are heard in the page's language.
+      const language = view.options.find((o) => o.language)?.language;
+      const heard = await motor.reading.choose(view.options.map((o) => o.text), language ? { language } : {});
       listening = false;
       answerByChoice(heard.chosen, heard.heard);
     } catch {

@@ -29,12 +29,14 @@ const alerts = [];
 let regiao;
 /** What the fake choice hears at its next ask: `{ text }`, `{ error }`, or nothing at all. */
 let hearing = {};
-/** The options the quiz last handed the engine. */
+/** The options the quiz last handed the engine, and the settings of every ask. */
 let offered = [];
+const asked = [];
 
 /** `reading.choose` as the engine answers it, on what the case says instead of a microphone. */
-const fakeChoose = async (options) => {
+const fakeChoose = async (options, settings = {}) => {
   offered = options;
+  asked.push(settings);
   const h = hearing;
   await esperar(20);
   if (h.error) throw new Error(h.error);
@@ -166,8 +168,28 @@ describe('the demo quiz, in its engine\'s language', () => {
     await said(next.correct); // right
     await esperar(1000);
   }, 15000);
+
+  /**
+   * 🔴 AN OPTION THAT IS CONTENT IS HEARD IN ITS OWN LANGUAGE (item 22, ADR-0225, ADR-0256): an English skill's options are
+   * asked for in `en`, whatever the interface speaks, and a skill whose options translate asks for no language at all.
+   */
+  it('🔴 [Right] the options of an English skill are heard in English; options that translate in the page\'s language', async () => {
+    const translating = asked.at(-1);
+    expect(translating, 'no choice was asked before — this case would measure nothing').toBeDefined();
+    expect(translating.language, 'a skill whose options translate asked for a language of its own').toBeUndefined();
+    regiao.focus();
+    for (let i = 0; i < 5 && !document.querySelector('#quiz-app .quiz-skill'); i++) { tecla('KeyK'); await esperar(150); }
+    const english = [...document.querySelectorAll('#quiz-app .quiz-skill')].find((b) => /EF06LI17/.test(b.textContent));
+    expect(english, 'the start screen has no English skill — the case would measure nothing').toBeTruthy();
+    english.click();
+    for (let i = 0; i < 40 && !document.querySelector('#quiz-app .quiz-alts'); i++) await esperar(25);
+    await listenHearing({ text: 'nothing that matches' });
+    expect(asked.at(-1), 'the English options were asked for in the page\'s language').toEqual({ language: 'en' });
+  });
 });
 // ============================== MUTATIONS CHECKED ==============================
 // Each of the quiz's hand-overs to `translate` replaced, one at a time, by a `t` that answers the key:
 //   the welcome · «ouvindo» · «não entendi» · «ouvi nada» · the failure · the statement given back · each answer ·
 //   the two «how to play» texts · the six positions' names                                            🔴 each, its case above
+// And (2026-09-27, item 22): the content language forgotten · the page's language always asked for   🔴 both, the last case
+// · the options handed over as indices instead of as shown                                              🔴 «saying an option's WORD»
