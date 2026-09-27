@@ -94,9 +94,11 @@ PARES_NAO_CONFERIDOS = {}
 # erratum (the author, with that day's facts, would have written exactly that) nor a supersession (the decision
 # did not change): it is a STATE line that aged, and ADR-0057 has no form for it.
 #
-# ⚠️ THE PROSE OF THE `confirmation` IS NOT REWRITTEN. It is historical and stays as it was; `confirmed-by` is
-# today's fact, and it lives in the METADATA, which in a YADR is the first thing one reads. So the record says
-# both true things at once — what was decided, and that it already exists — without either of them lying.
+# ⚠️ WHEN THE GATE LANDS, THE `confirmation` IS REWRITTEN (ADR-0128: the decision before, the confirmation after).
+# Before the code it can only declare a DEBT and name its issue; once the gate exists, `confirmed-by` lists it — today's
+# fact, in the METADATA a YADR opens with — the `confirmation` says what the gates hold, and an erratum says what
+# changed and when. A record that keeps the old debt prose beside a `confirmed-by` says two things, one of them false:
+# `tempo-dos-registos.py` refuses it.
 #
 # What the machine comes to know: the difference between «decidido» and «decidido e construído». Every listed path
 # MUST EXIST, and that is where the key pays its own cost — it was measured on 2026-09-07 that three open issues
