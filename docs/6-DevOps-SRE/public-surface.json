@@ -992,6 +992,7 @@
     "VoskRecognizer",
     "commandModelId",
     "createBundleLoader",
+    "keepVoskModels",
     "loadVoskRuntime"
   ],
   "platform/vosk-vocabulary.ts": [

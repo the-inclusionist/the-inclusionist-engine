@@ -90,7 +90,18 @@ export interface VoiceControl extends SwitchableControl {
    * because the next start already reads the new language.
    */
   languageChanged(): Promise<void>;
+  /**
+   * LENDS THIS EAR TO A CHOICE AMONG THE GAME'S OPTIONS (ADR-0256): while it is listening in `language`, the grammar becomes
+   * `grammar` and every text heard goes to `onHeard` instead of being obeyed; `stop()` gives the menu's grammar back. `null` when
+   * it is not listening, or listens in another language — then the choice opens an ear of its own.
+   * 📏 Without it every choice paused this recogniser and opened another: two workers and two microphones per press, 40 MiB of
+   * model unpacked each time, measured on 2026-09-27 — and the Dev's machine froze.
+   */
+  borrow(language: string, grammar: readonly string[], onHeard: (text: string, final: boolean) => void): { stop(): Promise<void> } | null;
 }
+
+/** The base of a language tag: `en-US` and `en` are the same model. */
+const baseOf = (tag: string): string => tag.split('-')[0]!.toLowerCase();
 
 export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
   const { t } = d;
@@ -106,6 +117,14 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
   let vocabulary: ReadonlySet<string> | null = null;
   /** Bumped by every stop, so a vocabulary that arrives for a recogniser already replaced is dropped. */
   let generation = 0;
+  /**
+   * 🔴 THE LANGUAGE THE LISTENING STARTED IN, read ONCE. The model and the grammar must come from the same reading: `start()` used
+   * to read the language again after the model had loaded, and a page booting in English (pt-BR until its stored language
+   * applies) opened the Portuguese model with the English grammar — 15 «missing in vocabulary», measured on 2026-09-27.
+   */
+  let listeningLanguage = '';
+  /** A choice among the game's options borrowing this ear (ADR-0256): what is heard goes to it, and no command is obeyed. */
+  let lent: ((text: string, final: boolean) => void) | null = null;
 
   /** The open menu's names that can enter the grammar. A one-letter name stays out: in a closed grammar every short noise lands on it. */
   const sayableNames = (): readonly string[] => d.menuWords().filter((n) => spokenText(n).length > 1);
@@ -118,7 +137,7 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
   const reportUnsayable = (names: readonly string[]): void => {
     const known = vocabulary;
     if (!known) return;
-    const language = d.language();
+    const language = listeningLanguage;
     for (const name of names) {
       const lacking = [...new Set(spokenText(name).split(' '))].filter((w) => w && !known.has(w));
       const kind = `unsayable:${language}:${name}`;
@@ -136,7 +155,7 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     const names = sayableNames();
     commands?.items(names);
     reportUnsayable(names);
-    return voiceGrammar(d.language(), names);
+    return voiceGrammar(listeningLanguage, names);
   };
 
   const command = (action: Action): void => {
@@ -162,6 +181,7 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     const going = listener;
     listener = null;
     commands = null;
+    lent = null;
     vocabulary = null;
     generation += 1;
     void going?.stop();
@@ -210,7 +230,10 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
         t('sr.voice.needsInternet'));
       return;
     }
-    commands = createVoiceCommands(d.language());
+    // the language changed while the model loaded (a page booting before its stored language applies): start again in it
+    if (baseOf(d.language()) !== baseOf(language)) { await start(); return; }
+    listeningLanguage = language;
+    commands = createVoiceCommands(language);
     const grammar = followMenu();
     grammarGiven = grammar.join('\n');
     try {
@@ -219,8 +242,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
         grammar,
         getUserMedia: d.getUserMedia,
         createContext: d.createContext,
-        onPartial: (text) => { obey(commands?.partial(text)); },
-        onFinal: (text) => { obey(commands?.final(text)); },
+        onPartial: (text) => { if (lent) lent(text, false); else obey(commands?.partial(text)); },
+        onFinal: (text) => { if (lent) lent(text, true); else obey(commands?.final(text)); },
       });
     } catch {
       failed('microphone', 'voice control: the microphone did not open — the child cannot play by speaking; allow the microphone '
@@ -252,7 +275,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
       await starting;
     },
     refreshGrammar() {
-      if (!listener) return;
+      // lent to a choice: the options are the grammar until it gives the ear back
+      if (!listener || lent) return;
       // 📌 A new grammar is a new recogniser (`platform/voice-listener`), and the root asks on every menu change it sees —
       // most of which change no name. Only a grammar that differs is handed on.
       const grammar = followMenu();
@@ -276,8 +300,24 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
       // ⚠️ A START IN FLIGHT IS IN THE OLD LANGUAGE. Letting it finish and replacing it costs one opening; skipping it would
       // leave `starting` to install the old model on top of the new one, which is the race the `if (!on)` in `start` exists for.
       await starting;
+      // a start that noticed the change itself is already listening in the new language: nothing to redo
+      if (listener && baseOf(listeningLanguage) === baseOf(d.language())) return;
       stop();
       await api.apply(true);
+    },
+    borrow(language, grammar, onHeard) {
+      if (!listener || lent || baseOf(language) !== baseOf(listeningLanguage)) return null;
+      const held = listener;
+      lent = onHeard;
+      held.setGrammar(grammar);
+      grammarGiven = '';
+      return {
+        async stop() {
+          if (lent !== onHeard) return;
+          lent = null;
+          api.refreshGrammar(); // the menu's grammar back
+        },
+      };
     },
   };
   return api;

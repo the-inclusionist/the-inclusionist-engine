@@ -17,10 +17,11 @@ import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 const heard = { listens: 0, grammars: [], onPartial: null, onFinal: null, vocabulary: null };
 vi.mock('../app/js/platform/vosk-runtime.js', async (original) => ({
   ...(await original()),
-  // the model's words, when a case sets them — and only if the ROOT lent a `fetch` to read them with, as the real runtime needs
+  // the model's words, READ WHEN ASKED as the real runtime reads them (a `fetch` of the archive each time) — so a model the root
+  // keeps between starts (ADR-0256) still answers what a case set later — and only if the ROOT lent a `fetch` to read them with
   loadVoskRuntime: async (d) => ({
     ok: true, model: { KaldiRecognizer: function () { /* never built: the listener is a double */ } },
-    ...(heard.vocabulary && typeof d.fetch === 'function' ? { vocabulary: async () => heard.vocabulary } : {}),
+    ...(typeof d.fetch === 'function' ? { vocabulary: async () => heard.vocabulary } : {}),
   }),
 }));
 vi.mock('../app/js/platform/voice-listener.js', async (original) => ({

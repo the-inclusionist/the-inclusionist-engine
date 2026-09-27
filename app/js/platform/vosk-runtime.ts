@@ -118,6 +118,37 @@ export function createBundleLoader(load: (absoluteUrl: string) => Promise<unknow
 }
 
 /**
+ * ONE MODEL PER LANGUAGE, LOADED ONCE AND KEPT (ADR-0256): the 👄 and a choice by voice ask the same `load`, and a listener that
+ * stops no longer ends the model — the one handed out has a `terminate` that does nothing; the real one is ended when it is
+ * pushed out (more than `keep` languages, the oldest first) or by `closeAll()`, the root's end.
+ * 📏 Why: every start used to spawn a worker and unpack ~40 MiB of model, and every choice started two — the Dev's machine froze
+ * on 2026-09-27. A load that failed is forgotten, so a model that comes down later is found.
+ */
+export function keepVoskModels(load: (d: VoskDeps) => Promise<VoskLoad>, keep = 2): { load(d: VoskDeps): Promise<VoskLoad>; closeAll(): void } {
+  /** Per language: the load as it came (whose model is the one to end) and the one handed out. */
+  const kept = new Map<string, { readonly real: Promise<VoskLoad>; readonly lent: Promise<VoskLoad> }>();
+  const end = (entry: { readonly real: Promise<VoskLoad> }): void => {
+    void entry.real.then((l) => { if (l.ok) l.model.terminate?.(); }, () => {});
+  };
+  return {
+    load(d) {
+      const key = d.language.split('-')[0]!.toLowerCase();
+      const found = kept.get(key);
+      if (found) { kept.delete(key); kept.set(key, found); return found.lent; } // the most recent last
+      const real = load(d);
+      const lent = real.then((l): VoskLoad => (l.ok ? { ...l, model: { get KaldiRecognizer() { return l.model.KaldiRecognizer; }, terminate: () => {} } } : l));
+      const entry = { real, lent };
+      kept.set(key, entry);
+      const forget = (): void => { if (kept.get(key) === entry) kept.delete(key); };
+      real.then((l) => { if (!l.ok) forget(); }, forget);
+      while (kept.size > keep) { const [oldest, q] = kept.entries().next().value!; kept.delete(oldest); end(q); }
+      return lent;
+    },
+    closeAll() { for (const entry of kept.values()) end(entry); kept.clear(); },
+  };
+}
+
+/**
  * Opens the recogniser for the child's language, or says what is missing.
  *
  * ⚠️ THE MODEL IS A `.tar.gz` THE BUNDLE FETCHES ITSELF, so what it is given is the DELIVERY path: the service worker answers it

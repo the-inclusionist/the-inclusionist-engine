@@ -64,7 +64,7 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { checkedCacheHas, sha256With } from '../platform/heavy.js';
-import { createBundleLoader } from '../platform/vosk-runtime.js';
+import { createBundleLoader, keepVoskModels, loadVoskRuntime } from '../platform/vosk-runtime.js';
 import { createVoiceChooser, openWithCommandRecogniser } from '../platform/choose-by-voice.js';
 import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, wireBarCaption, showPauseOptions } from '../ui/pause-icons.js';
@@ -4052,6 +4052,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   let closeReadingThread = (): void => {};
   // the command recogniser's bundle, put in the page once and shared by the 👄 and a choice by voice
   const voskBundle = createBundleLoader((url) => import(/* @vite-ignore */ url));
+  // one command model per language, loaded once for the 👄 and a choice alike, ended with the root (ADR-0220, ADR-0256)
+  const voskModels = keepVoskModels(loadVoskRuntime);
+  whenDisposed(() => { voskModels.closeAll(); });
   /*
    * A CHOICE AMONG THE OPTIONS THE GAME SHOWS (ADR-0256): heard by the command recogniser with a grammar of exactly those options,
    * and the 👄 paused meanwhile — one ear per word. Not tied to `uses.reading`: the command models are asked of every delivery. A
@@ -4061,8 +4064,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     language: () => bcp47(),
     open: openWithCommandRecogniser({
       base: doc.baseURI, hasFile: hasHeavyFile, loadBundle: voskBundle, fetch: (url) => win.fetch(url),
-      getUserMedia, createContext: () => new HostAudioContext!() as never,
+      getUserMedia, createContext: () => new HostAudioContext!() as never, load: voskModels.load,
     }),
+    // the 👄 already listening in the options' language lends its ear: no second model, no second microphone
+    borrow: (language, grammar, onHeard) => voiceControl?.borrow(language, grammar, onHeard) ?? null,
     after: (fn, ms) => win.setTimeout(fn, ms),
     cancel: (h) => win.clearTimeout(h as number),
     report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
@@ -4503,15 +4508,18 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       turnOff: () => { state.setVoiceControlValue(false); },
       after: (fn, ms) => { win.setTimeout(fn, ms); },
       // ⚠️ THE ADDRESS IS ABSOLUTE AND THE BUNDLER MUST NOT FOLLOW IT: the recogniser arrives with the delivery at runtime.
-      hasFile: hasHeavyFile, loadBundle: voskBundle,
+      hasFile: hasHeavyFile, loadBundle: voskBundle, loadRuntime: voskModels.load,
       // the model's vocabulary is read from its archive, so a menu name the model cannot hear is a line of `problems` (ADR-0194 §4)
       fetch: (url) => win.fetch(url),
       getUserMedia, createContext: () => new HostAudioContext!() as never,
     });
     stateOn('voiceControl', (on) => { void voiceControl?.apply(on); });
-    void voiceControl.apply(state.voiceControl);
+    // 📌 A STORED 👄 STARTS ONCE THE STORED LANGUAGE HAS APPLIED: started before, it opened the boot language's model and then the
+    // child's — two workers and ~40 MiB unpacked for nothing on every English or Spanish boot (measured on 2026-09-27)
+    let voiceEnded = false;
+    void translator.ready().then(() => { if (!voiceEnded) void voiceControl?.apply(state.voiceControl); }, () => {});
     // and so does the microphone; `apply(false)` stops without writing the stored answer, which belongs to the child (ADR-0220)
-    whenDisposed(() => { void voiceControl?.apply(false); });
+    whenDisposed(() => { voiceEnded = true; void voiceControl?.apply(false); });
   }
   /*
   /*

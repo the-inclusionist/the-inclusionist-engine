@@ -151,6 +151,34 @@ describe('a choice by voice', () => {
     expect(h.log.reports[0]).toMatch(/"Ornitorrinco".*"ornitorrinco"/);
   });
 
+  it('🔴 [Right] what was heard is the END of the sentence — a partial the recogniser took back is not shown as heard', async () => {
+    const h = harness();
+    const p = h.chooser.choose(ANIMALS, { maxMs: 4000 });
+    await h.hear('gato', false);
+    await h.hear('', true); // the recogniser withdrew its guess
+    await h.fire();
+    expect(await p, 'a withdrawn partial was reported as what the child said').toEqual({ chosen: null, heard: '', ended: 'timeout' });
+  });
+
+  it('🔴 [Right] an ear already listening is BORROWED: nothing is opened, nothing paused, and it is given back', async () => {
+    const log = { opened: 0, pauses: 0, resumes: 0, given: 0, lentWith: null };
+    let heard = () => {};
+    const chooser = createVoiceChooser({
+      language: () => 'pt-BR',
+      open: async () => { log.opened += 1; return { stop: async () => {} }; },
+      borrow: (language, grammar, onHeard) => { log.lentWith = { language, grammar }; heard = onHeard; return { stop: async () => { log.given += 1; } }; },
+      after: () => ({}), cancel: () => {}, report: () => {},
+      pause: () => { log.pauses += 1; }, resume: () => { log.resumes += 1; },
+    });
+    const p = chooser.choose(['😀 Feliz', 'Triste']);
+    await new Promise((r) => setTimeout(r, 0));
+    heard('feliz', true);
+    expect((await p).chosen).toBe(0);
+    expect(log.lentWith).toEqual({ language: 'pt-BR', grammar: ['feliz', 'triste'] });
+    expect([log.opened, log.pauses, log.resumes], 'a second ear was opened, or the lent one paused').toEqual([0, 0, 0]);
+    expect(log.given, 'the borrowed ear was not given back').toBe(1);
+  });
+
   it('🔴 [Consistency] one microphone, one choice: a second caller waits on the first', async () => {
     const h = harness();
     const a = h.chooser.choose(ANIMALS);
@@ -165,3 +193,4 @@ describe('a choice by voice', () => {
 // decided on the partial · two options answering the first · not the longest option · the word order ignored · the accents
 // compared · `maxMs` ignored · a stop before the microphone opened lost · the 👄 not resumed · a reason reported every time · an
 // unsayable option unreported · two microphones · the grammar as written (pictogram and case kept) · the microphone kept open
+// And (2026-09-27, one ear): the borrow ignored · paused while borrowed · a withdrawn partial kept as heard — 3 of 3 red

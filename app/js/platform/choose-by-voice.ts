@@ -16,7 +16,7 @@
 // (`open`), which lends the delivery, the cache and the browser (ADR-0232 D4).
 
 import { spokenText, compareKey } from './speech-recognition.js';
-import { loadVoskRuntime, type VoskDeps } from './vosk-runtime.js';
+import { loadVoskRuntime, type VoskDeps, type VoskLoad } from './vosk-runtime.js';
 import { startVoiceListening, type VoiceListenerDeps } from './voice-listener.js';
 
 /** What a choice gives back: the index of the option said, or `null`; what was heard; why it ended. */
@@ -53,7 +53,12 @@ export interface VoiceChooserDeps {
   readonly cancel: (handle: unknown) => void;
   /** A line for `problems`, written once per reason (ADR-0169). */
   readonly report: (line: string) => void;
-  /** Called before the microphone is opened and after it is let go: the root pauses the 👄 in between (one ear per word). */
+  /**
+   * An ear ALREADY LISTENING in `language`, lent for this choice with the grammar given — the 👄's (`ui/voice-control.borrow`) — or
+   * `null`. Borrowed, nothing is opened and nothing paused: one model and one microphone, however many choices.
+   */
+  readonly borrow?: (language: string, grammar: readonly string[], onHeard: (text: string, final: boolean) => void) => OpenedChoice | null;
+  /** Called before an ear of its own is opened and after it is let go: the root pauses the 👄 in between (one ear per word). */
   readonly pause?: () => void;
   readonly resume?: () => void;
 }
@@ -67,7 +72,10 @@ export interface VoiceChooser {
 const MAX_MS = 10_000;
 
 /** What opening the command recogniser for a choice uses of the delivery and the browser, lent by the root (ADR-0232 D4). */
-export type CommandRecogniserDeps = Omit<VoskDeps, 'language'> & Pick<VoiceListenerDeps, 'getUserMedia' | 'createContext'>;
+export type CommandRecogniserDeps = Omit<VoskDeps, 'language'> & Pick<VoiceListenerDeps, 'getUserMedia' | 'createContext'> & {
+  /** How a language's model is had — the root's `keepVoskModels(…).load`, so it is loaded once; default a fresh load. */
+  readonly load?: (d: VoskDeps) => Promise<VoskLoad>;
+};
 
 /**
  * THE `open` A CHOOSER IS GIVEN WHERE THE COMMAND RECOGNISER IS THE EAR: the language's model from the delivery, then the
@@ -77,7 +85,7 @@ export function openWithCommandRecogniser(d: CommandRecogniserDeps): VoiceChoose
   return async (language, grammar, onHeard) => {
     // a device with no microphone is refused before 31 MiB of model are opened for nothing
     if (!d.getUserMedia) throw new Error('this device cannot open a microphone');
-    const load = await loadVoskRuntime({ ...d, language });
+    const load = await (d.load ?? loadVoskRuntime)({ ...d, language });
     if (!load.ok) throw new Error(`${load.missing.join(', ')} not on this device`);
     try {
       const listening = await startVoiceListening({
@@ -143,17 +151,20 @@ export function createVoiceChooser(d: VoiceChooserDeps): VoiceChooser {
     askToStop = () => end(null, 'asked');
     const onHeard = (text: string, final: boolean): void => {
       const clean = text.replace(/\[unk\]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (clean) heard = clean;
+      // 🔴 THE END OF A SENTENCE IS WHAT WAS HEARD, even empty: a partial the recogniser took back («happy», then nothing) is not
+      // an answer to show the child — measured on 2026-09-27, the quiz said «I heard happy» for a word the model had withdrawn
+      if (final || clean) heard = clean;
       if (!final || !clean) return;
       const named = optionsNamed(options, clean);
       if (named.length === 1) end(named[0]!, 'chosen');
       else if (named.length > 1) end(null, 'unclear');
     };
-    d.pause?.();
+    const borrowed = d.borrow?.(language, grammar, onHeard) ?? null;
+    if (!borrowed) d.pause?.();
     try {
       let opened: OpenedChoice;
       try {
-        opened = await d.open(language, grammar, onHeard);
+        opened = borrowed ?? await d.open(language, grammar, onHeard);
       } catch (e) {
         const why = e instanceof Error ? e.message : String(e);
         once(`open:${language}`, `choosing by voice: the recogniser did not open for ${language} (${why}) — the child cannot answer an `
@@ -168,7 +179,7 @@ export function createVoiceChooser(d: VoiceChooserDeps): VoiceChooser {
       return result;
     } finally {
       askToStop = null;
-      d.resume?.();
+      if (!borrowed) d.resume?.();
     }
   };
 

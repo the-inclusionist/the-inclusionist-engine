@@ -4207,6 +4207,23 @@ device — serves any game and stays.
 
 The mixer's `guide` category and its row in the hearing panel stay (ADR-0151, ADR-0155): a game's guide plays in it.
 
+## EA · ADR-0256, one ear: `VoiceControl.borrow` — a choice by voice uses the 👄 already listening
+
+**Who is affected:** anyone who builds an object of the type `ui/voice-control.VoiceControl` (a test double of it): the type has a
+new REQUIRED method, `borrow(language, grammar, onHeard)`. A game that only receives the engine's 👄 changes nothing.
+
+📌 **Why:** measured on 2026-09-27 in a page booting in English with the 👄 stored on, then pressing action 1 three times: the
+Portuguese model opened with the English grammar, two microphones were open, and every choice paused the 👄 and opened two more
+recognisers — eight workers and eight microphones after three presses, ~40 MiB of model unpacked each time. The Dev's machine froze.
+Now a choice borrows the 👄 when it listens in the options' language (nothing opened), each command model is loaded once per
+language and kept (`platform/vosk-runtime.keepVoskModels`, new and additive), and a stored 👄 starts once the stored language has
+applied. The same page after the fix: one worker, one microphone, no «missing in vocabulary», and three presses open nothing.
+
+| was | now | what to do |
+|---|---|---|
+| `VoiceControl` = apply, refreshGrammar, languageChanged | + `borrow(language, grammar, onHeard)` → `{ stop() }` or `null` | a double adds `borrow: () => null` |
+| `platform/choose-by-voice.CommandRecogniserDeps` | + optional `load` (a keeper's loader) | nothing |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.

@@ -657,6 +657,79 @@ describe('the language changed', () => {
   });
 });
 
+/*
+ * ONE READING OF THE LANGUAGE, AND ONE EAR (2026-09-27, ADR-0256). 📏 Measured in a page booting in English with the 👄 stored on:
+ * the Portuguese model opened with the English grammar (15 «missing in vocabulary»), two microphones, and every choice by voice
+ * paused this ear and opened two more — the Dev's machine froze.
+ */
+describe('one reading of the language, and one ear lent to a choice', () => {
+  const benchWithLanguage = (first, over = {}) => {
+    let lang = first;
+    const b = bench({ language: () => lang, ...over });
+    return { ...b, setLanguage: (l) => { lang = l; } };
+  };
+
+  it('🔴 [Right] a language that changes while the model loads: the listening ends in the NEW one, model and grammar alike', async () => {
+    let b;
+    b = benchWithLanguage('pt-BR', {
+      loadRuntime: async (d) => { b.log.loads += 1; b.log.lastLoad = d; if (b.log.loads === 1) b.setLanguage('en-US'); return { ok: true, model: MODEL }; },
+    });
+    await b.control.apply(true);
+    expect(b.log.lastLoad.language, 'the listening stayed in the language the page booted in').toBe('en-US');
+    expect(b.log.lastListen.grammar, 'the model and the grammar came from two readings of the language')
+      .toEqual([...voiceGrammar('en-US', [])]);
+    expect(b.log.listens, 'a microphone was opened for the language that was left').toBe(1);
+  });
+
+  it('🔴 [Right] a choice borrows the ear: what is heard goes to it and nothing is obeyed; stop() gives the menu grammar back', async () => {
+    const b = bench();
+    await b.control.apply(true);
+    const heard = [];
+    const lent = b.control.borrow('pt-BR', ['feliz', 'triste'], (text, final) => heard.push([text, final]));
+    expect(lent, 'the 👄 listening in the options\' language did not lend its ear').not.toBeNull();
+    expect(b.log.grammars.at(-1), 'the options did not become the grammar').toEqual(['feliz', 'triste']);
+    b.hear('abaixo');
+    b.endOfSentence('feliz');
+    expect(heard).toEqual([['abaixo', false], ['feliz', true]]);
+    expect(b.log.pressed, 'a word heard during a choice was obeyed as a command').toEqual([]);
+    await lent.stop();
+    expect(b.log.grammars.at(-1), 'the menu\'s grammar did not come back').toEqual([...voiceGrammar('pt-BR', [])]);
+    b.hear('abaixo');
+    expect(b.log.pressed.length, 'after the choice the commands are not obeyed again').toBe(1);
+  });
+
+  it('🎯 [Zero] no ear to lend: turned off, listening in another language, or already lent', async () => {
+    const b = bench();
+    expect(b.control.borrow('pt-BR', ['feliz'], () => {}), 'lent while off').toBeNull();
+    await b.control.apply(true);
+    expect(b.control.borrow('en-US', ['happy'], () => {}), 'a Portuguese ear lent to English options').toBeNull();
+    const first = b.control.borrow('pt', ['feliz'], () => {});
+    expect(first, '`pt` and `pt-BR` are the same model').not.toBeNull();
+    expect(b.control.borrow('pt-BR', ['triste'], () => {}), 'lent twice at once').toBeNull();
+  });
+
+  it('🔴 [Right] a menu refreshed between a language change and the restart keeps the MODEL\'s language', async () => {
+    // the root's `i18n:change` listeners run in order: the menu's grammar may be rebuilt before `languageChanged` restarts
+    const b = benchWithLanguage('pt-BR');
+    await b.control.apply(true);
+    b.setLanguage('en-US');
+    b.control.refreshGrammar();
+    const given = b.log.grammars.at(-1) ?? b.log.lastListen.grammar;
+    expect(given, 'the Portuguese model was fed English words').toEqual([...voiceGrammar('pt-BR', [])]);
+  });
+
+  it('🔴 [Right] a menu that changes during the choice does not take the options\' grammar away', async () => {
+    let names = [];
+    const b = bench({ menuWords: () => names });
+    await b.control.apply(true);
+    b.control.borrow('pt-BR', ['feliz'], () => {});
+    const before = b.log.grammars.length;
+    names = ['Voltar ao jogo'];
+    b.control.refreshGrammar();
+    expect(b.log.grammars.length, 'the menu replaced the options while the child was answering').toBe(before);
+  });
+});
+
 // ============================== MUTATIONS CHECKED (2026-09-25, ADR-0194 §2–§3) ==============================
 //   W5  a name moves the cursor and nothing confirms it                     🔴 a whole name … presses the menu's confirm; «voltar» waits
 //   W7  the end of the utterance is not read (`onFinal` ignores its text)    🔴 the end of a sentence resets; «voltar» waits
@@ -687,3 +760,6 @@ describe('the language changed', () => {
 //   V6 under one button a name presses another position than confirm         🔴 a name heard points at NOTHING; asked per word
 //   V8 with one button off a name is never pointed at                        🔴 a whole name …; «voltar» waits; a name whose item is
 //                                                                              gone; asked per word
+// One reading of the language, one ear (2026-09-27, `scratchpad/mutate-one-ear.mjs`), 7 of 7 red: the grammar read again after the
+// load · no restart when the language changed mid-load · a lent ear still obeying · the menu grammar never given back · lent to
+// another language · lent twice · the menu replacing the options

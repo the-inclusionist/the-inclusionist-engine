@@ -1816,6 +1816,7 @@
     "interface VoiceChooserDeps": {
       "members": {
         "after": "readonly after: (fn: () => void, ms: number) => unknown",
+        "borrow?": "readonly borrow: (language: string, grammar: readonly string[], onHeard: (text: string, final: boolean) => void) => OpenedChoice | null",
         "cancel": "readonly cancel: (handle: unknown) => void",
         "language": "readonly language: () => string",
         "open": "readonly open: (language: string, grammar: readonly string[], onHeard: (text: string, final: boolean) => void) => Promise<OpenedChoice>",
@@ -1830,7 +1831,7 @@
         "stop": "stop(): void"
       }
     },
-    "type CommandRecogniserDeps": "Omit<VoskDeps, 'language'> & Pick<VoiceListenerDeps, 'getUserMedia' | 'createContext'>"
+    "type CommandRecogniserDeps": "Omit<VoskDeps, 'language'> & Pick<VoiceListenerDeps, 'getUserMedia' | 'createContext'> & { readonly load?: (d: VoskDeps) => Promise<VoskLoad>; }"
   },
   "platform/flash-sampler.ts": {
     "interface FlashMeasurement": {
@@ -4497,6 +4498,7 @@
     "interface VoiceControl": {
       "extends": "SwitchableControl",
       "members": {
+        "borrow": "borrow(language: string, grammar: readonly string[], onHeard: (text: string, final: boolean) => void): { stop(): Promise<void>; } | null",
         "languageChanged": "languageChanged(): Promise<void>",
         "refreshGrammar": "refreshGrammar(): void"
       }
