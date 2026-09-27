@@ -1,6 +1,11 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0210
+      what: >-
+        the list left out. ADR-0210 §3 put index down and index right into the default hand map, two of the six this
+        record had left out; the other fourteen candidates stand.
   confirmed-by:
     - tests/hand-map.node.test.js
     - tests/hand-control.browser.test.js

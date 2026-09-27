@@ -5,6 +5,10 @@ metadata:
     - tests/the-pause-items-and-their-order.node.test.js
     - tests/game-options.browser.test.js
   superseded-in-part:
+    - by: ADR-0161
+      what: >-
+        gate 2's ABSENCE. A game with nothing of its own no longer loses the «Opções do jogo» door: since ADR-0161 the
+        pause card shows every item, and an item with no action is locked with its reason, never hidden.
     - by: ADR-0151
       what: >-
         the §3 name. «Configurações» becomes «Configurações de inclusão»; «Opções do jogo» stays, and the split

@@ -10,7 +10,7 @@ metadata:
              the submenu in order, an item without an action locked with its reason said (`engine:f13c8e4`, cursor on item 1
              `ce38ed3`). The Visual and Empathy panels this record kept locked were built the same day (`engine:f16bb63`,
              `b6037e4`) and are live."
-  supersedes-in-part: [ADR-0106]
+  supersedes-in-part: [ADR-0106, ADR-0146]
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
