@@ -29,6 +29,14 @@ metadata:
         only through the ☝️'s refusal, and a quiz answered by voice already pressed once per word — option B's defect
         describes ADR-0211 §2's press-level latch, which was never built. The Breaking-Changes note DU names what a
         consumer migrates. The confirmation below replaces the debt it declared.
+    - date: 2026-09-27
+      what: >-
+        The erratum above saying keyboard, pad and touch are not resolved at `pressedBy`, and the confirmation saying a pad
+        press does not re-resolve the latch, described a defect, not this record's boundary: ADR-0109 rule 3 asks that every device's press switch the device in use and the
+        latch read. Since `engine:f015f1ad` the root's `pressedBy` resolves every transport; what this record decides is
+        unchanged — the game's `holdsKeys()` is the default on the four only, and the pad's case in
+        `tests/a-quiz-word-presses-once.browser.test.js` now asserts that the game's answer does not reach the pad, either way.
+        See ADR-0109's erratum of the same day.
   supersedes-in-part: [ADR-0109, ADR-0211]
   date: 2026-09-27
   decision-makers: [Dev]

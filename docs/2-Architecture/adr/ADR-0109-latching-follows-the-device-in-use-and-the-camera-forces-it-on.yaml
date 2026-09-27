@@ -7,6 +7,7 @@ metadata:
     - tests/latch-scope.node.test.js
     - tests/latch-sync.node.test.js
     - tests/latch-edge.node.test.js
+    - tests/every-transport-feeds-the-device-in-use.browser.test.js
     - app/js/input/transport-in-use.ts
   errata:
     - date: 2026-09-09
@@ -22,6 +23,21 @@ metadata:
         it is not this repository's: the cartridge's `onTouchControlsShown` patch comes out in the major, in
         `game-platformer`. Errata and not supersession: nothing was decided differently — a record went on
         saying its work was undone after it was done.
+    - date: 2026-09-27
+      what: >-
+        RULE 3 DID NOT HOLD IN THE ROOT for the keyboard, touch and the pad, and now holds (`engine:f015f1ad`).
+        The wiring the erratum above describes lives in the input modules; the composition root did not carry
+        it for those three. The virtual controller's `pressedBy` hears every press that names its transport, and the root
+        resolved only eyes, face, gestures and speech there (ADR-0249): a real key reached the game and never
+        the automaton, so after a spoken word the device in use stayed `fala`, the voice's latch carried into
+        keyboard play and the ☝️ wrote the keyboard's choice under `fala`; touch and the pad moved the automaton
+        through their raw `playerEdge` but never resolved their latch. Reproduced through the real root before
+        the fix. Now every transport's press records its edge and resolves that device's latch at that one door —
+        its stored choice, else its default (the game's `holdsKeys()` on the four, ADR-0249; the factory's on
+        keyboard, pad and touch). `tests/every-transport-feeds-the-device-in-use.browser.test.js` joins the
+        confirmation: voice then a real key, touch then the keyboard, the pad then the voice, and a transport the
+        child did not touch leaving the latch alone. Errata and not supersession: rule 3 was decided; the root
+        did not carry it out.
   supersedes-in-part: [ADR-0104]
   superseded-in-part:
     - by: ADR-0249
