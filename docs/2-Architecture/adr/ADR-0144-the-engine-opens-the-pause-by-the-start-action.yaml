@@ -45,6 +45,16 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        BUILT: THE DEFAULT POSITIONS. Where the game's preset names no position, the motor panel's «Mapear controle» row shows
+        (it was hidden: «nothing named, nothing to map») and `input/pad-wizard` asks the Dev's fourteen in the Dev's order — up,
+        down, left, right, action1–4, leftShoulder, leftTrigger, rightShoulder, rightTrigger, START, SELECT — each by the engine's
+        name for its button (`input/touch.buttonName`, ADR-0165: the directions' words, «1»…«4», «L1», «L2», «R1», «R2»; START and
+        SELECT keep their own questions), the progress line in the same words. No key was missing: every name already existed. A
+        game that names any position keeps its steps, then START and SELECT. The same wizard serves the DirectInput pad that opens
+        it by itself. Gated by `tests/mapping-a-pad-follows-the-hand.node.test.js` and `tests/map-the-gamepad.browser.test.js`,
+        whose «[Zero]» case pinned the hidden row and now pins the defaults; six mutations, all red.
+    - date: 2026-09-26
+      what: >-
         BUILT: THE PAUSE ANSWERS THE SCREEN'S FIRST PLAYER. A `createGame` root draws one screen — one region, one card
         (`#vp-pause-0`), one quick bar — and every seat it seats plays there, so `boot/create-game.leadsTheScreen` names seat 0.
         START from another seat does nothing by the key of its scheme, by its pad and through the virtual controller

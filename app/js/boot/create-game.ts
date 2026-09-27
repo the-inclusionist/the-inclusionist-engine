@@ -3677,7 +3677,8 @@ export function createGame(o: CreateGameOptions): Engine {
       controlStrong.textContent = t('motora.controle');
       controlButton.textContent = t('motora.abrir');
       controlButton.setAttribute('aria-label', t('motora.controle'));
-      controlMappingRow.hidden = actionsToMap().length === 0; // nothing named, nothing to map
+      // ⚠️ SHOWN FOR EVERY GAME: one that names no position gets the wizard's fourteen default positions (ADR-0144, erratum of
+      // 2026-09-26), so there is always something to map.
     };
     reflectControlRow();
 

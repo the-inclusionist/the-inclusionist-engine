@@ -4,7 +4,8 @@
 // The Dev listed «mapear controle» in the motor panel (ADR-0151 §2). The wizard lived inside `initGamepad`, which a cartridge
 // starts — two of seven games — and drew the platformer's sprites as its demonstration; `createGame` could not offer it
 // without describing that game. Here is only what every game shares: the steps, one per position the GAME names and then the
-// system's START and SELECT, always, in the engine's words (ADR-0144, erratum of 2026-09-26), reading a
+// system's START and SELECT, always, in the engine's words (ADR-0144, erratum of 2026-09-26) — or, for a game that names no
+// position, the fourteen default positions in the engine's words (ADR-0144, the Dev's answer of the same day) —, reading a
 // button or an axis against the pad at rest, and the stored map per pad id. The demonstration and what happens around closing
 // (the play phase, the edges of the held button) are the host's, by hooks.
 //
@@ -13,6 +14,7 @@
 import type { Translate } from '../core/i18n.js';
 import { SYSTEM } from '../core/actions.js';
 import { migrateControlMap } from './vocabulary-migration.js';
+import { buttonName } from './touch.js';
 import type { Store } from '../platform/storage.js';
 
 // ⚠️ THE SHAPES ARE WRITTEN HERE, not imported from `input/gamepad`: gamepad imports this module, and a type import back would
@@ -69,6 +71,16 @@ const SYSTEM_WORDS: Readonly<Record<(typeof SYSTEM)[number], { readonly question
 };
 const systemWords = (action: string): { readonly question: string; readonly name: string } | null =>
   ((SYSTEM as readonly string[]).includes(action) ? SYSTEM_WORDS[action as (typeof SYSTEM)[number]] : null);
+
+/**
+ * 🔴 THE DEFAULT POSITIONS (ADR-0144, erratum of 2026-09-26 — the Dev: «as posições padrões são up, down, left, right, 1, 2, 3, 4,
+ * L1, L2, R1, R2, START e SELECT»). A game that names no position still gets a pad the child can map: these fourteen, in this
+ * order, each asked by its button's name (`input/touch.buttonName`, ADR-0165 — the names printed on the virtual pad).
+ */
+const DEFAULT_ORDER: readonly string[] = [
+  'up', 'down', 'left', 'right', 'action1', 'action2', 'action3', 'action4',
+  'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select',
+];
 
 /** What this module reads and writes the maps through: the page's store, built by the root (ADR-0232, issue #207). */
 export type PadMapStore = Pick<Store, 'getJSON' | 'setJSON'>;
@@ -150,15 +162,24 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   const { t } = ctx;
   let padWiz: WizState | null = null;
 
-  /** Is this step asked? The game's positions when it names them; the system's two always (`SYSTEM_WORDS`). */
-  const asked = (action: string): boolean => systemWords(action) !== null || !!ctx.actionLabel(action);
   /**
-   * A position's word, the one its question said: the engine's for START and SELECT, the game's for the rest. ⚠️ A position
-   * the game no longer names (a cartridge mounted mid-wizard) has no word, and is left out rather than shown by its id.
+   * THIS WIZARD'S STEPS, decided when it opens: the game's positions (`PADWIZ_ORDER`, those it names) and then START and SELECT;
+   * or, where the game names none, the fourteen defaults (`DEFAULT_ORDER`), all asked, in the engine's words.
+   */
+  let defaults = false;
+  let order: readonly string[] = PADWIZ_ORDER;
+  const gameNamesAnyPosition = (): boolean => PADWIZ_ORDER.some((action) => systemWords(action) === null && !!ctx.actionLabel(action));
+  /** Is this step asked? Every default; else the game's positions when it names them; the system's two always (`SYSTEM_WORDS`). */
+  const asked = (action: string): boolean => defaults || systemWords(action) !== null || !!ctx.actionLabel(action);
+  /**
+   * A position's word, the one its question said: the engine's for START and SELECT and for every default, the game's for the
+   * rest. ⚠️ A position the game no longer names (a cartridge mounted mid-wizard) has no word, and is left out rather than shown
+   * by its id.
    */
   const wordFor = (action: string): string | null => {
     const system = systemWords(action);
-    return system ? t(system.name) : ctx.actionLabel(action);
+    if (system) return t(system.name);
+    return defaults ? buttonName(ctx.t, action) : ctx.actionLabel(action);
   };
   /**
    * Walks to the next step asked, or closes if there is none left. ONE function: after the last step the wizard does not stay
@@ -166,17 +187,17 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
    */
   function advance(): void {
     if (!padWiz) return;
-    while (padWiz.step < PADWIZ_ORDER.length && !asked(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
-    if (padWiz.step >= PADWIZ_ORDER.length) closeWizard(true);
+    while (padWiz.step < order.length && !asked(order[padWiz.step]!)) padWiz.step++;
+    if (padWiz.step >= order.length) closeWizard(true);
   }
   function ask(): void {
     if (!padWiz) return;
     advance();
     if (!padWiz) return; // it closed while advancing
-    const action = PADWIZ_ORDER[padWiz.step]!;
-    const n = padWiz.step + 1, total = PADWIZ_ORDER.length;
+    const action = order[padWiz.step]!;
+    const n = padWiz.step + 1, total = order.length;
     const system = systemWords(action);
-    ctx.say(t(system?.question ?? 'pad.wiz.step', { n, total, acao: system ? '' : ctx.actionLabel(action)! }));
+    ctx.say(t(system?.question ?? 'pad.wiz.step', { n, total, acao: system ? '' : wordFor(action)! }));
     ctx.onStep?.(action);
     // What is mapped, in the words it was asked with (ADR-0074) — the map's keys are position ids. The empty list's dash stays
     // raw on purpose: it is punctuation, not language.
@@ -185,13 +206,15 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   }
   function wire(bd: PadBinding): void {
     if (!padWiz) return;
-    padWiz.map[PADWIZ_ORDER[padWiz.step]!] = bd;
+    padWiz.map[order[padWiz.step]!] = bd;
     padWiz.step++;
     padWiz.release = true; // requires letting go before the next step
     advance();
   }
 
   function begin(gi: number, id: string, phrase: string): void {
+    defaults = !gameNamesAnyPosition();
+    order = defaults ? DEFAULT_ORDER : PADWIZ_ORDER;
     padWiz = { gi, id, step: -1, base: null, map: {}, release: false, baseWait: gi >= 0, axTrack: null, timer: null };
     ctx.say(phrase);
     ctx.onStep?.(null);

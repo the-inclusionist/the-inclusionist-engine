@@ -512,14 +512,15 @@ export interface TouchMarkupSpec {
 
 /**
  * A BUTTON'S NAME, from the position it fires (ADR-0165): the same in every game — 1 to 4, L1/L2/R1/R2, SELECT, START,
- * and the four directions by their spoken name. The cartridge's word is the FUNCTION, and it never reaches the face.
+ * and the four directions by their spoken name. The cartridge's word is the FUNCTION, and it never reaches the face. The pad
+ * wizard asks by these names where the game names no position (`input/pad-wizard`, ADR-0144 erratum of 2026-09-26).
  */
 const SLOT_NAME: Readonly<Record<string, string>> = {
   action1: '1', action2: '2', action3: '3', action4: '4',
   leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
   select: 'SELECT', start: 'START',
 };
-function buttonName(t: Translate, slotAction: string): string | null {
+export function buttonName(t: Translate, slotAction: string): string | null {
   if (SLOT_NAME[slotAction]) return SLOT_NAME[slotAction]!;
   return slotAction === 'up' || slotAction === 'down' || slotAction === 'left' || slotAction === 'right' ? t(`touch.nome.${slotAction}`) : null;
 }

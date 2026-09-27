@@ -219,14 +219,60 @@ describe('START and SELECT: always asked, last, in the engine\'s words', () => {
     expect(SELECT_SENTENCE, 'the engine\'s dictionary has no SELECT question').toMatch(/SELECT/);
   });
 
-  it('🎯 [Zero] a host that names no position still maps START and SELECT — the pause is not the game\'s to decline', () => {
-    const pad = mkPad('p', 0);
-    const { ctx, steps } = mkCtx([pad], []);
+});
+
+/*
+ * THE DEFAULT POSITIONS (ADR-0144, erratum of 2026-09-26 — the Dev: «as posições padrões são up, down, left, right, 1, 2, 3, 4, L1,
+ * L2, R1, R2, START e SELECT»). A game that names no position used to be asked START and SELECT only: a pad mapped for it could
+ * pause and nothing else. Now the wizard asks the fourteen, in that order, each by the engine's name for its button.
+ */
+describe('a game that names no position: the fourteen defaults, in the engine\'s words', () => {
+  function answer(wiz, pad, b) {
+    pad.buttons[b].pressed = true; wiz.tick();
+    pad.buttons[b].pressed = false; wiz.tick();
+  }
+  /** The Dev's order, written out here and not read from the module: the list IS the decision. */
+  const DEFAULTS = ['up', 'down', 'left', 'right', 'action1', 'action2', 'action3', 'action4',
+    'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select'];
+  /** The Dev's names: the directions in the engine's words, «1»…«4», «L1», «L2», «R1», «R2», START and SELECT. */
+  const NAMES = [translate('touch.nome.up'), translate('touch.nome.down'), translate('touch.nome.left'), translate('touch.nome.right'),
+    '1', '2', '3', '4', 'L1', 'L2', 'R1', 'R2', translate('touch.start'), translate('touch.select')];
+  const t = translate; // named `t`: its `{param}` keys are the dictionary's, not members (`scripts/apply-member-rename.mjs`)
+  const question = (i) => (DEFAULTS[i] === 'start' ? t('pad.wiz.stepStart', { n: i + 1, total: 14 })
+    : DEFAULTS[i] === 'select' ? t('pad.wiz.stepSelect', { n: i + 1, total: 14 })
+      : t('pad.wiz.step', { n: i + 1, total: 14, acao: NAMES[i] }));
+
+  it('🔴 [Right] it asks the fourteen, in the Dev\'s order and the engine\'s words, and stores them all', () => {
+    const pad = mkPad('p', 0, 16);
+    const { ctx, steps, said, closed } = mkCtx([pad], []);
     const wiz = createPadWizard(ctx);
     upToTheFirstQuestion(wiz, pad);
-    answer(wiz, pad, 4); answer(wiz, pad, 5);
-    expect(steps.filter(Boolean)).toEqual(['start', 'select']);
-    expect(ctx.maps.padMap('p')).toEqual({ start: { b: 4 }, select: { b: 5 } });
+    for (let i = 0; i < 14; i++) {
+      expect(said.at(-1), `question ${i + 1} is not the Dev's ${DEFAULTS[i]} in the engine's words`).toBe(question(i));
+      answer(wiz, pad, i + 1);
+    }
+    expect(steps.filter(Boolean), 'the order of the questions').toEqual(DEFAULTS);
+    expect(closed, 'the wizard did not close and save after SELECT').toEqual([[0, true]]);
+    expect(ctx.maps.padMap('p'), 'the stored map').toEqual(Object.fromEntries(DEFAULTS.map((a, i) => [a, { b: i + 1 }])));
+  });
+
+  it('🔴 [Right] the progress line names what is mapped in the same words', () => {
+    const pad = mkPad('p', 0, 16);
+    const { ctx, progress } = mkCtx([pad], []);
+    const wiz = createPadWizard(ctx);
+    upToTheFirstQuestion(wiz, pad);
+    for (let i = 0; i < 13; i++) answer(wiz, pad, i + 1); // all but SELECT: the line is written when SELECT is asked
+    expect(progress.at(-1)).toBe(t('pad.wiz.mapped', { lista: NAMES.slice(0, 13).join(' · ') }));
+  });
+
+  it('🎯 [CrossCheck] a game that names ONE position keeps its own steps: that one, then START and SELECT', () => {
+    const pad = mkPad('p', 0);
+    const { ctx, steps } = mkCtx([pad], ['action3']);
+    const wiz = createPadWizard(ctx);
+    upToTheFirstQuestion(wiz, pad);
+    answer(wiz, pad, 4); answer(wiz, pad, 5); answer(wiz, pad, 6);
+    expect(steps.filter(Boolean)).toEqual(['action3', 'start', 'select']);
+    expect(ctx.maps.padMap('p')).toEqual({ action3: { b: 4 }, start: { b: 5 }, select: { b: 6 } });
   });
 });
 
@@ -311,6 +357,11 @@ describe('the stored maps, one cache per root', () => {
 // and (2026-09-26, `scratchpad/wizard-words-single/mutate.mjs`, restored by SHA-256):
 //   · the progress line listing the map's keys       → «after up, down, left and START»
 //   · START named by its id · the game's positions named by their ids → the same case, each
+// (the «[Zero]» named above — START and SELECT alone for a host that names nothing — was replaced by the defaults below.)
+// and (2026-09-26, `scratchpad/dev-answers/mutate.mjs`, restored by SHA-256), the fourteen defaults:
+//   · never the defaults · the defaults in `PADWIZ_ORDER` · the defaults named by the host's labeller → the two default cases, each
+//   · always the defaults                            → the four cases of a game that names positions
+//   · the progress line by the map's keys            → the defaults' progress line and «after up, down, left and START»
 //
 // 🟡 AND THREE SURVIVORS ARE DECLARED, because two of them are the same fact: **the baseline's button array is all
 // false by construction.** It is captured in the one frame where `!gp.buttons.some(pressed)` holds, so

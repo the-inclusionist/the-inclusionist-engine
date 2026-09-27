@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2348,
+      "codeLines": 2347,
       "decisionNodes": 305,
       "maxDepth": 4,
       "fanOut": 98,
@@ -678,10 +678,10 @@
       "fanIn": 1
     },
     "input/pad-wizard.ts": {
-      "codeLines": 187,
-      "decisionNodes": 34,
+      "codeLines": 198,
+      "decisionNodes": 36,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
@@ -755,7 +755,7 @@
       "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "input/transport-in-use.ts": {
       "codeLines": 32,

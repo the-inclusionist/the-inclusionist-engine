@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // «MAPEAR CONTROLE» IN THE MOTOR PANEL (ADR-0151 §2; issue #182): the engine's own gamepad mapping wizard, asking the
-// positions THIS game names, in its words, then START and SELECT in the engine's (ADR-0144 erratum of 2026-09-26), and storing
-// the map the game's pad reading uses.
+// positions THIS game names, in its words, then START and SELECT in the engine's (ADR-0144 erratum of 2026-09-26) — or, for a
+// game that names none, the fourteen default positions in the engine's words — and storing the map the game's pad reading uses.
 //
 // 📌 A fake pad behind `navigator.getGamepads`: the wizard reads a button pressed against the pad at rest.
 //
@@ -152,10 +152,40 @@ describe('«Mapear controle»', () => {
     expect(localStorage.getItem('incl_padmap_' + pad.id), 'an Escaped wizard stored a map').toBeNull();
   });
 
-  it('🎯 [Zero] a game that names no position has nothing to map: the row is not offered', () => {
+  /*
+   * 🔴 THE DEFAULT POSITIONS (ADR-0144, erratum of 2026-09-26 — the Dev: «Sim, as posições padrões são up, down, left, right, 1, 2,
+   * 3, 4, L1, L2, R1, R2, START e SELECT»). This case said the opposite — «nothing to map: the row is not offered» — and the row
+   * was hidden for a game that names no position.
+   */
+  it('🔴 [Zero] a game that names no position is offered the row, and the wizard asks the fourteen defaults in the engine\'s words', async () => {
+    localStorage.removeItem('incl_padmap_' + pad.id);
     motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
     abrirMotora();
-    expect(document.querySelector('#motora #opt-controle')?.closest('.ctrl-row')?.hidden, 'a row with nothing to map').toBe(true);
+    const botao = document.querySelector('#motora #opt-controle');
+    expect(botao?.closest('.ctrl-row')?.hidden, 'the row is not offered to a game that names no position').toBe(false);
+    botao.click();
+    pad.buttons[3].pressed = true; // any button: this pad is the one
+    await esperar();
+    soltarTudo();
+    await esperar();
+    const prompt = () => document.querySelector('#padwiz-prompt').textContent;
+    const aperta = async (i) => { pad.buttons[i].pressed = true; await esperar(); soltarTudo(); await esperar(); };
+    const NOMES = [t('touch.nome.up'), t('touch.nome.down'), t('touch.nome.left'), t('touch.nome.right'), '1', '2', '3', '4',
+      'L1', 'L2', 'R1', 'R2'];
+    for (let i = 0; i < NOMES.length; i++) {
+      expect(prompt(), `question ${i + 1} is not the default position «${NOMES[i]}»`).toBe(t('pad.wiz.step', { n: i + 1, total: 14, acao: NOMES[i] }));
+      await aperta(i % 12);
+    }
+    expect(prompt(), 'START was not the 13th question').toBe(t('pad.wiz.stepStart', { n: 13, total: 14 }));
+    await aperta(0);
+    expect(prompt(), 'SELECT was not the 14th question').toBe(t('pad.wiz.stepSelect', { n: 14, total: 14 }));
+    expect(document.querySelector('#padwiz-progress').textContent, 'the progress line does not use the same words')
+      .toBe(t('pad.wiz.mapped', { lista: [...NOMES, t('touch.start')].join(' · ') }));
+    await aperta(1);
+    const guardado = JSON.parse(localStorage.getItem('incl_padmap_' + pad.id) ?? 'null');
+    expect(Object.keys(guardado ?? {}), 'the fourteen were not stored').toEqual(['up', 'down', 'left', 'right', 'action1', 'action2',
+      'action3', 'action4', 'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select']);
+    localStorage.removeItem('incl_padmap_' + pad.id);
   });
 });
 
@@ -167,3 +197,6 @@ describe('«Mapear controle»', () => {
 //      (2026-09-26, `scratchpad/wizard-start-select/mutate.mjs`, restored by SHA-256)                    🔴 both mapping cases, each
 //   K12 the progress line listing the map's keys · K13 START by its id · K14 the game's positions by their ids
 //      (2026-09-26, `scratchpad/wizard-words-single/mutate.mjs`, restored by SHA-256)                   🔴 the mapping case, each
+//   (K6 pinned the old rule, «nothing named, no row»; ADR-0144's erratum of 2026-09-26 turned it into the [Zero] case above)
+//   K15 the row hidden again for a game that names nothing · K16 never the defaults
+//      (2026-09-26, `scratchpad/dev-answers/mutate.mjs`, restored by SHA-256)                           🔴 the [Zero] case, each

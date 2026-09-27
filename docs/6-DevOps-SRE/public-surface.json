@@ -635,6 +635,7 @@
     "TouchMarkupSpec",
     "TouchSlotChoice",
     "TouchStore",
+    "buttonName",
     "closestPersona",
     "computePadPhysicalPx",
     "initTouch",
