@@ -1,6 +1,32 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/what-fonts-the-package-carries.node.test.js
+    - tests/font-library.node.test.js
+    - tests/a-cartridge-declares-a-library-font.browser.test.js
+    - tests/heavy-into-the-delivery.node.test.js
+    - tests/font-licences.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        CONFIRMED (`engine:0ac4334b`, `engine:a336d88d`, `engine:9f25bdde`). What the implementation had to choose: (1) the engine's own faces are
+        the typography button's cycle over EVERY hand a tag can pick — Andika, Atkinson Hyperlegible, Lexend and fifteen
+        Playwrite hands — and the mathematics face, Atkinson Hyperlegible Mono: 19 families in 29 files, `ui/fonts`
+        `ENGINE_FAMILIES`; the engine's CSS and TypeScript draw with no other family (measured with `git grep`). (2) The
+        other 194 families are the library, `the-inclusionist-lfs/fonts/<family>/` — ONE top-level folder of the mirror, so the
+        upload script's per-folder `SHA256SUMS` check covers it (`fonts/SHA256SUMS` lists every file) — each folder with its
+        fonts, its licence text, `NOTICE.txt` and `SHA256SUMS`, written by `scripts/licences/fonts.mjs --library`. (3) The
+        catalogue is `app/js/platform/font-library.json`, a chunk loaded only when a cartridge declares a family, and not a
+        TypeScript module: 194 families of sha256s are data, not code, and not what every page should import. (4) The
+        declaration is `CreateGameOptions.uses.fonts`, beside `reading` and `neuralVoice`; the root writes the rules into a
+        `<style>` of its own and keeps the files FIRST through the heavy download (`HeavyOptions.also`), and `problems` says a
+        family the library does not hold, or one whose file was not kept, once per family with the fix. (5) The delivery flag is
+        `inclusionist-heavy --fonts <family,…|all|none>`. (6) The typography kit stays — ADR-0151 mounts no panel, and its writer
+        is the cycle's and the boot's — with a library row disabled until its family is declared, the detector being «the game
+        declared it» because `document.fonts.check` answers true for a family no rule declares; a stored library face the game
+        did not declare is drawn as the default and stays stored. (7) Merriweather's catalogue status is `removida`. The
+        confirmation below replaces the debt it declared.
   supersedes-in-part: [ADR-0150, ADR-0176, ADR-0254]
   date: 2026-09-27
   decision-makers: [Dev]
@@ -60,10 +86,17 @@ decision-outcome:
       - "The mirror (Cloudflare) receives the fonts' folders — the Dev's upload, as for every heavy folder"
 
   confirmation: |
-    Debt until the gate lands (to be named with the implementation): the engine's package and precache hold only its
-    own faces; a cartridge declaring a library family gets it from `heavy/`, verified, with its `@font-face`; one not
-    delivered is reported; every library folder in `the-inclusionist-lfs` carries its licence; the reserved-name
-    families there are the originals.
+    ✅ The gates in confirmed-by. `what-fonts-the-package-carries` holds `fonts.css` to EXACTLY the engine's faces, every hand
+    the cycle can pick for any tag packaged, one home per family, and no face offered without a way to get it (packaged, in the
+    library, or `off` with a remedy). `font-library` holds the catalogue's shape, the rules at the delivery's `heavy/` with the
+    subsets' ranges, and the files kept by the heavy download — checked by sha256, before the catalogue's files — with an
+    undelivered or tampered face said once with the fix; `a-cartridge-declares-a-library-font` holds the same in a real
+    document booted by `createGame`. `heavy-into-the-delivery` holds `--fonts`: each face written verified against the engine's
+    catalogue, a tampered one refused and its family not delivered, an unknown family refused by name. `font-licences` holds a
+    licence with a text for every library family and — where the mirror is on the machine (`INCLUSIONIST_LFS`, else beside the
+    repository; elsewhere those cases skip) — every folder's licence, notice and `SHA256SUMS` as the generator writes them, and
+    the library-wide sums. The build's `dist/vendor/fonts` carries the engine's 29 files, and the precache fell from 361 entries
+    (11 312.9 KiB) to 49 (1 923.4 KiB).
 
 more-information: |
   Games are not edited from the engine's session: a cartridge that uses a library face declares it when it moves to the

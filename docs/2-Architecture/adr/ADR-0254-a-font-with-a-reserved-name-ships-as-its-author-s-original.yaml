@@ -1,6 +1,20 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/font-licences.node.test.js
+    - tests/what-fonts-the-package-carries.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        CONFIRMED (`engine:0ac4334b`, `engine:a336d88d`, `engine:9f25bdde`), in the home ADR-0255 gave the files: the 21 families and Ubuntu are in
+        `the-inclusionist-lfs/fonts/`, not in the package. Twenty of them and Ubuntu are the `google/fonts` originals compressed
+        to WOFF2 with no table transform (23 files: Lato and Ubuntu in two weights, the others one file, the variable ones
+        whole — Lora 400–700, Playfair Display 400–900, Quicksand 300–700, Source Sans 3 and Source Serif 4 200–900), each folder
+        with the author's `OFL.txt` or `UFL.txt` beside the licence text every library folder carries; OpenDyslexic was already
+        its author's `compiled/OpenDyslexic-Regular.woff2` and moved as it was. The two `head` fields WOFF2 itself writes and
+        the dropped `DSIG` are the only differences from the originals, as the decision says. Merriweather's catalogue status is
+        `removida`. The confirmation below replaces the debt it declared.
   superseded-in-part:
     - by: ADR-0255
       what: >-
@@ -62,9 +76,13 @@ decision-outcome:
       - "Merriweather is no longer offered"
 
   confirmation: |
-    Debt until the gate lands (to be named with the implementation): each of these families' files, decompressed, has
-    every table byte-identical to its author's original (WOFF2 written without table transforms); Merriweather is not packaged; the notices and licences still cover every
-    family.
+    ✅ The gates in confirmed-by. `font-licences` holds every reserved-name family of the library to its original — a source
+    named, no unicode-range — and, where the mirror is on the machine, decompresses each of its files and compares every table,
+    written without a transform, to the sha256 of the same table of the author's original (`tests/fixtures/reserved-name-
+    originals.json`, measured from the originals; `head` with the checksum WOFF2 recomputes zeroed, `DSIG` out), and
+    OpenDyslexic's whole file to its author's; it also holds the notices and licence texts of every family, packaged or in
+    the library. `what-fonts-the-package-carries` holds Merriweather nowhere — package, library, kit, dictionaries — and the
+    typographic catalogue's `removida` with its reason.
 
 more-information: |
   Downloads — the originals from `github.com/google/fonts` and the `fonttools`/`brotli` tools — authorised by the Dev on
