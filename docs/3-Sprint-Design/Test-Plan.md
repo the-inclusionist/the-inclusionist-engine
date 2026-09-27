@@ -133,6 +133,9 @@ friction points. Covers **gate 4 of ADR-001**.
 
 - [ ] One complete game without looking, on NVDA (Windows).
 - [ ] One complete game without looking, on VoiceOver (iOS).
+- [ ] A menu row with more than five options is a dropdown (ADR-0130 rule 3): on each reader, it announces its name, its
+  value and the list, and a choice is heard — native is not accessible by itself (moved from issue #134, whose code gates
+  all landed).
 - [ ] Each friction point recorded with the SCREEN, the ACTION and what the reader said — all three, or it cannot be fixed.
 - [ ] The frictions that need code become issues, one per defect.
 
