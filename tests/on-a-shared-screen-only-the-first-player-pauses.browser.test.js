@@ -36,17 +36,20 @@ const padFalso = (index, pressed) => ({
   buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: pressed.includes(i) })),
   axes: [0, 0, 0, 0],
 });
-const ESQUEMA = (up, down, a2, start, select) => ({ up: [up], down: [down], left: null, right: null, action1: null, action2: [a2],
-  action3: null, action4: null, leftShoulder: null, leftTrigger: null, rightShoulder: null, rightTrigger: null,
-  start: [start], select: [select] });
+/**
+ * THE KEYS ARE THE ENGINE'S TWO-PLAYER DEFAULTS (`input/default-bindings` `KEYBOARD_DUO`), because the root seats them: it writes
+ * each player's `ctrl` from its own tables at boot (`assignControls`), so a scheme handed in `players` is not what the keys mean.
+ * 📏 This file once handed its own and pressed `Numpad0` as seat 1's START and `NumpadDecimal` as its SELECT: they are seat 1's
+ * SELECT and nobody's key, so seat 1's START key was never pressed — the keyboard case stayed green with START's question removed.
+ * `beforeEach` now checks the keys against the seats.
+ */
+const TECLAS = [{ start: 'KeyH', select: 'KeyF' }, { start: 'Numpad1', select: 'Numpad0' }];
+const [T0, T1] = TECLAS;
 
 let raiz; let motor; let getGamepadsReal;
 /** What each pad has pressed this frame, by the pad's index. */
 const botoes = [[], []];
-const jogadores = [
-  { ctrl: ESQUEMA('KeyW', 'KeyS', 'KeyJ', 'KeyH', 'KeyF') },
-  { ctrl: ESQUEMA('ArrowUp', 'ArrowDown', 'Numpad1', 'Numpad0', 'NumpadDecimal') },
-];
+const jogadores = [{ ctrl: 0 }, { ctrl: 0 }];
 /** The phases the GAME was asked for. */
 const fases = [];
 /** Two frames: the loop schedules the next one at the end of its own, so one alone does not guarantee a whole poll. */
@@ -90,6 +93,8 @@ afterAll(() => { navigator.getGamepads = getGamepadsReal; motor?.dispose(); raiz
 
 beforeEach(() => {
   expect(jogadores.map((j) => j.pad), 'the pads did not take one seat each: the cases would measure nothing').toEqual([0, 1]);
+  expect(jogadores.map((j) => ({ start: j.ctrl.start[0], select: j.ctrl.select[0] })), 'the seats\' keys are not the ones pressed here')
+    .toEqual(TECLAS);
   expect(tela(), 'a case left a menu open').toEqual(EM_JOGO);
   fases.length = 0;
 });
@@ -104,9 +109,9 @@ describe('in play, seat 1\'s START and SELECT do nothing', () => {
   });
 
   it('🔴 [Right] from seat 1\'s KEYBOARD scheme: the same', () => {
-    tecla('Numpad0');
+    tecla(T1.start);
     expect(tela(), 'seat 1\'s START key opened a pause').toEqual(EM_JOGO);
-    tecla('NumpadDecimal');
+    tecla(T1.select);
     expect(tela(), 'seat 1\'s SELECT key opened the menus').toEqual(EM_JOGO);
     expect(fases).toEqual([]);
   });
@@ -127,11 +132,11 @@ describe('with seat 0\'s pause open, seat 1\'s START and SELECT do nothing', () 
     expect(tela(), 'seat 0\'s START did not open the quick pause: the case would measure nothing').toEqual(aberta);
     await apertar(1, START);
     expect(tela(), 'seat 1\'s PAD START left seat 0\'s quick pause').toEqual(aberta);
-    tecla('Numpad0');
+    tecla(T1.start);
     tocar('start', 1);
     expect(tela(), 'seat 1\'s START key or controller left seat 0\'s quick pause').toEqual(aberta);
     await apertar(1, SELECT);
-    tecla('NumpadDecimal');
+    tecla(T1.select);
     tocar('select', 1);
     expect(tela(), 'seat 1\'s SELECT turned seat 0\'s quick pause into the card').toEqual(aberta);
     expect(fases).toEqual(['paused']);
@@ -146,7 +151,7 @@ describe('with seat 0\'s pause open, seat 1\'s START and SELECT do nothing', () 
     expect(tela(), 'seat 0\'s SELECT did not open the card: the case would measure nothing').toEqual(aberto);
     await apertar(1, START);
     expect(tela(), 'seat 1\'s PAD START closed seat 0\'s card').toEqual(aberto);
-    tecla('Numpad0');
+    tecla(T1.start);
     tocar('start', 1);
     await apertar(1, SELECT);
     expect(tela(), 'seat 1\'s START key, controller or SELECT changed seat 0\'s card').toEqual(aberto);
@@ -164,14 +169,14 @@ describe('seat 0 is the screen\'s first player', () => {
     expect(tela()).toEqual({ pausado: true, barra: true, cartao: false });
     await apertar(0, START);
     expect(tela()).toEqual(EM_JOGO);
-    tecla('KeyH');
+    tecla(T0.start);
     expect(tela(), 'seat 0\'s START key did not open the quick pause').toEqual({ pausado: true, barra: true, cartao: false });
-    tecla('KeyH');
+    tecla(T0.start);
     expect(fases).toEqual(['paused', 'playing', 'paused', 'playing']);
   });
 
   it('🔴 [CrossCheck] seat 0\'s SELECT opens the card, by key and by the controller', () => {
-    tecla('KeyF');
+    tecla(T0.select);
     expect(tela().cartao, 'seat 0\'s SELECT key did not open the card').toBe(true);
     motor.pause.hide(0);
     tocar('select', 0);
@@ -186,5 +191,8 @@ describe('seat 0 is the screen\'s first player', () => {
 //   P2 START's question removed from `startForSeat`                🔴 the same
 //   P3 the pad's `resume` on an open menu without the question     🔴 the quick pause stays · the card stays open
 //   P4 the pad's START on an open menu named as seat 0              🔴 the same two, and the seat case in `gamepad.node`
+//   P2 again, the KEYBOARD case run alone (`scratchpad/menus-first-seat/mutate.mjs M8 keyboard-alone`) 🔴 — it was green with the
+//      keys this file used to press, which were not seat 1's START
+
 // SELECT has no question of its own: `openSeatMenus` opens the seat's own card, and this root mounts seat 0's only — a guard there
 // was measured inert (green under its removal) and was not kept.
