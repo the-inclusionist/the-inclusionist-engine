@@ -45,8 +45,8 @@ export const LICENCES_DIR = fileURLToPath(new URL('../../app/public/vendor/fonts
  * · Ubuntu-font-1.0: the `License: Ubuntu-Font-Licence-1.0` paragraph of the Debian package `fonts-ubuntu`'s
  *   `/usr/share/doc/fonts-ubuntu/copyright` (sha256 bca346a5…8ef8cf, the same in three WSL installs, packages 0.83-6ubuntu1 and
  *   0.869+git20240321-0ubuntu1), decoded as the Debian copyright format writes it: one leading space removed from each line, a
- *   line holding only « .» read as an empty line. ⚠️ UNVERIFIED: byte identity with upstream's `LICENCE.txt`, which is not on
- *   this machine — the WORDS are the package's, the line breaks are the ones it carries.
+ *   line holding only « .» read as an empty line. ✅ VERIFIED 2026-09-27 byte for byte (same sha256) against
+ *   `google/fonts` `ufl/ubuntu/UFL.txt`, the licence that travels with the very files this engine packages.
  */
 export const FONT_LICENCE_TEXTS = Object.freeze({
   'OFL-1.1': { file: 'OFL-1.1.txt', name: 'SIL Open Font License, Version 1.1',

@@ -274,8 +274,8 @@ service worker precaches them into every install and the npm package ships them,
   family's as read from the font. Only one file keeps its licence text (OpenDyslexic's name ID 13): the web subsets strip it,
   so the texts ship as files beside the fonts — `OFL-1.1.txt` (copied from that OpenDyslexic field, byte-identical to three
   upstream `OFL.txt` copies held locally), `Apache-2.0.txt` (the heavy files' text, `scripts/licences/`) and `UFL-1.0.txt`
-  (decoded from the Debian `fonts-ubuntu` package's copyright file; ⚠️ byte identity with upstream's `LICENCE.txt` is
-  **UNVERIFIED**, the words are the package's).
+  (decoded from the Debian `fonts-ubuntu` package's copyright file, and verified byte for byte on 2026-09-27 against
+  `google/fonts` `ufl/ubuntu/UFL.txt`, the licence that travels with the files packaged here).
 - ⚠️ **Reserved Font Names:** 25 families name one in their copyright line (Lato, Lora, Quicksand, Source Sans 3 among them),
   and OpenDyslexic in its licence field. OFL §3 keeps a reserved name off a Modified Version, and the OFL counts a format
   change or a subset as one; whether these web subsets, declared under the reserved names, need the holders' permission is
