@@ -18,6 +18,10 @@ metadata:
       what: >-
         §2's removal of the voice row («quem escolhe a voz é o jogo»). The hearing panel lists the voices that speak
         the child's language, and locks the speech rows with the reason when none does.
+    - by: ADR-0258
+      what: >-
+        §2's hearing-panel rows for the ledge guard and the guide track. Their mixer categories (`guard`, `guide`) left
+        with them: the engine plays nothing in either since the guide moved to the platformer. The sonar's row stays.
   supersedes-in-part: [ADR-0147, ADR-0146, ADR-0149]
   date: 2026-09-12
   decision-makers: [Dev]

@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - tests/audio-category-defaults.node.test.js
+    - tests/audio-ambient.node.test.js
+    - docs/6-DevOps-SRE/public-shape.json
+  supersedes-in-part: [ADR-0014, ADR-0139, ADR-0151]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, asked about what the sound guide's move to the platformer (ADR-0257) left behind — `noiseBuffer`: «A engine passas a gerar sozinha.» `sonarPlayers`: «Tire agora.» The mixer categories `guide` and `guard`: «Saem.» And the pinball: «Fica com uma cópia do guia, feito o platformer.»"
+    - "ADR-0257 — the continuous sound guide left the engine for the platformer; its report measured that nothing in the engine plays in the `guide` and `guard` categories any more and that `sonarPlayers` feeds nothing"
+  informed: []
+
+title: What the sound guide left behind leaves the engine — its categories, its players option, and the ambient's noise port
+
+context-and-problem-statement: |
+  When the continuous sound guide left the engine (ADR-0257), three things stayed with nothing of the engine behind them. The
+  mixer's `guide` and `guard` categories (ADR-0014's nine) and their rows in the hearing panel (ADR-0151) govern sounds only games
+  play — the engine plays nothing in either. `CreateGameOptions.sonarPlayers` (ADR-0139's list of the game's half) fed only the
+  guide, and three games pass it to nothing. And `platform/audio-ambient` asks every game for `noiseBuffer` in its ctx, a white
+  noise the engine itself has (`platform/audio.noiseBuffer`) and a game can only hand back.
+
+decision-drivers:
+  - "The engine carries what it uses; a setting whose subject is gone is a control that does nothing (ADR-0106 §5)"
+  - "A port a game can only fill with the engine's own function is not a port"
+
+considered-options:
+  - "A · The three leave: the categories and their rows, the option, and the ambient's noise port (the engine makes its noise)"
+  - "B · Keep them published and deprecated until the games move"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The mixer and the hearing panel offer only what the engine sounds; the contract loses a field that does nothing; the
+  ambient needs one line less from every game. ❌ Breaking: games that pass `sonarPlayers`, hand `noiseBuffer` to the ambient or
+  route a sound to `guide`/`guard` adapt on their next bump. 📏 Measured: the platformer's guide copy asks the mixer whether
+  `guide` is on (`guideAudible` reads `cat.guide.on`) and plays into its bus, so on the bump it stays silent until the platformer
+  gives it a switch of its own; the pinball's copy reads no mixer category. **B.** ❌ Controls without a subject, and a field
+  that reads as a promise.
+
+decision-outcome:
+  chosen-option:
+    link: "A — they leave"
+    justification: |
+      1. The mixer's categories `guide` and `guard` leave (its list, their stored levels and their rows in the hearing panel). A
+         stored level for them stays in the child's storage and is read by nobody.
+      2. `CreateGameOptions.sonarPlayers` leaves the contract.
+      3. `platform/audio-ambient` makes its own white noise from `platform/audio.noiseBuffer`; its ctx loses `noiseBuffer`.
+      4. The pinball gets its own copy of the guide, as the platformer did (ADR-0257, its repository).
+      Superseded in part: ADR-0014's `edge-guard` and `guide` among the mixer's categories; ADR-0151's hearing-panel rows for the
+      ledge guard and the guide track; ADR-0139's `sonarPlayers` in the game's half.
+
+  consequences:
+    positive:
+      - "The hearing panel shows only sounds the engine makes; one less contract field and one less ambient port"
+    negative:
+      - "Three breaking changes for games on their next bump, each with its note"
+
+  confirmation: |
+    ✅ The gates in confirmed-by. `audio-category-defaults` holds that `guard` and `guide` are not in the mixer and that `tts` is
+    the only category born off; `audio-ambient` that the thunder plays white noise the engine made on the context, asking the
+    game for nothing (three mutations red, listed in the file); `public-shape.json` no longer carries
+    `CreateGameOptions.sonarPlayers` nor `AudioAmbientCtx.noiseBuffer`, and the surface test fails on a shape that changes
+    without a note. The pinball's copy of the guide is that repository's work and its own tests.
+
+more-information: |
+  The pinball's copy is its own repository's work, done by the Dev's order in the same session.

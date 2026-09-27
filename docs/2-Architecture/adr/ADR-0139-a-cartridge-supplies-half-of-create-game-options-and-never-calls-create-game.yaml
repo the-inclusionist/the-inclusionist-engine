@@ -1,6 +1,11 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0258
+      what: >-
+        `sonarPlayers` in the game's half of `CreateGameOptions`. It fed only the sound guide, which left the engine
+        (ADR-0257), and it left the contract. The rest of the half is unchanged.
   date: 2026-09-11
   decision-makers: [Dev]
   consulted:

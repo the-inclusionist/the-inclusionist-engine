@@ -2,6 +2,11 @@
 metadata:
   shape: bundle          # consolidation of the REGISTRO-DE-DECISOES; see README
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0258
+      what: >-
+        `edge-guard` and `guide` among the mixer's categories. They left the engine's mixer: the engine plays nothing in
+        either since the guide moved to the platformer (ADR-0257). The other categories and every other decision stand.
   date: 2026-07-02
   decision-makers: [Dev, AI]
   consulted: []
