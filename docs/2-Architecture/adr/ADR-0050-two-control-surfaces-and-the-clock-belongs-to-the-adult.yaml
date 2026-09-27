@@ -1,5 +1,18 @@
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/session-clock.browser.test.js
+    - tests/session-clock.node.test.js
+    - tests/hud-mounted-by-the-engine.browser.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE IN PART. It said nothing was built while the clock stood on the HUD (engine
+        `2cc76738`, `263ec0c9`): the pie and the digits in the HUD row, measured in the browser on production markup,
+        and nothing of the clock's length or ending kept on the child's side. Those gates are in `confirmed-by`. Most of
+        §3's clock and its layout belong to ADR-0236, ADR-0239 and ADR-0059 now; what this record still owes is §2's
+        adult panel, the negative gate for THE CLOCK IS NOT A GAME TIMER, §4's break and §5's night window — issue #94,
+        open, which the confirmation did not name.
   superseded-in-part:
     - by: ADR-0236
       what: "§3, the clock itself: it becomes a continuous Time Timer pie, never numbers only and with no unit change
@@ -154,15 +167,19 @@ decision-outcome:
          requerimento states this and it is repeated here so nobody imports them as a cap on schoolwork."
 
   confirmation: |
-    Nothing here is built. What each clause will be measured by:
+    ✅ In part (erratum of 2026-09-27): the clock is on the HUD, because a limit that is not shown does not exist —
+    mounted by the engine in the HUD row and measured in the browser on production markup, never read off the
+    stylesheet; and nothing of the clock's length or ending is kept on the child's side, which is the first half of THE
+    TWO SURFACES. The gates are in confirmed-by.
 
-      · THE TWO SURFACES — a gate that fails if any parameter of §2 is reachable from the child's pause menu.
-      · THE CLOCK IS NOT A GAME TIMER — the strongest one, and it must assert the negative: no activity, question
-        or minigame reads the session clock, in any code path.
+    📋 Still owed under issue #94:
+
+      · THE TWO SURFACES — the adult's panel of §2, and a gate that fails if any of its parameters is reachable from the
+        child's pause menu.
+      · THE CLOCK IS NOT A GAME TIMER — asserted as a negative. Today it holds by construction (only the root imports
+        `ui/session-clock`, and `core/session-clock` knows no activity), but no case would go red.
       · THE BREAK — un-pausable without the adult's command, asserted over the pause path.
-      · THE HUD — a browser gate on production markup, in the ADR-0044 style: measure, do not read the stylesheet.
-      · THE NIGHT WINDOW — a pure function over (allowance, now) with no age input, which is also how the record
-        proves it collects nothing.
+      · THE NIGHT WINDOW — a pure function over (allowance, now) with no age input.
 
     ⚠️ AND WHAT CANNOT BE CONFIRMED HERE: whether a red screen a child cannot dismiss is experienced as care or as
     punishment. That is issue #7, and it is the clause most likely to need changing after five children have met it.

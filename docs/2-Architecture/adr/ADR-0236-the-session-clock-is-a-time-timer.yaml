@@ -1,6 +1,9 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/session-clock.node.test.js
+    - tests/session-clock.browser.test.js
   superseded-in-part:
     - by: ADR-0240
       what: "the options of its erratum (length; red · pulsing · lock) as engine settings: none on the child's side; one hour, red at the end, always on. They belong to Bússola Escolar's adult menu."
@@ -8,6 +11,12 @@ metadata:
       what: "only where the clock sits: bottom centre, the digits with the pie to their right. Everything else stands."
   supersedes-in-part: [ADR-0050]
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: the clock is built (engine `2cc76738`, `1b87011a`, `263ec0c9`). It is a Time Timer —
+        a pie that empties continuously and clockwise, beside the time left in digits, never numbers only — and the
+        session is the hour of the erratum above, red at its end. Where it sits is ADR-0239's (bottom centre), and the
+        adult's value replacing the hour belongs to Bússola Escolar's adult menu, by ADR-0240.
     - date: 2026-09-25
       what: >-
         THE OPEN QUESTION IS ANSWERED, and the default changes. The Dev, the same day: «Mude para 1 hora, a tela não
@@ -65,8 +74,10 @@ decision-outcome:
       - "What happens when the default 50 minutes run out with no adult present is not settled here (ADR-0050 §4 locks the screen until an adult lifts the break)"
 
   confirmation: |
-    ⏳ Not built. Debt: issue #94 — the Time Timer pie at the top right, the 50-minute default, and the adult's value
-    replacing it.
+    ✅ The gates in confirmed-by: a continuous Time Timer pie that empties clockwise, beside the digits and never numbers
+    only; one hour, full at the start and red at its end (the erratum of 2026-09-25, fixed by ADR-0240). 📌 The top-right
+    place became ADR-0239's bottom centre, and the adult's value replacing the default waits for Bússola Escolar's adult
+    menu (ADR-0240).
 
 more-information: |
   ⏸ Open, for the Dev: at the end of a default session with no adult logged in, does the screen lock as ADR-0050 §4

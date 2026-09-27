@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/session-clock.node.test.js
+    - tests/session-clock.browser.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: the removal landed (engine `263ec0c9`). The child's side keeps nothing of the clock
+        — no default, no storage key, no store member, no writer; whatever is stored under the keys it once had, it
+        shows one hour, ends red and still, and says nothing in `problems`; and a whole session writes no
+        `incl_session_*` key.
   supersedes-in-part: [ADR-0236]
   date: 2026-09-25
   decision-makers: [Dev]
@@ -46,8 +56,9 @@ decision-outcome:
       - "An hour for everyone until the adult's menu exists"
 
   confirmation: |
-    ⏳ Not built. Debt: issue #94 — the stored length and ending, their setters and keys, and the pulse and lock endings
-    removed; the clock reads a fixed hour and turns red.
+    ✅ The gates in confirmed-by: no length, ending, setter or key of the clock on the child's side, and the pulse and
+    lock endings gone; the clock reads a fixed hour and turns red, and still, at its end, whatever an old stored value
+    says.
 
 more-information: |
   Bússola Escolar is the backend the Dev names for adult-side settings (see ADR-0235 on multiplayer waiting for it too).

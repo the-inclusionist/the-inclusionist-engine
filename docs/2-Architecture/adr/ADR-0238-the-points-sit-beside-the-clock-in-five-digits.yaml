@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/session-clock.node.test.js
+    - tests/hud-mounted-by-the-engine.browser.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: the counter was built with the clock (engine `2cc76738`). The score is five digits
+        with leading zeros, clamped at 99999 and at zero, a fraction and a NaN not digits; a listener hears the number,
+        never the zeros; and five digits keep one width, so the score does not move as it grows. Its place is ADR-0239's
+        row.
   superseded-in-part:
     - by: ADR-0239
       what: "only the corner: the score sits between the centre and the right of the bottom row. Five digits, clamped, spoken as a number, stand."
@@ -49,8 +59,8 @@ decision-outcome:
       - "A score above 99999 is shown as 99999"
 
   confirmation: |
-    ⏳ Not built. Debt: issue #94, built together with the clock — the counter beside it, five digits, clamped, spoken as a
-    number.
+    ✅ The gates in confirmed-by: the counter beside the clock in five digits with leading zeros, clamped at 99999 and at
+    zero, spoken as a number, and one width as it grows — in the HUD row of ADR-0239.
 
 more-information: |
   Issue #93 was closed with the engine's share of rewards done; this record keeps the counter and gives it its place.
