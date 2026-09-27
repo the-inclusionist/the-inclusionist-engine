@@ -14,6 +14,8 @@
 - ✅ `1f5765fe` — as portas de entrada descem primeiro (comandos e câmera antes da leitura, a leitura antes da voz neural). 3 mutações.
 - ✅ `aabece3a` — **item 22**: uma opção que é conteúdo é ouvida na língua dela (EF06LI17 em `en`). 2 mutações.
 - ✅ ADR-0027 (#137): **já estava** aceite com errata desde 22/09 — só falta fechar a #137 no GitHub (Dev).
+- ✅ `ee10068b` (BREAKING, nota EA) — **um ouvido só**: o Dev relatou que recarregar em inglês com o 👄 ligado e carregar no U travava a máquina inteira. Medido: modelo pt com gramática en, e cada U abria dois reconhecedores (8 workers e 8 microfones após três U). Agora o 👄 arranca na língua guardada, a escolha usa o ouvido do 👄 quando é da mesma língua, e cada modelo carrega uma vez por língua (`keepVoskModels`). Depois: 1 worker, 1 microfone, 0 avisos. 16 mutações.
+- ✅ `a04ab239`…`66491aee` + `game-platformer:69d2a06` — **ADR-0257**, o guia sonoro mudou para o plataformer.
 
 **Em curso:** 🟡 a metade do guia sonoro do `audio-sonar` → plataformer (ordem do Dev), num agente: ADR-0257, o plataformer recebe primeiro, a engine apaga depois (nota DZ).
 
