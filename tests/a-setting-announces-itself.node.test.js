@@ -29,7 +29,7 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { formaDe } from '../scripts/shape-surface.mjs';
+import { formaDe, memberKeys } from '../scripts/shape-surface.mjs';
 
 const RAIZ = fileURLToPath(new URL('../', import.meta.url));
 const forma = formaDe(join(RAIZ, 'app', 'js'));
@@ -50,7 +50,8 @@ const ANUNCIO_NO_SETTER_INJETADO = [
   },
 ];
 
-const membros = (modulo, tipo) => forma[modulo]?.[tipo] ?? [];
+// The keys of an interface entry are its member names, with `?` on the optional ones.
+const membros = (modulo, tipo) => memberKeys(forma[modulo]?.[tipo]);
 
 describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
   it('⚠️ [Interface] o crivo está VIVO — lê os tipos de verdade', () => {

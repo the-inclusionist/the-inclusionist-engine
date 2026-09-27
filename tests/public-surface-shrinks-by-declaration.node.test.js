@@ -25,7 +25,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { superficieDe, RETRATO } from '../scripts/snapshot-public-surface.mjs';
-import { formaDe, formaDoTexto, quebrasDeForma, RETRATO_FORMA } from '../scripts/shape-surface.mjs';
+import { formaDe, formaDoTexto, memberKeys, quebrasDeForma, RETRATO_FORMA } from '../scripts/shape-surface.mjs';
 
 const RAIZ = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const retrato = JSON.parse(readFileSync(join(RAIZ, RETRATO), 'utf8'));
@@ -225,7 +225,8 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
       '}',
       'export type U = "a" | "b";',
     ].join('\n'));
-    expect(f['interface A']).toEqual(['LOGICAL_W?', 'holdsAtOnce', 'i', 'topology']);
+    // The index signature is a member now, keyed by its key type: an implementer has to satisfy it.
+    expect(memberKeys(f['interface A'])).toEqual(['LOGICAL_W?', '[string]', 'holdsAtOnce', 'i', 'topology']);
     expect(f['type U']).toBe('"a" | "b"');
   });
 
@@ -261,6 +262,111 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
     ].join('\n'));
     expect(umaLinha['type P']).toBe("{ a: number; b: 'x' | 'y'; } | null");
     expect(outra['type P']).toBe(umaLinha['type P']);
+  });
+});
+
+// ========================= AN INTERFACE, READ BY THE PARSER =========================
+// 🔴 Interfaces used to be read by a regex up to the first `{` and one member per line, counting braces. 📏 On the tree of
+// 2026-09-27, 49 of the 420 exported interfaces had a wrong list of names — `Spot { readonly x; readonly y; readonly z? }`
+// was `['x']`, `CameraStartDeps<T extends { close(): void }, F>` was `['close']` — and no member TYPE, type parameter or
+// `extends` was recorded at all, so a member whose type changed passed this gate green.
+describe('an interface is read by the parser — its type parameters, its extends and each member typed', () => {
+  const shapeOf = (src) => ({ 'm.ts': formaDoTexto(src) });
+  const breaks = (before, now) => quebrasDeForma(shapeOf(before), shapeOf(now));
+  const formaArvore = formaDe(join(RAIZ, 'app', 'js'));
+
+  it('🔴 [Right] braces inside a string-literal type, an object-literal type and a type-parameter constraint are read right', () => {
+    const box = formaDoTexto([
+      'export interface Box<T extends { id: string } = { id: "}" }, U = T> extends Base<T>, Other {',
+      "  readonly label: '{' | '}';",
+      '  style: { color: string; nested: { depth: number } }; after: number;',
+      '  greet<K extends keyof T>(key: K, loud?: boolean): string;',
+      '  (now: number): U;',
+      '  new (seed: string): Box<T, U>;',
+      '  [key: string]: unknown;',
+      '}',
+    ].join('\n'))['interface Box'];
+    expect(box.typeParameters, 'the generic is not recorded').toBe('T extends { id: string; } = { id: "}"; }, U = T');
+    expect(box.extends).toBe('Base<T>, Other');
+    expect(box.members).toEqual({
+      '()': '(now: number): U',
+      '[string]': '[key: string]: unknown',
+      after: 'after: number',
+      greet: 'greet<K extends keyof T>(key: K, loud?: boolean): string',
+      label: "readonly label: '{' | '}'",
+      'new()': 'new (seed: string): Box<T, U>',
+      style: 'style: { color: string; nested: { depth: number; }; }',
+    });
+  });
+
+  it('🔴 [Right] the real tree: an interface written on one line keeps every member', () => {
+    // `core/contract.ts` `Spot` was recorded as `['x']` by the old reader — deleting `y` passed green.
+    expect(memberKeys(formaArvore['core/contract.ts']?.['interface Spot'])).toEqual(['x', 'y', 'z?']);
+    expect(formaArvore['ui/camera-control.ts']?.['interface CameraStartDeps']?.typeParameters).toBe('T extends { close(): void; }, F');
+  });
+
+  it('⚠️ [Right] a member whose TYPE changes fails — a parameter added, or `string` becoming `number`', () => {
+    expect(breaks('export interface A { on: (a: number) => void }', 'export interface A { on: (a: number, b: number) => void }'))
+      .toEqual(['m.ts  interface A.on  changed type: «on: (a: number) => void» → «on: (a: number, b: number) => void»']);
+    expect(breaks('export interface A { readonly n: string }', 'export interface A { readonly n: number }'))
+      .toEqual(['m.ts  interface A.n  changed type: «readonly n: string» → «readonly n: number»']);
+  });
+
+  it('⚠️ [Right] a type parameter added fails', () => {
+    expect(breaks('export interface A { x: number }', 'export interface A<T = number> { x: T }')).toEqual([
+      'm.ts  interface A  type parameters changed: «» → «T = number»',
+      'm.ts  interface A.x  changed type: «x: number» → «x: T»',
+    ]);
+    expect(breaks('export interface A<T> { x: number }', 'export interface A { x: number }'))
+      .toEqual(['m.ts  interface A  type parameters changed: «T» → «»']);
+  });
+
+  it('⚠️ [Right] an `extends` that changes fails', () => {
+    expect(breaks('export interface A extends B { x: number }', 'export interface A extends C { x: number }'))
+      .toEqual(['m.ts  interface A  extends changed: «B» → «C»']);
+  });
+
+  it('⚠️ [Right] a member that leaves fails — from an interface written on one line', () => {
+    expect(breaks('export interface A { x: number; y: string }', 'export interface A { x: number }'))
+      .toEqual(['m.ts  interface A.y  SAIU']);
+  });
+
+  it('⚠️ [Right] a member that becomes required fails ONCE — not a second time as a type change', () => {
+    expect(breaks('export interface A { x?: number }', 'export interface A { x: number }'))
+      .toEqual(['m.ts  interface A.x  era opcional e passou a OBRIGATÓRIO']);
+    // 📌 The `?` lives in the KEY only, so the reverse keeps the rule this gate always had: required → optional does not
+    // break whoever builds the type, and it is not turned into a «type change» by the question mark alone.
+    expect(breaks('export interface A { x: number }', 'export interface A { x?: number }')).toEqual([]);
+  });
+
+  it('[Right] a new OPTIONAL member passes, and a new required one does not', () => {
+    expect(breaks('export interface A { x: number }', 'export interface A { x: number; y?: (a: string) => void }')).toEqual([]);
+    expect(breaks('export interface A { x: number }', 'export interface A { x: number; y(): void }'))
+      .toEqual(['m.ts  interface A.y  ENTROU como obrigatório']);
+  });
+
+  it('[Right] formatting alone — line breaks, comments, `,` against `;` — is not a change of an interface', () => {
+    const oneLine = 'export interface A<T extends object = {}> extends B<T> { readonly f: (a: number, b: string) => void; g(): void; }';
+    const spread = [
+      'export interface A<',
+      '  T extends object = {},',
+      '> extends B<T> {',
+      '  // why f is readonly',
+      '  readonly f: (a: number,',
+      '     b: string) => void,',
+      '  /** the other */ g(): void',
+      '}',
+    ].join('\n');
+    expect(breaks(oneLine, spread)).toEqual([]);
+    expect(shapeOf(spread)).toEqual(shapeOf(oneLine));
+  });
+
+  it('📌 [Right] a portrait from before the parser (a plain list of names) is still compared by name', () => {
+    // A published tag's portrait is that form, and `Breaking-Changes.md` audits a tag against `HEAD`.
+    const legacy = { 'm.ts': { 'interface A': ['x', 'y?'] } };
+    expect(quebrasDeForma(legacy, shapeOf('export interface A { x: string; y?: number; [k: string]: unknown }'))).toEqual([]);
+    expect(quebrasDeForma(legacy, shapeOf('export interface A { x: string; y: number }')))
+      .toEqual(['m.ts  interface A.y  era opcional e passou a OBRIGATÓRIO']);
   });
 });
 
@@ -320,3 +426,24 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
 //   · the alias read by the old regex again (up to the first `;`) → the multi-line union case, the formatting case and the
 //     real-tree case fail.
 //   · the alias kept as its raw source text instead of printed → the formatting case and the real-tree case fail.
+//
+// ========================= MUTATIONS OF THE INTERFACE READ BY THE PARSER =========================
+// Applied by script, anchor counted (=1 in all fourteen), restored from a copy and compared byte for byte; all RED.
+// ⚠️ The last two are against the REAL TREE, and both passed the old reader GREEN: it recorded `Spot` as `['x']`.
+//   · the member-type comparison removed          → the type-change case and the type-parameter case (its `x: T`)
+//   · the type-parameter comparison removed       → the type-parameter case
+//   · the `extends` comparison removed            → the `extends` case
+//   · the member-left rule removed                → both member-left cases (list form and one-line interface)
+//   · the optional → required rule removed        → its case, the «fails ONCE» case and the plain-list case
+//   · a new OPTIONAL member counted as a break    → both new-optional cases
+//   · type parameters not recorded                → `[Zero]` on the real tree, the braces case, the real-tree case, the
+//                                                   type-parameter case
+//   · a property's type not recorded              → `[Zero]`, the braces case, the type-change and type-parameter cases
+//   · method signatures not read as methods       → `[Zero]`, both extractor cases, the new-member case, and the ORPHAN
+//                                                   case of `a-setting-announces-itself`
+//   · optionality dropped from the member's key   → seven, among them `a-setting-announces-itself`'s SOLVED-example case
+//   · the `?` kept inside the signature           → `[Zero]` and the «fails ONCE» case (required → optional became a
+//                                                   «type change»)
+//   · a plain list's missing signatures reported as new → the plain-list case
+//   · `core/contract.ts` `Spot.y: number` → `string`    → `[Zero] NENHUM tipo mudou de forma`
+//   · `core/contract.ts` `Spot.y` deleted               → `[Zero]` and the real-tree case
