@@ -595,11 +595,13 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     // that is the game's, because while the mode is on nothing else from this pad is the game's.
     //
     // Both exits arrive together: `especial` (action 3) is the project's BACK — the east button: B on Xbox, ◯ on
-    // PlayStation, A on Nintendo — and `startEdge` is the button that opens the pause, where this was entered. A child
+    // PlayStation, A on Nintendo — and `pauseEdge` is the button that opens the pause, where this was entered. A child
     // who is lost goes back the way they came, one who knows the game tries the usual back; both work.
+    // ⚠️ START ALONE, not `startEdge`: that one fires on action 2 too («close a dialog»), and passed here it made the confirm
+    // LEAVE the bar instead of pressing the icon under the cursor.
     if (f.owner >= 0 && ctx.onBar(f.owner)) {
       const k = f.navKeys();
-      if (f.startEdge || anyIntent(k)) ctx.navBar(f.owner, k, !!f.startEdge);
+      if (f.pauseEdge || anyIntent(k)) ctx.navBar(f.owner, k, f.pauseEdge);
       return;
     }
     if (f.owner < 0) { takeSeat(f); return; }

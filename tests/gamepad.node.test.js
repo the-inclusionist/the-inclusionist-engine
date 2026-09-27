@@ -15,6 +15,8 @@ import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/inpu
 import { createInputState } from '../app/js/input/state.js';
 import { createPadMaps } from '../app/js/input/pad-wizard.js';
 import { createPadTable } from '../app/js/input/pad-defaults.js';
+// what the bar DOES with a step — the engine's own reading of `navBar`'s arguments, so a case says «pressed» or «left», not a flag
+import { barAction } from '../app/js/ui/pause-icons.js';
 // `oneButton` reaches the module through the ctx, which answers from a settings store: these cases really turn it on and off.
 import { createSettingsStore } from '../app/js/core/state.js';
 import { filePort } from './fixtures/file-storage.js';
@@ -980,6 +982,29 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.calls.navBar[0][0]).toBe(0);
     expect(ctx.calls.navBar[0][1].yes).toBe(true);
     expect(p.jumpEdge, 'o mesmo botão dirigiu a barra E fez o personagem saltar').toBe(false);
+  });
+
+  /*
+   * 🔴 ON THE BAR IN PLAY, ACTION 2 PRESSES THE ICON AND ONLY START LEAVES (ADR-0044 item 7). A cartridge that answers `onBar`
+   * itself can have the bar steered with its world running — the `createGame` root cannot, its bar opens only through the quick
+   * pause. 📏 Before, this branch passed `startEdge` as the START exit, and `startEdge` fires on action 2 too («close a dialog»):
+   * the confirm LEFT the bar instead of pressing the icon under the cursor.
+   * 📏 Mutations (2026-09-26, `scratchpad/pad-action4/mutate.mjs`, restored by SHA-256), all red here: the exit read from
+   * `startEdge` again; START alone not reaching the bar; the exit never passed.
+   */
+  it('🔴 [Right] on the bar with the world running, action 2 presses the icon, and only START (and back) leave', () => {
+    const p = makePlayer({ pad: 0 });
+    const ctx = buildCtx({ players: [p], naBarra: new Set([0]) });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    const tocar = (botao) => {
+      ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [botao] })]); api.pollPads();
+      ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [] })]); api.pollPads();
+    };
+    for (const botao of [0, 13, 9, 1]) tocar(botao); // action 2, d-pad down, START, action 3
+    expect(ctx.calls.navBar.map(([i, k, temStart]) => [i, barAction(k, temStart)]), 'the pad\'s buttons did the wrong thing on the bar')
+      .toEqual([[0, 'ativar'], [0, 'andar'], [0, 'sair'], [0, 'sair']]);
+    expect(ctx.calls.pressionadas, 'a button on the bar reached the game').toEqual([]);
   });
 
   /*
