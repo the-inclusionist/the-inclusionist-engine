@@ -5,6 +5,26 @@
 
 ---
 
+## 📋 ESTADO EM 27/09 (tarde) — o que falta, e quem o fecha
+
+**Feito hoje, na `main` da engine (nada empurrado):**
+- ✅ `0ce4cebf` — uma função da janela corre na janela, seja quem a embrulhou (a extensão **Read Aloud** do Brave do Dev deixava a descida de pesados inteira em silêncio: cache vazia, câmera e voz sem ligar). 7 mutações.
+- ✅ `3ee1be7d` + `docs:824b4ca` **ADR-0256** e `f2411142` (BREAKING, nota DX) — **a criança responde uma opção dizendo-a**: `reading.choose(opções)`, gramática fechada do Vosk só com as opções, decidida no fim da frase, duas opções não é resposta; o 👄 cala-se enquanto escolhe. O quiz responde por ela no botão de ação 1 e deixou de declarar `uses.reading` (850 MiB a menos por entrega). 13 + 2 + 3 mutações.
+- ✅ `f594d4f3` (BREAKING, nota DY) — saem `core/contract.dimension`, `input/transports.holds`, `ui/title.TITLE_MENU_IDS_ORDERED` (Dev: «Sai e é quebra»).
+- ✅ `1f5765fe` — as portas de entrada descem primeiro (comandos e câmera antes da leitura, a leitura antes da voz neural). 3 mutações.
+- ✅ `aabece3a` — **item 22**: uma opção que é conteúdo é ouvida na língua dela (EF06LI17 em `en`). 2 mutações.
+- ✅ ADR-0027 (#137): **já estava** aceite com errata desde 22/09 — só falta fechar a #137 no GitHub (Dev).
+
+**Em curso:** 🟡 a metade do guia sonoro do `audio-sonar` → plataformer (ordem do Dev), num agente: ADR-0257, o plataformer recebe primeiro, a engine apaga depois (nota DZ).
+
+**Espera o Dev:**
+- 📋 `platform/audio.noiseBuffer` — sair (cada jogo escreve o seu ruído para o `audio-ambient`) ou a engine passar a gerá-lo ela mesma (o campo sai do ctx). Perguntado 27/09.
+- 📋 `records-token` — o repositório da engine vai ser público? Se sim, uma linha no `game-ci.yml`; se não, as instruções do token já foram dadas.
+- 📋 Rodadas com a voz dele: escolher opções em pt, en e es (entrega com os três modelos de comandos).
+- 📋 Push das duas árvores e fechar #134/#137/#199/#191 no GitHub.
+
+**Achado anotado, sem conserto ainda:** o `tests/exports-without-consumer.node.test.js` falhou a CARREGAR duas vezes hoje sob a suíte completa e passa sozinho.
+
 ## 🎯 ATÉ AO FIM — o plano adequado às decisões de 25/09 (esta é a ordem; as secções abaixo são histórico)
 
 > 📌 Dev, 25/09: «Agora que eu tomei as decisões, adeque o plano. E vamos terminá-lo.» As decisões que isto
