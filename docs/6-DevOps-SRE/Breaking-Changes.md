@@ -4148,6 +4148,31 @@ it, once per delivery however many cartridges use it, as the heavy files are (AD
 | `ui/fonts.faceAvailable(it)` answered `true` for every face not `off` | `true` for the engine's faces; a library face (and the ronde, whose stack ends in Cookie) answers through the detector | a panel mounted by a game passes `fontInstalled`; the root passes «the game declared the family» |
 | the kit row `merriweather` | gone | nothing |
 
+## DX · ADR-0256: a child answers an option by saying it — `engine.reading.choose()`, and the quiz's own matcher leaves
+
+**Who is affected:** a game that answered options by voice with `engine.reading.listen()` and compared the text itself, and anyone
+who builds an object of the type `Reading` (a test double of it): the type has a new REQUIRED method, `choose`. The demo's
+`consumer-quiz/main-quiz.heardAlternative` is no longer published — the rule moved into the engine with the matching.
+
+📌 **Why:** ADR-0256 — an option is one or two words, which the reading (Whisper) transcribes badly (the lab: 1 of 7 on words said
+alone) and a closed grammar hears (7 of 7). The game says what it shows; the engine hears only that, with the command recogniser,
+and answers WHICH option — never text to compare. Two options in one sentence are no answer (a child thinking out loud).
+
+**The migration a game makes, once:**
+
+1. Where it asked `reading.listen()` to hear an answer among options, call `reading.choose(options)` with the option texts as shown
+   (a leading pictogram is not spoken and is dropped by the engine) and use `chosen` — the index, or `null` — and `heard`. The game
+   still decides WHEN to ask: the demo asks on action 1, which the child reaches by saying «ação», by the key or by the pad.
+2. If it no longer transcribes anything, drop `uses: { reading: true }`: that declaration puts 850 MiB of reading models into its
+   delivery. `choose()` needs the command models, which every delivery carries unless its `--commands` list narrows it.
+3. A double of `Reading` gains `choose`.
+
+| was | now | what to do |
+|---|---|---|
+| `reading.listen()` + the game's own comparison | `reading.choose(options, { language?, maxMs? })` → `{ chosen, heard, ended }` | call `choose` for options; keep `listen` for reading aloud |
+| `consumer-quiz/main-quiz.heardAlternative` | gone (`platform/choose-by-voice.optionsNamed` is the engine's rule) | nothing — the demo was its only caller |
+| the demo declared `uses: { reading: true }` | it declares none | nothing |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.

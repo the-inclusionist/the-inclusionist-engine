@@ -33,12 +33,17 @@ describe('the quiz demo declares what it uses', () => {
       .not.toMatch(/carregarKokoro|loadKokoro/);
   });
 
-  it('🔴 [Right] it asks to HEAR the child in one line too, and answers with the text it gets back', () => {
+  /*
+   * THE CHILD CHOOSES AN OPTION BY SAYING IT, and the demo declares no reading it does not use (ADR-0256). A declared reading is
+   * 850 MiB of models in every delivery; a demo that declared it and never transcribed would be a field with no reader.
+   */
+  it('🔴 [Right] it asks the engine for a CHOICE among the options it shows, and declares no reading it does not use', () => {
     const quiz = codigo('main-quiz.ts');
-    expect(quiz, 'the demo stopped declaring the reading: `listen()` would refuse and a delivery would carry no model')
-      .toMatch(/uses:\s*\{[^}]*reading:\s*true/);
-    expect(quiz, 'nothing in the demo asks the engine to listen — the declaration would be a field with no reader')
-      .toMatch(/reading\.listen\(/);
+    expect(quiz, 'nothing in the demo asks the engine to hear a choice').toMatch(/reading\.choose\(/);
+    expect(quiz, 'the demo declares the reading and never transcribes: 850 MiB of models for nothing')
+      .not.toMatch(/uses:\s*\{[^}]*reading:\s*true/);
+    expect(quiz, 'the demo transcribes again — an option is heard by the closed grammar, not by Whisper (ADR-0256)')
+      .not.toMatch(/reading\.listen\(/);
   });
 
   it('🎯 [Zero] and it names no microphone, no model and no language of its own — that is the engine\'s half', () => {

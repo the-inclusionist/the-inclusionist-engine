@@ -53,6 +53,25 @@ function build({ state = 'available', model, record, language = 'pt-BR' } = {}) 
   return { reading, r, reports, sessions };
 }
 
+describe('a choice among the options shown (ADR-0256)', () => {
+  it('🔴 [Right] the reading hands a choice to the chooser the engine lent, and stop() reaches it', async () => {
+    const asked = [];
+    let stopped = 0;
+    const chooser = { choose: async (options, settings) => { asked.push({ options, settings }); return { chosen: 1, heard: 'triste', ended: 'chosen' }; }, stop: () => { stopped += 1; } };
+    const reading = createReading({ language: () => 'pt-BR', now: () => 0, every: () => 0, stopEvery: () => {}, report: () => {}, chooser });
+    expect(await reading.choose(['feliz', 'triste'], { maxMs: 5000 })).toEqual({ chosen: 1, heard: 'triste', ended: 'chosen' });
+    expect(asked).toEqual([{ options: ['feliz', 'triste'], settings: { maxMs: 5000 } }]);
+    reading.stop();
+    expect(stopped).toBe(1);
+  });
+
+  it('🔴 [Zero] with no chooser lent, a choice is REFUSED and the adult reads why — never answered with nothing', async () => {
+    const { reading, reports } = build();
+    await expect(reading.choose(['feliz'])).rejects.toThrow(/not available/);
+    expect(reports.some((l) => /choosing by voice/.test(l))).toBe(true);
+  });
+});
+
 describe('a reading heard on the device', () => {
   it('🔴 [Right] answers with what the child read, once she goes quiet', async () => {
     const { reading, r, sessions } = build();

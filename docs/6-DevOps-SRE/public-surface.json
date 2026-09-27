@@ -14,7 +14,6 @@
     "QuestionView",
     "QuizHost",
     "bootQuiz",
-    "heardAlternative",
     "inLanguage",
     "joinParts",
     "narrationOnDraw",
@@ -740,6 +739,17 @@
     "createAudio",
     "noiseBuffer"
   ],
+  "platform/choose-by-voice.ts": [
+    "ChoiceHeard",
+    "ChooseSettings",
+    "CommandRecogniserDeps",
+    "OpenedChoice",
+    "VoiceChooser",
+    "VoiceChooserDeps",
+    "createVoiceChooser",
+    "openWithCommandRecogniser",
+    "optionsNamed"
+  ],
   "platform/flash-sampler.ts": [
     "FlashMeasurement",
     "FlashSamplerCtx",
@@ -915,6 +925,7 @@
     "RecognitionApi",
     "RecognitionInstance",
     "RecognitionRoute",
+    "compareKey",
     "createCommandReader",
     "createOnDeviceRecognition",
     "recognitionRoute",

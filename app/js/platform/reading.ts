@@ -14,6 +14,7 @@
 // · Asking twice does not open two microphones: the second caller waits on the same reading.
 
 import { recognitionRoute, createOnDeviceRecognition, type RecognitionApi, type OnDeviceAvailability, type RecognitionInstance } from './speech-recognition.js';
+import type { VoiceChooser, ChooseSettings, ChoiceHeard } from './choose-by-voice.js';
 
 /** The browser's recognition object, with the parts a reading uses. Assigned handlers, as the API has them. */
 export interface ListeningSession extends RecognitionInstance {
@@ -55,6 +56,11 @@ export interface ReadingDeps {
   readonly record?: (options: ListenOptions) => Promise<Float32Array>;
   readonly route?: typeof recognitionRoute;
   readonly createSession?: (api: RecognitionApi, language: string) => ListeningSession;
+  /**
+   * The closed-grammar recogniser a choice among shown options is heard by (`platform/choose-by-voice`, ADR-0256). Absent: a
+   * choice is REFUSED with its reason, like a reading with nothing to hear it.
+   */
+  readonly chooser?: VoiceChooser;
 }
 
 export interface ListenOptions {
@@ -67,7 +73,12 @@ export interface ListenOptions {
 export interface Reading {
   /** Listens until the child goes quiet, and answers with what was read. */
   listen(options?: ListenOptions): Promise<Heard>;
-  /** Gives the microphone back now; the reading in hand answers with what it has. */
+  /**
+   * THE CHILD SAYS ONE OF THE OPTIONS THE GAME SHOWS (ADR-0256): pass them as written, get back which one was said — heard by a
+   * recogniser that can only answer with one of them. For choosing; `listen()` is for reading aloud.
+   */
+  choose(options: readonly string[], settings?: ChooseSettings): Promise<ChoiceHeard>;
+  /** Gives the microphone back now; the reading or the choice in hand answers with what it has. */
   stop(): void;
   /** Can this device serve the child's language at all? Answers with the reason when it cannot. */
   ready(): Promise<{ readonly can: boolean; readonly why: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local' | 'no-model' }>;
@@ -133,7 +144,15 @@ export function createReading(d: ReadingDeps): Reading {
 
   return {
     ready,
-    stop() { askToStop?.('asked'); },
+    stop() { askToStop?.('asked'); d.chooser?.stop(); },
+    async choose(options, settings) {
+      if (!d.chooser) {
+        once('sem-escolha', 'choosing by voice: nothing on this device hears a choice among options — the child answers with the '
+          + 'arrows only; the engine lends a chooser where it can open the command recogniser (ADR-0256)');
+        throw new Error('choosing by voice is not available here');
+      }
+      return d.chooser.choose(options, settings);
+    },
     async listen(options = {}) {
       if (inFlight) return inFlight;                       // one microphone, one reading: the second caller waits on the first
       const { route: route, status: state } = await routeOf(d.language(), d.api);

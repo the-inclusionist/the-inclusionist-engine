@@ -6,9 +6,11 @@
 // measures is every place a child meets one of those words — the welcome, the answer, the end, what the quiz says while it
 // listens, the help's slides and the keyboard map — and that none of them is a raw key.
 //
-// 📌 THE REAL QUIZ PAGE, in its own file: a clean module registry, so the quiz boots here and nowhere else. The browser's
-// recogniser is replaced by one that recognises "on the device" and hears what a case says, which is the only way the
-// quiz's listening lines can be reached without a microphone.
+// 📌 THE REAL QUIZ PAGE, in its own file: a clean module registry, so the quiz boots here and nowhere else. The engine's
+// `reading.choose` (ADR-0256) is replaced by one that "hears" what a case says and names the option whose words it contains,
+// over the options the quiz passed — the only way the quiz's listening lines can be reached without a microphone, and still a
+// measure of what the quiz hands the engine. The engine's own rule has its cases in `choosing-by-voice.node.test.js`; importing
+// it here would make this an engine test that needs the quiz (`engine-boundary`).
 //
 // ⚠️ No `core/i18n` import, and no dictionary import: either would make this the test of an ENGINE module, and the
 // boundary gate would count the quiz's own names as a debt (measured). So a raw key is what is looked for, never a phrase.
@@ -25,24 +27,21 @@ const esperar = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 const status = [];
 const alerts = [];
 let regiao;
-/** What the fake recogniser hears at its next start: `{ text }`, `{ error }`, or nothing at all. */
+/** What the fake choice hears at its next ask: `{ text }`, `{ error }`, or nothing at all. */
 let hearing = {};
+/** The options the quiz last handed the engine. */
+let offered = [];
 
-/** A recogniser that recognises on the device (`processLocally` on its prototype) and hears `hearing`. */
-class FakeRecognition {
-  constructor() { this.onresult = null; this.onerror = null; this.onend = null; }
-  start() {
-    const h = hearing;
-    setTimeout(() => {
-      if (h.error) { this.onerror?.({ error: h.error }); return; }
-      if (h.text) this.onresult?.({ results: [Object.assign([{ transcript: h.text }], { isFinal: true })] });
-      this.onend?.();
-    }, 20);
-  }
-  stop() { /* the session already ended */ }
-  static available() { return Promise.resolve('available'); }
-}
-FakeRecognition.prototype.processLocally = false;
+/** `reading.choose` as the engine answers it, on what the case says instead of a microphone. */
+const fakeChoose = async (options) => {
+  offered = options;
+  const h = hearing;
+  await esperar(20);
+  if (h.error) throw new Error(h.error);
+  const words = ` ${(h.text ?? '').toLowerCase()} `;
+  const named = options.map((o, i) => [o.replace(/[^\p{L}\p{N} ]/gu, '').trim().toLowerCase(), i]).filter(([o]) => o && words.includes(` ${o} `)).map(([, i]) => i);
+  return named.length === 1 ? { chosen: named[0], heard: h.text, ended: 'chosen' } : { chosen: null, heard: h.text ?? '', ended: 'timeout' };
+};
 
 const tecla = (code) => regiao.dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }));
 const statement = () => document.querySelector('#quiz-app .quiz-pergunta')?.textContent ?? '';
@@ -55,7 +54,6 @@ async function listenHearing(h) {
 }
 
 beforeAll(async () => {
-  window.SpeechRecognition = FakeRecognition;
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
     .replace(/<script[\s\S]*?<\/script>/g, '');
   for (const [id, into] of [['sr-status', status], ['sr-alert', alerts]]) {
@@ -63,7 +61,8 @@ beforeAll(async () => {
     new MutationObserver(() => { if (el.textContent) into.push(el.textContent); })
       .observe(el, { childList: true, characterData: true, subtree: true });
   }
-  (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  const engine = (await import('../app/js/consumer-quiz/main-quiz.ts')).bootQuiz({ doc: document, win: window, skills: THREE_SKILLS });
+  engine.reading.choose = fakeChoose;
   // the quiz opens on its start screen since it became a test bench: into the first skill, as a pointer does
   await openSkill(document, 0);
   for (let i = 0; i < 40 && !document.querySelector('.quiz-alts'); i++) await esperar(50);
@@ -106,7 +105,10 @@ describe('the demo quiz, in its engine\'s language', () => {
     // text with the KEYS (`quiz.p1.b`) meant no spoken answer could ever match.
     const word = document.querySelector('#quiz-app button[data-alt="1"]').textContent.trim();
     expect(word, 'the option has no word — this case would measure nothing').not.toMatch(RAW_KEY);
+    const shown = [...document.querySelectorAll('#quiz-app button[data-alt]')].map((b) => b.textContent.trim());
     await listenHearing({ text: `é ${word.toLowerCase()}` });
+    // the engine is handed the options AS SHOWN — keys or other text would make no spoken answer match (ADR-0256)
+    expect(offered.map((o) => o.trim()), 'the quiz handed the engine other words than it shows').toEqual(shown);
     // Answered, the quiz draws the NEXT question; not understood, it only writes a line where the statement is.
     const optionNow = () => document.querySelector('#quiz-app button[data-alt="1"]')?.textContent.trim();
     for (let i = 0; i < 60 && optionNow() === word; i++) await esperar(50);

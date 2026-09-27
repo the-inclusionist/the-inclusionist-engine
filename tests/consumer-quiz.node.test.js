@@ -17,7 +17,7 @@ import { join, posix } from 'node:path';
 import ts from 'typescript';
 import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 import {
-  questionHtml, questionView, questionNarration, narrationOnDraw, optionNarration, heardAlternative, bootQuiz, joinParts,
+  questionHtml, questionView, questionNarration, narrationOnDraw, optionNarration, bootQuiz, joinParts,
   statementParts, optionFace, inLanguage, startHtml, skillLabel, skillExplanation, skillNarration,
 } from '../app/js/consumer-quiz/main-quiz.js';
 import { FIRST_ATTEMPT } from '../app/js/consumer-quiz/quiz-round.js';
@@ -281,52 +281,7 @@ describe('the start screen — the skills by BNCC code, grouped, explained in th
   });
 });
 
-describe('alternativaOuvida — what the child SAID, when she answers out loud (ADR-0216, issue #200)', () => {
-  const ANIMAIS = ['Gato', 'Galinha', 'Cavalo', 'Peixe'];
-  const NUMEROS = ['Três', 'Quatro', 'Cinco', 'Dois'];
-
-  it('[Right] the option said by itself is the answer', () => {
-    expect(heardAlternative('galinha', ANIMAIS)).toBe(1);
-  });
-
-  it('🔴 [Right] a model writes like a person — case, accent and full stop are not part of the answer', () => {
-    expect(heardAlternative('Três.', NUMEROS)).toBe(0);
-    expect(heardAlternative('GALINHA!', ANIMAIS)).toBe(1);
-    // 🔴 AND THE ACCENT ITSELF: a case with the accent on BOTH sides proves nothing — it took a surviving mutation to show it.
-    expect(heardAlternative('tres', NUMEROS)).toBe(0);
-  });
-
-  it('🔴 [Right] and she is allowed to answer in a sentence — «eu acho que é a galinha»', () => {
-    expect(heardAlternative('eu acho que é a galinha', ANIMAIS)).toBe(1);
-  });
-
-  it('🔴 [Right] TWO options heard is not an answer: a child thinking out loud is not choosing', () => {
-    expect(heardAlternative('gato ou galinha', ANIMAIS)).toBeNull();
-  });
-
-  it('[Zero] nothing heard, and something that is none of them, answer nothing', () => {
-    expect(heardAlternative('', ANIMAIS)).toBeNull();
-    expect(heardAlternative('   ...  ', ANIMAIS)).toBeNull();
-    expect(heardAlternative('elefante', ANIMAIS)).toBeNull();
-    expect(heardAlternative('gato', [])).toBeNull();
-  });
-
-  it('🔴 [Boundary] WHOLE words: «doisel» is not «Dois», and an empty option answers nothing', () => {
-    expect(heardAlternative('doisel', NUMEROS)).toBeNull();
-    expect(heardAlternative('gato', ['', 'Gato'])).toBe(1);
-  });
-
-  it('🔴 [Boundary] an option of two words is found in ORDER, and only in order', () => {
-    expect(heardAlternative('é um cavalo marinho', ['Cavalo marinho', 'Gato'])).toBe(0);
-    expect(heardAlternative('marinho cavalo', ['Cavalo marinho', 'Gato'])).toBeNull();
-  });
-});
-
-// MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-ouvir-resposta.py`, 10 of 10 red, each mutant compiled first:
-//   · the accents stop being decomposed (NFD → NFC)   · the case stops being lowered   · punctuation stays inside the word
-//   · the FIRST option heard wins instead of needing exactly one   · part of a word counts   · the word order stops counting
-//   · an empty option is found in every sentence   · the demo stops declaring the reading   · nobody asks to listen
-//   · the demo names the microphone again
+// The rule on which option a child said moved into the engine with the matching (ADR-0256): `tests/choosing-by-voice.node.test.js`.
 // MUTATIONS CHECKED (2026-09-26, ADR-0234 phase B3): Q1 the service worker no longer ignoring `?libras` when matching —
 // 🔴 «builds no interpreter of its own and reads nothing from its address».
 // MUTATIONS CHECKED (2026-09-26, the test bench; tables in quiz-round.node and quiz-bench.browser): M4, M5, M6, M7, M8, M9, M10,

@@ -81,7 +81,7 @@ describe('«Sair do jogo» on the pause card', () => {
   });
 
   /**
-   * Opens a question, asks to listen through a reading double, and quits from the card. `ends` says how the double's `listen()`
+   * Opens a question, asks to listen through a choice double (ADR-0256), and quits from the card. `ends` says how the double's `choose()`
    * ends when the microphone is given back: resolving with nothing heard, or refusing — a recogniser may do either.
    */
   async function quitWhileListening(ends) {
@@ -90,9 +90,10 @@ describe('«Sair do jogo» on the pause card', () => {
     let stops = 0;
     let finish = null;
     const reading = engine.reading;
-    const kept = { ready: reading.ready, listen: reading.listen, stop: reading.stop };
-    reading.ready = async () => ({ can: true });
-    reading.listen = () => new Promise((resolve, reject) => { finish = ends === 'refused' ? () => reject(new Error('stopped')) : () => resolve({ text: '' }); });
+    const kept = { choose: reading.choose, stop: reading.stop };
+    reading.choose = () => new Promise((resolve, reject) => {
+      finish = ends === 'refused' ? () => reject(new Error('stopped')) : () => resolve({ chosen: null, heard: '', ended: 'asked' });
+    });
     reading.stop = () => { stops += 1; finish?.(); };
     try {
       press(engine.keyboard.kbFor(0).action1[0]);

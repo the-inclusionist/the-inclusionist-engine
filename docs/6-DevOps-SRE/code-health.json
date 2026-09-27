@@ -28,18 +28,18 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2344,
-      "decisionNodes": 301,
+      "codeLines": 2360,
+      "decisionNodes": 302,
       "maxDepth": 4,
-      "fanOut": 100,
+      "fanOut": 101,
       "globalReach": 0,
       "worstFunction": 76,
       "statefulEdges": 0,
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 497,
-      "decisionNodes": 100,
+      "codeLines": 476,
+      "decisionNodes": 93,
       "maxDepth": 2,
       "fanOut": 10,
       "globalReach": 0,
@@ -867,6 +867,16 @@
       "statefulEdges": 0,
       "fanIn": 1
     },
+    "platform/choose-by-voice.ts": {
+      "codeLines": 127,
+      "decisionNodes": 20,
+      "maxDepth": 3,
+      "fanOut": 3,
+      "globalReach": 0,
+      "worstFunction": 6,
+      "statefulEdges": 0,
+      "fanIn": 1
+    },
     "platform/flash-sampler.ts": {
       "codeLines": 65,
       "decisionNodes": 11,
@@ -1048,8 +1058,8 @@
       "fanIn": 1
     },
     "platform/reading.ts": {
-      "codeLines": 115,
-      "decisionNodes": 18,
+      "codeLines": 126,
+      "decisionNodes": 19,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
@@ -1065,7 +1075,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 3
+      "fanIn": 4
     },
     "platform/speech.ts": {
       "codeLines": 24,
@@ -1135,7 +1145,7 @@
       "globalReach": 0,
       "worstFunction": 6,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "platform/voice-plan.ts": {
       "codeLines": 40,
@@ -1155,7 +1165,7 @@
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
-      "fanIn": 2
+      "fanIn": 3
     },
     "platform/vosk-vocabulary.ts": {
       "codeLines": 116,

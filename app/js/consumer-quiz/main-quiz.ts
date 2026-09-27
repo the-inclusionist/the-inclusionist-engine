@@ -307,45 +307,6 @@ export function narrationOnDraw(t: Translate, view: QuestionView, key: string, c
 /** The bar of a skill not answered yet in this sitting: empty, it fills as she answers. */
 const NO_BAR: Pick<Bar, 'segmentos' | 'cor'> = { segmentos: [], cor: 'nenhuma' };
 
-/* ===================================== SPEECH ===================================== */
-
-/**
- * THE WORDS OF A SENTENCE, as a comparison can use them: no case, no accents, no punctuation.
- *
- * A reading model writes what it hears the way a person writes — «Galinha.», «galinha», «GALINHA» — and a child who says
- * «é a galinha» said the answer. What is stripped here is everything that is not the word itself.
- */
-function wordsOf(phrase: string): string[] {
-  return phrase.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean);
-}
-
-/** Are these words, in this order, inside that sentence? Whole words — «dois» is not found inside «doisel». */
-function containsTheWords(ditas: readonly string[], alvo: readonly string[]): boolean {
-  if (!alvo.length || alvo.length > ditas.length) return false;
-  for (let i = 0; i + alvo.length <= ditas.length; i++) {
-    if (alvo.every((w, k) => ditas[i + k] === w)) return true;
-  }
-  return false;
-}
-
-/**
- * WHICH OPTION THE CHILD SAID, or nothing when the answer is not one of them.
- *
- * This is the whole of what the demo does with the reading (ADR-0216): it asks the engine to listen, receives TEXT, and the
- * rest is its own rule. Nothing here knows about a microphone, a model or a language.
- *
- * 🔴 TWO MATCHES IS NOT AN ANSWER, and that is why the count is kept instead of the first hit: a child who says «gato ou
- * galinha» is thinking out loud, and a quiz that picked one of them would answer FOR her — and mark it wrong.
- */
-export function heardAlternative(heard: string, alternativas: readonly string[]): number | null {
-  const ditas = wordsOf(heard);
-  if (!ditas.length) return null;
-  const found: number[] = [];
-  alternativas.forEach((a, i) => { if (containsTheWords(ditas, wordsOf(a))) found.push(i); });
-  return found.length === 1 ? found[0]! : null;
-}
-
 /** Named first when a position has more than one key: an arrow, then Space — keys a child finds by their name. */
 const KEYS_NAMED_FIRST: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
 
@@ -416,10 +377,10 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
   let narrated = '';
   let motor: Engine | null = null;
   /**
-   * ANSWERING BY SPEAKING (ADR-0216, issue #200) — the child says an option out loud and this quiz receives the TEXT.
+   * ANSWERING BY SPEAKING (ADR-0256) — on action 1 the child says one of the options shown, and this quiz receives WHICH ONE.
    *
-   * 📌 It is the whole cartridge side of the reading port, and it is meant to be read as such: `uses: { reading: true }` below,
-   * `listen()` here, a rule of its own on the words. No microphone, no model, no language, no path — the engine's business.
+   * 📌 It is the whole cartridge side of it, and it is meant to be read as such: `choose()` with the options as shown, the index
+   * back. No microphone, no model, no language, no path — the engine's business.
    *
    * ⚠️ NOTHING IS SPOKEN WHILE THE MICROPHONE IS OPEN. The statement is REPLACED by the line on screen instead of narrated,
    * because the engine's own voice would be recorded as if the child had said it.
@@ -563,14 +524,14 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
   async function listenForAnswer(): Promise<void> {
     const view = viewNow();
     if (!motor || !view || listening) return; // asked for on the question screen only (`ON_BUTTON.action1`)
-    const pode = await motor.reading.ready();
-    if (!pode.can) { sayInStatement(translate('quiz.semLeitura')); return; }
     listening = true;
     sayInStatement(translate('quiz.ouvindo'), false);
     try {
-      const heard = await motor.reading.listen();
+      // 📌 THE OPTIONS AS SHOWN, and the engine hears only those (ADR-0256): an option is one or two words, which a closed grammar
+      // hears and a free transcription invents. The answer is which one — never text to compare.
+      const heard = await motor.reading.choose(view.options.map((o) => o.text));
       listening = false;
-      answerByVoice(view, heard.text);
+      answerByChoice(heard.chosen, heard.heard);
     } catch {
       // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows —
       // unless she has already left the question («Sair do jogo» stops the microphone, `onPhase`).
@@ -579,11 +540,9 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     }
   }
 
-  /** What she said, as an answer — or nothing at all when she left the question while it listened («Sair do jogo», `onPhase`). */
-  function answerByVoice(view: QuestionView, text: string): void {
+  /** The option she said, as an answer — or nothing at all when she left the question while it listened («Sair do jogo», `onPhase`). */
+  function answerByChoice(chosenOption: number | null, text: string): void {
     if (screen !== 'question') return;
-    // the options' WORDS as they are shown — the page's language, or the content's own: she says «galinha», not a key
-    const chosenOption = heardAlternative(text, view.options.map((o) => o.text));
     if (chosenOption !== null) { render(false); answer(chosenOption); return; }
     const said = text.trim();
     sayInStatement(said ? translate('quiz.notAnOption', { heard: said }) : translate('quiz.ouviNada'));
@@ -767,10 +726,10 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     // THIS GAME READS TO THE CHILD (ADR-0216 §3): one line, and the engine loads the voice from the delivery when she picks it.
     // 📌 It used to be the ~200 lines of `kokoro-porta`/`kokoro-carregar` — the phonemizer, the runtime and the paths — which every
     // game that wanted a voice would have copied. They moved into the engine and were deleted here.
-    // AND THE CHILD READS TO IT (ADR-0216 §3): one more line, and `motor.reading.listen()` answers with what she said. This
-    // answer is also what puts the reading models of pt, en and es into a delivery — `npx inclusionist-heavy dist --reading` —
-    // and what makes every device keep the three, her language's first, since she can switch at any moment (ADR-0225 erratum).
-    uses: { neuralVoice: true, reading: true },
+    // 📌 NO READING IS DECLARED, and that is the answer, not an omission (ADR-0256): this quiz hears the child CHOOSE an option,
+    // which `motor.reading.choose()` hears with the command models every delivery carries. Declaring the reading would put 850 MiB
+    // of reading models into every delivery and every device for a transcription this game never asks for.
+    uses: { neuralVoice: true },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
     // the pause card's «Sair do jogo» asks for `'title'`: this quiz's start screen (`onPhase`)

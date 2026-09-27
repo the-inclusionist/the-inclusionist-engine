@@ -65,6 +65,7 @@ import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { checkedCacheHas, sha256With } from '../platform/heavy.js';
 import { createBundleLoader } from '../platform/vosk-runtime.js';
+import { createVoiceChooser, openWithCommandRecogniser } from '../platform/choose-by-voice.js';
 import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, wireBarCaption, showPauseOptions } from '../ui/pause-icons.js';
 // 📌 The bar's markup is a pure string builder and lives with the rest of the pause markup (ADR-0221, issue #203); what this
@@ -4060,6 +4061,26 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * vocabulary (ADR-0216): a method only this file calls has no business in a contract seven repositories read.
    */
   let closeReadingThread = (): void => {};
+  // the command recogniser's bundle, put in the page once and shared by the 👄 and a choice by voice
+  const voskBundle = createBundleLoader((url) => import(/* @vite-ignore */ url));
+  /*
+   * A CHOICE AMONG THE OPTIONS THE GAME SHOWS (ADR-0256): heard by the command recogniser with a grammar of exactly those options,
+   * and the 👄 paused meanwhile — one ear per word. Not tied to `uses.reading`: the command models are asked of every delivery. A
+   * device with no microphone or no model is told by the chooser itself, in `problems` and to the game.
+   */
+  const chooser = createVoiceChooser({
+    language: () => bcp47(),
+    open: openWithCommandRecogniser({
+      base: doc.baseURI, hasFile: hasHeavyFile, loadBundle: voskBundle, fetch: (url) => win.fetch(url),
+      getUserMedia, createContext: () => new HostAudioContext!() as never,
+    }),
+    after: (fn, ms) => win.setTimeout(fn, ms),
+    cancel: (h) => win.clearTimeout(h as number),
+    report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
+    // `apply(false)` stops without writing the child's stored answer (ADR-0220), so resuming is applying that answer again
+    pause: () => { void voiceControl?.apply(false); },
+    resume: () => { void voiceControl?.apply(state.voiceControl); },
+  });
   const reading: Reading = (() => {
     const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown; Worker?: typeof Worker };
     let microphone: { record(o: ListenOptions): Promise<Float32Array>; stop(): void } | null = null;
@@ -4079,6 +4100,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       every: (fn, ms) => win.setInterval(fn, ms),
       stopEvery: (h) => win.clearInterval(h as number),
       report: (rowNode) => { if (!measuredProblems.includes(rowNode)) measuredProblems.push(rowNode); },
+      chooser,
       /**
        * THE ENGINE'S OWN RECOGNISER, and it arrives late on purpose (ADR-0216 §5): `platform/reading-runtime` is what names the
        * model files, so a game that never listens — and a child of a game that does, until the first `listen()` — loads none of
@@ -4160,6 +4182,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     return {
       ready: () => (o.uses?.reading ? listener.ready() : Promise.resolve({ can: false as const, why: 'no-model' as const })),
       stop: () => listener.stop(),
+      choose: (options, settings) => listener.choose(options, settings),
       listen: (options) => {
         if (!o.uses?.reading) {
           if (!measuredProblems.includes(notDeclared)) measuredProblems.push(notDeclared);
@@ -4491,7 +4514,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       turnOff: () => { state.setVoiceControlValue(false); },
       after: (fn, ms) => { win.setTimeout(fn, ms); },
       // ⚠️ THE ADDRESS IS ABSOLUTE AND THE BUNDLER MUST NOT FOLLOW IT: the recogniser arrives with the delivery at runtime.
-      hasFile: hasHeavyFile, loadBundle: createBundleLoader((url) => import(/* @vite-ignore */ url)),
+      hasFile: hasHeavyFile, loadBundle: voskBundle,
       // the model's vocabulary is read from its archive, so a menu name the model cannot hear is a line of `problems` (ADR-0194 §4)
       fetch: (url) => win.fetch(url),
       getUserMedia, createContext: () => new HostAudioContext!() as never,

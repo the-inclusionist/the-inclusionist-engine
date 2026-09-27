@@ -1816,6 +1816,45 @@
       }
     }
   },
+  "platform/choose-by-voice.ts": {
+    "interface ChoiceHeard": {
+      "members": {
+        "chosen": "readonly chosen: number | null",
+        "ended": "readonly ended: 'chosen' | 'unclear' | 'timeout' | 'asked'",
+        "heard": "readonly heard: string"
+      }
+    },
+    "interface ChooseSettings": {
+      "members": {
+        "language?": "readonly language: string",
+        "maxMs?": "readonly maxMs: number"
+      }
+    },
+    "interface OpenedChoice": {
+      "members": {
+        "stop": "stop(): Promise<void>",
+        "vocabulary?": "readonly vocabulary: () => Promise<ReadonlySet<string> | null>"
+      }
+    },
+    "interface VoiceChooserDeps": {
+      "members": {
+        "after": "readonly after: (fn: () => void, ms: number) => unknown",
+        "cancel": "readonly cancel: (handle: unknown) => void",
+        "language": "readonly language: () => string",
+        "open": "readonly open: (language: string, grammar: readonly string[], onHeard: (text: string, final: boolean) => void) => Promise<OpenedChoice>",
+        "pause?": "readonly pause: () => void",
+        "report": "readonly report: (line: string) => void",
+        "resume?": "readonly resume: () => void"
+      }
+    },
+    "interface VoiceChooser": {
+      "members": {
+        "choose": "choose(options: readonly string[], settings?: ChooseSettings): Promise<ChoiceHeard>",
+        "stop": "stop(): void"
+      }
+    },
+    "type CommandRecogniserDeps": "Omit<VoskDeps, 'language'> & Pick<VoiceListenerDeps, 'getUserMedia' | 'createContext'>"
+  },
   "platform/flash-sampler.ts": {
     "interface FlashMeasurement": {
       "members": {
@@ -2199,6 +2238,7 @@
     "interface ReadingDeps": {
       "members": {
         "api?": "readonly api: RecognitionApi | null",
+        "chooser?": "readonly chooser: VoiceChooser",
         "createSession?": "readonly createSession: (api: RecognitionApi, language: string) => ListeningSession",
         "every": "readonly every: (fn: () => void, ms: number) => unknown",
         "language": "readonly language: () => string",
@@ -2218,6 +2258,7 @@
     },
     "interface Reading": {
       "members": {
+        "choose": "choose(options: readonly string[], settings?: ChooseSettings): Promise<ChoiceHeard>",
         "listen": "listen(options?: ListenOptions): Promise<Heard>",
         "ready": "ready(): Promise<{ readonly can: boolean; readonly why: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local' | 'no-model'; }>",
         "stop": "stop(): void"

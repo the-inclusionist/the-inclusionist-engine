@@ -80,7 +80,7 @@ export interface CommandReader {
  * What two spoken forms are COMPARED by: `spokenText` without its accents. The grammar asks the model for «ação» (it would drop
  * «acao»), but a recogniser that writes «acao» back — or a browser recogniser with no closed vocabulary — still said «ação».
  */
-const compareKey = (t: string): string => spokenText(t).normalize('NFD').replace(/\p{M}/gu, '');
+export const compareKey = (t: string): string => spokenText(t).normalize('NFD').replace(/\p{M}/gu, '');
 
 /** The phrases a reader knows, by comparison key → the spoken form it answers with (the first one to claim the key). */
 function byKey(phrases: readonly string[]): Map<string, string> {
