@@ -103,7 +103,7 @@ request `g` of the filing asks to be put on record: the itemized list of those e
 - **Typefaces** — roster and restrictions in **ADR-0012**. ⚠️ Ronde and the alternatives OPTIFrench-Script and
   Merveille are **free for personal use only and CANNOT be packaged**: a download is offered, and the
   option stays disabled when none of them is present.
-  The engine **packages** every family `app/public/vendor/fonts.css` declares — **217 families in 346 `.woff2` files**, which
+  The engine **packages** every family `app/public/vendor/fonts.css` declares — **214 families in 340 `.woff2` files**, which
   the service worker precaches into every install and the npm package ships: **214 under the SIL OFL 1.1**, **2 under
   Apache-2.0** (Luckiest Guy, Smokum) and **1 under the Ubuntu Font Licence 1.0** (Ubuntu), each as its own font states it.
   Both licences ask for the notice and the text to travel **with each copy**, so they sit **beside the fonts**, in

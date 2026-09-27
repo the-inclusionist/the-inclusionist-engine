@@ -2,7 +2,7 @@
 //
 // WHAT THE ENGINE OWES THE PEOPLE WHOSE FONTS IT CARRIES (the fonts' twin of `third-party.mjs`).
 //
-// The engine packages every font family `app/public/vendor/fonts.css` declares — 217 families in 346 `.woff2` files — and
+// The engine packages every font family `app/public/vendor/fonts.css` declares — 214 families in 340 `.woff2` files — and
 // every copy of it is a redistribution: the PWA precaches them into each install, and the npm package ships `app/public/vendor`.
 // SIL OFL 1.1 §2 lets a font travel «provided that each copy contains the above copyright notice and this license», as a
 // stand-alone text file or as metadata «easily viewed by the user»; Apache-2.0 §4(a) asks for the licence text; the Ubuntu Font
@@ -10,7 +10,7 @@
 // carries each licence text they are under and `NOTICE.txt`: every family, its files, its licence and its copyright line AS THE FONT
 // ITSELF STATES IT (name ID 0 of its `name` table), so the obligation holds whether or not a viewer can open the metadata.
 //
-// 📏 MEASURED 2026-09-27, all 346 files: every one keeps its copyright line (name ID 0); only ONE keeps its licence
+// 📏 MEASURED 2026-09-27, all 346 files then packaged: every one keeps its copyright line (name ID 0); only ONE keeps its licence
 // description (name ID 13, OpenDyslexic, the whole OFL text); 331 keep a licence URL (name ID 14). The web subsets strip the
 // licence text, which is why the text has to travel as a file. Three families are NOT under the OFL — Luckiest Guy and Smokum
 // (Apache-2.0) and Ubuntu (Ubuntu Font Licence 1.0) — although the typographic catalogue records «OFL 1.1» for all three.
@@ -65,12 +65,7 @@ export const FONT_LICENCE_TEXTS = Object.freeze({
  * whose font later names a licence is refused (the entry would be a second, older truth), and so is an entry no family uses.
  */
 export const DECLARED_WITHOUT_METADATA = Object.freeze({
-  'iA Writer Quattro': { spdx: 'OFL-1.1',
-    evidence: 'the files carry no licence field; research/catalogo_tipografico.json records «OFL 1.1», source GitHub iaolo/iA-Fonts' },
-  Monoton: { spdx: 'OFL-1.1',
-    evidence: 'the files carry no licence field; research/catalogo_tipografico.json records «OFL 1.1», source Google Fonts' },
-  'Yatra One': { spdx: 'OFL-1.1',
-    evidence: 'the files carry no licence field; research/catalogo_tipografico.json records «OFL 1.1», source Google Fonts' },
+  // none: the three faces that carried no licence in their files left the package (ADR-0251)
 });
 
 // ===================== READING A WOFF2's `name` TABLE =====================
@@ -186,9 +181,12 @@ export function familiesOf(css) {
  * for a family with no licence stated or declared, with two licences, with a licence no shipped text covers, with files that
  * disagree about their copyright, or declared although its font now states a licence.
  */
-export function fontEntries({ css, readFont, declared = DECLARED_WITHOUT_METADATA, texts = FONT_LICENCE_TEXTS }) {
+export function fontEntries({
+  css, readFont, declared = DECLARED_WITHOUT_METADATA, texts = FONT_LICENCE_TEXTS,
+  readNames = (file) => readFontNames(readFont(file)), // a case describes a font's `name` table without shipping one
+}) {
   const entries = familiesOf(css).map(({ family, files }) => {
-    const perFile = files.map((file) => ({ file, names: readFontNames(readFont(file)) }));
+    const perFile = files.map((file) => ({ file, names: readNames(file) }));
     const stated = perFile.flatMap(({ names }) => licencesStated(names));
     const spdxStated = [...new Set(stated.map((s) => s.spdx))];
     if (spdxStated.length > 1) throw new Error(`«${family}»: its files state more than one licence (${spdxStated.join(', ')})`);

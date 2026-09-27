@@ -258,20 +258,19 @@ both pinned in `scripts/libras-glosses/uv.lock` with the other Python packages t
   this project believes it is not, and that is not a legal opinion. The glosses a delivery writes say what made them
   (`"made"` in `glosses.json`).
 
-## Fonts — 217 families — SIL OFL 1.1, Apache-2.0 and the Ubuntu Font Licence 1.0
+## Fonts — 214 families — SIL OFL 1.1, Apache-2.0 and the Ubuntu Font Licence 1.0
 
-Every family `app/public/vendor/fonts.css` declares: 346 `.woff2` files in `app/public/vendor/fonts/`, most of them the latin
-and latin-ext subsets `fonts.gstatic.com` serves, plus OpenDyslexic (antijingoist/opendyslexic) and iA Writer Quattro
-(iaolo/iA-Fonts). The
+Every family `app/public/vendor/fonts.css` declares: 340 `.woff2` files in `app/public/vendor/fonts/`, most of them the latin
+and latin-ext subsets `fonts.gstatic.com` serves, plus OpenDyslexic (antijingoist/opendyslexic). The
 service worker precaches them into every install and the npm package ships them, so each copy of the engine redistributes them.
 
 - **Licences, as each font states its own** (name IDs 14, 13 and 0 of its `name` table, read on 2026-09-27): **SIL OFL 1.1**
-  for 214 families; **Apache-2.0** for Luckiest Guy and Smokum (Brian J. Bonislawsky DBA Astigmatic); the **Ubuntu Font
+  for 211 families; **Apache-2.0** for Luckiest Guy and Smokum (Brian J. Bonislawsky DBA Astigmatic); the **Ubuntu Font
   Licence 1.0** for Ubuntu (Canonical Ltd.). ⚠️ The typographic catalogue (`research/catalogo_tipografico.json`) records «OFL
   1.1» for those three as well; the fonts say otherwise, and the fonts are what ships.
-- **Three families state no licence in their files** — iA Writer Quattro, Monoton and Yatra One — and are listed as OFL 1.1 on the
-  catalogue's word (`DECLARED_WITHOUT_METADATA` in `scripts/licences/fonts.mjs`).
-- **Copyright lines:** every one of the 346 files keeps its own (name ID 0), and `app/public/vendor/fonts-licences/NOTICE.txt` lists each
+- **Three families stated no licence in their files** — iA Writer Quattro, Monoton and Yatra One — and LEFT the package on
+  2026-09-27 until their licence is established (ADR-0251); none is declared by hand any more.
+- **Copyright lines:** every one of the 340 files keeps its own (name ID 0), and `app/public/vendor/fonts-licences/NOTICE.txt` lists each
   family's as read from the font. Only one file keeps its licence text (OpenDyslexic's name ID 13): the web subsets strip it,
   so the texts ship as files beside the fonts — `OFL-1.1.txt` (copied from that OpenDyslexic field, byte-identical to three
   upstream `OFL.txt` copies held locally), `Apache-2.0.txt` (the heavy files' text, `scripts/licences/`) and `UFL-1.0.txt`

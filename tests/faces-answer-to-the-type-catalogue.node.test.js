@@ -29,7 +29,6 @@ const comRecuo = (it) => { const fams = faceFamilies(it); return fams.length > 1
  * and removing a face for dyslexia from the menu is their call, not a gate's (issue #172). Each line says what is missing.
  */
 const COBERTURA_NAO_VERIFICADA = {
-  quattro: 'iA Writer Quattro: GitHub source, coverage not measured in the catalogue',
   opendyslexic: 'OpenDyslexic: GitHub source, coverage not measured in the catalogue',
   ronde: 'Ronde Script: referencia_externa, coverage not measured in the catalogue; its fallback Cookie covers pt_br',
 };

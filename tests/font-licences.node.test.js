@@ -3,7 +3,7 @@
 //
 // 📌 SIL OFL 1.1 §2, Apache-2.0 §4(a) and the Ubuntu Font Licence §1 attach to the COPY, and every install of the PWA and every
 // copy of the npm package is one: `app/public/vendor/fonts-licences/` carries `NOTICE.txt` (each family, its files, its licence and its
-// copyright line as the font states it) and the licence texts beside the 346 `.woff2`. 📏 The web subsets keep their copyright
+// copyright line as the font states it) and the licence texts beside the `.woff2` files. 📏 The web subsets keep their copyright
 // line but only one of 346 keeps its licence text (measured 2026-09-27), so the texts cannot be left to the metadata.
 //
 // MUTATIONS CHECKED — at the end of the file.
@@ -73,9 +73,12 @@ describe('the fonts carry their notices and licences', () => {
   });
 
   it('🔴 [Right] a family with no licence in its files and none declared is REFUSED, and so is a licence with no text', () => {
-    // Monoton's files carry no licence field: under another name, nobody declared it.
-    const orphan = "@font-face{font-family:'Nobody';src:url('fonts/cat-monoton-400.woff2') format('woff2');}";
-    expect(() => fontEntries({ css: orphan, readFont, declared: {} })).toThrow(/no licence stated in its files and none declared/);
+    // A font whose `name` table has a copyright line and no licence field (IDs 13/14) — as Monoton's, Yatra One's and iA Writer
+    // Quattro's did before they left the package (ADR-0251) — and nobody declared it.
+    const orphan = "@font-face{font-family:'Nobody';src:url('fonts/nobody-400.woff2') format('woff2');}";
+    const copyrightOnly = () => ({ 0: 'Copyright 2011 Nobody', 1: 'Nobody' });
+    expect(() => fontEntries({ css: orphan, readFont, readNames: copyrightOnly, declared: {} }))
+      .toThrow(/no licence stated in its files and none declared/);
     const ubuntu = "@font-face{font-family:'Ubuntu';src:url('fonts/ubuntu-400.woff2') format('woff2');}";
     const { 'Ubuntu-font-1.0': _dropped, ...withoutUfl } = FONT_LICENCE_TEXTS;
     expect(() => fontEntries({ css: ubuntu, readFont, declared: {}, texts: withoutUfl })).toThrow(/no licence text shipped/);
@@ -120,7 +123,7 @@ describe('the fonts carry their notices and licences', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 //   F1 one family's block deleted from NOTICE.txt (Lexend)                🔴 every family has an entry · NOTICE.txt is what the fonts say
-//   F2 Monoton's hand declaration deleted                                  🔴 NOTICE.txt is what the fonts say (the build refuses it)
+//   F2 (before ADR-0251) Monoton's hand declaration deleted              🔴 NOTICE.txt is what the fonts say (the build refuses it)
 //   F3 the «no licence stated and none declared» refusal removed           🔴 a family with no licence is REFUSED
 //   F4 the «no licence text shipped» refusal removed                        🔴 a family with no licence is REFUSED
 //   F5 one character of OFL-1.1.txt changed                                 🔴 the shipped texts are the bytes they were copied from

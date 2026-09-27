@@ -1,11 +1,11 @@
 The fonts in vendor/fonts/: notices and licences
 =============================================
 
-The Inclusionist engine redistributes 217 font families, in 346 files, from this directory. Each
+The Inclusionist engine redistributes 214 font families, in 340 files, from this directory. Each
 family is listed below with the files it covers, its licence, where that licence was read, and its copyright
 notice as the font's own `name` table states it (name ID 0). The licence texts sit beside this file:
 
-    OFL-1.1.txt     SIL Open Font License, Version 1.1 (214 families)
+    OFL-1.1.txt     SIL Open Font License, Version 1.1 (211 families)
     Apache-2.0.txt  Apache License, Version 2.0 (2 families)
     UFL-1.0.txt     Ubuntu Font Licence, Version 1.0 (1 family)
 
@@ -43,14 +43,6 @@ Licence:   SIL Open Font License, Version 1.1 (OFL-1.1), see OFL-1.1.txt
 Read from: licence URL (name ID 14): https://openfontlicense.org
 Copyright:
     Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors (https://github.com/googlefonts/atkinson-hyperlegible-next-mono)
-
--------------------------------------------------------------------------------
-Family:    iA Writer Quattro
-Files:     quattro-400.woff2, quattro-700.woff2
-Licence:   SIL Open Font License, Version 1.1 (OFL-1.1), see OFL-1.1.txt
-Read from: the files carry no licence field; research/catalogo_tipografico.json records «OFL 1.1», source GitHub iaolo/iA-Fonts
-Copyright:
-    Copyright 2017 IBM Corp. and iA Inc. All rights reserved.
 
 -------------------------------------------------------------------------------
 Family:    Source Sans 3
@@ -1543,14 +1535,6 @@ Copyright:
     Copyright 2025 The Monomakh Project Authors (https://github.com/slavonic/Monomakh/)
 
 -------------------------------------------------------------------------------
-Family:    Monoton
-Files:     cat-monoton-400-ext.woff2, cat-monoton-400.woff2
-Licence:   SIL Open Font License, Version 1.1 (OFL-1.1), see OFL-1.1.txt
-Read from: the files carry no licence field; research/catalogo_tipografico.json records «OFL 1.1», source Google Fonts
-Copyright:
-    Copyright (c) 2011 by vernon adams. All rights reserved.
-
--------------------------------------------------------------------------------
 Family:    Nerko One
 Files:     cat-nerko_one-400-ext.woff2, cat-nerko_one-400.woff2
 Licence:   SIL Open Font License, Version 1.1 (OFL-1.1), see OFL-1.1.txt
@@ -1753,14 +1737,6 @@ Licence:   SIL Open Font License, Version 1.1 (OFL-1.1), see OFL-1.1.txt
 Read from: licence URL (name ID 14): http://scripts.sil.org/OFL
 Copyright:
     Copyright (c) 2011 Rodrigo Fuenzalida (hello@rfuenzalida.com), with Reserved Font Name "Titan One"
-
--------------------------------------------------------------------------------
-Family:    Yatra One
-Files:     cat-yatra_one-400-ext.woff2, cat-yatra_one-400.woff2
-Licence:   SIL Open Font License, Version 1.1 (OFL-1.1), see OFL-1.1.txt
-Read from: the files carry no licence field; research/catalogo_tipografico.json records «OFL 1.1», source Google Fonts
-Copyright:
-    Copyright 2014 The Yatra Project Authors.
 
 -------------------------------------------------------------------------------
 Family:    Yomogi

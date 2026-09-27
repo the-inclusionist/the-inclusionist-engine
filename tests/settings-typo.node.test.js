@@ -78,8 +78,8 @@ describe('resolveFontKey — boot: persistida válida > migração legado > defa
     expect(resolveFontKey(fakeStore())).toBe('atkinson');
   });
   it('[Right] a chave nova tem prioridade sobre a legada quando ambas presentes', () => {
-    const store = fakeStore({ incl_font_k: 'quattro', incl_fonte: 'dislexia' });
-    expect(resolveFontKey(store)).toBe('quattro');
+    const store = fakeStore({ incl_font_k: 'lexend', incl_fonte: 'dislexia' });
+    expect(resolveFontKey(store)).toBe('lexend');
   });
 });
 

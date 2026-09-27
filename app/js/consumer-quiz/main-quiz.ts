@@ -92,7 +92,7 @@
 //     importação e mantido a mentira, porque o consumidor continuaria devolvendo a string `'paused'`. A
 //     plataforma responde `phase === 'paused'`; este quiz responde `true`; ninguém mente. A linha
 //     `setPhaseValue('paused')` que ficava aqui foi apagada, e `menu-nav` não importa mais de core/state.
-//     Provado: com `setPhaseValue('paused')`, `S` desce atkinson→lexend→quattro e `W` volta, pelo esquema de
+//     Provado: com `setPhaseValue('paused')`, `S` desce atkinson→lexend→andika e `W` volta, pelo esquema de
 //     teclas remapeável. Sem ela, tecla nenhuma chega.
 //
 // 11. O TECLADO REMAPEÁVEL É O MELHOR RECORTE DA BASE. `KeyboardRuntimePlayer` é `Pick<ControlledPlayer,'ctrl'>`

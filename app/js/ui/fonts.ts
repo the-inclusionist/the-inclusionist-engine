@@ -161,7 +161,6 @@ export const FONT_GROUPS: FontGroup[] = [
   {g:'font.group.sans', items:[
     {k:'atkinson', id:'atkinson_hyperlegible',   fam:'Atkinson Hyperlegible', fb:'sans', d:'font.desc.atkinson'},
     {k:'lexend', id:'lexend',     fam:'Lexend',                fb:'sans', d:'font.desc.lexend'},
-    {k:'quattro', id:'ia_writer_quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'font.desc.quattro'},
     {k:'andika', id:'andika',     fam:'Andika',                fb:'sans', d:'font.desc.andika'},
     // ⚠️ OPENDYSLEXIC IS OFFERED WITH NO CLAIM OF EFFICACY — issue #87 item 3 and `docs/game-design/typography.md`: offer
     // Dyslexie and OpenDyslexic only as a user's choice, because research shows no reading gain from them. Its description

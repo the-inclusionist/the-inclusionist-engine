@@ -2,6 +2,10 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0251
+      what: >-
+        the erratum keeping iA Writer Quattro in the menu: it left the package, with Monoton and Yatra One, until its licence is
+        established.
     - by: ADR-0191
       what: >-
         §1's «at the engine repository root». The catalogue and its instructions live in `research/`, where the Dev put

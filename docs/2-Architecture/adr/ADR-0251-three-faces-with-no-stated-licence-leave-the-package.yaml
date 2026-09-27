@@ -1,0 +1,59 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - tests/font-licences.node.test.js
+    - tests/an-offered-font-loads.node.test.js
+    - tests/faces-answer-to-the-type-catalogue.node.test.js
+  supersedes-in-part: [ADR-0176]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, told that Monoton, Yatra One and iA Writer Quattro carry no licence in their files and were listed as OFL only on the catalogue's word: «Melhor não usá-las por enquanto.»"
+    - "The Dev, 2026-09-27, on the catalogue's wrong licence for Luckiest Guy, Smokum (Apache 2.0) and Ubuntu (Ubuntu Font Licence 1.0): «Corrija, por favor.»"
+    - "`engine:459438d7` — the fonts' notices and licence texts, measured from each file's `name` table"
+  informed: []
+
+title: Three faces with no stated licence leave the package until their licence is established
+
+context-and-problem-statement: |
+  Reading the `name` table of every packaged font (to ship each family's notice and licence, ADR-0149's debt) found three
+  families whose files carry a copyright line and NO licence: Monoton, Yatra One and iA Writer Quattro. They shipped as
+  OFL 1.1 only because the typographic catalogue says so, and the catalogue was measured wrong for three other families
+  (Luckiest Guy and Smokum are Apache 2.0, Ubuntu is under its own licence). iA Writer Quattro was in the typography menu,
+  kept there by ADR-0176's erratum («Ficam») while its coverage was unmeasured.
+
+decision-drivers:
+  - "Every copy of the engine carries the fonts; a font whose licence nobody established should not travel with it"
+  - "The catalogue is the engine's source for fonts (ADR-0176), so it says what is true"
+
+considered-options:
+  - "A · The three leave the package and the catalogue marks them removed, until their licence is established"
+  - "B · Keep them on the catalogue's word"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Nothing ships without an established licence. ❌ The typography menu loses one face (iA Writer Quattro); a child
+  who had chosen it falls back to the default face, the stored choice being validated at boot. **B.** ❌ Ships three fonts
+  on an assertion the same catalogue was wrong about three times.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the three leave until their licence is established"
+    justification: |
+      The six `.woff2` files, their `@font-face` rules and the menu entry leave; the catalogue marks the three `removida`
+      with the reason, and its licence field is corrected for Luckiest Guy, Smokum and Ubuntu. Superseded in part: ADR-0176's
+      erratum keeping iA Writer Quattro in the menu. A face comes back when its licence is established from its own source.
+
+  consequences:
+    positive:
+      - "Every packaged family's licence is read from the font itself, and its text ships beside it"
+    negative:
+      - "One face fewer in the typography menu; 136 KB fewer in every install (six files, measured)"
+
+  confirmation: |
+    ✅ The gates in confirmed-by: every family the stylesheet declares has its notice and a shipped licence text, a family
+    with no licence stated or declared is refused, no declared face is missing from the catalogue as active, and the menu's
+    faces all answer to the catalogue.
+
+more-information: |
+  The catalogue `research/catalogo_tipografico.json` is the Dev's file; these edits were asked for by them.
