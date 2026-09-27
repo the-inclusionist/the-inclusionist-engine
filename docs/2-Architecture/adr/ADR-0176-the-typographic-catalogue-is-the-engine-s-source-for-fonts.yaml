@@ -2,6 +2,9 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0255
+      what: >-
+        the packaging of every active catalogue family with the engine: the engine packages only the faces it uses itself; the library lives in `the-inclusionist-lfs`, delivered when a cartridge declares it.
     - by: ADR-0251
       what: >-
         the erratum keeping iA Writer Quattro in the menu: it left the package, with Monoton and Yatra One, until its licence is

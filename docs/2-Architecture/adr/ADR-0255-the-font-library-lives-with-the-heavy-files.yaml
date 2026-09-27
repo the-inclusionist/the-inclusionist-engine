@@ -1,0 +1,70 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0150, ADR-0176, ADR-0254]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, while the reserved-name fonts were being replaced by their originals: «Em vez de seguir dentro da engine, não seria mais apropriado que as fontes ficassem em the-inclusionist-lfs?» — and, told that the engine's own faces must stay and the library for cartridges could move: «Sim, todas as fontes que a engine não usa vão para the-inclusionist-lfs.»"
+    - "The Dev, 2026-09-27, against each cartridge shipping its own fonts: «Se tivermos 300 jogos, são 300+ fontes aparecendo repetidas vezes»"
+    - "ADR-0177 — heavy files are packaged with the delivery, checked by sha256, and served from the page's own origin"
+  informed: []
+
+title: The font library lives with the heavy files; the engine keeps only the faces it uses itself
+
+context-and-problem-statement: |
+  The engine packages about 210 font families (340 files, ~7 MB) in its repository, its npm package and every install's
+  precache, though it uses only a handful itself: the typography button's faces (Andika, Atkinson Hyperlegible, Lexend,
+  the country's Playwrite hand and its fallbacks) and the mathematics face. The rest is a library for cartridges to load.
+  The heavy files already have a home with the right properties — `the-inclusionist-lfs`, copied into a delivery on
+  request, checked by sha256, each folder with its licence (ADR-0177) — and one copy per delivery answers a cartridge
+  shipping its own fonts, which would repeat them across games.
+
+decision-drivers:
+  - "The engine carries what the engine uses; a library for cartridges is delivered when a cartridge asks for it"
+  - "One copy of a font per delivery, however many cartridges use it"
+  - "The faces a child reaches from the engine's own controls are on the device from the first day, whatever the delivery"
+
+considered-options:
+  - "A · The library moves to `the-inclusionist-lfs` as heavy files; the engine keeps its own faces"
+  - "B · Everything stays in the engine"
+  - "C · Each cartridge ships the fonts it uses"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The engine's repository and package lose ~7 MB of binaries; a delivery carries only the fonts its cartridges
+  declare, once each; licences travel per folder by the machinery the models already use. ❌ The heavy catalogue grows
+  by the library's files, a delivery gains a font step, and a cartridge declares its fonts (a contract field, additive).
+  **B.** ❌ Every install carries 7 MB of faces most games never draw. **C.** ❌ The same font repeated per cartridge.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the library lives with the heavy files"
+    justification: |
+      1. The engine keeps, packaged and precached, only the faces it uses itself: the typography button's (ADR-0149,
+         ADR-0150) and the mathematics face. Their licences ship beside them as now.
+      2. Every other family moves to `the-inclusionist-lfs`, one folder per family with its files and its licence text
+         and notice; the engine keeps its catalogue (files, sha256, weights), as it does for the models.
+      3. A cartridge DECLARES the families it uses (in `uses`, beside `reading` and `neuralVoice`); the delivery copies
+         the declared families into `heavy/` (`inclusionist-heavy`), and at boot the engine caches them verified and
+         declares their `@font-face` itself. A family asked for and not delivered is said in `problems` (ADR-0169).
+      4. ADR-0254 holds in its new home: the reserved-name families are their authors' originals, compressed only; and
+         Merriweather does not enter the library.
+      Superseded in part: ADR-0150's and ADR-0176's packaging of every catalogue family with the engine, and ADR-0254's
+      «ship» (the files, not the choice of originals).
+
+  consequences:
+    positive:
+      - "The engine's repository and package shrink by the library; an install carries only the fonts its games use"
+    negative:
+      - "A cartridge that uses a library face must declare it, and a delivery must be built with it"
+      - "The mirror (Cloudflare) receives the fonts' folders — the Dev's upload, as for every heavy folder"
+
+  confirmation: |
+    Debt until the gate lands (to be named with the implementation): the engine's package and precache hold only its
+    own faces; a cartridge declaring a library family gets it from `heavy/`, verified, with its `@font-face`; one not
+    delivered is reported; every library folder in `the-inclusionist-lfs` carries its licence; the reserved-name
+    families there are the originals.
+
+more-information: |
+  Games are not edited from the engine's session: a cartridge that uses a library face declares it when it moves to the
+  version that has this.

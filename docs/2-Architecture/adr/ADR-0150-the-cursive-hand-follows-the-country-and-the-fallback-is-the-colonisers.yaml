@@ -2,6 +2,9 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0255
+      what: >-
+        packaging every hand with the engine: the engine keeps the typography button's faces; the rest of the library lives with the heavy files.
     - by: ADR-0176
       what: "ONLY what is packaged: its erratum of 2026-09-13 («Engine empacota tudo por enquanto») packages every active family of the typographic catalogue — the Guides this record kept out and every Playwrite beyond its fifteen (engine:192f777). The fallback by the coloniser's language stands"
   confirmed-by:

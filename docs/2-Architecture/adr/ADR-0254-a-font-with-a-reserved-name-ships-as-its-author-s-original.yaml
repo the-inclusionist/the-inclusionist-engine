@@ -1,6 +1,10 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0255
+      what: >-
+        «ship» — the files: the reserved-name families are the originals in `the-inclusionist-lfs`, delivered on a cartridge's declaration; the choice of originals stands.
   date: 2026-09-27
   decision-makers: [Dev]
   consulted:
