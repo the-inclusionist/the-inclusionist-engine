@@ -14,6 +14,7 @@
 //
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeAll } from 'vitest';
+import { userEvent } from '@vitest/browser/context';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 class HostUtterance { constructor(text) { this.text = text; this.lang = ''; this.voice = null; this.volume = 0; this.rate = 0; } }
@@ -83,7 +84,37 @@ beforeAll(async () => {
   root.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(root);
+  /*
+   * ⚠️ THE MACHINE'S REAL POINTER IS NOT THIS FILE'S SUBJECT. Hovering an icon writes its name under the row — by design
+   * (`wireBarCaption`) — and this page has no stylesheet, so the bar sits in the flow where another file's real click can
+   * leave the browser's pointer. In one full-suite run (2026-09-26) all four cases below read «Menu»: the failure screenshot
+   * shows the ☰ in the native `:hover` state, and «Menu» came back even after leaving the bar had cleared the caption, which
+   * only a pointer entering the ☰ writes. Not reproduced alone nor in five runs beside the files that use `userEvent`. So the
+   * TRUSTED pointer boundary events stop at this root; the ones a case dispatches (untrusted) pass, and no case here hovers.
+   */
+  for (const type of ['mouseover', 'mouseout', 'mouseenter', 'mouseleave']) {
+    root.addEventListener(type, (e) => { if (e.isTrusted) e.stopPropagation(); }, true);
+  }
   motor = createGame({ declaration: declaration(), host: { doc: document, win: voicedHost() }, downloadHeavy: false, accommodations: SEM_ASSUNTO });
+});
+
+describe('the machine\'s pointer does not write what this file measures', () => {
+  it('🎯 [Environment] a REAL pointer entering the ☰ while the cursor is on the 🦯 leaves the caption naming the 🦯', async () => {
+    await cursorTo('blind');
+    const away = document.createElement('div');
+    away.style.cssText = 'width:40px;height:40px';
+    document.body.appendChild(away);
+    try {
+      await userEvent.hover(away);
+      await userEvent.hover(icon('menu'));
+      expect(icon('menu').matches(':hover'), 'the pointer never reached the ☰; the case measures nothing').toBe(true);
+      expect(caption().textContent, 'a real pointer rewrote the caption under the cursor').toBe(label('blind', blindOn()));
+    } finally {
+      await userEvent.hover(away);
+      away.remove();
+      await leaveTheBar();
+    }
+  });
 });
 
 describe('the name under the cursor follows a state changed ELSEWHERE', () => {
@@ -148,3 +179,4 @@ describe('ONLY the icon under the cursor, and only when there is a cursor', () =
 //   M1  the reflection no longer writes the cursor's caption (the defect)                 🔴 🦯 and 🗣 flipped in the panel
 //   M2  the caption is written for EVERY reflected icon, not only the cursor's            🔴 all four
 //   M3  the caption is rewritten even when its text did not change                       🔴 the text node untouched
+//   M4  (2026-09-27) the trusted-pointer guard at the root off                            🔴 [Environment] — a real pointer entering the ☰ rewrites the caption
