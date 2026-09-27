@@ -130,6 +130,7 @@
 - ✅ **Prosa estragada pelo renomeador** («isInside») no `app/quiz.html:57` e em mensagens de teste — é código (cadeias), vai num commit próprio. ✅ (25/09) Feito (o `quiz.html:57` em `a3ef0e89`, o resto na leva de higiene).
 
 **Do Dev (rodar, empurrar ou decidir):**
+- ✅ **A 11.0.0** — publicada 27/09 21h31 UTC pelo Dev (`npx release-it major` + `git push --follow-tags`): npm `latest` = `11.0.0`, tag `v11.0.0` = `1c8dc08a`. 356 commits desde a 10.0.0, 24 com rodapé `BREAKING CHANGE`; o CHANGELOG da versão tem 185 entradas e nenhum `Co-Authored-By`/`Refs` vazado. Antes, o pacote foi instalado de fora (cache local, `--offline`): a raiz e `/build` importam, os dois `bin` respondem. Destrava a CI dos jogos quando subirem para ela (outro plano).
 - ✅ **F10 · a 10.0** — publicada 25/09 14h33 UTC pelo Dev (`npx release-it` + `git push --follow-tags`): npm `@the-inclusionist/engine@10.0.0`, tag `v10.0.0` = `00f292a7`. CHANGELOG conferido: 129 entradas BREAKING = 128 rodapés + 1 commit `!` sem rodapé (`69052a12`). #202 fechada. ⚠️ A tag leva o `Breaking-Changes.md` duplicado pelo meu `6f91dd4c`; o conserto `f15ce7ff` veio depois da tag.
 - 📋 **F11** — o segredo `records-token` para a CI de um jogo validar a própria árvore.
 - 📋 **Item 7/15 · leitura em voz alta** — a rodada com microfone real (`localhost:8205`).
