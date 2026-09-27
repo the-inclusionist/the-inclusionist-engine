@@ -1802,7 +1802,8 @@
     "interface ChooseSettings": {
       "members": {
         "language?": "readonly language: string",
-        "maxMs?": "readonly maxMs: number"
+        "maxMs?": "readonly maxMs: number",
+        "onListening?": "readonly onListening: () => void"
       }
     },
     "interface OpenedChoice": {

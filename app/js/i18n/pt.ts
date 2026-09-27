@@ -620,6 +620,7 @@ const pt: Record<string, string> = {
   // se aplica: «o ENUNCIADO SEMPRE TRADUZ». Eram literais em pt-BR dentro do cartucho até 23/09, e trocar a
   // bandeira mudava a moldura da engine sem tocar na atividade (ADR-0225).
   'quiz.pageTitle': 'The Inclusionist — quiz de demonstração',
+  'quiz.carregando': 'Carregando…',
   'quiz.ouvindo': 'Estou ouvindo. Diga a resposta.',
   'quiz.ouviNada': 'Não ouvi nada. Diga de novo ou escolha com as setas.',
   'quiz.semLeitura': 'Este aparelho não consegue ouvir agora. Escolha com as setas.',

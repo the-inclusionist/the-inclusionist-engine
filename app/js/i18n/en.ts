@@ -502,6 +502,7 @@ const en: Record<string, string> = {
   // The quiz's questions — keys, not sentences, so that changing the flag reaches the ACTIVITY and not only the
   // engine's frame (ADR-0225). A quiz is not a language subject, so nothing here is exempt from translating.
   'quiz.pageTitle': 'The Inclusionist — demo quiz',
+  'quiz.carregando': 'Loading…',
   'quiz.ouvindo': 'I am listening. Say the answer.',
   'quiz.ouviNada': 'I heard nothing. Say it again or choose with the arrows.',
   'quiz.semLeitura': 'This device cannot listen right now. Choose with the arrows.',

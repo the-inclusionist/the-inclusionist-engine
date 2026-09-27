@@ -525,14 +525,22 @@ export function bootQuiz({ doc, win, interpreter, skills = QUIZ_SKILLS }: QuizHo
     const view = viewNow();
     if (!motor || !view || listening) return; // asked for on the question screen only (`ON_BUTTON.action1`)
     listening = true;
-    sayInStatement(translate('quiz.ouvindo'), false);
     try {
       // 📌 THE OPTIONS AS SHOWN, and the engine hears only those (ADR-0256): an option is one or two words, which a closed grammar
       // hears and a free transcription invents. The answer is which one — never text to compare.
       // 📌 AN OPTION THAT IS CONTENT IS SAID IN ITS OWN LANGUAGE (item 22, ADR-0225): «apple» in an English skill is heard by the
       // English model, whatever the interface speaks; options that translate are heard in the page's language.
       const language = view.options.find((o) => o.language)?.language;
-      const heard = await motor.reading.choose(view.options.map((o) => o.text), language ? { language } : {});
+      // 🔴 «SAY IT» ONLY ONCE THE EAR IS OPEN, «LOADING» UNTIL THEN (the Dev, 2026-09-27): the first choice in a language waits a
+      // few seconds for its model, and that wait read as a frozen game. With the 👄's ear lent, the engine answers at once and
+      // «loading» never shows.
+      let open = false;
+      const choice = motor.reading.choose(view.options.map((o) => o.text), {
+        ...(language ? { language } : {}),
+        onListening: () => { open = true; if (listening && screen === 'question') sayInStatement(translate('quiz.ouvindo'), false); },
+      });
+      if (!open) sayInStatement(translate('quiz.carregando'), false);
+      const heard = await choice;
       listening = false;
       answerByChoice(heard.chosen, heard.heard);
     } catch {

@@ -179,6 +179,55 @@ describe('a choice by voice', () => {
     expect(log.given, 'the borrowed ear was not given back').toBe(1);
   });
 
+  /*
+   * 🔴 «LOADING» UNTIL THE EAR IS OPEN (the Dev, 2026-09-27: «adicione a palavra "carregando" enquanto um modelo estiver
+   * carregando»): the game is told the moment a word would be heard, so it says «loading» before and «say it» after.
+   */
+  it('🔴 [Right] `onListening` comes once, when the ear is OPEN — after the model loaded, never before', async () => {
+    let letOpen = () => {};
+    const gate = new Promise((r) => { letOpen = r; });
+    let heard = () => {};
+    const told = [];
+    const chooser = createVoiceChooser({
+      language: () => 'pt-BR',
+      open: async (_l, _g, onHeard) => { await gate; heard = onHeard; told.push('opened'); return { stop: async () => {} }; },
+      after: () => ({}), cancel: () => {}, report: () => {},
+    });
+    const p = chooser.choose(ANIMALS, { onListening: () => told.push('listening') });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(told, 'the game was told it listens while the model was still loading').toEqual([]);
+    letOpen();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(told).toEqual(['opened', 'listening']);
+    heard('gato', true);
+    expect((await p).chosen).toBe(0);
+    expect(told, 'told more than once').toEqual(['opened', 'listening']);
+  });
+
+  it('🔴 [Right] with the 👄\'s ear lent, `onListening` comes AT ONCE — nothing loads, so there is no «loading» to show', () => {
+    let told = 0;
+    const chooser = createVoiceChooser({
+      language: () => 'pt-BR',
+      open: async () => ({ stop: async () => {} }),
+      borrow: () => ({ stop: async () => {} }),
+      after: () => ({}), cancel: () => {}, report: () => {},
+    });
+    void chooser.choose(ANIMALS, { onListening: () => { told += 1; } });
+    expect(told, 'a lent ear was announced only later — the game would flash «loading»').toBe(1);
+    chooser.stop();
+  });
+
+  it('🔴 [Zero] an ear that cannot open never says it listens; a listener that throws does not take the answer', async () => {
+    let told = 0;
+    const fails = harness({ openFails: 'no model' });
+    await expect(fails.chooser.choose(ANIMALS, { onListening: () => { told += 1; } })).rejects.toThrow('no model');
+    expect(told).toBe(0);
+    const h = harness();
+    const p = h.chooser.choose(ANIMALS, { onListening: () => { throw new Error('the game broke'); } });
+    await h.hear('peixe', true);
+    expect((await p).chosen).toBe(3);
+  });
+
   it('🔴 [Consistency] one microphone, one choice: a second caller waits on the first', async () => {
     const h = harness();
     const a = h.chooser.choose(ANIMALS);
@@ -194,3 +243,4 @@ describe('a choice by voice', () => {
 // compared · `maxMs` ignored · a stop before the microphone opened lost · the 👄 not resumed · a reason reported every time · an
 // unsayable option unreported · two microphones · the grammar as written (pictogram and case kept) · the microphone kept open
 // And (2026-09-27, one ear): the borrow ignored · paused while borrowed · a withdrawn partial kept as heard — 3 of 3 red
+// And (2026-09-27, «carregando»): `onListening` called before the open · never called · its throw not caught — 3 of 3 red

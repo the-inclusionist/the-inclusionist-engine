@@ -32,6 +32,12 @@ export interface ChooseSettings {
   readonly language?: string;
   /** How long to wait for an option. Default 10 s: time to think, and a microphone that is never forgotten open. */
   readonly maxMs?: number;
+  /**
+   * Called once, when the ear is OPEN and a word said now would be heard — at once when the 👄's ear is lent, after the model
+   * has loaded when one had to be opened. Before it, a game says «loading», not «say the answer»: the first choice in a language
+   * waits a few seconds for its model, and a child told to speak into that wait is not heard (the Dev, 2026-09-27).
+   */
+  readonly onListening?: () => void;
 }
 
 /** A recogniser listening with a grammar: it can be stopped, and it may say which words its model knows. */
@@ -172,6 +178,8 @@ export function createVoiceChooser(d: VoiceChooserDeps): VoiceChooser {
         throw e;
       }
       void reportUnsayable(opened, options, language);
+      // a game's listener that throws must not take the child's answer with it
+      try { settings.onListening?.(); } catch { /* the game's own line, not the choice */ }
       const timer = d.after(() => end(null, 'timeout'), settings.maxMs ?? MAX_MS);
       const result = await answer;
       d.cancel(timer);

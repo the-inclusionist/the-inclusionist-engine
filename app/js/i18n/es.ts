@@ -501,6 +501,7 @@ const es: Record<string, string> = {
   // Las preguntas del quiz — claves, no frases, para que cambiar la bandera alcance la ACTIVIDAD y no sólo el
   // marco del motor (ADR-0225). Un quiz no es una materia de idioma: nada de esto queda sin traducir.
   'quiz.pageTitle': 'The Inclusionist — cuestionario de demostración',
+  'quiz.carregando': 'Cargando…',
   'quiz.ouvindo': 'Estoy escuchando. Di la respuesta.',
   'quiz.ouviNada': 'No escuché nada. Dilo otra vez o elige con las flechas.',
   'quiz.semLeitura': 'Este aparato no puede escuchar ahora. Elige con las flechas.',

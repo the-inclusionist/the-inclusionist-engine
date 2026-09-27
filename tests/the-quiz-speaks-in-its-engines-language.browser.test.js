@@ -33,13 +33,18 @@ let hearing = {};
 let offered = [];
 const asked = [];
 
-/** `reading.choose` as the engine answers it, on what the case says instead of a microphone. */
+/**
+ * `reading.choose` as the engine answers it, on what the case says instead of a microphone. It tells the quiz its ear is open
+ * as the engine does: AT ONCE when the 👄's ear is lent (`lent`), after the model's load (`loadMs`) otherwise, never when it fails.
+ */
 const fakeChoose = async (options, settings = {}) => {
   offered = options;
   asked.push(settings);
   const h = hearing;
+  if (h.lent) settings.onListening?.();
   await esperar(20);
   if (h.error) throw new Error(h.error);
+  if (!h.lent) { await esperar(h.loadMs ?? 0); settings.onListening?.(); await esperar(20); }
   const words = ` ${(h.text ?? '').toLowerCase()} `;
   const named = options.map((o, i) => [o.replace(/[^\p{L}\p{N} ]/gu, '').trim().toLowerCase(), i]).filter(([o]) => o && words.includes(` ${o} `)).map(([, i]) => i);
   return named.length === 1 ? { chosen: named[0], heard: h.text, ended: 'chosen' } : { chosen: null, heard: h.text ?? '', ended: 'timeout' };
@@ -47,13 +52,17 @@ const fakeChoose = async (options, settings = {}) => {
 
 const tecla = (code) => regiao.dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }));
 const statement = () => document.querySelector('#quiz-app .quiz-pergunta')?.textContent ?? '';
+/** Lines the quiz says for one ask: «loading» (unless lent) · «listening» (unless it failed) · the outcome. */
+const linesFor = (h) => (h.lent || h.error ? 2 : 3);
 async function listenHearing(h) {
   hearing = h;
   alerts.length = 0;
   regiao.focus();
   tecla('KeyU'); // action1, «falar», in the default one-player scheme
-  for (let i = 0; i < 60 && alerts.length < 2; i++) await esperar(50);
+  for (let i = 0; i < 60 && alerts.length < linesFor(h); i++) await esperar(50);
 }
+/** The «listening» line, learned from an ask with a lent ear — the one case where it is the FIRST thing said. */
+let listeningLine = null;
 
 beforeAll(async () => {
   document.body.innerHTML = pagina.slice(pagina.indexOf('<body>') + '<body>'.length, pagina.indexOf('</body>'))
@@ -100,6 +109,34 @@ describe('the demo quiz, in its engine\'s language', () => {
     await listenHearing({ error: 'not-allowed' });
     expect(alerts.length).toBeGreaterThan(1);
     expect(alerts.join(' | '), 'the failure was said with a raw key').not.toMatch(RAW_KEY);
+  });
+
+  /*
+   * 🔴 «LOADING» UNTIL THE EAR IS OPEN, «LISTENING» ONLY THEN (the Dev, 2026-09-27: the first U in a language waited for its model
+   * and the game looked frozen). The quiz waits for the engine's `onListening` before it tells the child to speak.
+   */
+  it('🔴 [Right] with the 👄\'s ear lent, «listening» is the first thing said — no «loading» for a wait that does not exist', async () => {
+    await listenHearing({ text: 'nothing that matches', lent: true });
+    expect(alerts.length, 'the quiz said nothing — this case would measure nothing').toBeGreaterThan(1);
+    listeningLine = alerts[0];
+    expect(listeningLine, 'the listening line is a raw key').not.toMatch(RAW_KEY);
+  });
+
+  it('🔴 [Right] while the model loads the statement says «loading», and «listening» only once the ear is open', async () => {
+    expect(listeningLine, 'the lent case did not run first — this case would measure nothing').toBeTruthy();
+    hearing = { text: 'nothing that matches', loadMs: 400 };
+    alerts.length = 0;
+    regiao.focus();
+    tecla('KeyU');
+    for (let i = 0; i < 20 && alerts.length < 1; i++) await esperar(25);
+    const loading = alerts[0];
+    expect(loading, 'the quiz said nothing at the key — a child would think the game froze').toBeTruthy();
+    expect(loading, '«loading» was said as a raw key').not.toMatch(RAW_KEY);
+    expect(loading, 'the child was told to speak while the model was still loading').not.toBe(listeningLine);
+    expect(statement(), 'the statement box does not say «loading»').toBe(loading);
+    for (let i = 0; i < 60 && alerts.length < 2; i++) await esperar(25);
+    expect(alerts[1], '«listening» did not follow once the ear opened').toBe(listeningLine);
+    for (let i = 0; i < 60 && alerts.length < 3; i++) await esperar(50);
   });
 
   it('🔴 [Right] saying an option\'s WORD answers with that option (ADR-0216)', async () => {
@@ -184,7 +221,7 @@ describe('the demo quiz, in its engine\'s language', () => {
     english.click();
     for (let i = 0; i < 40 && !document.querySelector('#quiz-app .quiz-alts'); i++) await esperar(25);
     await listenHearing({ text: 'nothing that matches' });
-    expect(asked.at(-1), 'the English options were asked for in the page\'s language').toEqual({ language: 'en' });
+    expect(asked.at(-1).language, 'the English options were asked for in the page\'s language').toBe('en');
   });
 });
 // ============================== MUTATIONS CHECKED ==============================
@@ -193,3 +230,4 @@ describe('the demo quiz, in its engine\'s language', () => {
 //   the two «how to play» texts · the six positions' names                                            🔴 each, its case above
 // And (2026-09-27, item 22): the content language forgotten · the page's language always asked for   🔴 both, the last case
 // · the options handed over as indices instead of as shown                                              🔴 «saying an option's WORD»
+// And (2026-09-27, «carregando»): «listening» said at the key again · «loading» never said · «loading» said with a lent ear
