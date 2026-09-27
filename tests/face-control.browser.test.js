@@ -138,6 +138,36 @@ describe('the face control', () => {
     expect(alpha(0.75), 'mirrored: x 0.3–0.2 is drawn at 0.7–0.8').toBeGreaterThan(0);
     expect(alpha(0.25), 'not unmirrored').toBe(0);
   });
+  /*
+   * 🔴 THE FACE'S LINES ARE OPAQUE WHITE WITH A BLACK SHADOW (ADR-0250 §1, superseding ADR-0212 §4's 20–50 % opacity). The case
+   * above sees that a line is painted; a translucent one is painted too. So the style in force at each stroke is written down.
+   */
+  it('🔴 [Right] the face\'s lines are stroked opaque white, at full opacity, over a black shadow', async () => {
+    const strokes = [];
+    const docQueTraca = {
+      createElement: (tag) => {
+        const el = document.createElement(tag);
+        if (tag !== 'canvas') return el;
+        const real = el.getContext.bind(el);
+        el.getContext = (kind) => new Proxy(real(kind), {
+          get: (t, p) => (p === 'stroke'
+            ? (...r) => { strokes.push({ style: t.strokeStyle, alpha: t.globalAlpha, shadow: t.shadowColor }); return t.stroke(...r); }
+            : typeof t[p] === 'function' ? t[p].bind(t) : t[p]),
+          set: (t, p, v) => { t[p] = v; return true; },
+        });
+        return el;
+      },
+    };
+    const PONTOS = [{ x: 0.3, y: 0.5 }, { x: 0.2, y: 0.5 }, { x: 0.3, y: 0.4 }, { x: 0.2, y: 0.4 }];
+    await make({ doc: docQueTraca, loadTracker: async () => ({ ok: true, tracker: { detect: () => face, delegate: () => 'GPU',
+      eyeLines: { eyes: [], brows: [] }, faceLines: { eyes: [{ start: 0, end: 1 }], brows: [], lips: [{ start: 2, end: 3 }] },
+      close: () => {} } }) }).apply(true);
+    hold(RELAXED, 3100, PONTOS);
+    expect(strokes.length, 'no line was stroked — the case would measure nothing').toBeGreaterThan(0);
+    const styles = new Set(strokes.map((s) => JSON.stringify(s)));
+    expect([...styles], 'a line over the game is not opaque white on black')
+      .toEqual([JSON.stringify({ style: '#ffffff', alpha: 1, shadow: '#000000' })]);
+  });
   it('files not on the device: reported and the 📷 back to off; turning it off removes the drawing', async () => {
     await make({ loadTracker: async () => ({ ok: false, missing: ['visao:modelo:rosto'] }) }).apply(true);
     expect(reports[0]).toMatch(/face control: visao:modelo:rosto/); expect(offs).toBe(1);
@@ -154,6 +184,8 @@ describe('the face control', () => {
 //   · presses from the eyes' source                       → «presses action 2 from the face»
 //   · no release when the face is lost                    → «lets go of what it held»
 //   · no turnOff on missing files                         → «back to off»
+// (2026-09-27, ADR-0250 §1) — `scratchpad/latch-by-game/mutate.mjs`, restored by SHA-256: the lines' `#ffffff` →
+// `rgba(255,255,255,0.35)`, a `globalAlpha = 0.35` before them, and their shadow `#000` → `#fff` → each «stroked opaque white…»
 //
 // PROBED AGAIN (2026-09-23), twelve decisions of the `frame` disabled one at a time — `scratchpad/sonda-rosto-maos.py`. Seven
 // were green: a camera with no frame yet, the middle asked for when the face leaves before the rest, the rest measured ONCE

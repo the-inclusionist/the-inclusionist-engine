@@ -64,7 +64,10 @@ describe('what each region is drawn WITH (probed 2026-09-23)', () => {
     const real = c.getContext('2d'), calls = [];
     const ctx = new Proxy(real, {
       get: (t, k) => (typeof t[k] === 'function'
-        ? (...a) => { calls.push({ k, a, style: t.strokeStyle, width: t.lineWidth, font: t.font }); return t[k](...a); }
+        ? (...a) => {
+          calls.push({ k, a, style: t.strokeStyle, width: t.lineWidth, font: t.font, alpha: t.globalAlpha, shadow: t.shadowColor });
+          return t[k](...a);
+        }
         : t[k]),
       set: (t, k, v) => { t[k] = v; return true; },
     });
@@ -131,6 +134,23 @@ describe('what each region is drawn WITH (probed 2026-09-23)', () => {
     expect(calls.filter((c) => c.k === 'lineTo')).toHaveLength(1);
   });
 
+  /*
+   * 🔴 THE EYES AND BROWS ARE OPAQUE WHITE WITH A BLACK SHADOW (ADR-0250 §1, superseding ADR-0212 §4's 20–50 % opacity): what
+   * the Dev ran and approved. The pixel case above sees THAT a line is there, and a translucent one is still there.
+   */
+  it('🔴 [Right] the eyes and brows are stroked opaque white, at full opacity, over a black shadow', () => {
+    const { ctx, calls } = recorded();
+    const landmarks = [{ x: 0.9, y: 0.5 }, { x: 0.8, y: 0.5 }, { x: 0.9, y: 0.3 }, { x: 0.8, y: 0.3 }];
+    drawGazeOverlay(translate, ctx, W, H, idle,
+      { face: { landmarks, lines: { eyes: [{ start: 0, end: 1 }], brows: [{ start: 2, end: 3 }] } } });
+    const lines = calls.filter((c, i) => c.k === 'stroke' && calls[i - 1]?.k === 'lineTo');
+    expect(lines, 'the eye and the brow were not both stroked — the case would measure nothing').toHaveLength(2);
+    for (const l of lines) {
+      expect({ style: l.style, alpha: l.alpha, shadow: l.shadow }, 'a line over the game is not opaque white on black')
+        .toEqual({ style: '#ffffff', alpha: 1, shadow: '#000000' });
+    }
+  });
+
   it('the shadow is switched off when the drawing ends — the next thing drawn on this context is not blurred', () => {
     const { ctx, real } = recorded();
     drawGazeOverlay(translate, ctx, W, H, upArmed('up'));
@@ -142,3 +162,7 @@ describe('what each region is drawn WITH (probed 2026-09-23)', () => {
 //   · not clearing before drawing          → «starts from a clear canvas»
 //   · the regions hatched again            → «never hatched»
 //   · the face lines not mirrored          → «mirrored»
+// (2026-09-27, ADR-0250 §1) — `scratchpad/latch-by-game/mutate.mjs`, one occurrence per anchor, restored by SHA-256:
+//   · `LINES` `#ffffff` → `rgba(255,255,255,0.35)` → «stroked opaque white…»
+//   · `globalAlpha = 0.35` before the lines         → same
+//   · the lines' shadow `#000` → `#fff`             → same

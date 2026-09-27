@@ -61,6 +61,33 @@ describe('the hand control', () => {
     expect(alpha(0.75), 'mirrored: x 0.3–0.2 is drawn at 0.7–0.8').toBeGreaterThan(0);
     expect(alpha(0.25), 'not unmirrored').toBe(0);
   });
+  /*
+   * 🔴 THE HAND'S BONES ARE OPAQUE WHITE WITH A BLACK SHADOW (ADR-0250 §1, superseding ADR-0212 §4's 20–50 % opacity). The case
+   * above sees that a bone is painted; a translucent one is painted too. So the style in force at each stroke is written down.
+   */
+  it('🔴 [Right] the hand\'s bones are stroked opaque white, at full opacity, over a black shadow', async () => {
+    const strokes = [];
+    const docQueTraca = {
+      createElement: (tag) => {
+        const el = document.createElement(tag);
+        if (tag !== 'canvas') return el;
+        const real = el.getContext.bind(el);
+        el.getContext = (kind) => new Proxy(real(kind), {
+          get: (t, p) => (p === 'stroke'
+            ? (...r) => { strokes.push({ style: t.strokeStyle, alpha: t.globalAlpha, shadow: t.shadowColor }); return t.stroke(...r); }
+            : typeof t[p] === 'function' ? t[p].bind(t) : t[p]),
+          set: (t, p, v) => { t[p] = v; return true; },
+        });
+        return el;
+      },
+    };
+    await make({ doc: docQueTraca }).apply(true);
+    hold('None', 100);
+    expect(strokes.length, 'no bone was stroked — the case would measure nothing').toBeGreaterThan(0);
+    const styles = new Set(strokes.map((s) => JSON.stringify(s)));
+    expect([...styles], 'a bone over the game is not opaque white on black')
+      .toEqual([JSON.stringify({ style: '#ffffff', alpha: 1, shadow: '#000000' })]);
+  });
   it('🔴 [Right] changing gesture lets go of the old one and presses the new one ONCE', async () => {
     // Only a LOST hand had a case; a hand that goes from one gesture to another could keep both held, or press again every frame.
     await make().apply(true);
@@ -117,6 +144,8 @@ describe('the hand control', () => {
 //   · no release when the hand is lost               → «lets go of what it held»
 //   · the bones not mirrored                         → «mirrored»
 //   · no turnOff on missing files                    → «back to off»
+// (2026-09-27, ADR-0250 §1) — `scratchpad/latch-by-game/mutate.mjs`, restored by SHA-256: the bones' `#ffffff` →
+// `rgba(255,255,255,0.35)`, a `globalAlpha = 0.35` before them, and their shadow `#000` → `#fff` → each «stroked opaque white…»
 //
 // PROBED AGAIN (2026-09-23), eleven decisions of the `frame` disabled one at a time — `scratchpad/sonda-rosto-maos.py`. Nine
 // were green, and the press/release diff itself was among them: only a LOST hand had a case, so a hand going from one gesture
