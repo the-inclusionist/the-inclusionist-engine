@@ -165,26 +165,60 @@ describe('§2 · the voice of a language', () => {
     expect(spoke.every((u) => u.voice !== null && u.voice.lang.startsWith('pt')), 'a voice of another language read the part').toBe(true);
   });
 
-  it('🔴 [Right] a browser voice of the language reads the part before a neural voice of the exact tag — and no model loads', async () => {
+  it('🔴 [Right] a browser voice of the exact tag reads the part before a neural voice of the exact tag — and no model loads', async () => {
     const record = { voices: [], phonemized: [] };
-    voices = [LUCIANA, SAMANTHA]; // the device speaks en-US, not en-GB; Kokoro has British voices
+    voices = [LUCIANA, DANIEL]; // the device speaks en-GB; Kokoro has British voices too
     const tts = setupNeural(record);
     tts.narrate([{ text: 'Leia:' }, { text: 'colour', language: 'en-GB' }]);
     await settle();
     tts.narrate([{ text: 'Leia:' }, { text: 'colour', language: 'en-GB' }]);
     await settle();
     expect(texts()).toEqual(['Leia:', 'colour', 'Leia:', 'colour']);
-    expect(spoke[3].voice, 'the neural voice of the exact tag won over the browser\'s English voice').toBe(SAMANTHA);
-    expect(record.voices, 'a neural voice loaded where the browser reads the language').toEqual([]);
+    expect(spoke[3].voice, 'the neural voice of the exact tag won over the browser\'s British voice').toBe(DANIEL);
+    expect(record.voices, 'a neural voice loaded where the browser reads the tag').toEqual([]);
   });
 
-  it('🔴 [Right] the order is the engine\'s, not the list\'s: a browser voice is picked over a neural voice listed before it', () => {
+  it('🔴 [Right] the order is the engine\'s, not the list\'s: a browser voice of the exact tag is picked over a neural one listed before it', () => {
     const neuralFirst = [
       { locale: 'pt-BR', engine: 'kokoro', voice: 'pf_dora' },
-      { locale: 'pt-PT', engine: 'webspeech', voice: 'webspeech:Helia' },
+      { locale: 'pt-BR', engine: 'webspeech', voice: 'webspeech:Luciana' },
     ];
-    expect(voiceOfLanguage('pt-BR', neuralFirst)?.voice).toBe('webspeech:Helia');
+    expect(voiceOfLanguage('pt-BR', neuralFirst)?.voice).toBe('webspeech:Luciana');
     expect(voiceOfLanguage('pt-BR', neuralFirst.slice(0, 1))?.voice, 'no browser voice: the neural one reads').toBe('pf_dora');
+  });
+
+  // THE REGION ANSWER (errata 2026-09-26 — the Dev: «Rede neural pt-BR.»): the exact tag before the region, whatever the engine.
+  it('🔴 [Right] a pt-BR part on a device with only a pt-PT browser voice is read by the neural pt-BR voice', () => {
+    const helia = { locale: 'pt-PT', engine: 'webspeech', voice: 'webspeech:Helia' };
+    const dora = { locale: 'pt-BR', engine: 'kokoro', voice: 'pf_dora' };
+    expect(voiceOfLanguage('pt-BR', [helia, dora])?.voice, 'the pt-PT browser voice beat the neural pt-BR one').toBe('pf_dora');
+    expect(voiceOfLanguage('pt-BR', [helia])?.voice, 'no neural pt-BR: the pt-PT browser voice still reads it').toBe('webspeech:Helia');
+    const lina = { locale: 'pt-PT', engine: 'kokoro', voice: 'pt_pt_neural' };
+    expect(voiceOfLanguage('pt-BR', [lina, helia])?.voice, 'another region: the browser voice still before the neural one').toBe('webspeech:Helia');
+  });
+
+  it('🔴 [Right] through narration: the neural pt-BR voice reads the pt-BR part once loaded; the pt-PT voice only while it loads', async () => {
+    const record = { voices: [], phonemized: [] };
+    voices = [SAMANTHA, HELIA]; // an English interface; the device's only Portuguese voice is European
+    language = 'en-US';
+    const tts = setupNeural(record);
+    tts.narrate([{ text: 'lata', language: 'pt-BR' }]);
+    expect(spoke.map((u) => u.voice), 'while the model loads, the device\'s Portuguese voice reads it').toEqual([HELIA]);
+    await settle();
+    expect(record.voices, 'the neural pt-BR voice was not the one loaded').toEqual(['pf_dora']);
+    spoke.length = 0; record.phonemized.length = 0;
+    tts.narrate([{ text: 'lata', language: 'pt-BR' }]);
+    await settle();
+    expect(texts(), 'the pt-PT browser voice read the pt-BR part with the neural pt-BR voice loaded').toEqual([]);
+    expect(record.phonemized).toEqual(['lata|pt-br']);
+  });
+
+  it('🔴 [Right] the interface\'s own voice follows the same order: neural pt-BR before a pt-PT browser voice, the exact tag before both', () => {
+    voices = [HELIA, SAMANTHA];
+    expect(setupNeural({ voices: [], phonemized: [] }).currentVoice()?.voice, 'the pt-PT voice is the interface\'s').toBe('pf_dora');
+    expect(setup().currentVoice()?.voice, 'a game with no neural voice: the pt-PT one still speaks').toBe('webspeech:Helia');
+    voices = [HELIA, LUCIANA];
+    expect(setupNeural({ voices: [], phonemized: [] }).currentVoice()?.voice).toBe('webspeech:Luciana');
   });
 
   it('🔴 [Right] with no browser voice for the language, a neural voice of the exact tag reads the part — after the frame before it', async () => {
@@ -316,6 +350,13 @@ describe('§3 · no voice for it, no wrong voice', () => {
 // V3. the neural steps removed                                              → red: the engine's order, the three neural cases, «still loading»
 // V4. every step ignoring the engine (the list's order decides)             → red: browser before neural, the engine's order
 // V5. the exact tag step removed from the browser voices                    → red: the exact tag (here and in `speech.node.test.js`)
+// The region answer (errata 2026-09-26, the Dev: «Rede neural pt-BR.»), in `VOICE_ORDER`, re-checked the same way:
+// R1. the previous order, a browser voice of another region before the neural exact tag → red: the region answer, through
+//     narration, the interface's own voice
+// R2. the neural exact-tag step removed                                     → red: those three and the two neural cases
+// R3. the exact tag first whatever the engine                               → red: the engine's order
+// R4. browser before neural whatever the tag                                → red: seven, the exact tag among them
+// (V1, V2 and V5 above were measured against the order before this answer; V2 is now the code.)
 // §3, in `platform/tts.ts`:
 // 1. the line not reported                                  → red: the `problems` line, once per language
 // 3. said and written at every part, not once               → red: once per language
