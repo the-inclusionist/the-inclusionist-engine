@@ -16,6 +16,17 @@ metadata:
     - "ADR-0194 — saying the name of a menu item activates it; the grammar follows the open menu"
     - "ADR-0201 erratum — Whisper small reads Portuguese; the lab measured Whisper on single words at 1 of 7 and Vosk at 7 of 7 (2026-09-14)"
   informed: []
+  errata:
+    - date: 2026-09-27
+      what: >-
+        «LOADING» UNTIL THE EAR IS OPEN. The Dev: the first choice in a language waited a few seconds for its model and the game
+        looked frozen; «Não mude nada, do jeito que está funciona bem. Apeas adicione a palavra "carregando" enquanto um modelo
+        estiver carregando», and «quero que mostre "carregando..." no instante do "U"». Preloading the model was considered and
+        declined. `ChooseSettings` gains an optional `onListening`, called once when a word said now would be heard — at once
+        with the 👄's ear lent, after the load otherwise, never when the ear does not open, and a listener that throws does not
+        take the answer. The demo quiz says «Carregando…» at the key and «Estou ouvindo» only then; the quiz had been saying
+        «listening» before the model was loaded. Held by `choosing-by-voice` (3 mutations) and
+        `the-quiz-speaks-in-its-engines-language` (3 mutations), all red.
 
 title: A child answers by saying one of the options the game shows — the game names them, the engine hears only those
 

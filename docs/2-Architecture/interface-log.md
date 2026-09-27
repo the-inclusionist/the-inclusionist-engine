@@ -331,3 +331,10 @@ screen without costing the quiz's five options a line.
 
 And the same day, «Ao clicar em menu e "Quit/Sair do Jogo" eu deveria ir para a tela de seleção de habilidades, a primeira do
 jogo»: the demo quiz answers the engine's `setPhase('title')` — the quit of ADR-0147's erratum — with its start screen.
+
+## 2026-09-27 · «Carregando…» at the key, «Estou ouvindo» once the ear is open
+
+The Dev, on the first choice by voice in a language: «Apeas adicione a palavra "carregando" enquanto um modelo estiver
+carregando», and «quero que mostre "carregando..." no instante do "U"». The demo quiz writes «Carregando…» (en «Loading…»,
+es «Cargando…») in the statement box at action 1 and «Estou ouvindo. Diga a resposta.» when the engine says the ear is open
+(ADR-0256 erratum); with the 👄's ear lent there is no wait and no «Carregando…». Chosen here: the words and the ellipsis.
