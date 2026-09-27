@@ -271,7 +271,7 @@ service worker precaches them into every install and the npm package ships them,
   1.1» for those three as well; the fonts say otherwise, and the fonts are what ships.
 - **Three families state no licence in their files** — iA Writer Quattro, Monoton and Yatra One — and are listed as OFL 1.1 on the
   catalogue's word (`DECLARED_WITHOUT_METADATA` in `scripts/licences/fonts.mjs`).
-- **Copyright lines:** every one of the 346 files keeps its own (name ID 0), and `app/public/vendor/fonts/NOTICE.txt` lists each
+- **Copyright lines:** every one of the 346 files keeps its own (name ID 0), and `app/public/vendor/fonts-licences/NOTICE.txt` lists each
   family's as read from the font. Only one file keeps its licence text (OpenDyslexic's name ID 13): the web subsets strip it,
   so the texts ship as files beside the fonts — `OFL-1.1.txt` (copied from that OpenDyslexic field, byte-identical to three
   upstream `OFL.txt` copies held locally), `Apache-2.0.txt` (the heavy files' text, `scripts/licences/`) and `UFL-1.0.txt`

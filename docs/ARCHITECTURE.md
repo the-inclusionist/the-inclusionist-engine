@@ -18,7 +18,7 @@ the-inclusionist-engine/      # published as the npm package @the-inclusionist/e
 │   ├── quiz.html             #   the demo cartridge's page: the only page the build emits
 │   ├── css/style.css         #   the engine stylesheet, shipped in the package as style.css
 │   ├── js/                   #   ES modules (TypeScript) — see §3
-│   └── public/               #   static: vendor/ (fonts.css + the font files, with their NOTICE.txt and licence texts) icon.svg _headers
+│   └── public/               #   static: vendor/ (fonts.css, the font files, and fonts-licences/ with their NOTICE.txt and licence texts) icon.svg _headers
 ├── art/                      # imported art and its ledger, ATTRIBUTION.csv (empty today) — see art/README.md
 ├── research/                 # the Dev's typography catalogue
 ├── scripts/                  # build, delivery and measurement scripts (the inclusionist-heavy bin lives here)

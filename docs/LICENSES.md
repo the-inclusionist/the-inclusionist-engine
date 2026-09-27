@@ -107,7 +107,7 @@ request `g` of the filing asks to be put on record: the itemized list of those e
   the service worker precaches into every install and the npm package ships: **214 under the SIL OFL 1.1**, **2 under
   Apache-2.0** (Luckiest Guy, Smokum) and **1 under the Ubuntu Font Licence 1.0** (Ubuntu), each as its own font states it.
   Both licences ask for the notice and the text to travel **with each copy**, so they sit **beside the fonts**, in
-  `app/public/vendor/fonts/`: `NOTICE.txt` (every family, its files, its licence and its copyright line as read from the font)
+  `app/public/vendor/fonts-licences/` (beside `fonts/`, so the notice revalidates while the fonts keep their year of cache): `NOTICE.txt` (every family, its files, its licence and its copyright line as read from the font)
   and `OFL-1.1.txt`, `Apache-2.0.txt`, `UFL-1.0.txt`. Made by `scripts/licences/fonts.mjs`; a family without an entry, or under
   a licence whose text does not ship, is refused (`tests/font-licences.node.test.js`). Attribution in [`CREDITS.md`](CREDITS.md).
 - **Third-party art — THREE DOORS, and what decides is compatibility with the project** (**ADR-0133**), not the

@@ -1,4 +1,4 @@
-Fonts in this directory: notices and licences
+The fonts in vendor/fonts/: notices and licences
 =============================================
 
 The Inclusionist engine redistributes 217 font families, in 346 files, from this directory. Each

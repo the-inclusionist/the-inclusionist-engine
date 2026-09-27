@@ -2,7 +2,7 @@
 // THE FONTS TRAVEL WITH THEIR NOTICES AND LICENCES (scripts/licences/fonts.mjs).
 //
 // 📌 SIL OFL 1.1 §2, Apache-2.0 §4(a) and the Ubuntu Font Licence §1 attach to the COPY, and every install of the PWA and every
-// copy of the npm package is one: `app/public/vendor/fonts/` carries `NOTICE.txt` (each family, its files, its licence and its
+// copy of the npm package is one: `app/public/vendor/fonts-licences/` carries `NOTICE.txt` (each family, its files, its licence and its
 // copyright line as the font states it) and the licence texts beside the 346 `.woff2`. 📏 The web subsets keep their copyright
 // line but only one of 346 keeps its licence text (measured 2026-09-27), so the texts cannot be left to the metadata.
 //
@@ -17,8 +17,9 @@ import {
 
 const ROOT = process.cwd();
 const FONTS = join(ROOT, 'app', 'public', 'vendor', 'fonts');
+const LICENCES = join(ROOT, 'app', 'public', 'vendor', 'fonts-licences');
 const CSS = readFileSync(join(ROOT, 'app', 'public', 'vendor', 'fonts.css'), 'utf8');
-const NOTICE = readFileSync(join(FONTS, NOTICE_FILE), 'utf8');
+const NOTICE = readFileSync(join(LICENCES, NOTICE_FILE), 'utf8');
 const readFont = (file) => readFileSync(join(FONTS, file));
 const sha = (text) => createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
 
@@ -53,7 +54,7 @@ describe('the fonts carry their notices and licences', () => {
     expect(missing, `families with no notice: run \`node scripts/licences/fonts.mjs\``).toEqual([]);
     expect(Object.keys(NOTICE_ENTRIES).filter((f) => !CSS_FAMILIES.includes(f)), 'a notice for a family fonts.css no longer has').toEqual([]);
     const bad = Object.entries(NOTICE_ENTRIES).filter(([, e]) => !e.spdx || !FONT_LICENCE_TEXTS[e.spdx]
-      || FONT_LICENCE_TEXTS[e.spdx].file !== e.file || !existsSync(join(FONTS, e.file)));
+      || FONT_LICENCE_TEXTS[e.spdx].file !== e.file || !existsSync(join(LICENCES, e.file)));
     expect(bad.map(([f, e]) => `${f}: ${e.spdx} / ${e.file}`)).toEqual([]);
   });
 
@@ -91,15 +92,23 @@ describe('the fonts carry their notices and licences', () => {
 
   it('🔴 [Right] the shipped texts are the bytes they were copied from, and say what they are', () => {
     for (const [spdx, t] of Object.entries(FONT_LICENCE_TEXTS)) {
-      const text = readFileSync(join(FONTS, t.file), 'utf8');
+      const text = readFileSync(join(LICENCES, t.file), 'utf8');
       expect(sha(text), `${t.file} no longer matches ${t.from}`).toBe(t.sha256);
       for (const m of MARKERS[spdx]) expect(text, `${t.file} lacks «${m}»`).toContain(m);
     }
     // two independent witnesses: the OFL body inside a font of this directory, and the heavy files' Apache text
     const inFont = readFontNames(readFont('opendyslexic-400.woff2'))[13].replaceAll('\r\n', '\n');
-    const ofl = readFileSync(join(FONTS, 'OFL-1.1.txt'), 'utf8');
+    const ofl = readFileSync(join(LICENCES, 'OFL-1.1.txt'), 'utf8');
     expect(inFont.endsWith(ofl), 'OFL-1.1.txt is not the OFL body OpenDyslexic carries').toBe(true);
-    expect(readFileSync(join(FONTS, 'Apache-2.0.txt'), 'utf8')).toBe(readFileSync(join(ROOT, 'scripts', 'licences', 'Apache-2.0.txt'), 'utf8'));
+    expect(readFileSync(join(LICENCES, 'Apache-2.0.txt'), 'utf8')).toBe(readFileSync(join(ROOT, 'scripts', 'licences', 'Apache-2.0.txt'), 'utf8'));
+  });
+
+  it('📌 [Boundary] the notice is never frozen at the edge: its folder revalidates, and the year-long `/vendor/fonts/*` is not its folder', () => {
+    const headers = readFileSync(join(ROOT, 'app', 'public', '_headers'), 'utf8');
+    const rule = headers.match(/^\/vendor\/fonts-licences\/\*\r?\n\s+Cache-Control:\s*([^\r\n]+)/m)?.[1] ?? '';
+    expect(rule, 'the licence folder has no cache rule of its own').toMatch(/no-cache/);
+    expect(rule).not.toMatch(/immutable/);
+    expect(existsSync(join(FONTS, NOTICE_FILE)), 'the notice sits under /vendor/fonts/*, cached a year as immutable').toBe(false);
   });
 
   it('📌 [Boundary] the texts reach every copy: the precache takes `.txt`, and the package ships `app/public/vendor`', () => {
@@ -118,3 +127,4 @@ describe('the fonts carry their notices and licences', () => {
 //   F6 `txt` removed from the precache globPatterns                        🔴 the texts reach every copy
 //   F7 the Apache URL dropped from the recognised licence URLs             🔴 NOTICE.txt is what the fonts say (unknown URL refused)
 //   F8 the «declared by hand although its font states» refusal removed     🔴 a hand declaration is refused
+//   F9 (2026-09-27) the `/vendor/fonts-licences/*` rule removed from `_headers`   🔴 the notice is never frozen at the edge

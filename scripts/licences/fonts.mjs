@@ -6,8 +6,8 @@
 // every copy of it is a redistribution: the PWA precaches them into each install, and the npm package ships `app/public/vendor`.
 // SIL OFL 1.1 §2 lets a font travel «provided that each copy contains the above copyright notice and this license», as a
 // stand-alone text file or as metadata «easily viewed by the user»; Apache-2.0 §4(a) asks for the licence text; the Ubuntu Font
-// Licence 1.0 §1 asks for the notice and the licence as the OFL does. So `app/public/vendor/fonts/` carries, beside the fonts,
-// each licence text they are under and `NOTICE.txt`: every family, its files, its licence and its copyright line AS THE FONT
+// Licence 1.0 §1 asks for the notice and the licence as the OFL does. So `app/public/vendor/fonts-licences/`, beside `fonts/`,
+// carries each licence text they are under and `NOTICE.txt`: every family, its files, its licence and its copyright line AS THE FONT
 // ITSELF STATES IT (name ID 0 of its `name` table), so the obligation holds whether or not a viewer can open the metadata.
 //
 // 📏 MEASURED 2026-09-27, all 346 files: every one keeps its copyright line (name ID 0); only ONE keeps its licence
@@ -21,7 +21,7 @@
 // `tests/font-licences.node.test.js` holds the committed `NOTICE.txt` equal to what this module builds, so a family added to
 // `fonts.css` without its entry turns the suite red.
 //
-// Use: `node scripts/licences/fonts.mjs` rewrites `app/public/vendor/fonts/NOTICE.txt` from `fonts.css` and the fonts.
+// Use: `node scripts/licences/fonts.mjs` rewrites `app/public/vendor/fonts-licences/NOTICE.txt` from `fonts.css` and the fonts.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { brotliDecompressSync } from 'node:zlib';
@@ -31,6 +31,9 @@ import { LICENCE_TEXTS } from './third-party.mjs';
 export const VENDOR = fileURLToPath(new URL('../../app/public/vendor/', import.meta.url));
 export const FONTS_DIR = fileURLToPath(new URL('../../app/public/vendor/fonts/', import.meta.url));
 export const NOTICE_FILE = 'NOTICE.txt';
+/** Where the notice and the licence texts ship: beside onts/, not in it — /vendor/fonts/* is cached for a year as immutable,
+ * and the notice changes whenever a family does (_headers gives this folder a rule that revalidates). */
+export const LICENCES_DIR = fileURLToPath(new URL('../../app/public/vendor/fonts-licences/', import.meta.url));
 
 /**
  * The licence texts that ship beside the fonts, each COPIED from a local file and pinned (sha256 of the copy, CRLF read as LF).
@@ -221,7 +224,7 @@ export function noticeText(entries, texts = FONT_LICENCE_TEXTS) {
   const files = entries.reduce((n, e) => n + e.files.length, 0);
   const used = Object.keys(texts).filter((spdx) => entries.some((e) => e.spdx === spdx));
   const head = [
-    'Fonts in this directory: notices and licences',
+    'The fonts in vendor/fonts/: notices and licences',
     '=============================================',
     '',
     `The Inclusionist engine redistributes ${entries.length} font families, in ${files} files, from this directory. Each`,
@@ -257,6 +260,6 @@ export function currentNotice() {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const text = currentNotice();
-  writeFileSync(`${FONTS_DIR}${NOTICE_FILE}`, text);
+  writeFileSync(`${LICENCES_DIR}${NOTICE_FILE}`, text);
   console.log(`wrote ${NOTICE_FILE}: ${Buffer.byteLength(text)} bytes`);
 }

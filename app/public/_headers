@@ -46,3 +46,8 @@
   Cache-Control: public, max-age=31536000, immutable
 /vendor/fonts.css
   Cache-Control: public, no-cache
+# The fonts' NOTICE and licence texts (scripts/licences/fonts.mjs) live BESIDE `fonts/`, not in it, for the same reason as the
+# index: the notice changes whenever a family does, and a year of `immutable` would keep last term's list on a browser with no
+# service worker. A third pattern that overlaps neither of the two above.
+/vendor/fonts-licences/*
+  Cache-Control: public, no-cache
