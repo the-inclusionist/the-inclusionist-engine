@@ -1,6 +1,24 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-pad-wizard-gives-the-focus-back.browser.test.js
+    - tests/the-pad-wizard-port-is-required.types.node.test.ts
+    - tests/gamepad.node.test.js
+    - tests/the-wizard-that-opened-by-itself-closes.browser.test.js
+  errata:
+    - date: 2026-09-26
+      what: >-
+        CONFIRMED (`engine:79ce0024`): the port is `GamepadCtx.wizardClosed: () => void`, REQUIRED, and the
+        transport calls it as the LAST thing its wizard's `onClose` does — after `#padwiz` is hidden and after the resume of
+        a game the wizard paused —, once per close, whichever way it ended (saved at its last step, cancelled by
+        `closePadWiz(false)`, by the overlay's own cancel button, or by the root's closer). The root answers with
+        `overlays.restoreFocus('padwiz')`, the return its own wizard already made. What the build had to choose: the root's
+        closer («Voltar» and Escape) now returns right after cancelling the transport's wizard and leaves the focus to the
+        port, so there is one return and not two. The order is measured, not assumed: called before the overlay is hidden,
+        the card under it is still inert and refuses the focus. Found on the way: `game-soccer` also builds `GamepadCtx` by
+        hand (`app/js/boot/main.ts`), not only `game-platformer`; the Breaking-Changes note DT names both. The confirmation
+        below replaces the debt it declared.
   date: 2026-09-26
   decision-makers: [Dev]
   consulted:
@@ -47,8 +65,12 @@ decision-outcome:
       - "game-platformer's `initGamepad` call must add the port when it moves to this version"
 
   confirmation: |
-    Debt until the gate lands (to be named with the implementation): the transport's wizard opened over the pause card
-    and finished normally leaves the focus on the card's item; a ctx without the port does not compile.
+    ✅ The gates in confirmed-by: the transport's wizard, opened by itself over the open pause card and finished normally
+    (saved at its last step), leaves the focus on the card's item it left, the card no longer inert; the same when it is
+    cancelled by «Voltar» or by Escape; the transport says the wizard closed once per close — saved, cancelled, by its cancel
+    button — with the overlay already hidden, and, when it paused the game, after the game resumed; a `GamepadCtx` without
+    `wizardClosed` does not compile. Red under each mutation: the port never called, the root's answer doing nothing, the
+    port called before the overlay is hidden, the port called before the resume, and the port made optional (`tsc`).
 
 more-information: |
   Games are not edited from the engine's session; game-platformer adds the port when it moves to the version that has it.
