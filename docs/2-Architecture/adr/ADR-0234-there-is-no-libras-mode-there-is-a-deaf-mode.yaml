@@ -2,11 +2,19 @@
 metadata:
   status: "accepted"
   confirmed-by:
+    - tests/the-sonar-takes-turns.node.test.js
+    - tests/the-sonar-takes-turns.browser.test.js
     - tests/the-sonar-reads-the-screen.browser.test.js
     - tests/libras-avatar.browser.test.js
     - tests/libras-glosses.node.test.js
   supersedes-in-part: [ADR-0051]
   errata:
+    - date: 2026-09-26
+      what: >-
+        THE SONAR'S TURNS ARE BUILT (`engine:d0413acf`): `Tts.narrate(text, { seat })`; another seat's reading waits its
+        turn, a seat's newer reading cuts or replaces its own, and a narration with no seat still cuts everything. Left as
+        it was, and the Dev's to decide: in deaf mode a new sign request still replaces what is being signed, and a queued
+        reading speaks the screen as it was at its press.
     - date: 2026-09-26
       what: >-
         ANOTHER PLAYER'S SONAR QUEUES. Asked whether a second player's sonar should still read an open menu aloud (on a shared
