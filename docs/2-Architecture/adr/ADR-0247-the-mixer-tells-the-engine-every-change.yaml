@@ -1,0 +1,53 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-26
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-26, choosing between the three ways out — (a) the mixer tells the engine of every change, (b) a written rule that games never change narration directly, (c) the bar re-reads the state when the quick pause opens: «Misturador de audio: a»"
+    - "Commit 3776c2ff — the bar's narration icon follows narration flipped in the hearing panel, through the panel's `setCatGain`"
+    - "ADR-0159 rule 3 and ADR-0167 — what an item of a menu says is its state"
+  informed: []
+
+title: The audio mixer tells the engine every change, whoever made it
+
+context-and-problem-statement: |
+  Narration on or off is a category of the engine's audio mixer (`audioCat.tts.on`). The hearing panel and the bar's 🗨️
+  change it through the engine and each reflects the other. But the engine hands the mixer itself to the game
+  (`Engine.audio`), and a game that switches narration there — a mute button of its own, a cut-scene — leaves the
+  engine's surfaces saying the old state: a blind child asks the icon and hears «ligada» over silence. Measured on
+  2026-09-26: no game does it in code today (only two of game-pinball's tests touch the category).
+
+decision-drivers:
+  - "What an item says is its state, and the state must be true whoever changed it"
+  - "A rule that depends on every game's author remembering breaks in silence"
+
+considered-options:
+  - "A · The mixer emits a change for every category change, and the engine's surfaces listen"
+  - "B · A written rule: games change narration only through the engine's surfaces"
+  - "C · The bar re-reads the mixer when the quick pause opens"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ True wherever the change came from. ❌ One more published member on the mixer. **B.** ❌ Relies on
+  discipline. **C.** ❌ Wrong until the next pause.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the mixer tells the engine every change"
+    justification: |
+      The mixer publishes a way to listen to changes of a category (on, volume), fired by every writer — the engine's
+      own and a game's. The root listens and reflects the bar and the panels from it; the panel-side reflection added in
+      3776c2ff becomes one case of the same listener. Additive.
+
+  consequences:
+    positive:
+      - "The bar and the panels always say the mixer's true state"
+    negative:
+      - "One more member on the published mixer"
+
+  confirmation: |
+    Debt until the gate lands (to be named with the implementation): a game switching narration on `Engine.audio`
+    directly moves the bar's 🗨️ label and the panel's switch.
+
+more-information: |
+  The games that read the mixer keep working: listening is additive, and none writes narration directly today.

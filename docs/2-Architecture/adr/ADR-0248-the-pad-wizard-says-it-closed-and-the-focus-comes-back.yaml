@@ -1,0 +1,54 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-26
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-26, choosing a REQUIRED field over an optional one or none: «Campo obrigatório. Os jogos já estão quebrados, melhor fazer a engine o mais \"certinha\" possível e fazer com que eles se adequem a ela em seguida.»"
+    - "Commit 05fa4cbd — Escape and «Voltar» cancel whichever pad wizard is mapping, and restore focus; the NORMAL end of the transport's own wizard does not"
+    - "ADR-0224 — a required port over an optional one, because an optional port is one more field a game can forget"
+  informed: []
+
+title: The pad wizard says when it closes, and the focus comes back to where it was
+
+context-and-problem-statement: |
+  The gamepad transport opens its own mapping wizard when an unknown pad (DirectInput) presses a button, and it may open
+  over the pause card. When it finishes normally its `onClose` (input/gamepad.ts) hides the overlay but never gives the
+  focus back: it drops to the page's body, and a screen reader loses the child's place. The code that knows the wizard
+  ended is the transport's; the code that owns the focus is the root's. Nothing connects them.
+
+decision-drivers:
+  - "A child who uses a screen reader must never be left with the focus nowhere"
+  - "The engine should be right first; the games adapt to it (the Dev)"
+
+considered-options:
+  - "A · A REQUIRED port on `GamepadCtx` the transport calls when its wizard closes"
+  - "B · The same port, optional"
+  - "C · No port: the root polls whether the wizard closed"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ Every consumer restores focus; the compiler names who has not. ❌ Breaks a game that builds `GamepadCtx` by
+  hand (game-platformer) until it adds one line. **B.** ❌ A game that forgets it keeps the defect in silence. **C.** ❌ A
+  poll every frame for an event.
+
+decision-outcome:
+  chosen-option:
+    link: "A — a required port"
+    justification: |
+      `GamepadCtx` gains a required port the transport calls once when its wizard closes, whichever way it ends; the root
+      answers by restoring the focus it held before the wizard opened (as `closeControl` already does for Escape).
+      BREAKING, with a migration note: a game that builds the ctx passes a function (the root's own answer when it uses
+      `createGame`).
+
+  consequences:
+    positive:
+      - "The focus always returns after a pad wizard, for every game"
+    negative:
+      - "game-platformer's `initGamepad` call must add the port when it moves to this version"
+
+  confirmation: |
+    Debt until the gate lands (to be named with the implementation): the transport's wizard opened over the pause card
+    and finished normally leaves the focus on the card's item; a ctx without the port does not compile.
+
+more-information: |
+  Games are not edited from the engine's session; game-platformer adds the port when it moves to the version that has it.
