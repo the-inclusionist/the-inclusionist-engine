@@ -1,6 +1,12 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/vosk-runtime.node.test.js
+    - tests/voice-control.node.test.js
+    - tests/reading.node.test.js
+    - tests/reading-runtime.node.test.js
+    - tests/reading-model.node.test.js
   superseded-in-part:
     - by: ADR-0201
       what: >-
@@ -11,6 +17,15 @@ metadata:
   supersedes-in-part: [ADR-0189]
   date: 2026-09-13
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: both recognisers are built. Vosk, with the game's words as a closed grammar, turns a
+        word into a press (issue #184, closed); reading is recognised on the device by the models ADR-0201 kept (engine
+        `20dd187`, `8bcb64a`, `4a24ff2`, `d23fe66`) — a read sentence transcribed from the real models' numbers, the
+        files fetched only through the fetch the root lends, and a device that cannot hear on its own refused rather
+        than sent to a recogniser off the device — and every model is in the heavy-file catalogue with its sha256. Both
+        were tried in a game and the result written in issue #184. Issue #185 stays open for the Dev's round with a real
+        microphone.
     - date: 2026-09-14
       what: "📌 THE READING MODEL, left open. Measured on the Dev's reading of a poem (52 words): Whisper base q8 (onnx-community, 81 MB) 15.4 % WER, Whisper tiny 42.3 %, Vosk small pt 34.6 % (25 % guided by the text). Asked whether Whisper base is the reading recogniser for Portuguese and Spanish, the Dev: «Sim.» Reading in Portuguese and Spanish is recognised by Whisper base; commands stay with Vosk (ADR-0193, in-game: 7/7 against Whisper base 1/7). Issue #185."
     - date: 2026-09-13
@@ -67,9 +82,11 @@ decision-outcome:
       - "Until a Portuguese and Spanish reading model is chosen, reading recognition covers English only"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #185** (Moonshine) in `the-inclusionist-engine`, beside **#184** (Vosk). Gates: a read sentence
-    is transcribed on the device with no network request carrying audio; the models are in the heavy-file catalogue with their
-    sha256; both recognisers are tried in a game and the result written.
+    ✅ The gates in confirmed-by: a read sentence is transcribed on the device, the model's files fetched only through
+    the lent fetch, and no recogniser that leaves the device is ever used; the models are in the heavy-file catalogue
+    with their sha256; commands are Vosk's, with the game's words as grammar. Both recognisers were tried in a game and
+    the result written (issue #184). 📌 Which reading model speaks which language is ADR-0201's; the browser's own
+    recogniser first is ADR-0200's.
 
 more-information: |
   The Dev asked whether Whisper is too large: the quantized whisper-tiny (39.0 MB) sits between moonshine-tiny (26.9 MB) and

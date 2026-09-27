@@ -1,6 +1,22 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-fourteen-actions.node.test.js
+    - tests/action-vocabulary-boundary.node.test.js
+    - tests/no-abstract-name-reaches-a-person.node.test.js
+    - tests/keyboard-vocabulary-migration.node.test.js
+    - tests/default-bindings.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: it said none of its gates passed because nothing had been renamed, and the rename
+        happened (engine `93c6fb4c`, `f0324dd7`; issue #103). The action type lists the positions — fourteen since
+        ADR-0085, named since ADR-0086 — and no engine module names `jump`, `run`, `swap` or `especial`, held as a
+        ceiling whose only entries are the migration module and the words a child says to `input/voice-map`; no abstract
+        name reaches a dictionary sentence, a written attribute or a spoken announcement; a saved
+        `inclusionist.kbcontrols.v3` loads with every key on the same verb, by ADR-0086's table; and `start` reaches the
+        keyboard. The per-transport reachability gate is ADR-0079's per-set gate now.
   date: 2026-09-05
   superseded-in-part:
     - by: ADR-0079
@@ -223,17 +239,17 @@ decision-outcome:
          were never the vocabulary."
 
   confirmation: |
-    · The engine's action type lists exactly the nine, and no engine module mentions `jump`, `run`, `swap` or
-      `especial` — those words live in the platformer preset and in the dictionaries.
-    · No abstract name (`action1`, `action1-mod`) ever reaches a rendered label, an aria-label or a spoken
-      announcement. Checkable by grepping the i18n dictionaries for the abstract names: zero hits.
-    · For each transport a game offers, a test asserts that every action that game declares is reachable
-      through it.
-    · A saved `inclusionist.kbcontrols.v3` from before the rename still loads, with the same keys bound to the
-      same in-game verbs.
+    ✅ The gates in confirmed-by:
 
-    ⚠️ NONE OF THESE PASSES TODAY, because nothing has been renamed yet. They are the definition of done for
-    the work this record authorises, not a claim about the present.
+      · The engine's action type lists exactly its positions (fourteen, ADR-0085), and no engine module mentions `jump`,
+        `run`, `swap` or `especial` outside the quarantined migration and the words spoken to `input/voice-map` — those
+        words live in the game's preset and in the dictionaries.
+      · No abstract name (`action1`…`action8`, the shoulders and triggers) reaches a dictionary sentence, a rendered
+        label, an aria-label or a spoken announcement.
+      · A saved `inclusionist.kbcontrols.v3` from before the rename still loads, with the same keys bound to the same
+        in-game verbs.
+
+    📌 Reachability of every action by each transport became ADR-0079's per-set guarantee, and is gated there.
 
 more-information: |
   This record supersedes nothing. It adds a layer that did not exist — an abstract action vocabulary and a

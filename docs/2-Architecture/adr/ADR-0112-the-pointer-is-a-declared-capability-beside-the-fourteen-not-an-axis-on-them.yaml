@@ -1,6 +1,20 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/transports.node.test.js
+    - tests/the-fourteen-stay-discrete.node.test.js
+    - tests/pointer-by-any-transport.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: its four gates landed (engine `7ddb8571`, `51e1acd6`, `fd3717ea`, `3e1a72e9`). A
+        game that declares a pointer is refused before it starts by a device without one, through ADR-0079's per-set
+        reach; a keyboard points exactly when a mouse is there; the fourteen stay discrete; the pointer's operations are
+        blind to the transport that produced a sample, and every sample carries its source. Not built: a pointer bound
+        from the gamepad stick or from the gaze — the gamepad declares none, and eye control reads no point on the
+        screen since ADR-0213 and ADR-0214 — and the rest of the transport (hover, the wheel, a position reached without
+        a pointer), all issue #105, open.
   supersedes-in-part: [ADR-0074]
   date: 2026-09-08
   decision-makers: [Dev]
@@ -157,21 +171,17 @@ decision-outcome:
       - "`PAD_DEAD` is untouched until the stick is actually wired to the pointer."
 
   confirmation: |
-    ⚠️ NOT YET BUILT. This is the contract; `input/pointer-space` is half the foundation and issue #105 is the
-    work. Written first so the implementation has something to be measured against.
+    ✅ In part (erratum of 2026-09-27), the four gates in confirmed-by:
 
-    The gates it owes:
+      · A GAME THAT DECLARES A POINTER IS REFUSED BY A DEVICE THAT HAS NONE, before it starts, through ADR-0079's
+        per-set reach and not a second mechanism — and a keyboard points exactly when a mouse is there.
+      · THE FOURTEEN STAY DISCRETE — no position carries a magnitude.
+      · A POINTER REACHED BY ANY TRANSPORT OFFERS THE SAME OPERATIONS — they are blind to the source, and the reach
+        accepts a pointer declared by any transport, an assisted one included.
+      · THE POINTER CARRIES ITS SOURCE, like every other command.
 
-    · A GAME THAT DECLARES A POINTER IS REFUSED BY A DEVICE THAT HAS NONE, before it starts — asserted through
-      ADR-0079's per-set reachability, not by a separate mechanism, or there will be two answers to one
-      question.
-    · THE FOURTEEN STAY DISCRETE — a case that no position carries a magnitude. ⚠️ This is the gate that keeps
-      P2 from arriving by accident, one convenient field at a time.
-    · A POINTER REACHED BY GAZE OFFERS THE SAME OPERATIONS AS ONE REACHED BY MOUSE, so «declared capability»
-      does not quietly mean «mouse only».
-    · THE POINTER CARRIES ITS SOURCE, like every other command (ADR-0111) — a drawing made by gaze and one
-      made by mouse must be distinguishable by the engine, because latching and the assisted-transport rules
-      of ADR-0109 depend on knowing which device is in use.
+    📋 Still owed under issue #105: a pointer bound from the gamepad stick (and with it §5's `PAD_DEAD` question) and
+    from the gaze, and the rest of the transport — hover, the wheel, and how a child with no pointer reaches a position.
 
 more-information: |
   Supersedes ADR-0074 in part: §2's statement that transports 8 and 9 «have no foundation». Everything else in

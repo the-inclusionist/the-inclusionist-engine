@@ -1,7 +1,20 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/face-map.node.test.js
+    - tests/hand-map.node.test.js
+    - tests/gaze-cycle.node.test.js
+    - tests/voice-map.node.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE IN PART, and issue #191 is closed. The candidates were tested with the bar protocol
+        and the results recorded (ADR-0205 and ADR-0206 errata); the Dev's default map is recorded — ADR-0210 for the
+        face and the hands, ADR-0213 for the eyes, this record's erratum for speech; and each mapping raises its
+        position from recorded frames or words — the face (engine `73f6a9fa`), the hands (`ddd7a47f`), the words
+        (`821cc678`) and the gaze cycle. The fifth modality, moving hand gestures, entered no map and has no gate, and
+        no open issue carries it.
     - date: 2026-09-14
       what: '📌 THE SECOND TEST PROTOCOL. The Dev, 2026-09-14: «Recrie os dois testes mas desta vez com barra para que eu passe para o próximo e três avaliações: ok, cansativo, não me detecta e não consegui. O app é que deve detectar se consegui fazer ou não quando a barra enche até a marca, minha avaliação é sobre a realização.» No timed tries: for each candidate the Dev moves freely; a bar per reading fills and the APP detects the candidate when the bar reaches its mark and holds (face: a rise of 0.3 from the calibrated rest held 300 ms; hands: the gesture recognised for 300 ms); the space bar passes to the next; the Dev rates the doing with four ratings — ok, cansativo, não me detecta, não consegui (the message says three and lists four; four are offered). Recorded per candidate: detected or not, time to the first detection, how many detections, the peak level, the rating. The first protocol''s crosstalk figures are not recorded again (ADR-0205 and ADR-0206 errata).'
     - date: 2026-09-14
@@ -66,8 +79,12 @@ decision-outcome:
       - "The current navigation mappings are provisional until the default map"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine`. Gates: a results table per modality from the Dev's test runs
-    (activation, crosstalk, fatigue); the Dev's default map recorded; each mapping recognised from recorded frames raises its position.
+    ✅ In part (erratum of 2026-09-27): results per modality from the Dev's runs are recorded (ADR-0205 and ADR-0206
+    errata); the Dev's default map is recorded (ADR-0210; the eyes in ADR-0213; speech in this record's erratum); and
+    each mapping of the face, the static hand gestures, the eyes and speech raises its position from recorded frames or
+    words — the gates in confirmed-by.
+
+    ⚠️ Not built: moving hand gestures, the fifth modality — none entered a map, and no open issue carries them.
 
 more-information: |
   MediaPipe Face Landmarker gives 52 blendshape scores (`_neutral` and 51 expressions); the Dev's list names them by region.

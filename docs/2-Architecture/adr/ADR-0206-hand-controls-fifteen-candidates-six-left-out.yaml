@@ -1,7 +1,17 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/hand-map.node.test.js
+    - tests/hand-control.browser.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #191 is closed. The half heart left the candidates by the erratum above,
+        and its gate with it. The hand reader (engine `ddd7a47f`, ADR-0210) raises each mapped gesture from the
+        landmarks once it is held 300 ms, once, and a colliding pair resolves to the one made — index down is not thumb
+        down, an open hand is not four fingers, a fist is not a zero. 📌 ADR-0210 §3 put index down and index right into
+        the map before their retest, which this record had left out; this record carries no mark of that supersession.
     - date: 2026-09-14
       what: '📌 THE COLLISIONS ARE NOT A MEASURE. The Dev, on how the test was run: «Eu olho, vejo se detecta, depois mexo a mão em posições diferentes para ver se a detecção é a mesma. Se eu coloco ok é porque está tudo certo, isto é, quando eu fiz a posição correta a detecção foi correta.» The frames of other gestures counted during each try come from those deliberate other positions; the collision figures in the negative consequences (Open_Palm → four fingers, I Love You → «cachorro», index up → Pointing_Up) say nothing about a gesture misreading while it is held, and nothing about the map. «Ok» means the gesture read correctly whenever it was made. Only the half heart read on Thumb_Down stands, as the Dev saw it. A collision is measured, if needed, by a protocol that records only frames held in the gesture.'
     - date: 2026-09-14
@@ -60,9 +70,9 @@ decision-outcome:
       - "The half heart's fix is measured on synthetic hands only; the Dev's hand retests it"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine`. Gates: a closed hand with the thumb out is never a half heart, curved
-    open fingers with the thumb away are; with the Dev's default map, each mapped candidate raises its position from recorded frames
-    and a colliding pair on two actions resolves to the made one.
+    ✅ The gates in confirmed-by: with the Dev's default map (ADR-0210), each mapped candidate raises its position from
+    recorded frames, and a colliding pair on two actions resolves to the one made. The half heart's gate left with the
+    half heart (erratum of 2026-09-14).
 
 more-information: |
   The half heart's fix (lab classifier): every fingertip beyond its knuckle from the wrist by 15% (open) and a mean finger curvature —

@@ -1,7 +1,19 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/reading-model.node.test.js
+    - tests/reading-runtime.node.test.js
+    - tests/reading.node.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE. Each candidate was measured on the Dev's recordings, per language, and the three
+        kept are in the errata above; they are in the heavy-file catalogue with their sha256, at the project's own
+        address — Whisper small for Portuguese, Moonshine streaming small for English and Spanish (engine `8bcb64a`,
+        `20dd187`); and a read sentence is transcribed on the device, the reading loop replayed on the real models'
+        numbers and giving the words each model itself answered. Issue #185 stays open for the Dev's round with a real
+        microphone.
     - date: 2026-09-14
       what: '📌 §2, THE MODELS KEPT. The Dev, after the table of the five on the Dev''s readings: «Vamos usar whisper small para pt, e moonshine streamming small para en e es. Eu não sou nativo, mas pelo desempenho é esperado que para nosso uso moonshine streaming small ofereça um resultado melhor que o base para nativos.» Portuguese: Whisper small (onnx-community, q8, 238 MB; 7.7 % WER, 22.0 s for 25.6 s of reading). English: Moonshine streaming small (`Workmind/moonshine-streaming-small-ONNX`, 158 MB; 19.3 % on a non-native reader, where Moonshine base read 16.9 %). Spanish: Moonshine streaming small-es exported here (encoder fp32, decoders q8, 310 MB; 7.2 %, 7.2 s). Tiny and base are not kept. Issue #185.'
     - date: 2026-09-14
@@ -60,8 +72,10 @@ decision-outcome:
       - "Three model families to fetch, check and try"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #185** in `the-inclusionist-engine`. Gates: each candidate's reading measured on the Dev's recordings
-    (WER per language); the kept models in the heavy-file catalogue with sha256; a read sentence transcribed on the device.
+    ✅ The WER of each candidate was measured per language on the Dev's recordings (errata of 2026-09-14). The gates in
+    confirmed-by: the kept models — Whisper small for pt, Moonshine streaming small for en and es — are in the
+    heavy-file catalogue with their sha256, every file a model needs named by id; and a read sentence is transcribed on
+    the device, with the same words the model itself answered.
 
 more-information: |
   The Dev's recordings for this (2026-09-14): commands and a read text in Portuguese, Spanish and English, in the engine's

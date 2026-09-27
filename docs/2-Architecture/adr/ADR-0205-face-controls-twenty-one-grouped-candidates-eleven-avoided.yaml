@@ -1,7 +1,17 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/face-map.node.test.js
+    - tests/face-control.browser.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #191 is closed. The face reader (engine `73f6a9fa`, ADR-0210) raises a
+        grouped candidate from any of its blendshapes — a squeeze by either eye, the brows, the mouth to a side — and
+        keeps only the blendshapes its map reads, so an avoided one raises nothing; with the Dev's default map each
+        expression raises its own position from recorded frames, and a colliding pair resolves to the one made: lips
+        pressed clear the smile, a mouth to the side clears the pucker, a squeeze clears the frown.
     - date: 2026-09-14
       what: '📌 SEVENTEEN CANDIDATES. The Dev, 2026-09-14, agreeing with the 21 and the 11 avoided, then: «Bico e olhar para baixo não podem ser considerados: resultam em colisões demais» — kiss (mouthPucker) and look down (eyeLookDown L/R) leave the candidates. «Piscar e apertar os olhos devem ser considerados a mesma coisa» — read per eye, since each eye''s blink and squint were judged apart: close-or-squint left (eyeBlinkLeft + eyeSquintLeft) and close-or-squint right (eyeBlinkRight + eyeSquintRight), two candidates instead of four. The sideways look stays under test: «É possível que exista algum mal entendido em olhar de lado, e se não houver, acredito que o problema é que olhos humanos não param de se mexer e ao voltar da lateral para o centro, eles apontam para o outro lado antes, várias vezes até se recalibrarem. Vamos testar melhor isso.» The retest asks for a look to each side, shows both crossed pairs (both blendshapes of a pair must rise together), records which pair rises first and every time the other pair reaches its mark within 1.5 s of the first falling back (a rebound).'
     - date: 2026-09-14
@@ -83,9 +93,9 @@ decision-outcome:
       - "Jaw left and right tire; the sideways look's direction (A or B is the child's right) is read by the lab before a reader uses it"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #191** in `the-inclusionist-engine`. Gates: the face reader rises a grouped candidate from any of its
-    blendshapes and never from an avoided one; with the Dev's default map, each mapped candidate raises its position from recorded
-    frames and a colliding pair on two actions resolves to the made one.
+    ✅ The gates in confirmed-by: the face reader raises a grouped candidate from any of its blendshapes and never from
+    an avoided one; with the Dev's default map (ADR-0210), each mapped candidate raises its position from recorded
+    frames, and a colliding pair on two actions resolves to the one made.
 
 more-information: |
   Candidate names are movements, not blendshape names, so the map and the child's help speak of a smile, not of `mouthUpperUpLeft`.
