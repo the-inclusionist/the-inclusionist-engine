@@ -1,6 +1,17 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/every-name-a-test-imports-exists.node.test.js
+    - tests/code-health.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: the stack moved (engine `87b6cdbe`, and `core/collision` with the tile-type table in
+        `203801a7`). `game-platformer` holds the modules and their tests and imports none of them from the package (read
+        on 2026-09-27); `app/js` no longer holds them; no engine test imports a removed path; and `Breaking-Changes.md`
+        §BY names them. 📏 Not the 177 modules this record predicted: three tried to leave and came back because what
+        they publish is accessibility, so the note counts 205 → 180 at the move, and `core/collision` left later.
   supersedes-in-part: []
   date: 2026-09-23
   decision-makers: [Dev]
@@ -136,14 +147,12 @@ decision-outcome:
          involved, and the ones that stay have to stop importing what left"
 
   confirmation: |
-    ⏸ NOT YET BUILT — written before the code, as ADR-0128 requires. Confirmed when all four are true:
-
-      · `game-platformer` holds the twenty-nine and their tests, imports NONE of them from the package, and is
-        green against the engine published today — proved BEFORE the engine removes anything;
-      · `app/js` no longer holds them, and `node scripts/code-health.mjs` counts 177 modules rather than 205;
-      · the engine's suite is green with no test importing a removed path — the gate
-        `every-name-a-test-imports-exists` is what makes that measurable rather than hopeful;
-      · `docs/6-DevOps-SRE/Breaking-Changes.md` names all twenty-nine, because the package published every one.
+    ✅ The gates in confirmed-by, and the other repository read on 2026-09-27: `game-platformer` holds the tile-world
+    modules and their tests and imports none of them from the package; `app/js` no longer holds them, and the
+    code-health baseline keeps no module that left; the engine's suite imports no removed path; and
+    `docs/6-DevOps-SRE/Breaking-Changes.md` §BY names them. 📏 The count differs from the 177 predicted: three modules
+    came back as accessibility (§BY), and `core/collision` left later. Whether `game-platformer` is green is that
+    repository's suite.
 
 more-information: |
   ⚠️ WHAT THIS RECORD DOES NOT DECIDE, named so it is not mistaken for settled. 📏 Measured while checking the

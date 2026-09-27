@@ -1,10 +1,17 @@
 ---
 metadata:
   status: "accepted"
-  # ⚠️ NO `confirmed-by`. This record decides that something is NOT built, and there is no file that proves an
-  # absence. What exists today and is consistent with it — `educational/adaptive-engine`, which receives the
-  # history as a parameter and reads no storage at all — was written before this decision and for another
-  # reason. Declaring it as `confirmed-by` would make the record look checked by accident.
+  confirmed-by:
+    - tests/no-stored-history.node.test.js
+    - tests/segment-bar.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: both gates it owed landed with the bar of #93 (engine `7f810535`). The metadata said
+        no file proves an absence; the absence is held by an INVENTORY instead — every engine module that writes to
+        storage is listed with what it keeps, a new writer fails until someone writes down what it stores, and the
+        curriculum layer writes nothing — and the ten-segment bar takes its segments as a parameter, with no storage
+        import. The comment that explained the missing `confirmed-by` left with the debt.
   supersedes-in-part: [ADR-0049]
   date: 2026-09-07
   decision-makers: [Dev]
@@ -132,15 +139,12 @@ decision-outcome:
          needed a home."
 
   confirmation: |
-    ⚠️ There is no gate for this, and inventing one that passes today would be theatre. What CAN be gated, and
-    is owed when #93 is built:
+    ✅ The gates in confirmed-by: no module under `app/js/**` writes a per-skill history — an inventory of every storage
+    writer, each named with what it keeps, that fails on a new writer and on an orphan entry, and the curriculum layer
+    writes nothing; and the bar takes its segments as a parameter, with no storage import at all.
 
-    · a case asserting that no module under `app/js/**` writes a per-skill history key — the shape of the
-      `engine-boundary` sieve, over storage calls instead of imports;
-    · the bar component of #93 taking its segments as a parameter, with no storage import at all.
-
-    `educational/adaptive-engine` is already consistent with this record, but it was written before the
-    decision and for another reason, so it confirms nothing about it.
+    `educational/adaptive-engine` was already consistent with this record, but it was written before the decision and
+    for another reason, so it confirms nothing about it.
 
 more-information: |
   ⚠️ Deliberately NOT decided here: what the Bússola Escolar does with a day's performance once it exists —

@@ -68,7 +68,6 @@ const MORTOS = {
   'tests/vozes-fora-do-pacote.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/no-voice-model-in-the-package.node.test.js`',
   'tests/modo-acessibilidade.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/accessibility-mode.node.test.js`',
   'tests/nada-de-cdn-a-mao.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/no-hand-written-cdn.node.test.js`',
-  'tests/nada-vem-de-fora.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/nothing-comes-from-outside.node.test.js`',
   'tests/pausa-44px.browser.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/pause-target-44px.browser.test.js`',
   'tests/pausa-sete-itens.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/the-pause-items-and-their-order.node.test.js`',
   'tests/actions-catorze.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/the-fourteen-actions.node.test.js`',
@@ -110,6 +109,10 @@ const MORTOS = {
 //    citing the dead file stays: it was right on the day, and the commit that killed it (`809bc01`) was the one that
 //    ABOLISHED the save — the gate was not lost, what it guarded stopped existing.
 //    📌 ADR-0034 cites the same file and did NOT gain the key: it is superseded, and leaves by the other route.
+//
+// ✅ `tests/nada-vem-de-fora.node.test.js` (renamed in phase 3 to `tests/nothing-comes-from-outside.node.test.js`) — cited
+//    only by ADR-0132, which gained `confirmed-by` on 2026-09-27 with the renamed file among its gates. Its prose still
+//    names the old path, and is right for the day it was written.
 //
 // ✅ `tests/docs.node.test.ts` — its story is worth more than the entry was.
 //

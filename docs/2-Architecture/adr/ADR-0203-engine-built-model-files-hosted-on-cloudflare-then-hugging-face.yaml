@@ -1,7 +1,19 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/heavy-mirror.node.test.js
+    - tests/heavy-licences.node.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE IN PART. Every file the project builds — the Vosk worker and wasm, the repacked Vosk
+        models, the Whisper and Moonshine exports, the eSpeak NG phonemizer — is a catalogue entry with the project's
+        address and a sha256; a mirror base serves each at the staging tree's path, or the entry says why it is not
+        mirrored (engine `a1bd77e2`); and each delivered folder carries its licence and notice. The recipes live in
+        `scripts/models/` and `docs/6-DevOps-SRE/models.md`. No gate holds that the catalogue's sha256 matches each
+        staged folder's `SHA256SUMS` in `the-inclusionist-lfs`, nor that a recipe rebuilds its file; both are checked by
+        hand when a folder is staged, under issue #192, open.
     - date: 2026-09-26
       what: >-
         eSpeak NG IS COMPILED BY THE PROJECT, from a pinned commit. The phonemizer the neural voice needs
@@ -71,8 +83,11 @@ decision-outcome:
       - "One change of addresses when the files move to Hugging Face"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issues #184 and #185** in `the-inclusionist-engine`. Gates: every catalogue entry of a project-built file
-    has an address and a sha256 matching the staged `SHA256SUMS`; each staged folder has a recipe that rebuilt its file.
+    ✅ In part (erratum of 2026-09-27): every catalogue entry of a project-built file has an address on the project's
+    mirror and a sha256, and each delivered folder carries its licence and notice — the gates in confirmed-by. 📋 Still
+    owed under issue #192: a gate that the catalogue's sha256 matches the staged `SHA256SUMS`, and one that each staged
+    folder's recipe rebuilds its file; both are checked by hand today. The move to Hugging Face waits for the city
+    hall's permission.
 
 more-information: |
   The staging folder is outside the repositories: the files are too large for git and are not code.

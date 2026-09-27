@@ -1,6 +1,19 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/heavy.node.test.js
+    - tests/heavy-into-the-delivery.node.test.js
+    - tests/content-security-policy.node.test.js
+    - tests/model-routes.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #173 is closed. The heavy files come from the delivery's own origin
+        (engine `d02a6e5e`): the download asks the page's origin for every file and no host outside it; the build writes
+        each file into the delivery and refuses, by name, a body whose sha256 differs; the Content-Security-Policy names
+        no host that only the build contacts; and the service worker answers from the checked cache, never from the
+        third party's network.
   date: 2026-09-13
   decision-makers: [Dev]
   consulted:
@@ -58,8 +71,9 @@ decision-outcome:
          bound to a path), decided when that site is set up"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — **issue #173** in `the-inclusionist-engine`. Gates: no runtime fetch address outside the origin; the
-    build refuses a file whose sha256 differs; the policy names no third-party host.
+    ✅ The gates in confirmed-by: no runtime fetch address outside the origin — the download asks the page's origin for
+    every file; the build refuses a file whose sha256 differs and writes nothing of it; the policy names no third-party
+    host that only the build contacts, and the service worker's routes are cache-only.
 
 more-information: |
   This record answers the question left open in the report of the STRIDE client pass (#170): who the child's device may

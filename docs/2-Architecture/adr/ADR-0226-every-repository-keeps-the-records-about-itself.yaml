@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - scripts/test-validate-adr.py
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE IN PART. The engine holds its own `docs/2-Architecture/adr/` tree (ADR-0242),
+        validated on every push by the `adr` job of `ci.yml`; the validator counts and says, on every run, what it could
+        not open — a `confirmed-by` or a supersession pair in a tree it was not given — held by its own test; and
+        `game-platformer` keeps the records that are its own. What is not true: no validator runs there — its CI calls
+        `game-ci.yml` without `adr-records: true`, read on 2026-09-27 — and no open issue carries it.
   supersedes-in-part: [ADR-0123]
   superseded-in-part:
     - by: ADR-0229
@@ -146,17 +156,14 @@ decision-outcome:
       - "⚠️ The supersession graph will span repositories, and no tool reads it whole today"
 
   confirmation: |
-    ⏸ NOT YET BUILT — the decision is written before the code, as ADR-0128 requires, and the migration has not
-    begun. This record is confirmed when three things are true and not before:
+    ✅ In part (erratum of 2026-09-27): the engine repository holds its own `docs/2-Architecture/adr/` tree with a
+    validator that runs in CI (the `adr` job of `ci.yml`), and the validator reports on every run how many
+    `confirmed-by` paths and supersession pairs it could NOT open — the gate in confirmed-by. The records about the
+    platformer live in `game-platformer`.
 
-      · the engine repository holds its own `docs/2-Architecture/adr/` tree with a validator that runs in CI;
-      · the records that are about the platformer live in `game-platformer` with a validator that runs there;
-      · the validator reports, on every run and in every repository, how many `confirmed-by` paths it could
-        NOT open — the clause of ADR-0123 that this record keeps because it is what makes N trees honest.
-
-    📌 THE DEBT IS DECLARED IN THE MEANWHILE, as ADR-0126 requires: until the trees exist, every record still
-    lives in `the-inclusionist-docs`, and a reader cannot tell a game's decision from the engine's by where it
-    sits. The triage is the work, and it has no issue yet.
+    ⚠️ Not true yet: a validator running in `game-platformer` — its CI does not turn on `adr-records` in `game-ci.yml` —
+    and no open issue carries it. 📌 §2's travel of the engine's records, superseded by ADR-0229, was restored by
+    ADR-0242.
 
 more-information: |
   ⚠️ WHAT THIS RECORD DOES NOT DECIDE, named so it is not mistaken for settled: whether the tile-world stack

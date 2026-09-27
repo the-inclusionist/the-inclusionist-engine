@@ -1,5 +1,20 @@
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/vlibras.node.test.js
+    - tests/the-sonar-reads-the-screen.browser.test.js
+    - tests/libras-avatar.browser.test.js
+    - tests/libras-avatar-delivery.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and what this record still decides is built. ADR-0234 replaced level one and the
+        tap-the-icon gesture with deaf mode and the sonar; what stands here is held. Written content reaches Libras —
+        the sonar hands the screen's text to the interpreter (engine `c8b18e83`) — and the text stays written beside it;
+        turning deaf mode off takes the interpreter away and the sonar speaks as before; nothing is built from zero —
+        the free player signs the GPL-3.0 signs of the VLibras suite's makers, LAViD-UFPB (engine `a3827e63`); and the
+        licence travels with them, each delivered clip with its `.blend` pinned as Corresponding Source and the GPL-3.0
+        beside it.
   superseded-in-part:
     - by: ADR-0234
       what: >-
@@ -118,13 +133,13 @@ decision-outcome:
          §53 of the requerimento intends for entry screens and accessibility menus."
 
   confirmation: |
-    Not built. What will be measured: that level two reaches WRITTEN content and not only audio (the clause that
-    distinguishes this record from what the ADRs said before); that the text is never removed when Libras is on;
-    that turning level two off restores exactly the previous state; and a licence gate over any sign-language
-    dependency, since the failure mode there is legal rather than visual.
+    ✅ The gates in confirmed-by: level two reaches WRITTEN content — the sonar hands exactly the screen's text to the
+    interpreter (ADR-0234); the text is written beside the signing and never removed; turning deaf mode off takes the
+    interpreter off the screen and the sonar speaks as it did; and the licence gate over the sign-language dependency —
+    every delivered clip pinned with its `.blend` as Corresponding Source, the GPL-3.0 and its notice in the folder.
 
-    ⚠️ WHAT NO TEST CAN CONFIRM: whether the translation is GOOD. Only deaf users and Libras interpreters can say,
-    and that is issue #6 and issue #7 territory. A green gate here would mean the window appeared, not that it said
+    ⚠️ WHAT NO TEST CAN CONFIRM: whether the translation is GOOD. Only deaf users and Libras interpreters can say, and
+    that is issue #6 and issue #7 territory. A green gate here means the text reached the interpreter, not that it said
     anything.
 
 more-information: |

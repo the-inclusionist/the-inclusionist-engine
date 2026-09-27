@@ -1,6 +1,21 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/heavy-mirror.node.test.js
+    - tests/heavy.node.test.js
+    - tests/nothing-comes-from-outside.node.test.js
+    - tests/no-voice-model-in-the-package.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE IN PART. WebGazer's half left with ADR-0214, and with it the lazy `<script src>` of
+        `ui/webcam.ts` (engine `ed2181b7`) and the two libraries to be measured together (issue #8, closed). What stands
+        is built: the MediaPipe runtime AND its three task models — face, gestures, hands — are catalogue entries with
+        measured bytes, a pinned version and a sha256, fetched with the delivery and never lazily at first use (engine
+        `188f0768`, then ADR-0177). The sherpa clause holds when measured — the word survives in no engine module, only
+        in a plan marked historical and in the test that refuses its files in the package — but no sieve would fail on a
+        new comment that revived it.
   superseded-in-part:
     - by: ADR-0214
       what: >-
@@ -153,22 +168,14 @@ decision-outcome:
       - "Install day grows by roughly 25 MB of vision alone, on top of the voices."
 
   confirmation: |
-    ⚠️ NOT YET BUILT. The catalogue entries and the wiring are **issue #11**; this record is the decision half
-    (ADR-0128).
+    ✅ In part (erratum of 2026-09-27): the MediaPipe runtime and its task models (face, gestures, hands) are in the
+    install catalogue with measured weights, a pinned version and a sha256, and nothing of vision is fetched lazily at
+    first use — the gates in confirmed-by. WebGazer's half — the lazy fetch in `ui/webcam.ts` and the two libraries
+    measured together on the target hardware — left with ADR-0214.
 
-    The gates this owes:
-
-    · BOTH RUNTIMES ARE IN THE INSTALL CATALOGUE, with measured weights and pinned versions — and the
-      MediaPipe TASK MODELS with them. 🔴 Written explicitly because the first attempt at this catalogue added
-      the vision RUNTIME and no models, which is the `.onnx` without its `.onnx.json` one level up: 11.7 MB
-      that cannot do anything.
-    · NO LAZY FETCH SURVIVES IN `ui/webcam.ts` — the `<script src>` goes, and the entry for it LEAVES
-      `tests/nada-vem-de-fora.node.test.js`'s violation list in the same commit. An inventory that keeps a
-      paid debt reports a defect that no longer exists.
-    · THE WORD «sherpa» APPEARS IN NO PLACE THAT DIRECTS WORK. It may survive in superseded records and in the
-      research document under its superseded header; it may not survive in a comment that reads as a plan.
-    · ⚠️ AND THE ONE THIS RECORD CANNOT PAY: the two libraries measured RUNNING TOGETHER on the target
-      hardware. That is issue #8's battery, and until it runs this record's biggest risk is unmeasured.
+    ⚠️ Measured on 2026-09-27 and not gated: the word `sherpa` directs no work — it survives only in a plan marked
+    historical and in the test that refuses its files in the package. No sieve would fail on a new comment that revived
+    it, and no open issue carries one.
 
 more-information: |
   Supersedes ADR-0124 in part: the parenthesis «webgazer não». Its central decision — the heavy runtimes are

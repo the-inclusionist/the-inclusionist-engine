@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/settings-audio.browser.test.js
+    - tests/code-health.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: the three ports landed (engine `7b1825f7`). `ui/settings-audio` measures
+        `globalReach 0` in `docs/6-DevOps-SRE/code-health.json`, held by the ratchet that fails when any module gets
+        worse; a host that answers `voices: () => []` gets the «this browser cannot» sentence and not an empty control;
+        and the panel draws whole with the three browser globals set to throw.
   supersedes-in-part: []
   date: 2026-09-23
   decision-makers: [Dev]
@@ -116,14 +126,10 @@ decision-outcome:
       - "A host that wants the panel and has no interest in audio devices still writes two lines"
 
   confirmation: |
-    ⏸ NOT YET BUILT — the decision is written before the code, as ADR-0128 requires. Confirmed when:
-
-      · `node scripts/code-health.mjs` reports `globalReach 0` for `ui/settings-audio`, and the baseline in
-        `docs/6-DevOps-SRE/code-health.json` records the fall rather than an exemption;
-      · a case proves a host that answers `voices: () => []` gets the «this browser cannot» sentence and NOT an
-        empty control — which is the difference between an answer and a silence, and is the whole of clause 3;
-      · a case proves the panel mounts and reflects with NO browser global available, which is the property the
-        ports exist to buy and the one thing option (b) could never have shown.
+    ✅ The gates in confirmed-by: `ui/settings-audio` measures `globalReach 0`, recorded in the baseline as a fall and
+    held by the ratchet; a host that answers `voices: () => []` gets the «this browser cannot» sentence and NOT an empty
+    control; and the panel mounts and reflects with the browser's globals set to throw, so reaching one would blow it
+    up.
 
 more-information: |
   ⚠️ WHAT THIS RECORD DOES NOT DECIDE: whether `ui/voice-settings` keeps its own four ports or receives the
