@@ -1,6 +1,25 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-mixer-tells-every-change.browser.test.js
+    - tests/the-mixer-tells-every-change.node.test.js
+    - tests/the-narration-icon-tells-its-state.browser.test.js
+  errata:
+    - date: 2026-09-26
+      what: >-
+        CONFIRMED (`engine:df9befa7`): the published member is `Audio.onCatChange(listener)`, called with the category's key
+        after its `on` or `vol` changed — a write of the value already there is no change — and answering the function that
+        stops listening. What the build had to choose, since a game's door is a plain property write with no call to hang an
+        event on: the write IS the door — each category's `on` and `vol` are accessors on the mixer's own object, and a
+        category replaced whole (`audioCat.tts = { on, vol }`) is copied into that object, so no replacement can detach it
+        from the surfaces that read it; one documented method as the only door would have left the raw write, which already
+        silences narration, unheard. The root listens once for its life (`dispose()` releases it, `unmount()` keeps it) and
+        reflects the bar for narration and the panels for any category (`SettingsAudioApi.reflectCategory`, new); both
+        earlier paths became this one — the panel's wrapped `setCatGain` of 3776c2ff, and the bar's `reflectTtsPanel`,
+        which `createGame` no longer switches on. Found on the way and drawn by the same reflection: the panel's narration
+        slider was never drawn from the mixer and opened at the range's middle. The confirmation below replaces the debt it
+        declared.
   date: 2026-09-26
   decision-makers: [Dev]
   consulted:
@@ -46,8 +65,11 @@ decision-outcome:
       - "One more member on the published mixer"
 
   confirmation: |
-    Debt until the gate lands (to be named with the implementation): a game switching narration on `Engine.audio`
-    directly moves the bar's 🗨️ label and the panel's switch.
+    ✅ The gates in confirmed-by: a game switching narration on `Engine.audio` directly — on, off, or the category replaced
+    — moves the bar's narration icon (its label, `aria-pressed` and caption) and the panel's switch; a volume it sets moves
+    the panel's sliders (narration's, and the sonar's in the open panel); the bar and the panel reflect each other through
+    the same listener; a game's own listener stops at `off()`; the root's listener is gone after `dispose()`; 11 mutations
+    red.
 
 more-information: |
   The games that read the mixer keep working: listening is additive, and none writes narration directly today.
