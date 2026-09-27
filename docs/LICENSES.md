@@ -103,13 +103,19 @@ request `g` of the filing asks to be put on record: the itemized list of those e
 - **Typefaces** — roster and restrictions in **ADR-0012**. ⚠️ Ronde and the alternatives OPTIFrench-Script and
   Merveille are **free for personal use only and CANNOT be packaged**: a download is offered, and the
   option stays disabled when none of them is present.
-  The engine **packages** every family `app/public/vendor/fonts.css` declares — **214 families in 340 `.woff2` files**, which
-  the service worker precaches into every install and the npm package ships: **214 under the SIL OFL 1.1**, **2 under
-  Apache-2.0** (Luckiest Guy, Smokum) and **1 under the Ubuntu Font Licence 1.0** (Ubuntu), each as its own font states it.
-  Both licences ask for the notice and the text to travel **with each copy**, so they sit **beside the fonts**, in
-  `app/public/vendor/fonts-licences/` (beside `fonts/`, so the notice revalidates while the fonts keep their year of cache): `NOTICE.txt` (every family, its files, its licence and its copyright line as read from the font)
-  and `OFL-1.1.txt`, `Apache-2.0.txt`, `UFL-1.0.txt`. Made by `scripts/licences/fonts.mjs`; a family without an entry, or under
-  a licence whose text does not ship, is refused (`tests/font-licences.node.test.js`). Attribution in [`CREDITS.md`](CREDITS.md).
+  The engine **packages** only the faces it draws with itself (ADR-0255) — every family `app/public/vendor/fonts.css`
+  declares, **19 families in 29 `.woff2` files**, all under the **SIL OFL 1.1** — which the service worker precaches into every
+  install and the npm package ships. Every other family is the **font library**, **194 families in 291 files** in
+  `the-inclusionist-lfs/fonts/`: **191 under the SIL OFL 1.1**, **2 under Apache-2.0** (Luckiest Guy, Smokum) and **1 under the
+  Ubuntu Font Licence 1.0** (Ubuntu), each as its own font states it, delivered only where a game declares it
+  (`inclusionist-heavy --fonts`). Every licence asks for the notice and the text to travel **with each copy**, so they sit
+  **beside the fonts**: in `app/public/vendor/fonts-licences/` for the engine's (beside `fonts/`, so the notice revalidates while
+  the fonts keep their year of cache: `NOTICE.txt`, every family with its files, its licence and its copyright line as read from
+  the font, and `OFL-1.1.txt`), and in each library folder and each delivered family's folder for the library's (its licence
+  text and its `NOTICE.txt`; the mirror's folders also carry a `SHA256SUMS`). Made by `scripts/licences/fonts.mjs`, which keeps
+  the three texts; a family without an entry, or under a licence whose text is not kept, is refused
+  (`tests/font-licences.node.test.js`). The library's reserved-name families are their authors' originals (ADR-0254).
+  Attribution in [`CREDITS.md`](CREDITS.md).
 - **Third-party art — THREE DOORS, and what decides is compatibility with the project** (**ADR-0133**), not the
   family a name belongs to. Four questions: may we **derive**? may it be used **commercially**?
   may we **convey** the file in what we publish? does anything **travel** from the source to our output?

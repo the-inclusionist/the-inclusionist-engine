@@ -258,28 +258,42 @@ both pinned in `scripts/libras-glosses/uv.lock` with the other Python packages t
   this project believes it is not, and that is not a legal opinion. The glosses a delivery writes say what made them
   (`"made"` in `glosses.json`).
 
-## Fonts — 214 families — SIL OFL 1.1, Apache-2.0 and the Ubuntu Font Licence 1.0
+## Fonts — the engine's 19 families and the font library's 194 — SIL OFL 1.1, Apache-2.0 and the Ubuntu Font Licence 1.0
 
-Every family `app/public/vendor/fonts.css` declares: 340 `.woff2` files in `app/public/vendor/fonts/`, most of them the latin
-and latin-ext subsets `fonts.gstatic.com` serves, plus OpenDyslexic (antijingoist/opendyslexic). The
-service worker precaches them into every install and the npm package ships them, so each copy of the engine redistributes them.
+Two homes since ADR-0255:
+
+- **The engine's own faces** — every family `app/public/vendor/fonts.css` declares, 19 families in 29 `.woff2` files in
+  `app/public/vendor/fonts/`: Atkinson Hyperlegible, Atkinson Hyperlegible Mono (Braille Institute), Andika (SIL), Lexend (the
+  Lexend Project) and the fifteen Playwrite hands the typography button can pick (TypeTogether), the latin and latin-ext subsets
+  `fonts.gstatic.com` serves. The service worker precaches them into every install and the npm package ships them, so each copy
+  of the engine redistributes them; `app/public/vendor/fonts-licences/NOTICE.txt` lists each family's copyright line as read
+  from the font, beside `OFL-1.1.txt`. All 19 are under the **SIL OFL 1.1**.
+- **The font library** — every other family, 194 in 291 files, one folder per family in `the-inclusionist-lfs/fonts/`, each
+  folder with its licence text, a `NOTICE.txt` and a `SHA256SUMS`, catalogued with each face's sha256 in
+  `app/js/platform/font-library.json`. A delivery carries only the families its games declare (`inclusionist-heavy --fonts`),
+  each with the same licence text and notice.
 
 - **Licences, as each font states its own** (name IDs 14, 13 and 0 of its `name` table, read on 2026-09-27): **SIL OFL 1.1**
-  for 211 families; **Apache-2.0** for Luckiest Guy and Smokum (Brian J. Bonislawsky DBA Astigmatic); the **Ubuntu Font
-  Licence 1.0** for Ubuntu (Canonical Ltd.). ⚠️ The typographic catalogue (`research/catalogo_tipografico.json`) records «OFL
-  1.1» for those three as well; the fonts say otherwise, and the fonts are what ships.
+  for every family but three, all in the library: **Apache-2.0** for Luckiest Guy and Smokum (Brian J. Bonislawsky DBA
+  Astigmatic) and the **Ubuntu Font Licence 1.0** for Ubuntu (Canonical Ltd.). ⚠️ The typographic catalogue
+  (`research/catalogo_tipografico.json`) records «OFL 1.1» for those three as well; the fonts say otherwise, and the fonts are
+  what ships.
 - **Three families stated no licence in their files** — iA Writer Quattro, Monoton and Yatra One — and LEFT the package on
   2026-09-27 until their licence is established (ADR-0251); none is declared by hand any more.
-- **Copyright lines:** every one of the 340 files keeps its own (name ID 0), and `app/public/vendor/fonts-licences/NOTICE.txt` lists each
-  family's as read from the font. Only one file keeps its licence text (OpenDyslexic's name ID 13): the web subsets strip it,
-  so the texts ship as files beside the fonts — `OFL-1.1.txt` (copied from that OpenDyslexic field, byte-identical to three
-  upstream `OFL.txt` copies held locally), `Apache-2.0.txt` (the heavy files' text, `scripts/licences/`) and `UFL-1.0.txt`
+- **Licence texts:** the web subsets strip the licence text (only OpenDyslexic keeps it, in name ID 13), so the texts travel as
+  files, kept in `scripts/licences/` and copied beside every family — `OFL-1.1.txt` (copied from OpenDyslexic's licence field,
+  byte-identical to three upstream `OFL.txt` copies held locally), `Apache-2.0.txt` (the heavy files' text) and `UFL-1.0.txt`
   (decoded from the Debian `fonts-ubuntu` package's copyright file, and verified byte for byte on 2026-09-27 against
-  `google/fonts` `ufl/ubuntu/UFL.txt`, the licence that travels with the files packaged here).
-- ⚠️ **Reserved Font Names:** 25 families name one in their copyright line (Lato, Lora, Quicksand, Source Sans 3 among them),
-  and OpenDyslexic in its licence field. OFL §3 keeps a reserved name off a Modified Version, and the OFL counts a format
-  change or a subset as one; whether these web subsets, declared under the reserved names, need the holders' permission is
-  **not determined here** (the Ubuntu Font Licence §2 raises the same question for Ubuntu).
+  `google/fonts` `ufl/ubuntu/UFL.txt`).
+- **Reserved Font Names (ADR-0254):** the 21 library families whose name is a Reserved Font Name — Lato, Lora, OpenDyslexic,
+  Playfair Display, Press Start 2P, Quicksand, Source Sans 3, Source Serif 4, UnifrakturMaguntia, Abril Fatface, Alfa Slab One,
+  Bowlby One SC, Cookie, Lilita One, Lobster, Monofett, Petit Formal Script, Plaster, Ranchers, Sancreek, Titan One — and Ubuntu
+  are their AUTHORS' ORIGINALS: OpenDyslexic its author's `compiled/OpenDyslexic-Regular.woff2` (antijingoist/opendyslexic),
+  the others the files `google/fonts` distributes, converted to WOFF2 by compression alone (every table byte-identical to the
+  author's but the two `head` fields WOFF2 writes, and without the `DSIG` a WOFF2 cannot carry), each folder with the author's
+  `OFL.txt` or `UFL.txt` beside its own. **Merriweather** is no longer offered: its original is a 4.5 MB variable font. The
+  other library families are the Google Fonts web subsets, none of them presented under a Reserved Font Name (ADR-0254 measured
+  the 22 that were).
 
 ## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
 
