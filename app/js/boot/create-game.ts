@@ -3616,7 +3616,8 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     const closeControl = (): void => {
       if (padWizard?.state()) { padWizard.close(false); return; }
-      if (gamepad.getPadWiz()) gamepad.closePadWiz(false); // its close hides the overlay and resumes the game it paused
+      // its close hides the overlay, resumes the game it paused, and gives the focus back through `wizardClosed` (ADR-0248)
+      if (gamepad.getPadWiz()) { gamepad.closePadWiz(false); return; }
       controlPanel.shell.overlay.hidden = true;
       overlays.restoreFocus?.('padwiz');
     };
@@ -4405,6 +4406,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     clearWaitingBadge: gameHooks.clearWaitingBadge,
     wizardStep: gameHooks.wizardStep,
     wizardTick: gameHooks.wizardTick,
+    // the root's answer, not a game's: its own wizard closed however it ended, and the focus goes back to whoever held it
+    // when that wizard opened — the same return the panel's wizard makes (ADR-0248)
+    wizardClosed: () => { overlays.restoreFocus?.('padwiz'); },
   });
   /*
    * AND THE ENGINE POLLS, because whoever mounts polls. ⚠️ The game loop is the CARTRIDGE's (`core/loop.startLoop` is

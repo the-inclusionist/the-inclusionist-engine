@@ -131,3 +131,6 @@ describe('and over the pause card, the card is the child\'s again', () => {
 //   M2 the transport's wizard cancelled, and the closer returns at once  🔴 the card's case: the focus stayed on <body>. The two
 //      in play stay green, as they should: there the focus never left the game.
 // 📏 Red before the fix: all three on «the wizard went on mapping hidden, and stored the answers».
+// 📌 Since ADR-0248 the closer DOES return at once after cancelling the transport's wizard (M2's shape): the focus now comes back
+// through `GamepadCtx.wizardClosed`, so the card's case here is red again if the transport does not call it or the root does not
+// answer it — measured in `the-pad-wizard-gives-the-focus-back.browser.test.js`.

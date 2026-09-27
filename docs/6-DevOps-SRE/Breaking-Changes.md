@@ -4027,6 +4027,23 @@ says nothing (§3) (engine `f59b39a3` on branch `speech-language`).
 |---|---|---|
 | `platform/speech.gameSay(voice, text)` — the utterance tagged `pt-BR`, its voice `ptbrVoice`'s (pt-BR, then a `pt` voice named Brasil, then a region-less `pt`, never pt-PT; with only pt-PT, no voice set) | `gameSay(voice, text, language)` — `language` a BCP-47 tag, REQUIRED; the utterance tagged with it, its voice the exact tag's, else the FIRST voice of the same language (a pt-PT voice listed first reads a pt-BR word when no pt-BR voice exists); a device that lists voices and none of the language says nothing | pass the language the word is in: the platformer's literacy words are Brazilian Portuguese, so `c.gameSay` becomes `(text) => gameSay(voice, text, 'pt-BR')` |
 
+## DT · ADR-0248: the pad wizard says it closed, required, and the focus comes back
+
+**Who is affected:** a consumer that builds `input/gamepad.GamepadCtx` by hand and calls `initGamepad` itself. 📏 Two sibling
+repositories do (`git grep` over the checkouts beside the engine, 2026-09-26): `game-platformer` (`app/js/main.ts`) and
+`game-soccer` (`app/js/boot/main.ts`), both on `^9.0.0`, so each meets this change on the day it moves to this version. A game
+that lets `createGame` mount the gamepad (note BP) needs nothing: the root answers the port itself.
+
+📌 **Why:** ADR-0248. The transport's own mapping wizard — the one that opens by itself when an unmapped DirectInput pad presses a
+button, possibly over the pause card — hid its overlay when it ended and never gave the focus back, so the focus dropped to
+`<body>` and a screen-reader child lost her place. The transport knows the wizard ended; the root owns the focus. The port is
+REQUIRED because the Dev chose the engine right first and the games adapting to it: an optional port is one more field a game
+can forget, and forgetting it keeps the defect in silence.
+
+| was | is | migration |
+|---|---|---|
+| `input/gamepad.GamepadCtx` — the transport's wizard closed with no word to anyone | gains `wizardClosed(): void`, REQUIRED — called once per close (saved, cancelled, or closed by the root), after `#padwiz` is hidden and after the resume of a game the wizard paused | pass a function that returns the focus to whoever held it when the wizard opened — with the engine's overlays, `wizardClosed: () => { overlays.restoreFocus('padwiz'); }` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.

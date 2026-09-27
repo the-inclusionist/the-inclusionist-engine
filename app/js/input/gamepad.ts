@@ -322,6 +322,16 @@ export interface GamepadCtx {
   wizardStep: (position: string | null) => void;
   /** One tick of the wizard's clock for that demonstration (`GamepadGameHooks.wizardTick`). */
   wizardTick: () => void;
+  /**
+   * THIS TRANSPORT'S OWN WIZARD HAS CLOSED (ADR-0248), whichever way it ended — saved, cancelled, or closed by the root. Called
+   * once per close, AFTER `#padwiz` is hidden and after the resume of a game the wizard paused, so whoever owns the focus
+   * returns it to what is really in front. The root answers by giving the focus back to whoever held it when the wizard
+   * opened (`overlays.restoreFocus('padwiz')`).
+   * 🔴 REQUIRED (ADR-0248, as ADR-0224 did for the door): the code that knows the wizard ended is this module, the code that owns
+   * the focus is the root — an optional port is one more field a game can forget, and forgetting it drops a screen-reader
+   * child's focus on `<body>`.
+   */
+  wizardClosed: () => void;
 }
 
 export interface GamepadApi {
@@ -413,6 +423,8 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         if (gp) { const c = actionsFor(gp); padCur[gi] = c; padPrevAct[gi] = c; padPrevStart[gi] = c._start; }
       } catch { /* a pad API that throws here only costs the edge baseline, never the closing */ }
       if (padWizAutoResume) { padWizAutoResume = false; if (ctx.pauseMenu()) ctx.resume(0); }
+      // last: the overlay is hidden and the game resumed, so the focus goes back to what is really in front (ADR-0248)
+      ctx.wizardClosed();
     },
   });
   function openPadWiz(): void {

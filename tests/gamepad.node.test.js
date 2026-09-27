@@ -68,7 +68,7 @@ function buildCtx(over = {}) {
   let phase = 'playing';
   const players = over.players ?? [];
   const naBarra = over.naBarra || new Set();
-  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], wizardSteps: [], wizardTicks: 0, hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
+  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], wizardSteps: [], wizardTicks: 0, wizardClosed: [], hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
   return {
     // each ctx its own maps over its own store (ADR-0232): a map one case saves cannot be the one another case reads
     padMaps: createPadMaps(createStorage(memoryBackend())),
@@ -133,6 +133,8 @@ function buildCtx(over = {}) {
     clearWaitingBadge: (i) => calls.clearWaitingBadge.push(i),
     wizardStep: (position) => calls.wizardSteps.push(position),
     wizardTick: () => { calls.wizardTicks++; },
+    // ADR-0248: what the scene looked like WHEN the transport said its wizard closed — the overlay and the phase at that instant
+    wizardClosed: () => calls.wizardClosed.push({ overlayHidden: dom.get('#padwiz').hidden, phase }),
     // test helpers (not part of the GamepadCtx contract)
     dom, said, alerted, fronted, calls,
     setPads: (p) => { pads = p; },
@@ -387,6 +389,63 @@ describe('initGamepad — wizard: Escape no meio (cancelar)', () => {
     api.openPadWizFor(makePad({ id: 'pad-btn', index: 0 }));
     ctx.dom.get('#padwiz-cancel')._listeners.click[0]();
     expect(api.getPadWiz()).toBeNull();
+  });
+});
+
+/*
+ * THE WIZARD SAYS IT CLOSED (ADR-0248): once per close, whichever way it ended, and only AFTER the overlay is hidden and a game
+ * the wizard paused has resumed — the root returns the focus to what is in front then, and a card still under a visible overlay
+ * is inert and refuses it. The focus itself is measured through the real root in
+ * `the-pad-wizard-gives-the-focus-back.browser.test.js`; here, the promise the transport makes to whoever answers.
+ * MUTATIONS CHECKED (2026-09-26, counting script, restored and checked by SHA-256): the call removed → 🔴 all three; the call
+ * moved before `#padwiz` is hidden → 🔴 all three (`overlayHidden: false`); the call moved before the auto-resume → 🔴 [Time] only.
+ */
+describe('initGamepad — the wizard says it closed (ADR-0248)', () => {
+  /** Walks an opened wizard through every step this file's fake game asks, so it closes and SAVES by itself. */
+  function answerEveryStep(ctx, api, id) {
+    ctx.setPads([makePad({ id, index: 0, mapping: '', pressed: [] })]);
+    api.padWizTick(); // the resting pose -> step 0
+    const asked = PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null).length + 2; // + START and SELECT
+    for (let i = 0; i < asked; i++) {
+      ctx.setPads([makePad({ id, index: 0, mapping: '', pressed: [i] })]);
+      api.padWizTick();
+      ctx.setPads([makePad({ id, index: 0, mapping: '', pressed: [] })]);
+      api.padWizTick();
+    }
+  }
+
+  it('🔴 [Right] saved: said once, with the overlay already hidden', () => {
+    const ctx = buildCtx(); const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused'); // over the open pause card: nothing to resume
+    api.openPadWizFor(makePad({ id: 'said-saved', index: 0, mapping: '' }));
+    expect(ctx.calls.wizardClosed, 'the premise: nothing said while it maps').toEqual([]);
+    answerEveryStep(ctx, api, 'said-saved');
+    expect(api.getPadWiz(), 'the premise: the wizard closed by itself').toBeNull();
+    expect(api.padMapFor('said-saved')?.select, 'the premise: it closed SAVING').toBeTruthy();
+    expect(ctx.calls.wizardClosed, 'the normal end did not say the wizard closed').toEqual([{ overlayHidden: true, phase: 'paused' }]);
+  });
+
+  it('🔴 [Right] cancelled (the root\'s `closePadWiz(false)` and the overlay\'s own cancel button): said once each time', () => {
+    const ctx = buildCtx(); const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    api.openPadWizFor(makePad({ id: 'said-cancel', index: 0, mapping: '' }));
+    api.closePadWiz(false);
+    expect(ctx.calls.wizardClosed, 'cancelling did not say the wizard closed').toEqual([{ overlayHidden: true, phase: 'paused' }]);
+    api.closePadWiz(false); // nothing open: nothing closed, nothing said
+    expect(ctx.calls.wizardClosed, 'a close with no wizard open said it twice').toHaveLength(1);
+    api.openPadWizFor(makePad({ id: 'said-button', index: 0, mapping: '' }));
+    ctx.dom.get('#padwiz-cancel')._listeners.click[0]();
+    expect(ctx.calls.wizardClosed, 'the cancel button did not say the wizard closed').toHaveLength(2);
+  });
+
+  it('🔴 [Time] opened by itself in play: said AFTER the game resumed, so the focus goes to the game and not to a closing pause', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] }); const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'said-in-play', index: 0, mapping: '', pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.setPhase, 'the premise: the wizard paused the game').toEqual(['paused']);
+    api.closePadWiz(false);
+    expect(ctx.calls.wizardClosed, 'said before the resume, or not at all').toEqual([{ overlayHidden: true, phase: 'playing' }]);
   });
 });
 
