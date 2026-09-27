@@ -1,6 +1,29 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-engine-builds-both-targets.node.test.js
+    - tests/game-ci-builds-both-targets.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        CONFIRMED (`engine:e0f26cb5`, `engine:b2e85bda`). What the build had to choose, read off the seven games' own builds: (1) ONE declaration is
+        the game's `vite.config` wrapped in `defineGameBuild({ cartridge, config })` from `@the-inclusionist/engine/build` —
+        `vite build` is the game's app config untouched (its manifest and precache are statements about that game, ADR-0140
+        §3), `vite build --mode cartridge` is the engine's: library mode into `dist-lib/cartridge.js` with its
+        `cartridge.d.ts`, `@the-inclusionist/engine`, `pixi.js` and `zdog` external as PREFIXES (an exact string inlines
+        every subpath, measured by `pixi-15-puzzle`), no `public/` (a cartridge declares no delivery, ADR-0117; `game-chess`
+        once shipped 7 MB) and the PWA plugin dropped by name, and types emitted with the GAME's own `typescript` and
+        `tsconfig.json` for the entry's import graph alone. A config factory rather than a `bin` that rebuilds the game's
+        config: the games' plugins and `define` (the platformer's sprite atlas) must reach both targets, and a factory is
+        data that imports no package. (2) The cartridge the checker reads is ADR-0139 §2's `Cartridge` as the entry's
+        DEFAULT export, `{ slug, declaration, hooks, create }`, read at import as `createGame` reads it at boot — none of
+        the seven exports exactly that today, so each moves its declaration and hooks there (note DV). (3) The checker,
+        `inclusionist-check-cartridge`, runs `cartridgeRefusals`, the one list `createGame` and `mount()` now throw with
+        (they threw group by group; they throw every line at once), so the checker cannot drift from the boot; it imports
+        the cartridge in Node with no page, and an import that needs one is its own refusal. (4) `game-ci.yml` runs the
+        cartridge build and the checker after the app build, with no input. The confirmation below replaces the debt it
+        declared.
   supersedes-in-part: [ADR-0140]
   date: 2026-09-27
   decision-makers: [Dev]
@@ -52,9 +75,14 @@ decision-outcome:
       - "The engine carries a build tool in its published surface"
 
   confirmation: |
-    Debt until the gate lands (to be named with the implementation): the engine's build produces both targets for a
-    game fixture; the cartridge checker refuses a built cartridge that breaks the contract and accepts one that holds;
-    the shared CI runs both builds and the checker.
+    `tests/the-engine-builds-both-targets.node.test.js` builds the fixture game `tests/fixtures/game-build` through Vite's
+    own command line, both targets: the cartridge keeps the engine's import at its edge and none of its code, copies no
+    `public/`, carries no service worker and emits its types; the app bundles the engine and stays a PWA. The same file
+    holds the checker: it accepts the fixture, refuses a built variant missing a required declaration field with that
+    field's line — the line `cartridgeRefusals` gives, not a copy — and refuses a cartridge without hooks, without a default
+    export, whose import needs a page, or never built. `tests/game-ci-builds-both-targets.node.test.js` holds the shared
+    CI: in the `gate` job the app build, the cartridge build and the checker, in that order, none behind an `if:`, an input
+    or `continue-on-error`.
 
 more-information: |
   Games are not edited from the engine's session; each adopts the engine's build when it moves to the version that has it.
