@@ -1,0 +1,54 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - tests/rng-factory-and-arithmetic.node.test.js
+  supersedes-in-part: [ADR-0141]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, told that ADR-0141 chose R2 (the engine hands each cartridge `ctx.rng`, the seed the shell's) while the decoupling built R3 (the engine exports only the factory `createRng`), and asked to choose between recording what exists and completing R2: «Registrar o que existe.»"
+    - "`engine:e26e93ac` (ADR-0232 D4) — `core/rng` holds no stream of its own: `rnd`, `randInt`, `shuffle`, `reseed` and `decorationRng` left; `createRng(seed)` and `DEFAULT_SEED` stay"
+  informed: []
+
+title: Each cartridge builds its own random stream — the engine offers the factory, not a stream
+
+context-and-problem-statement: |
+  ADR-0141 found that a random stream shared by two cartridges on one page makes a seeded run irreproducible for a reason
+  in neither game's code, and chose R2: the engine hands each cartridge a stream of its own (`ctx.rng`), seeded by the
+  shell, and the shared exports are forbidden inside a cartridge. The decoupling of 2026-09-26 (ADR-0232 D4) built another
+  option instead: `core/rng` stopped holding any stream, so there is nothing left to share, and `mount()` hands no stream.
+
+decision-drivers:
+  - "Two cartridges on a page never draw from one stream — ADR-0141's defect, which holds by construction now"
+  - "No contract field without a consumer asking for it"
+
+considered-options:
+  - "A · Record what exists: the engine offers `createRng(seed)`, and each cartridge builds its own stream and chooses its seed"
+  - "B · Complete R2: `mount()` hands a seeded `ctx.rng`"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ No contract change; nothing shared, so ADR-0141's defect cannot come back. ❌ «The same puzzle for the whole
+  class» is each game's to offer (the 15-puzzle's `?seed=` does). **B.** ✅ One uniform seed for every game. ❌ An
+  optional contract field every game must adopt, for a need only one game has today.
+
+decision-outcome:
+  chosen-option:
+    link: "A — each cartridge builds its own stream from the engine's factory"
+    justification: |
+      `core/rng` exports `createRng(seed)` and `DEFAULT_SEED` and holds no stream. A cartridge builds its stream at mount
+      and owns its seed; a seeded run is the game's to offer. Superseded in part: ADR-0141's chosen option R2 (`ctx.rng`)
+      and its gate list — the rule it protected, one stream per cartridge, holds by construction.
+
+  consequences:
+    positive:
+      - "Nothing in the engine can be shared between cartridges' draws"
+    negative:
+      - "A uniform «same run for everyone» across games is not offered by the engine"
+
+  confirmation: |
+    ✅ The gate in confirmed-by: `core/rng`'s values are `createRng` and `DEFAULT_SEED` only, re-adding a shared stream turns
+    it red, and two streams built from one seed draw the same sequence independently.
+
+more-information: |
+  Should a teacher's «same run for everyone» become a need across games, B is additive and can be recorded then.

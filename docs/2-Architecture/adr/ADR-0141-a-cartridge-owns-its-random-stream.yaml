@@ -1,6 +1,10 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0252
+      what: >-
+        the chosen option R2 (`ctx.rng`) and its gates: the engine offers only the factory `createRng`, and each cartridge builds its own stream; one stream per cartridge holds by construction.
   date: 2026-09-11
   decision-makers: [Dev]
   consulted:

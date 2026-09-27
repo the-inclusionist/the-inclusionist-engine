@@ -1,6 +1,10 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0253
+      what: >-
+        the cartridge build left to each game: the engine builds both targets, and the shared CI builds and checks both, required.
   date: 2026-09-11
   supersedes-in-part: [ADR-0117]
   decision-makers: [Dev]

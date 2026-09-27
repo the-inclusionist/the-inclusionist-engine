@@ -1,0 +1,60 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0140]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, choosing among (1) CI runs each game's own `build:lib`, (2) that plus a cartridge checker in the engine, (3) the engine provides the build of both targets: «A engine fornece o build dos dois alvos»"
+    - "The Dev, 2026-09-26, on ADR-0248 — the same question of a required engine rule the games must meet: «Os jogos já estão quebrados, melhor fazer a engine o mais \"certinha\" possível e fazer com que eles se adequem a ela em seguida.»"
+    - "Measured 2026-09-27 (read-only `git grep` of the sibling games): five of seven declare a `build:lib`, each built differently (`vite build --mode lib`, a second Vite config, a script, `tsc`); `game-2048` builds both in `build`; `game-soccer` has no cartridge target. The shared `game-ci.yml` runs only `npm run build` — the app."
+  informed: []
+
+title: The engine builds both targets of a game, and the shared CI builds and checks both
+
+context-and-problem-statement: |
+  ADR-0140 decided that a game is a standalone PWA and a cartridge from one source, and that a gate building BOTH in CI is
+  not optional. The gate was never built: the shared CI builds the app only, and the cartridge target is written by each
+  game its own way — five ways across five games, and one game has none. Two targets written by hand in each game drift;
+  that is the defect the record foresaw.
+
+decision-drivers:
+  - "One way to build a cartridge, owned by the engine, so the games cannot drift apart"
+  - "The gate ADR-0140 called not optional is built, and it checks that the cartridge works, not only that it compiles"
+  - "The engine right first; the games adapt to it (the Dev, on ADR-0248)"
+
+considered-options:
+  - "1 · The shared CI runs each game's own `build:lib`"
+  - "2 · That, plus a cartridge checker the engine provides"
+  - "3 · The engine provides the build of both targets, and the shared CI runs it"
+
+pros-and-cons-of-the-options: |
+  **1.** ✅ One line. ❌ Proves only that a cartridge compiles, and keeps five builds. **2.** ✅ Catches a cartridge that
+  compiles and breaks the contract. ❌ Keeps five builds. **3.** ✅ Ends the drift at its source; the checker comes with
+  it. ❌ The largest change: the engine publishes a build tool, and every game adopts it.
+
+decision-outcome:
+  chosen-option:
+    link: "3 — the engine builds both targets"
+    justification: |
+      The engine publishes the build of both targets of a game — the APP (the standalone PWA, engine bundled) and the
+      CARTRIDGE (engine external) — from one declaration in the game, and a cartridge checker that mounts the built
+      cartridge through the engine's own contract checks. The shared `game-ci.yml` builds both with it and runs the
+      checker. The step is REQUIRED for every game, as ADR-0140 said and by the Dev's rule on ADR-0248 that the games adapt
+      to the engine: a game without a cartridge target turns its CI red until it adopts the engine's build. Superseded in
+      part: ADR-0140's leaving the cartridge build to each game.
+
+  consequences:
+    positive:
+      - "One cartridge build for every game, and a CI that proves each cartridge mounts"
+    negative:
+      - "Every game changes its build to the engine's; each game's CI is red from the day this lands until it does"
+      - "The engine carries a build tool in its published surface"
+
+  confirmation: |
+    Debt until the gate lands (to be named with the implementation): the engine's build produces both targets for a
+    game fixture; the cartridge checker refuses a built cartridge that breaks the contract and accepts one that holds;
+    the shared CI runs both builds and the checker.
+
+more-information: |
+  Games are not edited from the engine's session; each adopts the engine's build when it moves to the version that has it.
