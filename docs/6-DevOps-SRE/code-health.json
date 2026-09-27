@@ -518,12 +518,12 @@
       "fanIn": 1
     },
     "input/gamepad.ts": {
-      "codeLines": 314,
-      "decisionNodes": 63,
+      "codeLines": 315,
+      "decisionNodes": 64,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 10,
+      "worstFunction": 11,
       "statefulEdges": 0,
       "fanIn": 1
     },

@@ -4,13 +4,17 @@
 // 📌 START is the quick pause: the game frozen, PAUSED, and the directional on the accessibility bar. The keyboard's direction
 // moves the bar's cursor along its ring, its confirm presses the icon under the cursor, its back and START leave. This file holds
 // that the screen's first seat's GAMEPAD does the same, through the real root: the d-pad (all four directions, as the keys),
-// action 2 on the icon under the cursor, action 3 and START out. And, on a screen two seats share, that seat 1's pad still does
-// nothing to it (ADR-0144, erratum of 2026-09-26).
+// action 2 on the icon under the cursor, action 3 and START out, and action 4 to the menus — the second door the frozen screen's
+// footer names, «Ação 4: menu» (ADR-0155 erratum «Ambos»). And, on a screen two seats share, that seat 1's pad still does nothing
+// to it (ADR-0144, erratum of 2026-09-26).
 //
 // 🔴 MEASURED before the fix (2026-09-26): seat 0's pad down and right left the cursor on the first icon while its key moved it
 // (0 → 1). With the quick pause open the root answers `pauseMenu()` true (`menuWithDpad`: the quick pause is a menu with a
 // directional), so `input/gamepad` sent the frame to `steerPause` — which knew the dialog on top and the card, not the bar. The bar
 // branch lives in `steerGame`, which that frame never reaches.
+// 🔴 MEASURED before the second fix (2026-09-26): seat 0's action-4 KEY on the quick pause opened the card at its root and left the
+// quick pause; its pad's action 4 left the child on the frozen screen, the card closed — `steerPause` read the six menu intents,
+// and action 4 is none of them.
 //
 // 📌 Driven through the REAL root with two fake standard pads behind `navigator.getGamepads`. ⚠️ ONE ROOT for the file: every
 // root polls the same `navigator` and hangs its listeners on the window.
@@ -30,6 +34,9 @@ const declaracao = () => ({
 const START = 9;
 const ACAO2 = 0;
 const ACAO3 = 1;
+const ACAO4 = 3;
+/** Seat 0's `action4` key (`KEYBOARD_DUO`): in the quick pause, the menus' second door (ADR-0155 erratum «Ambos»). */
+const TECLA_ACAO4_0 = 'KeyI';
 /** The standard table's d-pad, and the key of seat 0's scheme (`KEYBOARD_DUO`, WASD) for the same direction. */
 const DIRECOES = { up: [12, 'KeyW'], down: [13, 'KeyS'], left: [14, 'KeyA'], right: [15, 'KeyD'] };
 const TECLA_START_0 = 'KeyH';
@@ -46,6 +53,8 @@ const botoes = [[], []];
 const jogadores = [{ ctrl: 0 }, { ctrl: 0 }];
 /** What reached the GAME: every command the cartridge heard. */
 const comandos = [];
+/** Every phase the root asked of the game — the way to the menus must not resume it on the way. */
+const fases = [];
 /** Two frames: the loop schedules the next one at the end of its own, so one alone does not guarantee a whole poll. */
 const quadro = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 /** One tap of a button on pad `pad`: down for a poll, up for a poll. */
@@ -62,6 +71,15 @@ const pausaRapida = () => { const w = document.querySelector('#game-region .paus
 /** Where the bar's cursor is: the index of the selected icon, −1 for none. */
 const cursor = () => icones().findIndex((b) => b.classList.contains('pi-sel'));
 const paineisAbertos = () => [...document.querySelectorAll('#game-region .overlay')].filter((o) => !o.hidden);
+const cartao = () => document.getElementById('vp-pause-0');
+/** Where the child is: the card open or not, which of its submenus shows, what has the focus, the quick pause, the legend. */
+const ondeEsta = () => ({
+  cartao: cartao()?.hidden === false,
+  submenu: cartao()?.querySelector('.pause-menu:not([hidden])')?.dataset.sub ?? null,
+  foco: document.activeElement === document.body ? null : document.activeElement?.textContent?.trim() ?? null,
+  pausada: pausaRapida(),
+  legenda: document.querySelector('#game-region .pausa-legenda')?.textContent ?? null,
+});
 
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
@@ -79,7 +97,7 @@ beforeAll(async () => {
   navigator.getGamepads = () => [padFalso(0, botoes[0]), padFalso(1, botoes[1])];
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
-    ...keyed({ preset: PRESET }), setPhase: () => {}, players: jogadores, onCommand: (c) => comandos.push(c),
+    ...keyed({ preset: PRESET }), setPhase: (p) => fases.push(p), players: jogadores, onCommand: (c) => comandos.push(c),
   });
   window.dispatchEvent(new Event('gamepadconnected'));
   // 📌 EACH PAD TAKES ITS SEAT as a child's does, by order of action: pad 0 first takes seat 0, pad 1 then takes seat 1.
@@ -96,7 +114,9 @@ beforeEach(() => {
   expect(icones().length, 'the bar has too few icons for a step to show').toBeGreaterThan(2);
   expect(paineisAbertos(), 'a case left a panel open').toEqual([]);
   expect(pausaRapida(), 'a case left the quick pause open').toBe(false);
+  expect(cartao()?.hidden, 'a case left the pause card open').toBe(true);
   comandos.length = 0;
+  fases.length = 0;
 });
 // 📌 A red case must not take the next ones with it: what it opened is closed here, whatever it asserted.
 afterEach(fecharTudo);
@@ -157,13 +177,30 @@ describe('in the QUICK PAUSE, seat 0\'s pad steers the bar as its keys do', () =
     expect(comandos).toEqual([]);
   });
 
+  it('🔴 [CrossCheck] action 4 opens the menus as seat 0\'s action-4 key does — the same card, in the same place (ADR-0155 erratum «Ambos»)', async () => {
+    // 📌 The frozen screen's footer says «Ação 4: menu». The key is measured first, so the pad is held to what the child is told.
+    expect(jogadores[0].ctrl.action4[0], 'seat 0\'s action-4 key is not the one pressed here').toBe(TECLA_ACAO4_0);
+    await entrar();
+    fases.length = 0;
+    tecla(TECLA_ACAO4_0);
+    const pelaTecla = { ...ondeEsta(), fases: [...fases] };
+    expect(pelaTecla.cartao, 'the action-4 KEY did not open the menus: the cross-check would measure nothing').toBe(true);
+    motor.pause.hide(0);
+    await entrar();
+    fases.length = 0;
+    await apertar(0, ACAO4);
+    expect({ ...ondeEsta(), fases: [...fases] }, 'the pad\'s action 4 in the quick pause did not do what the key does').toEqual(pelaTecla);
+    expect(comandos, 'action 4 on the quick pause reached the game under it').toEqual([]);
+  });
+
   it('🔴 [Right] seat 1\'s pad on the shared screen moves, presses and leaves nothing (ADR-0144 erratum)', async () => {
     await entrar();
     await apertar(0, DIRECOES.down[0]); // seat 0 steps, so a step of seat 1 would show from here
     const antes = { pausada: pausaRapida(), cursor: cursor() };
-    for (const b of [...Object.values(DIRECOES).map(([p]) => p), ACAO2, ACAO3, START]) await apertar(1, b);
+    for (const b of [...Object.values(DIRECOES).map(([p]) => p), ACAO2, ACAO3, ACAO4, START]) await apertar(1, b);
     expect({ pausada: pausaRapida(), cursor: cursor() }, 'seat 1\'s pad steered or left seat 0\'s quick pause').toEqual(antes);
     expect(paineisAbertos(), 'seat 1\'s pad pressed an icon of seat 0\'s bar').toEqual([]);
+    expect(cartao()?.hidden, 'seat 1\'s action 4 opened seat 0\'s menus').toBe(true);
     expect(comandos, 'seat 1\'s pad reached the game under the quick pause').toEqual([]);
   });
 });
@@ -177,3 +214,10 @@ describe('in the QUICK PAUSE, seat 0\'s pad steers the bar as its keys do', () =
 //   M4 action 2 read as the START exit (`startEdge` counts it)       🔴 the action-2 case here · the quick-pause case in `gamepad.node`
 // The seat-1 case here stays green under all four: on this root seat 1 is never on the bar, so it pins that the fix keeps it so,
 // and M2 and M3 are held by the node cases, where a card under the bar and a second seat on a bar can be staged.
+// `scratchpad/pad-action4/mutate.mjs` (same discipline), 2026-09-26, against this file and `gamepad.node`:
+//   A1 the action-4 press removed (the defect back)                 🔴 the action-4 case here · the action-4 case in `gamepad.node`
+//   A2 the press asked before the screen's question                 🔴 the seat-1 action-4 case in `gamepad.node`
+//   A3 no return after the press (the frame steers on)              🔴 the action-4 case in `gamepad.node` (action 2 in the same frame)
+//   A4 pressed as SELECT instead of the position                    🔴 the action-4 case in `gamepad.node`
+// A2–A4 stay green here: this root's seat 1 is in no quick pause for its key to open, and SELECT on the quick pause opens the same
+// card — the node case holds that the pad presses the POSITION and leaves its meaning to the root.

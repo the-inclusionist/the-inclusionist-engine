@@ -1012,6 +1012,33 @@ describe('initGamepad — pollPads', () => {
   });
 
   /*
+   * 🔴 ACTION 4 IN THE QUICK PAUSE IS THE MENUS' SECOND DOOR (ADR-0155 erratum «Ambos»), and the pad PRESSES it: the controller
+   * hands the position to the menus as the seat's key, and the root answers that key where it answers the keyboard's. 📏 Before,
+   * `steerPause` read the six menu intents only, and the pad's action 4 on the frozen screen went nowhere. The root's half is
+   * `the-pad-steers-the-quick-bar.browser`.
+   */
+  it('🔴 [Right] in the quick pause, action 4 (button 3) is PRESSED for the pad\'s seat, once, and steers nothing else', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], naBarra: new Set([0]), emMenu: true });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    // with action 2 in the same snapshot: the door is the frame's one meaning, or action 2 would press whatever the card shows
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [3, 0] })]);
+    api.pollPads();
+    api.pollPads(); // held: one press, not one a frame
+    expect(ctx.calls.pressionadas, 'the pad\'s action 4 did not reach the menus').toEqual([['action4', 'gamepad', 0]]);
+    expect([...ctx.calls.navBar, ...ctx.calls.navPause], 'the frame that opened the menus also steered one').toEqual([]);
+  });
+
+  it('🔴 [Right] in the quick pause, another seat of a shared screen does not press action 4 there (ADR-0144 erratum)', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 }), makePlayer({ pad: 1 })], naBarra: new Set([0]), leadsTheScreen: (s) => s === 0, emMenu: true });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    ctx.setPads([null, makePad({ id: 'std', index: 1, mapping: 'standard', pressed: [3] })]);
+    api.pollPads();
+    expect(ctx.calls.pressionadas, 'seat 1\'s action 4 reached seat 0\'s menus').toEqual([]);
+  });
+
+  /*
    * 🔴 THE PAD'S SELECT (ADR-0155, ADR-0144 §1 «from any transport»). `input/pad-reading` read the button — `select` is button 8
    * in the standard table — and nothing acted on it: the keyboard's F opened the menus and the pad's SELECT did nothing. It is
    * PRESSED on the virtual controller now, which hands it to the engine; what it opens is decided there, as for F.

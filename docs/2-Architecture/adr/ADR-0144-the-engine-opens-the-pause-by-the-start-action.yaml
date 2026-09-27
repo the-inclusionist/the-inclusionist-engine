@@ -48,6 +48,18 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        BUILT: THE PAD'S ACTION 4 IS THE MENUS' SECOND DOOR TOO. ADR-0155's erratum «Ambos» opens the menus by `action4` from the
+        quick pause, and the frozen screen's footer says «Ação 4: menu»; the keyboard had it (`boot/create-game.openMenusByAction4`),
+        the gamepad did not. 📏 Measured through the real root with a fake standard pad on seat 0: in the quick pause its action-4
+        KEY opened the card at its root and left the quick pause, while its pad's action 4 left the child on the frozen screen —
+        `input/gamepad` `steerPause` read the six menu intents, and action 4 is none of them. Now `steerPause` PRESSES the position
+        for the seat, after the screen's question, and nothing else of that frame: the virtual controller hands it to the menus as
+        the seat's key, as it does for the touch pad's action 4, and the root answers it where it answers the keyboard's. The rule
+        stays in one place and no port changes. Gated by `tests/the-pad-steers-the-quick-bar.browser.test.js` (the pad against the
+        key, card, list, focus, legend and phases; seat 1 opens nothing) and two cases in `tests/gamepad.node.test.js`; four
+        mutations — the press removed, asked before the screen's question, the frame steering on, pressed as SELECT — all red.
+    - date: 2026-09-26
+      what: >-
         BUILT: THE PAD STEERS THE QUICK BAR. ADR-0155 §1 gives the directional to the quick bar while START's quick pause is open,
         and the keyboard had it; the gamepad did not. 📏 Measured through the real root with a fake standard pad on seat 0: its
         START opened the quick pause, then its d-pad left the bar's cursor on the first icon (the keys moved it 0 → 1), its action 2

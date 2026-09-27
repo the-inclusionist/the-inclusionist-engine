@@ -495,11 +495,15 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     ctx.navTitle(k); // the title menu, navigable by pad
   }
 
-  /** A menu is open: START resumes, and the d-pad navigates the quick bar, the shared dialog or the seat's own card. */
+  /** A menu is open: START resumes, action 4 is pressed, and the d-pad navigates the quick bar, the shared dialog or the seat's own card. */
   function steerPause(f: PadFrame): void {
     const pi = f.owner < 0 ? 0 : f.owner;
     if (f.pauseEdge) { ctx.resume(pi); return; } // START resumes — if this seat's START reaches this screen's pause (the root's)
     if (ctx.leadsTheScreen && !ctx.leadsTheScreen(pi)) return; // another seat of a shared screen steers none of its menus
+    // ACTION 4 IS PRESSED, as the keyboard's key rises: no menu intent reads it, and the controller hands it to the menus as the
+    // seat's key, which the root answers where it answers the keyboard's — in the quick pause, the menus' second door (ADR-0155
+    // erratum «Ambos»). The pad decides nothing about it; one frame, one door, as SELECT.
+    if (f.edge('action4')) { ctx.press('action4', 'gamepad', pi); return; }
     const k = f.navKeys();
     if (!anyIntent(k)) return;
     // THE QUICK BAR FIRST, in the order `ui/menu-nav` steers a key: the quick pause (ADR-0155 §1) is a menu, so its frames come
