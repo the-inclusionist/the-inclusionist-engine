@@ -13,8 +13,9 @@
 //
 // ⚠️ THE `guide` BEING OFF WAS PROVISIONAL, and this file also exists so that it does not become permanent by
 // forgetting. The replacement decided was a sound that grows as the child gets closer, following a navigable route
-// instead of pointing in a straight line into a wall; the continuous guide now follows `core/route` (#84 item 2,
-// `platform/audio-sonar`). Its default is still off, and switching it on goes through this line.
+// instead of pointing in a straight line into a wall (#84 item 2). That guide is a game's own now — the platformer's
+// `platform/audio-guide` (ADR-0257) — and the category it plays in stays this mixer's. Its default is still off, and
+// switching it on goes through this line.
 //
 // ========================= AND WHY THE SAVED VALUE WINS =========================
 // A saved value means someone TOUCHED that control, and the child's choice is not ours to undo. Whoever had turned the

@@ -28,12 +28,12 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2360,
-      "decisionNodes": 302,
+      "codeLines": 2353,
+      "decisionNodes": 301,
       "maxDepth": 4,
       "fanOut": 101,
       "globalReach": 0,
-      "worstFunction": 76,
+      "worstFunction": 75,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -305,7 +305,7 @@
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 0
     },
     "core/scenes.ts": {
       "codeLines": 50,
@@ -848,10 +848,10 @@
       "fanIn": 3
     },
     "platform/audio-sonar.ts": {
-      "codeLines": 213,
-      "decisionNodes": 40,
+      "codeLines": 104,
+      "decisionNodes": 22,
       "maxDepth": 2,
-      "fanOut": 3,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
@@ -894,16 +894,6 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 0,
-      "fanIn": 1
-    },
-    "platform/guide-intensity.ts": {
-      "codeLines": 17,
-      "decisionNodes": 1,
-      "maxDepth": 1,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 3,
       "statefulEdges": 0,
       "fanIn": 1
     },

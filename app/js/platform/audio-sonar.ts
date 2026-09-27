@@ -9,7 +9,8 @@
 //
 // This is one of them: what navigates by SOUND — pointing at the nearest target, the looping beacon, the pan by relative
 // position and the question "does this child need audio cues?". The CANE and BLIND SWIMMING, which read tiles, floor and
-// hitbox, are the platformer's and live in its repository (ADR-0228, note CC), and the audio guide is its decision.
+// hitbox, are the platformer's and live in its repository (ADR-0228, note CC). So is the continuous audio GUIDE, which
+// is that game's decision: it left this module for the platformer's `platform/audio-guide` (ADR-0257, note DZ).
 //
 // ========================= WHAT REPLACED THE PLATFORMER THINGS =========================
 // None of them crossed over. The sonar used to ask the game for an array of coins and filter by taken/owner; now it
@@ -35,13 +36,8 @@
 // ========================= NO I/O AT IMPORT =========================
 // Nothing here touches `window`: a player's own context comes from the injected `newContext` (ADR-0232 D4). It runs in the
 // `node` project.
-import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable, type Role } from '../core/contract.js';
+import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable } from '../core/contract.js';
 import type { Translate } from '../core/i18n.js';
-// THE GUIDE (#84 item 2) is made of these two and nothing else: the ROUTE says how many steps remain going round walls,
-// and the INTENSITY turns that number into brightness and volume. Neither touches Web Audio; the wiring — the only part
-// that does — is `updateGuide` below, which is why the design can be checked in `node`.
-import { routeTo } from '../core/route.js';
-import { guideIntensity, FAR_CUT, STEPS_TO_FLOOR } from './guide-intensity.js';
 
 export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 
@@ -81,75 +77,6 @@ export interface SonarPlayer extends PlayerAudioOut {
   readonly audioSink?: string | null;
 }
 
-/** The guide's continuous graph: oscillator → low-pass → gain → pan → the `guide` category. */
-export interface LiveGuide {
-  /** The context that built it — each `setTargetAtTime` takes its `currentTime` from it. */
-  readonly ac: AudioContext;
-  readonly osc: OscillatorNode;
-  readonly filter: BiquadFilterNode;
-  readonly gain: GainNode;
-  /** `null` on an engine without `createStereoPanner` — the guide goes mono instead of not existing. */
-  readonly panner: StereoPannerNode | null;
-  /** Frames since the ROUTE was last recomputed. The route is costly; the sound cannot wait for it. */
-  framesSinceRoute: number;
-  /** The last measured steps. The intensity comes from here every frame. */
-  steps: number;
-  /** The last measured pan, for the same reason: it comes from the target, which is found only with the route. */
-  pan: number;
-}
-
-/**
- * ⚠️ THE TIMBRE MUST HAVE HARMONICS, and it is a technical requirement, not taste.
- *
- * The axis of #84 item 2 is BRIGHTNESS, and brightness is a low-pass opening and closing. **A low-pass over a `sine` wave
- * does absolutely nothing**: a sine has nothing above its fundamental for the filter to cut, and the guide would be left
- * with a dead axis and only the volume working. The sawtooth is the richest of Web Audio's four waves — it has ALL the
- * harmonics — which is why it is the choice.
- *
- * And it solves, for free, the plan's other constraint: the sonar and the cane use `sine`. A different timbre was
- * required so they would not collide on one channel; here the different timbre IS the mechanism.
- */
-export const GUIDE_WAVE: OscillatorType = 'sawtooth';
-
-/**
- * The guide's fundamental, fixed.
- *
- * ⚠️ FIXED ON PURPOSE: PITCH is already the sonar's language (`380 + 740 * near`, nearer = higher). If the guide also
- * rose in pitch, both would say the same thing through the same means, and whoever hears both at once could not tell them
- * apart. The guide says distance by brightness; the sonar, by pitch.
- */
-const GUIDE_HZ = 220;
-
-/**
- * How many frames between two route computations.
- *
- * ⚠️ THE ROUTE IS A BREADTH-FIRST SEARCH, and `__incl.update(dt)` counts FRAMES: running a BFS every frame on a platform
- * map spends the whole frame budget on the target device (Positivo/Chromebook, pillar 1). Twelve frames are ~0.2 s at
- * 60 fps — faster than a child takes a step, and the sound does not wait for them: the intensity is rewritten EVERY
- * frame, with the steps the last route left.
- */
-export const FRAMES_BETWEEN_ROUTES = 12;
-
-/**
- * The ceiling of spots for the guide's route. Well below `core/route`'s 4096, and that module says why: a cue every
- * frame tolerates far less than a calculation when a level loads. Hitting it returns `null`, which is "I cannot say" —
- * and the guide falls back to the straight line, which still sounds.
- */
-const ROUTE_BUDGET = 1024;
-
-/**
- * The guide's base gain, before the intensity and the master volume multiply it.
- *
- * ⚠️ LOWER THAN THE BEEP IT REPLACES (0.11), and not by mistake: a sound that **never stops** is perceived as louder
- * than a transient of the same peak, and it tires by persistence rather than intensity — exactly what autism-support
- * mode exists not to do.
- */
-export const GUIDE_VOL = 0.06;
-
-/** The `setTargetAtTime` time constant. Short enough to follow a step, long enough that a change is a glide and not a
- *  stair — a stair on every route would be a beep again. */
-const GUIDE_TAU = 0.08;
-
 /**
  * A player's DEDICATED OUTPUT, and this module OWNS it: it is here the two fields are BORN (`new AC()` + `createGain()`,
  * below). By ADR-0039 the owner declares where a field is born, and `core/entity` does not mention them — they are not
@@ -161,20 +88,6 @@ const GUIDE_TAU = 0.08;
 export interface PlayerAudioOut {
   _ac?: SinkAC | null;
   _acOut?: GainNode | null;
-  /**
-   * This player's LIVE GUIDE GRAPH, and it lives HERE, beside the other two, for their reason (ADR-0039: the owner
-   * declares where a field is born; ADR-0033: the engine's entity declares what the ENGINE owns, and an oscillator is
-   * not). `null`/absent = quiet.
-   *
-   * ⚠️ IT HAS TO SURVIVE FRAMES, and that is where it differs from everything else in this file. The sonar and the old
-   * beep created an oscillator, played it and threw it away; a CONTINUOUS presence (#84 item 2) is an oscillator that
-   * STAYS, with the filter and gain moving under it. That is why it hangs on the player: there is nowhere else a
-   * per-player thing lasts from one frame to the next.
-   *
-   * ⚠️ AND THAT IS WHY THERE IS A WAY TO STOP IT. A field that lasts is a field that leaks: with nobody stopping it,
-   * turning the `guide` category off in the mixer would leave the sound playing.
-   */
-  _guide?: LiveGuide | null;
 }
 
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
@@ -189,15 +102,6 @@ export interface SonarCtx {
   targetsOf: (playerIndex: number) => readonly Spot[];
   /** Field 3: what the thing there is called. `null` = no name, and the announcement falls back to the generic. */
   nameAt: (at: Spot) => Speakable | null;
-  /**
-   * Field 2: what is at this spot. It is what `core/route` crosses (or not) to find the way.
-   *
-   * ⚠️ OPTIONAL HERE, and required in `GameDeclaration` — the difference is not carelessness. Making a `SonarCtx` field
-   * required breaks every consumer that builds this ctx by hand, and the composition root (which really builds it) always
-   * has it, because the declaration's validation requires it. Absent here, the guide does not go quiet: it falls back to
-   * the straight-line distance, which is what it did before.
-   */
-  roleAt?: (at: Spot) => Role;
 
   /* --- audio --- */
   tonePan: (freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtxOut | null) => void;
@@ -213,21 +117,6 @@ export interface SonarCtx {
    * target. Without (a world drawn on a canvas, or no text), the words are the navigation sentence. Absent: always the latter.
    */
   screenText?: () => string;
-  /**
-   * A mixer category's bus. The SAME shape the other audio modules receive — the guide cannot use `tonePan`, because
-   * `tonePan` plays and forgets, and a continuous presence is a graph that STAYS.
-   *
-   * Optional for the reason of `roleAt`: whoever does not inject it falls back to `audioOut` and, lacking that, to the
-   * `destination`. What is lost is the `guide` category's slider, not the sound.
-   */
-  catNode?: (cat: string) => AudioNode | null;
-  /** The master node, `catNode`'s fallback. */
-  audioOut?: () => AudioNode | null;
-  /**
-   * The master volume (0..1), which each synthesis multiplies by itself — `platform/audio`'s master gain is the pause's
-   * mute, not the slider. Absent = 1: the guide sounds and ignores the slider. That is why the root injects it.
-   */
-  getVolume?: () => number;
 
   /* --- accessibility and screen --- */
   /**
@@ -249,11 +138,7 @@ export interface SonarCtx {
    * is a candidate for the next major.
    */
   LOGICAL_W?: number;
-  getPlayers: () => SonarPlayer[];
   getNumPlayers: () => number;
-  getAudioCtx: () => AudioContext | null;
-  getSoundOn: () => boolean;
-  getAudioCat: () => Record<string, { on: boolean }> | null;
   /**
    * Makes a NEW AudioContext, or `null` where the host has none: each player with an audio device of their own gets one, so
    * `setSinkId` can send that child's cues to that device. The root's maker, from `host.win` — the same one its `createAudio`
@@ -267,19 +152,12 @@ export interface AudioSonar {
   panFor: (wx: number, pl: SonarPlayer) => number;
   needsAudioCues: (pl: SonarPlayer) => boolean;
   sonar: (pl: SonarPlayer) => void;
-  updateGuide: () => void;
   readonly sonarCount: number;
-  /**
-   * ⚠️ It counts FRAMES IN WHICH THE GUIDE SOUNDS (#84 item 2), not beeps: there is nothing discrete left to count.
-   * Reading it to say "the guide is working" is right; reading it to say "it played three times" asks about something
-   * that no longer exists.
-   */
-  readonly guideCount: number;
 }
 
 export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   const { t } = ctx;
-  let _sonarCount = 0, _guideCount = 0;
+  let _sonarCount = 0;
 
   /** The player's AudioContext (for `setSinkId` on their device), or null → the global context. */
   function playerCtx(pl: SonarPlayer): PlayerCtxOut | null {
@@ -305,7 +183,8 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   /**
-   * Impaired sight? The edge guard and the guide exist only when the answer is yes (or in blind mode).
+   * Impaired sight? A game's audio cues — its edge guard, its guide — ask this, and exist only when the answer is yes (or in
+   * blind mode).
    *
    * ⚠️ THE VISUAL HALF IS INJECTED (#104), and the module got SMALLER instead of migrating. It used to consult a table of
    * RENDER modes, walked with a render key, from inside `platform/`. The choice was: import `render/` (an edge the wrong
@@ -403,145 +282,8 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     ctx.srSay(msg); ctx.narrate(msg, pl.i);
   }
 
-  /**
-   * HOW MANY STEPS REMAIN, and the preferred answer is the one that goes round walls.
-   *
-   * ⚠️ BOTH ANSWERS ARE ALREADY IN THE SAME UNIT, which is the only reason this is a line and not a conversion: the route
-   * counts steps by definition, and `distance()` returns steps in EVERY topology — it divides by the `unit` itself in the
-   * continuous branch. Dividing again by the world step here was the mistake waiting to be made, and in a game with
-   * `unit = 16` it would put the guide at full brightness forever — the defect #121 took out of `panFor`: mixing a world
-   * ruler with a screen ruler.
-   *
-   * The route is lost two ways — a game that did not inject `roleAt`, and a budget run out — and both fall back to the
-   * STRAIGHT LINE. ⚠️ It lies behind a wall (says "near" of a target that needs going round), which is why it is a
-   * fallback and not a choice. But continuing to say it is strictly better than going quiet — quiet would claim there is
-   * no target.
-   */
-  function stepsToTarget(pl: SonarPlayer, target: { at: Spot; d: number }): number {
-    const roleAt = ctx.roleAt;
-    if (roleAt) {
-      const path = routeTo(
-        { topology: ctx.topology(), roleAt, budget: ROUTE_BUDGET },
-        { x: pl.x, y: pl.y }, [target.at],
-      );
-      if (path) return path.steps;
-    }
-    return target.d;
-  }
-
-  /** Lights this player's continuous graph. `null` = it could not (no context, or an engine without Web Audio). */
-  function startGuide(pl: SonarPlayer): LiveGuide | null {
-    const pc = playerCtx(pl);
-    const ac = pc ? pc.ac : ctx.getAudioCtx();
-    if (!ac) return null;
-    try {
-      const osc = ac.createOscillator(), lowpass = ac.createBiquadFilter(), level = ac.createGain();
-      osc.type = GUIDE_WAVE;
-      osc.frequency.value = GUIDE_HZ;
-      lowpass.type = 'lowpass';
-      lowpass.frequency.value = FAR_CUT; // born at the bottom of the scale and rising; born open would be a fright
-      level.gain.value = 0;                 // and born quiet, so it does not click when it starts
-      let migrated: AudioNode = level;
-      let panner: StereoPannerNode | null = null;
-      if (ac.createStereoPanner) { panner = ac.createStereoPanner(); level.connect(panner); migrated = panner; }
-      osc.connect(lowpass).connect(level);
-      migrated.connect(pc ? pc.out : (ctx.catNode?.('guide') || ctx.audioOut?.() || ac.destination));
-      osc.start();
-      // `framesSinceRoute` is born at the ceiling so the FIRST pass measures the route, instead of sounding for twelve
-      // frames on invented steps.
-      return { ac, osc, filter: lowpass, gain: level, panner, framesSinceRoute: FRAMES_BETWEEN_ROUTES, steps: STEPS_TO_FLOOR, pan: 0 };
-    } catch (e) { return null; }
-  }
-
-  /**
-   * Puts the graph out — and it HAS to be put out, because an oscillator that stays is the difference between this shape
-   * and the old one. The beep died by itself; this plays until someone stops it. Without this, turning the `guide`
-   * category off in the mixer would leave the sound playing, and changing visual mode would leave a second graph adding
-   * to the first.
-   *
-   * It ramps down (does not cut) because a dry cut on a live oscillator is a click — a transient, precisely what this item
-   * exists to take out of the child's ear.
-   */
-  function stopGuide(pl: SonarPlayer): void {
-    const g = pl._guide;
-    if (!g) return;
-    pl._guide = null;
-    try {
-      const audioNow = g.ac.currentTime;
-      g.gain.gain.setTargetAtTime(0, audioNow, 0.05);
-      g.osc.stop(audioNow + 0.3);
-    } catch (e) { /* noop */ }
-  }
-
-  /**
-   * THE CONTINUOUS PRESENCE, one frame at a time (#84 item 2).
-   *
-   * ⚠️ WHAT LEFT HERE WAS A BEEP, forever, whether or not the child moved or anything changed. The Dev's verdict: «um
-   * ping é a pior escolha possível, tenebroso para quem tem TEA». What replaces it fires nothing — the sound is already
-   * there, and changes brightness.
-   *
-   * ⚠️ AND GOING QUIET IS STILL A STATEMENT, with one meaning only: THERE IS NO TARGET. That is why "no target" puts the
-   * graph out and "far" does not: `guide-intensity`'s floor (`FAR_VOL`) exists exactly so the child does not confuse "it
-   * is far" with "there is nothing to find".
-   */
-  function updateGuide(): void {
-    const audible = guideAudible();
-    const vol = ctx.getVolume ? ctx.getVolume() : 1;
-    for (const pl of ctx.getPlayers()) {
-      if (!audible || !needsAudioCues(pl)) { stopGuide(pl); continue; }
-      // no guide lit (no target, or a device that refused it), or the target gone: silence says «nothing to find»
-      const g = liveGuide(pl);
-      if (!g || !remeasure(pl, g)) { stopGuide(pl); continue; }
-      glide(g, vol);
-      _guideCount++;
-    }
-  }
-
-  /** Can the guide be heard at all: the engine's audio started, the game's sound on, and a `guide` category that is on. */
-  function guideAudible(): boolean {
-    const cat = ctx.getAudioCat();
-    return !!ctx.getAudioCtx() && ctx.getSoundOn() && !!cat && !!cat.guide && cat.guide.on;
-  }
-
-  /** This player's live guide — lit here only if there is a target to point to, and `null` where it cannot be lit. */
-  function liveGuide(pl: SonarPlayer): LiveGuide | null {
-    if (pl._guide) return pl._guide;
-    // ⚠️ THE QUESTION "IS THERE A TARGET?" COMES BEFORE LIGHTING, and the gate insisted: with the graph born first, a
-    // player with no target created an oscillator, measured the route, found nothing and put it out — SIXTY TIMES A
-    // SECOND. The beep did not have this problem because nothing of it lasted; permanence brought it. `nearestSpot` is a
-    // loop over `targetsOf`, not the BFS: asking every frame costs nothing when the list is empty, which is the case here.
-    if (!nearestSpot(pl)) return null;
-    return (pl._guide = startGuide(pl));
-  }
-
-  /**
-   * Every FRAMES_BETWEEN_ROUTES frames the route and the side are measured again — the BFS on a cadence, not sixty times a
-   * second. Answers `false` when the target is gone.
-   */
-  function remeasure(pl: SonarPlayer, g: LiveGuide): boolean {
-    if (++g.framesSinceRoute < FRAMES_BETWEEN_ROUTES) return true;
-    g.framesSinceRoute = 0;
-    const target = nearestSpot(pl);
-    if (!target) return false;
-    g.steps = stepsToTarget(pl, target);
-    g.pan = panFor(target.at.x, pl);
-    return true;
-  }
-
-  /** EVERY frame, not only when the route is new: this is what makes the change a glide. */
-  function glide(g: LiveGuide, vol: number): void {
-    const i = guideIntensity(g.steps);
-    try {
-      const audioNow = g.ac.currentTime;
-      g.filter.frequency.setTargetAtTime(i.cutoff, audioNow, GUIDE_TAU);
-      g.gain.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, audioNow, GUIDE_TAU);
-      g.panner?.pan.setTargetAtTime(g.pan, audioNow, GUIDE_TAU);
-    } catch (e) { /* noop */ }
-  }
-
   return {
-    playerCtx, panFor, needsAudioCues, sonar, updateGuide,
+    playerCtx, panFor, needsAudioCues, sonar,
     get sonarCount() { return _sonarCount; },
-    get guideCount() { return _guideCount; },
   };
 }

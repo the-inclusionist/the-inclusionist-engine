@@ -73,7 +73,8 @@ said so. A document that describes the code has to be able to notice when it sto
   `app/js/core/i18n.ts` · `tests/i18n-dicts.node.test.js`
 - ✅ As a **blind player**, I want **audio navigation** towards what matters, so that I can find a target
   without seeing it. `app/js/platform/audio-sonar.ts` · `tests/audio-sonar.node.test.js` (the cane and the
-  blind swim, which read a tile world, live in the `game-platformer` since note CC)
+  blind swim, which read a tile world, live in the `game-platformer` since note CC, and so does the continuous
+  guide since note DZ)
 - ✅ As a **player**, I want **narration of what is on screen**, so that reading is not the price of playing.
   `app/js/platform/tts.ts`, `app/js/platform/interruptible-speech.ts` · `tests/tts.node.test.js`
 - ✅ As a **deaf player**, I want **every sound captioned** in deaf mode, so that nothing the game says by sound is lost.

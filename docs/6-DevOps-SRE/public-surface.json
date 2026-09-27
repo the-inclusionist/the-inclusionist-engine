@@ -717,10 +717,6 @@
   ],
   "platform/audio-sonar.ts": [
     "AudioSonar",
-    "FRAMES_BETWEEN_ROUTES",
-    "GUIDE_VOL",
-    "GUIDE_WAVE",
-    "LiveGuide",
     "PAN_PACES",
     "PlayerAudioOut",
     "PlayerCtxOut",
@@ -765,14 +761,6 @@
     "libraryFiles",
     "startLibraryFonts",
     "unknownFamilyLine"
-  ],
-  "platform/guide-intensity.ts": [
-    "FAR_CUT",
-    "FAR_VOL",
-    "Intensity",
-    "NEAR_CUT",
-    "STEPS_TO_FLOOR",
-    "guideIntensity"
   ],
   "platform/heavy-catalogue.ts": [
     "CACHE_HEAVY",

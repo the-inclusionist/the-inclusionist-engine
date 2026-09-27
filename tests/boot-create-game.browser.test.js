@@ -2085,35 +2085,6 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
     expect(spoken[1].rate, 'the utterance was not timed by the host\'s clock').not.toBe(1);
   });
 
-  it('🔴 [Right] the sonar\'s guide plays in the root\'s OWN context, at the root\'s master volume', async () => {
-    const pl = { i: 0, x: 0, y: 0 };
-    const motor = abrir({
-      declaration: {
-        ...declaracaoValida(),
-        topology: () => ({ kind: 'continuous', size: [100, 100], unit: 1, move: 'free', frame: 'clock' }),
-        targetsOf: () => [{ x: 6, y: 0 }],
-      },
-      sonarPlayers: () => [pl],
-    });
-    motor.settings.setBlindModeValue(true); // the guide plays for a child who does not see
-    motor.audio.audioCat.guide.on = true;
-    motor.sonar.updateGuide();
-    expect(motor.sonar.guideCount, 'the guide sounded before the root had a context').toBe(0);
-    const botao = document.createElement('button');
-    raiz.appendChild(botao);
-    botao.addEventListener('click', () => { motor.audio.ensureAC(); }, { once: true });
-    await userEvent.click(botao);
-    motor.sonar.updateGuide();
-    expect(motor.sonar.guideCount, 'the root\'s context started and the guide stayed off').toBe(1);
-    expect(pl._guide.ac).toBe(motor.audio.audioCtx);
-    const levels = [];
-    pl._guide.gain.gain.setTargetAtTime = (v) => { levels.push(v); };
-    motor.audio.setVolume(1); motor.sonar.updateGuide();
-    motor.audio.setVolume(0.5); motor.sonar.updateGuide();
-    expect(levels[1] / levels[0], 'the guide did not follow the root\'s master volume').toBeCloseTo(0.5, 6);
-    await motor.audio.audioCtx.close();
-  });
-
   it('📌 [Right] the root\'s sound is the one its game reaches: `engine.audio` moves what the root\'s voice reads', () => {
     const motor = abrir();
     motor.audio.setSoundOn(false);

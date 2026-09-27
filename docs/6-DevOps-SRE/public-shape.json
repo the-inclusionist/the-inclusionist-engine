@@ -1723,23 +1723,10 @@
         "y": "readonly y: number"
       }
     },
-    "interface LiveGuide": {
-      "members": {
-        "ac": "readonly ac: AudioContext",
-        "filter": "readonly filter: BiquadFilterNode",
-        "framesSinceRoute": "framesSinceRoute: number",
-        "gain": "readonly gain: GainNode",
-        "osc": "readonly osc: OscillatorNode",
-        "pan": "pan: number",
-        "panner": "readonly panner: StereoPannerNode | null",
-        "steps": "steps: number"
-      }
-    },
     "interface PlayerAudioOut": {
       "members": {
         "_ac?": "_ac: SinkAC | null",
-        "_acOut?": "_acOut: GainNode | null",
-        "_guide?": "_guide: LiveGuide | null"
+        "_acOut?": "_acOut: GainNode | null"
       }
     },
     "interface PlayerCtxOut": {
@@ -1751,19 +1738,11 @@
     "interface SonarCtx": {
       "members": {
         "LOGICAL_W?": "LOGICAL_W: number",
-        "audioOut?": "audioOut: () => AudioNode | null",
-        "catNode?": "catNode: (cat: string) => AudioNode | null",
-        "getAudioCat": "getAudioCat: () => Record<string, { on: boolean; }> | null",
-        "getAudioCtx": "getAudioCtx: () => AudioContext | null",
         "getBlindMode": "getBlindMode: () => boolean",
         "getNumPlayers": "getNumPlayers: () => number",
-        "getPlayers": "getPlayers: () => SonarPlayer[]",
-        "getSoundOn": "getSoundOn: () => boolean",
-        "getVolume?": "getVolume: () => number",
         "nameAt": "nameAt: (at: Spot) => Speakable | null",
         "narrate": "narrate: (text: string, seat: number) => void",
         "newContext": "newContext: () => AudioContext | null",
-        "roleAt?": "roleAt: (at: Spot) => Role",
         "screenText?": "screenText: () => string",
         "srSay": "srSay: (text: string) => void",
         "t": "t: Translate",
@@ -1775,13 +1754,11 @@
     },
     "interface AudioSonar": {
       "members": {
-        "guideCount": "readonly guideCount: number",
         "needsAudioCues": "needsAudioCues: (pl: SonarPlayer) => boolean",
         "panFor": "panFor: (wx: number, pl: SonarPlayer) => number",
         "playerCtx": "playerCtx: (pl: SonarPlayer) => PlayerCtxOut | null",
         "sonar": "sonar: (pl: SonarPlayer) => void",
-        "sonarCount": "readonly sonarCount: number",
-        "updateGuide": "updateGuide: () => void"
+        "sonarCount": "readonly sonarCount: number"
       }
     }
   },
@@ -1912,14 +1889,6 @@
       "members": {
         "files": "readonly files: readonly HeavyFile[]",
         "onReport": "readonly onReport: (r: { readonly id: string; readonly outcome: string; readonly error?: string; }) => void"
-      }
-    }
-  },
-  "platform/guide-intensity.ts": {
-    "interface Intensity": {
-      "members": {
-        "cutoff": "readonly cutoff: number",
-        "volume": "readonly volume: number"
       }
     }
   },

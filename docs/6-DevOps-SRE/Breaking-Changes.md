@@ -4185,6 +4185,28 @@ reader only outside — or none at all.
 | `input/transports.holds(transport, asked)` | no longer exported (the engine's own reach check still uses it) | `transport.holds === undefined \|\| transport.holds >= asked` |
 | `ui/title.TITLE_MENU_IDS_ORDERED` | no longer exported | `ui/title.TITLE_MENU_IDS` (the set) is still published; a game that needs an order keeps its own |
 
+## DZ · The continuous sound guide leaves the engine for the platformer (ADR-0257)
+
+**Who is affected:** a game that runs the sonar's guide — `engine.sonar.updateGuide()` or `createAudioSonar(…).updateGuide()` —
+or reads `guideCount`; a game that builds a `SonarCtx` by hand; anyone importing `platform/guide-intensity.js` or the guide's
+names from `platform/audio-sonar.js`. 📏 Measured 2026-09-27: nothing in the engine runs the guide (`createGame` wired it and
+never called it); in the catalogue the platformer did (through its own root) and `game-pinball` does (`engine.sonar`). The
+platformer already owns its copy — `game-platformer:69d2a06`, 1385 tests green.
+
+📌 **Why:** the Dev, 2026-09-23: «O guia sonoro é do platformer e deve ser decidido por ele sim», and 2026-09-27: «Pode tirar e
+levar da engine para o platformer». The SONAR — the tone that points, its words, the pan, `needsAudioCues`, a child's own output
+device — serves any game and stays.
+
+| was | now | what to do |
+|---|---|---|
+| `AudioSonar.updateGuide()`, `AudioSonar.guideCount` (also on `engine.sonar`) | gone | own the guide, as `game-platformer/app/js/platform/audio-guide.ts` does: it asks the sonar instance for `playerCtx`, `panFor` and `needsAudioCues`, and measures with `core/contract.distance` and `core/route.routeTo` |
+| `platform/guide-intensity.js` — `guideIntensity`, `Intensity`, `STEPS_TO_FLOOR`, `FAR_CUT`, `NEAR_CUT`, `FAR_VOL` | gone | copy the pure mapping (`game-platformer/app/js/platform/guide-intensity.ts`) |
+| `platform/audio-sonar.js` — `LiveGuide`, `GUIDE_WAVE`, `GUIDE_VOL`, `FRAMES_BETWEEN_ROUTES`, `PlayerAudioOut._guide` | gone | the guide's own module declares them, and hangs its graph on its own player type |
+| `SonarCtx.roleAt`, `catNode`, `audioOut`, `getVolume`, `getPlayers`, `getAudioCtx`, `getSoundOn`, `getAudioCat` | gone — only the guide read them | delete them from a hand-built ctx; a guide of your own takes them in its ctx |
+| `CreateGameOptions.sonarPlayers` | still accepted, `@deprecated`, **read by nothing** | nothing breaks; stop passing it when convenient — the sonar gets its player in `engine.sonar.sonar(pl)` |
+
+The mixer's `guide` category and its row in the hearing panel stay (ADR-0151, ADR-0155): a game's guide plays in it.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.

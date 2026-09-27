@@ -317,11 +317,12 @@ export interface CreateGameOptions {
   /** Phase change, for a game that has phases. Absent = does nothing (a game without phases loses nothing). */
   readonly setPhase?: (p: 'title' | 'playing' | 'paused') => void;
   /**
-   * The players as NAVIGATION SOUND sees them. Absent, `createGame` DERIVES one from field 4 of the contract: the focus
-   * says where the player is, which is all the sonar needs to know about position.
+   * @deprecated ⚠️ NO READER (ADR-0257). The list fed the continuous guide's frame, and the guide left the engine for the
+   * platformer; the sonar itself receives the player it answers for, in `engine.sonar.sonar(pl)`.
    *
-   * A game with several players, or with an audio device per player, supplies its own list. A one-child game supplies
-   * nothing — and gets the sonar anyway, which is the point.
+   * It stays, optional and inert, instead of being removed with the guide: three games pass it (measured 2026-09-27 —
+   * chess, pinball, platformer), and removing a field of the cartridge's options is a decision of its own. Removing it for
+   * good is a candidate for the next major.
    */
   readonly sonarPlayers?: () => SonarPlayer[];
   /** Blind mode on? Absent = the engine's own stored value (`core/state.blindMode`). Applies to every player. */
@@ -2365,13 +2366,8 @@ export function createGame(o: CreateGameOptions): Engine {
     topology: () => cartridge.declaration.topology(),
     targetsOf: (i) => cartridge.declaration.targetsOf(i),
     nameAt: (at) => cartridge.declaration.nameAt(at),
-    // Field 2 + the mixer bus: what the CONTINUOUS GUIDE needs and the beep did not (#84 item 2). `roleAt` is what lets
-    // the route go round a wall; `catNode`/`audioOut`/`getVolume` put a PERMANENT graph on the same volume slider as
-    // all the rest of the audio.
-    roleAt: (at) => cartridge.declaration.roleAt(at),
     // what the sonar reads is spoken — or, in deaf mode, captioned and signed by the interpreter (ADR-0234)
     tonePan, srSay, narrate: deafMode.sonar,
-    catNode, audioOut, getVolume: () => mixer.volume,
     // ⚠️ THE ANSWER, NOT THE TABLE (#104): `platform/audio-sonar` does not know what a visual mode is, so it is answered
     // here — the root is the only layer that knows both axes AND may import from `render/`.
     visionImpaired: (pl) => {
@@ -2379,14 +2375,7 @@ export function createGame(o: CreateGameOptions): Engine {
       return !!v && (isBlind(v) || isLowVision(v));
     },
     getBlindMode: readBlindMode, LOGICAL_W,
-    // The player DERIVED from the focus: field 4 answering where the child is. A game that supplies no list still has
-    // the sonar, and that is what makes the accessibility stack not an accessory.
-    getPlayers: cartridge.sonarPlayers ?? (() => {
-      const f = cartridge.declaration.focusOf(0);
-      return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: DEFAULT_VISUAL }] : [];
-    }),
     getNumPlayers: () => (cartridge.players ?? [null]).length,
-    getAudioCtx: () => mixer.audioCtx, getSoundOn: () => mixer.soundOn, getAudioCat: () => mixer.audioCat,
     newContext: newAudioContext,
   });
 
