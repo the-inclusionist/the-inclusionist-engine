@@ -61,7 +61,10 @@ decision-outcome:
     the only category born off; `audio-ambient` that the thunder plays white noise the engine made on the context, asking the
     game for nothing (three mutations red, listed in the file); `public-shape.json` no longer carries
     `CreateGameOptions.sonarPlayers` nor `AudioAmbientCtx.noiseBuffer`, and the surface test fails on a shape that changes
-    without a note. The pinball's copy of the guide is that repository's work and its own tests.
+    without a note. The pinball's copy (`game-pinball:d14a5e9`, against engine 9.0.0) holds the guide's wiring in its own
+    tests (`tests/audio-guide.node.test.ts`, `tests/audio-guide-intensity.node.test.ts`), 27 mutations red; it reads no mixer
+    category and plays to the destination or the child's own device. Named in prose and not in confirmed-by: the validator
+    declares no `game-pinball` tree.
 
 more-information: |
   The pinball's copy is its own repository's work, done by the Dev's order in the same session.
