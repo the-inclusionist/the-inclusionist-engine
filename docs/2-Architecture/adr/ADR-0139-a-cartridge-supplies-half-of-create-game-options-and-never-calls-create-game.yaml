@@ -21,6 +21,15 @@ metadata:
        for a game. This record is the game side of it"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        §2 CONFIRMED BY THE DEV AS THE SHAPE THE CARTRIDGE CHECKER READS. Building ADR-0253's checker found that none of the
+        seven games exports exactly `{ slug, declaration, hooks, create }` as its entry's default, and that one keeps its
+        declaration on the instance `create()` returns because the declaration reads that instance's state. Asked whether
+        the checker keeps §2 (each game moves declaration and hooks to the default export) or runs `create()` in a page to
+        read the instance, the Dev: «A». So §2 stands: the declaration and the hooks are on the default export, read at
+        import as `createGame` reads them at boot; a declaration that needs per-run state reaches it through the functions
+        the declaration already is (ADR-0084), not by living on the instance.
     - date: 2026-09-11
       what: "`more-information` listed `declines` as undecided between the host's half and the game's, and
              said the direction «has to be read from the implementation rather than guessed». It was read,
