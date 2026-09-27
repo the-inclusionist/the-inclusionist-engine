@@ -258,6 +258,30 @@ both pinned in `scripts/libras-glosses/uv.lock` with the other Python packages t
   this project believes it is not, and that is not a legal opinion. The glosses a delivery writes say what made them
   (`"made"` in `glosses.json`).
 
+## Fonts — 217 families — SIL OFL 1.1, Apache-2.0 and the Ubuntu Font Licence 1.0
+
+Every family `app/public/vendor/fonts.css` declares: 346 `.woff2` files in `app/public/vendor/fonts/`, most of them the latin
+and latin-ext subsets `fonts.gstatic.com` serves, plus OpenDyslexic (antijingoist/opendyslexic) and iA Writer Quattro
+(iaolo/iA-Fonts). The
+service worker precaches them into every install and the npm package ships them, so each copy of the engine redistributes them.
+
+- **Licences, as each font states its own** (name IDs 14, 13 and 0 of its `name` table, read on 2026-09-27): **SIL OFL 1.1**
+  for 214 families; **Apache-2.0** for Luckiest Guy and Smokum (Brian J. Bonislawsky DBA Astigmatic); the **Ubuntu Font
+  Licence 1.0** for Ubuntu (Canonical Ltd.). ⚠️ The typographic catalogue (`research/catalogo_tipografico.json`) records «OFL
+  1.1» for those three as well; the fonts say otherwise, and the fonts are what ships.
+- **Three families state no licence in their files** — iA Writer Quattro, Monoton and Yatra One — and are listed as OFL 1.1 on the
+  catalogue's word (`DECLARED_WITHOUT_METADATA` in `scripts/licences/fonts.mjs`).
+- **Copyright lines:** every one of the 346 files keeps its own (name ID 0), and `app/public/vendor/fonts/NOTICE.txt` lists each
+  family's as read from the font. Only one file keeps its licence text (OpenDyslexic's name ID 13): the web subsets strip it,
+  so the texts ship as files beside the fonts — `OFL-1.1.txt` (copied from that OpenDyslexic field, byte-identical to three
+  upstream `OFL.txt` copies held locally), `Apache-2.0.txt` (the heavy files' text, `scripts/licences/`) and `UFL-1.0.txt`
+  (decoded from the Debian `fonts-ubuntu` package's copyright file; ⚠️ byte identity with upstream's `LICENCE.txt` is
+  **UNVERIFIED**, the words are the package's).
+- ⚠️ **Reserved Font Names:** 25 families name one in their copyright line (Lato, Lora, Quicksand, Source Sans 3 among them),
+  and OpenDyslexic in its licence field. OFL §3 keeps a reserved name off a Modified Version, and the OFL counts a format
+  change or a subset as one; whether these web subsets, declared under the reserved names, need the holders' permission is
+  **not determined here** (the Ubuntu Font Licence §2 raises the same question for Ubuntu).
+
 ## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
 
 The eye control draws four arrows over the game (`app/js/ui/gaze-overlay.ts`): Lucide's `arrow-up`, `arrow-right`, `arrow-down` and

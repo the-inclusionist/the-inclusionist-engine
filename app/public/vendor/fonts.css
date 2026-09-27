@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: OFL-1.1
- * The engine's fonts — self-hosted (offline PWA). All SIL OFL 1.1.
+ * The engine's fonts — self-hosted (offline PWA). SIL OFL 1.1, but for three the fonts themselves state otherwise: Luckiest
+ * Guy and Smokum are Apache-2.0, Ubuntu is the Ubuntu Font Licence 1.0. Each family's licence and copyright: fonts/NOTICE.txt,
+ * beside the licence texts (scripts/licences/fonts.mjs writes it; tests/font-licences.node.test.js refuses a family without one).
  *  Atkinson Hyperlegible  → DEFAULT (UI/reading)           — Braille Institute
  *  Andika                 → LITERACY                       — SIL
  *  Lexend                 → OPTIONAL (dyslexia/ADHD/dyscalculia) — SIL
@@ -337,7 +339,8 @@
 
 /* ===== THE TYPOGRAPHIC CATALOGUE, PACKAGED (ADR-0176 erratum: «Engine empacota tudo por enquanto») =====
  * Every `ativo` family of `catalogo_tipografico.json` not listed above, in the same form: latin and latin-ext subsets,
- * weights 400/700 where the family has them (Playwrite and STIX Two Math ship their own subsets). Google Fonts, OFL 1.1.
+ * weights 400/700 where the family has them (Playwrite and STIX Two Math ship their own subsets). Google Fonts, OFL 1.1 but
+ * Luckiest Guy and Smokum (Apache-2.0): fonts/NOTICE.txt.
  * Layer A (reading) and layer B (display, for ornament only, R1) are both here; what the reading menu OFFERS is ui/fonts. */
 /* Atkinson Hyperlegible Next — atkinson_hyperlegible_next, layer A */
 @font-face{font-family:'Atkinson Hyperlegible Next';font-style:normal;font-weight:400;font-display:swap;
