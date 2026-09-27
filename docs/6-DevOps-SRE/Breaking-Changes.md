@@ -155,9 +155,13 @@ exported *name* is exactly as it was — what changed is what a consumer has to 
 
 ### And the gate now sees it
 
-`tests/superficie-publica.node.test.js` gained a second half, backed by `scripts/shape-surface.mjs`. It fails
-on a member that leaves, a member that goes from optional to required, a **required member that arrives**, and
-a type alias whose right-hand side changes.
+`tests/public-surface-shrinks-by-declaration.node.test.js` holds the shape half, backed by `scripts/shape-surface.mjs`,
+which reads every exported interface and type alias with the TypeScript parser (since 2026-09-27; before that,
+interfaces were read by counting braces and 52 of 420 were misread — a member left from a one-line interface passed
+unseen). It fails on a member that leaves, a member that goes from optional to required **or from required to
+optional**, a **required member that arrives**, a member whose printed **type** changes, a changed type-parameter list
+or `extends` clause, a type that changes kind (`interface` ↔ `type`), and a type alias whose right-hand side changes.
+It compares printed syntax, not resolved types: renaming a parameter reads as a change, and the note for it says so.
 
 ⚠️ **The asymmetry is not the same as the name gate's.** There, adding is always safe. Here it is not: a new
 *required* member breaks everyone who constructs the type, which is exactly what `holdsAtOnce` did. Optional

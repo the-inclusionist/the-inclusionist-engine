@@ -334,9 +334,14 @@ describe('an interface is read by the parser — its type parameters, its extend
   it('⚠️ [Right] a member that becomes required fails ONCE — not a second time as a type change', () => {
     expect(breaks('export interface A { x?: number }', 'export interface A { x: number }'))
       .toEqual(['m.ts  interface A.x  era opcional e passou a OBRIGATÓRIO']);
-    // 📌 The `?` lives in the KEY only, so the reverse keeps the rule this gate always had: required → optional does not
-    // break whoever builds the type, and it is not turned into a «type change» by the question mark alone.
-    expect(breaks('export interface A { x: number }', 'export interface A { x?: number }')).toEqual([]);
+  });
+
+  it('⚠️ [Right] a member that becomes OPTIONAL fails ONCE — it breaks whoever reads a type the engine hands over', () => {
+    // The `?` lives in the KEY only, so it is reported as what it is, never a second time as a «type change».
+    expect(breaks('export interface A { x: number }', 'export interface A { x?: number }'))
+      .toEqual(['m.ts  interface A.x  became optional']);
+    // and a member that stays optional with its type unchanged is no change at all
+    expect(breaks('export interface A { x?: number }', 'export interface A { x?: number }')).toEqual([]);
   });
 
   it('[Right] a new OPTIONAL member passes, and a new required one does not', () => {

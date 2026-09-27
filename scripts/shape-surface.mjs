@@ -9,6 +9,7 @@
 //
 //   · a member becoming REQUIRED (`GameDeclaration.holdsAtOnce()` did, and every game that builds a declaration stopped
 //     compiling);
+//   · a member becoming OPTIONAL — whoever reads a type the engine hands over may now get `undefined`;
 //   · a member leaving an interface that is still exported under the same name (`SonarPlayer.viz`);
 //   · a member whose TYPE changes (`(a) => void` becoming `(a, b) => void`, `string` becoming `number`);
 //   · a type parameter added or removed, or an `extends` clause that changes;
@@ -258,6 +259,9 @@ export function quebrasDeForma(antes, agora) {
         const is = now.members.get(n);
         if (!is) fora.push(`${modulo}  ${tipo}.${n}  SAIU`);
         else if (was.optional && !is.optional) fora.push(`${modulo}  ${tipo}.${n}  era opcional e passou a OBRIGATÓRIO`);
+        // ⚠️ AND THE REVERSE TOO: a member that becomes optional breaks whoever READS a type the engine hands over — the value
+        // they used may now be `undefined`. Which side a consumer is on is a type checker's question; this gate asks for a note.
+        else if (!was.optional && is.optional) fora.push(`${modulo}  ${tipo}.${n}  became optional`);
         else if (was.signature !== undefined && is.signature !== undefined && was.signature !== is.signature) {
           fora.push(`${modulo}  ${tipo}.${n}  changed type: «${was.signature}» → «${is.signature}»`);
         }
