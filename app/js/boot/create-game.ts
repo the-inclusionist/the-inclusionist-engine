@@ -782,55 +782,42 @@ function refuseDeclaration(who: string, problemas: readonly string[]): never {
   throw new Error(`${who}: declaração malformada — ${problemas.join('; ')}`);
 }
 
-/*
- * «start» BELONGS TO THE PAUSE, AND A CARTRIDGE DOES NOT TAKE IT (ADR-0144 §4).
- *
- * ⚠️ THE SENTENCE LIVES IN `core/actions`, not here, for two reasons that point the same way: that is where the
- * validity of an `ActionPreset` lives, and that is where the raw-prose ledger already answers for messages read by
- * whoever WRITES a preset. A new sentence in this module would raise its cap to pay for text that belongs to the input
- * vocabulary, not to the boot.
- *
- * ⚠️ IT THROWS, by the rubric of the two refusals above: this is a PROGRAM defect — the game declared a word for a
- * position that is not its own — and not a gap of the host. `problems` is for what still lets the child play.
- */
-function refuseIfItClaimsStart(who: string, preset: ActionPreset | undefined): void {
-  // 📌 AND SELECT TOO, since ADR-0155: the two system positions are the two doors of the pause.
-  const problemas = [startClaimProblem(preset), selectClaimProblem(preset)].filter((x): x is string => x !== null);
-  if (problemas.length) refuseDeclaration(who, problemas);
-}
-
 /**
- * Did the cartridge ANSWER its accommodations? (ADR-0153.) Same rubric as the contract: a missing or incomplete answer is
- * a precondition, not a gap — `problems` is for what still lets the child play, and here the engine would not know which
- * rows to mount.
+ * EVERY LINE `createGame` AND `mount()` REFUSE A CARTRIDGE WITH — one list, read by the boot, by `mount()` and by the
+ * cartridge checker the engine ships (`inclusionist-check-cartridge`, ADR-0253). EMPTY means the cartridge holds.
+ *
+ * 🎯 ONE LIST AND NOT A CHECKER'S COPY OF IT: a checker that re-listed these rules would drift from the boot the first time
+ * a rule was added here, and it would then accept a cartridge the platform refuses — the drift ADR-0253 exists to end.
+ *
+ * ⚠️ EACH ROW THROWS AT BOOT, by the rubric of ADR-0169: every one is a PROGRAM defect, never a gap of the host, and
+ * `problems` is for what still lets the child play.
+ *   · the declaration's shape (`core/contract`, ADR-0030);
+ *   · «start» and «select» belong to the pause, and a cartridge does not take them (ADR-0144 §4, ADR-0155) — the sentences
+ *     live in `core/actions`, where the validity of a preset lives;
+ *   · the accommodations are ANSWERED, all of them (ADR-0153): the engine would not know which rows to mount;
+ *   · a genre outside the engine's list, or Casino game (ADR-0156 §2, §4); an absent genre is conformant;
+ *   · a malformed `hud`, game options or `howToPlay` (ADR-0169): the engine would not know what to place, draw or show.
  */
-function refuseIfNoAnswer(who: string, answers: unknown): void {
-  const problemas = accommodationAnswersProblems(answers);
-  if (problemas.length) refuseDeclaration(who, problemas);
+export function cartridgeRefusals(
+  declaration: Partial<GameDeclaration> | null | undefined,
+  hooks: Partial<CartridgeHooks> | null | undefined,
+): string[] {
+  const h = hooks ?? {};
+  return [
+    ...conformanceProblems(declaration),
+    ...[startClaimProblem(h.preset), selectClaimProblem(h.preset)].filter((x): x is string => x !== null),
+    ...accommodationAnswersProblems(h.accommodations),
+    ...genreProblems(h.genre),
+    ...hudNumbersProblems(h.hud),
+    ...gameOptionsProblems(h.gameOptions),
+    ...howToPlayProblems(h.howToPlay),
+  ];
 }
 
-/** A genre outside the engine's list, or Casino game, refuses the boot (ADR-0156 §2, §4); an absent genre is conformant. */
-function refuseIfGenreRefused(who: string, genre: unknown): void {
-  const problemas = genreProblems(genre);
-  if (problemas.length) refuseDeclaration(who, problemas);
-}
-
-/** A malformed `hud` is a program defect, refused like the declaration (ADR-0169): the engine would not know what to place. */
-function refuseIfHudMalformed(who: string, hud: unknown): void {
-  const problemas = hudNumbersProblems(hud);
-  if (problemas.length) refuseDeclaration(who, problemas);
-}
-
-/** Malformed game options are a program defect, refused like the declaration (ADR-0169): the engine would not know what to draw. */
-function refuseIfOptionsMalformed(who: string, options: unknown): void {
-  const problemas = gameOptionsProblems(options);
-  if (problemas.length) refuseDeclaration(who, problemas);
-}
-
-/** A malformed `howToPlay` is a program defect, refused like the declaration (ADR-0169): the help would not know what to show. */
-function refuseIfHowToPlayMalformed(who: string, slides: unknown): void {
-  const problemas = howToPlayProblems(slides);
-  if (problemas.length) refuseDeclaration(who, problemas);
+/** Throws with every refusal at once: an author fixes the whole list in one pass instead of meeting it line by line. */
+function refuseCartridge(who: string, declaration: GameDeclaration, hooks: Partial<CartridgeHooks>): void {
+  const problems = cartridgeRefusals(declaration, hooks);
+  if (problems.length) refuseDeclaration(who, problems);
 }
 
 /** The ids the engine announces and draws into. Without them a child who listens hears nothing (finding 6). */
@@ -881,16 +868,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let cartridge: GameHalf = o;
 
-  const contractProblems = conformanceProblems(cartridge.declaration);
-  if (contractProblems.length) {
-    refuseDeclaration('createGame', contractProblems);
-  }
-  refuseIfItClaimsStart('createGame', cartridge.preset);
-  refuseIfNoAnswer('createGame', cartridge.accommodations);
-  refuseIfGenreRefused('createGame', cartridge.genre);
-  refuseIfHudMalformed('createGame', cartridge.hud);
-  refuseIfOptionsMalformed('createGame', cartridge.gameOptions);
-  refuseIfHowToPlayMalformed('createGame', cartridge.howToPlay);
+  refuseCartridge('createGame', cartridge.declaration, cartridge);
 
   const { doc } = o.host;
   /*
@@ -3979,21 +3957,11 @@ export function createGame(o: CreateGameOptions): Engine {
   // absent value becomes `{}` — the cartridge that did not answer — and is refused below with ADR-0153's sentence, never
   // with a TypeError on `hooks.preset`.
   function mountAll(declaration: GameDeclaration, hooks: CartridgeHooks = {} as CartridgeHooks): void {
-    // ⚠️ IT THROWS, IT DOES NOT DIAGNOSE — the boot's rule, and so the boot's sentence. A malformed declaration is a
-    // precondition: `problems` is for gaps one can still play with, and this is not one.
-    const malformed = conformanceProblems(declaration);
-    if (malformed.length) {
-      refuseDeclaration('mount', malformed);
-    }
-    // ⚠️ AND `mount()` REFUSES BY THE SAME RULES, before writing to `cartridge`. `CartridgeHooks` is
-    // `Omit<GameHalf, 'declaration'>`, so it carries `preset` — a second cartridge could take the «start» the first one
-    // respected, and the root would be left with the pause unreachable mid-session.
-    refuseIfItClaimsStart('mount', hooks.preset);
-    refuseIfNoAnswer('mount', hooks.accommodations);
-    refuseIfGenreRefused('mount', hooks.genre);
-    refuseIfHudMalformed('mount', hooks.hud);
-    refuseIfOptionsMalformed('mount', hooks.gameOptions);
-    refuseIfHowToPlayMalformed('mount', hooks.howToPlay);
+    // ⚠️ IT THROWS, IT DOES NOT DIAGNOSE — the boot's rule, and so the boot's list and sentence (`cartridgeRefusals`). A
+    // malformed cartridge is a precondition: `problems` is for gaps one can still play with, and this is not one. And it
+    // refuses BEFORE writing to `cartridge`: `CartridgeHooks` carries `preset`, so a second cartridge could take the
+    // «start» the first one respected, and the root would be left with the pause unreachable mid-session.
+    refuseCartridge('mount', declaration, hooks);
     cartridge = { ...hooks, declaration };
     explainForGame(null); // the explanation was the replaced cartridge's (ADR-0244)
     // its words, before anything draws them: ADDED to the root's dictionary, so the keys a shell registered at boot stay

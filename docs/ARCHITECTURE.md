@@ -21,7 +21,8 @@ the-inclusionist-engine/      # published as the npm package @the-inclusionist/e
 │   └── public/               #   static: vendor/ (fonts.css, the font files, and fonts-licences/ with their NOTICE.txt and licence texts) icon.svg _headers
 ├── art/                      # imported art and its ledger, ATTRIBUTION.csv (empty today) — see art/README.md
 ├── research/                 # the Dev's typography catalogue
-├── scripts/                  # build, delivery and measurement scripts (the inclusionist-heavy bin lives here)
+├── scripts/                  # build, delivery and measurement scripts: the inclusionist-heavy and inclusionist-check-cartridge bins,
+│                             #   and game-build.mjs, the build of a game's two targets (`@the-inclusionist/engine/build`, ADR-0253)
 ├── tools/                    # dev tools: map editor, PNG writer, history audits
 ├── dist/                     # app build output (git-ignored); NO deploy is connected to it today
 ├── dist-pkg/                 # package build output of tsc -p tsconfig.pkg.json (git-ignored)

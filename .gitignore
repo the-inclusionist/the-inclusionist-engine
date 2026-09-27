@@ -11,6 +11,8 @@ dist/
 # the PACKAGE build's output (`npm run build:pkg`, tsconfig.pkg.json) — what `exports` points at and what
 # `npm publish` ships. Generated, never versioned, for the same reason as `dist/`.
 dist-pkg/
+# the CARTRIDGE build's output (`vite build --mode cartridge`, ADR-0253) — the fixture game under tests/fixtures/game-build builds one
+dist-lib/
 .vite/
 *.tsbuildinfo
 

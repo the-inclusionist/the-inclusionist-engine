@@ -35,7 +35,11 @@
     "seventeen families of which none loaded — the child picks one, the menu marks it active, and the browser",
     "draws the system font. No error anywhere. `app/quiz.html` links it now, and",
     "`tests/an-offered-font-loads.node.test.js` holds both halves: no offerable font without a `@font-face`, and",
-    "the host actually loading the sheet."
+    "the host actually loading the sheet.",
+    "`./build` IS A BUILD SCRIPT, NOT ENGINE CODE (ADR-0253): the game's `vite.config` wraps its config in `defineGameBuild`,",
+    "so `vite build` builds its app and `vite build --mode cartridge` its cartridge; `inclusionist-check-cartridge` (bin) runs",
+    "the boot's own refusals on the built cartridge. Both live in `scripts/` and import no package: the types are emitted with",
+    "the game's own `typescript`. `tests/the-engine-builds-both-targets.node.test.js` holds them."
   ],
   "exports": {
     ".": {
@@ -69,6 +73,10 @@
     "./i18n/*.js": {
       "types": "./dist-pkg/i18n/*.d.ts",
       "default": "./dist-pkg/i18n/*.js"
+    },
+    "./build": {
+      "types": "./scripts/game-build.d.mts",
+      "default": "./scripts/game-build.mjs"
     },
     "./style.css": "./app/css/style.css",
     "./assets/vendor/*": "./app/public/vendor/*",
@@ -109,6 +117,9 @@
     "docs/LICENSES.md",
     "docs/CREDITS.md",
     "scripts/heavy-into-the-delivery.mjs",
+    "scripts/game-build.mjs",
+    "scripts/game-build.d.mts",
+    "scripts/check-cartridge.mjs",
     "scripts/licences",
     "scripts/libras-glosses.mjs",
     "scripts/libras-glosses/pyproject.toml",
@@ -118,7 +129,8 @@
     "scripts/libras-avatar.json"
   ],
   "bin": {
-    "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"
+    "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs",
+    "inclusionist-check-cartridge": "scripts/check-cartridge.mjs"
   },
   "comment:dependencies": [
     "⚠️ THIS PACKAGE HAS ONE `dependency`, AND EACH ONE IS A RECORDED DECISION (ADR-0094), never an accident.",

@@ -1,0 +1,1 @@
+A file of the app's public/ folder: the APP copies it, and a cartridge declares no delivery (ADR-0117), so its build must not.

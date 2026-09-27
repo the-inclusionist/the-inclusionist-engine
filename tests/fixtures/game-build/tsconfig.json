@@ -1,0 +1,14 @@
+{
+  "//": "The fixture game's own TypeScript settings: the engine's build emits the cartridge's types with them (ADR-0253).",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": ["src", "app"]
+}

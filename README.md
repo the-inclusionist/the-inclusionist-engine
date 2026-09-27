@@ -56,6 +56,34 @@ npm run preview    # serves the built dist/
 npm test           # Vitest tests (node + browser via Playwright); npm run test:node = the logic only
 ```
 
+## Building a game on the engine — the two targets (ADR-0253)
+
+A game is built twice from one source (ADR-0140): the **APP**, its standalone PWA with the engine bundled — the route for
+developing, testing, auditing and demonstrating that repository, never for delivering to children — and the **CARTRIDGE**,
+what the platform installs, with the engine and the shared render libraries (`pixi.js`, `zdog`) left external. **The engine
+builds the cartridge; the game declares it once**, by wrapping the Vite config it already has:
+
+```ts
+// vite.config.ts of a game
+import { defineGameBuild } from '@the-inclusionist/engine/build';
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineGameBuild({
+  cartridge: 'src/index.ts',            // the entry, relative to the repository root
+  config: { root: 'app', plugins: [VitePWA({ /* the game's manifest */ })], build: { outDir: '../dist' } },
+});
+```
+
+- `vite build` → the **app**: the game's `config`, untouched.
+- `vite build --mode cartridge` → **`dist-lib/cartridge.js`** and **`dist-lib/cartridge.d.ts`** (types emitted with the game's
+  own `tsconfig.json`, for the entry's import graph only). The game's plugins, `define` and `resolve` still apply; the engine
+  lays over them what a cartridge must be: `@the-inclusionist/engine`, `pixi.js` and `zdog` external as prefixes, no `public/`
+  (a cartridge declares no delivery, ADR-0117) and no service worker (the PWA plugin is dropped).
+- The entry's **default export is the cartridge** of ADR-0139 §2: `{ slug, declaration, hooks, create(ctx) }`. Nothing runs on
+  import.
+- **`npx inclusionist-check-cartridge`** imports `dist-lib/cartridge.js` in Node and runs on it the refusals `createGame` and
+  `mount()` apply at boot (`cartridgeRefusals`), one line per problem.
+
 ## CI/CD
 
 - **CI** — **GitHub Actions** (`.github/workflows/ci.yml`), on every push to `main` and on every pull request.

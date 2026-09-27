@@ -6,6 +6,7 @@
     "Engine",
     "EngineHost",
     "VirtualCommand",
+    "cartridgeRefusals",
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [
