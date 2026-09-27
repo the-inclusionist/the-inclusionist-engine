@@ -58,13 +58,23 @@ const icone = (k) => document.querySelector(`#title-icons .pi-btn[data-pi="${k}"
 const pausadoAVista = () => { const w = document.querySelector('#game-region .pausa-rapida'); return !!w && w.hidden === false; };
 const quadro = () => new Promise((r) => requestAnimationFrame(() => r(null)));
 const ouvido = () => ouvidos.filter((c) => c.pressed).map((c) => `${c.action}:${c.source ?? '-'}`);
-/** Waits until the chip OFFERS `texto`, frame by frame, and fails naming the last word seen. */
+/**
+ * Waits until the chip BEGINS to offer `texto`, frame by frame, and fails naming the last word seen.
+ * ⚠️ BEGINS, not «is offering»: a real click (`userEvent`) takes time to land, and one that lands after the step ends takes the
+ * NEXT item — measured on 2026-09-27: a click 30 ms before the end of «Cima» pressed «Baixo». Returning mid-offer left the
+ * case at the mercy of the machine's load (it failed so once in a full run); waiting for the offer to start gives each press
+ * the whole step.
+ */
 const quandoOferecer = async (texto) => {
-  const fim = performance.now() + PASSO * 10;
-  while (chip()?.textContent !== texto) {
-    if (performance.now() > fim) throw new Error(`the chip never offered «${texto}» (last: «${chip()?.textContent}»)`);
-    await quadro();
-  }
+  const fim = performance.now() + PASSO * 20;
+  const ate = async (pronto) => {
+    while (!pronto()) {
+      if (performance.now() > fim) throw new Error(`the chip never offered «${texto}» (last: «${chip()?.textContent}»)`);
+      await quadro();
+    }
+  };
+  await ate(() => chip()?.textContent !== texto); // already on it: wait for the next time round
+  await ate(() => chip()?.textContent === texto);
 };
 /** A tap on the root's controller from `source`, the way every transport that reads positions presses it. */
 const tocar = (action, source) => { motor.controller.press(action, source, 0); motor.controller.release(action, source, 0); };
