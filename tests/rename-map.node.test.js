@@ -8,9 +8,10 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { renameInText, readMap } from '../scripts/apply-rename.mjs';
 
 const RAIZ = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process.cwd();
@@ -122,32 +123,37 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
     expect(movidos.length, 'nada movido — este caso não mede nada').toBeGreaterThan(0);
     // The two forms of each moved path (`.ts` on disk, `.js` in an import), in one alternation. The `Set` keeps one entry
     // per distinct FORM found in the file, not per occurrence.
-    const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const formas = [...new Set(movidos.flatMap((v) => [v, v.replace(/\.ts$/, '.js')]))];
-    const FORMAS_MOVIDAS = new RegExp(formas.map(escapar).join('|'), 'g');
-    // ⚠️ THE TREE IS READ AS BYTES (`latin1`), NOT DECODED AS UTF-8, and the finding is the same: every form is ASCII
-    // (checked here: the day one is not, the read goes back to UTF-8 by itself), and in UTF-8 an ASCII byte only ever
-    // stands for itself — a multi-byte character is made of bytes ≥ 0x80, which no ASCII form can match. What is skipped
-    // is decoding ~20 MB the pattern never needed decoded: measured on 2026-09-25, 303 ms → 174 ms of this case's ~430 ms.
-    const soAscii = formas.every((f) => /^[\x20-\x7e]*$/.test(f));
-    const leitura = soAscii ? 'latin1' : 'utf8';
-    const rastreados = execFileSync('git', ['ls-files'], { cwd: RAIZ, encoding: 'utf8' }).trim().split(/\r?\n/);
-    const sobras = [];
-    for (const f of rastreados) {
-      if (f === 'scripts/rename-map.json' || f === 'scripts/apply-file-rename.mjs') continue; // they CITE the old ones on purpose
-      if (f === 'docs/6-DevOps-SRE/Breaking-Changes.md' || f === 'CHANGELOG.md') continue;    // the migration table lives in them
-      if (f === 'tests/rename-map.node.test.js') continue;                                     // and this file cites them too
-      if (f === 'tests/records-pointing-at-dead-gates.node.test.js') continue;
-      if (f.startsWith('.claude/plans/')) continue; // the working plan is the HISTORY of the work: it names what moved, as a log
-      // The records and their index name the path of their DATE — a rename is not an erratum (ADR-0057, ADR-0242).
-      if (f.startsWith('docs/2-Architecture/adr/')) continue;
-      const texto = readFileSync(join(RAIZ, f), leitura);
-      // ⚠️ ONE PASS PER FILE, not one per moved path: an `includes` for each of the ~320 forms inside the loop over the
-      // ~1050 tracked files — ~335 thousand scans of the whole text — blew the 5 s ceiling in about one run in five under
-      // the suite's load. A red that comes from the machine and not from the code invalidates whatever is being measured
-      // beside it; the fix is the work shrinking, never the clock growing.
-      for (const forma of new Set([...texto.matchAll(FORMAS_MOVIDAS)].map((m) => m[0]))) sobras.push(`${f} → ${forma}`);
+    const excluded = [
+      'scripts/rename-map.json', 'scripts/apply-file-rename.mjs', // they CITE the old ones on purpose
+      'docs/6-DevOps-SRE/Breaking-Changes.md', 'CHANGELOG.md',   // the migration table lives in them
+      'tests/rename-map.node.test.js',                           // and this file cites them too
+      'tests/records-pointing-at-dead-gates.node.test.js',
+      '.claude/plans/', // the working plan is the HISTORY of the work: it names what moved, as a log
+      'docs/2-Architecture/adr/', // the records and their index name the path of their DATE — a rename is not an erratum (ADR-0057, ADR-0242)
+    ];
+    /*
+     * ⚠️ ONE `git grep` OVER THE TRACKED TREE, fixed strings, every form at once. The tree is ~20 MB; read and matched in
+     * JavaScript it took ~430 ms alone and blew the 5 s ceiling under the full suite's load — a red that comes from the machine
+     * and not from the code invalidates whatever is measured beside it, and the fix is the work shrinking, never the clock
+     * growing. `git grep` reads the same files (the tracked ones, as they are on disk) in native threads. `--null` separates
+     * the path from the match, `-o` prints each form found, `-a` reads binary files as text as the old loop did, and exit 1
+     * means «no match». Any other exit is THROWN, never read as «no match»: checked on 2026-09-27, a broken command with
+     * the rethrow swallowed leaves this case green over a scan that never ran; with it, red. And an old path written into a
+     * tracked source file turns the case red, naming the file and the form.
+     */
+    const patternsFile = join(tmpdir(), `rename-map-forms-${process.pid}.txt`);
+    writeFileSync(patternsFile, `${formas.join('\n')}\n`);
+    let found = '';
+    try {
+      found = execFileSync('git', ['grep', '-F', '-o', '-a', '--null', '-f', patternsFile, '--', '.',
+        ...excluded.map((p) => `:(exclude)${p}`)], { cwd: RAIZ, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    } catch (e) {
+      if (e.status !== 1) throw e;
+    } finally {
+      rmSync(patternsFile, { force: true });
     }
+    const sobras = [...new Set(found.split('\n').filter(Boolean).map((line) => line.replace('\0', ' → ')))];
     expect(sobras, 'alguém ainda escreve um caminho que foi movido').toEqual([]);
   });
 });
