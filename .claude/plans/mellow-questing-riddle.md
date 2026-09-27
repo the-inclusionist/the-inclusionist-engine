@@ -23,7 +23,9 @@
 - 📋 Rodadas com a voz dele: escolher opções em pt, en e es (entrega com os três modelos de comandos).
 - 📋 Push das duas árvores e fechar #134/#137/#199/#191 no GitHub.
 
-**Achado anotado, sem conserto ainda:** o `tests/exports-without-consumer.node.test.js` falhou a CARREGAR duas vezes hoje sob a suíte completa e passa sozinho.
+**Achado anotado, sem conserto ainda:** o `tests/exports-without-consumer.node.test.js` falhou a CARREGAR duas vezes hoje sob a suíte completa e passa sozinho. 📏 Investigado 27/09: 7 corridas aos pares com o `the-engine-builds-both-targets` e 3 suítes completas seguidas — nenhuma falha. Hipótese NÃO provada: o varredor (`scripts/exports-without-consumer.mjs`, no import do teste) desce por `tests/` e só salta `node_modules`/`dist`/`dist-pkg`; o teste da build escreve e apaga `tests/fixtures/game-build/dist-lib/`, e um ficheiro que some entre o `readdirSync` e o `readFileSync` derruba a carga. Na próxima falha, ler o bloco «Failed Suites» antes de mexer.
+
+**Do guia sonoro (ADR-0257, feito: `game-platformer:69d2a06`, engine `a04ab239`…`66491aee`), três perguntas ao Dev:** o **pinball** também corre o guia da engine e quebra no próximo bump; `CreateGameOptions.sonarPlayers` ficou sem efeito (marcado obsoleto; três jogos passam-no); as categorias `guide`/`guard` do misturador ficaram sem som da engine.
 
 ## 🎯 ATÉ AO FIM — o plano adequado às decisões de 25/09 (esta é a ordem; as secções abaixo são histórico)
 
