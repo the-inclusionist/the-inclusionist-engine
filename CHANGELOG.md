@@ -1,5 +1,285 @@
 # Changelog
 
+## [11.0.0](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v10.0.0...v11.0.0) (2026-09-27)
+
+### ⚠ BREAKING CHANGES
+
+* **audio:** the mixer has no `guide` or `guard` category (`audioCat.guide`,
+`audioCat.guard`, `audio.cat.guide`, `audio.cat.guard` are gone, `NAV_CATS` is
+`['sonar']`); `CreateGameOptions.sonarPlayers` is gone; `AudioAmbientCtx.noiseBuffer` is
+gone and the ambient makes its own noise. A game that plays its own guide owns its
+switch and plays to the sonar's bus, the output or its own. Migration: note EB in
+docs/6-DevOps-SRE/Breaking-Changes.md.
+* **voice:** `ui/voice-control.VoiceControl` gains the required method `borrow`. See note EA.
+* **platform:** `platform/audio-sonar.js` no longer runs a guide:
+`AudioSonar.updateGuide`, `AudioSonar.guideCount` (also on
+`engine.sonar`), `LiveGuide`, `GUIDE_WAVE`, `GUIDE_VOL`,
+`FRAMES_BETWEEN_ROUTES`, `PlayerAudioOut._guide`, and the `SonarCtx`
+fields `roleAt`, `catNode`, `audioOut`, `getVolume`, `getPlayers`,
+`getAudioCtx`, `getSoundOn` and `getAudioCat` are gone, and
+`platform/guide-intensity.js` is no longer published. A game that
+wants the guide owns it, as the game-platformer does. See note DZ.
+* `core/contract.dimension`, `input/transports.holds` and
+`ui/title.TITLE_MENU_IDS_ORDERED` are no longer published. See note DY.
+* **platform:** `Reading` gains the required method `choose` (a double of it must add it), and
+`consumer-quiz/main-quiz.heardAlternative` is no longer published. See note DX.
+* **fonts:** the engine no longer packages the font library. A game that draws with any family other than the engine's own faces (Atkinson Hyperlegible, Andika, Lexend, Atkinson Hyperlegible Mono and the fifteen Playwrite hands of the typography button) declares it in `createGame({ uses: { fonts: ['Press Start 2P', ...] } })` and builds its delivery with `inclusionist-heavy dist --fonts "Press Start 2P,..."`; Merriweather is gone. The reserved-name families are now their authors' originals, with no unicode-range and the originals' weights. `ui/fonts.faceAvailable` answers true only for the engine's faces without a detector, and `vendor/fonts-licences/` no longer holds Apache-2.0.txt and UFL-1.0.txt. Migration: docs/6-DevOps-SRE/Breaking-Changes.md, note DW.
+* **input:** the latch rule's functions take the game's answer. `LatchReading` gains the required `gameHoldsKeys`; `readLatch`, `storedLatch` and `syncLatch` take `LatchDefaults` (`{ byDefault, gameHoldsKeys }`) in place of the boolean fallback; `LatchedEdgeOptions` requires `holdsKeys: () => boolean`; `writeLatch` returns nothing and writes on every transport; `latchAlwaysOn`, `latchIsOptional`, the module `ui/latch-refusal` and the `alt.exigida.*` keys are removed; `nextInputMode` takes two arguments and `IconStateSnapshot.latchRequired` is removed. See docs/6-DevOps-SRE/Breaking-Changes.md note DU.
+* **input:** input/gamepad.GamepadCtx gains wizardClosed(): void,
+required. A game that builds the ctx by hand and calls initGamepad
+itself (game-platformer, game-soccer) passes a function that returns
+the focus to whoever held it when the wizard opened, e.g.
+wizardClosed: () => { overlays.restoreFocus('padwiz'); }. A game that
+lets createGame mount the gamepad needs nothing.
+* **speech:** `platform/speech.gameSay(voice, text)` becomes `gameSay(voice, text, language)`, the language REQUIRED (a BCP-47 tag); the forced pt-BR is gone. A caller passes the language its word is in — `game-platformer`'s literacy words pass `'pt-BR'`. See note DS in `docs/6-DevOps-SRE/Breaking-Changes.md`.
+* **voice:** `ui/voice-control.VoiceControlDeps` gains `oneButtonOnly(): boolean`, required; a caller of `createVoiceControl` passes it (`() => false` where no one-button scan exists).
+* **scan:** `ui/menu-nav.MenuNavApi` gains `underCursor(player)`; a hand-built double of it must add it. `ui/menu-intent.MenuStep` widens with 'increase' and 'decrease'; an exhaustive switch over it must handle them.
+* **scan:** `ui/scan-overlay.scanItemText(item, label, t)` takes the root's translator as its third argument instead of the word for «cancel». A double of `MenuNavApi` must add `navIntent(player, keys)`.
+* **deaf-mode:** the VLibras Unity player leaves the engine. `ui/vlibras-player`
+(`createVlibrasInterpreter`, `VlibrasPlayerPorts`) is removed — the root
+builds `ui/libras-avatar-player` itself; `LibrasAvatarPorts.glossesFolder`
+and `avatarPlace`'s third argument are removed (glosses live in
+`libras/avatar/`); the catalogue loses `libras:player:*`, `madeFrom`,
+`LIBRAS_PLAYER_FOLDER`, `LIBRAS_SIGNS_FOLDER` and the `libras:delivery` list;
+`inclusionist-heavy --libras` writes route B's files instead of route A's,
+and `--libras-avatar` is gone; `scripts/vlibras-player.mjs`,
+`scripts/libras-signs.json` and the sign-delivery exports of
+`scripts/libras-glosses.mjs` leave; `QuizHost.librasAvatar` is removed. See
+docs/6-DevOps-SRE/Breaking-Changes.md, note DO.
+* **i18n:** a game declares the KEYS of its words — preset, accommodations,
+gameOptions, howToPlay and hud — and its words go into
+CreateGameOptions.dictionaries; core/i18n's module-level t, registerDict,
+setLocale, getLocale, initI18n, localeReady and loadLocale are gone (use
+engine.t, engine.locale(), engine.setLocale(), engine.localeReady() and
+createTranslator). Migration: docs/6-DevOps-SRE/Breaking-Changes.md, note DN.
+* **sonar:** the sonar's words in a DOM world are the text on
+screen, not the navigation sentence; R1 with a menu open reads the menu;
+a world with a canvas in it gains a line in `problems`. See note DM in
+docs/6-DevOps-SRE/Breaking-Changes.md.
+* **crt:** `createCrt`'s ctx no longer takes `a11yVisualOn`; it
+takes `scanlineYields` and `vignetteYields`, both required, and each
+effect follows its own answer. See note DL in
+docs/6-DevOps-SRE/Breaking-Changes.md.
+* **hud:** relative to the unreleased main, and not to 10.0.0:
+`SettingsStore` loses `sessionMinutes`, `sessionEnding`,
+`setSessionMinutesValue` and `setSessionEndingValue`; `GameEvent` loses
+`sessionMinutes` and `sessionEnding`; `DEFAULTS` and `KEYS` lose their
+session entries; `core/session-clock` loses `SessionEnding`, `ClockLook`,
+`clockLook`, `toSessionMinutes`, `toSessionEnding` and
+`sessionEndingProblems`, and `readSession` takes only the elapsed time;
+`SessionClockCtx` loses `minutes`, `ending`, `systemReducedMotion` and
+`sceneMotion`. This reverses the footer of bf489607: against 10.0.0
+nothing breaks, and `core/session-clock` is new. See note DJ in
+docs/6-DevOps-SRE/Breaking-Changes.md.
+* **hud:** `--rodape-h` is now the HUD row's room only (48 px at
+640x360 with the clock alone); the caption, the legend and the explanation
+overlay a game's workspace while they show. The footer's own two lines are
+`--footer-band-h`. See note DK in docs/6-DevOps-SRE/Breaking-Changes.md.
+* **hud:** `Engine` gains the required `mapSlot` and `HudBandsMounted`
+the required `points`; the identity band is drawn as five digits in the bottom
+row, the power above it, the learning bars at the row's left and the mission at
+the top centre; `--rodape-h` grows by the row's height. A game that only
+declares `hud` changes no code. See note DK in
+docs/6-DevOps-SRE/Breaking-Changes.md.
+* **state:** `SettingsStore` gains the required members `sessionMinutes`,
+`sessionEnding`, `setSessionMinutesValue` and `setSessionEndingValue`, and
+`GameEvent` the entries `sessionMinutes` and `sessionEnding`. Code that only
+reads `engine.settings` changes nothing; a hand-made double of the store adds
+the four members. See note DJ in docs/6-DevOps-SRE/Breaking-Changes.md.
+* **voice:** `input/voice-map.VoiceCommands` is now {items, partial, final}: `partial` returns every `VoiceCommand` it completes (positions and items) instead of one `Action | null`, and `reset()` is replaced by `final(text)`. `ui/voice-control.VoiceControlDeps` requires `pointAt(name)` (pass `(name) => nav.pointAt(name, 0)`), and `ui/menu-nav.MenuNavApi` gains `itemNames` and `pointAt`. See note DI in docs/6-DevOps-SRE/Breaking-Changes.md.
+* 33 re-exported names leave the module that re-exported them; each still lives where it is declared.
+`DomQuery` leaves input/gamepad, keydown, touch-bindings, touch and ui/hud, menu-nav, settings-audio, settings-controls,
+settings-mobility, settings-typo, shell, title → import it from core/dom-query. `KeyScheme` leaves input/keyboard,
+keyboard-runtime, keydown, touch-bindings and ui/settings-controls → core/entity. `NavKeys` leaves input/gamepad and
+ui/menu-nav, and `TitleNav` leaves input/keydown → input/edges (`NavKeys`). The package root loses `GamepadGameHooks`
+(→ input/gamepad) and `FlashMeasurement` (→ platform/flash-sampler). input/keydown loses `edgeAllowed` and `EdgeFlag`
+(→ input/edges); input/touch-bindings `RectLike` (→ input/pointer-space); platform/heavy `HeavyFile` (→
+platform/heavy-catalogue); platform/tts `KokoroModule`, `KokoroSession` (→ platform/kokoro); render/high-contrast
+`PaintableRole`, `HcRoleKey`, `HC_ROLE_KEYS` (→ render/hc-role-data); ui/hud `ScreenGrid` (→ core/screens); ui/shell
+`SceneFacts` (→ core/scenes). Change the import path; docs/6-DevOps-SRE/Breaking-Changes.md note DH.
+* **ui:** `Engine.libras` becomes `Engine.deafMode` with `isOn()`, `toggle()` and `captionsOn()` — pass `captionsOn` as `createAudioEarcons`'s `getCaptionsOn`. `libras.say` and `libras.tick` are removed: the interpreter answers the sonar, not announcements. `ui/vlibras.js` `createLibras` becomes `createDeafMode({ store, captionsSetting, t, interpreter, speak, caption, tell, report })`, and `Libras`, `LibrasPorts`, `LibrasStore` become `DeafMode`, `DeafModePorts`, `DeafModeStore`; `Interpreter`, `SignResult`, `NO_INTERPRETER` and `signingUnavailableLine` are new. See docs/6-DevOps-SRE/Breaking-Changes.md note DG.
+* **ui:** `ui/aac-sets` holds only `arasaac` and `pcs`, both unlicensed;
+`mulberry`, `blissymbolics`, `tawasol`, `sclera`, `symbolstix` and `widgit` left
+`AAC_SETS` and `AAC_BY_KEY`. `AacTier` is now `'licensed' | 'unlicensed'` (was
+`'bundled' | 'fetched' | 'negotiating'`); `AacSet` is a union whose `license` is a
+string when licensed and `null` otherwise, and `AacSet.available` is gone: call
+`aacSelectable(s)` instead. `aacReason` answers `'aac.noLicence'` or `null`, and
+`AAC_SECTIONS` has two sections. The i18n keys `aac.emPreparo`,
+`aac.aguardandoNegociacao`, `aac.secao.preparo(Tag)` and `aac.secao.negociacao(Tag)`
+are removed; `aac.noLicence` and `aac.section.pictograms(Tag)` are new. A game that
+only mounts the panel with `initSettingsAac` changes no code. See note DF in
+`docs/6-DevOps-SRE/Breaking-Changes.md`.
+
+### Features
+
+* **audio:** the mixer tells the engine every change of a category ([df9befa](https://github.com/the-inclusionist/the-inclusionist-engine/commit/df9befa7c1dd70c1a181dfe8b801918005798b49))
+* **build:** the engine builds both targets of a game, and checks the cartridge (ADR-0253) ([ff56dea](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ff56deadf6cc46f0e872a8f17811c1347ab86341))
+* **crt:** the scanlines stay under the colour-vision modes ([eebc2fb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/eebc2fb20dd67c4e452f7ec0c4fdc80f744fba24))
+* **deaf-mode:** a spelled word is signed with the hand held up between its letters ([115e398](https://github.com/the-inclusionist/the-inclusionist-engine/commit/115e39864336a1b085491f4a6bc51a8af4928440))
+* **deaf-mode:** the free Libras player is the interpreter, and the Unity player leaves (ADR-0234 B3) ([a3827e6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/a3827e63d5acf804f455d60041ee07ebbf50d128))
+* **deaf-mode:** the interpreter hands the player the gloss the delivery wrote (ADR-0234 route A, 5b) ([b69e46b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/b69e46b10f47afa022b2e59c06dc24cb1b86e51e)), closes [#59](https://github.com/the-inclusionist/the-inclusionist-engine/issues/59)
+* **deaf-mode:** the interpreter takes turns by player ([17c6620](https://github.com/the-inclusionist/the-inclusionist-engine/commit/17c6620af0643fbdca6d97a29c6a7ebed555c4b2))
+* **deaf-mode:** with no interpreter from the host, the root uses the VLibras player the delivery shipped (ADR-0234 route A) ([5fd6d09](https://github.com/the-inclusionist/the-inclusionist-engine/commit/5fd6d097a77f87e172d0a549ae3e13bbad26f090))
+* **engine:** Engine.explain, a game explains its own item in the engine's footer ([ef5064d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ef5064d9bafee501ea1884c6ca8cadc51b21b765))
+* **fonts:** the font library leaves the package for the heavy files (ADR-0255, ADR-0254) ([0ac4334](https://github.com/the-inclusionist/the-inclusionist-engine/commit/0ac4334baa97fc7416fb33f4f4ec6030650f1484))
+* **fonts:** the ronde falls back to Cookie, and its stack reaches it ([3875ce4](https://github.com/the-inclusionist/the-inclusionist-engine/commit/3875ce45112814c78f5ae12309e1797a01002673)), closes [#150](https://github.com/the-inclusionist/the-inclusionist-engine/issues/150)
+* **heavy:** --libras glosses the engine's and the game's Portuguese at build time (ADR-0234 route A, 5b) ([741db60](https://github.com/the-inclusionist/the-inclusionist-engine/commit/741db607f9672958b4ab488780034d87dbc980ef)), closes [#59](https://github.com/the-inclusionist/the-inclusionist-engine/issues/59)
+* **heavy:** `--libras-avatar` carries the whole manual alphabet — 655 clips, «PÕE» is fingerspelled ([613cd79](https://github.com/the-inclusionist/the-inclusionist-engine/commit/613cd79f23ea45907ae4b00f65d9fa417d1bb60b))
+* **heavy:** `--libras-avatar` delivers the free player's avatar and its 632 clips, checked by sha256 ([4cfa0f6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/4cfa0f6f6b50cd4f5e9603b58350c87940d37d85))
+* **heavy:** `--libras-avatar` lists the free player's files and its three.js chunk for offline ([69af448](https://github.com/the-inclusionist/the-inclusionist-engine/commit/69af448464f24c4f08e6565805fbb3df03ff9d02))
+* **heavy:** `inclusionist-heavy --reading` alone carries the pt, en and es reading models ([afb005e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/afb005ecb0589af44a6870ee384a473880e98f9e))
+* **heavy:** a game that listens keeps the reading models of pt, en and es, the child's first ([22a08cb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/22a08cbab4f1e42e7ced5656c887618c600ce00a))
+* **heavy:** deaf mode keeps the free Libras player by a delivery list of its own ([c027462](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c0274626bcd176d36cbe5f0ae9705ccf17091ad5))
+* **heavy:** deliver the VLibras player with --libras, its eval patched at delivery (ADR-0234 route A) ([8203234](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8203234fcaf2bcd3f679ec9d03f64ee86b00059a))
+* **heavy:** the delivery carries the voice commands in pt, en and es ([fa9be43](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fa9be434aa0b8775aba4edd7c4afbd5c8f501d02)), closes [#184](https://github.com/the-inclusionist/the-inclusionist-engine/issues/184)
+* **heavy:** the neural voice's phonemizer is the project's own eSpeak NG build ([0278e31](https://github.com/the-inclusionist/the-inclusionist-engine/commit/0278e311f936e4944b6875a870f86d5f1faf8f7f)), closes [#192](https://github.com/the-inclusionist/the-inclusionist-engine/issues/192)
+* **heavy:** the patched VLibras framework the player runs is pinned, fetched and kept ([15db99c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/15db99c87ffbdb6dbb9dbf33dad85c485f6e155b))
+* **heavy:** with deaf mode on, the start keeps the player's page and signs, checked by the list ([ad0af03](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ad0af039d7e17463b2600f0b5c3a35a9d057b24c))
+* **hud:** one HUD row at the bottom around the session clock; the score in five digits ([2cc7673](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2cc767385c11f473f71b86cebfcf55da2eb5df30)), closes [#94](https://github.com/the-inclusionist/the-inclusionist-engine/issues/94)
+* **input:** the game says whether a one-command transport latches (ADR-0249) ([14b5201](https://github.com/the-inclusionist/the-inclusionist-engine/commit/14b520141d43bfb3cca19566dc2dea22f302e7f3))
+* **input:** the pad wizard says it closed, and the focus comes back ([fd0dbc0](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fd0dbc06e73ef1050fb1dc0405702189a90316c6)), closes [#padwiz](https://github.com/the-inclusionist/the-inclusionist-engine/issues/padwiz)
+* **libras-export:** measure where a letter's hand is held up ([396a63e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/396a63e9856a34dbb1c1634122638271cc1f1ede))
+* **libras-export:** the manual alphabet's 23 missing letters are pinned and exported by default ([eb2eeda](https://github.com/the-inclusionist/the-inclusionist-engine/commit/eb2eeda099bba6d3e7aae7ca3447bc71ce17816e))
+* **libras:** a spelled word keeps its Ç, in both routes ([fcff09a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fcff09a2df634ccc4aadb56e185f0812255b3eab))
+* **libras:** deaf mode reports a text the interpreter signed only in part ([b8659fc](https://github.com/the-inclusionist/the-inclusionist-engine/commit/b8659fc7455a0dda6c8bbeaff992b01dfd15706e))
+* **libras:** pin the 632 signs the engine's glosses use ([5dc5520](https://github.com/the-inclusionist/the-inclusionist-engine/commit/5dc5520ae2dbf775d7a880c5d36d2d441bf3270e))
+* **libras:** route B, phase B1 — export the signs' .blend sources to one avatar and one three.js clip per sign ([8aa2438](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8aa243835b2568f92099113b2354bff13342da9d))
+* **libras:** route B, phase B2 — the free player on three.js, behind the Interpreter port ([8c5f3a8](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8c5f3a88834da74872af7400f1bf56805d41f2b3))
+* **libras:** route B's pure half — which clips a gloss is signed with, their clock, and the clip before three.js reads it ([5ec14b8](https://github.com/the-inclusionist/the-inclusionist-engine/commit/5ec14b8bc4c4e3ee221dc28355398412fa620b72))
+* **libras:** spell a word with no sign as it is written ([af96348](https://github.com/the-inclusionist/the-inclusionist-engine/commit/af96348622f85d8f4ac4f8ea7b1443203f49677d))
+* **libras:** the delivery lists the player's page and signs with their sha256 ([658e250](https://github.com/the-inclusionist/the-inclusionist-engine/commit/658e25017c344a90821f603ae903437481e5a1c5))
+* **libras:** the interpreter leaves 5 s after the player says it stopped ([24fb5a5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/24fb5a5ca04033973f8ed766f064f75c0bafb15c))
+* **libras:** the interpreter leaves the screen when it is done signing ([ee049e3](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ee049e331ba56dc17fd4c7470957599b59785875))
+* **libras:** the pins and the delivered manifest carry where each letter is held ([7f07c79](https://github.com/the-inclusionist/the-inclusionist-engine/commit/7f07c794da243a15c532a509349958aee7fa710d))
+* **menus:** a list longer than the screen scrolls in its card, and the cursor stays in view ([0fbac5c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/0fbac5cadd7c6e883aed4bcd0546af9fa89ecefd)), closes [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134)
+* **menus:** an exclusive choice takes the control its size asks for ([2c9899c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2c9899c846a42973421a09d51ad590db5e7e25e7)), closes [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134)
+* **menus:** back from a list of the pause card returns the cursor to its door ([91da1bc](https://github.com/the-inclusionist/the-inclusionist-engine/commit/91da1bc8379244389b4b3b937ee8acb7e3739318)), closes [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134)
+* **menus:** the modal boundary sits at the front card of the stack ([e0004f5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e0004f5eecd5ac017ee3c7e12d698a9a7f3811ad)), closes [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134)
+* **menus:** the opening menus take the width of their widest item ([5ba43b7](https://github.com/the-inclusionist/the-inclusionist-engine/commit/5ba43b71ec499ed07e3055318c02bf0fb43cb13c)), closes [#tm-main](https://github.com/the-inclusionist/the-inclusionist-engine/issues/tm-main) [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134) [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134)
+* **pad:** the mapping wizard has default positions ([7a4334b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/7a4334bc6640ca7fc537f57784ade19a0e5db0fc))
+* **platform:** a child answers an option by saying it (ADR-0256) ([f241114](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f24111426d23e4b6b7a2ee8e9b7dcc5ec0af05a6))
+* **pwa:** the service worker answers the free Libras player from the checked cache ([0180b4a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/0180b4a6c66f5cbe03745479881cc7b516280078))
+* **pwa:** the service worker answers the Libras player's page and signs from the checked cache ([15a33a9](https://github.com/the-inclusionist/the-inclusionist-engine/commit/15a33a9b4ae1fd99997ff86807874ad59be2a279))
+* **quiz:** «Sair do jogo» opens the start screen ([698be4a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/698be4a54145263d4687ffe324c814725ab5dba5))
+* **quiz:** `?libras=avatar` lends the engine the free Libras player ([ae1c893](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ae1c893672310aef1083f744b54f2ff03e5061e2))
+* **quiz:** an option that is content is heard in its own language (item 22) ([aabece3](https://github.com/the-inclusionist/the-inclusionist-engine/commit/aabece3a21e6fcdce89a885d9db33ed1d69b606b))
+* **quiz:** narration is handed to the engine as parts (ADR-0243) ([793afd5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/793afd5e87f9aeb7d546d24720243e8d9282e68c))
+* **quiz:** the demo quiz becomes a test bench of BNCC skills ([f644ddb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f644ddb4d32ad4626777a39f5d261c59f70d789a))
+* **quiz:** the demo quiz's skills as data, one BNCC skill each ([747222b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/747222b6cb6254b7c9bf60d073c56a0e6a5d4f6e))
+* **quiz:** the fifteen BNCC skills, three questions each ([c7a690e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c7a690ec53a88fe2d12f216e91717ddef5ef698c))
+* **scan:** one-button scanning adjusts a slider, a list or a steps row ([0756857](https://github.com/the-inclusionist/the-inclusionist-engine/commit/07568574aedc96d93745a00ff4d2408a71f5a9c4))
+* **scan:** one-button scanning offers the engine's doors in play ([66342f1](https://github.com/the-inclusionist/the-inclusionist-engine/commit/66342f1069ff8984b9636743d5bdeee6f0a68a7e))
+* **scan:** one-button scanning steps the engine's menus ([dcae942](https://github.com/the-inclusionist/the-inclusionist-engine/commit/dcae9422fe27679dfc5390646e5c0f5b3c078340))
+* **scan:** with one button only, any input takes the item shown ([5f3e373](https://github.com/the-inclusionist/the-inclusionist-engine/commit/5f3e3732166d0485e3fb9a01b487ccd70424138d))
+* **sonar:** the sonar reads what is on the screen now (ADR-0234) ([c8b18e8](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c8b18e836ce25068d7f2e552e0071f96a22f40f8))
+* **speech:** gameSay takes the language of its word, required ([f59b39a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f59b39a350bd6351887c4989c8e6ad3fd0f91085))
+* **state:** the session clock's length and ending are stored settings ([bf48960](https://github.com/the-inclusionist/the-inclusionist-engine/commit/bf48960738dd76ef183fdb6c285b5c912cefa3bf)), closes [#94](https://github.com/the-inclusionist/the-inclusionist-engine/issues/94)
+* **title:** back to an opening menu puts the focus on the item that opened the submenu ([4840210](https://github.com/the-inclusionist/the-inclusionist-engine/commit/4840210da7e28bc3498c0a469f005af6d3dc9b50)), closes [#134](https://github.com/the-inclusionist/the-inclusionist-engine/issues/134)
+* **tts:** a part with no voice for its language is not spoken, and says so once ([b7111d3](https://github.com/the-inclusionist/the-inclusionist-engine/commit/b7111d3225d1f270f150be29137286822c624390))
+* **tts:** a spoken text carries its language — narrate takes parts ([8c803f5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8c803f5bd349f92344d797377bfab1e187906b1a))
+* **ui:** a long footer explanation scrolls at the child's reading pace ([b2ff44e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/b2ff44e67c57a2b11b33b6a9b23cdf875b82e613))
+* **ui:** a margin between the game's edge and its text and buttons ([e1fb44a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e1fb44aced6e3eb34dd91603b4c4212a7667cad5))
+* **ui:** deaf mode — sounds get captions, and the sonar calls an interpreter port (ADR-0234) ([ddab86d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ddab86db72dedf840c111ac420a8b2827798c395)), closes [#59](https://github.com/the-inclusionist/the-inclusionist-engine/issues/59)
+* **ui:** the AAC menu's door is disabled and says only «Menu desabilitado» (ADR-0233 erratum) ([416b4a9](https://github.com/the-inclusionist/the-inclusionist-engine/commit/416b4a9c2de8854a9ab3efddc00b06a5e7e34d64)), closes [#57](https://github.com/the-inclusionist/the-inclusionist-engine/issues/57)
+* **ui:** the on-screen pad's buttons and shoulders stand the edge margin off ([43f5b8f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/43f5b8ff34249e89dc356496353bf56804c8bb78))
+* **ui:** the rest of the edge margin — HUD bands with no row, the caption, the legend, the pills, the viz dot ([d0f776d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/d0f776d2af17e750fa0f3e3ce1a01cf14f66eabb))
+* **voice:** «Carregando…» at the key, «Estou ouvindo» only once the ear is open ([6cf6ee6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6cf6ee687cc1c4c1de8472a520498dbafbc723a8))
+* **voice:** a locked menu item said by name speaks its reason ([10a1235](https://github.com/the-inclusionist/the-inclusionist-engine/commit/10a12351de42cf8f97e3a4c4a6ba8144572fba19))
+* **voice:** a menu item's name said by voice activates it ([84c9327](https://github.com/the-inclusionist/the-inclusionist-engine/commit/84c93273307f147febcafe1102cd7e6a3717c0b1)), closes [#184](https://github.com/the-inclusionist/the-inclusionist-engine/issues/184)
+* **voice:** a menu name with a word the speech model lacks is a line of problems ([6353ba6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6353ba6af8b85a2d597b3bd001959265f52e82fc))
+* **voice:** the command reader matches without accents, answers with them ([dd8db18](https://github.com/the-inclusionist/the-inclusionist-engine/commit/dd8db181bc1110ea452de5ad45d5203e5dc7eb6c)), closes [#184](https://github.com/the-inclusionist/the-inclusionist-engine/issues/184)
+* **voice:** the end of an utterance carries what was said ([2177efe](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2177efe94cb4efd3266a3839b93c1c23b87ba90d)), closes [#184](https://github.com/the-inclusionist/the-inclusionist-engine/issues/184)
+
+### Bug Fixes
+
+* **a11y:** the child hears «on» from the control that started, never from the press ([cb0274d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/cb0274dc68fdf95f85c5872a278058b83081d3c8))
+* **bar:** the name under the cursor follows its icon's state ([f37796f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f37796f293c11c2b6903a6163cde03dee76c4783))
+* **bar:** the narration icon follows narration flipped in the hearing panel ([3776c2f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/3776c2ff043623d3b64cebfb320a0962ccef3c9d))
+* **boot:** Escape and «Voltar» cancel whichever pad wizard is mapping ([05fa4cb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/05fa4cbd7bbd1d1eab5b3b596a5f14e94dd7d804))
+* **boot:** one pad mapping wizard owns the pad at a time ([10f054c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/10f054ccb6eeac4f9a5f947635f7c647b924a549))
+* **boot:** the CRT yields to the game's high-contrast theme under createGame ([fa265ab](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fa265ab93e034fc7397a7bdfc9198f58d90eabad))
+* **camera:** a vision runtime that cannot load is said, not swallowed ([07cf9b6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/07cf9b6feb0768086e53045faa5128b08dfd4aed))
+* **ci:** allow the second false positive gitleaks read as a key, a line of prose ([e56f1d6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e56f1d66487482923758498b13ce1166588fc032))
+* **ci:** allow the SHA-256 digest gitleaks read as a key, by file and reason ([abcb444](https://github.com/the-inclusionist/the-inclusionist-engine/commit/abcb444c287575982271cbf96e721446149bf99c))
+* **ci:** the DCO check reads the pull request's commits, not GitHub's merge commit ([45e3cdb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/45e3cdbc1690dd9a31aff09aceeca93e4e3fe59f))
+* **ci:** three comment lines at column 0 inside a `run: |` block made ci.yml invalid YAML ([2a922c1](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2a922c1b063e3dc15db2371196e069574e993118))
+* **comments:** restore the `apply(false)` a shell escape turned into a BEL in the root's comment ([9818cdb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/9818cdb1afdad6c5501f8b34befecb0cc3c55281))
+* **comments:** restore the characters a shell escape ate in two comments ([6a1a8fb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6a1a8fbcbf96dd85b4dc7c54aff67a1290128954))
+* **fonts:** three faces with no stated licence leave the package ([6cdeacd](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6cdeacdca9d2a813689dca7669bf49ad01e9626d))
+* **heavy:** `inclusionist-heavy --commands xx` stops with exit 2 instead of carrying the runtime alone ([e4487da](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e4487da36e2e9e767864a5ee9b35061578932e0b))
+* **heavy:** a second delivery run keeps the licence notices of what the first one wrote ([e0ebf59](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e0ebf597b9f97d5c10316647b77f4cc72cacb60c))
+* **heavy:** the list reader's words pass the language gates ([62a4a59](https://github.com/the-inclusionist/the-inclusionist-engine/commit/62a4a598fd25d6beb57d6ee9530595bd04aa7c88))
+* **heavy:** the merged language list is named in words the language gate knows ([fe84acf](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fe84acfeafc5e20eeb082c3cdd588cab2ffe5e97))
+* **hud:** a game's bottom room is the HUD row's; momentary bands overlay ([fc0d19c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fc0d19c51e1fe5f752f7ccec7e60704477348686)), closes [#94](https://github.com/the-inclusionist/the-inclusionist-engine/issues/94)
+* **hud:** a screen reader gets the clock's words, never its label and digits ([e4c96a4](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e4c96a4dfa7fd79a9133b0e22c22375eb132e3e4))
+* **hud:** the clock shows the hour only while there is one, and takes less room ([907514a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/907514aa0a799e2eb6b768aa1dc5678cc8184fe9))
+* **hud:** the HUD keeps clear of the quick bar and the pad's shoulders ([9ade1c5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/9ade1c5be3420142f4d98f754cac44295b304897))
+* **hud:** the row and the footer follow the on-screen pad at once ([7d4308b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/7d4308be0ffbf081dc411a0acab77398e415a72d))
+* **hud:** the session clock is one hour, red at the end, with no setting on the child's side ([263ec0c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/263ec0c94f72b564e62f1b24536515f5b300f0e7)), closes [#94](https://github.com/the-inclusionist/the-inclusionist-engine/issues/94)
+* **hud:** the session pie empties clockwise, like a Time Timer ([1b87011](https://github.com/the-inclusionist/the-inclusionist-engine/commit/1b87011a74a24f248b17d4e5cf21d0df7bab5a72))
+* **hud:** without a row, the power stands under the points, not over them ([dbcbd9b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/dbcbd9b4ec5982d053373afbf97193bc7105bb70))
+* **input:** a key that went to a field or to the engine's own control is not also played ([bdd719d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/bdd719db412acfef5a52d9139217a438381742bb))
+* **input:** a key the engine delivered to the game does not also do the browser's default ([f294c52](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f294c5221d33d98e48e486518f8293981d50f9f6))
+* **input:** a key the engine's menus consumed is not also played ([afcfe81](https://github.com/the-inclusionist/the-inclusionist-engine/commit/afcfe81e8d064faaa1c56f439178aa6cd5cb7851))
+* **input:** a key typed into a text field is not START or SELECT ([bc08c95](https://github.com/the-inclusionist/the-inclusionist-engine/commit/bc08c95388f2e1c0cf248ad5a7cc983f51f55a86))
+* **input:** a pad mapped by the wizard reads its SELECT ([ca03921](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ca039213a7efddf345e9709df1650ff7f46d3b4f))
+* **input:** a system position is never translated into a menu key ([f603263](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f60326371a40f842da52fabfd15b4d727cce4cc0))
+* **input:** every transport's press moves the device in use and its latch (ADR-0109 rule 3) ([f015f1a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f015f1ad43037b6e4f19709cb13fb3fe287b6f21))
+* **input:** START and SELECT open the pause from every transport ([014cd75](https://github.com/the-inclusionist/the-inclusionist-engine/commit/014cd752d54752378640d7408917037c58383a6a))
+* **input:** the game never hears START or SELECT ([688d9ac](https://github.com/the-inclusionist/the-inclusionist-engine/commit/688d9acc2d05abe627ed7916e784416c82a876e6))
+* **input:** the gamepad's SELECT opens the menus ([1899eb7](https://github.com/the-inclusionist/the-inclusionist-engine/commit/1899eb7119e5efc0e1a6fd076a57c766249cafb6))
+* **input:** the gamepad's START pauses its own seat ([8286e9f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8286e9fbd7ad5e54bf8e3b145286e134c294b4d6))
+* **input:** the pad mapping wizard always asks START and SELECT ([01dc384](https://github.com/the-inclusionist/the-inclusionist-engine/commit/01dc3841a2e9eacb5d1bac9b5bbae4993a16de75))
+* **input:** the pad wizard's progress line names positions in words ([e659483](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e659483a33848f797bedcdf8b8f05daef1da0247))
+* **libras:** the free player asks each clip where the offline list keeps it ([c9baaec](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c9baaecadadae42b1712803c0edaa0c7c67e65e0))
+* **licences:** the font notice lives beside fonts/, where it revalidates ([062d6aa](https://github.com/the-inclusionist/the-inclusionist-engine/commit/062d6aa2da7c3e2b8e355d3ca14562b1bfca32a6))
+* **licences:** the fonts carry their notices and licence texts beside them ([459438d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/459438d71af7fdb2b158acde19b31fae200c2ce6))
+* **menus:** on a shared screen only the first player steers an open menu ([f65da8e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f65da8e2db97ceca15216a28551aa77fe839af0e))
+* **pad:** action 4 opens the menus from the quick pause ([8d5cbb3](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8d5cbb3076da9a6163d7aba9e4be0cc4bb0680f2))
+* **pad:** on the bar in play, only START is the START exit ([1267d9c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/1267d9cce6d5476dcd846776871dc4e191e989f7))
+* **pad:** the gamepad steers the quick pause's bar ([786eca8](https://github.com/the-inclusionist/the-inclusionist-engine/commit/786eca8011d66034bca75c57281ae7cf8bb5cff1))
+* **pause:** Enter on the engine's focused control presses it ([3fdd2d1](https://github.com/the-inclusionist/the-inclusionist-engine/commit/3fdd2d1f516ba6dc15bc67fbffc177d47cd729ac))
+* **pause:** on a shared screen only the first player's START acts ([35bde6d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/35bde6d5eaa1be836e68e971343481bfd592c509))
+* **pause:** the key that ends print mode is not also played ([c52107a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c52107a3b8520f90bb3b209c64cd40f06745c497))
+* **platform:** a function lent by the window runs on the window, whoever wrapped it ([0ce4ceb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/0ce4cebfa35b34d59fd523beb56d4269f18045a6))
+* **platform:** the ways in come down first — a fresh install's voice commands no longer wait behind 700 MiB ([1f5765f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/1f5765fe248a7728cad4c0f3d3318feda5b2da4b))
+* **precache:** the free Libras player's three.js chunk is excused from the precache by name ([d8a770c](https://github.com/the-inclusionist/the-inclusionist-engine/commit/d8a770c3ddb14074d49b33fed98b6a77411e33f6))
+* **pwa:** the quiz opened with `?libras=avatar` is found in the precache offline ([52e192e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/52e192ea141089759c67e951676cc38e2d264ebf))
+* **quiz:** one press of Space answers one question, not two ([e1fe84b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e1fe84ba1b0f91a7c575c1228c16cd90473a2ba5))
+* **quiz:** the welcome names the keys this child has, not Enter ([ad229a2](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ad229a231e248b7aa2beaed3336a5229b783683b))
+* **quiz:** what has the focus is what Space answers ([888a015](https://github.com/the-inclusionist/the-inclusionist-engine/commit/888a015a3e4f451682bdad1ce8b32968835f0528))
+* **reading:** Moonshine hears the wave in whole 80-sample frames — English and Spanish readings stop failing ([e0ae42f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e0ae42f249a6a801b565a7fba83759db14590f42)), closes [#185](https://github.com/the-inclusionist/the-inclusionist-engine/issues/185)
+* **reading:** one thread per language — a reading no longer recompiles the model, and a switch opens hers ([bb9eb46](https://github.com/the-inclusionist/the-inclusionist-engine/commit/bb9eb4675e4e49a8b124d1e7eee184acb9e15fae)), closes [#185](https://github.com/the-inclusionist/the-inclusionist-engine/issues/185)
+* **reading:** without a `Worker`, one runtime per language — and the `problems` line written once ([2e9b1b4](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2e9b1b4659b24f38630f7cd59d359c35b272a839)), closes [#185](https://github.com/the-inclusionist/the-inclusionist-engine/issues/185)
+* **sonar:** another player's reading waits its turn, a player's own is cut ([d0413ac](https://github.com/the-inclusionist/the-inclusionist-engine/commit/d0413acfda4a023d7c0bd8eff31f3ebfd3794e09))
+* **surface:** a member that becomes optional is a shape change too ([c62e43b](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c62e43bd38b228c6b2bfa8fcf3cc0d965d5cd02a))
+* **surface:** the shape gate reads a type alias whole, through the parser ([96baa06](https://github.com/the-inclusionist/the-inclusionist-engine/commit/96baa069f16edd5dc0eed343586b8481cbb03bfc))
+* **surface:** the shape gate reads interfaces with the parser, members typed ([9221326](https://github.com/the-inclusionist/the-inclusionist-engine/commit/92213269e5eb57d1ab883935af0eb4edd0f8f0a2))
+* **test:** the browser suite runs in pt-BR on every machine, not in the host's language ([6f8a326](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6f8a326f6f8e831f2ffe657350ac3a4b9ea5fc78))
+* **test:** the build fixture stops importing `dimension`, which note DY removed ([8291d5a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8291d5a7f6d0fa29ab3708c6f3420c23f071b5ef))
+* **test:** the hearing-panel cases lend their own voices instead of reading the machine's ([f7640ec](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f7640ec824a5f8c5e5e7ad70cd3349c4311e8bf4))
+* **tts:** a browser voice that reads a part comes before a neural one ([e7a79af](https://github.com/the-inclusionist/the-inclusionist-engine/commit/e7a79aff975cf8d5495829afb7182d798a6794b4))
+* **tts:** narration after a language switch speaks with the new language's voice ([6353acb](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6353acb7a88272a7729aaae41f0af743628d1b10))
+* **ui:** a long footer explanation glides up continuously, not a line at a time ([7ddc002](https://github.com/the-inclusionist/the-inclusionist-engine/commit/7ddc0025facb41ebb32c998023f7a12f0447b984))
+* **viz:** the simulation dot stands top left, under the left shoulders ([96c30d7](https://github.com/the-inclusionist/the-inclusionist-engine/commit/96c30d70b3b01dc03bab81a73a02e28460c8331e))
+* **voice:** menu names enter the grammar as the language writes them ([64d9d6e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/64d9d6eb7f0a83eb5582bdf7d45a21d61ee2e024)), closes [#184](https://github.com/the-inclusionist/the-inclusionist-engine/issues/184)
+* **voice:** one ear — a choice borrows the 👄, each model is loaded once, the 👄 starts in the child's language ([ee10068](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ee10068b39dbae720681b64c84dc0d80c31f3b6b))
+* **voices:** the «test voice» button locks with the speech rows ([5857de3](https://github.com/the-inclusionist/the-inclusionist-engine/commit/5857de37a6d5d7cbf21a09dd160e82308daa1c5b))
+* **voices:** the «test voice» sample speaks the page's language ([ccefaa4](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ccefaa4120f344bb779abc4843e9c3c68e41c8e3))
+* **voices:** the speech lock follows the device's voices both ways, in place ([cb79796](https://github.com/the-inclusionist/the-inclusionist-engine/commit/cb797964b20cff8cfb150745352ac673f9a057b9))
+* **voices:** the system-voice list offers only voices of the page's language ([9324d8f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/9324d8fa90ffea65351e36360cbc4c1ca6e8a49b))
+* **voice:** the exact tag before the region, a neural pt-BR voice before a pt-PT one ([9f6b692](https://github.com/the-inclusionist/the-inclusionist-engine/commit/9f6b69253018921b90c3615a838e5e01e14ccba9))
+* **voice:** with one button only, a word heard is one press and nothing else ([66b35c6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/66b35c6d42ed01f54080637e68472bc43cda123e))
+
+### Code Refactoring
+
+* 33 re-exports nothing in the engine imports stop being published, and the surface portrait reads re-exports ([cbffee5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/cbffee5212e97aa8e648150d90177c633db025a7)), closes [#204](https://github.com/the-inclusionist/the-inclusionist-engine/issues/204) [#204](https://github.com/the-inclusionist/the-inclusionist-engine/issues/204)
+* **audio:** what the sound guide left behind leaves — `guide`/`guard`, `sonarPlayers`, the ambient's noise port ([a3d719d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/a3d719d6708e1350c91d0d96c117471a6f84e879))
+* **i18n:** a game declares the KEYS of its words, and core/i18n holds no state ([cf39cb6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/cf39cb6f263dd1394d5469efdaf1fe4d03926d24)), closes [#207](https://github.com/the-inclusionist/the-inclusionist-engine/issues/207)
+* **platform:** the continuous sound guide leaves — platform/audio-sonar keeps only the sonar ([f04052e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f04052ead678def8621a7afc08145b7f4186e617))
+* three published names nothing in the engine read leave the surface ([f594d4f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f594d4f3175d27cb8ab9acdd2927a7107f8316f3))
+* **ui:** only ARASAAC and PCS, locked until a licence is recorded (ADR-0233) ([7d7b36e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/7d7b36ebd375fc4c5ea7038bd6bb6a19494309c5)), closes [#57](https://github.com/the-inclusionist/the-inclusionist-engine/issues/57)
+
 ## [10.0.0](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v9.0.0...v10.0.0) (2026-09-25)
 
 ### ⚠ BREAKING CHANGES
