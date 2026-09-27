@@ -49,13 +49,13 @@ const AUDIO_HTML = `
 const AUDIO_CATS = [
   { k: 'music', lbl: 'Música' }, { k: 'ambient', lbl: 'Sons ambiente' }, { k: 'interact', lbl: 'Interação' },
   { k: 'earcons', lbl: 'Earcons' }, { k: 'tts', lbl: 'Narração (TTS)' },
-  { k: 'sonar', lbl: 'Sonar' }, { k: 'guard', lbl: 'Guarda' }, { k: 'guide', lbl: 'Guia' },
+  { k: 'sonar', lbl: 'Sonar' },
 ];
 
 /**
  * The FACTORY state of the categories — asked of `defaultAudioCat`, not copied again.
  *
- * A second copy of the rule written here (`{ on: k !== 'tts', vol: 0.8 }`) diverged the day `guide` started being born
+ * A second copy of the rule written here (`{ on: k !== 'tts', vol: 0.8 }`) diverged the day a category started being born
  * off: the fixture kept it ON, and ADR-0029's "changed from default" mark showed up in a menu nobody had touched. The
  * case failed and it was right — the copy was wrong, not the code.
  */
@@ -287,7 +287,7 @@ describe('ui/settings-audio — renderAudio (categorias)', () => {
     expect(catGainCalls).toContain('ambient');
   });
 
-  it('[Interface] o slider geral de navegação sonora move sonar/guard/guide juntos e chama setCatGain 3x', () => {
+  it('[Interface] o slider geral de navegação sonora move toda categoria de navegação e chama setCatGain para cada uma', () => {
     const { ctx, audioCat, catGainCalls } = fullCtx();
     const api = initSettingsAudio(ctx);
     api.renderAudio();

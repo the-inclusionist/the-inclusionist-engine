@@ -48,7 +48,7 @@ beforeEach(() => { audio = createAudio({ newContext: () => null, store: createSt
 describe('tonePan — a tone, panned, on a child\'s device', () => {
   it('🔴 [Right] plays ONE oscillator of the asked timbre and pitch, at the asked level times the master, for the asked time', () => {
     const { rec, pc } = contextoDoJogador();
-    audio.tonePan(523, 0.2, 'guide', null, 0.5, 'triangle', pc);
+    audio.tonePan(523, 0.2, 'sonar', null, 0.5, 'triangle', pc);
     expect(rec.osc).toHaveLength(1);
     expect([rec.osc[0].type, rec.osc[0].frequency.value]).toEqual(['triangle', 523]);
     expect(rec.picos[0][0]).toBeCloseTo(0.5 * 0.6, 6);
@@ -57,37 +57,37 @@ describe('tonePan — a tone, panned, on a child\'s device', () => {
 
   it('🔴 [Right] it reaches the PLAYER\'s device — the cue is for that child, not for the room', () => {
     const { rec, pc } = contextoDoJogador();
-    audio.tonePan(523, 0.2, 'guide', null, 0.5, 'triangle', pc);
+    audio.tonePan(523, 0.2, 'sonar', null, 0.5, 'triangle', pc);
     expect(rec.destinos.at(-1)).toEqual(['ganho', 'saida-do-jogador']);
   });
 
   it('📌 [Boundary] without a timbre it is a sine; without a level, 0.2 of the master; and never under a floor', () => {
     const { rec, pc } = contextoDoJogador();
-    audio.tonePan(523, 0.2, 'guide', null, undefined, undefined, pc);
+    audio.tonePan(523, 0.2, 'sonar', null, undefined, undefined, pc);
     expect(rec.osc[0].type).toBe('sine');
     expect(rec.picos[0][0]).toBeCloseTo(0.2 * 0.6, 6);
     audio.setVolume(0.05);
-    audio.tonePan(523, 0.2, 'guide', null, 0.2, 'sine', pc);
+    audio.tonePan(523, 0.2, 'sonar', null, 0.2, 'sine', pc);
     expect(rec.picos[1][0], 'a quiet master made the cue inaudible').toBeCloseTo(0.02, 6);
   });
 
   it('🔴 [Right] a pan is clamped to the two ears, and NO pan builds no panner', () => {
     const { rec, pc } = contextoDoJogador();
-    audio.tonePan(523, 0.2, 'guide', 3, 0.5, 'sine', pc);
-    audio.tonePan(523, 0.2, 'guide', -3, 0.5, 'sine', pc);
+    audio.tonePan(523, 0.2, 'sonar', 3, 0.5, 'sine', pc);
+    audio.tonePan(523, 0.2, 'sonar', -3, 0.5, 'sine', pc);
     expect(rec.panners.map((p) => p.pan.value)).toEqual([1, -1]);
     const semPan = contextoDoJogador();
-    audio.tonePan(523, 0.2, 'guide', null, 0.5, 'sine', semPan.pc);
+    audio.tonePan(523, 0.2, 'sonar', null, 0.5, 'sine', semPan.pc);
     expect(semPan.rec.panners).toHaveLength(0);
   });
 
   it('🔴 [Zero] the game\'s sound off, or the master at zero: nothing is built', () => {
     const { rec, pc } = contextoDoJogador();
     audio.setSoundOn(false);
-    audio.tonePan(523, 0.2, 'guide', null, 0.5, 'sine', pc);
+    audio.tonePan(523, 0.2, 'sonar', null, 0.5, 'sine', pc);
     audio.setSoundOn(true);
     audio.setVolume(0);
-    audio.tonePan(523, 0.2, 'guide', null, 0.5, 'sine', pc);
+    audio.tonePan(523, 0.2, 'sonar', null, 0.5, 'sine', pc);
     expect(rec.osc).toHaveLength(0);
   });
 });
@@ -292,7 +292,7 @@ describe('one root\'s sound — `createAudio` (ADR-0232 D4)', () => {
   it('📌 [Zero] a host with no audio context: every question answers null and no cue throws', () => {
     const a = built(() => null);
     expect([a.ensureAC(), a.audioOut(), a.catNode('earcons')]).toEqual([null, null, null]);
-    expect(() => { a.tone(440, 0.1); a.noiseHit('piso'); a.tonePan(440, 0.1, 'guide'); a.setMasterMuted(true); a.setHearingLossGraph(true); }).not.toThrow();
+    expect(() => { a.tone(440, 0.1); a.noiseHit('piso'); a.tonePan(440, 0.1, 'sonar'); a.setMasterMuted(true); a.setHearingLossGraph(true); }).not.toThrow();
   });
 
   it('🔴 [Right] TWO ROOTS SHARE NOTHING: each its own context, master volume, switch and categories', () => {

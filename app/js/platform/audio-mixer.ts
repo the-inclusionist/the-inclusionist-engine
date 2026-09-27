@@ -22,8 +22,8 @@ export const AUDIO_CATS: AudioCat[] = [
   {k:'earcons', lbl:'audio.cat.earcons'},
   {k:'tts',     lbl:'audio.cat.tts'},
   {k:'sonar',   lbl:'audio.cat.sonar'},
-  {k:'guard',   lbl:'audio.cat.guard'},
-  {k:'guide',   lbl:'audio.cat.guide'},
+  // 🔴 `guard` and `guide` LEFT (ADR-0258, the Dev: «Saem.»): the engine plays nothing in either since the guide moved to the
+  // platformer (ADR-0257); a level stored for them stays in the child's storage and is read by nobody.
 ];
 
 /**
@@ -33,14 +33,9 @@ export const AUDIO_CATS: AudioCat[] = [
  *  · `tts` — a robotic voice irritates and overloads autistic people. Whoever needs it turns it on in the menu. (The
  *    literacy voice is `gameSay()`, independent of this and always on.)
  *
- *  · `guide` — the audio guide, off by the Dev's decision, a PROVISIONAL measure that should not become permanent
- *    without someone reviewing it. The Dev's verdict on the old beacon: «um ping é a pior escolha possível, tenebroso
- *    para quem tem TEA». It was not the FREQUENCY that was wrong — it was the beep, which the child who most needs cues
- *    heard the whole game long. Its replacement, a sound that grows as one approaches along a walkable route (#84), is
- *    the game's to decide; until someone reviews it, silence is the default, and a child who wants the guide can still
- *    turn it on in the hearing menu.
+ * (`guide`, born off by the Dev's decision on the old beacon, left with its category — ADR-0258.)
  */
-const BORN_OFF = new Set(['tts', 'guide']);
+const BORN_OFF = new Set(['tts']);
 
 /**
  * A category's FACTORY state. It has a name because two places need it: the boot's read (when nothing is stored) and

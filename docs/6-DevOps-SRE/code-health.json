@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2357,
+      "codeLines": 2356,
       "decisionNodes": 302,
       "maxDepth": 4,
       "fanOut": 101,
@@ -428,7 +428,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 638,
+      "codeLines": 636,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -438,7 +438,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 638,
+      "codeLines": 636,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -448,7 +448,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 638,
+      "codeLines": 636,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -811,7 +811,7 @@
       "codeLines": 59,
       "decisionNodes": 13,
       "maxDepth": 3,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 11,
       "statefulEdges": 0,
@@ -838,7 +838,7 @@
       "fanIn": 0
     },
     "platform/audio-mixer.ts": {
-      "codeLines": 30,
+      "codeLines": 28,
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
@@ -865,7 +865,7 @@
       "globalReach": 0,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "platform/choose-by-voice.ts": {
       "codeLines": 131,

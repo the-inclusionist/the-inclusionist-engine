@@ -8,13 +8,13 @@ import { createAudioAmbient } from '../app/js/platform/audio-ambient.js';
 // A fake AC that records: the number of buffers created (= number of builds), of bufferSources (thunder) and ALL the
 // setTargetAtTime {value} calls (to check the water/rain gains).
 function fakeAC() {
-  const rec = { buffers: 0, sources: 0, targets: [] };
+  const rec = { buffers: 0, sources: 0, targets: [], made: [], played: [] };
   const chain = { connect: () => chain };
   const gainNode = () => ({ gain: { value: 0, setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {}, setTargetAtTime: (v) => rec.targets.push(v) }, connect: () => chain });
   const ac = {
     sampleRate: 44100, currentTime: 0, destination: {},
-    createBuffer: (_c, n) => { rec.buffers++; return { getChannelData: () => new Float32Array(n) }; },
-    createBufferSource: () => { rec.sources++; return { buffer: null, loop: false, connect: () => chain, start: () => {}, stop: () => {} }; },
+    createBuffer: (_c, n) => { rec.buffers++; const data = new Float32Array(n); const b = { length: n, getChannelData: () => data }; rec.made.push(b); return b; },
+    createBufferSource: () => { rec.sources++; const s = { buffer: null, loop: false, connect: () => chain, start: () => { rec.played.push(s.buffer); }, stop: () => {} }; return s; },
     createBiquadFilter: () => ({ type: '', frequency: { value: 0 }, Q: { value: 0 }, connect: () => chain }),
     createGain: gainNode,
   };
@@ -30,7 +30,6 @@ function setup(over = {}) {
   const ctx = {
     ensureAC: () => ac, getAudioCtx: () => over.audioCtx === undefined ? ac : over.audioCtx,
     catNode: () => ({ connect: () => ({}) }), audioOut: () => ({ connect: () => ({}) }),
-    noiseBuffer: () => ({}),
     getSoundOn: () => over.soundOn === undefined ? true : over.soundOn,
     getVolume: () => over.volume === undefined ? 0.6 : over.volume,
     getAudioCat: () => over.audioCat === undefined ? { ambient: { on: true } } : over.audioCat,
@@ -105,4 +104,19 @@ describe('platform/audio-ambient', () => {
     amb.thunder(0.7);
     expect(rec.sources).toBe(1);
   });
+
+  /*
+   * 🔴 THE ENGINE MAKES ITS OWN NOISE (ADR-0258, the Dev: «A engine passas a gerar sozinha.»): the thunder no longer asks the game
+   * for a `noiseBuffer` it could only hand back from the engine; it plays white noise the engine made on this context.
+   */
+  it('🔴 [Right] the thunder plays WHITE NOISE the engine made — not silence, and nothing asked of the game', () => {
+    const { amb, rec } = setup();
+    amb.thunder(0.7);
+    const played = rec.played[0];
+    expect(rec.made, 'the thunder played a buffer the engine did not make').toContain(played);
+    const samples = played.getChannelData(0);
+    expect(samples.length, 'the noise is empty').toBeGreaterThan(0);
+    expect(samples.some((v) => v !== 0), 'the thunder rumbles on silence').toBe(true);
+  });
 });
+// MUTATIONS CHECKED (2026-09-27, ADR-0258): the thunder given no buffer · a silent buffer · the game's port asked again — each red

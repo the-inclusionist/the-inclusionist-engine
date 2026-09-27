@@ -21,7 +21,7 @@
 //   · GENERAL — there is text, sound, a screen and a menu in every game. The engine mounts these always.
 //   · CONTRACT_KEYED — the subject is answered by a declaration the contract ALREADY asks every game
 //     (`tick`, `holdsKeys()`, `needsPointer()`, `world()` × `topology()`, the players list). The engine can
-//     derive these without a genre, which is the `sonarPlayers` precedent: absent ⇒ derive from the contract.
+//     derive these without a genre, by the rule the engine keeps for what a contract already answers: absent ⇒ derive from the contract.
 //   · GAME_KEYED — nothing the engine holds answers it (genre, perspective, avatar, text, pieces, timing).
 //     The game — or the template of its genre — declares it.
 //

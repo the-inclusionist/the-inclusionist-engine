@@ -542,8 +542,6 @@ const pt: Record<string, string> = {
   'audio.cat.earcons': 'Earcons',
   'audio.cat.tts': 'Narração',
   'audio.cat.sonar': 'Sonar',
-  'audio.cat.guard': 'Guarda de beirada',
-  'audio.cat.guide': 'Pista / guia auditivo',
   'audio.cat.volumeDe': 'Volume de {c}',
   'audio.navsound.grupo': 'Sons de navegação',
   'audio.cane': 'Batida da bengala',

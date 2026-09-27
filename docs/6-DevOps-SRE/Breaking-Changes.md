@@ -4206,6 +4206,7 @@ device — serves any game and stays.
 | `CreateGameOptions.sonarPlayers` | still accepted, `@deprecated`, **read by nothing** | nothing breaks; stop passing it when convenient — the sonar gets its player in `engine.sonar.sonar(pl)` |
 
 The mixer's `guide` category and its row in the hearing panel stay (ADR-0151, ADR-0155): a game's guide plays in it.
+⚠️ **Until EB**, in the same release: the `guide` and `guard` categories and `sonarPlayers` leave as well (ADR-0258).
 
 ## EA · ADR-0256, one ear: `VoiceControl.borrow` — a choice by voice uses the 👄 already listening
 
@@ -4223,6 +4224,25 @@ applied. The same page after the fix: one worker, one microphone, no «missing i
 |---|---|---|
 | `VoiceControl` = apply, refreshGrammar, languageChanged | + `borrow(language, grammar, onHeard)` → `{ stop() }` or `null` | a double adds `borrow: () => null` |
 | `platform/choose-by-voice.CommandRecogniserDeps` | + optional `load` (a keeper's loader) | nothing |
+
+## EB · ADR-0258: what the sound guide left behind leaves — the `guide`/`guard` categories, `sonarPlayers`, the ambient's noise port
+
+**Who is affected:** a game that plays a sound into the mixer's `guide` or `guard` category, or reads `audioCat.guide` /
+`audioCat.guard`; a game that passes `CreateGameOptions.sonarPlayers`; a game that builds `createAudioAmbient`'s ctx with a
+`noiseBuffer`. 📏 Measured 2026-09-27: nothing in the engine plays in `guide` or `guard` since the guide moved (DZ); the
+platformer's guide copy reads `cat.guide.on` and plays into the `guide` bus, so after the bump it is SILENT until it gets a switch
+of its own; the pinball's copy reads no category.
+
+📌 **Why:** the Dev, 2026-09-27: «A engine passas a gerar sozinha.» (the noise), «Tire agora.» (`sonarPlayers`), «Saem.» (the two
+categories). A volume with no sound of the engine under it is a control that does nothing (ADR-0106 §5).
+
+| was | now | what to do |
+|---|---|---|
+| `platform/audio-mixer.AUDIO_CATS` with `guard` and `guide`; `audioCat.guard`, `audioCat.guide` | gone; a level stored for them stays in the child's storage and is read by nobody | a game that plays its own guide owns its switch and its volume (its own setting, its own row in its «Opções do jogo») and plays to `catNode('sonar')`, `audioOut()` or its own bus |
+| `ui/audio-choices.NAV_CATS` = `['sonar', 'guard', 'guide']` | `['sonar']` | nothing, unless you iterated it expecting three |
+| i18n keys `audio.cat.guard`, `audio.cat.guide` | gone from the engine's dictionaries | a game that shows them registers its own words |
+| `CreateGameOptions.sonarPlayers` (`@deprecated`, read by nothing since DZ) | gone from the type | stop passing it — the sonar gets its player in `engine.sonar.sonar(pl)` |
+| `AudioAmbientCtx.noiseBuffer` (required) | gone — the thunder plays the engine's own white noise (`platform/audio.noiseBuffer`) | delete it from the ctx |
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

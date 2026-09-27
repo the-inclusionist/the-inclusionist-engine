@@ -53,11 +53,11 @@ describe('listening ends, and the mixer keeps working as it did', () => {
     const a = [], b = [];
     const offA = audio.onCatChange((k) => { a.push(k); });
     audio.onCatChange((k) => { b.push(k); });
-    audio.audioCat.guide.on = true;
+    audio.audioCat.tts.on = true;
     offA();
-    audio.audioCat.guide.on = false;
-    expect(a).toEqual(['guide']);
-    expect(b).toEqual(['guide', 'guide']);
+    audio.audioCat.tts.on = false;
+    expect(a).toEqual(['tts']);
+    expect(b).toEqual(['tts', 'tts']);
   });
 
   it('📌 [Conformance] the category still reads, compares and stores as `{ on, vol }`', () => {

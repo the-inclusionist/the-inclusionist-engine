@@ -91,7 +91,7 @@ import type { SpeechPort } from '../platform/speech.js';
 import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
 import type { ReadingThreads, ReadingInWorker } from '../platform/reading-in-worker.js';
 import { createAudio, type Audio } from '../platform/audio.js';
-import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
+import { createAudioSonar, type AudioSonar } from '../platform/audio-sonar.js';
 // The root is the layer that MAY know both axes: `render/` is below it, and it is the root's job to answer
 // `platform/audio-sonar`, which cannot import from here without inverting an edge (#104).
 import { isBlind, isLowVision, hasHighContrast, onlyColourVision, DEFAULT_VISUAL, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
@@ -316,15 +316,6 @@ export interface CreateGameOptions {
   readonly players?: { ctrl: KeyScheme; audioSink?: string | null }[];
   /** Phase change, for a game that has phases. Absent = does nothing (a game without phases loses nothing). */
   readonly setPhase?: (p: 'title' | 'playing' | 'paused') => void;
-  /**
-   * @deprecated ⚠️ NO READER (ADR-0257). The list fed the continuous guide's frame, and the guide left the engine for the
-   * platformer; the sonar itself receives the player it answers for, in `engine.sonar.sonar(pl)`.
-   *
-   * It stays, optional and inert, instead of being removed with the guide: three games pass it (measured 2026-09-27 —
-   * chess, pinball, platformer), and removing a field of the cartridge's options is a decision of its own. Removing it for
-   * good is a candidate for the next major.
-   */
-  readonly sonarPlayers?: () => SonarPlayer[];
   /** Blind mode on? Absent = the engine's own stored value (`core/state.blindMode`). Applies to every player. */
   readonly isBlindMode?: () => boolean;
   /**
@@ -855,7 +846,7 @@ const ENGINE_CONTROLS_IN_PLAY = '.pi-btn';
  */
 type GameHalf = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'withIndex' | 'onBar' | 'navBar' | 'players' | 'setPhase'
-  | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
+  | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
   | 'setPlayerTheme' | 'setPlayerCorrection' | 'accommodations' | 'genre' | 'onScreenPad' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'
   | 'dictionaries'>;
 
@@ -2225,7 +2216,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const audioPanel = mountPanel(panelCtx, {
       id: 'audio',
       // 📌 THE SHELL'S LIST IS NAVIGATION SOUND since ADR-0151: the taste categories went to «Áudio». The id
-      // `navsound-list` is the one `initSettingsAudio` fills with sonar, cane and guide.
+      // `navsound-list` is the one `initSettingsAudio` fills with the sonar and the cane (`guard`/`guide` left, ADR-0258).
       listId: 'navsound-list',
       labels: () => ({
         title: t('menu.audio'),

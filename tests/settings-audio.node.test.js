@@ -14,8 +14,9 @@ import {
 } from '../app/js/ui/audio-choices.js';
 
 describe('ui/settings-audio — categorias (dados)', () => {
-  it('[Zero] NAV_CATS e GEN_CATS não se sobrepõem e cobrem sonar/guard/guide + music/ambient/interact/earcons', () => {
-    expect(NAV_CATS).toEqual(['sonar', 'guard', 'guide']);
+  it('[Zero] NAV_CATS e GEN_CATS não se sobrepõem e cobrem sonar + music/ambient/interact/earcons', () => {
+    // `guard` and `guide` left (ADR-0258): the engine plays nothing in either.
+    expect(NAV_CATS).toEqual(['sonar']);
     // `other` is gone (ADR-0151, erratum): it controlled no sound at all.
     expect(GEN_CATS).toEqual(['music', 'ambient', 'interact', 'earcons']);
     expect(NAV_CATS.some((k) => GEN_CATS.includes(k))).toBe(false);
@@ -42,12 +43,17 @@ describe('ui/settings-audio — volPercent', () => {
 
 describe('ui/settings-audio — navMasterVolume', () => {
   it('[Right] é o volume da categoria MAIS ALTA entre as de navegação, em %', () => {
-    const state = { sonar: { on: true, vol: 0.4 }, guard: { on: true, vol: 0.9 }, guide: { on: false, vol: 0.2 } };
-    expect(navMasterVolume(state)).toBe(90);
+    // The list is a parameter, so the rule is measured on three categories even while the engine has one (ADR-0258).
+    const state = { a: { on: true, vol: 0.4 }, b: { on: true, vol: 0.9 }, c: { on: false, vol: 0.2 } };
+    expect(navMasterVolume(state, ['a', 'b', 'c'])).toBe(90);
+  });
+  it('[Right] sem lista, lê as categorias de navegação da engine — hoje só o sonar', () => {
+    const state = { sonar: { on: true, vol: 0.35 }, music: { on: true, vol: 1 } };
+    expect(navMasterVolume(state)).toBe(35);
   });
   it('[Boundary] todas em 0 -> 0', () => {
-    const state = { sonar: { on: false, vol: 0 }, guard: { on: false, vol: 0 }, guide: { on: false, vol: 0 } };
-    expect(navMasterVolume(state)).toBe(0);
+    const state = { a: { on: false, vol: 0 }, b: { on: false, vol: 0 } };
+    expect(navMasterVolume(state, ['a', 'b'])).toBe(0);
   });
 });
 

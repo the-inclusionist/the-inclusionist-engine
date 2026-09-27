@@ -430,8 +430,6 @@ const en: Record<string, string> = {
   'audio.cat.earcons': 'Earcons',
   'audio.cat.tts': 'Narration',
   'audio.cat.sonar': 'Sonar',
-  'audio.cat.guard': 'Edge guard',
-  'audio.cat.guide': 'Audio cue / guide',
   'audio.cat.volumeDe': '{c} volume',
   'audio.navsound.grupo': 'Navigation sounds',
   'audio.cane': 'Cane tap spacing',

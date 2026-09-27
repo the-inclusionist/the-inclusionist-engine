@@ -6,7 +6,7 @@
 // Fifteen accommodations have a subject that the contract ALREADY answers: whether time runs on its own (`tick`),
 // whether the game holds keys (`holdsKeys`), whether it needs a continuous pointer (`needsPointer`), whether it has a
 // world and a direction (`world` × `topology`), how many players there are. Asking the cartridge again would let the two
-// answers disagree — so the engine derives them, which is the `sonarPlayers` precedent: absent ⇒ derive from the contract.
+// answers disagree — so the engine derives them, by the rule the engine keeps for what a contract already answers: absent ⇒ derive from the contract.
 //
 // ⚠️ DERIVED AT CALL TIME, NEVER MEMOISED: every input is a FUNCTION of the contract, because a game changes demands
 // between phases (ADR-0084). A set computed once at boot would describe the first phase forever.

@@ -7,6 +7,7 @@
 //   thunder(inten)  — a synthesised low rumble (low-passed noise) of variable intensity; called by the weather.
 
 import type { Role, Spot } from '../core/contract.js';
+import { noiseBuffer } from './audio.js';
 
 interface AmbientNodes { hum: GainNode; wind: GainNode; water: GainNode; rain: GainNode; }
 interface Vec2 { x: number; y: number; }
@@ -28,7 +29,6 @@ export interface AudioAmbientCtx {
   getAudioCtx: () => AudioContext | null;
   catNode: (cat: string) => AudioNode | null;
   audioOut: () => AudioNode | null;
-  noiseBuffer: (ac: AudioContext) => AudioBuffer;
   getSoundOn: () => boolean;
   getVolume: () => number;
   getAudioCat: () => Record<string, { on: boolean }> | null;
@@ -75,7 +75,8 @@ export function createAudioAmbient(ctx: AudioAmbientCtx): AudioAmbient {
     if (!ctx.getSoundOn() || ctx.getVolume() <= 0) return; const ac = ctx.ensureAC(); if (!ac) return;
     try {
       const vol = ctx.getVolume();
-      const src = ac.createBufferSource(); src.buffer = ctx.noiseBuffer(ac); src.loop = true;
+      // the engine's own white noise (ADR-0258): a game could only ever hand back this same function
+      const src = ac.createBufferSource(); src.buffer = noiseBuffer(ac); src.loop = true;
       const bq = ac.createBiquadFilter(); bq.type = 'lowpass'; bq.frequency.value = 140 + Math.random() * 220; bq.Q.value = 0.7;
       const g = ac.createGain(), t = ac.currentTime, dur = 0.7 + inten * 1.4;
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.min(0.55, 0.2 * inten) * vol, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);

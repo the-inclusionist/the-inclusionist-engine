@@ -3,33 +3,27 @@
 //
 // ========================= WHY THIS DESERVES A GATE =========================
 // A sound default looks like a detail and is not. It decides what the child HEARS before she knows there is a menu — and
-// the two categories that are off are off for opposite and equally concrete reasons:
+// the one category born off is off for a concrete reason:
 //
 //   · `tts` — a robotic voice irritates and overloads people with ASD. Whoever needs it turns it on.
-//   · `guide` — the audio guide. As a beacon it played a 0.12 s `triangle` every 0.8 s, forever, regardless of movement
-//     or of anything having changed; and in blind mode the condition that releases it is always true, so the child who
-//     most needs cues was the one who heard the beep the whole match. The Dev's verdict: «um ping é a pior escolha
-//     possível, tenebroso para quem tem TEA».
 //
-// ⚠️ THE `guide` BEING OFF WAS PROVISIONAL, and this file also exists so that it does not become permanent by
-// forgetting. The replacement decided was a sound that grows as the child gets closer, following a navigable route
-// instead of pointing in a straight line into a wall (#84 item 2). That guide is a game's own now — the platformer's
-// `platform/audio-guide` (ADR-0257) — and the category it plays in stays this mixer's. Its default is still off, and
-// switching it on goes through this line.
+// ⚠️ `guide` WAS THE SECOND, AND IT LEFT WITH ITS CATEGORY (ADR-0258, the Dev: «Saem.»). The guide moved to the platformer
+// (ADR-0257) and the engine plays nothing in `guide` or in `guard` any more — a volume with nothing under it is the dead button
+// `other` already was. What a game plays through its own guide is that game's mixer to name.
 //
 // ========================= AND WHY THE SAVED VALUE WINS =========================
-// A saved value means someone TOUCHED that control, and the child's choice is not ours to undo. Whoever had turned the
-// guide on keeps it on — the default reaches only whoever never chose.
+// A saved value means someone TOUCHED that control, and the child's choice is not ours to undo. A level stored for a category
+// that left stays in the child's storage and is read by nobody — it is not deleted behind her back.
 //
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { defaultAudioCat, AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
 
-const DESLIGADAS = ['tts', 'guide'];
+const DESLIGADAS = ['tts'];
 
 describe('categorias de áudio · o estado de fábrica é decisão, não acaso', () => {
   it('[Zero] o gate está lendo o catálogo de verdade', () => {
-    expect(AUDIO_CATS.length).toBeGreaterThanOrEqual(8);
+    expect(AUDIO_CATS.length).toBeGreaterThanOrEqual(6);
     expect(AUDIO_CATS.map((c) => c.k)).toEqual(expect.arrayContaining(DESLIGADAS));
   });
 
@@ -38,9 +32,15 @@ describe('categorias de áudio · o estado de fábrica é decisão, não acaso',
     expect(AUDIO_CATS.map((c) => c.k)).not.toContain('other');
   });
 
-  it('[Right] EXATAMENTE `tts` e `guide` nascem desligadas', () => {
+  it('🔴 [Zero] `guard` e `guide` SAÍRAM do mixer (ADR-0258) — a engine não toca nada nelas', () => {
+    const cats = AUDIO_CATS.map((c) => c.k);
+    expect(cats).not.toContain('guard');
+    expect(cats).not.toContain('guide');
+  });
+
+  it('[Right] EXATAMENTE `tts` nasce desligada', () => {
     // Exactly in both directions: a new category born muted without a written reason fails here, and so does switching
-    // `guide` back on without going through this line.
+    // `tts` on at the factory without going through this line.
     const desligadas = AUDIO_CATS.map((c) => c.k).filter((k) => !defaultAudioCat(k).on);
     expect(desligadas.sort(), 'mudou quem nasce em silêncio — o motivo está no cabeçalho de audio-mixer').toEqual([...DESLIGADAS].sort());
   });
@@ -65,6 +65,7 @@ describe('categorias de áudio · o estado de fábrica é decisão, não acaso',
 });
 
 // ========================= MUTATIONS CHECKED =========================
-//   · returning `{ on: k !== 'tts' }` (the guide back on) → the [Right] exactly-`tts`-and-`guide` case fails.
+//   · returning `{ on: true }` for every category (`tts` on at the factory) → the [Right] exactly-`tts` case fails.
 //   · putting `'earcons'` on the muted list → the same case fails from the other side.
 //   · giving `vol: 0` to the muted ones → the [Boundary] factory-volume case fails.
+//   · putting `guide` back in `AUDIO_CATS` → the [Zero] `guard`-and-`guide` case fails.

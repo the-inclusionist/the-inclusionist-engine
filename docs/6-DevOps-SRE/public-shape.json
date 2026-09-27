@@ -46,7 +46,6 @@
         "setPhase?": "readonly setPhase: (p: 'title' | 'playing' | 'paused') => void",
         "setPlayerCorrection?": "readonly setPlayerCorrection: (i: number, correction: Correction) => void",
         "setPlayerTheme?": "readonly setPlayerTheme: (i: number, theme: Theme) => void",
-        "sonarPlayers?": "readonly sonarPlayers: () => SonarPlayer[]",
         "uses?": "readonly uses: { readonly reading?: boolean; readonly neuralVoice?: boolean; readonly fonts?: readonly string[]; }",
         "withIndex?": "readonly withIndex: () => boolean"
       }
@@ -1648,7 +1647,6 @@
         "getRainLevel": "getRainLevel: () => number",
         "getSoundOn": "getSoundOn: () => boolean",
         "getVolume": "getVolume: () => number",
-        "noiseBuffer": "noiseBuffer: (ac: AudioContext) => AudioBuffer",
         "roleAt": "roleAt: (at: Spot) => Role"
       }
     },

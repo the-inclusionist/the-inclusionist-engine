@@ -20,11 +20,14 @@ import type { Translate } from '../core/i18n.js';
 export interface AudioCatDef { k: string; lbl: string; }
 export interface AudioCatState { on: boolean; vol: number; }
 
-/** The SOUND-NAVIGATION categories (cane/sonar/guard/guide) — their master volume is separate from the game's sound. */
-export const NAV_CATS = ['sonar', 'guard', 'guide'] as const;
+/**
+ * The SOUND-NAVIGATION categories — their master volume is separate from the game's sound. Only the sonar since `guard` and
+ * `guide` left (ADR-0258): the engine plays nothing in them since the guide moved to the platformer.
+ */
+export const NAV_CATS = ['sonar'] as const;
 /** The game's GENERAL categories (TTS lives in the Voice section, outside this list). */
 // ⚠️ THEY BELONG TO THE «AUDIO» PANEL since ADR-0151, not to the hearing one: what is taste (music, ambience) does not live
-// beside what is accessibility (sonar, guard, guide). And `other` left — it controlled no sound at all.
+// beside what is accessibility (the sonar). And `other` left — it controlled no sound at all.
 export const GEN_CATS = ['music', 'ambient', 'interact', 'earcons'] as const;
 
 /** 0..1 -> 0..100 rounded (slider display value). */

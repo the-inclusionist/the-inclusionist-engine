@@ -1352,7 +1352,7 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#tts-vol').type, 'o volume da narração não é um cursor').toBe('range');
       // and the navigation-sound list was FILLED by the panel: an empty group is finding 6 again
       expect([...document.querySelectorAll('#navsound-list [data-acat]')].map((b) => b.dataset.acat),
-        'o painel abriu sem sonar, guarda e guia').toEqual(['sonar', 'guard', 'guide']);
+        'o painel abriu sem o sonar').toEqual(['sonar']);
       // 🔴 WHAT ADR-0151 TOOK OUT OF THIS PANEL, asserted ABSENT inside it
       const painel = document.querySelector('#audio');
       for (const sel of ['#audio-master', '#audio-master-vol', '#navsound-master', '[data-acat="music"]']) {
