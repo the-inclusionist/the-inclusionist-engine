@@ -1,6 +1,9 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-pause-items-and-their-order.node.test.js
+    - tests/game-options.browser.test.js
   superseded-in-part:
     - by: ADR-0151
       what: >-
@@ -24,6 +27,14 @@ metadata:
        half exists exactly when the game has something to put in it"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #144 is closed. What stands is built: the split between what travels with
+        the child and what belongs to this game, and the game's door live only when the game has something behind it,
+        opening the game's options (ADR-0182). ⚠️ Gate 2's ABSENCE was overtaken: since ADR-0161 the pause card shows
+        every item and locks, with its reason, the one nothing acts on — the game's door included — and this record
+        carries no mark of it. Gates 1 and 4 left with ADR-0151 and the erratum above. Gate 5 holds when measured on
+        2026-09-27 — the two names share no spoken prefix in pt, en or es — but no case asserts it.
     - date: 2026-09-12
       what: "✅ **§3 IS SATISFIED, and by better words than the ones this record was written around.** §3
              required the distinguishing word to come FIRST so the two doors do not share a spoken prefix —
@@ -162,17 +173,13 @@ decision-outcome:
          side is now findable in the wrong place, where before it was merely in a long list"
 
   confirmation: |
-    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #144** in
-    `the-inclusionist-engine`. The gates, named now:
+    ✅ In part (erratum of 2026-09-27): a game that declares nothing of its own gets no live door to the game's options,
+    and a game that declares something gets it live, opening a list with that something in it — the gates in
+    confirmed-by. 📌 Since ADR-0161 that door is shown locked with its reason rather than absent; the root's count and
+    the remapping panel's place are ADR-0151's.
 
-      1. The root list is the eight items of this record, in order, with `resume` first and `quit` last —
-         the ADR-0044 §2 case, extended rather than replaced.
-      2. A game that declares nothing of its own does NOT get «opções do jogo» — the case asserts the
-         ABSENCE of the item, not only the presence of the other.
-      3. A game that declares something DOES get it, and the item opens a list with that something in it.
-      4. The remapping panel has its own item under «opções gerais», and it opens.
-      5. 🔴 The two items' accessible names do not share a spoken prefix. This is the §3 gate and it is the
-         one no visual check catches.
+    ⚠️ Not gated: that the two doors' accessible names share no spoken prefix — true today in pt, en and es. Issue #144
+    closed without it, and no open issue carries it.
 
 more-information: |
   📌 **This record exists because the Dev drew the consequence themselves**, in the same message that corrected

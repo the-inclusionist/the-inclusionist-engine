@@ -1,6 +1,11 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/typography-cycle.node.test.js
+    - tests/bda-spacing-follows-the-text.browser.test.js
+    - tests/what-fonts-the-package-carries.node.test.js
+    - tests/an-offered-font-loads.node.test.js
   superseded-in-part:
     - by: ADR-0151
       what: >-
@@ -22,6 +27,15 @@ metadata:
        face in the cycle"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #146 is closed. The cycle landed (engine `690d3d36`), and since ADR-0151
+        it is the communication cycle of the same button: its typography positions keep this record's order and start,
+        each press setting the case and the face together. The BDA spacing is the document's default (engine `6386175`)
+        and reaches the text inside controls (`d7160fe3`, issue #187), and a joined face takes it off; the country's
+        hand is 25 % larger and exactly its face's floor; the hand follows the region, and a tag with none falls back by
+        language (ADR-0150); every offered face has its `@font-face` in the vendored `fonts.css`, and every `@font-face`
+        its file. No case asserts that each face carries its OFL attribution.
     - date: 2026-09-14
       what: "📌 WHERE THE SPACING REACHES, which this record left implicit. Measured on 2026-09-13: the browser's own stylesheet gives every `<button>` `letter-spacing: normal`, so the pause card's items and the quiz's options had no BDA spacing while the panels' text had 2.88 px. Asked whether buttons follow, the Dev: «Onde houver ESCRITA ele precisa valer, não células ou bordas. Se dentro de um botão tem texto, as regras de espaçamento valem para este texto, mesmo que seja uma única palavra.» The spacing is the text's, wherever the text is — a button, a select, an input; a cell's or a border's size is not spacing. Issue #187."
     - date: 2026-09-12
@@ -198,20 +212,20 @@ decision-outcome:
          constrains"
 
   confirmation: |
-    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #146** in `the-inclusionist-engine`.
-    The gates, named now:
+    ✅ In part (erratum of 2026-09-27), the gates in confirmed-by:
 
-      1. The cycle has five positions in the order of §1, it STARTS at (c), and each press sets BOTH
-         `letterCase` and the face — asserting the pair, because setting one of the two passes a weaker case.
-      2. 🔴 The BDA spacing is present on a document using the DEFAULT face. This is the hole: a case that
-         only checks Lexend would stay green with the bug intact.
-      3. 🔴 Position (e) has NO letter/word spacing, and (a)–(d) have it — the pair that proves the exemption
-         is a rule and not a missing line.
-      4. Position (e) renders 25% larger, and never below the face's `minPx`.
-      5. The country comes from the BCP-47 REGION: `pt-BR` → Playwrite BR, `es-MX` → Playwrite MX, `en` with
-         no region → Playwrite US Modern. A case per branch, including the fallback.
-      6. The four new faces load from the vendored `fonts.css` with no network, and each carries its OFL
-         attribution.
+      1. The typography positions follow §1's order, START at (c), and each press sets BOTH `letterCase` and the face —
+         in the communication cycle of ADR-0151, which skips ARASAAC and PCS (ADR-0155).
+      2. The BDA spacing is present on a document using the DEFAULT face, and on the text inside controls.
+      3. A joined face, position (e), has NO letter or word spacing, and the reading faces keep it.
+      4. Position (e) renders 25 % larger and exactly at the face's `minPx`, never below; only the country's hand is
+         scaled.
+      5. The country comes from the BCP-47 region, with ADR-0150's fallback by language, a case per branch.
+      6. The faces load from the vendored `fonts.css` with no network: every offered face has its `@font-face`, and
+         every `@font-face` its file.
+
+    ⚠️ Not gated: that each of the four faces carries its OFL attribution. Issue #146 closed without it, and no open
+    issue carries it.
 
 more-information: |
   📏 **Where each fact was read**, 2026-09-12:

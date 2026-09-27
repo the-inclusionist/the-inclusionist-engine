@@ -1,6 +1,12 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/the-pause-items-and-their-order.node.test.js
+    - tests/pause-target-44px.browser.test.js
+    - tests/boot-create-game.browser.test.js
+    - tests/settings-visual.browser.test.js
+    - tests/settings-motion.browser.test.js
   superseded-in-part:
     - by: ADR-0155
       what: >-
@@ -38,6 +44,14 @@ metadata:
        child loses the accommodation"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #148 is closed. The six-item root (engine `c296c840`) fits 640×360 with 44
+        px items and no overflow, the root and the submenu alike; the submenu holds its seven; the removed rows are
+        asserted ABSENT — print and accessibility off the root, communication and typography out of the submenu with
+        their panels not mounted; and the contrast enhancement and the rounded corners are ⯇ ⯈ steps that record,
+        announce and keep their explanation in the footer. The gate on ARASAAC and PCS shown disabled is not this
+        record's any more: ADR-0155 skips them.
     - date: 2026-09-13
       what: "THE EMPATHY LIST, AS THE DEV NAMED IT. §2 item 2 read «blur, fog, tunnel, tunnel vision, central scotoma,
              scattered scotomas», and asked whether «tunnel» and «tunnel vision» were two, the Dev listed the visual
@@ -179,11 +193,11 @@ decision-outcome:
          positions — this is the largest single change to the menus since ADR-0044"
 
   confirmation: |
-    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #148** in `the-inclusionist-engine`. The
-    gates, named now: the root has exactly the six items in this order at 640×360 with zero overflow; the
-    submenu has the seven; no removed row is in the document (asserting ABSENCE); ARASAAC and PCS are in the
-    cycle and `aria-disabled` with a reason; the contrast enhancement and rounded corners step with left/right
-    and keep their explanation in the footer.
+    ✅ The gates in confirmed-by: the root has exactly the six items in this order and, at 640×360 with 44 px items, zero
+    overflow — and so does the submenu, which has the seven; no removed row is in the document (print and accessibility
+    off the root, communication and typography out of the submenu, their panels not mounted), asserting ABSENCE; and the
+    contrast enhancement and the rounded corners step with left and right and keep their explanation in the footer. 📌
+    ARASAAC and PCS in the cycle, disabled with a reason, left with ADR-0155, which skips them.
 
 more-information: |
   📏 **The overflow numbers** were measured on 2026-09-12 against the `.pause-card` at 640×360, with the work

@@ -1,6 +1,11 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/boot-create-game.browser.test.js
+    - tests/boot-create-game.node.test.js
+    - tests/help-panel.node.test.js
+    - tests/pause-icons.browser.test.js
   superseded-in-part:
     - by: ADR-0151
       what: >-
@@ -25,6 +30,16 @@ metadata:
        seven of nine items are invisible had never been seen by anyone"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #144 is closed. The nine-item root and `controles` at the root left with
+        ADR-0151, and an item nothing acts on is shown locked with its reason since ADR-0161. What this record still
+        decides is built: the engine actions the items that are hers — `resume`, the help, and `quit`, which asks for
+        the press-start screen with `setPhase('title')` (engine `c5521ff3`) — so a game that supplies nothing beyond
+        `createGame` gets them live; the number of players stays in a one-player game, locked, and says its reason when
+        pressed; and the help (engine `33cefc99`) shows this child's remapped key and never an engine identifier, a
+        position the game does not declare is absent from it, and with no `preset` it is not mounted and the engine says
+        why.
     - date: 2026-09-12
       what: "§5 left `quit` deliberately undecided — «what LEAVING means with no host is a question whose wrong
              answer loses a child's progress». ✅ **The Dev answered it the same day: «Voltar à tela de press
@@ -199,20 +214,17 @@ decision-outcome:
          place where the engine's answer and the game's could diverge"
 
   confirmation: |
-    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #144** in `the-inclusionist-engine`
-    (the same issue as ADR-0146, whose scope this record widens). The gates, named now:
+    ✅ The gates in confirmed-by, for what stands after ADR-0151 and ADR-0161:
 
-      1. The root is the NINE of §1, in order, `resume` first and `quit` last — the ADR-0044 §2 case, extended
-         a second time rather than replaced.
-      2. 🔴 In a game that supplies NOTHING beyond `createGame`, eight of the nine are live. The case asserts
-         each one is present AND not `hidden` — counting nine items would pass with all of them dead.
-      3. 🔴 `controles` with no `preset`: NOT mounted, and the line said in `problems`. Asserting the absence,
-         not merely that nothing threw.
-      4. 🔴 A one-player game: «número de jogadores» is PRESENT, `aria-disabled`, and carries a reason a screen
-         reader reads. The pair that fails both ways — hidden fails it, and enabled-but-inert fails it.
-      5. The help table shows the REMAPPED key and never an engine identifier; a position the game does not
-         declare is ABSENT from it.
-      6. `quit` with no game action: absent, and said — the one case where §5's silence is the right answer.
+      1. In a game that supplies nothing beyond `createGame`, the engine's own items are live, and the root is its six
+         in order, `resume` first and `quit` last.
+      2. `quit` with no game action asks for the press-start screen — the CALL is asserted, not the pixels.
+      3. A one-player game: the number of players is PRESENT, not hidden, `aria-disabled`, and a press says its reason.
+      4. The help table shows the REMAPPED key and never an engine identifier; a position the game does not declare is
+         ABSENT; with no `preset` the help is not mounted, its item is locked, and `problems` says why.
+
+    📌 The nine-item root and `controles` at the root left with ADR-0151; an item nothing acts on is no longer absent and
+    said but locked with its reason, by ADR-0161.
 
 more-information: |
   📏 **The measurement this record rests on**, taken 2026-09-12 on `dist/quiz.html` with the service worker

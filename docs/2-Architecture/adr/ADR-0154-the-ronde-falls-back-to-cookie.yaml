@@ -1,6 +1,17 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/what-fonts-the-package-carries.node.test.js
+    - tests/the-ronde-falls-back-to-cookie.browser.test.js
+    - tests/settings-typo.node.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #150 is closed. Every gate it named landed (engine `3875ce45`): the ronde
+        stack is the three faces in the Dev's order and ends in Cookie, and on a device with none of them it draws in
+        Cookie, measured on the glyphs; Cookie is declared in `fonts.css` with its file present; none of the three is
+        packaged; and the ronde entry is enabled, its notice naming all three in pt, en and es.
   supersedes-in-part: [ADR-0012, ADR-0108]
   date: 2026-09-12
   decision-makers: [Dev]
@@ -64,10 +75,9 @@ decision-outcome:
       - "The precache grows by one face (Cookie has a single weight, 400)"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — the work is **issue #150** in `the-inclusionist-engine`. Gates, named now: the ronde
-    entry's family stack ends in Cookie; Cookie is in `fonts.css` with its file present; none of the three faces is
-    packaged (the existing gate); the ronde entry is no longer `off`, and its notice still names all three in pt,
-    en and es.
+    ✅ The gates in confirmed-by: the ronde entry's family stack ends in Cookie, and draws in Cookie on a device with
+    none of the three; Cookie is in `fonts.css` with its file present; none of the three faces is packaged; the ronde
+    entry is no longer `off`, and its notice still names all three in pt, en and es.
 
 more-information: |
   📏 **Cookie's licence, read on 2026-09-12** from `google/fonts` `ofl/cookie/METADATA.pb`: designer Ania Kruk,

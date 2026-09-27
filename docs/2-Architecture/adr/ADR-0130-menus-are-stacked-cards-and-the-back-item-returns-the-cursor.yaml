@@ -1,6 +1,13 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/back-returns-the-cursor.browser.test.js
+    - tests/a-choice-takes-the-control-its-size-asks.browser.test.js
+    - tests/an-on-off-control-is-a-toggle.browser.test.js
+    - tests/no-menu-leaves-the-canvas.browser.test.js
+    - tests/menu-width-follows-content.browser.test.js
+    - tests/the-explanation-stays-in-the-footer.browser.test.js
   superseded-in-part:
     - by: ADR-0158
       what: >-
@@ -8,6 +15,16 @@ metadata:
         after its rows. The cursor returning to the item that opened the menu stands.
   supersedes-in-part: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: every gate it named landed under issue #134 (engine `91da1bc8`, `2c9899c8`,
+        `0bba624b`, `5ba43b71`). «Back» returns the cursor to the item that opened the card, by key, by the item and
+        after a pointer, and each layer is drawn in front with only the front one reachable; five or fewer exclusive
+        options are a cycle row and more are a dropdown, with no radio group; an on/off control is a toggle that says
+        its state with `aria-pressed`; no menu leaves the 640×360 canvas, a panel the engine never saw included; the
+        opening menus are as wide as their widest item; and the explanation stays in the footer after a redraw. Rule 1
+        was built as the shape to build first; whether it serves a child better is what use shows, not a gate. Issue
+        #134 is still open.
     - date: 2026-09-09
       what: >-
         🔴 THIS RECORD OVER-COMMITTED, and the Dev caught it within the hour: «por que já registrou como ADR ao
@@ -182,23 +199,22 @@ decision-outcome:
       - "⚠️ Nothing here says what happens when a submenu is opened from a row that scrolls out of view — restoring the cursor implies restoring the scroll position, which is not stated and will be discovered."
 
   confirmation: |
-    ⚠️ NOT YET BUILT, and the debt is followable: **issue #134** carries the work, and the gates below are what
-    it has to produce. Written before the code (ADR-0128) so that the stacking model cannot be re-decided one
-    panel at a time, which is exactly how the current state was reached.
+    ✅ The gates in confirmed-by:
 
-    · THE BACK ITEM RETURNS THE CURSOR TO THE OPENING ITEM — a browser case, because it is focus in a real
-      document across two live cards. 🎯 This is the clause the whole record turns on, and it was NOT verified
-      before writing: the engine has `pmback` items, and whether focus lands on the opening row or on the top
-      of the restored menu is unmeasured.
-    · A GROUP OF MORE THAN FIVE EXCLUSIVE OPTIONS IS A DROPDOWN, and five or fewer are radios — asserted over
-      the built menus rather than promised, in the shape of the inventory sieves this repository already uses.
-    · NO MENU LEAVES THE CANVAS — assertable over the stylesheet as a rule rather than over five panels that
-      happen to have it.
-    · WIDTH FOLLOWS CONTENT — 📏 today `fit-content` and `max-content` appear ZERO times, so this gate is born
-      red and must not be written until the change lands; ADR-0128 makes that a debt with an issue rather than
-      a prophecy in the confirmation.
-    · AND THE FOOTER RULE GETS THE GATE IT NEVER HAD: a panel that re-renders keeps its hint in the footer.
-      It failed twice by memory, and memory is what a gate replaces.
+      · THE BACK ITEM RETURNS THE CURSOR TO THE OPENING ITEM — focus in a real document across live cards, by Escape, by
+        the back item and after a pointer opened the panel; opening a card still lands on item 1 (ADR-0158); each layer
+        is drawn in front of the last, and only the front one is reachable.
+      · FIVE OR FEWER EXCLUSIVE OPTIONS ARE A CYCLE ROW, MORE ARE A DROPDOWN, and there is no radio group — a sieve over
+        the built menus (the erratum of 2026-09-12).
+      · AN ON/OFF CONTROL IS A TOGGLE that says its state with `aria-pressed`, and a press flips it.
+      · NO MENU LEAVES THE CANVAS — every panel the page mounts, and one the engine has never seen, stays inside 640×360
+        and scrolls.
+      · WIDTH FOLLOWS CONTENT — each opening menu exactly as wide as its widest label, a longer language neither cut nor
+        wrapped.
+      · THE FOOTER RULE — a panel that redraws, changes language or is reopened keeps its prose in the footer.
+
+    ⚠️ Rule 1 was built as the shape to build first (erratum of 2026-09-09): whether stacked cards serve a child better
+    than the old model is what use shows, not what these gates measure.
 
 more-information: |
   This record supersedes nothing. It completes ADR-0092, which said menus are a layer without saying how one

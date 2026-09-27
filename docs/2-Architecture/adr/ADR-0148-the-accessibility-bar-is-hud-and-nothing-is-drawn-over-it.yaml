@@ -1,6 +1,11 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/boot-create-game.browser.test.js
+    - tests/pause-icons.node.test.js
+    - tests/the-a11y-bar-is-hud.node.test.js
+    - tests/quiz-below-the-bar.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
@@ -16,6 +21,15 @@ metadata:
        area, caption in the footer. This record gives the first of those three a measurable boundary"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and issue #145 is closed. The gates landed as the first erratum above corrected them
+        (engine `a64e042`, `e28ca8d2`): with a filter host the engine mounts 🚥 by itself and a press puts the correction
+        on the world, while 🌗 stays the game's and is asserted absent; the colour-vision cycle walks its four steps and
+        names each, the trichromatic step as the vision and never as off; ☝️ is absent from a game that neither holds a
+        key nor declares a position (the narrowing of ADR-0218); a game's own correction writer wins over the engine's
+        default; and a node of the game over the bar is accused by name, while the bar keeps its reserved strip — the
+        icon's name line and a gap included.
     - date: 2026-09-12
       what: "🔴 **§1 CLAIMED BOTH VISUAL ICONS FOR THE ENGINE, and only ONE of them is hers.** Measured while
              building it (`engine:a64e042`): 🚥 colour-vision correction the engine genuinely can action —
@@ -186,20 +200,16 @@ decision-outcome:
       - "🌗 offers off plus three levels where the Dev said two; the difference is flagged, not resolved"
 
   confirmation: |
-    ⚠️ NOT BUILT YET, so there is no `confirmed-by`. The work is **issue #145** in `the-inclusionist-engine`.
-    The gates, named now:
+    ✅ The gates in confirmed-by, as the erratum of 2026-09-12 narrowed them to the one visual axis the engine can
+    action:
 
-      1. 🔴 A game that supplies NOTHING beyond `createGame` mounts 🌗 and 🚥, and pressing each one CHANGES
-         the stored value. Counting icons would pass with both inert.
-      2. 🌗 walks the four steps of `CONTRAST_LEVELS` and 🚥 the four of `CVD_SEQ`, announcing each — and
-         position 0 of the CVD cycle says «trichromatic», never «off» (the distinction `CVD_NAMES` already
-         carries in writing).
-      3. 🔴 A game that declares `seguraTeclas(): false` does NOT get ☝️ — asserting the ABSENCE, which is the
-         case that keeps this record from quietly overriding ADR-0145.
-      4. A game that passes its OWN `tema`/`correcao` writers keeps them: the engine's are a default.
-      5. 🔴 With the bar mounted, no node of the game intersects its rectangle, measured with
-         `getBoundingClientRect` — and the pair: the bar itself still reaches its own space, so a gate that
-         passes by hiding the bar fails.
+      1. A game that supplies nothing beyond `createGame`, given a filter host, mounts 🚥, and pressing it puts the
+         correction on the world; 🌗 is the game's and is NOT mounted by the engine.
+      2. 🚥 walks the four steps of `CVD_SEQ` and announces each, and its trichromatic step names the vision, never off.
+      3. A game that neither holds a key nor declares a position does NOT get ☝️ — asserting the ABSENCE.
+      4. A game that passes its OWN correction writer keeps it: the engine's is a default.
+      5. With the bar mounted, a node of the game that paints over its rectangle is accused by name, and the pair: a
+         container whose padding keeps its content below the bar is not, and the bar keeps its own strip.
 
 more-information: |
   📏 **Where each fact was read**, 2026-09-12:

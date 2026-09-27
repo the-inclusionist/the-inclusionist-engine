@@ -1,8 +1,18 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/aac-sets.node.test.js
+    - tests/settings-aac.browser.test.js
+    - tests/pause-icons.browser.test.js
   supersedes-in-part: [ADR-0028]
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE: the work landed (engine `7d7b36eb`, `416b4a9c`). `ui/aac-sets.ts` lists only ARASAAC
+        and PCS, the dropped sets gone rather than locked; no set is selectable, and a set is selectable exactly when a
+        licence is written down; and the menu's door is disabled and says only that it is disabled, as the erratum above
+        asks. Issue #57 stays open for the menu itself, once a set is licensed.
     - date: 2026-09-25
       what: >-
         The Dev answered the same day. (1) «Sim, PCS» — the candidate is PCS, the symbol set, not the PECS method. (2)
@@ -61,8 +71,10 @@ decision-outcome:
       - "The AAC menu holds only the upper-case letters switch and two locked sets until a licence is obtained"
 
   confirmation: |
-    ⏳ Not built yet. Debt: issue #57 — `ui/aac-sets.ts` reduced to ARASAAC and PCS, both unavailable with the licence
-    reason, with a gate that fails if a set without a recorded licence becomes selectable.
+    ✅ The gates in confirmed-by: `ui/aac-sets.ts` holds ARASAAC and PCS and nothing else, neither selectable; a gate
+    fails if a set without a recorded licence becomes selectable, and its pair proves a licensed one would be; and the
+    menu's door is disabled and says only that it is disabled (erratum of 2026-09-25). 📋 The menu's exercises and
+    keyboard wait for a licence, under issue #57.
 
 more-information: |
   The question of what the AAC menu is FOR (a symbol set that replaces written text, exercises, or a virtual keyboard)
