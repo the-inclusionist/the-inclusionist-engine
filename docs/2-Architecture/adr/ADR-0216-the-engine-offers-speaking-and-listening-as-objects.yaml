@@ -14,6 +14,10 @@ metadata:
     - tests/boot-create-game.node.test.js
   supersedes-in-part:
     - ADR-0198
+  superseded-in-part:
+    - by: ADR-0256
+      what: "ONLY the reading as the way a game hears an answer among options it shows: a choice is heard by `reading.choose()`,
+             with a closed grammar of exactly those options on the command recogniser; `listen()` stays for reading aloud."
   date: 2026-09-21
   decision-makers: [Dev]
   consulted:

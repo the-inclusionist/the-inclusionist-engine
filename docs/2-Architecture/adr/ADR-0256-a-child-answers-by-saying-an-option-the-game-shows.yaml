@@ -1,0 +1,86 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - tests/choosing-by-voice.node.test.js
+    - tests/reading.node.test.js
+    - tests/the-quiz-declares-what-it-uses.node.test.js
+    - tests/the-quiz-speaks-in-its-engines-language.browser.test.js
+  supersedes-in-part: [ADR-0216]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, told that the 👄 hears only the position words and the engine's menus, and that «feliz» said to it became the nearest command and opened the menu — asked whether the 👄 should understand the game's options by name: «Sim». And: «O jogo deve dizer o que mostra à engine.» And: «Sim, registre e implemente o que for necessário na engine já.»"
+    - "The Dev, same message: «No entanto, para opções, gostaria que continuasse usando o esquema de pressionar o botão de ação 1 do controle virtual, seja dizendo \"ação\" seja apertando o botão equivalente no teclado ou no controle de videogame.»"
+    - "The Dev, same day, after pressing action 1 and saying the option: «Sempre que aperto U ou digo ação, o que eu falo nunca é o que está escrito.»"
+    - "ADR-0194 — saying the name of a menu item activates it; the grammar follows the open menu"
+    - "ADR-0201 erratum — Whisper small reads Portuguese; the lab measured Whisper on single words at 1 of 7 and Vosk at 7 of 7 (2026-09-14)"
+  informed: []
+
+title: A child answers by saying one of the options the game shows — the game names them, the engine hears only those
+
+context-and-problem-statement: |
+  The quiz lets a child answer aloud: action 1 opens the microphone, `engine.reading.listen()` returns what she said, and the
+  quiz compares it with its options. The reading is Whisper (ADR-0201), which reads sentences well (7.7 % of words wrong on a read
+  text) and single words badly — the lab measured it at 1 of 7 on words said alone, inventing text where a word was short. An
+  answer to an option is exactly one or two words, and the Dev, reading his answers, found that what came back «is never what is
+  written». The 👄, which hears single words well because its grammar is closed, knows only the position words and the engine's
+  menus (ADR-0194): an option of the game is not among them, so «feliz» said to it was pushed to the nearest command and opened
+  the menu. The engine cannot put the options in any grammar, because it does not know what the game is showing.
+
+decision-drivers:
+  - "Choosing among a handful of shown options is a closed question and wants a closed grammar: the answer can only be one of them, or nothing"
+  - "The game knows what it shows; the engine knows how to hear (ADR-0216: the game asks, the engine hears)"
+  - "The way to START answering stays the one the child already has — the action 1 position, by voice, key or pad (the Dev)"
+  - "Two recognisers must never hear the same word: one answer, one ear"
+
+considered-options:
+  - "A · The game passes the options it shows when it asks; the engine opens a closed grammar of exactly those, and answers which one was said"
+  - "B · The game declares its sayable words continuously and the 👄 adds them to its grammar"
+  - "C · Keep Whisper and improve the comparison"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The game tells the engine what it shows at the moment it asks, so the grammar is always the screen's; the answer is
+  an index, never text to parse; the trigger stays action 1, as the Dev asked; it works with the 👄 off. ❌ One more method on
+  the reading, and the command model of the language must be delivered (`--commands`), which is already true where the 👄 works.
+  **B.** ✅ No button to press. ❌ The Dev asked to keep the button; a word said in passing would answer a question; the 👄 has to
+  be on. **C.** ❌ The error is the recogniser's on single words, not the comparison's.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the game passes what it shows, the engine hears only that"
+    justification: |
+      1. `engine.reading.choose(options, { language?, maxMs? })`: the game passes the option texts it is showing (as written —
+         a leading pictogram or punctuation is not spoken, and the engine drops it) and gets back `{ chosen, heard, ended }` —
+         the index of the option said, or `null`, what was heard, and whether it ended by a choice, by two options at once, by
+         time or by being asked.
+      2. The engine hears with the command recogniser (Vosk, ADR-0193) and a grammar of exactly those options plus `[unk]`, so
+         anything else is «not one of them» and never the nearest option; an option is named when all its words are heard in
+         order, accents aside, the longest at each word. It is decided at the END of a sentence: one option chooses, TWO OR MORE
+         are no answer — a child who says «gato ou galinha» is thinking out loud (the quiz's own rule, which moves into the
+         engine with the matching). The language is the page's unless the game names the content's (ADR-0225, item 22).
+      3. While a choice listens, the 👄 is paused and comes back as the child left it: one ear per word.
+      4. An option with a word the language's model does not know is a line of `problems` naming the word (ADR-0194 §4).
+      5. The game decides WHEN to ask. The quiz asks on action 1, which the child reaches by saying «ação», by the key or by the
+         pad — nothing about the trigger moves into the engine.
+      Superseded in part: ADR-0216's reading as the only way a game hears an answer — `listen()` stays for reading aloud.
+
+  consequences:
+    positive:
+      - "A child answers an option by saying it, heard by a recogniser that can only answer with one of them"
+    negative:
+      - "A new method on the reading object (additive); the command model of the language must be in the delivery"
+
+  confirmation: |
+    ✅ The gates in confirmed-by. `choosing-by-voice` holds the grammar an option set becomes, which options a sentence names
+    (whole words, in order, the longest, accents and pictograms aside), the choice decided at the end of a sentence and two
+    options as no answer, the time and a stop ending it unanswered (a stop while the microphone opens included), the 👄 paused
+    and resumed on every way out, a recogniser that cannot open and an option the model cannot hear each said once, and one
+    microphone for one choice — 13 of 13 mutations red. `reading` holds the delegation and the refusal without a chooser;
+    `the-quiz-declares-what-it-uses` holds the demo asking for a choice and declaring no reading it does not use;
+    `the-quiz-speaks-in-its-engines-language` holds the demo handing the engine its options as shown. Measured end to end on
+    2026-09-27 in a fresh profile with a fake microphone saying «feliz»: action 1, «Estou ouvindo», the option answered about
+    1.5 s after the word. The demo's boot no longer downloads the reading models.
+
+more-information: |
+  The quiz of this repository is the first consumer. Games are not edited from the engine's session.

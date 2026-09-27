@@ -359,6 +359,7 @@ repository (`docs:…`, `game-platformer:…`). That row answers for the number 
 | [ADR-0253](ADR-0253-the-engine-builds-both-targets-of-a-game.yaml) | **The engine builds both targets of a game, and the shared CI builds and checks both.** 📌 The Dev, 27/09: «A engine fornece o build dos dois alvos» | accepted |
 | [ADR-0254](ADR-0254-a-font-with-a-reserved-name-ships-as-its-author-s-original.yaml) | **A font with a reserved name ships as its author's original, compressed and nothing else.** 📌 The Dev, 27/09: «Compra a regularização de tudo», «Merriweather sai devido ao tamanho e ficamos com A para as 22.» | accepted |
 | [ADR-0255](ADR-0255-the-font-library-lives-with-the-heavy-files.yaml) | **The font library lives with the heavy files; the engine keeps only the faces it uses itself.** 📌 The Dev, 27/09: «Sim, todas as fontes que a engine não usa vão para the-inclusionist-lfs.» A cartridge declares the families it uses | accepted |
+| [ADR-0256](ADR-0256-a-child-answers-by-saying-an-option-the-game-shows.yaml) | **A child answers by saying one of the options the game shows — the game names them, the engine hears only those.** 📌 The Dev, 27/09: «O jogo deve dizer o que mostra à engine», «Sim, registre e implemente», and the trigger stays action 1 | accepted |
 
 > ADRs 0011–0019 replaced the informal `REGISTRO-DE-DECISOES.md` log (a decision is an ADR). The exhaustive per-row
 > detail of the old log is in git history; these ADRs carry the decisions + rationale.
