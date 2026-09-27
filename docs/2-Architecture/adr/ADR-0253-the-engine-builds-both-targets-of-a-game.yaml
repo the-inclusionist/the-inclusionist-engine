@@ -7,7 +7,7 @@ metadata:
   errata:
     - date: 2026-09-27
       what: >-
-        CONFIRMED (`engine:e0f26cb5`, `engine:b2e85bda`). What the build had to choose, read off the seven games' own builds: (1) ONE declaration is
+        CONFIRMED (`engine:ff56dead`, `engine:c81c342b`). What the build had to choose, read off the seven games' own builds: (1) ONE declaration is
         the game's `vite.config` wrapped in `defineGameBuild({ cartridge, config })` from `@the-inclusionist/engine/build` —
         `vite build` is the game's app config untouched (its manifest and precache are statements about that game, ADR-0140
         §3), `vite build --mode cartridge` is the engine's: library mode into `dist-lib/cartridge.js` with its

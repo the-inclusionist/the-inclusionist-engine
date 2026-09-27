@@ -15,7 +15,7 @@ metadata:
   errata:
     - date: 2026-09-27
       what: >-
-        CONFIRMED (`engine:58bfa99a`): `input/latch-scope.latchOf` reads the transport's stored value first on every
+        CONFIRMED (`engine:14b52014`): `input/latch-scope.latchOf` reads the transport's stored value first on every
         transport, and on eyes, face, gestures and speech falls back to the game's answer, `LatchReading.gameHoldsKeys` —
         the legacy per-player key no longer reaches those four, since a value set on the keyboard is not a choice about a
         spoken word. `latchAlwaysOn` and `latchIsOptional` left, and with them `ui/latch-refusal` and its four

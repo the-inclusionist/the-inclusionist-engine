@@ -10,7 +10,7 @@ metadata:
   errata:
     - date: 2026-09-27
       what: >-
-        Clause 1 CONFIRMED (`engine:f04f8be8`): a case in each of the three modules writes down the style in force at every
+        Clause 1 CONFIRMED (`engine:3a46dbd3`): a case in each of the three modules writes down the style in force at every
         stroke of the lines over the game — the eyes and brows (`ui/gaze-overlay`), the face (`ui/face-control`), the hands
         (`ui/hand-control`) — and finds `strokeStyle` `#ffffff`, `globalAlpha` 1 and a black `shadowColor`. The pixel cases
         that already existed saw only that a line is painted, which a translucent line is too. The confirmation's debt for

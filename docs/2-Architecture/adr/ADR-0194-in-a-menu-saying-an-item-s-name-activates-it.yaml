@@ -33,7 +33,7 @@ metadata:
         THE FIRST TWO confirmed-by ENTRIES PROVED ONLY THE GRAMMAR. Measured in an issue audit the same day: the voice path in
         use (`ui/voice-control` with `input/voice-map`) put the open menu's names in the recogniser's word list, and hearing
         one activated NOTHING; the only code that did what §2–§3 say was a command reader in `platform/speech-recognition`
-        that only its own test imported. Now built (`engine:81d7f1b4` and the three before it, note DI): the reader drives
+        that only its own test imported. Now built (`engine:84c93273` and the three before it, note DI): the reader drives
         the 👄 path, a heard name moves the cursor to its item and presses confirm through the virtual controller like any
         other transport, the grammar is refreshed whenever a card or panel shows or hides (before, only when the «N of M»
         setting changed, so no menu's names ever reached the recogniser), and names keep their accents, because the small

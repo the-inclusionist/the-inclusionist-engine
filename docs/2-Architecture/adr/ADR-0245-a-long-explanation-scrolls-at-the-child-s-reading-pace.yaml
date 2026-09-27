@@ -31,7 +31,7 @@ metadata:
         never rewritten (§4). Measured at 640×360: all fifteen BNCC texts of the demo quiz overflow two lines (3 to 7).
     - date: 2026-09-26
       what: >-
-        THE GLIDE IS BUILT (`engine:edfc912c`), correcting `engine:b2ff44e6`, whose driver moved `scrollTop` a line per step
+        THE GLIDE IS BUILT (`engine:7ddc0025`), correcting `engine:b2ff44e6`, whose driver moved `scrollTop` a line per step
         — measured on EF35EF05 at 125 ppm, sampled every 500 ms on real time: 0 px until 9.2 s, then 21, 42, 62 and 83 px,
         each held for seconds. Now, after the first view's wait, the words rise at ONE speed until the last line is in view:
         the distance from the first line to the top of the last view, in the time the words BELOW the first view take at

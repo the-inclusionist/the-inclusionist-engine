@@ -9,7 +9,7 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
-        CONFIRMED (`engine:79ce0024`): the port is `GamepadCtx.wizardClosed: () => void`, REQUIRED, and the
+        CONFIRMED (`engine:fd0dbc06`): the port is `GamepadCtx.wizardClosed: () => void`, REQUIRED, and the
         transport calls it as the LAST thing its wizard's `onClose` does — after `#padwiz` is hidden and after the resume of
         a game the wizard paused —, once per close, whichever way it ended (saved at its last step, cancelled by
         `closePadWiz(false)`, by the overlay's own cancel button, or by the root's closer). The root answers with
