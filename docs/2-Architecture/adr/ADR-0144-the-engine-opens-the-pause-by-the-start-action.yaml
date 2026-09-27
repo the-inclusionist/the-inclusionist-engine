@@ -27,6 +27,7 @@ metadata:
     - tests/mapping-a-pad-follows-the-hand.node.test.js
     - tests/a-mapped-pad-has-start-and-select.browser.test.js
     - tests/map-the-gamepad.browser.test.js
+    - tests/the-pad-steers-the-quick-bar.browser.test.js
   date: 2026-09-12
   decision-makers: [Dev]
   consulted:
@@ -45,6 +46,19 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        BUILT: THE PAD STEERS THE QUICK BAR. ADR-0155 §1 gives the directional to the quick bar while START's quick pause is open,
+        and the keyboard had it; the gamepad did not. 📏 Measured through the real root with a fake standard pad on seat 0: its
+        START opened the quick pause, then its d-pad left the bar's cursor on the first icon (the keys moved it 0 → 1), its action 2
+        pressed nothing and its action 3 did not leave. With the quick pause open the root answers `GamepadCtx.pauseMenu()` true
+        (`menuWithDpad`: the quick pause is a menu with a directional), so `input/gamepad` sent the frame to `steerPause`, which knew
+        the dialog on top and the card; the bar branch sits in `steerGame`, which that frame never reaches. Now `steerPause` asks
+        `onBar` first, after the screen's question, in the order `ui/menu-nav` steers a key: the d-pad moves the cursor along the
+        ring as the keys do, action 2 presses the icon under it, action 3 leaves, START leaves through `resume` as before, and
+        seat 1 of a shared screen still reaches nothing. No port changes. Gated by `tests/the-pad-steers-the-quick-bar.browser.test.js`
+        (four seat-0 cases red before, the keys as the cross-check, seat 1) and two cases in `tests/gamepad.node.test.js`; four
+        mutations — the bar branch removed, asked after the card, asked before the screen's question, action 2 read as START — all red.
     - date: 2026-09-26
       what: >-
         BUILT: INSIDE AN OPEN MENU, TOO, ONLY THE SCREEN'S FIRST PLAYER STEERS. The erratum «THE PAUSE ANSWERS THE SCREEN'S FIRST

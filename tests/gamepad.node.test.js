@@ -983,6 +983,35 @@ describe('initGamepad — pollPads', () => {
   });
 
   /*
+   * 🔴 THE QUICK PAUSE IS A MENU, AND ITS BAR IS STEERED FROM THE MENU BRANCH (ADR-0155 §1). The root answers `pauseMenu()` true
+   * while the quick pause is open, so the frame goes to `steerPause` — 📏 which knew only the dialog and the card: seat 0's d-pad
+   * left the bar's cursor where it was while its keys moved it. The root's half is `the-pad-steers-the-quick-bar.browser`.
+   */
+  it('🔴 [Right] in the QUICK PAUSE, the d-pad and action 2 go to the bar — not to the card, and action 2 is not the START exit', () => {
+    const cartao = { hidden: false };
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], naBarra: new Set([0]), getPauseMenu: () => cartao });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [13] })]); // D-pad down
+    api.pollPads();
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]); // action 2
+    api.pollPads();
+    expect(ctx.calls.navBar.map(([i, k, temStart]) => [i, !!k.down, !!k.yes, temStart]), 'the quick bar did not get the pad')
+      .toEqual([[0, true, false, false], [0, false, true, false]]);
+    expect(ctx.calls.navPause, 'the step went to the card under the bar').toEqual([]);
+    expect(ctx.calls.setPhase, 'a step on the bar resumed the game').toEqual([]);
+  });
+
+  it('🔴 [Right] in the quick pause, another seat of a shared screen does not reach the bar (ADR-0144 erratum)', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 }), makePlayer({ pad: 1 })], naBarra: new Set([0, 1]), leadsTheScreen: (s) => s === 0 });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    ctx.setPads([null, makePad({ id: 'std', index: 1, mapping: 'standard', pressed: [13, 0, 1] })]);
+    api.pollPads();
+    expect(ctx.calls.navBar, 'seat 1 steered the shared screen\'s bar').toEqual([]);
+  });
+
+  /*
    * 🔴 THE PAD'S SELECT (ADR-0155, ADR-0144 §1 «from any transport»). `input/pad-reading` read the button — `select` is button 8
    * in the standard table — and nothing acted on it: the keyboard's F opened the menus and the pad's SELECT did nothing. It is
    * PRESSED on the virtual controller now, which hands it to the engine; what it opens is decided there, as for F.
