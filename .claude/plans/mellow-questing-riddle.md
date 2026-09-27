@@ -22,7 +22,8 @@
 
 **Espera o Dev:**
 - 📋 **Pré-carregar o modelo da língua ao abrir uma habilidade** (para o primeiro U numa língua não travar uns segundos) — perguntado 27/09: implementar?
-- 📋 `records-token` — criado pelo Dev (27/09). 📏 Medido: nenhum segredo no repositório do plataformer (no da engine só `DOCS_READ_TOKEN`); o da organização eu não leio (falta `admin:org`). E o chamador do plataformer ainda não liga `adr-records` nem passa o segredo.
+- ✅ **F11 · `records-token`**: `RECORDS_TOKEN` no repositório do plataformer (o plano gratuito do GitHub não tem segredo de organização para repositórios privados — um token por repositório). `game-platformer:7fb2e57` liga `adr-records` e passa o segredo; o passo foi corrido localmente antes (9 registos, 9 sãos). ⏸ Falta só ver a primeira corrida da CI depois do push — e o token tem de LER o `the-inclusionist-engine`, que é onde os registos citados moram.
+- ✅ **«Carregando…» no instante do U** (Dev: «Não mude nada… Apeas adicione a palavra "carregando"»; o pré-carregamento foi recusado): `3d1838a5` (errata do ADR-0256) + `6cf6ee68` — `ChooseSettings.onListening`, e o quiz diz «Estou ouvindo» só quando o ouvido está aberto. 6 de 6 mutações. Visto no `dist`: «Carregando…» ao U. ⏸ A metade «Estou ouvindo» depois do modelo carregar pede microfone real (a rodada é do Dev).
 - ✅ Push (engine, docs, pinball) feito pelo Dev; #134, #137, #199 e #191 já estavam fechadas.
 - ✅ Espelho: o player do VLibras (5), os sinais (633), o avatar (657) e o eSpeak NG `530bf0a` (9) respondem 200 com o tamanho certo. A pasta local `espeak-ng-1.0.2` não está no espelho e nada a usa.
 - 🚫 **Pinball e plataformer: fora deste plano** (Dev, 27/09: «Não vamos mexer com o pinball, isso é de outro plano de trabalho»). O que o relatório do agente achou fica lá: o guia do pinball soa sempre com o modo cego; o do plataformer fica mudo no próximo bump (lê `cat.guide.on`); o pinball ainda passa `sonarPlayers` e o `teardown()` não pára o guia.
