@@ -147,6 +147,12 @@ export interface MenuNavCtx {
   closePadWiz: (save: boolean) => void;
   /** input/keyboard-runtime.ts: whose key is this? (-1 = generic). */
   whichPlayer: (code: string) => number;
+  /**
+   * Does player `i` steer this screen's menus — the dialog on top and the pause card? On a screen several players share, only
+   * the first does (ADR-0144, erratum of 2026-09-26): another player's direction, confirm and back move, press and close nothing.
+   * Absent: every player does — each has a screen of her own. The quick bar is asked per player already (`onBar`).
+   */
+  leadsTheScreen?: (i: number) => boolean;
   /** input/keyboard-runtime.ts: which action is this key FOR that player (honouring the remap)? */
   actionOf: (code: string, playerIndex: number) => string | null;
   /** Where `attach()` installs the menus' listeners, in CAPTURE. See `EventTargetLike` in input/touch-bindings. */
@@ -492,8 +498,12 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     return { player, keys: menuKeyIntent(code, owner >= 0 ? ctx.actionOf(code, player) : null) };
   }
 
-  /** The menu a key of player `pi` moves: the dialog on top if there is one, else that player's OWN open pause card. */
+  /**
+   * The menu a key of player `pi` moves: the dialog on top if there is one, else that player's OWN open pause card — and none for
+   * a player who does not lead this screen (ADR-0144 erratum): the dialog on top is the screen's, not every seat's.
+   */
   function menuUnderKeys(pi: number): { readonly menu: HTMLElement; readonly inPause: boolean } | null {
+    if (ctx.leadsTheScreen && !ctx.leadsTheScreen(pi)) return null;
     const dlg = sharedDialogOpen();
     if (dlg) return { menu: dlg, inPause: false };
     const menu = ctx.getPauseMenu(pi);

@@ -21,6 +21,8 @@ metadata:
     - tests/gamepad.node.test.js
     - tests/one-button-only.browser.test.js
     - tests/on-a-shared-screen-only-the-first-player-pauses.browser.test.js
+    - tests/on-a-shared-screen-only-the-first-player-steers-the-menus.browser.test.js
+    - tests/menu-nav.browser.test.js
     - app/js/input/pad-wizard.ts
     - tests/mapping-a-pad-follows-the-hand.node.test.js
     - tests/a-mapped-pad-has-start-and-select.browser.test.js
@@ -43,6 +45,21 @@ metadata:
        `start` action"
   informed: []
   errata:
+    - date: 2026-09-26
+      what: >-
+        BUILT: INSIDE AN OPEN MENU, TOO, ONLY THE SCREEN'S FIRST PLAYER STEERS. The erratum «THE PAUSE ANSWERS THE SCREEN'S FIRST
+        PLAYER» closed the doors, START and SELECT; the menu once open still answered every seat. 📏 Measured through the real root
+        with two fake pads, one on each seat, and the engine's two-player keyboard: with a panel open, seat 1's d-pad, its arrows
+        and keypad, and a transport pressing the virtual controller for seat 1 moved the panel's focus, pressed the control under it
+        and closed it — `input/gamepad` `steerPause` and `ui/menu-nav` `menuUnderKeys` handed the dialog on top to any seat. Now both
+        ask the root's one rule, `boot/create-game.leadsTheScreen`, through an optional port of the same name on `GamepadCtx` and
+        `MenuNavCtx` (absent: every seat leads a screen of its own, which is what a consumer drawing one screen per seat has): another
+        seat's direction, confirm and back move, press and close nothing — the panel, the card, the quick bar — and still reach no
+        game under the menu. Additive: no consumer breaks. On the card and the quick bar seat 1 already moved nothing (no card of its
+        own, never on the bar); those cases pin that it stays so. Gated by
+        `tests/on-a-shared-screen-only-the-first-player-steers-the-menus.browser.test.js` (panel, card, quick pause; pad, keys,
+        controller; seat 0 steering and seat 1 playing as the controls), a case in `tests/menu-nav.browser.test.js` and three in
+        `tests/gamepad.node.test.js`; seven mutations — each port removed, each root wiring removed, every seat leading, and each absence misread — all red.
     - date: 2026-09-26
       what: >-
         BUILT: THE DEFAULT POSITIONS. Where the game's preset names no position, the motor panel's «Mapear controle» row shows

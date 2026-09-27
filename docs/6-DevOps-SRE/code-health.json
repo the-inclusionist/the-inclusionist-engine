@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2347,
+      "codeLines": 2349,
       "decisionNodes": 305,
       "maxDepth": 4,
       "fanOut": 98,
@@ -518,8 +518,8 @@
       "fanIn": 1
     },
     "input/gamepad.ts": {
-      "codeLines": 311,
-      "decisionNodes": 61,
+      "codeLines": 313,
+      "decisionNodes": 62,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
@@ -1678,8 +1678,8 @@
       "fanIn": 5
     },
     "ui/menu-nav.ts": {
-      "codeLines": 299,
-      "decisionNodes": 67,
+      "codeLines": 301,
+      "decisionNodes": 68,
       "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,

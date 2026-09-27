@@ -757,6 +757,35 @@ describe('menuNavKey — o tradutor de teclado', () => {
     expect($('#sp0').querySelector('.pm-sel')).toBe(null); // the other player's screen did not move
   });
 
+  /*
+   * 🔴 ON A SHARED SCREEN ONLY THE FIRST PLAYER STEERS THE MENUS (ADR-0144, erratum of 2026-09-26). 📏 Measured before: the dialog
+   * on top went to whichever player's key it was — player 2's arrows moved it and player 2's back closed it. The case above is the
+   * absence: with no `leadsTheScreen`, each player has a screen of her own and steers her own card.
+   */
+  it('🔴 [Right] a player who does not lead the screen steers neither the dialog on top nor a card — and the key is not consumed', () => {
+    let dono = 1;
+    const { nav, openTypo } = boot({ whichPlayer: () => dono, leadsTheScreen: (i) => i === 0 });
+    showPauses();
+    openTypo();
+    const foco = document.activeElement;
+    for (const code of ['ArrowDown', 'Escape', 'Enter']) {
+      const e = key(code);
+      nav.menuNavKey(e);
+      expect(e.stops, `player 2's ${code} was taken by the screen's menus`).toBe(0);
+    }
+    expect([$('#typo').hidden, document.activeElement], 'player 2 steered the dialog on top').toEqual([false, foco]);
+    expect(nav.itemNames(1), 'player 2 can say the names of a menu she does not steer').toEqual([]);
+    $('#typo').hidden = true;
+    nav.menuNavKey(key('ArrowRight'));
+    expect($('#sp1').querySelector('.pm-sel'), 'player 2 steered a card on a screen she does not lead').toBe(null);
+    // 🎯 the control: the first player's key steers the same menus
+    dono = 0;
+    openTypo();
+    const e = key('ArrowDown');
+    nav.menuNavKey(e);
+    expect([e.stops, document.activeElement === foco], 'the first player\'s key did not steer the dialog').toEqual([1, false]);
+  });
+
   // ⚠️ DEFECT 2, PINNED. What decides is the TOP OF THE STACK (z-index), not ui/settings-panel's registry chain (order:
   // audio → typo → help, in this test). With #typo on top, #typo closes — even with #audio before it in the chain. If
   // someone switches the resolution to the registered chain, this case fails, and that is the warning.

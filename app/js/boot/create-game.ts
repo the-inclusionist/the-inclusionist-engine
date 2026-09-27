@@ -2484,6 +2484,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // registered with the overlays, which cancels a running wizard without storing its map.
     closePadWiz: () => { overlays.closeById('padwiz'); },
     whichPlayer: (code) => keyboard.whichPlayer(code),
+    // this root's one screen: another seat's keys steer none of its menus (below, at the rule)
+    leadsTheScreen,
     actionOf: (code, i) => keyboard.actionOf(code, i),
     // Finding 12, SOLVED IN THE ENGINE: the port is generic over `WindowEventMap` (see `EventTargetLike` in
     // input/touch-bindings), so the real `window` goes straight in, with no adapter per consumer.
@@ -3092,6 +3094,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * its pause and its menus answer seat 0: START and SELECT from any other seat, by any transport, do nothing. A player with a
    * screen of her own has a root of her own, and its pause. START asks this below and the pad's START on an open menu asks it
    * too (`resume`); SELECT needs no question, because `openSeatMenus` opens the seat's own card and this root mounts seat 0's only.
+   * And INSIDE an open menu the same: `ui/menu-nav` and `input/gamepad` ask it before handing a seat the dialog on top or the
+   * card, so another seat's direction, confirm and back — by its keys, its pad, or a transport pressing the controller, whose
+   * press becomes that seat's key — move, press and close nothing, and reach no game under the menu either.
    */
   function leadsTheScreen(seat: number): boolean {
     return seat === 0;
@@ -4388,6 +4393,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     navBar,
     sharedDialogOpen: nav.sharedDialogOpen,
     navDialog: nav.navDialog,
+    leadsTheScreen, // another seat's pad steers none of this screen's menus, as its keys do not
     getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
     navPause: nav.navPause,
     setPauseActor,

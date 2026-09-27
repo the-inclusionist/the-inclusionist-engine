@@ -253,6 +253,12 @@ export interface GamepadCtx {
   navBar: (i: number, k: NavKeys, hasStart: boolean) => void;
   sharedDialogOpen: () => HTMLElement | null;
   navDialog: (dlg: HTMLElement, k: NavKeys) => void;
+  /**
+   * Does this seat's pad steer the menus open on this screen — the dialog on top and the pause card? On a screen several players
+   * share, only the first's does (ADR-0144, erratum of 2026-09-26): another seat's d-pad and buttons move, press and close
+   * nothing there. Absent: every seat's does — each has a screen of her own. The same question `ui/menu-nav` asks of a key.
+   */
+  leadsTheScreen?: (seat: number) => boolean;
   /** The player's pause screen. `HTMLElement` and not `{ hidden: boolean }`: the structural minimum works for READING,
    *  but this module HANDS the menu to `navPause`, which needs the whole element — and in parameter position the
    *  minimal slice inverts (ADR-0039). */
@@ -493,6 +499,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   function steerPause(f: PadFrame): void {
     const pi = f.owner < 0 ? 0 : f.owner;
     if (f.pauseEdge) { ctx.resume(pi); return; } // START resumes — if this seat's START reaches this screen's pause (the root's)
+    if (ctx.leadsTheScreen && !ctx.leadsTheScreen(pi)) return; // another seat of a shared screen steers none of its menus
     const k = f.navKeys();
     if (!anyIntent(k)) return;
     const dlg = ctx.sharedDialogOpen();

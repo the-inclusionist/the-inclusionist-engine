@@ -937,6 +937,36 @@ describe('initGamepad — pollPads', () => {
     expect(resumed, 'the seat that pressed START was not named: the root cannot tell the first player\'s from another\'s').toEqual([1]);
   });
 
+  /*
+   * 🔴 INSIDE AN OPEN MENU, A SEAT THAT DOES NOT LEAD THE SCREEN STEERS NOTHING (ADR-0144, erratum of 2026-09-26: on a shared screen
+   * only the first player controls the pause and the menus). 📏 Measured before: `steerPause` handed any seat's d-pad and buttons
+   * to the dialog on top. Absent, the question means «every seat leads a screen of its own», and the seat still steers.
+   * The root's half is `on-a-shared-screen-only-the-first-player-steers-the-menus.browser`.
+   */
+  for (const [caso, pergunta, seat, esperado] of [
+    ['another seat of a shared screen: nothing', (s) => s === 0, 1, 0],
+    ['the screen\'s first seat: one step', (s) => s === 0, 0, 1],
+    ['no question — each seat has its own screen: one step', undefined, 1, 1],
+  ]) {
+    it(`🔴 [Right] with a panel or a card open, the d-pad of seat ${seat} — ${caso}`, () => {
+      const painel = { hidden: false }; const cartao = { hidden: false };
+      const ctx = buildCtx({
+        players: [makePlayer({ pad: 0 }), makePlayer({ pad: 1 })],
+        sharedDialogOpen: () => painel, getPauseMenu: () => cartao, leadsTheScreen: pergunta,
+      });
+      const api = initGamepad(ctx);
+      ctx.setPhaseValue('paused');
+      // down, confirm and back together: one frame is one call to the menu, and none for the wrong seat
+      const apertar = (pressed) => { const pads = [null, null]; pads[seat] = makePad({ id: 'std', index: seat, pressed }); ctx.setPads(pads); api.pollPads(); };
+      apertar([13, 0, 1]);
+      expect(ctx.calls.navDialog, 'the panel on top was steered by the wrong seat').toHaveLength(esperado);
+      ctx.sharedDialogOpen = () => null; // the panel closed: the card is what is open now
+      apertar([]);
+      apertar([13, 0, 1]);
+      expect(ctx.calls.navPause, 'the card was steered by the wrong seat').toHaveLength(esperado);
+    });
+  }
+
   it('🔴 [Right] na BARRA RÁPIDA, o botão dirige a barra e NÃO vira acção de jogo (ADR-0044 item 7)', () => {
     // ⚠️ The second expectation carries the subject: while the mode is on, nothing from this pad is the game's. Without it, a
     // bar that navigated and let the character jump at the same time would pass.
