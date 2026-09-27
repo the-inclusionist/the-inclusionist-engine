@@ -19,7 +19,7 @@ export type TitleMenuId = 'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' |
  * order in its type, so a reader that has to scan the submenus in order to find the visible one would otherwise
  * declare its own array of the same six ids, kept in step by discipline alone. One list.
  */
-export const TITLE_MENU_IDS_ORDERED: readonly TitleMenuId[] = [
+const TITLE_MENU_IDS_ORDERED: readonly TitleMenuId[] = [
   'tm-main', 'tm-alf', 'tm-mat', 'tm-tab', 'tm-fr', 'tm-cen',
 ];
 export const TITLE_MENU_IDS: ReadonlySet<TitleMenuId> = new Set(TITLE_MENU_IDS_ORDERED);

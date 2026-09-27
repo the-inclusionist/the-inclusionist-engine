@@ -112,9 +112,6 @@ export type Topology =
  */
 export interface Spot { readonly x: number; readonly y: number; readonly z?: number }
 
-/** The dimension the topology declares. `hotspots` has no space, so no dimension. */
-export function dimension(t: Topology): number { return t.kind === 'hotspots' ? 0 : t.size.length; }
-
 /** Axis `i` of a point, for whoever walks dimensions instead of naming them. */
 function axis(s: Spot, i: number): number { return i === 0 ? s.x : i === 1 ? s.y : (s.z ?? 0); }
 

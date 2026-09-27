@@ -164,7 +164,6 @@
     "WorldScope",
     "bearing",
     "conformanceProblems",
-    "dimension",
     "distance",
     "speakableProblems"
   ],
@@ -667,7 +666,6 @@
     "carriedBy",
     "carries",
     "defaultTransports",
-    "holds",
     "reach",
     "reachable"
   ],
@@ -1781,7 +1779,6 @@
   ],
   "ui/title.ts": [
     "TITLE_MENU_IDS",
-    "TITLE_MENU_IDS_ORDERED",
     "TitleApi",
     "TitleCtx",
     "TitleMenuId",

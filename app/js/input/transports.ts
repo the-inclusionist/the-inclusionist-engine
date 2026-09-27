@@ -146,7 +146,7 @@ export function carries(t: Transport, actions: readonly Action[]): boolean {
  * would fail every game for having no number at all. Where there is no decision, the model stays silent; touch is
  * the one with a decision, and it alone can fail here.
  */
-export function holds(t: Transport, asked: number): boolean {
+function holds(t: Transport, asked: number): boolean {
   return t.holds === undefined || t.holds >= asked;
 }
 

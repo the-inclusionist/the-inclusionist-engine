@@ -4173,6 +4173,18 @@ and answers WHICH option — never text to compare. Two options in one sentence 
 | `consumer-quiz/main-quiz.heardAlternative` | gone (`platform/choose-by-voice.optionsNamed` is the engine's rule) | nothing — the demo was its only caller |
 | the demo declared `uses: { reading: true }` | it declares none | nothing |
 
+## DY · Three published names nothing in the engine read leave the surface
+
+**Who is affected:** a game that imports one of them. 📌 **Why:** the Dev, 2026-09-27, shown that nothing inside the engine reads
+them: «Sai e é quebra». A name published with no reader in the engine is debt (the exports ledger), and each of these had its
+reader only outside — or none at all.
+
+| was | now | what to do |
+|---|---|---|
+| `core/contract.dimension(topology)` | gone | `topology.kind === 'hotspots' ? 0 : topology.size.length` |
+| `input/transports.holds(transport, asked)` | no longer exported (the engine's own reach check still uses it) | `transport.holds === undefined \|\| transport.holds >= asked` |
+| `ui/title.TITLE_MENU_IDS_ORDERED` | no longer exported | `ui/title.TITLE_MENU_IDS` (the set) is still published; a game that needs an order keeps its own |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.
