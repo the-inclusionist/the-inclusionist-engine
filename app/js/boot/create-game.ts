@@ -112,9 +112,8 @@ import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { mountPanel } from '../ui/mount-panel.js';
 // 📌 No `setMoveLatch` here: the sticky keys are written by the bar's ☝️, which already writes both stored keys. What the root
-// does is RESOLVE the latch when a one-command transport presses (ADR-0249) — `createLatchedEdge`, below.
+// does is RESOLVE the latch when any transport presses (ADR-0109 rule 3, ADR-0249) — `createLatchedEdge`, below.
 import { createLatchedEdge } from '../input/latch-edge.js';
-import { latchDefaultFromGame } from '../input/latch-scope.js';
 import type { LatchPlayer } from '../input/latch-sync.js';
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
@@ -3315,6 +3314,8 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     press: (action, source) => virtualController.press(action, source),
     release: (action, source) => virtualController.release(action, source),
+    // the RAW edge: the press above already recorded it and resolved touch's latch at the controller's `pressedBy`, so this only
+    // repeats an edge the automaton holds (ADR-0109 rule 3)
     playerEdge,
     heldKeys: keys,
     attractOnInput: () => false,
@@ -4271,23 +4272,26 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   whenDisposed(stopScan); // the scan's frames are this root's, and an ended root keeps none running (ADR-0220)
   if (state.switchScan) startScan();
   /*
-   * 🔴 THE LATCH OF THE ONE-COMMAND TRANSPORTS (ADR-0249). A press from the eyes, the face, the hands or the voice is that
-   * device's edge (ADR-0109), and on it the seat's latch is resolved again: the child's stored choice for that transport, else
-   * the MOUNTED game's `holdsKeys()` read now — so a platform game keeps walking on «direita», a quiz's «abaixo» presses once,
-   * and a stage that stops holding keys stops latching at the next word.
-   * ⚠️ ONLY THOSE FOUR: the keyboard, the pad and touch keep their rules (ADR-0104, ADR-0109), and resolving theirs here would
-   * change what those children have today. The seats are the ones the bar's ☝️ writes (`PausePlayer`, the same cast).
+   * 🔴 THE DEVICE IN USE AND ITS LATCH, AT ONE DOOR (ADR-0109 rule 3, ADR-0113, ADR-0249). Every transport that plays presses
+   * this controller — the keyboard conductor below (`teclado`), the on-screen pad (`toque`), the gamepad, the eyes, the face,
+   * the hands, the voice — so its `pressedBy` is where the root hears «the child is using this device now». Each press is that
+   * device's edge: the seat's transport automaton moves to it, and the seat's latch is resolved again for it — the child's
+   * stored choice for that transport, else its default: the MOUNTED game's `holdsKeys()` read now on the four one-command
+   * transports (a platform game keeps walking on «direita», a quiz's «abaixo» presses once), the factory's on the keyboard, the
+   * pad and touch. So a key after a spoken word brings back the keyboard's latch, and the ☝️ writes under the keyboard.
+   * ⚠️ EVERY TRANSPORT, not one hook per transport: a transport this door did not hear would leave the automaton on the device
+   * the child put down, and play would go on under that device's latch — in silence. The seats are the ones the bar's ☝️
+   * writes (`PausePlayer`, the same cast).
    */
-  const oneCommandEdge = createLatchedEdge(() => players() as unknown as readonly LatchPlayer[], {
+  const transportEdge = createLatchedEdge(() => players() as unknown as readonly LatchPlayer[], {
     input, store, holdsKeys: () => cartridge.declaration.holdsKeys(),
   });
   const virtualController = createVirtualController({
-    // told first, for every press that names its transport; only the one-command transports resolve the latch here
-    pressedBy: (source, seat) => { if (latchDefaultFromGame(source)) oneCommandEdge(seat, source); },
+    // told first, for every press that names its transport: the edge and the latch of the device that pressed
+    pressedBy: (source, seat) => { transportEdge(seat, source); },
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuWithDpad,
-    // ⚠️ `markKeyFrom` AND NOT RAW `markKey`: a key that arrives WITHOUT a source — which is every real keyboard event —
-    // must ERASE whoever held it last instead of inheriting them (ADR-0109). The choice between the two doors lives in
-    // `input/state`.
+    // ⚠️ `markKeyFrom` AND NOT RAW `markKey`: a key that arrives WITHOUT a source — a synthetic key nobody stamped — must ERASE
+    // whoever held it last instead of inheriting them (ADR-0109). The choice between the two doors lives in `input/state`.
     holdKey: markKeyFrom,
     releaseKey: releaseKey, menuKey: keyToMenu, deliver: deliverCommand,
     // With a menu open the game hears no press, so the engine answers the sonar there: R1 reads the menu in front, spoken or,
@@ -4410,6 +4414,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
     navPause: nav.navPause,
     setPauseActor,
+    // the RAW edge: every pad press already reached the controller's `pressedBy`, which recorded it and resolved the pad's latch
     playerEdge,
     press: (action, source, player) => virtualController.press(action, source, player),
     release: (action, source, player) => virtualController.release(action, source, player),

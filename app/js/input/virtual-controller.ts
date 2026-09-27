@@ -78,8 +78,9 @@ export interface VirtualControllerDeps {
   /**
    * A PRESS FROM A NAMED TRANSPORT, told FIRST — before one button only, a menu or play decides where it goes. This is the one
    * place every position-pressing transport shares, so it is where «the child is using this device» can be heard for all of
-   * them (ADR-0109), and where the root resolves the latch of the one-command transports before their press reaches the game
-   * (ADR-0249). Not told for a press with no source: a real key is nobody's edge here. Absent: nothing is told.
+   * them (ADR-0109 rule 3), and where the root records that device's edge and resolves its latch before the press reaches the
+   * game (ADR-0113, ADR-0249). Not told for a press with no source: a key nobody stamped is nobody's edge — the real keyboard
+   * arrives here as `teclado`, read off the event by `input/synthetic-source.sourceOfEvent`. Absent: nothing is told.
    */
   readonly pressedBy?: (source: TransportName, player: number) => void;
 }

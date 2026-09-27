@@ -44,8 +44,9 @@ export interface LatchedEdgeOptions {
 }
 
 /**
- * RETURNS THE `playerEdge` THAT ALSO RESOLVES THE TOGGLE — to hand to `initKeydown` and `initTouchBindings` in place of
- * the raw one.
+ * RETURNS THE `playerEdge` THAT ALSO RESOLVES THE TOGGLE. The root calls it from the virtual controller's `pressedBy`, the one
+ * door every transport's press goes through (ADR-0109 rule 3); a host without that door hands it to `initKeydown`,
+ * `initTouchBindings` and `initGamepad` in place of the raw one.
  *
  * ⚠️ IT RESOLVES AGAINST `inputOf(player).inUse` AND NOT `origin`, a difference of design and not of behaviour: today the
  * edge always sets in-use to the origin, so swapping one for the other is an EQUIVALENT mutation — recorded as such in the

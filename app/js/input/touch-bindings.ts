@@ -307,7 +307,9 @@ export interface TouchBindingsCtx {
    *
    * 🔴 REQUIRED, and it is where the device switch becomes VISIBLE: touch is the transport the child uses beside the
    * keyboard, and without this line the automaton answers `teclado` even with the finger on the screen — so the latch
-   * read would be the keyboard's, on the wrong device.
+   * read would be the keyboard's, on the wrong device. 📌 In the root the press has already recorded this edge and resolved
+   * touch's latch at the virtual controller's `pressedBy` (ADR-0109 rule 3); a host without that door passes the latched edge
+   * of `input/latch-edge` here.
    */
   playerEdge: (player: number, source: TransportName) => void;
   /**

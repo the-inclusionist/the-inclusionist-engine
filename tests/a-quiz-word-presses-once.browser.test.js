@@ -41,7 +41,7 @@ const declaration = () => ({
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
 });
 const PRESET = { down: { label: 'Baixo' }, right: { label: 'Direita' }, action2: { label: 'Confirmar' } };
-const KEYS = ['incl_togglemove_p0_fala', 'incl_togglemove_p0', 'incl_switch_scan'];
+const KEYS = ['incl_togglemove_p0_fala', 'incl_togglemove_p0_gamepad', 'incl_togglemove_p0', 'incl_switch_scan'];
 
 async function until(cond) { for (let i = 0; i < 200 && !cond(); i++) await new Promise((r) => { setTimeout(r, 10); }); }
 /** The recogniser heard `text` as a partial, and the utterance ended — the calls the microphone makes. */
@@ -157,13 +157,18 @@ describe('the child\'s stored choice for her voice wins over the game (ADR-0249)
   }, 10_000);
 });
 
-describe('the keyboard, the pad and touch keep their rules (ADR-0249)', () => {
-  it('📌 [Boundary] a press from the PAD does not re-resolve the latch in the root — the ☝️ choice stays as she set it', () => {
-    stage = 'quiz';
-    seats[0].toggleMove = true; // set by the bar for the pad, say; the quiz stage's `false` must not reach it
+describe('the keyboard, the pad and touch keep the factory default (ADR-0249)', () => {
+  it('📌 [Boundary] a press from the PAD resolves the PAD\'s latch — the game\'s `holdsKeys()` does not reach it, either way', () => {
+    stage = 'platform'; // the game holds: a one-command transport would latch here
     motor.controller.press('right', 'gamepad', 0);
     motor.controller.release('right', 'gamepad', 0);
-    expect(seats[0].toggleMove, 'a pad press was resolved as a one-command transport').toBe(true);
+    expect(seats[0].toggleMove, 'a pad press was resolved as a one-command transport').toBe(false);
+
+    stage = 'quiz';
+    localStorage.setItem('incl_togglemove_p0_gamepad', '1'); // set by the bar for the pad; the quiz stage's `false` must not reach it
+    motor.controller.press('right', 'gamepad', 0);
+    motor.controller.release('right', 'gamepad', 0);
+    expect(seats[0].toggleMove, 'the choice she stored for the pad was not read on the pad').toBe(true);
   });
 });
 
@@ -175,7 +180,9 @@ describe('the keyboard, the pad and touch keep their rules (ADR-0249)', () => {
 //   R3 `latchOf` ignoring the game's answer                               🔴 3 — «direita», the stage, the ☝️
 //   R4 the root's `pressedBy` wired to nothing                            🔴 4 — «direita», the stage, the stored choice, the ☝️
 //   R5 the root answering `holdsKeys` true for every game                 🔴 2 — «abaixo» once, the stage
-//   R6 the root resolving every transport (pad and touch too)             🔴 «a press from the PAD»
+//   R6 the root resolving every transport (pad and touch too)             🔴 «a press from the PAD» — the case asserted then that a
+//      pad press left the latch alone; since the root resolves every transport (ADR-0109 rule 3, erratum of 2026-09-27) it
+//      asserts the pad's own latch, and its mutations are in `every-transport-feeds-the-device-in-use.browser.test.js`
 //   R7 the controller never telling who pressed                           🔴 4 (and 2 in `virtual-controller.node`)
 //   R8 `writeLatch` refusing the four again                               🔴 the ☝️
 //   R9 the ☝️ refusing the write on the four again                        🔴 the ☝️ (and 2 in `pause-icons.node`)

@@ -270,9 +270,10 @@ export interface GamepadCtx {
    * THIS EDGE IS THIS PLAYER'S, AND IT CAME FROM THE PAD (ADR-0113 clause 4, issue #127).
    *
    * 🔴 REQUIRED: without it the input state's `playerEdge` has no caller for the pad, so `inputOf(i).inUse` answers
-   * `teclado` for everyone — and the latch read is the keyboard's even with the pad in hand. 📌 Pass
-   * `createLatchedEdge(() => players, { store, input, holdsKeys })` from `input/latch-edge`, not the raw one: it also resolves this
-   * device's latch on the player.
+   * `teclado` for everyone — and the latch read is the keyboard's even with the pad in hand. 📌 The latch is resolved where the
+   * pad's press lands: the root's virtual controller tells `pressedBy`, which records this edge through `input/latch-edge` too,
+   * so the root passes the raw one here. A host whose `press` does not reach such a door passes
+   * `createLatchedEdge(() => players, { store, input, holdsKeys })` instead.
    *
    * ⚠️ The gamepad is the transport that stays identifiable without the key set — it goes through `padCur` —, and that
    * is exactly why a gap here is invisible: the module knows which pad the edge came from, and the automaton does not.
