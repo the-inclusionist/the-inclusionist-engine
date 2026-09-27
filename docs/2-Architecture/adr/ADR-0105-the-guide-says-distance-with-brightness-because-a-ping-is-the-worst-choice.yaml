@@ -2,10 +2,15 @@
 metadata:
   status: "accepted"
   confirmed-by:
-    - "app/js/platform/guide-intensity.ts"
-    - "app/js/platform/audio-sonar.ts"
-    - "tests/guide-intensity.node.test.js"
-    - "tests/audio-sonar.node.test.js"
+    - "game-platformer:app/js/platform/guide-intensity.ts"
+    - "game-platformer:app/js/platform/audio-guide.ts"
+    - "game-platformer:tests/guide-intensity.node.test.js"
+    - "game-platformer:tests/audio-guide.node.test.js"
+  superseded-in-part:
+    - by: ADR-0257
+      what: "ONLY where the guide lives: §6's wiring into the engine's `platform/audio-sonar` and the consequence that the
+             engine needs the `guide` bus and the master volume injected. The guide is the platformer's
+             (`platform/audio-guide`, `platform/guide-intensity`); §1–§5 and the design in §6 are unchanged."
   date: 2026-09-07
   decision-makers: [Dev]
   consulted:

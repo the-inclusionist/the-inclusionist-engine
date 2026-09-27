@@ -1,0 +1,92 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - tests/audio-sonar.node.test.js
+    - docs/6-DevOps-SRE/public-shape.json
+    - game-platformer:app/js/platform/audio-guide.ts
+    - game-platformer:tests/audio-guide.node.test.js
+    - game-platformer:tests/guide-intensity.node.test.js
+  supersedes-in-part: [ADR-0105]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-23, when the cane and the blind swim left for the platformer: «O guia sonoro é do platformer e deve ser decidido por ele sim.»"
+    - "The Dev, 2026-09-27, told that the guide half of `platform/audio-sonar` had no caller left in the engine: «Pode tirar e levar da engine para o platformer»"
+    - "ADR-0105 — the guide says distance with brightness; its design travels unchanged, only where it lives changes"
+    - "ADR-0228 — what describes one game leaves `app/js`; the cane and the blind swim left by it (engine `a303c3da`, platformer `3389241`)"
+    - "ADR-0151 and ADR-0155 — the mixer's `guide` category and its row in the hearing panel, which this record does not touch"
+  informed: []
+
+title: The continuous sound guide leaves the engine — the platformer owns it, and the engine's sonar keeps only what serves any game
+
+context-and-problem-statement: |
+  `platform/audio-sonar` was two things under one name. The SONAR — a tone that points at the nearest target, the words that
+  say where it is, the pan by relative position, and the question «does this child need audio cues?» — serves any genre. The
+  GUIDE — a sawtooth that stays, a low-pass that opens as the child walks closer along a route, torn down when there is nothing
+  to find (ADR-0105) — was wired into the same factory: `updateGuide`, `guideCount`, the `_guide` graph hung on the player, the
+  `LiveGuide` type, its constants, `platform/guide-intensity`, and four `SonarCtx` fields only it read (`roleAt`, `catNode`,
+  `audioOut`, `getVolume`).
+
+  Measured before deciding (2026-09-27, `git grep`): in the engine nothing calls `updateGuide` — `createGame` wires the sonar
+  and never runs the guide in its loop; its only caller was `platform/audio-nav`, which already left for the platformer. In
+  the catalogue, the platformer runs it every frame through its own root (`nav.updateGuide()`), and `game-pinball` calls
+  `engine.sonar.updateGuide()` every frame and reads `guideCount` in a test. Both pin `@the-inclusionist/engine@^9.0.0`, whose
+  published names are still the Portuguese ones (`rotaAte`, `intensidadeDoGuia`, `GuiaVivo`).
+
+decision-drivers:
+  - "The Dev decided whose the guide is: the platformer's, to decide by itself (2026-09-23), and ordered the move (2026-09-27)"
+  - "A published name nothing in the engine reads is debt, and whoever consumes the engine adapts to the new version — the rule of `scripts/exports-without-consumer.mjs` (the Dev, 2026-09-22)"
+  - "The move must not publish a new engine name only for the game that receives it"
+  - "The platformer must compile against the engine it actually installs (9.0.0), not against this tree"
+
+considered-options:
+  - "A · The guide moves whole into the platformer; the pure pieces are copied, and what is the engine's is read through what it already publishes"
+  - "B · The guide stays in the engine as an opt-in any game may run"
+  - "C · The guide moves, and the engine publishes a smaller helper for it (a `nearestSpot`/`stepsToTarget` export)"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The engine's sonar shrinks to what serves any genre; the platformer decides its guide, as the Dev said; no new engine
+  name. ❌ A game that wants a guide carries its own (the pinball, at its next bump). **B.** ❌ Contradicts the Dev's decision, and
+  keeps a feature whose design — brightness, route, floor — is one game's choice inside the engine. **C.** ❌ Publishes names whose
+  only consumer is the game that asked for them, which is the surface the exports ledger exists to refuse.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the guide moves whole; copies of the pure pieces, the engine's own parts read through its published surface"
+    justification: |
+      1. The platformer owns `platform/audio-guide` (`updateGuide`, `guideCount`, the live graph and its teardown, the route's
+         cadence, the glide) and `platform/guide-intensity`, with their tests. The sonar's private `nearestSpot` and
+         `stepsToTarget` are copied — a loop over `targetsOf` and a call to the route.
+      2. What stays the engine's is read through what 9.0.0 already publishes: the sonar instance's `playerCtx`, `panFor` and
+         `needsAudioCues` (a child's own output device, the pan on the declared ruler, and blind mode or impaired sight),
+         `distance` from `core/contract`, and the route from `core/route` — a contract-level search over the declared
+         topology and roles, not one game's. The mixer and its `guide` category stay the engine's (ADR-0151, ADR-0155).
+      3. The engine removes from `platform/audio-sonar`: `updateGuide` and `guideCount` on `AudioSonar`, `_guide` on
+         `PlayerAudioOut`, `LiveGuide`, `GUIDE_WAVE`, `GUIDE_VOL`, `FRAMES_BETWEEN_ROUTES`, and the `SonarCtx` fields only the
+         guide read (`roleAt`, `catNode`, `audioOut`, `getVolume`); and the module `platform/guide-intensity`. A breaking
+         change, with its note in `Breaking-Changes.md`.
+      4. The move keeps behaviour: the platformer's guide receives exactly what its root gave the engine's guide before.
+      Superseded in part: ADR-0105's placement of the guide in the engine (its §6 wiring and the consequence that the engine
+      needs the `guide` bus and the master volume injected). Its design — brightness first, a volume floor, a harmonic timbre,
+      the fixed pitch, the route on a cadence — is unchanged and now lives in the platformer.
+
+  consequences:
+    positive:
+      - "The engine's sonar is only what serves any game; the guide's design is decided where the Dev put it"
+    negative:
+      - "A game that runs the engine's guide keeps it only by owning a copy after its bump — measured: `game-pinball`. What the pinball does is the pinball's to decide, by the same sentence of the Dev; this record does not decide it"
+    neutral:
+      - "Not decided here, and reported: after the move no engine code routes a sound into the `guide` category (the games' sounds still do, through the engine's mixer), and `core/route` has no reader in `app/js` besides its own test"
+
+  confirmation: |
+    ✅ The gates in confirmed-by. In the platformer, `audio-guide.node.test.js` holds the guide's wiring as it was held in the
+    engine — one oscillator for the whole walk, the harmonic timbre and the low-pass, near opening and far never silent, no graph
+    without a target, a sighted player or the category off, teardown when the target or the category goes, the master volume
+    multiplying without killing, a refusing device, the route's cadence and the pan, and the route beating the straight line
+    behind a wall — and `guide-intensity.node.test.js` the pure mapping; each file lists its mutations, all red. In the engine,
+    `audio-sonar.node.test.js` keeps the sonar's half, and `public-shape.json` no longer carries the guide's members.
+
+more-information: |
+  The index rows are added by whoever keeps the indexes. Games are not edited from the engine's session: the pinball's
+  adaptation is its own work.
