@@ -15,11 +15,14 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import {
   levarPesadosParaEntrega, argumentosDaEntrega, idsOfTheDelivery, commandLanguagesOfTheDelivery, readingLanguagesOfTheDelivery,
+  fontFamiliesOfTheDelivery, levarFontesParaEntrega,
 } from '../scripts/heavy-into-the-delivery.mjs';
 import { deliveryPath, heavyAtBoot, HEAVY_FILES } from '../app/js/platform/heavy.js';
 import { commandsLanguageOf, readingLanguageOf } from '../app/js/platform/heavy-catalogue.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
+/** The engine's font catalogue, read as the delivery reads it. */
+const LIBRARY = JSON.parse(readFileSync(new URL('../app/js/platform/font-library.json', import.meta.url), 'utf8'));
 // the ids carry real group prefixes (`voz:kokoro`, `visao`): an id with no licence group is refused (heavy-licences test)
 const ENTRADAS = [
   { id: 'voz:kokoro:teste', url: 'https://huggingface.co/x/resolve/main/voz.onnx', sha256: hash('voz') },
@@ -164,7 +167,7 @@ describe('the script, reachable by a cartridge', () => {
   });
 
   it('🔴 [Right] Kokoro enters a delivery only with `--kokoro`, in any position (ADR-0216 §3)', () => {
-    const semBase = (a) => { const { base, ...resto } = argumentosDaEntrega(a, {}); return resto; };
+    const semBase = (a) => { const { base, fonts, ...resto } = argumentosDaEntrega(a, {}); return resto; };
     expect([semBase(['dist']), semBase(['--kokoro', 'dist']), semBase(['dist', '--kokoro'])])
       .toEqual([{ destino: 'dist', kokoro: false, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false }, { destino: 'dist', kokoro: true, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false },
         { destino: 'dist', kokoro: true, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false }]);
@@ -172,7 +175,7 @@ describe('the script, reachable by a cartridge', () => {
   });
 
   it('🔴 [Right] the spoken languages are named one by one, and a flag never eats the delivery folder', () => {
-    const semBase = (a) => { const { base, ...resto } = argumentosDaEntrega(a, {}); return resto; };
+    const semBase = (a) => { const { base, fonts, ...resto } = argumentosDaEntrega(a, {}); return resto; };
     expect(semBase(['dist', '--commands', 'pt', '--commands', 'es']))
       .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: ['pt', 'es'], libras: false, librasTexts: [], librasSetup: false });
     // ⚠️ AND WITH THE FLAG FIRST, which is the only position that can see its VALUE being taken for the folder: `--base` had
@@ -318,12 +321,89 @@ describe('the script, reachable by a cartridge', () => {
     expect(argumentosDaEntrega(['dist'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' }).base).toBe('https://espelho.exemplo');
     const comFlag = argumentosDaEntrega(['dist', '--base', 'D:\\lfs', '--kokoro'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' });
     expect(comFlag, 'the flag must beat the environment, and the folder must not be eaten by it')
-      .toEqual({ destino: 'dist', kokoro: true, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false, base: 'D:\\lfs' });
+      .toEqual({ destino: 'dist', kokoro: true, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false, fonts: [], base: 'D:\\lfs' });
     // ⚠️ AND WITH THE FLAG FIRST: the case above cannot see the value being taken for the folder, because the folder was read
     // before it. A mutation that forgot to skip the value survived exactly here.
     expect(argumentosDaEntrega(['--base', 'D:\\lfs', 'dist'], {}), 'the base\'s value was taken for the delivery folder')
-      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false, base: 'D:\\lfs' });
+      .toEqual({ destino: 'dist', kokoro: false, reading: [], commands: [], libras: false, librasTexts: [], librasSetup: false, fonts: [], base: 'D:\\lfs' });
   });
+
+  it('🔴 [Right] `--fonts` is repeatable, each value a family or a list, and its value never eats the folder (ADR-0255)', () => {
+    expect(argumentosDaEntrega(['--fonts', 'Lato,Press Start 2P', 'dist', '--fonts', 'Cookie'], {}).fonts)
+      .toEqual(['Lato,Press Start 2P', 'Cookie']);
+    expect(argumentosDaEntrega(['--fonts', 'Lato', 'dist'], {}).destino, 'the family was read as the delivery folder').toBe('dist');
+    expect(argumentosDaEntrega(['dist'], {}).fonts, 'a delivery asked for no font and got some').toEqual([]);
+    expect(fontFamiliesOfTheDelivery(['Lato,Press Start 2P', 'Cookie'], LIBRARY)).toEqual(['Lato', 'Press Start 2P', 'Cookie']);
+    expect(fontFamiliesOfTheDelivery(['all'], LIBRARY)).toEqual(Object.keys(LIBRARY.families));
+    expect(fontFamiliesOfTheDelivery(['none'], LIBRARY)).toEqual([]);
+    expect(() => fontFamiliesOfTheDelivery(['Lato,Merriweather'], LIBRARY), 'a family the library does not hold was carried as nothing')
+      .toThrow(/--fonts Merriweather: the engine's font library has no such family/);
+  });
+});
+
+/*
+ * THE FONT LIBRARY INTO THE DELIVERY (ADR-0255): a declared family's faces are checked against the ENGINE's catalogue — not the
+ * mirror's word — and written where the page asks for them, with the family's licence text and notice beside them.
+ */
+describe('the font library, put into the delivery by the build', () => {
+  const FONT_DIR = join(process.cwd(), 'app', 'public', 'vendor', 'fonts');
+  const bytes = readFileSync(join(FONT_DIR, 'lexend-400.woff2'));
+  // a fake library of one family, whose one face is a real font of the package (its `name` table is what the notice is read from)
+  const library = { mirror: 'https://lfs.example/fonts', ranges: {},
+    families: { Lexend: { folder: 'lexend', licence: 'OFL-1.1', faces: [{ file: 'lexend-400.woff2', weight: '400', style: 'normal', bytes: bytes.length, sha256: hash(bytes) }] } } };
+  const mirrorFolder = () => {
+    const base = mkdtempSync(join(tmpdir(), 'lfs-'));
+    mkdirSync(join(base, 'fonts', 'lexend'), { recursive: true });
+    writeFileSync(join(base, 'fonts', 'lexend', 'lexend-400.woff2'), bytes);
+    return base;
+  };
+  const fromBase = (url, base) => `${base}/fonts${url.slice(library.mirror.length)}`;
+
+  it('🔴 [Right] each face is written where the page asks for it, checked, with the family\'s licence and notice beside it', async () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    const base = mirrorFolder();
+    try {
+      const r = await levarFontesParaEntrega({ destino, families: ['Lexend'], library, deliveryPath, base, fonteDe: fromBase });
+      expect(r.ok, JSON.stringify(r.linhas)).toBe(true);
+      const at = join(destino, 'heavy', 'lfs.example', 'fonts', 'lexend');
+      expect(readFileSync(join(at, 'lexend-400.woff2')).equals(bytes)).toBe(true);
+      expect(readFileSync(join(at, 'OFL-1.1.txt'), 'utf8')).toContain('SIL OPEN FONT LICENSE Version 1.1');
+      expect(readFileSync(join(at, 'NOTICE.txt'), 'utf8')).toContain('Copyright 2019 The Lexend Project Authors');
+    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] a TAMPERED face is not written, its family gets no notice, and the run reports failure', async () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    const base = mirrorFolder();
+    try {
+      const tampered = Buffer.from(bytes); tampered[tampered.length - 1] ^= 0xff;
+      writeFileSync(join(base, 'fonts', 'lexend', 'lexend-400.woff2'), tampered);
+      const r = await levarFontesParaEntrega({ destino, families: ['Lexend'], library, deliveryPath, base, fonteDe: fromBase });
+      expect(r.ok, 'a tampered font was accepted').toBe(false);
+      expect(r.linhas[0].error).toMatch(/sha256 mismatch/);
+      // the tampered file is the one line: a family not delivered whole is not then asked for its notice, which would fail again
+      expect(r.linhas.filter((l) => l.outcome === 'falhou').length, 'a follow-on failure buried the cause').toBe(1);
+      const at = join(destino, 'heavy', 'lfs.example', 'fonts', 'lexend');
+      expect(existsSync(join(at, 'lexend-400.woff2')), 'the tampered bytes were written').toBe(false);
+      expect(existsSync(join(at, 'NOTICE.txt')), 'a family not delivered whole got a notice').toBe(false);
+    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(base, { recursive: true, force: true }); }
+  });
+
+  it('📌 [Boundary] a face already in the delivery with its pinned hash is not fetched again', async () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    try {
+      const at = join(destino, 'heavy', 'lfs.example', 'fonts', 'lexend');
+      mkdirSync(at, { recursive: true });
+      writeFileSync(join(at, 'lexend-400.woff2'), bytes);
+      const r = await levarFontesParaEntrega({ destino, families: ['Lexend'], library, deliveryPath,
+        fetch: () => { throw new Error('fetched again'); } });
+      expect(r.linhas.map((l) => l.outcome)).toEqual(['ja-tinha']);
+      expect(existsSync(join(at, 'NOTICE.txt'))).toBe(true);
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+});
+
+describe('the script\'s last step, the usage', () => {
 
   it('📌 [Boundary] run as a program without a destination, it stops with the usage — and never starts downloading', () => {
     const fora = mkdtempSync(join(tmpdir(), 'cartucho-'));
@@ -349,6 +429,12 @@ describe('the script, reachable by a cartridge', () => {
 //   N5 run detection by the shim's name                  🔴 stops with the usage (a direct `node` run is not recognised)
 //   N6 `--kokoro` read as always on                      🔴 only with `--kokoro`
 //   N7 the flag taken as the folder                      🔴 only with `--kokoro`
+//   (2026-09-27, ADR-0255 — the font library, each applied by script and restored from a copy by sha256)
+//   D1 the sha256 check skipped                          🔴 not written on mismatch · a mirror of other bytes · a TAMPERED face
+//   D2 a family not delivered whole asked for its notice 🔴 a TAMPERED face (a follow-on failure buried the cause) — SURVIVED
+//      first: the notice cannot be read from a missing file anyway, so the case now holds the report's single cause
+//   D3 an unknown family carried as nothing, in silence  🔴 `--fonts` is repeatable … refused by name
+//   D4 a face already delivered fetched again            🔴 a face already in the delivery is not fetched again
 //   C1 no `--commands` carries no language (the old default)   🔴 the pt, en and es models
 //   C2 no `--commands` carries one language                    🔴 the pt, en and es models
 //   C3 an explicit `--commands` list does not narrow           🔴 the flag narrows

@@ -89,6 +89,10 @@ const DECLARADAS = {
   'https://lfs-oinclusionista.jrocha.dev.br/vosk-models': 'THE MIRROR ABOVE, the three command models — alphacephei\'s small '
     + 'ones (Apache-2.0) repacked deterministically as the `.tar.gz` that build loads. 31–39 MiB a language, and a device asks '
     + 'for the child\'s',
+  'https://lfs-oinclusionista.jrocha.dev.br/fonts': 'THE MIRROR ABOVE, the font library (ADR-0255): one folder per family, '
+    + 'catalogued with each face\'s sha256 in `platform/font-library.json`. The path a local base serves it under, never a fetch: '
+    + '`heavy-mirror` is pure. The BUILD copies the families a cartridge declares into the delivery (`--fonts`), and the page asks '
+    + 'for them at `heavy/` on its own origin',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/heavy`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };
@@ -149,6 +153,9 @@ const TOCAM_NA_REDE = {
     + 'that points its worker threads at the delivery too (ADR-0216): a worker left to itself asks the CDN the library was '
     + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '
     + 'The voice and the reading both load it from here, so the rule is written once',
+  'platform/font-library.ts': 'LOCAL. `import(\'./font-library.json\')` — the font library\'s catalogue, a chunk of this same '
+    + 'package loaded only when a cartridge declares a family in `uses.fonts` (ADR-0255). The faces it names are asked for at '
+    + '`heavy/` on the page\'s own origin, by `@font-face` rules and by `platform/heavy`, never at the mirror',
   'platform/vosk-runtime.ts': 'LOCAL. The host\'s `fetch`, lent by the root (ADR-0232 D4), reads the command MODEL\'S archive — '
     + 'the same `heavy/` address on the page\'s own origin the recogniser\'s worker opens, answered from the checked cache — only '
     + 'to learn the words the model knows (ADR-0194 §4, `platform/vosk-vocabulary`); the read stops once the word list is read',

@@ -181,13 +181,15 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     create: (tag) => list.ownerDocument.createElement(tag),
   });
 
-  function setFont(k: string, announce = false): void {
+  function setFont(k: string, announce = false): void { choose(k, announce, true); }
+
+  function choose(k: string, announce: boolean, persist: boolean): void {
     const it = FONT_BY_KEY[k];
     // The SAME function as the other two readings: a face the list shows clickable has to be accepted here, and one it
     // shows grey has to be refused. Three answers to the same question drift.
     if (!it || !faceAvailable(it, ctx.fontInstalled)) return;
     fontKey = k;
-    persistFontKey(ctx.store, k);
+    if (persist) persistFontKey(ctx.store, k);
     const target = fontCssTarget(k, it);
     ctx.root.dataset.fonte = target.font;
     /*
@@ -271,7 +273,14 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     ctx.srSay(t('sr.typo.reset', { fam: FONT_BY_KEY[DEFAULT_FONT_KEY].fam }));
   });
 
-  setFont(fontKey, false); // applies the persisted font at boot
+  /*
+   * Applies the persisted font at boot. 📌 A stored face THIS page does not have — a library family its game did not declare
+   * (ADR-0255) — is drawn as the default and NOT written over: the choice stays stored for a game that declares the family, and
+   * `getFontKey` answers the face really drawn instead of one the page cannot draw.
+   */
+  const stored = FONT_BY_KEY[fontKey];
+  const drawable = !!stored && faceAvailable(stored, ctx.fontInstalled);
+  choose(drawable ? fontKey : DEFAULT_FONT_KEY, false, drawable);
 
   return { render, setFont, getFontKey: () => fontKey };
 }

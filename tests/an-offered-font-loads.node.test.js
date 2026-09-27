@@ -24,14 +24,19 @@ const ler = (...p) => readFileSync(join(RAIZ_REPO, ...p), 'utf8');
 const CSS = ler('app', 'public', 'vendor', 'fonts.css');
 /** The families `fonts.css` declares — what the browser actually knows how to draw. */
 const DECLARADAS = new Set([...CSS.matchAll(/font-family:\s*['"]?([^;'"]+)/g)].map((m) => m[1].trim()));
+/**
+ * The font library's families (ADR-0255): the engine writes their `@font-face` itself, pointing at `heavy/`, for the families a
+ * cartridge declares — `libraryFaceRules` over this catalogue, measured in `font-library.node.test.js`.
+ */
+const LIBRARY = JSON.parse(ler('app', 'js', 'platform', 'font-library.json'));
 
 /**
  * Every catalogue item, marked with whether it is OFFERABLE (not `.off`), with the families of its stack: a stack loads when
  * ANY of them is declared — the ronde's three are never packaged and it loads through Cookie, the last (ADR-0154).
  */
 const ITENS = FONT_GROUPS.flatMap((g) => g.items.map((it) => ({ fam: it.fam, fams: faceFamilies(it), oferecivel: !it.off })));
-/** Does any family of this item's stack have an `@font-face`? */
-const carrega = (i) => i.fams.some((f) => DECLARADAS.has(f));
+/** Does any family of this item's stack have an `@font-face` — the package's, or the one the engine writes for a library family? */
+const carrega = (i) => i.fams.some((f) => DECLARADAS.has(f) || LIBRARY.families[f]);
 
 /**
  * 🔴 AND THE SHEET MUST BE ABLE TO CHANGE ITS MIND. This file guards that every face offered in the menu loads; the case below
@@ -60,7 +65,7 @@ describe('o índice das fontes pode mudar de ideia (issue #73, mesma classe)', (
     expect(REGRAS['/vendor/fonts.css'], 'o índice das fontes não tem regra própria').toBeTruthy();
     expect(REGRAS['/vendor/fonts.css'], 'o índice ficou congelado por um ano').not.toContain('immutable');
     expect(REGRAS['/vendor/fonts.css']).toContain('no-cache');
-    expect(REGRAS['/vendor/fonts/*'], 'as 346 woff2 perderam o ano, e essas o nome identifica').toContain('immutable');
+    expect(REGRAS['/vendor/fonts/*'], 'as woff2 perderam o ano, e essas o nome identifica').toContain('immutable');
   });
 
   it('🔴 [Zero] nenhuma regra apanha a folha E as fontes ao mesmo tempo', () => {
@@ -76,6 +81,7 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
     // catalogue or an unreadable sheet give ZERO, and that is what it catches; the real guards are the cases below.
     expect(ITENS.length).toBeGreaterThanOrEqual(12);
     expect(DECLARADAS.size).toBeGreaterThanOrEqual(12);
+    expect(Object.keys(LIBRARY.families).length).toBeGreaterThan(150);
   });
 
   it('🔴 [Zero] NENHUMA face declarada fica ÓRFÃ — o sentido que faltava a este crivo', () => {
@@ -94,11 +100,11 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
       // engine imposes where the digit's shape is the subject matter (ADR-0010, pillar 5).
       'Atkinson Hyperlegible Mono': '--font-math (matemática)',
     });
-    // Since the ADR-0176 erratum («Engine empacota tudo por enquanto») a declared face is orphan when the typographic
-    // catalogue does not hold it as `ativo` — the catalogue, not the reading menu, says what exists; layer B faces are
-    // packaged for ornament and never offered in the reading menu (R1).
-    const orfas = [...DECLARADAS].filter((f) => !ATIVAS.has(f) && !(f in ALCANCADAS_POR_VARIAVEL));
-    expect(orfas, 'a declared face the typographic catalogue does not hold as active: bytes in the precache nobody can use').toEqual([]);
+    // A declared face is orphan when the typographic catalogue does not hold it as `ativo` — the catalogue, not the reading
+    // menu, says what exists (ADR-0176). Since ADR-0255 the package holds only the engine's faces and the library holds the
+    // rest, and the same rule holds for both: a library family that is not `ativo` is bytes a delivery carries for nothing.
+    const orfas = [...DECLARADAS, ...Object.keys(LIBRARY.families)].filter((f) => !ATIVAS.has(f) && !(f in ALCANCADAS_POR_VARIAVEL));
+    expect(orfas, 'a face the typographic catalogue does not hold as active: bytes nobody can use').toEqual([]);
     expect(ATIVAS.size, 'the catalogue was not read — the case would measure nothing').toBeGreaterThan(100);
 
     // 📌 THE PAIR, without which the exception list would be the open door: each exception must REALLY be declared. An

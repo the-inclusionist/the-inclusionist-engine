@@ -157,6 +157,16 @@ export type FontItem = {
 };
 /** A catalogue group. `g` holds a KEY too ('font.group.sans'), for the same reason. */
 export type FontGroup = { g: string; items: FontItem[] };
+/**
+ * THE TYPOGRAPHY PANEL'S KIT — every face a panel may list, grouped. The engine mounts no panel since ADR-0151 («quem escolhe a
+ * tipografia é o jogo»), and the kit stays for whoever mounts one (`ui/settings-typo`), because the eleventh button's cycle and
+ * the boot's stored choice go through its writer.
+ *
+ * 📌 MOST OF THESE FACES ARE THE FONT LIBRARY'S, not the engine's (ADR-0255): only the cycle's faces are packaged. A library face
+ * reaches a page when its cartridge declares the family in `uses.fonts` and the delivery carries it, so `faceAvailable` answers
+ * for it through the host's detector — a row whose family nobody declared is shown disabled, never offered and then drawn in the
+ * system font. Keeping the rows is what lets a game that declares its families offer them with no list of its own.
+ */
 export const FONT_GROUPS: FontGroup[] = [
   {g:'font.group.sans', items:[
     {k:'atkinson', id:'atkinson_hyperlegible',   fam:'Atkinson Hyperlegible', fb:'sans', d:'font.desc.atkinson'},
@@ -208,8 +218,8 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'literata', id:'literata',    fam:'Literata',       fb:'serif'},
     {k:'sourceserif', id:'source_serif_4', fam:'Source Serif 4', fb:'serif'},
     {k:'newsreader', id:'newsreader',  fam:'Newsreader',     fb:'serif'},
-    // Five READING faces: serifs for running text, like the three above.
-    {k:'merriweather', id:'merriweather', fam:'Merriweather',  fb:'serif'},
+    // Four READING faces: serifs for running text, like the three above. (Merriweather left: its author's original is a 4.5 MB
+    // variable font, and the library carries only originals of a reserved name — ADR-0254.)
     {k:'lora', id:'lora',        fam:'Lora',           fb:'serif'},
     {k:'spectral', id:'spectral',    fam:'Spectral',       fb:'serif'},
     {k:'domine', id:'domine',      fam:'Domine',         fb:'serif'},
@@ -339,20 +349,31 @@ export function familyStack(fam: string): string {
 }
 
 /**
+ * THE FACES THE ENGINE DRAWS WITH ITSELF, by key — the eleventh button's cycle over EVERY hand a tag can pick (ADR-0149,
+ * ADR-0150). With the mathematics face (`MATHEMATICS_FAMILY`) they are the only faces packaged and precached (ADR-0255 §1); every
+ * other face of the kit is the font library's. `tests/what-fonts-the-package-carries.node.test.js` holds `fonts.css` to this list.
+ */
+export const ENGINE_FACE_KEYS: readonly string[] = Object.freeze([...new Set([
+  'andika', 'atkinson', 'lexend', ...Object.values(HAND_BY_COUNTRY).flat(), ...Object.values(HAND_BY_LANGUAGE).flat(),
+])]);
+/** The face the engine draws mathematics in (`--font-math` in `style.css`): packaged, never a typography choice (ADR-0012). */
+export const MATHEMATICS_FAMILY = 'Atkinson Hyperlegible Mono';
+
+/**
  * CAN THIS FACE BE USED NOW? — `off` stops being a sentence and becomes a CONDITION.
  *
- * An `off` face stays disabled WHILE none of its families is present (ADR-0012's «enquanto»), and becomes available the
- * instant the adult installs one the message names. No catalogue face uses it today — the ronde, which did, ends its stack
- * in a packaged face since ADR-0154 — and the mechanism stays for a face that cannot ship with a fallback.
+ * An engine face is always there: it is packaged and precached (ADR-0255 §1). Any other face is used WHILE one of its families
+ * is present — a library family its cartridge declared in `uses.fonts` (the root's detector answers for those), or, for an `off`
+ * face, one the adult installed from the ones its message names (ADR-0012's «enquanto»). The ronde's stack ends in Cookie, a
+ * library family, so it is available where the game declares Cookie (ADR-0154, ADR-0255).
  *
  * ⚠️ THE DETECTOR IS INJECTED, and `document.fonts` is never read here: this module is the catalogue, it runs in node in
  * the gates, and reading a browser global here would be a boot waiting to crash against an injected document.
- * 📌 And the DEFAULT is not installed, which is safe for a reason that does not hold for every default in this repository:
- * with no detector the option stays disabled WITH the message, and the message tells the adult exactly what to do. The
- * silence decides nothing against the child — it keeps a state that already existed and is actionable.
+ * 📌 And the DEFAULT is not present, which is safe: with no detector a library row stays disabled, never offered and then drawn
+ * in the system font, and an `off` row keeps the message that tells the adult exactly what to do.
  */
 export function faceAvailable(it: FontItem, installed?: (family: string) => boolean): boolean {
-  if (!it.off) return true;
+  if (!it.off && ENGINE_FACE_KEYS.includes(it.k)) return true;
   return !!installed && faceFamilies(it).some((f) => installed(f));
 }
 
@@ -363,6 +384,8 @@ export const OFERECIVEIS: FontItem[] = FONT_GROUPS.flatMap((g) => g.items).filte
  * module wrote into at import, which the code-health measure reads as module state. The last item with a key wins, as it did.
  */
 export const FONT_BY_KEY: Record<string, FontItem> = Object.fromEntries(FONT_GROUPS.flatMap((g) => g.items.map((it) => [it.k, it])));
+/** The families `vendor/fonts.css` declares — the engine's faces and the mathematics face. A cartridge never declares these. */
+export const ENGINE_FAMILIES: ReadonlySet<string> = new Set([...ENGINE_FACE_KEYS.map((k) => FONT_BY_KEY[k]!.fam), MATHEMATICS_FAMILY]);
 
 /** Narrow store shape these need — lets a caller inject a fake without touching real storage. */
 export interface FontStore { get(key: string, fallback: string | null): string | null; set(key: string, v: string): void; }

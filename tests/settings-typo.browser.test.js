@@ -139,7 +139,8 @@ describe('ui/settings-typo', () => {
   });
 
   it('[Edge-case] fonte custom (fora do trio canônico) grava --font-custom com o fallback certo', () => {
-    const ctx = fullCtx();
+    // Literata is a LIBRARY face (ADR-0255): usable where its game declared the family, which the root's detector answers
+    const ctx = { ...fullCtx(), fontInstalled: (family) => family === 'Literata' };
     const api = initSettingsTypo(ctx);
     api.setFont('literata', false);
     expect(document.documentElement.dataset.fonte).toBe('custom');
@@ -288,12 +289,12 @@ describe('ui/settings-typo', () => {
     expect(comNota.querySelector('button').getAttribute('aria-label')).toContain(nota);
   });
 
-  it('🔴 [Right] the ronde row is ENABLED, and its label draws in the whole stack down to Cookie (ADR-0154)', () => {
-    const api = initSettingsTypo(fullCtx());
+  it('🔴 [Right] the ronde row is ENABLED where its game declared Cookie, and its label draws in the whole stack down to Cookie (ADR-0154, ADR-0255)', () => {
+    const api = initSettingsTypo({ ...fullCtx(), fontInstalled: (family) => family === 'Cookie' });
     api.render();
     const botao = $('#typo-list').querySelector('button[data-font="ronde"]');
     expect(botao, 'the ronde left the list').not.toBeNull();
-    expect(botao.disabled, 'the ronde is locked again — Cookie answers on every device').toBe(false);
+    expect(botao.disabled, 'the ronde is locked although its game declared Cookie').toBe(false);
     const rotulo = botao.closest('.ctrl-row').querySelector(':scope > span');
     // the browser normalises the quotes; what matters is that each family is its own entry and Cookie is the last
     const valor = rotulo.style.fontFamily;

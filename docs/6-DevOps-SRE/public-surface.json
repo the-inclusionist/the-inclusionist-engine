@@ -745,6 +745,19 @@
     "FlashSamplerCtx",
     "sampleFlashes"
   ],
+  "platform/font-library.ts": [
+    "FontLibrary",
+    "LibraryFace",
+    "LibraryFamily",
+    "LibraryFontsPorts",
+    "LibraryFontsStarted",
+    "declaredFamilies",
+    "libraryFaceId",
+    "libraryFaceRules",
+    "libraryFiles",
+    "startLibraryFonts",
+    "unknownFamilyLine"
+  ],
   "platform/guide-intensity.ts": [
     "FAR_CUT",
     "FAR_VOL",
@@ -1259,6 +1272,8 @@
     "BASE_EM_PX",
     "CYCLE_START",
     "DEFAULT_FONT_KEY",
+    "ENGINE_FACE_KEYS",
+    "ENGINE_FAMILIES",
     "FONT_BY_KEY",
     "FONT_GROUPS",
     "FontGroup",
@@ -1266,6 +1281,7 @@
     "FontRole",
     "FontStore",
     "HANDWRITING_SCALE",
+    "MATHEMATICS_FAMILY",
     "OFERECIVEIS",
     "TypographyStep",
     "faceAvailable",

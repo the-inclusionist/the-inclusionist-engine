@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// WHAT TRAVELS INSIDE THE PACKAGE — the gates ADR-0108 §confirmation owed.
+// WHAT TRAVELS INSIDE THE PACKAGE — the engine's own faces, and nothing else (ADR-0255; the gates ADR-0108 §confirmation owed).
 //
 // ========================= WHY THE PACKAGE DESERVES A SIEVE =========================
 // ⚠️ EVERY FACE THAT TRAVELS IS A DOWNLOAD A SCHOOL PAYS ON FIRST LOAD, on the machines pillar 1 of ADR-0010 names:
-// public-school Positivo and Chromebook. ADR-0012 cut the roster «uma segunda vez, por ENTREGA», with that reason
-// written; ADR-0108 fixed the Playwrite list. A delivery list kept by memory is a package that grows by itself, and
-// nobody notices because each face alone looks cheap.
+// public-school Positivo and Chromebook. ADR-0255 cut the package to the faces the engine draws with ITSELF — the typography
+// button's cycle (ADR-0149, ADR-0150) and the mathematics face; every other family lives in the font library, delivered in
+// `heavy/` when a cartridge declares it. A package kept by memory grows by itself, and nobody notices because each face alone
+// looks cheap — which is how it reached 214 families.
 //
 // ========================= THE ANCHOR IS `fonts.css`, NOT THE FOLDER =========================
 // ⚠️ The folder is not the truth — a `.woff2` without `@font-face` is usable by no browser, and an `@font-face` pointing
@@ -13,13 +14,9 @@
 // directions have a case here.
 //
 // ========================= WHAT IS ASSERTED =========================
-//   · the PROHIBITION: no Playwrite beyond the declared ones, nothing of the Ronde, no closed Fontshare face;
-//   · a FLOOR that only rises: the eight of ADR-0108 have arrived, and the floor cannot go back without someone writing
-//     it here by hand — this repository's «teto que só desce», the other way round;
-//   · no face OFFERED without a way to get it: bundled, or `off` with an actionable remedy (the fourth gate, below).
-//
-// 📌 The Ronde option is a `geral` entry whose stack ends in the packaged Cookie (ADR-0154), with the `font.notice.ronde`
-// key in all three languages: a `geral` entry RENDERS in the typography panel, while a `caligrafica` one would be invisible.
+//   · the package is EXACTLY the engine's faces (`ENGINE_FAMILIES`), and every hand the cycle can pick for any tag is in it;
+//   · the PROHIBITION: nothing of the Ronde, no closed Fontshare face, Merriweather nowhere;
+//   · no face OFFERED without a way to get it: packaged, in the library, or `off` with an actionable remedy.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -28,7 +25,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // The catalogue and the three dictionaries, read from the MODULES and not a copy — the sentence the child and the adult
 // read is the one here, and asserting it against a literal beside it would measure the copy.
-import { FONT_GROUPS, faceAvailable, faceFamilies } from '../app/js/ui/fonts.js';
+import {
+  FONT_GROUPS, ENGINE_FAMILIES, ENGINE_FACE_KEYS, FONT_BY_KEY, MATHEMATICS_FAMILY, faceAvailable, faceFamilies, handsForTag,
+} from '../app/js/ui/fonts.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
@@ -36,45 +35,20 @@ import es from '../app/js/i18n/es.js';
 const VENDOR = fileURLToPath(new URL('../app/public/vendor/', import.meta.url));
 const CSS = readFileSync(join(VENDOR, 'fonts.css'), 'utf8');
 const NA_PASTA = readdirSync(join(VENDOR, 'fonts'));
+const LIBRARY = JSON.parse(readFileSync(new URL('../app/js/platform/font-library.json', import.meta.url), 'utf8'));
+const TYPE_CATALOGUE = JSON.parse(readFileSync(new URL('../research/catalogo_tipografico.json', import.meta.url), 'utf8'));
 
 /**
- * THE ONES THAT TRAVEL. Written as they appear in the Google Fonts family name.
- *
- * ⚠️ The list's shape IS the argument: it changed TWICE by the Dev's decision — so the two layers are written apart,
- * instead of merged into a list of fifteen that says where none came from.
- *
- * 📌 THE ORIGINAL EIGHT (ADR-0108 §2) are the Americas with BOTH American hands, because the US teaches two and choosing
- * one would be choosing for the child.
- *
- * 🔴 THE SEVEN NEW ONES (ADR-0150) enter by a different rule, and revoke ADR-0108's «nada de empacotar»: three are the
- * FALLBACK BY LANGUAGE — a country without a hand of its own gets the coloniser's, so Spain, Portugal and England cover
- * EVERY missing country —, two were asked for by name (Cuba, Peru), and two are the second hand of a country that
- * teaches two, exactly like US Trad/Modern.
- *
- * ⚠️ AND THE SIEVE STILL ASKS BY PREFIX, which keeps it alive: a sixteenth («Playwrite IE», «Playwrite NG», or any
- * `Guides`) is caught without having to be predicted by name.
+ * EVERY TAG THE CYCLE CAN MEET, as a country and as a language: `handsForTag` reads the region first and then the language, so
+ * a hand is reachable through a region the table names or a language it falls back by. Built from the TAGS a child's browser
+ * can report, not from the table the function reads — a hand added to the table without a file is caught through its tag.
  */
-const AS_OITO = Object.freeze([
-  'Playwrite BR', 'Playwrite US Trad', 'Playwrite US Modern', 'Playwrite CA',
-  'Playwrite MX', 'Playwrite AR', 'Playwrite CL', 'Playwrite CO',
-]);
-const AS_SETE_NOVAS = Object.freeze([
-  'Playwrite ES', 'Playwrite PT', 'Playwrite GB J',   // the fallbacks by language
-  'Playwrite CU', 'Playwrite PE',                      // asked for by name
-  'Playwrite ES Deco', 'Playwrite GB S',               // the second hand of a country that teaches two
-]);
-const AS_EMPACOTADAS = Object.freeze([...AS_OITO, ...AS_SETE_NOVAS]);
+const TAGS = ['pt-BR', 'pt-PT', 'pt', 'en-US', 'en-GB', 'en', 'es-ES', 'es-MX', 'es-AR', 'es-CL', 'es-CO', 'es-CU', 'es-PE', 'es',
+  'en-CA', 'fr-CA', 'pt-AO', 'es-BO', 'en-AU'];
 
-/**
- * Since the ADR-0176 erratum («Engine empacota tudo por enquanto») the package is every `ativo` family of the typographic
- * catalogue, the Guides included; the fifteen above stay as the ones the reading menu grew from.
- */
-const ATIVAS_DO_CATALOGO = Object.freeze(new Set(JSON.parse(readFileSync(new URL('../research/catalogo_tipografico.json', import.meta.url), 'utf8'))
-  .fontes.filter((f) => f.status === 'ativo').map((f) => f.familia)));
-
-/** The three faces of the French ronde. NONE can be bundled — they are free for PERSONAL use only. */
+/** The ronde's three faces. NONE can be bundled — they are free for PERSONAL use only (ADR-0012). */
 const A_RONDE = Object.freeze(['Ronde Script', 'OPTIFrench-Script', 'Merveille']);
-/** The ronde's packaged fallback (ADR-0154): OFL, one weight, shipped unmodified as Google Fonts serves it. */
+/** The ronde's fallback (ADR-0154): a library family since ADR-0255. */
 const RONDE_FALLBACK = 'Cookie';
 
 /* ---------- the pure halves, so fixtures can drive them ---------- */
@@ -87,19 +61,6 @@ export function familiasDe(css) {
 /** The files the `src:` refer to, without the folder. */
 export function referidosPor(css) {
   return [...new Set([...css.matchAll(/url\('fonts\/([^']+)'\)/g)].map((m) => m[1]))];
-}
-
-/**
- * Is a family Playwrite? Asked by PREFIX and not by equality, on purpose: that is how an undeclared one («Playwrite IE»,
- * «Playwrite NG») is caught without having to be predicted by name.
- */
-export function ehPlaywrite(familia) {
-  return /^playwrite\b/i.test(familia.trim());
-}
-
-/** The packaged Playwrite families that are NOT `ativo` in the typographic catalogue (ADR-0176). */
-export function playwriteForaDoCatalogo(familias, ativas = ATIVAS_DO_CATALOGO) {
-  return familias.filter((f) => ehPlaywrite(f) && !ativas.has(f.trim()));
 }
 
 /**
@@ -132,53 +93,69 @@ export function sinaisDeFontshareFechada(familias, ficheiros) {
 
 const familias = familiasDe(CSS);
 const referidos = referidosPor(CSS);
+const LIBRARY_FAMILIES = Object.keys(LIBRARY.families);
+const LIBRARY_FILES = Object.values(LIBRARY.families).flatMap((f) => f.faces.map((x) => x.file));
 
-describe('ADR-0108 · o que viaja dentro do pacote', () => {
+describe('ADR-0255 · the package carries the engine\'s own faces, and nothing else', () => {
   it('⚠️ [Interface] o crivo está VIVO: lê famílias e ficheiros de verdade', () => {
     // The vacuum case, first for the usual reason: without it, the absence cases below would pass for having nothing to
     // examine. The proof is real code — the faces the repository bundles.
-    expect(NA_PASTA.length, 'a pasta de fontes veio vazia — o caminho morreu').toBeGreaterThan(30);
-    expect(referidos.length, 'nenhum `src` foi lido — a regex morreu').toBeGreaterThan(30);
+    expect(NA_PASTA.length, 'a pasta de fontes veio vazia — o caminho morreu').toBeGreaterThan(15);
+    expect(referidos.length, 'nenhum `src` foi lido — a regex morreu').toBeGreaterThan(15);
     expect(familias, 'a família âncora não foi lida').toContain('Atkinson Hyperlegible');
+    expect(LIBRARY_FAMILIES.length, 'the library was not read').toBeGreaterThan(150);
   });
 
-  it('⚠️ [Zero] NO Playwrite outside the catalogue\'s active families travels in the package (ADR-0176 erratum)', () => {
-    expect(
-      playwriteForaDoCatalogo(familias),
-      'a packaged Playwrite the typographic catalogue does not mark `ativo`: the catalogue is the source of which fonts exist',
-    ).toEqual([]);
+  it('🔴 [Right] fonts.css declares EXACTLY the engine\'s faces — the cycle\'s and the mathematics face', () => {
+    expect([...familias].sort(), 'a family packaged that the engine does not draw with, or one it draws with and does not package')
+      .toEqual([...ENGINE_FAMILIES].sort());
+    expect(familias).toContain(MATHEMATICS_FAMILY);
+    // 📌 the pair: the engine's list is not empty by accident — the three reading faces and a hand at least
+    expect(ENGINE_FAMILIES.size).toBeGreaterThanOrEqual(5);
+  });
+
+  it('🔴 [Right] EVERY hand the cycle can pick, for any tag, is packaged — the typography button never reaches a missing face', () => {
+    const picked = [...new Set(TAGS.flatMap((tag) => handsForTag(tag)))];
+    expect(picked.length, 'no tag picked a hand — the list of tags died').toBeGreaterThan(10);
+    const missing = picked.map((k) => FONT_BY_KEY[k]?.fam ?? `(no catalogue entry for ${k})`).filter((fam) => !familias.includes(fam));
+    expect(missing, 'a hand the cycle can pick is not in the package: the button would draw the system cursive').toEqual([]);
+    // and ENGINE_FACE_KEYS holds every hand the table names, which is what `faceAvailable` trusts
+    for (const k of picked) expect(ENGINE_FACE_KEYS, `${k} is picked by the cycle but not an engine face`).toContain(k);
+  });
+
+  it('🔴 [Zero] no family is BOTH packaged and in the library — one home per family', () => {
+    expect(familias.filter((f) => LIBRARY.families[f])).toEqual([]);
+    expect(NA_PASTA.filter((n) => LIBRARY_FILES.includes(n)), 'a library file left in the package').toEqual([]);
   });
 
   it('⚠️ [Zero] NENHUMA face da ronde é empacotada — é uso PESSOAL, não distribuição', () => {
     expect(
-      sinaisDeRonde(familias, NA_PASTA),
-      'ronde no pacote: as três são gratuitas só para uso pessoal, e empacotá-las é distribuir o que não '
+      sinaisDeRonde([...familias, ...LIBRARY_FAMILIES], [...NA_PASTA, ...LIBRARY_FILES]),
+      'ronde no pacote ou na biblioteca: as três são gratuitas só para uso pessoal, e distribuí-las é distribuir o que não '
       + 'foi licenciado para distribuição (ADR-0012, mantido pelo ADR-0108 §3)',
     ).toEqual([]);
   });
 
-  it('🔴 [Zero] a Clash Display NÃO é empacotada — a ITF Free Font License proíbe distribuí-la (ADR-0150)', () => {
-    // ADR-0150 refused it «até a licença ser lida». It was read, and the wait became a refusal with a reason.
+  it('🔴 [Zero] a Clash Display NÃO é distribuída — a ITF Free Font License proíbe (ADR-0150)', () => {
     expect(
-      sinaisDeFontshareFechada(familias, NA_PASTA),
-      'face Closed Source da Fontshare no pacote: a ITF FFL §02 proíbe distribuí-la por repositório, aplicação '
-      + 'ou servidor público, e servi-la como fonte selecionável a terceiros — que é o que a engine faz',
+      sinaisDeFontshareFechada([...familias, ...LIBRARY_FAMILIES], [...NA_PASTA, ...LIBRARY_FILES]),
+      'face Closed Source da Fontshare no pacote ou na biblioteca: a ITF FFL §02 proíbe distribuí-la por repositório, '
+      + 'aplicação ou servidor público, e servi-la como fonte selecionável a terceiros',
     ).toEqual([]);
     // 📌 The pair: the detector SEES the family and the file, or the absence above would pass through blindness.
     expect(sinaisDeFontshareFechada(['Clash Display', 'Lexend'], ['clashdisplay-var.woff2', 'lexend-var.woff2']))
       .toEqual(['Clash Display', 'clashdisplay-var.woff2']);
   });
 
-  it('✅ [Boundary] o PISO das oito só sobe — hoje são OITO, e a decisão está entregue', () => {
-    // ⚠️ THIS IS THE CASE THAT TELLS THE TRUTH ABOUT THE STATE. A FLOOR records what has arrived and prevents going back:
-    // lowering it requires someone writing it here by hand.
-    const PISO = 8;
-    const presentes = familias.filter((f) => AS_OITO.includes(f.trim()));
-    expect(presentes.length, `o pacote PERDEU Playwrite: tinha ${PISO}, tem ${presentes.length}`)
-      .toBeGreaterThanOrEqual(PISO);
-    // ✅ The eight are delivered (one variable file per family), so the floor is EIGHT and asserted by equality: ADR-0108's
-    // decision is delivered, not only recorded.
-    expect(presentes.length, 'as oito são o piso: falta alguma').toBe(AS_OITO.length);
+  it('🔴 [Zero] Merriweather is NOWHERE — package, library, kit, dictionaries — and the catalogue says it left (ADR-0254)', () => {
+    expect(familias).not.toContain('Merriweather');
+    expect(LIBRARY.families.Merriweather, 'Merriweather entered the library').toBeUndefined();
+    expect(NA_PASTA.filter((n) => /merriweather/i.test(n))).toEqual([]);
+    expect(FONT_GROUPS.flatMap((g) => g.items).filter((it) => /merriweather/i.test(`${it.k} ${it.fam} ${it.id}`))).toEqual([]);
+    for (const d of [pt, en, es]) expect(Object.keys(d).filter((k) => /merriweather/i.test(k))).toEqual([]);
+    const entry = TYPE_CATALOGUE.fontes.find((f) => f.id === 'merriweather');
+    expect(entry.status, 'the typographic catalogue still holds Merriweather as active').toBe('removida');
+    expect(entry.motivo, 'removed with no reason written').toBeTruthy();
   });
 
   it('⚠️ [Interface] todo `@font-face` aponta para um ficheiro que EXISTE', () => {
@@ -195,75 +172,37 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
     expect(NA_PASTA.filter((n) => n.endsWith('.woff2') && !usados.has(n)), 'ficheiro empacotado que ninguém declara').toEqual([]);
   });
 
-  /* ===================== 🎯 ADR-0108'S FOURTH GATE, and it changed shape when measured =====================
+  /* ===================== 🎯 NO FACE IS OFFERED WITHOUT A WAY TO GET IT =====================
    *
-   * #87 asked for «a CHEGADA POR DOWNLOAD de uma face fora das oito». ⚠️ **Building a download mechanism would be a
-   * defect**, for three measured reasons, not laziness:
-   *
-   *   1. The game speaks **three languages** (`pt`, `en`, `es`), and ADR-0012 limits the roster by LANGUAGE: nobody can
-   *      ask for a face outside it.
-   *   2. An ON-DEMAND download is, in shape, a lazy fetch — a machine that never asked for that face does not have it,
-   *      and without a network nothing happens. It is what nothing-comes-from-outside accuses.
-   *   3. A gate over a mechanism whose TRIGGER cannot occur is born empty, and a gate that cannot turn red is one someone
-   *      switches off.
-   *
-   * 🎯 SO WHAT IS ASSERTED IS THE RULE THE DOWNLOAD WOULD BE A CONSEQUENCE OF, and it measures today's tree: **no face is
-   * OFFERED without a way to get it.** An undeclared Playwrite cannot enter the catalogue without a file or a remedy —
-   * and the day someone wants to add one, this case forces them to build its arrival BEFORE offering it, which is the
-   * right order.
-   *
-   * ⚠️ AND THIS IS NOT AN INVENTED RULE: it is the lesson `ui/fonts`' header records, paid for with entries that were
-   * `.off` WITHOUT A FILE — «o menu oferecia-as e ninguém as podia obter». The invariant has TWO legs (bundled, or `off`
-   * with an actionable remedy) and needs no third for system faces. */
-  it('🎯 [Right] NENHUMA face é oferecida sem forma de a obter — empacotada, ou `off` com remédio', () => {
+   * ADR-0108's fourth gate, reshaped by ADR-0255: a face of the kit is got by one of THREE legs — packaged (the engine's), in the
+   * font library (delivered where its game declares it), or `off` with a remedy the adult can act on. A face with none of the three
+   * is the `learningcurve` defect: the menu offers, the child chooses, and the browser falls to the next font with nothing saying so. */
+  it('🎯 [Right] NENHUMA face é oferecida sem forma de a obter — empacotada, na biblioteca, ou `off` com remédio', () => {
     const semSaida = [];
     for (const item of FONT_GROUPS.flatMap((g) => g.items)) {
-      const empacotada = faceFamilies(item).some((f) => familias.includes(f.trim()));
-      if (empacotada) continue;
-      // The other leg: `off` with a key that RESOLVES in all three dictionaries. An `off` without a message is the grey
-      // row that does not say what to do — the child loses the face and the adult does not know why.
+      const obtivel = faceFamilies(item).some((f) => familias.includes(f.trim()) || LIBRARY.families[f.trim()]);
+      if (obtivel) continue;
       const remedio = item.off && [pt, en, es].every((d) => typeof d[item.off] === 'string' && d[item.off].length > 8);
       if (!remedio) semSaida.push(`${item.k} («${item.fam}»)`);
     }
-    expect(
-      semSaida,
-      'face no catálogo que ninguém consegue obter: nem viaja no pacote, nem tem `off` com remédio nos três '
-      + 'idiomas. É o defeito da `learningcurve` a voltar — o menu oferece, a criança escolhe, e o navegador '
-      + 'cai na fonte seguinte da pilha sem nada o dizer. Se é uma Playwrite fora das oito, ela precisa da '
-      + 'CHEGADA antes da oferta (ADR-0108 §2).',
-    ).toEqual([]);
-
-    // 📌 THE PAIR, without which the case passes vacuously: if the catalogue empties or the CSS stops being read, the list
-    // of missing ones is empty for having nothing to measure. The same trap as the empty result.
-    expect(FONT_GROUPS.flatMap((g) => g.items).length, 'o catálogo esvaziou — o caso mediria o nada')
-      .toBeGreaterThanOrEqual(26);
-  });
-
-  it('[Right] a Playwrite the catalogue does not hold is refused — and one it holds as active is not', () => {
-    // «Playwrite IE» was outside the ADR-0108 package; the catalogue marks it active, so it travels now. A name the
-    // catalogue does not have is still caught by its prefix.
-    expect(playwriteForaDoCatalogo(['Playwrite BR', 'Playwrite IE', 'Playwrite ZZ'])).toEqual(['Playwrite ZZ']);
-    expect(playwriteForaDoCatalogo([...AS_OITO])).toEqual([]);
+    expect(semSaida, 'face no catálogo que ninguém consegue obter: nem no pacote, nem na biblioteca, nem `off` com remédio').toEqual([]);
+    // 📌 THE PAIR, without which the case passes vacuously.
+    expect(FONT_GROUPS.flatMap((g) => g.items).length, 'o catálogo esvaziou — o caso mediria o nada').toBeGreaterThanOrEqual(26);
   });
 
   /* ===================== ADR-0154 · THE RONDE FALLS BACK TO COOKIE, AND STILL NAMES THE THREE =====================
    *
    * ADR-0012 decided the licence — the three faces are free for PERSONAL use only and are never bundled. ADR-0154 ends the
-   * ronde's stack in Cookie, which the engine packages, so the option works on every device, offline, and is never
-   * disabled. 🔴 Cookie is a related joined hand, NOT the ronde a French classroom teaches, and the notice is the only
-   * thing that says so — which is why it still names the three.
-   *
-   * 🎯 AND THE RULE IS NAMING THE THREE, not the category. «Instale uma fonte ronde» is not actionable — an adult does not
-   * act on a category — and it is exactly the form ADR-0108 refuses in writing. This block exists so the sentence cannot
-   * slide there. */
+   * ronde's stack in Cookie, so the option works offline wherever Cookie is; since ADR-0255 Cookie is a LIBRARY family, there
+   * where the game declares it. 🔴 Cookie is a related joined hand, NOT the ronde a French classroom teaches, and the notice is
+   * the only thing that says so — which is why it still names the three. */
   describe('ADR-0154 · the ronde falls back to Cookie and names the three faces', () => {
     const RONDE = FONT_GROUPS.flatMap((g) => g.items).find((it) => it.k === 'ronde');
 
-    it('[Zero] the `ronde` entry exists in the catalogue, and is NO LONGER disabled', () => {
+    it('[Zero] the `ronde` entry exists in the catalogue, and is not `off`', () => {
       expect(RONDE, 'the ronde entry left the catalogue — ADR-0154 has no subject').toBeTruthy();
-      expect(RONDE.off, 'the ronde is `off` again: with Cookie at the end of its stack it works on every device').toBeUndefined();
-      // 📌 `geral` and not `caligrafica`, although it is calligraphic: the menu filters out the calligraphic ones, and a
-      // filtered row says nothing to anyone. The «right» role would erase the only thing it does.
+      expect(RONDE.off, 'the ronde is `off` again: Cookie answers wherever the game declares it').toBeUndefined();
+      // 📌 `geral` and not `caligrafica`, although it is calligraphic: the menu filters out the calligraphic ones.
       expect(RONDE.role, 'a ronde foi marcada como caligráfica e desapareceu do menu').toBeUndefined();
     });
 
@@ -272,49 +211,36 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
       for (const [nome, dic] of [['pt', pt], ['en', en], ['es', es]]) {
         const msg = dic[RONDE.notice];
         expect(msg, `${nome}: a chave \`${RONDE.notice}\` não existe no dicionário`).toBeTruthy();
-        for (const face of A_RONDE) {
-          expect(msg, `${nome}: a mensagem não nomeia «${face}»`).toContain(face);
-        }
+        for (const face of A_RONDE) expect(msg, `${nome}: a mensagem não nomeia «${face}»`).toContain(face);
       }
     });
 
     it('🎯 [Right] the stack is the three, in the Dev\'s order, and ENDS in Cookie', () => {
-      // The first one the device has wins; Cookie answers when it has none. Cookie anywhere but last would draw Cookie
-      // on a device that HAS a real ronde installed. (Read as four families, not one: the CSS stack is `familyStack`'s
-      // job and is measured in the browser, in `the-ronde-falls-back-to-cookie.browser.test.js`.)
       expect(faceFamilies(RONDE), 'the ronde stack is not «the three, then Cookie»').toEqual([...A_RONDE, RONDE_FALLBACK]);
     });
 
-    it('🔴 [Right] Cookie IS packaged: declared in `fonts.css`, with its file present', () => {
-      // The half that makes the fallback real: a stack ending in a family nobody declares falls to the generic
-      // `cursive`, and the child who chose the ronde gets whatever the system has.
-      expect(familias, 'Cookie is not declared in fonts.css — the ronde stack falls to the generic').toContain(RONDE_FALLBACK);
-      const src = [...CSS.matchAll(/font-family:'([^']+)'[^}]*?url\('fonts\/([^']+)'\)/g)]
-        .filter((m) => m[1] === RONDE_FALLBACK).map((m) => m[2]);
-      expect(src.length, 'the Cookie @font-face points at no file').toBeGreaterThan(0);
-      for (const f of src) expect(NA_PASTA, `the Cookie file «${f}» is not in the folder`).toContain(f);
+    it('🔴 [Right] Cookie is IN THE LIBRARY, as its author\'s original (ADR-0254, ADR-0255)', () => {
+      const cookie = LIBRARY.families[RONDE_FALLBACK];
+      expect(cookie, 'Cookie is not in the library — the ronde stack falls to the generic').toBeTruthy();
+      expect(cookie.faces.every((f) => f.from && !f.range), 'Cookie is a subset again, not its author\'s original').toBe(true);
     });
 
-    it('🎯 [Right] available on ANY device — with none of the three, and with no detector', () => {
-      // ADR-0154 §4: the option is no longer disabled. On a school tablet with none of the three, the stack reaches Cookie.
-      expect(faceAvailable(RONDE, () => false)).toBe(true);
-      expect(faceAvailable(RONDE, undefined)).toBe(true);
+    it('🎯 [Right] available where the game declared Cookie; not where nothing draws it', () => {
+      expect(faceAvailable(RONDE, (f) => f === RONDE_FALLBACK)).toBe(true);
+      expect(faceAvailable(RONDE, () => false), 'the ronde is offered with nothing to draw it').toBe(false);
+      expect(faceAvailable(RONDE, undefined)).toBe(false);
     });
 
-    it('📌 [Boundary] uma face que NÃO é `off` está disponível sem detector nenhum', () => {
-      // The pair that keeps the rule from becoming «tudo depende do detector»: the other faces never depended on it.
-      const atkinson = FONT_GROUPS.flatMap((g) => g.items).find((it) => it.k === 'atkinson');
+    it('📌 [Boundary] an ENGINE face is available with no detector at all', () => {
+      const atkinson = FONT_BY_KEY.atkinson;
       expect(faceAvailable(atkinson, undefined)).toBe(true);
       expect(faceAvailable(atkinson, () => false)).toBe(true);
     });
 
     it('⚠️ [Right] e uma frase que nomeia a CATEGORIA reprovaria — a forma que o ADR-0108 recusa', () => {
-      // The rule as a function, driven by a fixture: without this the case above would pass because today's sentence is
-      // right, and nothing would say the WRONG one is detectable. It is the wording the record rejects, word for word.
       const nomeiaAsTres = (texto) => A_RONDE.every((f) => texto.includes(f));
       expect(nomeiaAsTres('Instale uma fonte ronde no aparelho.')).toBe(false);
       expect(nomeiaAsTres('Instale Ronde Script, OPTIFrench-Script ou Merveille.')).toBe(true);
-      // ⚠️ AND TWO OF THE THREE ARE NOT ENOUGH: whoever has only the other one reads a list that does not serve them.
       expect(nomeiaAsTres('Instale Ronde Script ou Merveille.')).toBe(false);
     });
   });
@@ -327,36 +253,11 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
 });
 
 // ========================= MUTATIONS CHECKED =========================
-// Six, each applied by script to the file with occurrence counts (=1 in all six).
-//   · `ehPlaywrite` always returning false -> the NINTH fails. Without it the sieve stops recognising the family it
-//     exists to recognise, and approves anything.
-//   · `playwriteForaDasOito` ignoring `AS_OITO` -> the NINTH fails from the other side: it also accuses the ones that MUST
-//     travel, and a gate that accuses the correct is switched off the following week.
-//   · `sinaisDeRonde` without the FILES half -> the ronde case fails. The two doors are different: a `.woff2` dropped in
-//     the folder without `@font-face` is still distributed, and distributing is what the licence does not allow.
-//   · killing the FAMILIES regex -> the VACUUM case fails, and only it. Without that case, the two `[Zero]`s would pass
-//     for having nothing to examine.
-//   · killing the `src` regex -> TWO fail: the vacuum and the DEAD WEIGHT. The second is the measure that it is alive —
-//     with no `src` read, every file looks unreferenced.
-//   · ⚠️ pointing a REAL `src` of `fonts.css` at a file that does not exist -> TWO fail, not one: the ORPHAN (the face the
-//     browser fetches and does not find) and the DEAD WEIGHT (the file left with nobody declaring it). Applied to the
-//     real asset and restored from a copy. Both failures are silent in production: the browser falls to the next font
-//     in the stack, and the child who needs Andika to read gets something else with nothing saying so.
-//
-// ===== MUTATIONS OF THE FOURTH GATE (2026-09-09) =====
-//  N1. a NINTH Playwrite in the catalogue with no file or remedy (`{k:'pwie', fam:'Playwrite IE', …}` — Ireland, which
-//      is English, so INSIDE the roster by language) -> fails, and fails ALONE. 🎯 That loneliness is the measure of the
-//      hole: the existing «uma NONA Playwrite reprova» case drives the PURE half with a fixture, so it stayed GREEN with
-//      the ninth really in the catalogue. One asserts the function can tell; the other asserts the tree has none. They
-//      are not the same, and only the second catches the offer.
-//  N2. (2026-09-09, before ADR-0154) the ronde losing its `off` -> FOUR failed: with no packaged face in its stack, the
-//      menu would offer what nobody could get. Since ADR-0154 the stack ends in Cookie, and that leg is the one it passes by.
-//
-// ===== MUTATIONS OF THE ADR-0154 BLOCK (2026-09-25, issue #150), each applied by script and restored from a copy =====
-//  C1. `, Cookie` removed from the ronde's `fam` -> here the stack case and the FOURTH GATE fail (the ronde, no longer
-//      `off`, becomes a face nobody can get); beside them `an-offered-font-loads` and the ronde CSS-stack case.
-//  C2. the Cookie `@font-face` renamed to 'Cookie X' in `fonts.css` -> the Cookie-is-packaged case and the fourth gate
-//      fail here, and the orphan and offered-without-face cases in `an-offered-font-loads`.
-//  C3. the ronde's `notice` removed -> the names-the-three case fails (and the ronde-row note in `settings-typo`).
-//  C4. `off:'font.off.pending'` put back on the ronde -> the not-disabled and any-device cases fail.
-//  C5. the Spanish notice naming only two of the three -> the names-the-three case fails.
+// (2026-09-27, ADR-0255; each applied by script — the anchor counted, exactly once — and restored from a copy by sha256.)
+//   P1. a library face (Lato, pointed at a packaged file) declared in fonts.css again → 🔴 «EXACTLY the engine's faces», «one home».
+//   P2. Playwrite PE's @font-face removed from fonts.css → 🔴 four: «EXACTLY», «EVERY hand» (es-PE picks it), the dead-weight case
+//       (its file left undeclared) and «no face offered without a way to get it».
+//   P3. `faceAvailable` answering true for every face not `off` (the rule before ADR-0255) → 🔴 «available where the game declared
+//       Cookie» here, and the library-row and ronde-row cases in `settings-typo.node`.
+//   P4. Merriweather's `status` put back to `ativo` in the typographic catalogue → 🔴 «Merriweather is NOWHERE».
+//   P5. Cookie's entry renamed away in font-library.json → 🔴 «Cookie is IN THE LIBRARY» and «no face offered without a way to get it».

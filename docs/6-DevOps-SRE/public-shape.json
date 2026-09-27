@@ -47,7 +47,7 @@
         "setPlayerCorrection?": "readonly setPlayerCorrection: (i: number, correction: Correction) => void",
         "setPlayerTheme?": "readonly setPlayerTheme: (i: number, theme: Theme) => void",
         "sonarPlayers?": "readonly sonarPlayers: () => SonarPlayer[]",
-        "uses?": "readonly uses: { readonly reading?: boolean; readonly neuralVoice?: boolean; }",
+        "uses?": "readonly uses: { readonly reading?: boolean; readonly neuralVoice?: boolean; readonly fonts?: readonly string[]; }",
         "withIndex?": "readonly withIndex: () => boolean"
       }
     },
@@ -1834,6 +1834,48 @@
       }
     }
   },
+  "platform/font-library.ts": {
+    "interface LibraryFace": {
+      "members": {
+        "bytes": "readonly bytes: number",
+        "file": "readonly file: string",
+        "from?": "readonly from: string",
+        "range?": "readonly range: string",
+        "sha256": "readonly sha256: string",
+        "style": "readonly style: string",
+        "weight": "readonly weight: string"
+      }
+    },
+    "interface LibraryFamily": {
+      "members": {
+        "faces": "readonly faces: readonly LibraryFace[]",
+        "folder": "readonly folder: string",
+        "licence": "readonly licence: string"
+      }
+    },
+    "interface FontLibrary": {
+      "members": {
+        "families": "readonly families: Readonly<Record<string, LibraryFamily>>",
+        "mirror": "readonly mirror: string",
+        "ranges": "readonly ranges: Readonly<Record<string, string>>"
+      }
+    },
+    "interface LibraryFontsPorts": {
+      "members": {
+        "asked": "readonly asked: readonly string[]",
+        "declare": "readonly declare: (css: string) => void",
+        "href": "readonly href: (url: string) => string",
+        "load?": "readonly load: () => Promise<FontLibrary>",
+        "report": "readonly report: (line: string) => void"
+      }
+    },
+    "interface LibraryFontsStarted": {
+      "members": {
+        "files": "readonly files: readonly HeavyFile[]",
+        "onReport": "readonly onReport: (r: { readonly id: string; readonly outcome: string; readonly error?: string; }) => void"
+      }
+    }
+  },
   "platform/guide-intensity.ts": {
     "interface Intensity": {
       "members": {
@@ -1871,6 +1913,7 @@
     },
     "interface HeavyOptions": {
       "members": {
+        "also?": "readonly also: readonly HeavyFile[]",
         "base": "readonly base: string",
         "cacheStorage": "readonly cacheStorage: CacheStorage | undefined",
         "digest": "readonly digest: ((payload: ArrayBuffer) => Promise<string>) | null",

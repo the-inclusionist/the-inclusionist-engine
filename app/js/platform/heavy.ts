@@ -54,6 +54,11 @@ export interface HeavyOptions {
    * puts everything of the child's language first). For a consumer that wants the voices and not the rest.
    */
   readonly only?: readonly string[];
+  /**
+   * Files OUTSIDE the catalogue, kept by the same rules and FIRST: the font library's faces a cartridge declared
+   * (`platform/font-library`, ADR-0255) — a few hundred KB the child sees, which should not wait behind 850 MiB of models.
+   */
+  readonly also?: readonly HeavyFile[];
   /** The page's address the delivery's `heavy/` folder is resolved against (`document.baseURI`). */
   readonly base: string;
 }
@@ -170,12 +175,13 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * subsystem has nowhere to come from yet" and "this subsystem is handled", exactly the distinction ADR-0119 measured as
  * missing: the engine PROMISED four things and delivered one, with nothing saying so.
  *
- * The catalogue's files come first, then the delivery's lists (`DELIVERY_LISTS`), each list ONE report for all its files.
+ * The files handed in `also` come first (the declared library fonts), then the catalogue's, then the delivery's lists
+ * (`DELIVERY_LISTS`), each list ONE report for all its files.
  */
 export async function downloadHeavy(options: HeavyOptions): Promise<HeavyReport[]> {
-  const targets = options.only
+  const targets = [...(options.also ?? []), ...(options.only
     ? [...new Set(options.only)].flatMap((id) => HEAVY_FILES.filter((p) => p.id === id))
-    : HEAVY_FILES;
+    : HEAVY_FILES)];
   const lists = DELIVERY_LISTS.filter((l) => !options.only || options.only.includes(l.id));
   const out: HeavyReport[] = [];
   const record = (r: HeavyReport): void => { out.push(r); options.onProgress?.(r); };

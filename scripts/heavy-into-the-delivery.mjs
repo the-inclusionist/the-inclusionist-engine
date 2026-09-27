@@ -16,6 +16,9 @@
 // (`platform/heavy-mirror`); without one, from upstream. The sha256 check does not move: a base that serves other bytes writes
 // nothing, which is why pointing elsewhere is safe and needs no trust.
 //
+// THE FONT LIBRARY TRAVELS THE SAME WAY (ADR-0255): `--fonts` puts the families the cartridges declare into `heavy/`, each face
+// checked against the engine's font catalogue, each family with its licence text and notice (`licences/fonts.mjs`).
+//
 // WHAT THE FILES OWE TRAVELS WITH THEM (`licences/third-party.mjs`): every folder of `heavy/` that holds a file also gets its
 // project's `LICENSE` and `NOTICE` (eSpeak NG's also a `SOURCE`), and `heavy/THIRD-PARTY-NOTICES.md` lists each project. A
 // catalogue entry whose licence nobody recorded there is refused like a file whose sha256 differs.
@@ -25,6 +28,7 @@ import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
+import { familyLicenceFiles } from './licences/fonts.mjs';
 import { deliverLibrasGlosses, readTexts, runGlosser, setUpGlosser } from './libras-glosses.mjs';
 import { deliverLibrasAvatar, readAvatarPins, stageChunkOf, writeAvatarList } from './libras-avatar.mjs';
 
@@ -34,6 +38,87 @@ export function moduloDoPacote() {
 }
 
 const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).digest('hex');
+
+/**
+ * ONE FILE, FETCHED (or read from a local base), CHECKED AGAINST ITS PINNED SHA256 AND WRITTEN — or refused with the reason, and
+ * nothing written. The one rule the catalogue's files and the library's fonts go through.
+ */
+async function trazerVerificado(p, alvo, { fonte, buscar, lerLocal, sha256 }) {
+  try {
+    let corpo;
+    if (/^https?:\/\//i.test(fonte)) {
+      const resp = await buscar(fonte);
+      if (!resp.ok) return { id: p.id, outcome: 'falhou', error: `HTTP ${resp.status} — ${fonte}` };
+      corpo = await resp.arrayBuffer();
+    } else {
+      corpo = lerLocal(fonte);
+    }
+    const obtido = sha256(corpo);
+    if (!p.sha256 || obtido !== p.sha256) {
+      return { id: p.id, outcome: 'falhou', error: `sha256 mismatch at ${fonte}: expected ${p.sha256}, got ${obtido} — not written` };
+    }
+    mkdirSync(dirname(alvo), { recursive: true });
+    writeFileSync(alvo, Buffer.from(corpo));
+    return { id: p.id, outcome: 'escrito', bytes: corpo.byteLength };
+  } catch (e) {
+    return { id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
+ * THE FONT LIBRARY'S FAMILIES A DELIVERY CARRIES (ADR-0255), from `--fonts`: each value a family or a comma-separated list of
+ * them; `all` is every family of the library, `none` nothing. A family the library does not hold STOPS the command (exit 2),
+ * naming it, instead of delivering nothing for it in silence.
+ */
+export function fontFamiliesOfTheDelivery(asked, library) {
+  const names = asked.flatMap((v) => v.split(',')).map((f) => f.trim()).filter(Boolean);
+  if (names.includes('all')) return Object.keys(library.families);
+  const named = [...new Set(names.filter((f) => f !== 'none'))];
+  const unknown = named.filter((f) => !library.families[f]);
+  if (unknown.length) {
+    throw new Error(`--fonts ${unknown.join(', ')}: the engine's font library has no ${unknown.length > 1 ? 'such families' : 'such family'} `
+      + '(app/js/platform/font-library.json). Name families as the library writes them — «Press Start 2P» — or `--fonts all`');
+  }
+  return named;
+}
+
+/**
+ * PUTS THE DECLARED FAMILIES OF THE FONT LIBRARY INTO THE DELIVERY (ADR-0255): each face is fetched (or read from a local base),
+ * checked against the sha256 the ENGINE'S catalogue pins, and written at `heavy/<host>/fonts/<folder>/<file>` — where the page
+ * asks for it. Beside each family whose every face is there, its licence text and `NOTICE.txt`, written from the delivered fonts'
+ * own `name` tables (`licences/fonts.mjs`, the same writer as the library's folders). A face refused leaves its family without a
+ * notice and the run not `ok`.
+ */
+export async function levarFontesParaEntrega({ destino, families, library, deliveryPath, fetch: buscar = fetch, sha256 = sha256DoNode,
+  base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho), licenceFiles = familyLicenceFiles }) {
+  const linhas = [];
+  for (const family of families) {
+    const entry = library.families[family];
+    let whole = true;
+    let folder = '';
+    // one file may serve two weights (a variable font declared at 400 and 700): each file once
+    const faces = entry.faces.filter((f, i) => entry.faces.findIndex((g) => g.file === f.file) === i);
+    for (const face of faces) {
+      const url = `${library.mirror}/${entry.folder}/${face.file}`;
+      const p = { id: `font:${entry.folder}:${face.file}`, sha256: face.sha256 };
+      const alvo = join(destino, deliveryPath(url));
+      folder = dirname(alvo);
+      const linha = existsSync(alvo) && sha256(readFileSync(alvo)) === face.sha256
+        ? { id: p.id, outcome: 'ja-tinha' }
+        : await trazerVerificado(p, alvo, { fonte: fonteDe(url, base), buscar, lerLocal, sha256 });
+      linhas.push(linha);
+      if (linha.outcome === 'falhou') whole = false;
+    }
+    if (!whole) continue;
+    try {
+      const owed = licenceFiles(family, entry, (file) => readFileSync(join(folder, file)));
+      for (const [name, text] of Object.entries(owed)) writeFileSync(join(folder, name), text);
+    } catch (e) {
+      linhas.push({ id: `font:${entry.folder}:licence`, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return { ok: linhas.every((l) => l.outcome !== 'falhou'), linhas };
+}
 
 /**
  * Fetches, checks and writes every entry with an address, then the licence files beside them. Returns one line per entry and
@@ -56,29 +141,9 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
       present.push({ id: p.id, path: deliveryPath(p.url) });
       continue;
     }
-    const fonte = fonteDe(p.url, base);
-    const daRede = /^https?:\/\//i.test(fonte);
-    try {
-      let corpo;
-      if (daRede) {
-        const resp = await buscar(fonte);
-        if (!resp.ok) { linhas.push({ id: p.id, outcome: 'falhou', error: `HTTP ${resp.status} — ${fonte}` }); continue; }
-        corpo = await resp.arrayBuffer();
-      } else {
-        corpo = lerLocal(fonte);
-      }
-      const obtido = sha256(corpo);
-      if (!p.sha256 || obtido !== p.sha256) {
-        linhas.push({ id: p.id, outcome: 'falhou', error: `sha256 mismatch at ${fonte}: expected ${p.sha256}, got ${obtido} — not written` });
-        continue;
-      }
-      mkdirSync(dirname(alvo), { recursive: true });
-      writeFileSync(alvo, Buffer.from(corpo));
-      linhas.push({ id: p.id, outcome: 'escrito', bytes: corpo.byteLength });
-      present.push({ id: p.id, path: deliveryPath(p.url) });
-    } catch (e) {
-      linhas.push({ id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
-    }
+    const escrito = await trazerVerificado(p, alvo, { fonte: fonteDe(p.url, base), buscar, lerLocal, sha256 });
+    linhas.push(escrito);
+    if (escrito.outcome === 'escrito') present.push({ id: p.id, path: deliveryPath(p.url) });
   }
   // 📌 THE NOTICES SPEAK FOR THE WHOLE DELIVERY, not for this run: a delivery may be built by several runs (`--reading pt`, then
   // `--kokoro`), and `THIRD-PARTY-NOTICES.md` is rewritten each time. So every catalogue file ALREADY in the delivery with its
@@ -128,12 +193,17 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
  *   build's three.js chunk with their sha256, by which a device with deaf mode on keeps the player for the days without a
  *   network — run after the build, which is what names the chunk.
  * · `--libras-setup`: builds that environment (uv and Python 3.12), and does nothing else.
+ * · `--fonts <family,…|all|none>`, repeatable: the font LIBRARY's families the cartridges declare in `uses.fonts` (ADR-0255) —
+ *   the engine packages only its own faces. Each face checked against the engine's catalogue (`platform/font-library.json`), each
+ *   family with its licence and notice. Without the flag the delivery carries no library font, and a game that declares one is
+ *   told so in `problems`. A family the library does not hold STOPS the command (exit 2).
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
   let destino, base;
   const reading = [];
   const commands = [];
+  const fonts = [];
   let libras = false;
   const librasTexts = [];
   for (let i = 0; i < args.length; i++) {
@@ -147,10 +217,11 @@ export function argumentosDaEntrega(args, ambiente = process.env) {
       continue;
     }
     if (args[i] === '--commands') { const v = args[++i]; if (v) commands.push(v); continue; }
+    if (args[i] === '--fonts') { const v = args[++i]; if (v) fonts.push(v); continue; }
     if (!args[i].startsWith('--') && destino === undefined) destino = args[i];
   }
   return { destino, kokoro: args.includes('--kokoro'), reading, commands, libras, librasTexts, librasSetup: args.includes('--libras-setup'),
-    base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
+    fonts, base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
 }
 
 /**
@@ -220,14 +291,14 @@ export function carregarEnv(caminho = join(process.cwd(), '.env'), carregar = pr
 const executado = (() => { try { return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
 if (executado) {
   carregarEnv();
-  const { destino, kokoro, reading, commands, libras, librasTexts, librasSetup, base } = argumentosDaEntrega(process.argv.slice(2));
+  const { destino, kokoro, reading, commands, libras, librasTexts, librasSetup, fonts, base } = argumentosDaEntrega(process.argv.slice(2));
   if (librasSetup) {
     try { console.log(`the Libras glosser's environment is ready: ${setUpGlosser()}`); process.exit(0); }
     catch (e) { console.error(e instanceof Error ? e.message : String(e)); process.exit(1); }
   }
   if (!destino) {
     console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading [all|pt|en|es|none]]… '
-      + '[--commands pt|en|es|none]… [--libras] [--libras-texts <file>]… | --libras-setup');
+      + '[--commands pt|en|es|none]… [--fonts <family,…|all|none>]… [--libras] [--libras-texts <file>]… | --libras-setup');
     if (reading.some((v) => v !== 'all')) console.error(`(the value after --reading is read as a language: «${reading.join(' ')}» — put the folder first)`);
     process.exit(2);
   }
@@ -238,10 +309,13 @@ if (executado) {
   const { LIBRAS_AVATAR_FOLDER, LIBRAS_AVATAR_STAGE_CHUNK, DELIVERY_LISTS, commandsLanguageOf, readingLanguageOf } = await import(new URL('../dist-pkg/platform/heavy-catalogue.js', import.meta.url).href);
   // 📌 THE LANGUAGES FIRST, reading and command, before a byte is downloaded: a language the catalogue has no model for stops
   // here, named
-  let read, spoken;
+  let read, spoken, typefaces;
+  // the ENGINE's font catalogue, from the package beside this script — the sha256 every delivered face must have (ADR-0255)
+  const library = JSON.parse(readFileSync(new URL('../dist-pkg/platform/font-library.json', import.meta.url), 'utf8'));
   try {
     read = readingLanguagesOfTheDelivery(reading, HEAVY_FILES, readingLanguageOf);
     spoken = commandLanguagesOfTheDelivery(commands, HEAVY_FILES, commandsLanguageOf);
+    typefaces = fontFamiliesOfTheDelivery(fonts, library);
   } catch (e) {
     console.error(e instanceof Error ? e.message : String(e));
     process.exit(2);
@@ -287,6 +361,15 @@ if (executado) {
   for (const l of licences) console.log(`licence   ${l.key} — ${l.folders.length} folder(s)`);
   if (licences.length) console.log('notices   heavy/THIRD-PARTY-NOTICES.md');
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
+  if (typefaces.length) {
+    const made = await levarFontesParaEntrega({ destino, families: typefaces, library, deliveryPath, base, fonteDe: heavySourceOf });
+    const written = made.linhas.filter((l) => l.outcome === 'escrito');
+    for (const l of made.linhas.filter((x) => x.outcome === 'falhou')) console.log(`falhou    ${l.id} — ${l.error}`);
+    console.log(`fonts     ${typefaces.length} families of the library — ${written.length} faces written, `
+      + `${made.linhas.filter((l) => l.outcome === 'ja-tinha').length} already there, each checked by sha256`
+      + `${made.ok ? ', each family with its licence and NOTICE.txt' : ''}`);
+    if (!made.ok) { console.error('a library font failed: its family is not delivered whole, and nothing unchecked was written'); process.exit(1); }
+  }
   if (libras) {
     try {
       const pins = readAvatarPins();

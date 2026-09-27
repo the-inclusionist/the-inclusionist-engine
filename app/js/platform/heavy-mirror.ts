@@ -36,6 +36,9 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   ['https://lfs-oinclusionista.jrocha.dev.br/espeak-ng-530bf0a', 'espeak-ng-530bf0a'],
   // The graph runtime the neural voice shares with the reading models (the Dev on 2026-09-22).
   ['https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0', 'onnxruntime-web-1.27.0'],
+  // The font library (ADR-0255): one folder per family under `fonts/`, catalogued in `platform/font-library.json`. It has no
+  // upstream either — the library IS the project's copy, and the reserved-name families in it are their authors' originals.
+  ['https://lfs-oinclusionista.jrocha.dev.br/fonts', 'fonts'],
   // 📌 The Libras player's avatar and clips are not catalogue files: `--libras` reads them from `<base>/vlibras-avatar-<commit>/`
   // by their own pins (`scripts/libras-avatar.mjs`), so no mapping for them lives here.
 ];

@@ -97,7 +97,8 @@ import { isBlind, isLowVision, hasHighContrast, onlyColourVision, DEFAULT_VISUAL
 // 📌 The mode → `url(#...)` table, which `render/cvd-matrices` installs and the `consumer-quiz` consumes.
 import { VIZ_FILTER } from '../render/viz-modes.js';
 import { createPadWizard, createPadMaps } from '../input/pad-wizard.js';
-import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
+import { typographyCycle, CYCLE_START, FONT_BY_KEY, ENGINE_FAMILIES } from '../ui/fonts.js';
+import { declaredFamilies, startLibraryFonts, type LibraryFontsStarted } from '../platform/font-library.js';
 // 📏 The drawing reporters (`barIntruders`, `belowFloor`, `minimumTarget` and their types) live in `ui/drawing-problems`
 // (ADR-0221, issue #203), and the root does not know them. An import that can be deleted is coupling that no longer
 // exists, and that is how this debt is paid: by subject.
@@ -158,7 +159,7 @@ import { showOnlyRowsThatApply } from '../ui/audio-rows-that-apply.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { createKeyboardConfig, type KBDefaults, type KeyboardConfigApi, type KeyboardMapping } from '../input/keyboard.js';
 import { createPadTable, type PadTableFor } from '../input/pad-defaults.js';
-import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/heavy.js';
+import { downloadHeavy, heavyAtBoot, deliveryPath, type HeavyReport } from '../platform/heavy.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** What the game lends from the document. Everything optional but `doc`/`win`: what is missing becomes `problems`. */
@@ -428,8 +429,13 @@ export interface CreateGameOptions {
    *   language's first: she can switch at any moment). Absent, `motor.reading.listen()` refuses and
    *   says which line is missing: a game that asks for a microphone it never declared would also be a delivery without the
    *   model, which is a silence in a school nobody can debug.
+   * · `fonts: ['Lato', 'Press Start 2P']` — the font LIBRARY's families this game draws with (ADR-0255). The engine packages only
+   *   its own faces (the typography button's and the mathematics face); every other family is delivered in `heavy/` when the
+   *   delivery is built with `inclusionist-heavy <folder> --fonts …`. The engine writes their `@font-face` rules and keeps each
+   *   file in the checked cache for the days without a network; a family the library does not hold, or the delivery did not
+   *   carry, is a line of `problems`. The engine's own faces need no declaration.
    */
-  readonly uses?: { readonly reading?: boolean; readonly neuralVoice?: boolean };
+  readonly uses?: { readonly reading?: boolean; readonly neuralVoice?: boolean; readonly fonts?: readonly string[] };
   /**
    * FETCH THE HEAVY FILES ON THE FIRST LOAD? Default **yes** (ADR-0110 (b), ADR-0116, ADR-0119).
    *
@@ -1708,6 +1714,11 @@ export function createGame(o: CreateGameOptions): Engine {
     pauseMountPoint.appendChild(findPauseCard);
   }
 
+  // THE LIBRARY FAMILIES THIS GAME DECLARED (`uses.fonts`, ADR-0255), the engine's own left out; a declaration that is not a list
+  // of names is said in `problems`. Their faces are written and kept at the end of the boot, with the heavy files.
+  const libraryFonts = declaredFamilies(o.uses?.fonts, ENGINE_FAMILIES);
+  if (libraryFonts.problem) hostProblems.push(libraryFonts.problem);
+
   /*
    * 4f. THE SETTINGS PANELS (ADR-0106 §1).
    *
@@ -1752,12 +1763,10 @@ export function createGame(o: CreateGameOptions): Engine {
       t: translator.t, $, srSay, store, root: doc.documentElement,
       // The rows' prose goes to the footer at EVERY render, or it appears twice on the first click.
       fillExplain: overlays.fillExplain,
-      // ⚠️ `doc.fonts` IS A BROWSER GLOBAL — FINDING 15 of this file. Here it comes from the host's `doc` and is still
-      // asked whether it exists: a fake document has no `fonts`, and the absence has a declared answer (the row is
-      // disabled WITH the message that tells the adult which fonts solve it).
-      ...(typeof doc.fonts?.check === 'function'
-        ? { fontInstalled: (family: string) => doc.fonts.check(`16px "${family}"`) }
-        : {}),
+      // 🔴 A LIBRARY FACE IS THERE WHEN THIS GAME DECLARED ITS FAMILY (ADR-0255), and that is the whole detector: the engine
+      // writes the family's `@font-face` for exactly those. `document.fonts.check` is not asked, because it answers `true` for a
+      // family NO rule declares (nothing to load) — it would offer every library row on every page.
+      fontInstalled: (family: string) => libraryFonts.asked.includes(family),
     });
 
     /*
@@ -3918,11 +3927,23 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 The right channel is the one the function already has: `onHeavyProgress`, handed to whoever calls. A consumer who
    * wants to show «N MB left» or «the voice did not come down» has a way; the engine invents no surface.
    */
+  /*
+   * THE LIBRARY FONTS THIS GAME DECLARED (ADR-0255): their `@font-face` rules go into the document as soon as the catalogue
+   * loads, pointing at the delivery's `heavy/`, and their files are kept FIRST in the checked cache — a family the library does
+   * not hold, or the delivery did not carry, becomes a line of `problems`. No catalogue is loaded for a game that declared none.
+   */
+  const fontsStarted = libraryFonts.asked.length ? startLibraryFonts({
+    asked: libraryFonts.asked,
+    declare: (css) => { const sheet = doc.createElement('style'); sheet.id = 'incl-library-fonts'; sheet.textContent = css; (doc.head ?? doc.documentElement).appendChild(sheet); },
+    href: (url) => new URL(deliveryPath(url), doc.baseURI).href,
+    report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
+  }) : null;
   if (o.downloadHeavy !== false) {
     // ⚠️ THE READING MODELS OF EVERY LANGUAGE THE PAGE CAN SWITCH TO, when the game listens (ADR-0225 erratum, the Dev:
     // «Negativo, baixar os três. Toda criança vai experimentar as três línguas imediatamente.»). `bcp47()` is the language the
     // interface booted in (ADR-0031), named first so everything of hers comes down before the 850 MiB of the three does.
-    void downloadHeavy({
+    const keepHeavy = (fonts: LibraryFontsStarted | null): Promise<unknown> => downloadHeavy({
+      also: fonts?.files ?? [],
       // 📌 AND THE COMMAND MODELS ARE ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). ONE PER LANGUAGE THE PAGE
       // CAN SWITCH TO, the child's first (ADR-0225 erratum): a language changed mid-game, offline the next day, must find its
@@ -3933,9 +3954,10 @@ export function createGame(o: CreateGameOptions): Engine {
         kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? [bcp47(), ...availableLocales()] : null,
         commands: [bcp47(), ...availableLocales()], libras: deafMode.isOn(),
       }),
-      onProgress: o.onHeavyProgress,
+      onProgress: (r) => { fonts?.onReport(r); o.onHeavyProgress?.(r); },
       cacheStorage: heavyCaches, fetch: win.fetch, digest: sha256With(win.crypto?.subtle), base: doc.baseURI,
-    })
+    });
+    void (fontsStarted ? fontsStarted.then(keepHeavy) : keepHeavy(null))
       .catch(() => { /* a background download brings down no boot */ });
   }
 

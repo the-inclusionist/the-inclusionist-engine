@@ -4110,6 +4110,44 @@ the cartridge — the half the platform installs — was built by no CI at all.
 
 A game on an engine without the build is told so by the step's first line, naming ADR-0253.
 
+## DW · ADR-0255: the font library left the package — a game declares the library families it draws with
+
+**Who is affected:** every game that draws text in a font family the engine packaged and does not use itself — any family of
+`vendor/fonts.css` before this version except Atkinson Hyperlegible, Andika, Lexend, Atkinson Hyperlegible Mono and the fifteen
+Playwrite hands the typography button can pick (BR, US Trad, US Modern, CA, MX, AR, CL, CO, ES, ES Deco, PT, GB J, GB S, CU, PE).
+The other 194 families (Press Start 2P, Lato, Cookie, the Noto scripts, the other Playwrite hands and every «Guides», the display
+faces…) are no longer in `app/public/vendor/fonts/`, in `fonts.css`, in the npm package or in the precache: they live in the font
+library, `the-inclusionist-lfs/fonts/<family>/`, catalogued with each face's sha256 in `platform/font-library.json`. A game that
+names one in its CSS or canvas without declaring it now draws the next face of its stack, and `problems` does not see a family
+it was never told of. **Merriweather** is gone from the package AND the library (ADR-0254): a game that used it picks another face.
+
+The library's reserved-name families are now their authors' ORIGINALS (ADR-0254): Lato, Lora, Playfair Display, Press Start 2P,
+Quicksand, Source Sans 3, Source Serif 4, UnifrakturMaguntia, Abril Fatface, Alfa Slab One, Bowlby One SC, Cookie, Lilita One,
+Lobster, Monofett, Petit Formal Script, Plaster, Ranchers, Sancreek, Titan One and Ubuntu cover the whole character set in one
+file per weight (or one variable file), with no `unicode-range` — larger than the subsets, and the weights are the originals'
+(Playfair Display 400–900, Source Sans 3 and Source Serif 4 200–900, Quicksand 300–700, Lora 400–700; Ubuntu 400 and 700).
+
+📌 **Why:** ADR-0255 — the engine carries what the engine uses; a library for cartridges is delivered when a cartridge asks for
+it, once per delivery however many cartridges use it, as the heavy files are (ADR-0177).
+
+**The migration a game makes, once, on the day it moves to this version:**
+
+1. Declare every library family it draws with — `createGame({ …, uses: { fonts: ['Press Start 2P', 'Lato'] } })`, beside
+   `reading` and `neuralVoice`. The engine writes their `@font-face` rules itself (pointing at the delivery's `heavy/`) and keeps
+   each file in the checked cache for the days without a network; a game's own `@font-face` for these families is deleted. The
+   engine's own faces need no declaration.
+2. Build its delivery with them: `npx inclusionist-heavy dist --fonts "Press Start 2P,Lato"` (repeatable, or `--fonts all`), from
+   the project's mirror or `--base <the-inclusionist-lfs folder>`. Each face is checked against the engine's catalogue by sha256,
+   and each family gets its licence text and `NOTICE.txt`.
+3. Read `problems` once: a family the library does not hold, or one the delivery did not carry, is a line naming it and the fix.
+
+| was | now | what to do |
+|---|---|---|
+| 214 families in `vendor/fonts.css` and `vendor/fonts/` | the 19 the engine draws with; the rest in the library | declare the others in `uses.fonts`, deliver with `--fonts` |
+| `vendor/fonts-licences/Apache-2.0.txt`, `UFL-1.0.txt` | gone (no engine face is under them); every library folder and delivered family carries its own | nothing, unless a page linked them: link the family's folder in `heavy/` |
+| `ui/fonts.faceAvailable(it)` answered `true` for every face not `off` | `true` for the engine's faces; a library face (and the ronde, whose stack ends in Cookie) answers through the detector | a panel mounted by a game passes `fontInstalled`; the root passes «the game declared the family» |
+| the kit row `merriweather` | gone | nothing |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.
@@ -4190,6 +4228,7 @@ A game on an engine without the build is told so by the step's first line, namin
 | `input/gamepad.GamepadCtx.resume` | `() => void` → `(seat: number) => void` (`35bde6d5`, ADR-0144 erratum: pause per screen) — a widening on the side the consumer provides: a function that ignores the seat still compiles and still resumes. Found on 2026-09-27 by the shape gate reading member types |
 | `platform/audio-sonar.SonarCtx.narrate` | `(text) => void` → `(text, seat: number) => void` (`d0413acf`, ADR-0234: the sonar takes turns) — the same widening: a consumer narrating without the seat still works, and its readings simply do not take turns |
 | `@the-inclusionist/engine/build` (`defineGameBuild`, `CARTRIDGE_MODE`, `CARTRIDGE_DIR`, `CARTRIDGE_FILE`, `CARTRIDGE_EXTERNAL`) · bin `inclusionist-check-cartridge` · `cartridgeRefusals` (package root) | new (ADR-0253): the build of both targets of a game from one declaration in its `vite.config` — `vite build` the app, `vite build --mode cartridge` the cartridge into `dist-lib/cartridge.js` and `cartridge.d.ts`, the engine, `pixi.js` and `zdog` external — and the checker that imports a built cartridge in Node and runs on it `cartridgeRefusals`, the list `createGame` and `mount()` refuse a cartridge with. The gate that requires them is note DV. ⚠️ **Behaviour a consumer may notice:** `createGame` and `mount()` now throw ONCE with every refusal of a cartridge (`declaração malformada — a; b; c`), where they threw with the first group only — the declaration's lines first, then the preset's, the accommodations', the genre's, the HUD's, the game options' and `howToPlay`'s; the sentence and the order are unchanged |
+| `CreateGameOptions.uses.fonts` · `platform/font-library` (`libraryFiles`, `libraryFaceRules`, `declaredFamilies`, `startLibraryFonts`, …) · `HeavyOptions.also` · `ui/fonts` `ENGINE_FACE_KEYS`, `ENGINE_FAMILIES`, `MATHEMATICS_FAMILY` · `inclusionist-heavy --fonts` | new (ADR-0255): the font library's families a game declares, their `@font-face` written by the engine at `heavy/` and their files kept checked, FIRST, by the same download as the heavy files; `also` is that download's door for files outside its catalogue. What a game must change is note DW |
 
 ## F · The commits, and whether they carry the footer
 

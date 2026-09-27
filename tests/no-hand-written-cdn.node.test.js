@@ -66,7 +66,9 @@ const BUSCAS_A_MAO = {
     // 11 → 12 with the Libras player (ADR-0234, route A), and 12 → 11 when it left (phase B3): the Unity build's folder went with it.
     // 11 → 10 when the engine pinned its own eSpeak NG build (issue #192): the jsDelivr address left BOTH lists, and the build's
     // folder on the project's mirror took one line.
-    urls: 10,
+    // 10 → 11 with the font library (ADR-0255): one more FOLDER of the same mirror, `fonts/`, catalogued in
+    // `platform/font-library.json` — not a new supplier.
+    urls: 11,
     porque:
       'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
       + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '

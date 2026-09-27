@@ -200,9 +200,18 @@ describe('typoGroups — view-model das linhas', () => {
     expect(linha.note, 'the row carries a raw key').not.toMatch(/font\.(desc|off)\./);
   });
   it('[Right] fonte sem descrição e sem .off tem note vazia', () => {
-    const row = typoGroups(translate, 'atkinson').flatMap((g) => g.rows).find((r) => r.key === 'inter');
+    // Inter is a LIBRARY face (ADR-0255): offered where its game declared the family, which the detector says.
+    const row = typoGroups(translate, 'atkinson', (f) => f === 'Inter').flatMap((g) => g.rows).find((r) => r.key === 'inter');
     expect(row.disabled).toBe(false);
     expect(row.note).toBe('');
+  });
+  it('🔴 [Right] a LIBRARY face whose family nobody declared is disabled; an engine face never is (ADR-0255)', () => {
+    // The row that would otherwise be offered and then drawn in the system font: the page has no `@font-face` for Inter.
+    const rows = typoGroups(translate, 'atkinson').flatMap((g) => g.rows);
+    expect(rows.find((r) => r.key === 'inter').disabled, 'a library face is offered with nothing that draws it').toBe(true);
+    expect(rows.find((r) => r.key === 'lexend').disabled, 'an engine face was locked').toBe(false);
+    expect(isSelectableFont('inter'), 'a library face is selectable with no family declared').toBe(false);
+    expect(isSelectableFont('inter', (f) => f === 'Inter')).toBe(true);
   });
   it('[Right] preserva os 3 grupos do catálogo, TRADUZIDOS (a chave nunca chega à tela)', () => {
     const groups = typoGroups(translate, 'atkinson');
@@ -249,11 +258,13 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
     expect(spec.ariaLabel).toContain(spec.hint);
   });
 
-  it('🔴 [Right] the ronde row is ENABLED and its note still names the three faces to install (ADR-0154)', () => {
+  it('🔴 [Right] the ronde row is ENABLED where its game declared Cookie, and its note still names the three faces to install (ADR-0154, ADR-0255)', () => {
     // The notice is not an `off` reason any more: it speaks on an enabled row, because the child who picks the ronde on a
-    // device without the three sees Cookie, and the notice is the only thing that says it is not the ronde.
-    const row = fontRow(translate, FONT_BY_KEY.ronde, 'atkinson');
-    expect(row.disabled, 'the ronde is disabled again — Cookie answers on every device').toBe(false);
+    // device without the three sees Cookie, and the notice is the only thing that says it is not the ronde. Cookie is a
+    // library family since ADR-0255, so the row is enabled where the game declared it.
+    const row = fontRow(translate, FONT_BY_KEY.ronde, 'atkinson', (f) => f === 'Cookie');
+    expect(row.disabled, 'the ronde is disabled although its game declared Cookie').toBe(false);
+    expect(fontRow(translate, FONT_BY_KEY.ronde, 'atkinson').disabled, 'the ronde is offered with no face to draw it').toBe(true);
     expect(row.note).toBe(`${translate('font.desc.ronde')} — ${translate('font.notice.ronde')}`);
     for (const face of ['Ronde Script', 'OPTIFrench-Script', 'Merveille']) expect(row.note).toContain(face);
   });

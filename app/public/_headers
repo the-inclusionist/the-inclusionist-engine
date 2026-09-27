@@ -31,7 +31,8 @@
   Cache-Control: no-cache
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
-# 🔴 THE FONTS ARE IMMUTABLE; THE INDEX OF THEM IS NOT. `vendor/fonts.css` declares all 166 families and its NAME NEVER CHANGES,
+# 🔴 THE FONTS ARE IMMUTABLE; THE INDEX OF THEM IS NOT. `vendor/fonts.css` declares the engine's own faces (ADR-0255; the font
+# library's families are written by the engine itself, at `heavy/`) and its NAME NEVER CHANGES,
 # so a year of `immutable` freezes the list itself: a browser that read it once offers last term's faces, and a family added
 # later is chosen in the menu and drawn by the system font, with nothing failing anywhere. It is the frozen-precache defect of
 # `scripts/check-precache.mjs` one layer up, at the edge.
@@ -40,7 +41,7 @@
 #  a private window, a browser where the worker never installs, the first load before it does, and a consumer page that links
 #  this stylesheet and registers no worker.
 #  📌 TWO PATTERNS THAT DO NOT OVERLAP, on purpose: a single `/vendor/*` plus a narrower rule would depend on which of them
-#  Cloudflare applies first, which is not written here and cannot be measured from this repository. The 346 woff2 live under
+#  Cloudflare applies first, which is not written here and cannot be measured from this repository. The woff2 live under
 #  `/vendor/fonts/` and keep the year; the index revalidates, which costs a 304 and never a stale menu.
 /vendor/fonts/*
   Cache-Control: public, max-age=31536000, immutable

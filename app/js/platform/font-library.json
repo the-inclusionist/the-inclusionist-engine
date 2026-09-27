@@ -1,0 +1,721 @@
+{
+  "about": "The Inclusionist font library (ADR-0255): every family the engine does not draw with itself, one folder per family in the-inclusionist-lfs/fonts/, delivered on a cartridge's `uses.fonts` by `inclusionist-heavy --fonts`. Each face: its file, weight, style, unicode-range (a key of `ranges`), bytes and sha256; `from` is the author's original a reserved-name family is compressed from (ADR-0254). Rewritten only with the folders (scripts/licences/fonts.mjs --library checks each file against it).",
+  "mirror": "https://lfs-oinclusionista.jrocha.dev.br/fonts",
+  "ranges": {
+    "r1": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "r2": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "r3": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+    "r4": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+  },
+  "families": {
+    "Abril Fatface": { "folder": "abril-fatface", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-abril_fatface-400.woff2","weight":"400","style":"normal","bytes":24916,"sha256":"f129d662e1f2e4126361f4f78cbf0e0a772f7056cffe1ef46a309f7d32ee54ee","from":"google/fonts ofl/abrilfatface/AbrilFatface-Regular.ttf"}
+    ] },
+    "ADLaM Display": { "folder": "adlam-display", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-adlam_display-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":4852,"sha256":"5470785a54af4d33e0ec322e4909cb206fc691076912aa3e85d89ec79e731034"},
+      {"file":"cat-adlam_display-400.woff2","weight":"400","style":"normal","range":"r2","bytes":23928,"sha256":"005f543123b13ac606ff9f905f10f9ecc5c2fa984450bcec10765abbb9f5642e"}
+    ] },
+    "Agu Display": { "folder": "agu-display", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-agu_display-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":33164,"sha256":"17a15f039d57db6b3aff9eeb8d8d7d74c39b9d6ef5f28da6ac50bf4a5122708c"},
+      {"file":"cat-agu_display-400.woff2","weight":"400","style":"normal","range":"r2","bytes":26804,"sha256":"7db34e3dbd5fc46b16995ed09ce2dd5cf2c0d466a235317782ef3f2a2d357987"}
+    ] },
+    "Alfa Slab One": { "folder": "alfa-slab-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-alfa_slab_one-400.woff2","weight":"400","style":"normal","bytes":39668,"sha256":"3a5cd3048a1a9c06d4737ef2a05cc612690af508f5da7b8db149f182afbd13d9","from":"google/fonts ofl/alfaslabone/AlfaSlabOne-Regular.ttf"}
+    ] },
+    "Are You Serious": { "folder": "are-you-serious", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-are_you_serious-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":29736,"sha256":"d4852de15b87311aef13c9047e2e545d4937b965c1dfe9f2cd863ec08bd06384"},
+      {"file":"cat-are_you_serious-400.woff2","weight":"400","style":"normal","range":"r2","bytes":42048,"sha256":"1a3e832a5b5a344a2537d79a9f68e7fbe016b3a7ea7b4dff2a1b2c034782d982"}
+    ] },
+    "Asimovian": { "folder": "asimovian", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-asimovian-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":13140,"sha256":"7da97677fd1379095a15e540577ae7fdef8db0a5ef0111568d2bbd58e6dab440"},
+      {"file":"cat-asimovian-400.woff2","weight":"400","style":"normal","range":"r2","bytes":15300,"sha256":"8ed6a2eca8579c7f1f56de2c937d32b546ae4dc2e145f2e4d3878460e80eccf5"}
+    ] },
+    "Atkinson Hyperlegible Next": { "folder": "atkinson-hyperlegible-next", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-atkinson_hyperlegible_next-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":19092,"sha256":"7dae0c6c66af1aec82e096186aeb1f0e6fa36ab8061ed65422f2b7daf4dd93f3"},
+      {"file":"cat-atkinson_hyperlegible_next-400.woff2","weight":"400","style":"normal","range":"r2","bytes":33996,"sha256":"18b2a1a39a2fa298b0ba5390aca68462669826c90925656f1c1f6796e0e1bbaf"},
+      {"file":"cat-atkinson_hyperlegible_next-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":19092,"sha256":"7dae0c6c66af1aec82e096186aeb1f0e6fa36ab8061ed65422f2b7daf4dd93f3"},
+      {"file":"cat-atkinson_hyperlegible_next-400.woff2","weight":"700","style":"normal","range":"r2","bytes":33996,"sha256":"18b2a1a39a2fa298b0ba5390aca68462669826c90925656f1c1f6796e0e1bbaf"}
+    ] },
+    "Bakbak One": { "folder": "bakbak-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-bakbak_one-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":10264,"sha256":"02d556b3dd82914c992aad9527c0e89327c071dcb588a95b2ad092ff83e62767"},
+      {"file":"cat-bakbak_one-400.woff2","weight":"400","style":"normal","range":"r2","bytes":15820,"sha256":"427bf8d998ab18373a5112963fb6f38af4ebf091e6232b7a4bb12c6352e57ff7"}
+    ] },
+    "Bangers": { "folder": "bangers", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-bangers-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":17196,"sha256":"2c9576bb1d612cf8750bf749689b5916287940fc99e1be5451b83d9fb6c4c5d9"},
+      {"file":"cat-bangers-400.woff2","weight":"400","style":"normal","range":"r2","bytes":23528,"sha256":"04f54ff42ea2b8fc50b4259c29c60b1e05e606b769c2fb541c98624346c9767c"}
+    ] },
+    "Barriecito": { "folder": "barriecito", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-barriecito-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":48268,"sha256":"aeff22cd84a97967c5107b676e0ff0d59d717c4dc5938ed4239d2957b03b74f0"},
+      {"file":"cat-barriecito-400.woff2","weight":"400","style":"normal","range":"r2","bytes":54308,"sha256":"90c7dafb4aaf56704237a21f56fbad10b43de67047c5654cbb95ed61d0e553e8"}
+    ] },
+    "Berkshire Swash": { "folder": "berkshire-swash", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-berkshire_swash-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":11020,"sha256":"28813221a9ef89d233de7917fb80fc670078d342c63032bf1e0c9f15fdd6b708"},
+      {"file":"cat-berkshire_swash-400.woff2","weight":"400","style":"normal","range":"r2","bytes":17348,"sha256":"51831d748cc8e6dccff84ea6cdbcf6018224f017dd336a9e71627abc78717c0a"}
+    ] },
+    "Bevan": { "folder": "bevan", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-bevan-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":18088,"sha256":"60c69405d277e90905f68e3de9a189b0d7d6efd0bd79bbc00c48347ab2e19167"},
+      {"file":"cat-bevan-400.woff2","weight":"400","style":"normal","range":"r2","bytes":21008,"sha256":"b2f840ba287ab2e6d74139b9646d6decd2548a24da7cf8519e828d31f5a6ca84"}
+    ] },
+    "Bitcount": { "folder": "bitcount", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-bitcount-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":3788,"sha256":"92125bab7d48cd6185c163b856562e02e756fc01006156090cdbdf9d07ab475a"},
+      {"file":"cat-bitcount-400.woff2","weight":"400","style":"normal","range":"r2","bytes":4432,"sha256":"a3301d8d5cd47a24d9d2bc580e002d194f1d9c382eb21b4a1d182b7d2b02c77c"},
+      {"file":"cat-bitcount-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":3788,"sha256":"92125bab7d48cd6185c163b856562e02e756fc01006156090cdbdf9d07ab475a"},
+      {"file":"cat-bitcount-400.woff2","weight":"700","style":"normal","range":"r2","bytes":4432,"sha256":"a3301d8d5cd47a24d9d2bc580e002d194f1d9c382eb21b4a1d182b7d2b02c77c"}
+    ] },
+    "Bitter": { "folder": "bitter", "licence": "OFL-1.1", "faces": [
+      {"file":"bitter-var.woff2","weight":"200 900","style":"normal","range":"r3","bytes":34072,"sha256":"0efe0fbe6068354f3fad5a88bf31384051206652468eaa22232119354e7ea423"},
+      {"file":"bitter-var-ext.woff2","weight":"200 900","style":"normal","range":"r4","bytes":32716,"sha256":"8c1f1559771de47e1f30a87c2bf501d46f42fabc4d93361f4401de05d8e6efa6"}
+    ] },
+    "Bodoni Moda": { "folder": "bodoni-moda", "licence": "OFL-1.1", "faces": [
+      {"file":"bodonimoda-var.woff2","weight":"400 700","style":"normal","range":"r3","bytes":25884,"sha256":"192ae876c21d9258d096a526dad5bddf37f0daa69cfe943cae5f6be5a52adda2"},
+      {"file":"bodonimoda-var-ext.woff2","weight":"400 700","style":"normal","range":"r4","bytes":14132,"sha256":"1186669811d902f310c7872ec43bf6b3e379d9102129271f1252a43a65b79d6b"}
+    ] },
+    "Bowlby One SC": { "folder": "bowlby-one-sc", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-bowlby_one_sc-400.woff2","weight":"400","style":"normal","bytes":35328,"sha256":"94d735f1a2b0bd0afec46058dc1b6248c191bc9d85e85f780fd6cc36a1baf20c","from":"google/fonts ofl/bowlbyonesc/BowlbyOneSC-Regular.ttf"}
+    ] },
+    "Bungee Shade": { "folder": "bungee-shade", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-bungee_shade-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":23068,"sha256":"b65ebc1bef14d7d2b900703027c959a52e23602053278ef8cba4da12bcf7cbac"},
+      {"file":"cat-bungee_shade-400.woff2","weight":"400","style":"normal","range":"r2","bytes":30368,"sha256":"5ac7452cbe7996c88c84998b86227ffbee8afb7ab5bd0b2b2512229dcac7e315"}
+    ] },
+    "Charm": { "folder": "charm", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-charm-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":16536,"sha256":"f49110efa8cc6a0fd968f3dc34d8aecfd9698d1c2eeefb05e84329dd06ab3553"},
+      {"file":"cat-charm-400.woff2","weight":"400","style":"normal","range":"r2","bytes":20016,"sha256":"d0c907f22a9a54e4be26915a25ac310be32207d25e81d995ed79ac703e13d1bd"},
+      {"file":"cat-charm-700-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":16632,"sha256":"8bd56b2abe0f7393a1d58ae0548a2e3ea280337e461e57e1d1fe0035eb98fc9b"},
+      {"file":"cat-charm-700.woff2","weight":"700","style":"normal","range":"r2","bytes":20484,"sha256":"8ba4eaea35424e2e3e9b7dc49c04174f865b3c03d71005afec2542cf99460654"}
+    ] },
+    "Cherry Bomb One": { "folder": "cherry-bomb-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-cherry_bomb_one-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":18004,"sha256":"41dfbfa27bec8f04ee073be0494db93507f71c82b25b1f2a27eb040948cac8ae"},
+      {"file":"cat-cherry_bomb_one-400.woff2","weight":"400","style":"normal","range":"r2","bytes":22752,"sha256":"f5289afc986b1934daebad67a4a4dccc18ac556f77e12d3af0f5d4b181150a4d"}
+    ] },
+    "Chokokutai": { "folder": "chokokutai", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-chokokutai-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":17696,"sha256":"ebf76e0cfc43f63e8506a94f48d193be990d553d781c11f0b7e9cfd926c162ef"},
+      {"file":"cat-chokokutai-400.woff2","weight":"400","style":"normal","range":"r2","bytes":16020,"sha256":"884937c6c5527e744b566567b865fb188a76899586d0b815e318c30a5cd190e4"}
+    ] },
+    "Chonburi": { "folder": "chonburi", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-chonburi-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":20876,"sha256":"571b9233d8099d6a336e80aaeb256d0504ea130690c1cea7a2ae909a3571177e"},
+      {"file":"cat-chonburi-400.woff2","weight":"400","style":"normal","range":"r2","bytes":18764,"sha256":"dd390718e8371d31b80141f12469ca8640c84933ea330bd3df8c0ffdb81e0421"}
+    ] },
+    "Climate Crisis": { "folder": "climate-crisis", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-climate_crisis-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":12732,"sha256":"7572844613d142cce06dde548f516c7de773429a00ece2025284462be967715f"},
+      {"file":"cat-climate_crisis-400.woff2","weight":"400","style":"normal","range":"r2","bytes":17060,"sha256":"a84b1a2cb79a5a84c31a7423658168f9a1384b330ed884dbbcc460012975c879"}
+    ] },
+    "Cookie": { "folder": "cookie", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-cookie-400.woff2","weight":"400","style":"normal","bytes":20228,"sha256":"b0c855175c8b5caed9d3081dc7e90b32e1f1843ca98bf9d15da7debd463351c1","from":"google/fonts ofl/cookie/Cookie-Regular.ttf"}
+    ] },
+    "Dela Gothic One": { "folder": "dela-gothic-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-dela_gothic_one-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":9108,"sha256":"56c74de18537d2c3b6b9d2f933857594adc2b3bee41f12c8a7cce63334f36c17"},
+      {"file":"cat-dela_gothic_one-400.woff2","weight":"400","style":"normal","range":"r2","bytes":13804,"sha256":"00ffa61fea9edb126e8e4fd3cf2b46e96ad158a0c1078b3cd22a3f6964993a88"}
+    ] },
+    "DM Serif Display": { "folder": "dm-serif-display", "licence": "OFL-1.1", "faces": [
+      {"file":"dmserifdisplay-400.woff2","weight":"400","style":"normal","range":"r3","bytes":24744,"sha256":"fdf61e20fd2c0108e0ea28da4daca0035205b4b7fc031a3974b865b704de160a"},
+      {"file":"dmserifdisplay-400-ext.woff2","weight":"400","style":"normal","range":"r4","bytes":10804,"sha256":"3af47815d6183efcee27a5717970acfe31153365e9b842e62d30c04e86c0613a"}
+    ] },
+    "Domine": { "folder": "domine", "licence": "OFL-1.1", "faces": [
+      {"file":"domine-var.woff2","weight":"400 700","style":"normal","range":"r3","bytes":28224,"sha256":"d0531fda200ea312e58435464c89a12f50ce52fff1961d8967df2db515f460cf"},
+      {"file":"domine-var-ext.woff2","weight":"400 700","style":"normal","range":"r4","bytes":14964,"sha256":"c80dc59dff430663fb7fb1d4a3a3667032938cc4aec009667b51b2fe8c300acd"}
+    ] },
+    "Fascinate Inline": { "folder": "fascinate-inline", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-fascinate_inline-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":10180,"sha256":"3b94bfaca62ecbc891cc50aa81c140ed8941a5cd90f9202b84dc415d18d2adb9"},
+      {"file":"cat-fascinate_inline-400.woff2","weight":"400","style":"normal","range":"r2","bytes":18268,"sha256":"90f585fbae2121d0fd1830e8fc785e30b5efc09cea965ae4b8e3af662a425f5b"}
+    ] },
+    "Fondamento": { "folder": "fondamento", "licence": "OFL-1.1", "faces": [
+      {"file":"fondamento-400.woff2","weight":"400","style":"normal","range":"r3","bytes":23536,"sha256":"01e17adcd642631e89b529fd50fb42a236abd603455d4b9aa63304de46f00794"},
+      {"file":"fondamento-400-ext.woff2","weight":"400","style":"normal","range":"r4","bytes":10848,"sha256":"cde009c2b33983777a782618eca10239c2221b3019d65c4a1cfe19cee8ef77fb"}
+    ] },
+    "Fraunces": { "folder": "fraunces", "licence": "OFL-1.1", "faces": [
+      {"file":"fraunces-var.woff2","weight":"200 900","style":"normal","range":"r3","bytes":36620,"sha256":"7f9d191d999336d3b9790afa72e1358e50a13b06d4f289341e92a311967a80f9"},
+      {"file":"fraunces-var-ext.woff2","weight":"200 900","style":"normal","range":"r4","bytes":33584,"sha256":"a21ecfbf41fbc393e24ef9b7e38532a27e8da5e0a074aa7d66802d1b5ccec2f0"}
+    ] },
+    "Fredoka": { "folder": "fredoka", "licence": "OFL-1.1", "faces": [
+      {"file":"fredoka-var.woff2","weight":"400 700","style":"normal","range":"r3","bytes":29732,"sha256":"99d6c78e043710d4f83ed90716779798b7b04eb690f73e0ad0e8f32d1f0e98c2"},
+      {"file":"fredoka-var-ext.woff2","weight":"400 700","style":"normal","range":"r4","bytes":4576,"sha256":"18a1723c878c0d8acc2e45a108fd62fbb976e408337804afa2908982fac13e2a"}
+    ] },
+    "Ga Maamli": { "folder": "ga-maamli", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-ga_maamli-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":42416,"sha256":"584f6ddd6f527024703c25be952aa5f0ec541cb82bd2109c16bb4a41de4bf577"},
+      {"file":"cat-ga_maamli-400.woff2","weight":"400","style":"normal","range":"r2","bytes":54076,"sha256":"810a680500b70bb7ff11cda31aee9ef9d73c24d8535cf7869cdc4ac4e8c3b1cd"}
+    ] },
+    "Inter": { "folder": "inter", "licence": "OFL-1.1", "faces": [
+      {"file":"inter-400.woff2","weight":"400","style":"normal","bytes":23664,"sha256":"8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"},
+      {"file":"inter-700.woff2","weight":"700","style":"normal","bytes":24356,"sha256":"6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"}
+    ] },
+    "Itim": { "folder": "itim", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-itim-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":38312,"sha256":"b3812e315641970cb621573a5a5e737edc602a7752ed758d62f10b36f0484f40"},
+      {"file":"cat-itim-400.woff2","weight":"400","style":"normal","range":"r2","bytes":46200,"sha256":"733235cab0000b011f318ba1028f1867ddc16e506ec8231f4134e9c0755d5ca6"}
+    ] },
+    "Jacquard 24": { "folder": "jacquard-24", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-jacquard_24-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":28724,"sha256":"bed0edc418c6f92e95d47101d5a007a7ef5b603c5d3897cffed3da83c534ce56"},
+      {"file":"cat-jacquard_24-400.woff2","weight":"400","style":"normal","range":"r2","bytes":35376,"sha256":"9d2cf508084a032b44160357968bd9f0cfb47ed69a17d167cb0f069a15229ad5"}
+    ] },
+    "Kablammo": { "folder": "kablammo", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-kablammo-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":43288,"sha256":"9d2aea07f941cd0a54c21e561a5a384f532ac6e86b2a670f4a248deb9350338d"},
+      {"file":"cat-kablammo-400.woff2","weight":"400","style":"normal","range":"r2","bytes":61700,"sha256":"63672a05390a721d70c6fe7923467c06ce3b83e1897babe343e6d8d4b5f62674"}
+    ] },
+    "Kalam": { "folder": "kalam", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-kalam-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":12140,"sha256":"1099e56781c48f97dc66c8df2039a640ded07742acd4c6f2c9dc6350c3e3f324"},
+      {"file":"cat-kalam-400.woff2","weight":"400","style":"normal","range":"r2","bytes":22336,"sha256":"954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"},
+      {"file":"cat-kalam-700-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":12152,"sha256":"1fc176f6b1fbc091d4321ef2c9b683a6f512f645b9f22c460c2e2f3d298fcf74"},
+      {"file":"cat-kalam-700.woff2","weight":"700","style":"normal","range":"r2","bytes":22144,"sha256":"252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"}
+    ] },
+    "Katibeh": { "folder": "katibeh", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-katibeh-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":8080,"sha256":"cd6db21b3e09eec32c7ffd22de28f1c03959e9811ea79338debc5915bc2fa913"},
+      {"file":"cat-katibeh-400.woff2","weight":"400","style":"normal","range":"r2","bytes":12124,"sha256":"bf5ca8a8c2854361c5d125551016861e241ee9db7e539e13c5ab5f04f8d2794f"}
+    ] },
+    "Lato": { "folder": "lato", "licence": "OFL-1.1", "faces": [
+      {"file":"lato-400.woff2","weight":"400","style":"normal","bytes":233788,"sha256":"7bf0992c412d8d366a22dbce7d66eab7dab990f5e4a55cfe968bf41174c21dd4","from":"google/fonts ofl/lato/Lato-Regular.ttf"},
+      {"file":"lato-700.woff2","weight":"700","style":"normal","bytes":232600,"sha256":"99166976028197f9cf0e6970cbfa91177e992cd44eab491a92c758ad6e810a48","from":"google/fonts ofl/lato/Lato-Bold.ttf"}
+    ] },
+    "Lemonada": { "folder": "lemonada", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-lemonada-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":17036,"sha256":"a6507ab1e2f1846408c8d67f64a831f3dba8a7ef05c2c69a0f7710ca5dd53c2a"},
+      {"file":"cat-lemonada-400.woff2","weight":"400","style":"normal","range":"r2","bytes":26688,"sha256":"a6530eb7debe445b8b7e02c0adf702e232135fd6d630032eb39931307632fd45"},
+      {"file":"cat-lemonada-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":17036,"sha256":"a6507ab1e2f1846408c8d67f64a831f3dba8a7ef05c2c69a0f7710ca5dd53c2a"},
+      {"file":"cat-lemonada-400.woff2","weight":"700","style":"normal","range":"r2","bytes":26688,"sha256":"a6530eb7debe445b8b7e02c0adf702e232135fd6d630032eb39931307632fd45"}
+    ] },
+    "Lilita One": { "folder": "lilita-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-lilita_one-400.woff2","weight":"400","style":"normal","bytes":14408,"sha256":"33c4e3c8072d15fbc3f4cd46029bf34b5a19ae5a09ab41beaffd72a619aa7f58","from":"google/fonts ofl/lilitaone/LilitaOne-Regular.ttf"}
+    ] },
+    "Literata": { "folder": "literata", "licence": "OFL-1.1", "faces": [
+      {"file":"literata-400.woff2","weight":"400","style":"normal","bytes":20420,"sha256":"a60c193b55766b68b922e2327e15c2d8c145532f283a27c3411b9c47a8583d18"},
+      {"file":"literata-700.woff2","weight":"700","style":"normal","bytes":22004,"sha256":"1f2985e0fc368aac76f95b847cd05ef6ec4bac2733a648098c62edf990756cf5"}
+    ] },
+    "Lobster": { "folder": "lobster", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-lobster-400.woff2","weight":"400","style":"normal","bytes":120104,"sha256":"0562cd71a3f4b32bc095722ea795489515ef66bd49ff3aa2bdaf0acf0174d037","from":"google/fonts ofl/lobster/Lobster-Regular.ttf"}
+    ] },
+    "Lora": { "folder": "lora", "licence": "OFL-1.1", "faces": [
+      {"file":"lora-var.woff2","weight":"400 700","style":"normal","bytes":90424,"sha256":"329f117280347b897ad73f2dc16388d75395c0ff0bf5aa34a7af08625724aeb2","from":"google/fonts ofl/lora/Lora[wght].ttf"}
+    ] },
+    "Luckiest Guy": { "folder": "luckiest-guy", "licence": "Apache-2.0", "faces": [
+      {"file":"cat-luckiest_guy-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":7612,"sha256":"1fbdf1d552eaa1c0c01788630cacb64a3d072beda38e9e7c8d730ad8eb54bfdb"},
+      {"file":"cat-luckiest_guy-400.woff2","weight":"400","style":"normal","range":"r2","bytes":17360,"sha256":"3877b522181765adf66ba89bd68d288ecb9f2483b441baab3424646b0c7aaa0a"}
+    ] },
+    "Marhey": { "folder": "marhey", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-marhey-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":12368,"sha256":"92b1c7fa9077bbf6fa10302201175dcbcd729e023abe32c02c4966c0d6b79d0e"},
+      {"file":"cat-marhey-400.woff2","weight":"400","style":"normal","range":"r2","bytes":26276,"sha256":"f4c8220f2e0fd44efbe16535b9d9f62645b6f4311123ff9f01811d7394d58cc8"},
+      {"file":"cat-marhey-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":12368,"sha256":"92b1c7fa9077bbf6fa10302201175dcbcd729e023abe32c02c4966c0d6b79d0e"},
+      {"file":"cat-marhey-400.woff2","weight":"700","style":"normal","range":"r2","bytes":26276,"sha256":"f4c8220f2e0fd44efbe16535b9d9f62645b6f4311123ff9f01811d7394d58cc8"}
+    ] },
+    "Modak": { "folder": "modak", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-modak-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":15684,"sha256":"9e93eeae7978c25bae66fb0f19a7d8540fa8b06f978d9e7b5957e097272fcd61"},
+      {"file":"cat-modak-400.woff2","weight":"400","style":"normal","range":"r2","bytes":33560,"sha256":"044310f45a5f75b5c510d535acdb78b42734c88cf31696b05c58be67e7c2219d"}
+    ] },
+    "Momo Signature": { "folder": "momo-signature", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-momo_signature-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":40416,"sha256":"077b506d524fd1e7b160c54b9fc71ce7a0366a9ddff38e4d0369bf02057fb78f"},
+      {"file":"cat-momo_signature-400.woff2","weight":"400","style":"normal","range":"r2","bytes":60132,"sha256":"b8ae75f56ec74aa859aeb46dd4a4b0589be8dfcddd51a5da224d4ce3eea3a101"}
+    ] },
+    "Monofett": { "folder": "monofett", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-monofett-400.woff2","weight":"400","style":"normal","bytes":24776,"sha256":"9d06f16bff49ef41091b999b3833e9745dd3a1861793ddb19ee1d83245deb1e5","from":"google/fonts ofl/monofett/Monofett-Regular.ttf"}
+    ] },
+    "Monomakh": { "folder": "monomakh", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-monomakh-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":16248,"sha256":"775f5700d0b68d65d3bc63a78bb02fff84ab7b343db4fdd1f65a40f0d1923097"},
+      {"file":"cat-monomakh-400.woff2","weight":"400","style":"normal","range":"r2","bytes":24936,"sha256":"e587edd17ffc2acef956510d66aab0578940d2da1961c899159ecc8bff6baf3c"}
+    ] },
+    "Nerko One": { "folder": "nerko-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-nerko_one-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":16788,"sha256":"d2a5ccd1d359eb9762abaf3000ec6027ebd1516fa5577f235571a79f142b7b0b"},
+      {"file":"cat-nerko_one-400.woff2","weight":"400","style":"normal","range":"r2","bytes":18336,"sha256":"6c6767855b5e131229ffc2c8222c3b525029b30314376eaa0c64ff054dd35447"}
+    ] },
+    "Newsreader": { "folder": "newsreader", "licence": "OFL-1.1", "faces": [
+      {"file":"newsreader-400.woff2","weight":"400","style":"normal","bytes":22480,"sha256":"e66067814f1c672d33a457e4f4d102c818b481420e2234cf685ebdbf2f443904"},
+      {"file":"newsreader-700.woff2","weight":"700","style":"normal","bytes":23796,"sha256":"8b5c3b65cbda1d79ed371d23df3ef1fe194e590558965cf9942042441480ec61"}
+    ] },
+    "Noto Sans": { "folder": "noto-sans", "licence": "OFL-1.1", "faces": [
+      {"file":"notosans-var.woff2","weight":"200 900","style":"normal","range":"r3","bytes":35820,"sha256":"51ca196f49a33e79e7870ff88ebd2829a3f627a51e7d690986618f0e7ad2b52d"},
+      {"file":"notosans-var-ext.woff2","weight":"200 900","style":"normal","range":"r4","bytes":167960,"sha256":"6d5a79315528df191b9d86f97b0c4272a8b588fcb166773fe6588ac795de0613"}
+    ] },
+    "Noto Sans Adlam": { "folder": "noto-sans-adlam", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_adlam-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":10384,"sha256":"81d4b0316061268d523a76e91742e656a7d538857724d3252f5bb95a3114687c"},
+      {"file":"cat-noto_sans_adlam-400.woff2","weight":"400","style":"normal","range":"r2","bytes":17032,"sha256":"a163f28da960be10641df7d4515e8fe113420ba628f3ea6e219bf83f6e8b29ce"},
+      {"file":"cat-noto_sans_adlam-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":10384,"sha256":"81d4b0316061268d523a76e91742e656a7d538857724d3252f5bb95a3114687c"},
+      {"file":"cat-noto_sans_adlam-400.woff2","weight":"700","style":"normal","range":"r2","bytes":17032,"sha256":"a163f28da960be10641df7d4515e8fe113420ba628f3ea6e219bf83f6e8b29ce"}
+    ] },
+    "Noto Sans Arabic": { "folder": "noto-sans-arabic", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_arabic-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":16816,"sha256":"27fe6458d54bcf13a2fe92228dd932ef3de9439267ca214e5c9f6bb02659e614"},
+      {"file":"cat-noto_sans_arabic-400.woff2","weight":"400","style":"normal","range":"r2","bytes":31416,"sha256":"fed070abc960c5f214fcb02b7b178cdab751ef7facd79a899f571bc21d38b8f8"},
+      {"file":"cat-noto_sans_arabic-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":16816,"sha256":"27fe6458d54bcf13a2fe92228dd932ef3de9439267ca214e5c9f6bb02659e614"},
+      {"file":"cat-noto_sans_arabic-400.woff2","weight":"700","style":"normal","range":"r2","bytes":31416,"sha256":"fed070abc960c5f214fcb02b7b178cdab751ef7facd79a899f571bc21d38b8f8"}
+    ] },
+    "Noto Sans Devanagari": { "folder": "noto-sans-devanagari", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_devanagari-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":13852,"sha256":"abb6f723e7ef4a6f9784d3b50533007f49609231bb872a205c2bfb6e7d43e6ee"},
+      {"file":"cat-noto_sans_devanagari-400.woff2","weight":"400","style":"normal","range":"r2","bytes":25384,"sha256":"531d2365a3dbd2daccb336430f40be4af31203a7d3f20c12513dca3012ad572b"},
+      {"file":"cat-noto_sans_devanagari-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":13852,"sha256":"abb6f723e7ef4a6f9784d3b50533007f49609231bb872a205c2bfb6e7d43e6ee"},
+      {"file":"cat-noto_sans_devanagari-400.woff2","weight":"700","style":"normal","range":"r2","bytes":25384,"sha256":"531d2365a3dbd2daccb336430f40be4af31203a7d3f20c12513dca3012ad572b"}
+    ] },
+    "Noto Sans Hebrew": { "folder": "noto-sans-hebrew", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_hebrew-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":11560,"sha256":"c088f4c4bf6d47d549adf622d8cd3c5e19164e7ead11931d8a2ff8832ba256d8"},
+      {"file":"cat-noto_sans_hebrew-400.woff2","weight":"400","style":"normal","range":"r2","bytes":20192,"sha256":"27fd789f4089b6aa76494638b3f94a6c00c69a0519e38add75a3c7e852cab1bc"},
+      {"file":"cat-noto_sans_hebrew-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":11560,"sha256":"c088f4c4bf6d47d549adf622d8cd3c5e19164e7ead11931d8a2ff8832ba256d8"},
+      {"file":"cat-noto_sans_hebrew-400.woff2","weight":"700","style":"normal","range":"r2","bytes":20192,"sha256":"27fd789f4089b6aa76494638b3f94a6c00c69a0519e38add75a3c7e852cab1bc"}
+    ] },
+    "Noto Sans JP": { "folder": "noto-sans-jp", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_jp-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":8232,"sha256":"ae56a66caadf69e67b818d49cdc6745fe51174804d1de8ee74a9aafb668746ab"},
+      {"file":"cat-noto_sans_jp-400.woff2","weight":"400","style":"normal","range":"r2","bytes":24840,"sha256":"2df3e31f5fbf0357d1b7018d82f028ec84a31e43e35098931a975c2fc769d7e1"},
+      {"file":"cat-noto_sans_jp-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":8232,"sha256":"ae56a66caadf69e67b818d49cdc6745fe51174804d1de8ee74a9aafb668746ab"},
+      {"file":"cat-noto_sans_jp-400.woff2","weight":"700","style":"normal","range":"r2","bytes":24840,"sha256":"2df3e31f5fbf0357d1b7018d82f028ec84a31e43e35098931a975c2fc769d7e1"}
+    ] },
+    "Noto Sans Khmer": { "folder": "noto-sans-khmer", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_khmer-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":14012,"sha256":"5daedff90f629b4061d26f773d822d9bfe170712dc6673e937f809cb20150e3c"},
+      {"file":"cat-noto_sans_khmer-400.woff2","weight":"400","style":"normal","range":"r2","bytes":25504,"sha256":"4ce5d86cb219b10a58b8534fe015edc6156f3d0888da4081c7b1ba9156ee2755"},
+      {"file":"cat-noto_sans_khmer-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":14012,"sha256":"5daedff90f629b4061d26f773d822d9bfe170712dc6673e937f809cb20150e3c"},
+      {"file":"cat-noto_sans_khmer-400.woff2","weight":"700","style":"normal","range":"r2","bytes":25504,"sha256":"4ce5d86cb219b10a58b8534fe015edc6156f3d0888da4081c7b1ba9156ee2755"}
+    ] },
+    "Noto Sans KR": { "folder": "noto-sans-kr", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_kr-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":8304,"sha256":"72795dcd57624f5273807a6445e203307ff08ca8bdb2d58fd8a8301283a0af87"},
+      {"file":"cat-noto_sans_kr-400.woff2","weight":"400","style":"normal","range":"r2","bytes":26004,"sha256":"2ee54080f0b0dee4fb2a9365ec8b3e3269d7720a7d7f2d62c2913088842e1326"},
+      {"file":"cat-noto_sans_kr-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":8304,"sha256":"72795dcd57624f5273807a6445e203307ff08ca8bdb2d58fd8a8301283a0af87"},
+      {"file":"cat-noto_sans_kr-400.woff2","weight":"700","style":"normal","range":"r2","bytes":26004,"sha256":"2ee54080f0b0dee4fb2a9365ec8b3e3269d7720a7d7f2d62c2913088842e1326"}
+    ] },
+    "Noto Sans SC": { "folder": "noto-sans-sc", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_sc-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":8244,"sha256":"e316201f3fc493d191136a3ea728d184227b9651aea2bb38e279c45ef58646a7"},
+      {"file":"cat-noto_sans_sc-400.woff2","weight":"400","style":"normal","range":"r2","bytes":25240,"sha256":"c1d919c8701a86ed7f33a8044f7c4e5675db2fce8b754091e97b2c0792f9782c"},
+      {"file":"cat-noto_sans_sc-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":8244,"sha256":"e316201f3fc493d191136a3ea728d184227b9651aea2bb38e279c45ef58646a7"},
+      {"file":"cat-noto_sans_sc-400.woff2","weight":"700","style":"normal","range":"r2","bytes":25240,"sha256":"c1d919c8701a86ed7f33a8044f7c4e5675db2fce8b754091e97b2c0792f9782c"}
+    ] },
+    "Noto Sans Thai": { "folder": "noto-sans-thai", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-noto_sans_thai-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":15944,"sha256":"49929deb3afa3fea37b19fdd148889ef19b3e44a8452b13568af089a7d5db934"},
+      {"file":"cat-noto_sans_thai-400.woff2","weight":"400","style":"normal","range":"r2","bytes":30748,"sha256":"1a66f268c8d76575807979309cbbac3aff7b61919f59ea19fdc821d92fb407f3"},
+      {"file":"cat-noto_sans_thai-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":15944,"sha256":"49929deb3afa3fea37b19fdd148889ef19b3e44a8452b13568af089a7d5db934"},
+      {"file":"cat-noto_sans_thai-400.woff2","weight":"700","style":"normal","range":"r2","bytes":30748,"sha256":"1a66f268c8d76575807979309cbbac3aff7b61919f59ea19fdc821d92fb407f3"}
+    ] },
+    "Nunito": { "folder": "nunito", "licence": "OFL-1.1", "faces": [
+      {"file":"nunito-var.woff2","weight":"400 700","style":"normal","range":"r3","bytes":39128,"sha256":"ba344451eab25b217a165363b1982048a5e5830a0daf36577973955a04cac793"},
+      {"file":"nunito-var-ext.woff2","weight":"400 700","style":"normal","range":"r4","bytes":35588,"sha256":"2c8d792869818ecb253a46bc3c63c7013df7aac2f69291c3c85e5cdc94160960"}
+    ] },
+    "Ole": { "folder": "ole", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-ole-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":35528,"sha256":"94422a6182045d1079c552ec61aef8e3a7fbe4747fdca3f1d2d92fff600c9f87"},
+      {"file":"cat-ole-400.woff2","weight":"400","style":"normal","range":"r2","bytes":36788,"sha256":"53c77111a59263ba789e921fc94f9bae11685d2a9a245d6d1fbd2c87661aee36"}
+    ] },
+    "Open Sans": { "folder": "open-sans", "licence": "OFL-1.1", "faces": [
+      {"file":"opensans-400.woff2","weight":"400","style":"normal","bytes":18640,"sha256":"0e44026ad31376af1b56593cd4acb4f353f8e8789c51759e18f64578e4ef296a"},
+      {"file":"opensans-700.woff2","weight":"700","style":"normal","bytes":18204,"sha256":"594a622208d1dad5d1dd58aef74f212ce7132d8f0aa5bacea6cfeb86d308c17a"}
+    ] },
+    "OpenDyslexic": { "folder": "opendyslexic", "licence": "OFL-1.1", "faces": [
+      {"file":"opendyslexic-400.woff2","weight":"400","style":"normal","bytes":103336,"sha256":"0441bc21071e42db57c217f93fbc48d3b55a2987c02814c94dc93621c42e8695","from":"antijingoist/opendyslexic compiled/OpenDyslexic-Regular.woff2"}
+    ] },
+    "Pacifico": { "folder": "pacifico", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-pacifico-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":31080,"sha256":"0e2fe23a0a87bf572e6463b29ea7782e1898d87d6399698ad9fb40b676e13758"},
+      {"file":"cat-pacifico-400.woff2","weight":"400","style":"normal","range":"r2","bytes":32280,"sha256":"99ec044ad9040a708e38f90ebd5984ca03fc46afeee26d5c77c4769c66ed89e2"}
+    ] },
+    "Patrick Hand": { "folder": "patrick-hand", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-patrick_hand-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":20112,"sha256":"c16846bad9501534b8402172c18f87e927146c4e63af2942f1fa8ad8ba7e6e70"},
+      {"file":"cat-patrick_hand-400.woff2","weight":"400","style":"normal","range":"r2","bytes":23944,"sha256":"ac5bc9033b2572bf84d39f7150c1634e37ed16e8dbee632d6d0bceac0bbf0199"}
+    ] },
+    "Petit Formal Script": { "folder": "petit-formal-script", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-petit_formal_script-400.woff2","weight":"400","style":"normal","bytes":51548,"sha256":"967d984226d5ed390cbb33f23d43ea8ac0edb818e6d157757d90aacbeafe8ce5","from":"google/fonts ofl/petitformalscript/PetitFormalScript-Regular.ttf"}
+    ] },
+    "Pinyon Script": { "folder": "pinyon-script", "licence": "OFL-1.1", "faces": [
+      {"file":"pinyon-400.woff2","weight":"400","style":"normal","bytes":39044,"sha256":"3e1f69a201572cad4aabea7ccf720f093a7dbc005380b2a1b89e0b94476d3e42"}
+    ] },
+    "Pixelify Sans": { "folder": "pixelify-sans", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-pixelify_sans-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":8208,"sha256":"0afa0101fd8c5892b1661f7561564c98f0aa13ef2d6609809d477820c4bc6c89"},
+      {"file":"cat-pixelify_sans-400.woff2","weight":"400","style":"normal","range":"r2","bytes":12016,"sha256":"4a5633a0c9c1b73abd133a56d3716c2d8df2ed03cb987346f72194aeb224f382"},
+      {"file":"cat-pixelify_sans-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":8208,"sha256":"0afa0101fd8c5892b1661f7561564c98f0aa13ef2d6609809d477820c4bc6c89"},
+      {"file":"cat-pixelify_sans-400.woff2","weight":"700","style":"normal","range":"r2","bytes":12016,"sha256":"4a5633a0c9c1b73abd133a56d3716c2d8df2ed03cb987346f72194aeb224f382"}
+    ] },
+    "Plaster": { "folder": "plaster", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-plaster-400.woff2","weight":"400","style":"normal","bytes":16368,"sha256":"a14eea01af3b4347be7eb5f49a4dd3ae72381a048471e39b28095303d70d46be","from":"google/fonts ofl/plaster/Plaster-Regular.ttf"}
+    ] },
+    "Playfair Display": { "folder": "playfair-display", "licence": "OFL-1.1", "faces": [
+      {"file":"playfair-var.woff2","weight":"400 900","style":"normal","bytes":112292,"sha256":"c1b9d34c126239b67bb3abf2a15af72f0cb24e9cc911ab065863ccc57a5e5952","from":"google/fonts ofl/playfairdisplay/PlayfairDisplay[wght].ttf"}
+    ] },
+    "Playwrite AR Guides": { "folder": "playwrite-ar-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ar_guides-400-0.woff2","weight":"400","style":"normal","bytes":51900,"sha256":"988da9d805ec908e9c399b206fa259befa0607050971320bbcbad81f556ba812"}
+    ] },
+    "Playwrite AT": { "folder": "playwrite-at", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_at-400-0.woff2","weight":"400","style":"normal","bytes":37668,"sha256":"cfc0a876867eba756b7a1e9894f375db94d4722556f397a68a62a098fa4d18f9"}
+    ] },
+    "Playwrite AT Guides": { "folder": "playwrite-at-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_at_guides-400-0.woff2","weight":"400","style":"normal","bytes":45296,"sha256":"85f63d16034e26aa3d1cab51eb5b08f6928f53cd5d6189144e1dc418a0b12737"}
+    ] },
+    "Playwrite AU NSW": { "folder": "playwrite-au-nsw", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_nsw-400-0.woff2","weight":"400","style":"normal","bytes":30064,"sha256":"047c259ec54ca70267133e9186643703a8b284cb1455afa701befe035736be5e"}
+    ] },
+    "Playwrite AU NSW Guides": { "folder": "playwrite-au-nsw-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_nsw_guides-400-0.woff2","weight":"400","style":"normal","bytes":38396,"sha256":"a7e43b748d5526120f6dad369ba14328d1c15a7491097ec220e1a51b2d3c9d23"}
+    ] },
+    "Playwrite AU QLD": { "folder": "playwrite-au-qld", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_qld-400-0.woff2","weight":"400","style":"normal","bytes":31876,"sha256":"cc7eb66fb1e3de4a5d65e9066e670adc5bf6827378f402f256d253c94e93e00c"}
+    ] },
+    "Playwrite AU QLD Guides": { "folder": "playwrite-au-qld-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_qld_guides-400-0.woff2","weight":"400","style":"normal","bytes":40432,"sha256":"25b7b06aa43e30aaaecedf2a7c1f268990c9e938c303ec5c5010e73ab1b2a21c"}
+    ] },
+    "Playwrite AU SA": { "folder": "playwrite-au-sa", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_sa-400-0.woff2","weight":"400","style":"normal","bytes":29588,"sha256":"79b1d9eb71873b1091acafa0788bb78f8889597b53047a757d193baa3f328043"}
+    ] },
+    "Playwrite AU SA Guides": { "folder": "playwrite-au-sa-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_sa_guides-400-0.woff2","weight":"400","style":"normal","bytes":37968,"sha256":"70b57755f3a42f5ffb81e4ab0d6fbfa87fde18ad3f4cdedb6c14498c2e21d477"}
+    ] },
+    "Playwrite AU TAS": { "folder": "playwrite-au-tas", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_tas-400-0.woff2","weight":"400","style":"normal","bytes":29420,"sha256":"d2467a94e24276e4f182361ba852e91d998d586df0635f4da203296d08344184"}
+    ] },
+    "Playwrite AU TAS Guides": { "folder": "playwrite-au-tas-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_tas_guides-400-0.woff2","weight":"400","style":"normal","bytes":37560,"sha256":"af8413487002027f982d5fb4b6b7d1118e7f2214ccf3accd129461359a14a3f4"}
+    ] },
+    "Playwrite AU VIC": { "folder": "playwrite-au-vic", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_vic-400-0.woff2","weight":"400","style":"normal","bytes":34028,"sha256":"2d2e7fe8a7e7e64ba26ab856c8d77c50e93ee6493733012268e24b78c7cbe88f"}
+    ] },
+    "Playwrite AU VIC Guides": { "folder": "playwrite-au-vic-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_au_vic_guides-400-0.woff2","weight":"400","style":"normal","bytes":42844,"sha256":"370bcc520db60a226ec1abeadf55d97c6d45f4835c0338edfd671cdd72eb055d"}
+    ] },
+    "Playwrite BE VLG": { "folder": "playwrite-be-vlg", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_be_vlg-400-0.woff2","weight":"400","style":"normal","bytes":42312,"sha256":"30d9c3142d959b456644095a408e881965957c7f5485e752e063b6597c163090"}
+    ] },
+    "Playwrite BE VLG Guides": { "folder": "playwrite-be-vlg-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_be_vlg_guides-400-0.woff2","weight":"400","style":"normal","bytes":51528,"sha256":"98776b48401908f15bf018e9d8623e9b8b6911ae6f94b8a709153c0ce57005e0"}
+    ] },
+    "Playwrite BE WAL": { "folder": "playwrite-be-wal", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_be_wal-400-0.woff2","weight":"400","style":"normal","bytes":42724,"sha256":"fe1e64d699892e9a320f2e9ee3ea720b547045023777eaa451e55a034abb2792"}
+    ] },
+    "Playwrite BE WAL Guides": { "folder": "playwrite-be-wal-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_be_wal_guides-400-0.woff2","weight":"400","style":"normal","bytes":51948,"sha256":"d3f8294e194edc8541429c2c6e2080338033c09a9dbf91307b02583da1a7d16d"}
+    ] },
+    "Playwrite BR Guides": { "folder": "playwrite-br-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_br_guides-400-0.woff2","weight":"400","style":"normal","bytes":51792,"sha256":"7655064a2c7523967b029790ad77f38cebac7ba5949c47e33db9d4ab20578e0c"}
+    ] },
+    "Playwrite CA Guides": { "folder": "playwrite-ca-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ca_guides-400-0.woff2","weight":"400","style":"normal","bytes":52520,"sha256":"1c4907c67455b15ffcdea028d16e1970caa6e57d365411f86e66c18757399c75"}
+    ] },
+    "Playwrite CL Guides": { "folder": "playwrite-cl-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_cl_guides-400-0.woff2","weight":"400","style":"normal","bytes":51764,"sha256":"39897e57631abb998a1aa0887aea083e8ef260dfee7659304994c8d7fa7d6d21"}
+    ] },
+    "Playwrite CO Guides": { "folder": "playwrite-co-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_co_guides-400-0.woff2","weight":"400","style":"normal","bytes":53772,"sha256":"3c48862e6dde3bf626d7acfbca806bab766e75c32528e4deeb3dc27f1ad373c6"}
+    ] },
+    "Playwrite CU Guides": { "folder": "playwrite-cu-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_cu_guides-400-0.woff2","weight":"400","style":"normal","bytes":54164,"sha256":"ce60e592e8236cc5811eeb1bcb33f405de90979a6c1ce2641513f2417f48ab59"}
+    ] },
+    "Playwrite CZ": { "folder": "playwrite-cz", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_cz-400-0.woff2","weight":"400","style":"normal","bytes":43024,"sha256":"de7581880e43d8c183709a474fb5958295e7332ea51d87b86424dd48d289e1c8"}
+    ] },
+    "Playwrite CZ Guides": { "folder": "playwrite-cz-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_cz_guides-400-0.woff2","weight":"400","style":"normal","bytes":51996,"sha256":"e447b2475f077c6ad840a5d7daf47e5fe6ddd78a804ad4d25fed812955d65e61"}
+    ] },
+    "Playwrite DE Grund": { "folder": "playwrite-de-grund", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_grund-400-0.woff2","weight":"400","style":"normal","bytes":20648,"sha256":"0274d84a08a7fad47f1089db0f48246ab734354e94e75ce45cd42d34956edb0e"}
+    ] },
+    "Playwrite DE Grund Guides": { "folder": "playwrite-de-grund-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_grund_guides-400-0.woff2","weight":"400","style":"normal","bytes":27616,"sha256":"ca65d683f4621204092ec5d916b59eaddd7885c5dcc3e94b92a23fb5a149e88c"}
+    ] },
+    "Playwrite DE LA": { "folder": "playwrite-de-la", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_la-400-0.woff2","weight":"400","style":"normal","bytes":42196,"sha256":"5bb89d9970026f33b883295d512708929d81ecea297978e2ccb529310f6c190d"}
+    ] },
+    "Playwrite DE LA Guides": { "folder": "playwrite-de-la-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_la_guides-400-0.woff2","weight":"400","style":"normal","bytes":51384,"sha256":"1e34920907d14678cba063f1cc4beead2f9aff01ad0da5ac39eaf6033c0ec1ec"}
+    ] },
+    "Playwrite DE SAS": { "folder": "playwrite-de-sas", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_sas-400-0.woff2","weight":"400","style":"normal","bytes":40820,"sha256":"53015bcaf23da09d58c3314f21d20989046d9f1864f3771df187903854df8229"}
+    ] },
+    "Playwrite DE SAS Guides": { "folder": "playwrite-de-sas-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_sas_guides-400-0.woff2","weight":"400","style":"normal","bytes":49476,"sha256":"9687e57ffcdaef8234f9d0af46ef497c8dda89f7d0dc1db906ac0a7d0f739104"}
+    ] },
+    "Playwrite DE VA": { "folder": "playwrite-de-va", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_va-400-0.woff2","weight":"400","style":"normal","bytes":38252,"sha256":"76731bfb704bfa50c30353927ecae94885213be1fdac50ddbd042391defb428b"}
+    ] },
+    "Playwrite DE VA Guides": { "folder": "playwrite-de-va-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_de_va_guides-400-0.woff2","weight":"400","style":"normal","bytes":47124,"sha256":"9ac92865ca1a3c529be80e8759e892d8a7e3e10059f8e378cf47332958d8d181"}
+    ] },
+    "Playwrite DK Loopet": { "folder": "playwrite-dk-loopet", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_dk_loopet-400-0.woff2","weight":"400","style":"normal","bytes":32536,"sha256":"943d3423b7265a2293b5f6d563ed2a5c211376e18968bd12948bfc8062bd5dce"}
+    ] },
+    "Playwrite DK Loopet Guides": { "folder": "playwrite-dk-loopet-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_dk_loopet_guides-400-0.woff2","weight":"400","style":"normal","bytes":40948,"sha256":"ef667754446bdf48cca092d10a369af7ca82f2e9fa8b2e59896ba5900ef398fc"}
+    ] },
+    "Playwrite DK Uloopet": { "folder": "playwrite-dk-uloopet", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_dk_uloopet-400-0.woff2","weight":"400","style":"normal","bytes":30532,"sha256":"20e871352b5f9e7d967f6404136f7c6418060b9c0157031614284b5842826662"}
+    ] },
+    "Playwrite DK Uloopet Guides": { "folder": "playwrite-dk-uloopet-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_dk_uloopet_guides-400-0.woff2","weight":"400","style":"normal","bytes":38832,"sha256":"d2b8380f0a84ca13cbb4ea4a76586b2b64f76f9f42fc4f6d4055d58c3a4cb96d"}
+    ] },
+    "Playwrite ES Deco Guides": { "folder": "playwrite-es-deco-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_es_deco_guides-400-0.woff2","weight":"400","style":"normal","bytes":50744,"sha256":"37f74cb8f6a812d760eeb7102b2c246a1ea9843496088175db7d8ec00b97fd99"}
+    ] },
+    "Playwrite ES Guides": { "folder": "playwrite-es-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_es_guides-400-0.woff2","weight":"400","style":"normal","bytes":42096,"sha256":"a77b14f75b0bbbc731c70bbbdbdded70f086d4a5cf2cf9be03ec2ebad2c1b1db"}
+    ] },
+    "Playwrite FR Moderne": { "folder": "playwrite-fr-moderne", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_fr_moderne-400-0.woff2","weight":"400","style":"normal","bytes":27352,"sha256":"e8ac5863e52e0c3c9b6d562a218a492fefb8b832157bd3c4df30cc511f9148aa"}
+    ] },
+    "Playwrite FR Moderne Guides": { "folder": "playwrite-fr-moderne-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_fr_moderne_guides-400-0.woff2","weight":"400","style":"normal","bytes":35344,"sha256":"473b0f504c0b013fa58a9d7648bd0c54906cc754f8c5c1a283bbe929f49eca0a"}
+    ] },
+    "Playwrite FR Trad": { "folder": "playwrite-fr-trad", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_fr_trad-400-0.woff2","weight":"400","style":"normal","bytes":43180,"sha256":"c280edaaf1d6c4b71d2e33fe245fe8ee17333ab8a7245144805499c079586caf"}
+    ] },
+    "Playwrite FR Trad Guides": { "folder": "playwrite-fr-trad-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_fr_trad_guides-400-0.woff2","weight":"400","style":"normal","bytes":52340,"sha256":"106f48c318a893213fdbca495d09f313d0cab6b08f3e4e815b62cfdc81cc2341"}
+    ] },
+    "Playwrite GB J Guides": { "folder": "playwrite-gb-j-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_gb_j_guides-400-0.woff2","weight":"400","style":"normal","bytes":36808,"sha256":"c419cb612d22bd7f0c27aa47f7c4f657ca16902666eeb183ee8c612393b971b0"}
+    ] },
+    "Playwrite GB S Guides": { "folder": "playwrite-gb-s-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_gb_s_guides-400-0.woff2","weight":"400","style":"normal","bytes":34380,"sha256":"9b224ff6e63402c7108286e12261e57c47f7f0701ff92b40120ec762177a8fda"}
+    ] },
+    "Playwrite HR": { "folder": "playwrite-hr", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_hr-400-0.woff2","weight":"400","style":"normal","bytes":40476,"sha256":"7d1040cb879993b3ffcfe1709ec2e03ccb8437c71050b2c7af276856fae61915"}
+    ] },
+    "Playwrite HR Guides": { "folder": "playwrite-hr-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_hr_guides-400-0.woff2","weight":"400","style":"normal","bytes":49092,"sha256":"073ef97e13280371f4321e804309de1261f885b3027906fb7e9b8db819349817"}
+    ] },
+    "Playwrite HR Lijeva": { "folder": "playwrite-hr-lijeva", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_hr_lijeva-400-0.woff2","weight":"400","style":"normal","bytes":39032,"sha256":"79d6cecb258c2a0a431b59811a40f2505192000f2ad647bd9c0efd6d4d3368bb"}
+    ] },
+    "Playwrite HR Lijeva Guides": { "folder": "playwrite-hr-lijeva-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_hr_lijeva_guides-400-0.woff2","weight":"400","style":"normal","bytes":47792,"sha256":"eff8785d537580c58d9a1d21e3ac43d8f0e843eb19dcf7f78cc3e0924c695eb0"}
+    ] },
+    "Playwrite HU": { "folder": "playwrite-hu", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_hu-400-0.woff2","weight":"400","style":"normal","bytes":39448,"sha256":"ddf7d738d2b46d25fde1b6bdaaccb9f82bf78582f8893705211ba342ff99bc0f"}
+    ] },
+    "Playwrite HU Guides": { "folder": "playwrite-hu-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_hu_guides-400-0.woff2","weight":"400","style":"normal","bytes":48360,"sha256":"04e62b564745e564fff30f2c6368800940a3c7edfa784adeb439852916233142"}
+    ] },
+    "Playwrite ID": { "folder": "playwrite-id", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_id-400-0.woff2","weight":"400","style":"normal","bytes":41704,"sha256":"5342a1819ba47b9c0d9cf77e79ac992cce82ad0f7b4910a6a7303968b4ce6bf2"}
+    ] },
+    "Playwrite ID Guides": { "folder": "playwrite-id-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_id_guides-400-0.woff2","weight":"400","style":"normal","bytes":51308,"sha256":"edd56ad6c3a8894ab0894bdf69d9e296622ed81a8e7afd80392de16d9368f89b"}
+    ] },
+    "Playwrite IE": { "folder": "playwrite-ie", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ie-400-0.woff2","weight":"400","style":"normal","bytes":41152,"sha256":"9989621508c7c919d402bb7ec8ff578bc9696a0c49b23b7f02eff8b273b9f188"}
+    ] },
+    "Playwrite IE Guides": { "folder": "playwrite-ie-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ie_guides-400-0.woff2","weight":"400","style":"normal","bytes":50176,"sha256":"a3105ea33ecb7f5eb197746ffb21820b8bbb31fae8be05eebc87ff2d08cf2a0f"}
+    ] },
+    "Playwrite IN": { "folder": "playwrite-in", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_in-400-0.woff2","weight":"400","style":"normal","bytes":44872,"sha256":"fd0618bd463347662919108cfa75162f75328710605a40df3a4528c8ae781241"}
+    ] },
+    "Playwrite IN Guides": { "folder": "playwrite-in-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_in_guides-400-0.woff2","weight":"400","style":"normal","bytes":54100,"sha256":"3cc3e937735b95e29f00e2d6ba06ac926c9d5584ac07de171bb4aee769b3204c"}
+    ] },
+    "Playwrite IS": { "folder": "playwrite-is", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_is-400-0.woff2","weight":"400","style":"normal","bytes":29536,"sha256":"5455babd90030834021d3cd8cc3cdbe58978fe9f0721bb4059684a372d7aca36"}
+    ] },
+    "Playwrite IS Guides": { "folder": "playwrite-is-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_is_guides-400-0.woff2","weight":"400","style":"normal","bytes":37632,"sha256":"63c7d09b1f1e0133809a5a85b7779339b2a2513cb8ed594d37b13ac0b259b141"}
+    ] },
+    "Playwrite IT Moderna": { "folder": "playwrite-it-moderna", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_it_moderna-400-0.woff2","weight":"400","style":"normal","bytes":29604,"sha256":"7b90d2d6bd8378e765a8c516a64c75081fd4341a767063db458f4d7d040d1135"}
+    ] },
+    "Playwrite IT Moderna Guides": { "folder": "playwrite-it-moderna-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_it_moderna_guides-400-0.woff2","weight":"400","style":"normal","bytes":36808,"sha256":"52a796ea816de26c92b6f955ebb2b6e210a452346e1f3e7e9ab51993394ff77b"}
+    ] },
+    "Playwrite IT Trad": { "folder": "playwrite-it-trad", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_it_trad-400-0.woff2","weight":"400","style":"normal","bytes":41252,"sha256":"95506af5feaeebedb508f95ab97e0847a4a458a54af9cfda87bb3cccde1fbaba"}
+    ] },
+    "Playwrite IT Trad Guides": { "folder": "playwrite-it-trad-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_it_trad_guides-400-0.woff2","weight":"400","style":"normal","bytes":49804,"sha256":"3570317dfb6823ee33d1f5ebaf5795e949e269ec1fab5955f8be76569e101319"}
+    ] },
+    "Playwrite MX Guides": { "folder": "playwrite-mx-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_mx_guides-400-0.woff2","weight":"400","style":"normal","bytes":54244,"sha256":"7a9a9a1b367c136607f534cc41b5a0d431af568a3987906bd4728e6d7f7ffb03"}
+    ] },
+    "Playwrite NG Modern": { "folder": "playwrite-ng-modern", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ng_modern-400-0.woff2","weight":"400","style":"normal","bytes":28028,"sha256":"f34c1bf5900a3735572f1ccb185fcd01991fbd82e90a794511457a2953ee7c72"}
+    ] },
+    "Playwrite NG Modern Guides": { "folder": "playwrite-ng-modern-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ng_modern_guides-400-0.woff2","weight":"400","style":"normal","bytes":35968,"sha256":"1b66179e87905d29647418624ac847bf6865d9119fe7aa3b0948a35efc65dd6b"}
+    ] },
+    "Playwrite NL": { "folder": "playwrite-nl", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_nl-400-0.woff2","weight":"400","style":"normal","bytes":42832,"sha256":"80df131cdda57258e81f671b7f2a3d6f211f9c92dc318ab0dc3e6c9ac96ac04b"}
+    ] },
+    "Playwrite NL Guides": { "folder": "playwrite-nl-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_nl_guides-400-0.woff2","weight":"400","style":"normal","bytes":52400,"sha256":"0966e35afe9948bb0df3fac0ec10e700ef141c4f84f2279903b4f8813cb40129"}
+    ] },
+    "Playwrite NO": { "folder": "playwrite-no", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_no-400-0.woff2","weight":"400","style":"normal","bytes":37312,"sha256":"f05a067d83fe946c65fbdd616eceda39e650c62c8e60a46d96aaa28023e4a7dc"}
+    ] },
+    "Playwrite NO Guides": { "folder": "playwrite-no-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_no_guides-400-0.woff2","weight":"400","style":"normal","bytes":45944,"sha256":"e40219db9569572fb278db6bfd0679b46201d12ccc90a9dc6085aa6e72491f36"}
+    ] },
+    "Playwrite NZ": { "folder": "playwrite-nz", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_nz-400-0.woff2","weight":"400","style":"normal","bytes":29272,"sha256":"f82bbf05885ba60d9be31805d5a4c15b379ac97602d34475cbd9114ebbcd8da3"}
+    ] },
+    "Playwrite NZ Basic": { "folder": "playwrite-nz-basic", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_nz_basic-400-0.woff2","weight":"400","style":"normal","bytes":23088,"sha256":"8495a838bd9a2a7b508b2fbf768c4829e80301e05f1000e7ec3cd51764c15379"}
+    ] },
+    "Playwrite NZ Basic Guides": { "folder": "playwrite-nz-basic-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_nz_basic_guides-400-0.woff2","weight":"400","style":"normal","bytes":29604,"sha256":"eee4e2b76834c8b1e7eeaba90bdbe9956cd7a042522bff391c037664c72d1f92"}
+    ] },
+    "Playwrite NZ Guides": { "folder": "playwrite-nz-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_nz_guides-400-0.woff2","weight":"400","style":"normal","bytes":36624,"sha256":"3b90c5d21af4789ef56b3c305ad104f358c600ef0f4ca2b1f27a1a7021e18af8"}
+    ] },
+    "Playwrite PE Guides": { "folder": "playwrite-pe-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_pe_guides-400-0.woff2","weight":"400","style":"normal","bytes":52392,"sha256":"368558fd931a17c899418d5ec5dc2ba5c7cf1efe6c04ad9e6ae2746c840cea30"}
+    ] },
+    "Playwrite PL": { "folder": "playwrite-pl", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_pl-400-0.woff2","weight":"400","style":"normal","bytes":37892,"sha256":"48b994182dd8d6ffae2e2b85b318449dfd1f835c1ce8c78bd542c1e338364d9e"}
+    ] },
+    "Playwrite PL Guides": { "folder": "playwrite-pl-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_pl_guides-400-0.woff2","weight":"400","style":"normal","bytes":46764,"sha256":"c2169bcb5e4cc7a1a10eaffabf7c16aef37c5a5f51d5dbcf32e57dedfda6f239"}
+    ] },
+    "Playwrite PT Guides": { "folder": "playwrite-pt-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_pt_guides-400-0.woff2","weight":"400","style":"normal","bytes":51388,"sha256":"e30097378fc28984b381d4bc1aa95fc101f6486542de4e41e2957c9c501c0075"}
+    ] },
+    "Playwrite RO": { "folder": "playwrite-ro", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ro-400-0.woff2","weight":"400","style":"normal","bytes":42144,"sha256":"4f5faf7d4dc5dd2222802e82f06913465cc3d53bd55e3425e006ed19ab03bda0"}
+    ] },
+    "Playwrite RO Guides": { "folder": "playwrite-ro-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_ro_guides-400-0.woff2","weight":"400","style":"normal","bytes":51336,"sha256":"53f7208e280faf17d40dd361bf69494ebe9fe893b9c4bfadd210589406ece5c8"}
+    ] },
+    "Playwrite SK": { "folder": "playwrite-sk", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_sk-400-0.woff2","weight":"400","style":"normal","bytes":43056,"sha256":"cc45e567e7e9f3bd7b4e35087cdd3460bad62663f273dc59a5bb7c805a7a048a"}
+    ] },
+    "Playwrite SK Guides": { "folder": "playwrite-sk-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_sk_guides-400-0.woff2","weight":"400","style":"normal","bytes":51984,"sha256":"a1d0edd3e8e591d0c5dbd6732ca6cb01ff15f64df455ce78b7f2283abcd1000c"}
+    ] },
+    "Playwrite TZ": { "folder": "playwrite-tz", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_tz-400-0.woff2","weight":"400","style":"normal","bytes":43748,"sha256":"b231a737d54a2c591b470ebd0da13a472288d32a63bc77c3c793ccab12d8fb26"}
+    ] },
+    "Playwrite TZ Guides": { "folder": "playwrite-tz-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_tz_guides-400-0.woff2","weight":"400","style":"normal","bytes":52792,"sha256":"5286c50474e1216c245e6fa16e6a5de3c5650e690b9563194ac17cf1286a06ec"}
+    ] },
+    "Playwrite US Modern Guides": { "folder": "playwrite-us-modern-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_us_modern_guides-400-0.woff2","weight":"400","style":"normal","bytes":36760,"sha256":"a5c365aef596214ad0191335f1820fb36f65f18d883c9cfb7a4222f7820c167d"}
+    ] },
+    "Playwrite US Trad Guides": { "folder": "playwrite-us-trad-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_us_trad_guides-400-0.woff2","weight":"400","style":"normal","bytes":52880,"sha256":"e0404f1120c2f5749a2c73af7f261379c01885105fc8a8fd5aac7ef7fa4009f6"}
+    ] },
+    "Playwrite VN": { "folder": "playwrite-vn", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_vn-400-0.woff2","weight":"400","style":"normal","bytes":42800,"sha256":"40caf7f0139c322649f4147077937a24f6cd2ba4879408a6dc9beb34d6a83475"}
+    ] },
+    "Playwrite VN Guides": { "folder": "playwrite-vn-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_vn_guides-400-0.woff2","weight":"400","style":"normal","bytes":52212,"sha256":"0f85f05c5d59f151e401913d6572440d28c7b3fc00cdcdc4d9d7d77a58a5dc5a"}
+    ] },
+    "Playwrite ZA": { "folder": "playwrite-za", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_za-400-0.woff2","weight":"400","style":"normal","bytes":43572,"sha256":"d4a37138fd83fbd373e68f003784730c5c8f5fd4b648268dbe1c80eca68f085f"}
+    ] },
+    "Playwrite ZA Guides": { "folder": "playwrite-za-guides", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-playwrite_za_guides-400-0.woff2","weight":"400","style":"normal","bytes":52172,"sha256":"83de403b726d0d36fc8f8445c42bc56ef4bb417fa95f066a3377a77e428e4230"}
+    ] },
+    "Plus Jakarta Sans": { "folder": "plus-jakarta-sans", "licence": "OFL-1.1", "faces": [
+      {"file":"jakarta-var.woff2","weight":"300 800","style":"normal","range":"r3","bytes":27348,"sha256":"153fc85b70298beeb1d61a5f723331649e7f23bb77302a66e61cb3e2fbdb5e79"},
+      {"file":"jakarta-var-ext.woff2","weight":"300 800","style":"normal","range":"r4","bytes":21728,"sha256":"38e3b8fd8045048eb311d90170a4429ed2c8f405852dc3d91b5af8452758703f"}
+    ] },
+    "Potta One": { "folder": "potta-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-potta_one-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":23596,"sha256":"dda6fe0445ac7d5bb79889c30a55fc75af807e9f9caf7bb2d37b97fe37f34bb6"},
+      {"file":"cat-potta_one-400.woff2","weight":"400","style":"normal","range":"r2","bytes":25104,"sha256":"98914bb178221153c1fc926aa12dc4674b629977be6c0c425279d2a5dd577d72"}
+    ] },
+    "Press Start 2P": { "folder": "press-start-2p", "licence": "OFL-1.1", "faces": [
+      {"file":"pressstart-400.woff2","weight":"400","style":"normal","bytes":33000,"sha256":"4dc5ae2b33d42d0990ba366e50e1c31e32bee99b10be4c7074b7ef1d6de7cc99","from":"google/fonts ofl/pressstart2p/PressStart2P-Regular.ttf"}
+    ] },
+    "Quicksand": { "folder": "quicksand", "licence": "OFL-1.1", "faces": [
+      {"file":"quicksand-var.woff2","weight":"300 700","style":"normal","bytes":56868,"sha256":"3ae17adca3eeb083d4953c00ce5847df7d1359aadd5c75995bae7698a2ae7742","from":"google/fonts ofl/quicksand/Quicksand[wght].ttf"}
+    ] },
+    "Ranchers": { "folder": "ranchers", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-ranchers-400.woff2","weight":"400","style":"normal","bytes":52220,"sha256":"b1cdaa4ddbcf1b2d07c9e2a35d1d5f3a4cbb1405b923c1d35a03f5604a2782e8","from":"google/fonts ofl/ranchers/Ranchers-Regular.ttf"}
+    ] },
+    "Ranga": { "folder": "ranga", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-ranga-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":6096,"sha256":"b1b5785c4416548b757a92b85648f50a9f5c532ab47e69a26691fe9fa3ffc4d0"},
+      {"file":"cat-ranga-400.woff2","weight":"400","style":"normal","range":"r2","bytes":15580,"sha256":"3558f1136b32892f0c0f88cd452596f127a1a56a7b83221f2c1f01cb863ebdad"},
+      {"file":"cat-ranga-700-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":6212,"sha256":"446f46db7f96857421edc019561b7fc40003bfdffd8a7bdec5b983498281d3c4"},
+      {"file":"cat-ranga-700.woff2","weight":"700","style":"normal","range":"r2","bytes":16172,"sha256":"ba9f868d1a1b75d7c4307125b44bd0a08dddff5c7e5065bcf8a325e5a18ad9bc"}
+    ] },
+    "Risque": { "folder": "risque", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-risque-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":9628,"sha256":"2d5826b63b707b534636425485e48b057eda639773b3fd999ad020782819eaad"},
+      {"file":"cat-risque-400.woff2","weight":"400","style":"normal","range":"r2","bytes":18852,"sha256":"1b1f8fa0ac3dfc515876e6bb093c714c5c30e5da838e176abf6668c04af5e9cc"}
+    ] },
+    "Roboto Flex": { "folder": "roboto-flex", "licence": "OFL-1.1", "faces": [
+      {"file":"robotoflex-var.woff2","weight":"100 1000","style":"normal","range":"r3","bytes":34320,"sha256":"8aabd65a22003f488ba7d2da8a8155a7f90e195ab2a11cd006615d00a0ee5eff"},
+      {"file":"robotoflex-var-ext.woff2","weight":"100 1000","style":"normal","range":"r4","bytes":23480,"sha256":"860475bc6d859474547084d6b7ab158d2c6a107b024abe7d9831faf968e9ec83"}
+    ] },
+    "Rowdies": { "folder": "rowdies", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-rowdies-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":15616,"sha256":"15affae138aa2acb856687a11b02fe505b71643eed58c79036157c3239394e91"},
+      {"file":"cat-rowdies-400.woff2","weight":"400","style":"normal","range":"r2","bytes":17700,"sha256":"7d1d3785c52509b4d4035359de1abd1c0c1668ba4e5565a059c8d967c991939a"},
+      {"file":"cat-rowdies-700-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":15788,"sha256":"7f7cc8af12662ef34ea9c62e465fa7606cdc6d5753045bad850d640008f20398"},
+      {"file":"cat-rowdies-700.woff2","weight":"700","style":"normal","range":"r2","bytes":17872,"sha256":"9e682b2cf748d8b0b3dfc154849370cac5d68c8034956fcd9e481672202c356f"}
+    ] },
+    "Ruge Boogie": { "folder": "ruge-boogie", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-ruge_boogie-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":36552,"sha256":"2ed477e3c00cdd844b633c2ad36db6997cee452953be91edc59d56d1814ca57c"},
+      {"file":"cat-ruge_boogie-400.woff2","weight":"400","style":"normal","range":"r2","bytes":43220,"sha256":"417b24d332066cbb1703d68d8f8c6e3fc5671d98117c466e95239211260e241b"}
+    ] },
+    "Ruslan Display": { "folder": "ruslan-display", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-ruslan_display-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":5416,"sha256":"3d07c6d7948cf9ff821b9b07231f16bac8d6e987185329767a5b9af67e1e05a0"},
+      {"file":"cat-ruslan_display-400.woff2","weight":"400","style":"normal","range":"r2","bytes":8516,"sha256":"7d8dc742e753a0680ee4aa8834e6ad4f93c027df2b27edfa71e2f98d1b9ee353"}
+    ] },
+    "Sacramento": { "folder": "sacramento", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-sacramento-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":14352,"sha256":"3b06ffc2dd2edc31fd3f8e301c92a91557c9d8846594486507c5f31b05cf781e"},
+      {"file":"cat-sacramento-400.woff2","weight":"400","style":"normal","range":"r2","bytes":23708,"sha256":"2fcd867d2812578d001b0eca921848e24de91d01986f26e038be374ec7c5cfd2"}
+    ] },
+    "Sancreek": { "folder": "sancreek", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-sancreek-400.woff2","weight":"400","style":"normal","bytes":47884,"sha256":"7e0c07d8cbc3715f24495c161c294814b88dc27a270de26dc6ded1403d1d3aac","from":"google/fonts ofl/sancreek/Sancreek-Regular.ttf"}
+    ] },
+    "Sankofa Display": { "folder": "sankofa-display", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-sankofa_display-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":71872,"sha256":"cb1b7862ec6fe34ce97fac5cac650dc2650b515928481322d84e83d01f13ce96"},
+      {"file":"cat-sankofa_display-400.woff2","weight":"400","style":"normal","range":"r2","bytes":46080,"sha256":"adfadeface714fe04eccac80d549cbb75448a51dccaa4871fbe23812f190fd60"}
+    ] },
+    "Sedgwick Ave Display": { "folder": "sedgwick-ave-display", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-sedgwick_ave_display-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":24968,"sha256":"e8d680bf1caa2247b3514eb1cdf3d29cc09060c57d76f69bb7bd255e4c385492"},
+      {"file":"cat-sedgwick_ave_display-400.woff2","weight":"400","style":"normal","range":"r2","bytes":34632,"sha256":"33a12de3b608a011d3caad5bfd4e529f0f8d177cc5ba184c68ed6ba998fe02dc"}
+    ] },
+    "Shantell Sans": { "folder": "shantell-sans", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-shantell_sans-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":37192,"sha256":"3b0ecff7fe287e170571e7cdce06da4099bed00e3fba7209a3840a280ffa79e4"},
+      {"file":"cat-shantell_sans-400.woff2","weight":"400","style":"normal","range":"r2","bytes":79292,"sha256":"f15631aba9746668ad895821c72db5825759fe0bddaa4da1e7ea33d0dc2d5477"},
+      {"file":"cat-shantell_sans-400-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":37192,"sha256":"3b0ecff7fe287e170571e7cdce06da4099bed00e3fba7209a3840a280ffa79e4"},
+      {"file":"cat-shantell_sans-400.woff2","weight":"700","style":"normal","range":"r2","bytes":79292,"sha256":"f15631aba9746668ad895821c72db5825759fe0bddaa4da1e7ea33d0dc2d5477"}
+    ] },
+    "Smokum": { "folder": "smokum", "licence": "Apache-2.0", "faces": [
+      {"file":"cat-smokum-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":12508,"sha256":"c5e9a15e8340f4277c62e70c8b00e2e28542bd028a396c54e58b4667a8f11564"},
+      {"file":"cat-smokum-400.woff2","weight":"400","style":"normal","range":"r2","bytes":18444,"sha256":"6c16d8c4fe4f0338456012973488e84f914556990fc87d1f7acf5e1a1c8a3e29"}
+    ] },
+    "Solitreo": { "folder": "solitreo", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-solitreo-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":13948,"sha256":"630f39c0b9da85c35b2f349393609d5d1479fd37192fe03fb89a1459903eab45"},
+      {"file":"cat-solitreo-400.woff2","weight":"400","style":"normal","range":"r2","bytes":25944,"sha256":"153964eccd1c337cd823eec85f3c47c31fa94c2a5d55d3579c625767bec59f43"}
+    ] },
+    "Sora": { "folder": "sora", "licence": "OFL-1.1", "faces": [
+      {"file":"sora-var.woff2","weight":"300 800","style":"normal","range":"r3","bytes":33652,"sha256":"fa26406eeda9a3c6ec3d9ea8813c3045d6dc755e30c716d5c094e8ef43be5a7f"},
+      {"file":"sora-var-ext.woff2","weight":"300 800","style":"normal","range":"r4","bytes":15548,"sha256":"c163c536f68befd99a83d4f17e8b88030e7f54229688a45c44f70c7149db7385"}
+    ] },
+    "Source Sans 3": { "folder": "source-sans-3", "licence": "OFL-1.1", "faces": [
+      {"file":"sourcesans-var.woff2","weight":"200 900","style":"normal","bytes":181408,"sha256":"bfa534315b218aca824b61e68a801cb07f19cc9f3472ccc07e537de822ad283e","from":"google/fonts ofl/sourcesans3/SourceSans3[wght].ttf"}
+    ] },
+    "Source Serif 4": { "folder": "source-serif-4", "licence": "OFL-1.1", "faces": [
+      {"file":"sourceserif-var.woff2","weight":"200 900","style":"normal","bytes":436484,"sha256":"11003b7885b648b7e5440d1ec8b0d3b2245a53fd5c8ab53adfa86a0175b315e7","from":"google/fonts ofl/sourceserif4/SourceSerif4[opsz,wght].ttf"}
+    ] },
+    "Space Grotesk": { "folder": "space-grotesk", "licence": "OFL-1.1", "faces": [
+      {"file":"spacegrotesk-var.woff2","weight":"400 700","style":"normal","range":"r3","bytes":22288,"sha256":"0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d"},
+      {"file":"spacegrotesk-var-ext.woff2","weight":"400 700","style":"normal","range":"r4","bytes":18940,"sha256":"952dddb45d2f96f71cbf3b7f510b24379afc3c89ea02fcf89d377b45d62c0166"}
+    ] },
+    "Spectral": { "folder": "spectral", "licence": "OFL-1.1", "faces": [
+      {"file":"spectral-400.woff2","weight":"400","style":"normal","range":"r3","bytes":21696,"sha256":"cf8daee3b83c1e662196c6e34e444bc41344d54bfeb4fb5351e197de6ce94539"},
+      {"file":"spectral-400-ext.woff2","weight":"400","style":"normal","range":"r4","bytes":20240,"sha256":"fc4b2566ccd9714a72c2137f822311cb0131296c83c8ee93848ae6f887969e85"},
+      {"file":"spectral-700.woff2","weight":"700","style":"normal","range":"r3","bytes":23036,"sha256":"5276f202cce67e8caa9f697800e11cfc9d708da67d47f6f5507dcadcf1e11c11"},
+      {"file":"spectral-700-ext.woff2","weight":"700","style":"normal","range":"r4","bytes":20824,"sha256":"9b5a5be420405c68cf73fcdd06fa4c9978dcd8fb8b87b0e187e107cfb7a5da29"}
+    ] },
+    "Spicy Rice": { "folder": "spicy-rice", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-spicy_rice-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":12276,"sha256":"0493d2952ae139a6c3f459610660f85d8713af781643f41ecdfad65277935b06"},
+      {"file":"cat-spicy_rice-400.woff2","weight":"400","style":"normal","range":"r2","bytes":22712,"sha256":"4834c38818bbd7a5436dd942f963c1005e121bf291f7922c3a8cb59472ceec2d"}
+    ] },
+    "Sriracha": { "folder": "sriracha", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-sriracha-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":33736,"sha256":"19df06843026dd2735f1834c1f42bcda9f791610fb863db354451d14353cf597"},
+      {"file":"cat-sriracha-400.woff2","weight":"400","style":"normal","range":"r2","bytes":39512,"sha256":"dd66cc98657b4048be3950edac49aea725b2a9db5db6cea36b639160a88d7691"}
+    ] },
+    "Srisakdi": { "folder": "srisakdi", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-srisakdi-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":14032,"sha256":"7c9a981e6a5e3d410ddd8fa61c7617f132873292aa89a608f9a138124f33044c"},
+      {"file":"cat-srisakdi-400.woff2","weight":"400","style":"normal","range":"r2","bytes":16144,"sha256":"a9fda5fb1d9fd61b936da0867b0d5a90f2e51972b441aad4efa8c7dbcae879d4"},
+      {"file":"cat-srisakdi-700-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":13892,"sha256":"6702940636bd530bef160072182855a3420275a2229e832e08330fc4379e7082"},
+      {"file":"cat-srisakdi-700.woff2","weight":"700","style":"normal","range":"r2","bytes":15820,"sha256":"1841d0630f28af420d5fc2f80519aeadead2b534bec2b0127e774df66def68e0"}
+    ] },
+    "STIX Two Math": { "folder": "stix-two-math", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-stix_two_math-400-0.woff2","weight":"400","style":"normal","bytes":403344,"sha256":"8b2a6834cfe1f4e0f3724ffa59fe92000013fc5a4c41e6a3f438006c26c60f0d"}
+    ] },
+    "Teachers": { "folder": "teachers", "licence": "OFL-1.1", "faces": [
+      {"file":"teachers-var.woff2","weight":"400 800","style":"normal","range":"r3","bytes":26384,"sha256":"7c7308e5b29d6e15a136808d4b4a523c4fa7040ba3286b3804c8c09c341d0fb1"},
+      {"file":"teachers-var-ext.woff2","weight":"400 800","style":"normal","range":"r4","bytes":12892,"sha256":"5a49ffd2807fc51b84249897a3573535bb316617cfc81b36324a39b22ffcb4d7"}
+    ] },
+    "Tillana": { "folder": "tillana", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-tillana-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":9804,"sha256":"f2a39ba6cc7cf663bae9ce3d3ba4b8e6bbed76efaaf0d98b3116250c79fe8adf"},
+      {"file":"cat-tillana-400.woff2","weight":"400","style":"normal","range":"r2","bytes":18056,"sha256":"3be0edc768add86f7125044b7ecbeb81a0e5afecdd2971b7ae4b4e3e954a15f5"},
+      {"file":"cat-tillana-700-ext.woff2","weight":"700","style":"normal","range":"r1","bytes":10264,"sha256":"7ef4e985d22784772f5507116130717b8227e3fbaee97bfc59c2b5594a0b28f7"},
+      {"file":"cat-tillana-700.woff2","weight":"700","style":"normal","range":"r2","bytes":18656,"sha256":"78d789539cbc145b729d08bdeb19bada10ed8c8d7d16d0ff324ca6a600f51667"}
+    ] },
+    "Titan One": { "folder": "titan-one", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-titan_one-400.woff2","weight":"400","style":"normal","bytes":22704,"sha256":"aa0f3067b90d4b4e7579612c279454eda39144e384593c0d11937f11e7407ca4","from":"google/fonts ofl/titanone/TitanOne-Regular.ttf"}
+    ] },
+    "Ubuntu": { "folder": "ubuntu", "licence": "Ubuntu-font-1.0", "faces": [
+      {"file":"ubuntu-400.woff2","weight":"400","style":"normal","bytes":135064,"sha256":"c5b18672804a840a8ae48ff2528a46ac15d849c8b2fae9c3a266e6d8348acf88","from":"google/fonts ufl/ubuntu/Ubuntu-Regular.ttf"},
+      {"file":"ubuntu-700.woff2","weight":"700","style":"normal","bytes":123588,"sha256":"932a30f2eb2f47d700a19dd8d385df7cf593a2ec9c8c798e12dc71469263ba4e","from":"google/fonts ufl/ubuntu/Ubuntu-Bold.ttf"}
+    ] },
+    "UnifrakturMaguntia": { "folder": "unifrakturmaguntia", "licence": "OFL-1.1", "faces": [
+      {"file":"ufmag-400.woff2","weight":"400","style":"normal","bytes":39276,"sha256":"9d54455b31f92e71aeacb29bd441d01691da42689e838fc782394046e5294706","from":"google/fonts ofl/unifrakturmaguntia/UnifrakturMaguntia-Book.ttf"}
+    ] },
+    "Yomogi": { "folder": "yomogi", "licence": "OFL-1.1", "faces": [
+      {"file":"cat-yomogi-400-ext.woff2","weight":"400","style":"normal","range":"r1","bytes":12328,"sha256":"fcc07e52b103a7670e177d744b4073691c02a237f37b68123f4d4f5530780976"},
+      {"file":"cat-yomogi-400.woff2","weight":"400","style":"normal","range":"r2","bytes":24528,"sha256":"d45d8563b3a0ecaa77d3afa56ebf6d9d006d07e91f3e2d84adbd203249ad1fa3"}
+    ] }
+  }
+}
