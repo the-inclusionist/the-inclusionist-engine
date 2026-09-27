@@ -2,10 +2,10 @@
 // THE SMALLEST CARTRIDGE THE ENGINE'S BUILD IS PROVED ON (ADR-0253) — the demo's one-screen declaration, cut to three answers.
 //
 // It is ADR-0139 §2's `Cartridge` as the entry's default export, which is the shape `inclusionist-check-cartridge` reads. It names
-// two engine functions at RUN time, so the cartridge build has an import it must keep external and the app build one it must
-// bundle; a real cartridge names many more.
+// an engine function at RUN time (`conformanceProblems`), so the cartridge build has an import it must keep external and the app
+// build one it must bundle; a real cartridge names many more.
 import type { CartridgeHooks } from '@the-inclusionist/engine';
-import { conformanceProblems, dimension, type GameDeclaration } from '@the-inclusionist/engine/core/contract.js';
+import { conformanceProblems, type GameDeclaration } from '@the-inclusionist/engine/core/contract.js';
 import { ANSWERS } from './answers.js';
 
 export type { Answer } from './answers.js';
@@ -18,7 +18,7 @@ const declaration: GameDeclaration = {
   topology: () => ({ kind: 'hotspots', order: ANSWERS.map((a) => a.id) }),
   world: () => ({ kind: 'element', selector: '#game-region' }),
   // a list has no axis, so one position at a time
-  holdsAtOnce: () => Math.max(1, dimension(declaration.topology())),
+  holdsAtOnce: () => 1,
   holdsKeys: () => false,
   tick: 'player',
   roleAt: (at) => (at.x === cursor ? 'goal' : 'free'),
