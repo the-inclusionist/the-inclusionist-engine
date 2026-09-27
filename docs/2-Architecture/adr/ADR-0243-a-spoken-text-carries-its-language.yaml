@@ -10,6 +10,14 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        THE REGION QUESTION IS ANSWERED. Asked whether a pt-PT browser voice may read a pt-BR part or the neural pt-BR voice
+        reads it, the Dev: «Rede neural pt-BR.» So the order of §2 is: the child's chosen voice when it speaks the part's
+        language; a browser voice of the EXACT tag; a neural voice of the exact tag; then, only where neither exists, a voice
+        of the same language (browser first, then neural); then §3. The same order serves the interface's own voice. The
+        material's tag decides the language (a pt-PT material is tagged pt-PT, the Dev: «se estivermos trabalhando com
+        material de Portugal ou Angola para alunos de Portugal ou Angola, pt-PT é o que deve ser usado»).
+    - date: 2026-09-26
+      what: >-
         THE ORDER OF §2, as the Dev settled it when asked which wins, a neural voice with the exact tag or the browser's:
         «Se a do navegador (mais leve) pode ser usada, a do navegador, senão ganha a voz neural (backup).» The build had read
         §2 as one list searched by tag first, so a neural voice of the exact tag beat a browser voice of the same language.

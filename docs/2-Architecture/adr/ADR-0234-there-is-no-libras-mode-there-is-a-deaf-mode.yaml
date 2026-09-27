@@ -9,6 +9,12 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        ANOTHER PLAYER'S SONAR QUEUES. Asked whether a second player's sonar should still read an open menu aloud (on a shared
+        screen only the first player steers it, ADR-0144), the Dev: «Sim mas em fila, não junto ao mesmo tempo com outro
+        sonar em andamento.» A sonar reading never cuts or overlaps another one in progress: it waits its turn, whichever
+        player asked.
+    - date: 2026-09-26
+      what: >-
         PHASE B4 — THE FREE PLAYER IS APPROVED. Asked for the last phase of route B — «a sua rodada com o avatar novo e a
         aceitação por pessoas surdas que sinalizam» — the Dev answered «Aprovado!». Route B is the interpreter, route A is
         gone, and the four phases of route B are closed. The same day the Dev chose that a spelled word's letters chain
