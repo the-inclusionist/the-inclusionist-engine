@@ -3,6 +3,12 @@ metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0033]
   superseded-in-part:
+    - by: ADR-0249
+      what: >-
+        §1–§2, «every button latches by default». The default is the game's `holdsKeys()`; §3 — the child may turn it off — is carried out.
+    - by: ADR-0250
+      what: >-
+        §1's «moving hand gestures»: they were removed from the modalities.
     - by: ADR-0218
       what: >-
         The SURFACE of the option on keyboard and touch: turning the latch on or off is now one position of the ☝️ icon's cycle,

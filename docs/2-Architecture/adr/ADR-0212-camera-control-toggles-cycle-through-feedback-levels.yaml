@@ -2,6 +2,9 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0250
+      what: >-
+        §4's 20–50% opacity: the lines over the game are opaque white with a black shadow.
     - by: ADR-0213
       what: >-
         §1, the eyes' cycle. It has three states — off · the regions' outlines + the eyes · outlines + hatching + the eyes — and no gaze

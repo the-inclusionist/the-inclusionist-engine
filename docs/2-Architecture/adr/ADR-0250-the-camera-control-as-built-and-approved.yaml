@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - tests/face-map.node.test.js
+    - tests/hand-map.node.test.js
+  supersedes-in-part: [ADR-0197, ADR-0204, ADR-0211, ADR-0212]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, told that the lines over the game are drawn opaque white with a black shadow where ADR-0212 §4 said 20–50% opacity: «Registrar opaco.»"
+    - "The Dev, 2026-09-27, told that no ~0.5 s cool-down follows a camera command, and that a held gesture and a return to rest stand in its place: «Registrar o que existe.»"
+    - "The Dev, 2026-09-27, asked whether the moving hand gestures, which never entered a map, are still wanted: «Não, remova.»"
+    - "The Dev, 2026-09-16 (ADR-0213), after running eye control with the camera: «Modo olhos funcionando corretamente, controles funcionando corretamente»"
+    - "ADR-0197's own erratum, the Dev: «prefiro nunca repetir, a não ser após voltar ao repouso»"
+  informed: []
+
+title: The camera control as built and approved — opaque lines, a held signal instead of a cool-down, and no moving gestures
+
+context-and-problem-statement: |
+  Three clauses of the camera records describe something the engine does not do, and the Dev ran and approved what it
+  does instead. ADR-0212 §4 put the lines over the game at 20–50% opacity; they are drawn opaque white with a black shadow
+  (`ui/gaze-overlay`, `ui/face-control`, `ui/hand-control`). ADR-0197 §5 put a ~0.5 s cool-down after every command; the
+  hand and face readers instead fire once when the signal has been held (300 ms, 600 ms for the mouth) and never again
+  until it goes back to rest (`input/face-map`, `input/hand-map`); the eyes follow their own cycle (ADR-0213, with its
+  0.7 s dead time after a command). ADR-0204 §2 counted moving hand gestures as a
+  fifth modality; none entered a map.
+
+decision-drivers:
+  - "A record that describes what the code does not do argues against the code at the next reading"
+  - "What the Dev ran and approved is the decision"
+
+considered-options:
+  - "A · Record what exists, and drop the moving gestures"
+  - "B · Build what the records said (translucent lines, a cool-down, the moving gestures)"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The records say what the child meets, which the Dev tested with the camera. **B.** ❌ Changes a control the Dev
+  approved, and builds a modality nobody asked to keep.
+
+decision-outcome:
+  chosen-option:
+    link: "A — record what exists, and drop the moving gestures"
+    justification: |
+      1. The lines over the game (eyes and brows, face, hands) are OPAQUE WHITE with a black shadow — never the camera's
+         image (ADR-0212 stands on that). Superseded: ADR-0212 §4's 20–50% opacity.
+      2. A hand or face command fires ONCE, when its signal has been held long enough, and never again until the signal
+         returns to rest; no cool-down timer. The eyes keep ADR-0213's cycle. Superseded: ADR-0197 §5.
+      3. The moving hand gestures are REMOVED from the modalities: the camera reads static hands, the face and the eyes,
+         and speech is the fourth transport. Superseded: ADR-0204 §2's fifth modality, ADR-0197 §2, and ADR-0211 §1's
+         «moving hand gestures».
+
+  consequences:
+    positive:
+      - "The camera records say what the engine does and the Dev approved"
+    negative:
+      - "Opaque lines hide a little more of the game under them than translucent ones would"
+
+  confirmation: |
+    ✅ In part: clause 2 is held by the gates in confirmed-by — a hand gesture presses once when seen 300 ms and is held
+    while seen, a face expression presses once when held (600 ms for the mouth, 1 s for the squeeze). Clause 3 is a
+    removal: no moving-gesture reader exists in the engine. Debt: clause 1 — that the lines over the game are drawn opaque
+    white with a black shadow (`ui/gaze-overlay`, `ui/face-control`, `ui/hand-control`) — has no case yet; it is built
+    with ADR-0249's work and named here then.
+
+more-information: |
+  ADR-0213 (eye control) and ADR-0215 (one 📷 cycling the modes) are untouched.

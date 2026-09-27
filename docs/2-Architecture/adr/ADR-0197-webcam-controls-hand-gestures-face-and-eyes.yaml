@@ -2,6 +2,9 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0250
+      what: >-
+        §2 (moving hand gestures, removed) and §5 (the cool-down: a hand or face command fires once on a held signal, never again until rest).
     - by: ADR-0210
       what: >-
         The hand, face and eye mappings to navigation positions. The Dev's default map puts face and hands on the whole controller;

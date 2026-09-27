@@ -1,6 +1,10 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0250
+      what: >-
+        §2's fifth modality: the moving hand gestures were removed; four modalities remain.
   confirmed-by:
     - tests/face-map.node.test.js
     - tests/hand-map.node.test.js

@@ -1,0 +1,59 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0109, ADR-0211]
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, told that ADR-0211 §3 lets the player turn the latch off on camera and speech while the code keeps it always on there: «Mudar o código para deixar desligar: num jogo de plataforma, ao dizer \"direita\" o jogador quer que o personagem continue andando para a direita (aderência), enquanto num jogo de quiz, ao dizer \"abaixo\" o jogador quer um único pressionamento para baixo sem aderência. Isso significa que o que define se haverá aderência ou não desde o início no jogo é o próprio jogo.»"
+    - "`input/latch-scope.latchAlwaysOn` — eyes, face, gestures and speech latch always, and the stored choice is never read on them"
+    - "`core/contract.GameDeclaration.holdsKeys()` — the game's own answer to «is any key HELD in this game?», a function because it changes between stages (ADR-0084)"
+  informed: []
+
+title: The game says whether a one-command transport latches, and the child may change it
+
+context-and-problem-statement: |
+  Eyes, face, gestures and speech emit one command at a time, so ADR-0109 made the latch ALWAYS ON for them and the code
+  does not even read the stored choice (`input/latch-scope.latchAlwaysOn`). ADR-0211 §3 said the opposite — a setting per
+  player turns it off — and was never built. The always-on latch is right where a command is HELD: in a platform game,
+  «direita» should keep the character walking. It is wrong where a command is a single PRESS: in a quiz, «abaixo» should
+  move the cursor once, and a latched press stays down, so the next «abaixo» only releases it and moves nothing.
+
+decision-drivers:
+  - "A spoken or camera command must do what that game means by it: keep going where something is held, press once where nothing is"
+  - "The game knows which it is; the engine does not"
+  - "The child keeps the last word: a default is not a lock (ADR-0104 §C)"
+
+considered-options:
+  - "A · The latch's DEFAULT on a one-command transport is the game's `holdsKeys()`, and the child may turn it on or off"
+  - "B · Always on (today): a quiz answered by voice or camera moves once every second word"
+  - "C · A new contract field for the latch alone"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The game already answers the question in the contract (`holdsKeys()`, required, per stage); no field is added.
+  ✅ ADR-0211 §3 finally holds. ❌ A child who needs the other behaviour sets it once per transport. **B.** ❌ The defect
+  above. **C.** ❌ A second field answering the question `holdsKeys()` already answers — two answers that can disagree.
+
+decision-outcome:
+  chosen-option:
+    link: "A — the game's `holdsKeys()` is the default, and the child may change it"
+    justification: |
+      On eyes, face, gestures and speech the latch starts as the game answers `holdsKeys()` (read when it matters, since
+      the answer can change between stages), and the child's stored choice for that transport, when there is one, wins.
+      The option is offered on these transports too. Keyboard and touch keep their rules (ADR-0104, ADR-0109). Superseded
+      in part: ADR-0109's «the camera forces it on», and ADR-0211's «latch every button by default» (§1–§2), whose §3 —
+      the child may turn it off — this record carries out.
+
+  consequences:
+    positive:
+      - "A quiz answered by voice or camera moves once per word; a platform game keeps walking on «direita»"
+    negative:
+      - "The latch panel shows the option on four more transports"
+
+  confirmation: |
+    Debt until the gate lands (to be named with the implementation): with a game that holds nothing, one spoken or camera
+    command presses once; with one that holds, it latches; a stored choice overrides either default; the panel offers the
+    option on the four transports.
+
+more-information: |
+  Games are not edited from the engine's session; a game's `holdsKeys()` already answers.

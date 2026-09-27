@@ -24,6 +24,9 @@ metadata:
         saying its work was undone after it was done.
   supersedes-in-part: [ADR-0104]
   superseded-in-part:
+    - by: ADR-0249
+      what: >-
+        the camera forcing the latch on. On eyes, face, gestures and speech the latch starts as the game answers `holdsKeys()`, and the child may change it.
     - by: ADR-0113
       what: >-
         the clause that walk-latching «stops being a SAVED CHOICE». It IS a saved choice — it is saved in a

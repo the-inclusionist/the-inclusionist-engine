@@ -8,6 +8,12 @@ metadata:
     - tests/speech.node.test.js
     - tests/interruptible-speech.node.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        WHILE THE NEURAL VOICE LOADS, THE SAME-LANGUAGE VOICE SPEAKS. Told that with no browser voice of the exact tag
+        (pt-BR) a pt-PT browser voice reads the first seconds, until the neural pt-BR voice has loaded, and asked whether to
+        keep that or to wait in silence with the caption on screen, the Dev: «Manter.» So the order of §2 holds at every
+        instant, not only once everything has loaded: what can speak now speaks, and the neural voice takes over when ready.
     - date: 2026-09-26
       what: >-
         THE REGION QUESTION IS ANSWERED. Asked whether a pt-PT browser voice may read a pt-BR part or the neural pt-BR voice
