@@ -84,6 +84,9 @@ export default defineGameBuild({
 - **`npx inclusionist-check-cartridge`** imports `dist-lib/cartridge.js` in Node and runs on it the refusals `createGame` and
   `mount()` apply at boot (`cartridgeRefusals`), one line per problem.
 
+The shared CI a game calls (`.github/workflows/game-ci.yml`) runs both builds and the checker, **required**: a game without a
+cartridge target is red until it adopts this build. The migration is in `docs/6-DevOps-SRE/Breaking-Changes.md`.
+
 ## CI/CD
 
 - **CI** — **GitHub Actions** (`.github/workflows/ci.yml`), on every push to `main` and on every pull request.

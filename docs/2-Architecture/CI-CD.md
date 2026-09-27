@@ -9,7 +9,9 @@ explains *intent* and points there, it does not restate the YAML.
 > just their address. They are marked with ⚠️ below.
 
 `game-ci.yml`, next to it, is a different thing: the reusable gate every **game** repository calls
-(ADR-0068 §4). The engine itself does not use it.
+(ADR-0068 §4). The engine itself does not use it. Besides the app, it builds every game's CARTRIDGE with the engine's
+build (`vite build --mode cartridge`) and runs the engine's checker on it (`inclusionist-check-cartridge`) — required, with no input
+to turn it off (ADR-0253); how a game adopts the build is in the README and in note DV of `../6-DevOps-SRE/Breaking-Changes.md`.
 
 ⚠️ **A workflow that does not parse is not a red run — GitHub runs it with no jobs**, and says nothing. That is
 how `ci.yml` checked nothing from `b764c41b` (2026-09-24) to `2a922c1b`: a comment at column 0 had cut a

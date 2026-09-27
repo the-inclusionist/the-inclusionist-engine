@@ -41,6 +41,16 @@
 #   · the Vitest suite, both projects — a game's browser tests need Chromium;
 #   · the build — a game that does not build cannot be selected by the catalogue's manifest.
 #
+# And one that is the games' own, REQUIRED and with no input to turn it off (ADR-0253, building the gate ADR-0140 called
+# «not optional»):
+#   · the CARTRIDGE — built with the ENGINE's build (`vite build --mode cartridge`, which exists only in a game whose `vite.config`
+#     wraps its config in `defineGameBuild` from `@the-inclusionist/engine/build`), then checked with the ENGINE's checker
+#     (`inclusionist-check-cartridge`), which imports the built cartridge and runs on it the same refusals `createGame` and
+#     `mount()` apply at boot. The app build above proves the standalone PWA; this proves the half the platform installs, which
+#     before this step nothing built at all.
+#   🔴 A GAME WITHOUT A CARTRIDGE TARGET IS RED UNTIL IT ADOPTS THE ENGINE'S BUILD — its own `build:lib` does not count, because
+#   five games wrote five of them and that drift is what the record ends. The migration is in `docs/6-DevOps-SRE/Breaking-Changes.md`.
+#
 # The a11y gate (axe) is OPT-IN rather than default, and that is a deliberate honesty: it needs the game to
 # be servable at a URL, and a game whose shell is still a scaffold has nothing to serve. `with: a11y: true`
 # turns it on. ⚠️ A game that ships to a school with `a11y: false` is a game that skipped pillar 2, and the
@@ -123,6 +133,18 @@ jobs:
 
       - name: build
         run: npm run build
+
+      # 🔴 THE CARTRIDGE, BUILT BY THE ENGINE (ADR-0253). No `if:` and no input: every game builds its cartridge here, the one way.
+      # The first line only turns an engine too old to have the build into a sentence instead of an npm error. `npx --no` never
+      # downloads: a bin missing from the game's own tree fails here rather than fetching whatever the registry holds by that name.
+      - name: cartridge (the engine's build of the platform's target)
+        run: |
+          node -e "const p=require('@the-inclusionist/engine/package.json');if(!(p.bin||{})['inclusionist-check-cartridge']){console.error('@the-inclusionist/engine '+p.version+' has no cartridge build: move to the version that has it and wrap vite.config in defineGameBuild (ADR-0253)');process.exit(1)}"
+          npx --no -- vite build --mode cartridge
+
+      # The boot's own refusals over what was just built: a cartridge that compiles and breaks the contract stops here.
+      - name: cartridge check (the refusals of createGame and mount)
+        run: npx --no -- inclusionist-check-cartridge
 
       # ⚠️ NOT `if: inputs.a11y` ALONE. The gate also needs the game to HAVE the two scripts, and a caller
       # that asks for it without them should fail loudly here rather than time out on a curl loop.

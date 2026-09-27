@@ -4077,6 +4077,39 @@ the virtual controller (`VirtualControllerDeps.pressedBy`, new and optional).
 | `ui/latch-refusal` (`latchRefusal`, `LatchRefusal`, `REFUSAL_KEY`, `NEED_LATCH`, `showsEvenWhenRequired`) · dictionary keys `alt.exigida.olhos`, `.rosto`, `.gestos`, `.fala` | removed: no device refuses the latch | delete the refusal branch; `ONE_COMMAND_AT_A_TIME` still names the four |
 | `ui/pause-icons.nextInputMode(m, holdsKeys, latchRequired?)` · `IconStateSnapshot.latchRequired?` | `nextInputMode(m, holdsKeys)`; the snapshot member removed — the ☝️ offers «padrão» on every device of a game that holds keys | drop the third argument and the member |
 
+## DV · ADR-0253: the shared CI builds and checks every game's cartridge, with the engine's build — required
+
+**Who is affected:** every game that calls `.github/workflows/game-ci.yml`. The PACKAGE's shapes do not change (the build and
+the checker are additive, section E); what changes is the gate. After `npm run build`, the shared CI now runs
+`vite build --mode cartridge` and `npx inclusionist-check-cartridge`, with no input to turn them off, so a game's CI is RED until
+it builds its cartridge with the engine. 📏 Measured 2026-09-27 (read-only `git grep` of the checkouts beside the engine): five of
+seven games declare a `build:lib`, each its own way — `game-platformer` `vite build --mode lib`; `game-chess` the same plus
+`tsc -p tsconfig.build.json`; `game-pinball` a second config, `vite.lib.config.ts`; `game-whackwhack` `vite build` under the
+`build:lib` lifecycle plus `tsc -p tsconfig.pkg.json`; `pixi-15-puzzle` `--mode lib`, `tsc` and its own `check-cartridge.mjs`;
+`game-2048` builds both in `build` through `scripts/build-lib.mjs`; `game-soccer` has none. None of the seven passes the gate as it
+stands, because none has the engine's build.
+
+📌 **Why:** ADR-0253, which builds the gate ADR-0140 called «not optional»: two targets written by hand in each game drift, and
+the cartridge — the half the platform installs — was built by no CI at all.
+
+**The migration a game makes, once, on the day it moves to this version:**
+
+1. `vite.config.ts` wraps the config it has and names the cartridge's entry; the game's own lib branch, second config or
+   environment switch is deleted:
+   ```ts
+   import { defineGameBuild } from '@the-inclusionist/engine/build';
+   export default defineGameBuild({ cartridge: 'src/index.ts', config: { /* the app config, as it was */ } });
+   ```
+2. The entry's **default export** is the cartridge, `{ slug, declaration, hooks, create(ctx) }` (ADR-0139 §2): the checker reads
+   `declaration` and `hooks` from it, at import, as `createGame` does at boot. A game whose declaration or hooks live only on the
+   instance `create` returns (`game-2048`), or that exports a factory or named members instead (`pixi-15-puzzle`, `game-chess`,
+   `game-platformer`, `game-whackwhack`, `game-pinball`), moves them onto that default export.
+3. `package.json`: `build:lib` becomes `vite build --mode cartridge` (or goes), the own `tsconfig.*` for the cartridge's types and
+   the own checker script go, and `exports["."]` points at `./dist-lib/cartridge.js` with `types` `./dist-lib/cartridge.d.ts`.
+4. The workflow keeps its one line, unchanged: `uses: the-inclusionist/the-inclusionist-engine/.github/workflows/game-ci.yml@main`.
+
+A game on an engine without the build is told so by the step's first line, naming ADR-0253.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.
@@ -4156,7 +4189,7 @@ the virtual controller (`VirtualControllerDeps.pressedBy`, new and optional).
 | `Audio.onCatChange` (`Engine.audio.onCatChange`) · `Audio.audioCat` · `ui/settings-audio.SettingsAudioApi.reflectCategory` · `ui/voice-settings` (`reflectTts`) | new, additive, and behaviour (ADR-0247; the Dev: «Misturador de audio: a»): the mixer tells every change of a category — its `on` or its `vol` — whoever made it, the engine's bar and panels or a game writing `audio.audioCat.tts.on = false` itself; `onCatChange(listener)` is called with the category's key after the value changed (a write of the value already there is no change) and answers the function that stops listening. The write IS the door, so each category's `on` and `vol` are now accessors on the mixer's own object, and a category replaced whole (`audioCat.tts = { on, vol }`) is COPIED into that object instead of taking its place. `createGame` listens once, for the root's life (`dispose()` releases it, `unmount()` keeps it): the bar's 🗣 and the hearing and sound panels are drawn from that listener, so a game switching narration on `Engine.audio` moves the 🗣's label and `aria-pressed` and the panel's switch, and a volume it sets moves the panel's slider. `SettingsAudioApi` gains `reflectCategory(cat)` (one category's switch, volume and marks, in place); `reflectTts` also draws `#tts-vol`. ⚠️ **Behaviour a consumer may notice:** `#tts-vol` now opens at the stored narration volume, where it opened at the range's middle whatever was stored; `delete audio.audioCat.tts` throws; a test comparing a category with `toEqual({ on, vol })` is unchanged, and `JSON.stringify` still gives `{ on, vol }`. A host that builds `initPauseIcons` itself and relied on `reflectTtsPanel` keeps it — only `createGame` stopped passing `reflectTtsPanelEnabled: true`. A read-only `git grep` of the sibling games (2026-09-26) finds `audioCat.tts.on` written only in two of `game-pinball`'s tests, and no replacement or `delete` of a category |
 | `input/gamepad.GamepadCtx.resume` | `() => void` → `(seat: number) => void` (`35bde6d5`, ADR-0144 erratum: pause per screen) — a widening on the side the consumer provides: a function that ignores the seat still compiles and still resumes. Found on 2026-09-27 by the shape gate reading member types |
 | `platform/audio-sonar.SonarCtx.narrate` | `(text) => void` → `(text, seat: number) => void` (`d0413acf`, ADR-0234: the sonar takes turns) — the same widening: a consumer narrating without the seat still works, and its readings simply do not take turns |
-| `@the-inclusionist/engine/build` (`defineGameBuild`, `CARTRIDGE_MODE`, `CARTRIDGE_DIR`, `CARTRIDGE_FILE`, `CARTRIDGE_EXTERNAL`) · bin `inclusionist-check-cartridge` · `cartridgeRefusals` (package root) | new (ADR-0253): the build of both targets of a game from one declaration in its `vite.config` — `vite build` the app, `vite build --mode cartridge` the cartridge into `dist-lib/cartridge.js` and `cartridge.d.ts`, the engine, `pixi.js` and `zdog` external — and the checker that imports a built cartridge in Node and runs on it `cartridgeRefusals`, the list `createGame` and `mount()` refuse a cartridge with. ⚠️ **Behaviour a consumer may notice:** `createGame` and `mount()` now throw ONCE with every refusal of a cartridge (`declaração malformada — a; b; c`), where they threw with the first group only — the declaration's lines first, then the preset's, the accommodations', the genre's, the HUD's, the game options' and `howToPlay`'s; the sentence and the order are unchanged |
+| `@the-inclusionist/engine/build` (`defineGameBuild`, `CARTRIDGE_MODE`, `CARTRIDGE_DIR`, `CARTRIDGE_FILE`, `CARTRIDGE_EXTERNAL`) · bin `inclusionist-check-cartridge` · `cartridgeRefusals` (package root) | new (ADR-0253): the build of both targets of a game from one declaration in its `vite.config` — `vite build` the app, `vite build --mode cartridge` the cartridge into `dist-lib/cartridge.js` and `cartridge.d.ts`, the engine, `pixi.js` and `zdog` external — and the checker that imports a built cartridge in Node and runs on it `cartridgeRefusals`, the list `createGame` and `mount()` refuse a cartridge with. The gate that requires them is note DV. ⚠️ **Behaviour a consumer may notice:** `createGame` and `mount()` now throw ONCE with every refusal of a cartridge (`declaração malformada — a; b; c`), where they threw with the first group only — the declaration's lines first, then the preset's, the accommodations', the genre's, the HUD's, the game options' and `howToPlay`'s; the sentence and the order are unchanged |
 
 ## F · The commits, and whether they carry the footer
 
