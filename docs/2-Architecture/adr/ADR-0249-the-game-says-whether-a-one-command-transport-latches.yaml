@@ -1,6 +1,34 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/a-quiz-word-presses-once.browser.test.js
+    - tests/latch-scope.node.test.js
+    - tests/latch-store.node.test.js
+    - tests/latch-sync.node.test.js
+    - tests/latch-edge.node.test.js
+    - tests/latching-per-transport.node.test.js
+    - tests/virtual-controller.node.test.js
+    - tests/pause-icons.node.test.js
+    - tests/settings-mobility.node.test.js
+    - tests/settings-mobility.browser.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        CONFIRMED (`engine:58bfa99a`): `input/latch-scope.latchOf` reads the transport's stored value first on every
+        transport, and on eyes, face, gestures and speech falls back to the game's answer, `LatchReading.gameHoldsKeys` —
+        the legacy per-player key no longer reaches those four, since a value set on the keyboard is not a choice about a
+        spoken word. `latchAlwaysOn` and `latchIsOptional` left, and with them `ui/latch-refusal` and its four
+        `alt.exigida.*` sentences: `writeLatch`, the ☝️ cycle and the motor panel row offer the option on the four.
+        What the build had to choose: the root resolves the latch when one of the four PRESSES the virtual controller —
+        `VirtualControllerDeps.pressedBy`, told before the press reaches the game — through `input/latch-edge`, whose
+        `holdsKeys` is now required and called at every edge, so the mounted game's answer is read then, stage by stage.
+        Keyboard, pad and touch are not resolved there and keep their rules. Found on the way: until this commit no camera or
+        voice press IN PLAY fed the root's transport automaton (the controller holds the key with its source and records no
+        edge), so the always-on latch of the four was reached
+        only through the ☝️'s refusal, and a quiz answered by voice already pressed once per word — option B's defect
+        describes ADR-0211 §2's press-level latch, which was never built. The Breaking-Changes note DU names what a
+        consumer migrates. The confirmation below replaces the debt it declared.
   supersedes-in-part: [ADR-0109, ADR-0211]
   date: 2026-09-27
   decision-makers: [Dev]
@@ -51,9 +79,17 @@ decision-outcome:
       - "The latch panel shows the option on four more transports"
 
   confirmation: |
-    Debt until the gate lands (to be named with the implementation): with a game that holds nothing, one spoken or camera
-    command presses once; with one that holds, it latches; a stored choice overrides either default; the panel offers the
-    option on the four transports.
+    ✅ The gates in confirmed-by. Through the real root, driven by voice with the recogniser replaced: in a stage whose
+    `holdsKeys()` is false one «abaixo» is one press and one release, two are two, and the seat's latch stays off; in a
+    stage that holds, «direita» turns the latch on; a stage change changes the next word's default and stops a character
+    walking by latch; a stored `fala` choice beats both defaults; the ☝️ reaches «padrão» with the voice in use and writes
+    the choice under `fala`; a pad press does not re-resolve it. In the rule and its storage: the four follow the game,
+    both ways, with nothing stored; a stored value wins on every transport; the legacy key does not reach the four; the
+    game's answer is read at every edge, not once. The ☝️ cycle and the panel row offer the option on the four, and the
+    virtual controller tells who pressed before the game hears the press. Red under each of eighteen mutations, among
+    them: the four always on again, the game's answer read before the stored choice, the legacy key inherited by the
+    four, `holdsKeys()` read once, the root's `pressedBy` wired to nothing or answering every transport, the controller
+    telling after the delivery, `writeLatch` and the ☝️ refusing the four again, and a spoken word never released.
 
 more-information: |
   Games are not edited from the engine's session; a game's `holdsKeys()` already answers.

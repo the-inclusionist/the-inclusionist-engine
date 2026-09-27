@@ -4,6 +4,17 @@ metadata:
   confirmed-by:
     - tests/face-map.node.test.js
     - tests/hand-map.node.test.js
+    - tests/gaze-overlay.browser.test.js
+    - tests/face-control.browser.test.js
+    - tests/hand-control.browser.test.js
+  errata:
+    - date: 2026-09-27
+      what: >-
+        Clause 1 CONFIRMED (`engine:f04f8be8`): a case in each of the three modules writes down the style in force at every
+        stroke of the lines over the game — the eyes and brows (`ui/gaze-overlay`), the face (`ui/face-control`), the hands
+        (`ui/hand-control`) — and finds `strokeStyle` `#ffffff`, `globalAlpha` 1 and a black `shadowColor`. The pixel cases
+        that already existed saw only that a line is painted, which a translucent line is too. The confirmation's debt for
+        clause 1 is replaced by what the gate holds; its other text is kept.
   supersedes-in-part: [ADR-0197, ADR-0204, ADR-0211, ADR-0212]
   date: 2026-09-27
   decision-makers: [Dev]
@@ -57,11 +68,12 @@ decision-outcome:
       - "Opaque lines hide a little more of the game under them than translucent ones would"
 
   confirmation: |
-    ✅ In part: clause 2 is held by the gates in confirmed-by — a hand gesture presses once when seen 300 ms and is held
+    ✅ Clause 2 is held by the gates in confirmed-by — a hand gesture presses once when seen 300 ms and is held
     while seen, a face expression presses once when held (600 ms for the mouth, 1 s for the squeeze). Clause 3 is a
-    removal: no moving-gesture reader exists in the engine. Debt: clause 1 — that the lines over the game are drawn opaque
-    white with a black shadow (`ui/gaze-overlay`, `ui/face-control`, `ui/hand-control`) — has no case yet; it is built
-    with ADR-0249's work and named here then.
+    removal: no moving-gesture reader exists in the engine. Clause 1 is held by a case in each of `gaze-overlay`,
+    `face-control` and `hand-control` (browser): every stroke of the eyes and brows, the face's lines and the hand's bones
+    is made with `strokeStyle` `#ffffff`, `globalAlpha` 1 and a black `shadowColor`; red when, in any of the three, the
+    colour becomes `rgba(255,255,255,0.35)`, a `globalAlpha` of 0.35 is set before the lines, or the shadow turns white.
 
 more-information: |
   ADR-0213 (eye control) and ADR-0215 (one 📷 cycling the modes) are untouched.
