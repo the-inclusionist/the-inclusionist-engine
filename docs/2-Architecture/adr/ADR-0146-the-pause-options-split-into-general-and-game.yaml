@@ -2,6 +2,7 @@
 metadata:
   status: "accepted"
   confirmed-by:
+    - tests/the-two-option-doors-start-apart.node.test.js
     - tests/the-pause-items-and-their-order.node.test.js
     - tests/game-options.browser.test.js
   superseded-in-part:
@@ -31,6 +32,11 @@ metadata:
        half exists exactly when the game has something to put in it"
   informed: []
   errata:
+    - date: 2026-09-27
+      what: >-
+        GATE 5 HAS ITS CASE. `tests/the-two-option-doors-start-apart.node.test.js` reads the two doors' names in pt, en and es
+        (a pause item is named `pause.<act>`) and refuses two that open with the same word, accents and case aside; a
+        dictionary edit that makes them open alike turns it red in each language (3 mutations).
     - date: 2026-09-27
       what: >-
         THE CONFIRMATION WAS STALE, and issue #144 is closed. What stands is built: the split between what travels with
@@ -182,8 +188,8 @@ decision-outcome:
     confirmed-by. 📌 Since ADR-0161 that door is shown locked with its reason rather than absent; the root's count and
     the remapping panel's place are ADR-0151's.
 
-    ⚠️ Not gated: that the two doors' accessible names share no spoken prefix — true today in pt, en and es. Issue #144
-    closed without it, and no open issue carries it.
+    ✅ And the two doors' names open with different words in pt, en and es — the child hearing or scanning the root tells
+    them apart by the first word.
 
 more-information: |
   📌 **This record exists because the Dev drew the consequence themselves**, in the same message that corrected
