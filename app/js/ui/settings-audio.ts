@@ -161,9 +161,14 @@ export interface SettingsAudioApi {
   renderAudio: () => void;
   /** Refreshes the #opt-modocego button. Exported because the host's blind-mode setter calls it directly. */
   reflectBlindMode: () => void;
-  /** Refreshes the #opt-tts button + #tts-engine selection. Exported because the pause-menu icon bar toggles
-   *  audioCat.tts.on itself and then calls this. */
+  /** Refreshes the #opt-tts button, the #tts-vol slider and the #tts-engine selection. */
   reflectTts: () => void;
+  /**
+   * Shows ONE mixer category as the mixer holds it now — its switch and its volume wherever this panel draws them, and the
+   * left-the-default marks — without redrawing anything else. The host calls it for every change the mixer tells
+   * (`Audio.onCatChange`, ADR-0247): a category written by a game, the bar or another panel.
+   */
+  reflectCategory: (cat: string) => void;
 }
 
 /** The cane's two positions — one tap per block, one every half block — in the page's language. */
@@ -745,5 +750,18 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    */
   ctx.on('blindMode', () => { drawBlindMode(); }); // through the root's door: released by its `dispose()`
 
-  return { renderAudio, reflectBlindMode: drawBlindMode, reflectTts: voice.reflectTts };
+  /** One category, in place: the lists hold rows only once the panel has drawn them, and a row not there is not drawn here. */
+  function reflectCategory(k: string): void {
+    if (k === 'tts') voice.reflectTts();
+    for (const sel of ['#audio-list', '#navsound-list']) {
+      const list = ctx.$<HTMLElement>(sel);
+      if (list) reflectCatRows(list, [k]);
+    }
+    const navMaster = ctx.$<HTMLInputElement>('#navsound-master');
+    const state = ctx.getAudioCat();
+    if (navMaster && state) navMaster.value = String(navMasterVolume(state, NAV_CATS));
+    refreshMarks();
+  }
+
+  return { renderAudio, reflectBlindMode: drawBlindMode, reflectTts: voice.reflectTts, reflectCategory };
 }

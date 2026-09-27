@@ -42,8 +42,17 @@ export interface Audio {
   setHearingLossGraph(on: boolean): void;
   /** The pause and title silence everything; playing brings it back. Acts only if the master exists — never makes one. */
   setMasterMuted(muted: boolean): void;
-  /** The mixer's live state per category, loaded from the store when the audio is built. Mutated by the panels. */
+  /**
+   * The mixer's live state per category, loaded from the store when the audio is built. Written in place — `on`, `vol`, or the
+   * whole category — by the panels, the bar and any game, and EVERY write that changes a value is told to `onCatChange`.
+   */
   readonly audioCat: Record<string, CatState>;
+  /**
+   * Listens to every change of a category — its `on` or its `vol` — WHOEVER made it: the engine's panels and bar, and a game
+   * writing `audio.audioCat.tts.on = false` itself (ADR-0247). Called with the category's key, after the value changed; a write
+   * of the value already there is no change. Answers the function that stops listening.
+   */
+  onCatChange(listener: (cat: string) => void): () => void;
   /** A category's bus, hanging off the master node. */
   catNode(cat: string): GainNode | null;
   /** Moves a category's bus to its state now, and keeps that state in the store. */
@@ -70,6 +79,27 @@ function buildHearingChain(ac: AudioContext): { input: AudioNode } {
   lp.connect(sp); sp.connect(ac.destination); return { input: lp };
 }
 
+/**
+ * THE CATEGORIES AS THE MIXER HOLDS THEM, each write heard (ADR-0247). A game reaches the mixer itself (`Engine.audio`), and
+ * its door to a category is a plain property write — `audioCat.tts.on = false` — with no call after it that an event could
+ * hang on. So the write IS the door: `on` and `vol` are accessors that tell `changed`, and so is the category itself, whose
+ * replacement (`audioCat.tts = {…}`) is copied INTO the mixer's object — replaced, the object every surface reads would come
+ * apart from the one the engine and the game write, and no later write would be heard.
+ */
+function heardCategories(stored: Record<string, CatState>, changed: (cat: string) => void): Record<string, CatState> {
+  const cats: Record<string, CatState> = {};
+  for (const [k, first] of Object.entries(stored)) {
+    let on = first.on, vol = first.vol;
+    const live = {} as CatState;
+    Object.defineProperties(live, {
+      on: { enumerable: true, get: () => on, set: (v: boolean) => { if (v !== on) { on = v; changed(k); } } },
+      vol: { enumerable: true, get: () => vol, set: (v: number) => { if (v !== vol) { vol = v; changed(k); } } },
+    });
+    Object.defineProperty(cats, k, { enumerable: true, get: () => live, set: (v: CatState) => { live.on = v.on; live.vol = v.vol; } });
+  }
+  return cats;
+}
+
 /** The last node before the output: a panner clamped to the two ears when a pan is asked, the gain itself when not. */
 function panned(ac: AudioContext, g: GainNode, pan?: number | null): AudioNode {
   if (pan == null || !ac.createStereoPanner) return g;
@@ -86,8 +116,14 @@ export function createAudio(deps: AudioDeps): Audio {
   let hearingLoss = false;
   let masterGain: GainNode | null = null, hlChain: { input: AudioNode } | null = null;
   let footCount = 0;
-  const audioCat: Record<string, CatState> = loadAudioCat(deps.store);
+  const catListeners = new Set<(cat: string) => void>();
+  // a copy of the listeners, so one that stops listening while it is told does not skip the next
+  const audioCat = heardCategories(loadAudioCat(deps.store), (cat) => { for (const l of [...catListeners]) l(cat); });
   const catNodes: Record<string, GainNode> = {};
+  function onCatChange(listener: (cat: string) => void): () => void {
+    catListeners.add(listener);
+    return () => { catListeners.delete(listener); };
+  }
 
   function ensureAC(): AudioContext | null {
     if (!audioCtx) audioCtx = deps.newContext();
@@ -137,7 +173,7 @@ export function createAudio(deps: AudioDeps): Audio {
     get volume() { return volume; }, setVolume: (v) => { volume = v; },
     get audioCtx() { return audioCtx; }, ensureAC, audioOut,
     get hearingLoss() { return hearingLoss; }, setHearingLossGraph, setMasterMuted,
-    audioCat, catNode, setCatGain,
+    audioCat, onCatChange, catNode, setCatGain,
     tone, tonePan, noiseHit,
     get footCount() { return footCount; },
   };

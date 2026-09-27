@@ -1430,10 +1430,10 @@ describe('createGame num documento de verdade', () => {
       expect(achados, achados.join(' · ')).toEqual([]);
     });
 
-    it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — o guarda morto do monólito voltou a valer', () => {
-      // ⚠️ `ui/pause-icons` documents the defect and kept it verbatim: in the monolith this call sat behind
-      // `typeof reflectTTS === 'function'`, a symbol that no longer existed, «so it never fires». The
-      // `reflectTtsPanelEnabled` field exists to switch it back on, and now there is a panel to refresh.
+    it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — pelo aviso do misturador', () => {
+      // ⚠️ In the monolith this refresh sat behind `typeof reflectTTS === 'function'`, a symbol that no longer existed, «so it
+      // never fires». The root no longer switches the bar's `reflectTtsPanelEnabled` on: the 🗣's write is told by the mixer,
+      // and the root's one listener (`onCatChange`, ADR-0247) repaints the panel.
       //
       // 📌 Without it, the child turns narration on with the 🗣 icon and the panel goes on saying it is off — the family of
       // a control lying about its state.
@@ -2212,7 +2212,9 @@ describe('the root\'s sound and speech, from the host (ADR-0232 D4)', () => {
 // ---- the voices are the case's, not the machine's (2026-09-26, CI run 36248801374; scripted, each alone, restored from a copy
 //      and checked by sha256 — 8 of 8 red; the file green on Windows with voices, on the runner's emulation and with no synthesis) ----
 //   N1 the spoken index wired to nothing (`ui/voice-settings`)           🔴 «o painel AUDITIVO abre…», only with its lent voice
-//   N2 `reflectTtsPanelEnabled: false` — the monolith's dead guard       🔴 «ligar o TTS pelo ÍCONE…»
+//   N2 `reflectTtsPanelEnabled: false` — the monolith's dead guard       🔴 «ligar o TTS pelo ÍCONE…» (⚠️ superseded by ADR-0247:
+//      the root passes `false` now and the panel follows the mixer's `onCatChange`; the mutation that turns this case red is
+//      the root's listener no longer reflecting the panel — M4 in `the-mixer-tells-every-change.browser.test.js`)
 //   N3 the speech rows never locked · N5 a locked row refusing silently  🔴 «with NO voice…, the spoken index refuses…»
 //   N4 the bar's 🗣 never locked · N6 the locked 🗣 refusing silently     🔴 «with NO voice…, the 🗣 refuses…»
 //   N7 the root reading the PAGE's `speechSynthesis` instead of the host's: on Windows (voices) the two voiceless cases go red,

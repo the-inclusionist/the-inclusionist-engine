@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2349,
+      "codeLines": 2350,
       "decisionNodes": 305,
       "maxDepth": 4,
       "fanOut": 98,
@@ -858,8 +858,8 @@
       "fanIn": 1
     },
     "platform/audio.ts": {
-      "codeLines": 88,
-      "decisionNodes": 34,
+      "codeLines": 107,
+      "decisionNodes": 38,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
@@ -1828,8 +1828,8 @@
       "fanIn": 0
     },
     "ui/settings-audio.ts": {
-      "codeLines": 430,
-      "decisionNodes": 71,
+      "codeLines": 442,
+      "decisionNodes": 75,
       "maxDepth": 4,
       "fanOut": 7,
       "globalReach": 0,
@@ -2038,8 +2038,8 @@
       "fanIn": 1
     },
     "ui/voice-settings.ts": {
-      "codeLines": 261,
-      "decisionNodes": 50,
+      "codeLines": 263,
+      "decisionNodes": 51,
       "maxDepth": 3,
       "fanOut": 3,
       "globalReach": 0,

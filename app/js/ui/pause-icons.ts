@@ -678,7 +678,10 @@ export interface PauseIconsCtx {
   setCatGain: (k: string) => void;
   /** Repaints the TTS row of the auditory panel after the icon changes it. */
   reflectTtsPanel: () => void;
-  /** Whether the TTS icon also calls `reflectTtsPanel`. `createGame` passes `true`; `false` leaves the panel as it was. */
+  /**
+   * Whether the TTS icon also calls `reflectTtsPanel`. `createGame` passes `false`: it repaints the panel from the mixer's
+   * `onCatChange`, which hears this icon's write like any other (ADR-0247). A host without that listener passes `true`.
+   */
   reflectTtsPanelEnabled: boolean;
 
   // --- Libras (ui/vlibras; both reach `document` at call time) ---
@@ -1088,7 +1091,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   /**
    * THE NAME UNDER THE ROW FOLLOWS THE LABEL OF THE ICON UNDER THE CURSOR (ADR-0159 rule 10, ADR-0167). The caption is the
    * visible half of what the cursor says, and the reflection is how a state changed ELSEWHERE reaches the icon — the 🦯, 📷
-   * and 👄 through the root's `stateOn`, the 🗣 through the hearing panel's `setCatGain`. Written only on a move or a press,
+   * and 👄 through the root's `stateOn`, the 🗣 through the mixer's `onCatChange` (ADR-0247). Written only on a move or a press,
    * the caption kept the state the child had left while the label spoke the new one.
    *
    * Only the CURSOR's icon (`.pi-sel`, which lives only on the bars `getA11yBars` hands over): another icon's name under the

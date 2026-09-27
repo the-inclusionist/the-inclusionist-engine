@@ -1358,17 +1358,8 @@ export function createGame(o: CreateGameOptions): Engine {
   };
 
   /**
-   * THE HEARING PANEL, resolved late and read early — the same laziness as `engineActions` above, for the same reason:
-   * `initPauseIcons` runs here and the panels mount further below.
-   *
-   * 🔴 IT IS A `let` BECAUSE OF A DEFECT KEPT VERBATIM. `ui/pause-icons` documents it: in the monolith the call that
-   * refreshed the narration row sat behind `typeof reflectTTS === 'function'`, a symbol that no longer existed, «so it
-   * never fires». The guard was ported as `reflectTtsPanelEnabled`, defaulting to `false`, so as not to fix it
-   * silently — and with a field to switch it back on.
-   *
-   * 🎯 THE ENGINE CAN: it mounts the panel, so it has the `reflectTts` to hand over. Without it, the child turns
-   * narration on with the bar's 🗣 icon and the panel goes on saying it is off — the family of defect where a control
-   * lies about its state.
+   * THE HEARING PANEL, resolved late and read early — the same laziness as `engineActions` above, for the same reason: the
+   * mixer's listener (`onCatChange`, below) is subscribed before the panels mount further below, and reads this when told.
    */
   let audio: SettingsAudioApi | null = null;
 
@@ -1516,9 +1507,11 @@ export function createGame(o: CreateGameOptions): Engine {
      * edge between layers to save one argument. Composition is this file's job.
      */
     transportInUse: (i: number) => inputOf(i).inUse,
-    // ✅ The monolith's dead guard works again — see the note on `audio`, above.
-    reflectTtsPanel: () => { audio?.reflectTts(); },
-    reflectTtsPanelEnabled: true,
+    // ⚠️ OFF, and not the monolith's dead guard come back: the 🗣's write is told by the mixer, and the root's one listener to
+    // it (`onCatChange`, below) repaints the panel — a second path here would be two answers to «who reflects narration»
+    // (ADR-0247).
+    reflectTtsPanel: () => {},
+    reflectTtsPanelEnabled: false,
     isLibrasOn: deafMode.isOn,
     toggleLibras: deafMode.toggle,
     /*
@@ -1674,9 +1667,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * `aria-pressed=false` after the child had turned it on — the control lying about its state.
      *
      * 📌 ONLY THE STATES WITH AN EVENT that can change elsewhere: blind mode, the camera control and the voice control
-     * (`GameEvent`). NARRATION changes elsewhere too, but it is the mixer's category and has no event: the hearing panel's
-     * `setCatGain`, further below, reflects the bar. The other icons reflect themselves on the click, which is the path by
-     * which they change.
+     * (`GameEvent`), and NARRATION, which is the mixer's category and is told by the mixer (`onCatChange`, below). The other
+     * icons reflect themselves on the click, which is the path by which they change.
      */
     stateOn('blindMode', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
@@ -1692,6 +1684,18 @@ export function createGame(o: CreateGameOptions): Engine {
     if (a11yBar && barUsable) pauseIcons.reflectIconsIn(a11yBar, 0);
     pauseIcons.reflectPauseIcons();
   });
+  /*
+   * 🔴 THE MIXER TELLS EVERY CHANGE, AND THIS IS THE ONE LISTENER (ADR-0247). The engine hands the mixer itself to the game
+   * (`Engine.audio`), so a category — narration above all — is written by the bar's 🗣, by the panels, and by a game's own mute
+   * button or cut-scene; without this, the bar and the panel said the state the child had left while the voice spoke or fell
+   * silent (ADR-0159 rule 10: the state is said in words, and a stale word is a lie). Every writer is heard here and every
+   * surface is drawn from here: the bar's icons for narration, the only category the bar shows, and the panels for any.
+   * It is the ROOT's, so it ends with `dispose()`; `unmount()` keeps it, as the root and its surfaces live on (ADR-0142).
+   */
+  whenDisposed(mixer.onCatChange((k) => {
+    if (k === 'tts' && a11yBar && barUsable) pauseIcons.reflectIconsIn(a11yBar, 0);
+    audio?.reflectCategory(k);
+  }));
 
   // 4d. WHO OPENED THE PAUSE, when there is more than one seat — finding 3 of the `game-soccer` audit.
   //
@@ -2347,18 +2351,8 @@ export function createGame(o: CreateGameOptions): Engine {
       getVolume: () => mixer.volume,
       setVolume,
       getAudioCat: () => mixer.audioCat,
-      /*
-       * 🔴 THE PANEL IS THE OTHER WRITER OF NARRATION, and the bar's 🗣 has to follow it. Narration is the mixer's `tts`
-       * category, not a setting of the store, so there is no `stateOn` for it beside the three the bar subscribes to above;
-       * but every writer commits a category through `setCatGain`, and here the panel's do — the switch, the volume slider that
-       * turns narration on, the reset. Without this, the child who turned narration on here heard the 🗣 under the bar's cursor
-       * say «desligado» (ADR-0159 rule 10: the state is said in words, and a stale word is a lie). The other direction is
-       * `reflectTtsPanel`, handed to the bar.
-       */
-      setCatGain: (k) => {
-        setCatGain(k);
-        if (k === 'tts' && a11yBar && barUsable) pauseIcons.reflectIconsIn(a11yBar, 0);
-      },
+      // the bar follows what the panel writes through the mixer's own event, `onCatChange` above (ADR-0247)
+      setCatGain,
       tts,
       getBlindMode: readBlindMode,
       // 📌 The `core/state` pattern: store, persist, notify. The game effects are a REACTION, and whoever reacts

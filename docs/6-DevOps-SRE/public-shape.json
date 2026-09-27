@@ -1436,6 +1436,7 @@
       "footCount",
       "hearingLoss",
       "noiseHit",
+      "onCatChange",
       "setCatGain",
       "setHearingLossGraph",
       "setMasterMuted",
@@ -3075,6 +3076,7 @@
     ],
     "interface SettingsAudioApi": [
       "reflectBlindMode",
+      "reflectCategory",
       "reflectTts",
       "renderAudio"
     ],

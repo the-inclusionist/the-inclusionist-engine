@@ -6,7 +6,8 @@
 // reflected when that surface changes it (`stateOn` in `boot/create-game`). Narration is not a setting of the store: it is the
 // mixer's `tts` category, which the icon, the hearing panel's switch and its volume slider all write, and nothing reflected the
 // bar after the panel wrote it. So the child turned narration on in the panel, came back to the bar, and the 🗣 under her cursor
-// said «desligado» — and `aria-pressed="false"` — over a voice that was speaking.
+// said «desligado» — and `aria-pressed="false"` — over a voice that was speaking. Since ADR-0247 the bar follows the mixer's
+// own event (`onCatChange`), which also hears a game writing the category; that case is `the-mixer-tells-every-change`.
 //
 // 📌 ONE ROOT PER FILE, with its own storage (`vitest.setup.browser.js`): narration starts off. The host lends ONE pt-BR voice,
 // so the 🗣 is not locked by a device that lists none (GitHub's Linux runner lists none, ADR-0185).
@@ -165,4 +166,6 @@ describe('the 🗣 flipped ELSEWHERE tells the truth under the bar\'s cursor', (
 // Applied by script, with the occurrence count checked BEFORE each one; restored from a copy.
 //   M1  the hearing panel's `setCatGain` no longer reflects the bar (the defect)     🔴 panel on, panel off, volume slider
 //   M2  it reflects on another category (`'sonar'`) instead of `'tts'`                🔴 the same three
+//   (⚠️ M1 and M2 were on the panel's wrapped `setCatGain`, which ADR-0247 removed: the same two, applied to the root's
+//    `onCatChange` listener, are M1 and M2 of `the-mixer-tells-every-change.browser.test.js`, and turn these three red too)
 //   M3  the bar's click no longer says the icon's label after the reflection        🔴 the press from the bar

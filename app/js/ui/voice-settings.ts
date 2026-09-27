@@ -110,7 +110,7 @@ export interface VoiceSettingsCtx {
 export interface VoiceSettings {
   /** Everything the section shows, refreshed from the stored state. Called by the panel's own render. */
   render: () => void;
-  /** Just the narration switch and the chosen engine. Exported because the quick bar's icon reflects it from outside. */
+  /** Just the narration switch, its volume and the chosen engine. Exported because the root reflects it from outside. */
   reflectTts: () => void;
 }
 
@@ -144,6 +144,9 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     const cat = ctx.getAudioCat();
     const on = !!(cat && cat.tts && cat.tts.on);
     if (b) { ctx.toggleBtn(b, on); b.textContent = toggleLabel(t, on); }
+    // and its volume: the slider was never drawn from the mixer, so it opened at the range's middle whatever was stored
+    const vol = ctx.$<HTMLInputElement>('#tts-vol');
+    if (vol && cat?.tts) vol.value = String(volPercent(cat.tts.vol));
     const e = ctx.$<HTMLSelectElement>('#tts-engine');
     if (e) e.value = ctx.tts.getEngineSel();
   }
