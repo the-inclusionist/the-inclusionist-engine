@@ -11,6 +11,15 @@ metadata:
   errata:
     - date: 2026-09-26
       what: >-
+        DEAF MODE TAKES TURNS TOO, AND A QUEUED READING KEEPS THE SCREEN OF ITS PRESS. The two points the first erratum of
+        this day left to the Dev, answered the same day. Asked whether, in deaf mode, another player's sign request should
+        now wait its turn like the sonar (until then a new request replaced whatever was being signed): «Sim». So the
+        interpreter takes turns by seat exactly as the narration does — a request from ANOTHER player waits until the one
+        being signed ends, and a player's newer request replaces that player's own. Asked whether a sonar reading that
+        waited its turn should keep reading the screen as it was at the press, not as it is when its turn comes: «Sim.» So
+        the text is taken at the press and never re-read; this holds for the narration and for the interpreter alike.
+    - date: 2026-09-26
+      what: >-
         THE SONAR'S TURNS ARE BUILT (`engine:d0413acf`): `Tts.narrate(text, { seat })`; another seat's reading waits its
         turn, a seat's newer reading cuts or replaces its own, and a narration with no seat still cuts everything. Left as
         it was, and the Dev's to decide: in deaf mode a new sign request still replaces what is being signed, and a queued
