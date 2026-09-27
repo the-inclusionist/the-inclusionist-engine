@@ -19,7 +19,18 @@ metadata:
     - "ADR-0113 clause 3 — `hidden` for «not offered», `aria-disabled` with a reason for «exists and is locked». A
        cycle position is neither a row nor a control on its own: skipping it is how a cycle says «not offered»"
   informed: []
+  confirmed-by:
+    - tests/the-two-doors-of-the-pause.browser.test.js
+    - tests/the-pad-steers-the-quick-bar.browser.test.js
+    - tests/typography-cycle.node.test.js
+    - tests/boot-create-game.node.test.js
   errata:
+    - date: 2026-09-26
+      what: >-
+        CONFIRMED, and the confirmation below was stale for two weeks: it still said «NOT BUILT YET» over the quick
+        pause built on 2026-09-12 (`engine:207f6e3`, `c1ce1a6`, `1ccc6ef`, `bb82b16`). Its gates are in confirmed-by;
+        on 2026-09-26 the gamepad joined the keyboard: its directional steers the bar, its action 2 presses the icon,
+        its action 4 opens the menus as the second door (`engine:786eca80`, `8d5cbb30`).
     - date: 2026-09-12
       what: >-
         ✅ THE OPEN ALTERNATIVE IS ANSWERED — «Ambos» (Dev). The menus have TWO doors: SELECT, as §2 says, AND
@@ -97,7 +108,7 @@ decision-outcome:
       - "`engine:tests/the-two-doors-of-the-pause.browser.test.js` (twelve cases) describes the old door and is rewritten"
 
   confirmation: |
-    ⚠️ NOT BUILT YET — the work is **issue #148** in `the-inclusionist-engine`. Gates, named now: START freezes the
+    ✅ The gates in confirmed-by (issue #148, built 2026-09-12; the gamepad's half 2026-09-26): START freezes the
     game (the phase is asked), reveals no card, puts the directional on the bar and shows PAUSED in the three
     languages; START again resumes and hides PAUSED; SELECT reveals the card; a panel open refuses both; the cycle
     never lands on ARASAAC or PCS (asserting absence over a full turn of the cycle); a cartridge declaring `select`
