@@ -6,7 +6,7 @@
 // guard, `expect(el).toEqual(el.cloneNode(true))` passes — and that is how a mutation survived in the footer-glide work (c9a10098).
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 const REFUSED = /refuses a screen element .*isEqualNode.*toBe/s;
 const paragraph = (text = 'Quanto é 2 mais 3?') => { const p = document.createElement('p'); p.textContent = text; return p; };
@@ -58,6 +58,47 @@ describe('a screen element on either side is refused, with the way out in the me
   });
 });
 
+describe('every other matcher that compares by deep equality is refused too', () => {
+  it('🔴 [Right] `toContainEqual` and `toMatchObject`: a clone would pass as the element in either', () => {
+    const el = paragraph();
+    const copy = el.cloneNode(true);
+    expect(() => expect([el]).toContainEqual(copy)).toThrow(REFUSED);
+    expect(() => expect({ cursor: el, n: 1 }).toMatchObject({ cursor: copy })).toThrow(REFUSED);
+    expect(() => expect([el]).not.toContainEqual(paragraph('outro'))).toThrow(REFUSED);
+  });
+
+  it('🔴 [Right] `toHaveProperty` with a VALUE — and not with a path alone, which compares nothing', () => {
+    const el = paragraph();
+    expect(() => expect({ cursor: el }).toHaveProperty('cursor', el.cloneNode(true))).toThrow(REFUSED);
+    expect({ cursor: el }).toHaveProperty('cursor');
+  });
+
+  it('🔴 [Right] a spy called with, or returning, a screen element', () => {
+    const el = paragraph();
+    const copy = el.cloneNode(true);
+    const spy = vi.fn((node) => node);
+    spy(el);
+    expect(() => expect(spy).toHaveBeenCalledWith(copy)).toThrow(REFUSED);
+    expect(() => expect(spy).toHaveBeenLastCalledWith(copy)).toThrow(REFUSED);
+    expect(() => expect(spy).toHaveBeenNthCalledWith(1, copy)).toThrow(REFUSED);
+    expect(() => expect(spy).toHaveReturnedWith(copy)).toThrow(REFUSED);
+    expect(() => expect(spy).toHaveLastReturnedWith(copy)).toThrow(REFUSED);
+    expect(() => expect(spy).toHaveNthReturnedWith(1, copy)).toThrow(REFUSED);
+  });
+
+  it('🎯 [Right] the same matchers with no node still compare', () => {
+    expect([{ a: 1 }]).toContainEqual({ a: 1 });
+    expect({ a: 1, b: 2 }).toMatchObject({ a: 1 });
+    expect({ a: { b: 2 } }).toHaveProperty('a.b', 2);
+    const spy = vi.fn((n) => n * 2);
+    spy(3);
+    expect(spy).toHaveBeenCalledWith(3);
+    expect(spy).toHaveBeenNthCalledWith(1, 3);
+    expect(spy).toHaveReturnedWith(6);
+    expect(spy).toHaveNthReturnedWith(1, 6);
+  });
+});
+
 describe('ordinary values still compare', () => {
   it('🎯 [Right] equal values pass, different ones fail with the ordinary message — not the guard\'s', () => {
     expect({ list: [1, 'dois', { tres: 3 }], set: new Set(['a']), map: new Map([['k', [1]]]) })
@@ -105,3 +146,7 @@ describe('ordinary values still compare', () => {
 // G7. no cycle guard                           → red: a value that holds itself
 // G8. own properties not walked                → red: anywhere, objects of a class
 // G9. `toStrictEqual` not guarded              → red: the clone, the same node, `.not`
+// (2026-09-27, the guard widened to every deep-equality matcher — same script, each restored — all red)
+// G10 `toContainEqual` · G11 `toMatchObject` · G12 `toHaveProperty`'s value · G13 «called with» · G14 «returned with»
+//     · G15 the `nth` «called with» not guarded → red: «every other matcher»
+// G16 `toHaveProperty` with a path alone refused → red: «not with a path alone»

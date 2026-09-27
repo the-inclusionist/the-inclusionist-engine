@@ -87,8 +87,8 @@ export type GamepadPlayer = PlayerView<
 
 /**
  * WHAT ONLY THE CARTRIDGE KNOWS ABOUT ITS WORLD (ADR-0224). The engine mounts this transport — as it mounts touch, the
- * eyes, the face, the hands, the voice and the scan —, and 📏 of `GamepadCtx`'s 25 doors the root answers 23 with what
- * it already has. These are the ones left, and they are the ones nothing in the engine can know.
+ * eyes, the face, the hands, the voice and the scan —, and the root answers every door of `GamepadCtx` it can with what it
+ * already has. These are the ones left, and they are the ones nothing in the engine can know.
  *
  * 🎯 **ALL OPTIONAL, AND EVERY ABSENCE HAS A WRITTEN MEANING** — never guessed (ADR-0113 clause 3, ADR-0169). A
  * cartridge that declares nothing has a working pad; what depends on its world simply does not happen. Refusing the

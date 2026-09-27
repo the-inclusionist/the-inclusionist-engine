@@ -18,7 +18,9 @@ globalThis.PIXI = PIXI;
 import { fileBackend } from './tests/fixtures/file-storage.js';
 Object.defineProperty(window, 'localStorage', { value: fileBackend, configurable: true, writable: false });
 
-// 🔴 `toEqual` AND `toStrictEqual` REFUSE A SCREEN ELEMENT (the Dev, 2026-09-26: «crie uma trava geral que recusa toEqual com
+// 🔴 EVERY DEEP-EQUALITY MATCHER REFUSES A SCREEN ELEMENT (`DEEP_EQUALITY` below: `toEqual`, `toStrictEqual`, `toContainEqual`,
+// `toMatchObject`, `toHaveProperty`'s value, the spy's «called with» and «returned with») — the Dev, 2026-09-26: «crie uma
+// trava geral que recusa toEqual com
 // elementos de tela em qualquer teste futuro»). Vitest compares two DOM nodes with `isEqualNode`, so a COPY of an element passes
 // as the element: a case claiming «the cursor IS on this option» stays green when the code hands over a clone, and that is how a
 // mutation survived in the footer-glide work (commit c9a10098, which converted the six assertions that did it). So either side
@@ -39,15 +41,34 @@ function holdsAScreenElement(value, seen = new Set()) {
   return inside(Object.values(value)); // an array's items, an object's own fields, an asymmetric matcher's `sample`
 }
 
+/**
+ * EVERY MATCHER THAT COMPARES BY DEEP EQUALITY, and what of it to look at: the received value and the arguments for the ones that
+ * compare the two; only the arguments for the spy's (the received side is the spy; `nth` forms lead with a count), and only the
+ * value for `toHaveProperty` (its first argument is a path). A deep equality anywhere lets a copy pass as the element.
+ */
+const both = (received, args) => [received, ...args];
+const argsOnly = (_received, args) => args;
+const DEEP_EQUALITY = {
+  toEqual: both, toStrictEqual: both, toContainEqual: both, toMatchObject: both,
+  toHaveProperty: (_received, args) => args.slice(1),
+  toHaveBeenCalledWith: argsOnly, toBeCalledWith: argsOnly,
+  toHaveBeenLastCalledWith: argsOnly, lastCalledWith: argsOnly,
+  toHaveBeenNthCalledWith: (_received, args) => args.slice(1), nthCalledWith: (_received, args) => args.slice(1),
+  toHaveReturnedWith: argsOnly, toReturnWith: argsOnly,
+  toHaveLastReturnedWith: argsOnly, lastReturnedWith: argsOnly,
+  toHaveNthReturnedWith: (_received, args) => args.slice(1), nthReturnedWith: (_received, args) => args.slice(1),
+};
+
 chai.use((api, utils) => {
-  for (const name of ['toEqual', 'toStrictEqual']) {
-    utils.overwriteMethod(api.Assertion.prototype, name, (compare) => function (expected, ...rest) {
-      if (holdsAScreenElement(utils.flag(this, 'object')) || holdsAScreenElement(expected)) {
+  for (const [name, compared] of Object.entries(DEEP_EQUALITY)) {
+    if (typeof api.Assertion.prototype[name] !== 'function') continue; // a name this Vitest does not define
+    utils.overwriteMethod(api.Assertion.prototype, name, (compare) => function (...args) {
+      if (compared(utils.flag(this, 'object'), args).some((value) => holdsAScreenElement(value))) {
         throw new Error(`${name} refuses a screen element (vitest.setup.browser.js): it compares DOM nodes with isEqualNode, `
           + 'so a copy of an element passes as the element. Compare identity with toBe (node by node for a list), or compare '
           + 'a specific property — textContent, id, a list of ids.');
       }
-      return compare.call(this, expected, ...rest);
+      return compare.call(this, ...args);
     });
   }
 });
