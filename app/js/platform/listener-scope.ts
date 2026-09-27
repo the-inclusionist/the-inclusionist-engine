@@ -76,25 +76,34 @@ export function createListenerScope(real: Window): ListenerScope {
    * ⚠️ WHAT LEAVES THIS TRAP IS ANSWERED BY THE REAL WINDOW, NEVER BY THE PROXY, and it is not style: `innerWidth`,
    * `devicePixelRatio` and `location` are GETTERS on the window, and `getComputedStyle`, `requestAnimationFrame` and
    * `matchMedia` are methods of it — run any of them with the proxy as `this` and the browser answers «Illegal invocation».
-   * So the receiver is left at its default (which IS the target) and every function is bound before it goes out.
+   * So the receiver is left at its default (which IS the target) and every function leaves answered by the real window.
    *
-   * 📌 Both halves are exercised, by mutation: forwarding the proxy as the receiver kills the whole collection at load, and
-   * dropping the `bind` kills it at the first `getComputedStyle`.
-   *
-   * 🔴 BUT A CONSTRUCTOR LEAVES UNBOUND, and this was not foreseen — the suite found it. `bind` returns a function with NO
-   * `prototype`, and code that reaches a constructor THROUGH the window reads that prototype: `platform/speech-recognition`
-   * asks `'processLocally' in api.prototype` before it will use the browser's recogniser on the device, and bound, that read is
-   * `in undefined`. 📏 Measured: `tests/reading-no-createGame.browser.test.js` went red — the child who reads aloud got no
-   * microphone at all. A constructor never needs `this` from the property access; a method always does, and `prototype` is the
-   * one thing that tells the two apart.
+   * 🔴 EVERY FUNCTION, WITH NO GUESS AT WHAT IT IS (`onTheWindow`): a call runs with the real window as `this`, and everything
+   * else — `new`, the `prototype`, a static like `SpeechRecognition.available` — reaches the function itself. The rule before
+   * guessed: a function with a `prototype` was a constructor and left unbound, the rest were `bind`-ed. The guess held for the
+   * browser's own functions and failed for an extension's: one that wraps `window.fetch` does it with a plain `function`, which
+   * HAS a `prototype`, so the engine's fetch left unbound and every heavy file failed with «Illegal invocation» inside the
+   * download's `catch`. 📏 Measured on 2026-09-27 in the Dev's Brave: no heavy file ever requested, an empty checked cache, and
+   * the 👄 and the 📷 unable to start; with a wrapped fetch in a clean profile, 0 requests against 66 without it. A `bind` could
+   * not be the answer either: it drops the `prototype` that `platform/speech-recognition` reads.
    */
+  const answered = new WeakMap<object, unknown>();
+  const onTheWindow = (fn: (...a: unknown[]) => unknown): unknown => {
+    // one wrapper per function, so the same property read twice is the same function; `new` builds with the function itself as
+    // the target — with the wrapper as `newTarget`, a constructor already bound (a host may lend one) built an object with none of
+    // its methods («observe is not a function», measured in `tests/no-need-to-hold.browser.test.js`)
+    if (!answered.has(fn)) answered.set(fn, new Proxy(fn, {
+      apply: (f, _this, args) => Reflect.apply(f, real, args),
+      construct: (f, args) => Reflect.construct(f, args),
+    }));
+    return answered.get(fn);
+  };
   const win = new Proxy(real, {
     get(target, prop) {
       if (prop === 'addEventListener') return listen;
       if (prop === 'removeEventListener') return forget;
       const value = Reflect.get(target, prop) as unknown;
-      if (typeof value !== 'function') return value;
-      return Object.hasOwn(value, 'prototype') ? value : (value as (...a: unknown[]) => unknown).bind(target);
+      return typeof value === 'function' ? onTheWindow(value as (...a: unknown[]) => unknown) : value;
     },
   });
 

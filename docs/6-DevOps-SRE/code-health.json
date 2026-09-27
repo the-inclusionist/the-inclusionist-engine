@@ -968,12 +968,12 @@
       "fanIn": 3
     },
     "platform/listener-scope.ts": {
-      "codeLines": 48,
+      "codeLines": 55,
       "decisionNodes": 8,
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 5,
+      "worstFunction": 4,
       "statefulEdges": 0,
       "fanIn": 1
     },
