@@ -28,7 +28,7 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2351,
+      "codeLines": 2352,
       "decisionNodes": 305,
       "maxDepth": 4,
       "fanOut": 98,
@@ -1528,8 +1528,8 @@
       "fanIn": 1
     },
     "ui/hud-row.ts": {
-      "codeLines": 44,
-      "decisionNodes": 6,
+      "codeLines": 53,
+      "decisionNodes": 8,
       "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,

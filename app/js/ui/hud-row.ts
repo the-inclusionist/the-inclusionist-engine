@@ -70,6 +70,25 @@ function padReach(pad: HTMLElement | null, regionBottom: number): number {
   return reach;
 }
 
+/** The pad, or a part of it, in a mutation: its `hidden` changed, its parts were rebuilt, or it came or went. */
+function aboutThePad(r: MutationRecord): boolean {
+  return [r.target, ...Array.from(r.addedNodes), ...Array.from(r.removedNodes)].some((n) => !!(n as Element).closest?.('#touch-controls'));
+}
+
+/**
+ * THE ROW FOLLOWS THE PAD AT ONCE (ADR-0239 §6): `measure` runs again whenever the on-screen pad under `host` shows, hides or is
+ * rebuilt, by whichever door — a touch, a key, a menu opening or closing (ADR-0166), a new cartridge. A resize and the session
+ * clock's tick are not enough: between them the row stood behind the pad for up to a second, and the explanation band that
+ * stands where the row stands lay over the pad's START pill. A mutation observer answers before the next frame is drawn.
+ * Returns what stops it; nothing is watched where the host has no observer.
+ */
+export function followThePad(host: Node | null, Observer: typeof MutationObserver | undefined, measure: () => void): () => void {
+  if (!host || typeof Observer !== 'function') return () => {};
+  const observer = new Observer((records) => { if (records.some(aboutThePad)) measure(); });
+  observer.observe(host, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+  return () => observer.disconnect();
+}
+
 /** Measures the bottom and writes `--hud-row-bottom` and `--hud-row-h` on the region (see the header). */
 export function reserveBottomBand(ctx: BottomBandCtx): void {
   const { region, row } = ctx;

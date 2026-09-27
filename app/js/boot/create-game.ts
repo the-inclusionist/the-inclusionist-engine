@@ -141,7 +141,7 @@ import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import { mountSessionClock, type SessionClockMounted } from '../ui/session-clock.js';
-import { mountHudRow, reserveBottomBand } from '../ui/hud-row.js';
+import { mountHudRow, reserveBottomBand, followThePad } from '../ui/hud-row.js';
 import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/game-options.js';
 import { createStorage, keysOutsideScopes, type StorageLike } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
@@ -3194,6 +3194,8 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const touchHostEl = o.host.touchHost ?? $('#game-region');
   const touchUsable = !!touchHostEl && typeof (touchHostEl as HTMLElement).appendChild === 'function';
+  // the HUD row and the footer stand above the pad from the frame it shows in, and come down in the frame it leaves (ADR-0239 §6)
+  whenDisposed(followThePad(touchHostEl, (win as unknown as { MutationObserver?: typeof MutationObserver }).MutationObserver, reserveRowBand));
   const seat0CardOpen = (): boolean => {
     const c = $<HTMLElement>('#vp-pause-0');
     return !!c && c.hidden === false;
