@@ -1,7 +1,22 @@
 ---
 metadata:
   status: "accepted"
+  confirmed-by:
+    - tests/hud-mounted-by-the-engine.browser.test.js
+    - tests/session-clock.browser.test.js
+    - tests/session-clock.node.test.js
+    - tests/the-row-follows-the-pad.browser.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE CONFIRMATION WAS STALE, and the row was built. The record still said «Not built» while the row stood in the
+        engine (`ui/hud-row`, `ui/hud-bands`) with its gates: the clock, the five-digit score with the power above it, the
+        learning bars at the bottom left, the map slot at the bottom right, the mission at the top centre, and the order at
+        the bottom of §6 (the sound caption above the row, the explanation covering it, the row above the on-screen pad).
+        One gap of §6 was found on 2026-09-27 and closed (`engine:7d4308be`): when the pad showed or hid, the row moved
+        only at the clock's next tick, up to a second later, sitting behind the pad meanwhile; it now follows the pad at
+        once. What issue #94 still owes is ADR-0050's part of the clock (the pause that locks, the night window), not
+        this record's.
     - date: 2026-09-25
       what: >-
         THE CLOCK'S DIGITS AND SIZE, from the Dev after seeing it run: «Temo está com letras grandes demais. Se não houver
@@ -91,8 +106,9 @@ decision-outcome:
       - "A game with a map gains a slot to fill (additive)"
 
   confirmation: |
-    ⏳ Not built. Debt: issue #94 — the clock and the score are built there, in this row; the learning bars and the power
-    move with them, and the map slot is added.
+    ✅ The gates in confirmed-by: every number in one row at the bottom around the session clock, the score in five digits
+    with the power above it, the learning bars at the bottom left and the map slot at the bottom right, the mission at the
+    top centre, and §6's order at the bottom — including the row standing above the on-screen pad from the frame it shows.
 
 more-information: |
   ZPD (zona de desenvolvimento proximal) names the learning bars in the Dev's words.
