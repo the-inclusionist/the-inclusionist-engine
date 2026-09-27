@@ -80,13 +80,12 @@ export default defineConfig({
       workbox: {
         // precaches EVERYTHING the page uses offline: the bundle (js/css/html), images (png/svg), fonts (woff2), text and data
 // (txt/json) and the manifest. The pixi chunk (~445 KB) is far below Workbox's default 2 MB ceiling.
-// `wasm` and the ceiling below were added so the neural TTS runtime (sherpa-onnx/ort, ~25.6 MB) was PRECACHED. Without
-// them the file stayed out of the PWA cache — and out of `runtimeCaching` too — so it depended on the ordinary HTTP
-// cache, which the browser evicts when it likes: in a school lab with restored machines the neural voice simply did
-// not load offline (pillar 8). The per-file ceiling rises with it because Workbox's default is 2 MB: adding the
-// extension alone would make it SKIP the file with a warning, and the symptom would be identical. Since ADR-0216 that
-// runtime comes from `heavy/` (the route below); the extension and the ceiling stay for any WebAssembly a page emits,
-// for the same reason as `mjs`:
+// `wasm` and the ceiling below: a WebAssembly file a page emits must be PRECACHED, or it depends on the ordinary HTTP
+// cache, which the browser evicts when it likes — in a school lab with restored machines the feature simply does not
+// start offline (pillar 8). The per-file ceiling rises with it because Workbox's default is 2 MB: adding the extension
+// alone would make it SKIP a larger file with a warning, and the symptom would be identical. The engine's own heavy
+// runtimes come from `heavy/` (ADR-0216, the route below); the extension and the ceiling stay for any WebAssembly a
+// page emits, for the same reason as `mjs`:
         // `mjs`: a module a worker loads by URL. onnxruntime's thread script is no longer one of them — since ADR-0216 it comes
         // from `heavy/`, which the delivery fills and the rule below caches — but the extension stays: a page that emits one and
         // leaves it outside the precache loses it offline, and the symptom is a feature that simply never starts.

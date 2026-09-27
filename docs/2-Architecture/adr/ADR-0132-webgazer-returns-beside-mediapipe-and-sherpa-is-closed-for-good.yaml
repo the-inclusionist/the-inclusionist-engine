@@ -2,11 +2,19 @@
 metadata:
   status: "accepted"
   confirmed-by:
+    - tests/sherpa-stays-closed.node.test.js
     - tests/heavy-mirror.node.test.js
     - tests/heavy.node.test.js
     - tests/nothing-comes-from-outside.node.test.js
     - tests/no-voice-model-in-the-package.node.test.js
   errata:
+    - date: 2026-09-27
+      what: >-
+        THE SHERPA CLAUSE HAS ITS GATE. `tests/sherpa-stays-closed.node.test.js` refuses the word in the engine's code, its
+        scripts, its tests and its build configuration, beyond the files that name it on purpose (the one that refuses its
+        files in the package, and the language gate's dictionary), each exemption held to its reason; the records and the
+        research keep the history. Writing it found one survivor: the `vite.config.ts` comment on the precache, which
+        explained the `wasm` extension by the old runtime and now gives today's reason. 4 mutations red.
     - date: 2026-09-27
       what: >-
         THE CONFIRMATION WAS STALE IN PART. WebGazer's half left with ADR-0214, and with it the lazy `<script src>` of
@@ -173,9 +181,8 @@ decision-outcome:
     first use — the gates in confirmed-by. WebGazer's half — the lazy fetch in `ui/webcam.ts` and the two libraries
     measured together on the target hardware — left with ADR-0214.
 
-    ⚠️ Measured on 2026-09-27 and not gated: the word `sherpa` directs no work — it survives only in a plan marked
-    historical and in the test that refuses its files in the package. No sieve would fail on a new comment that revived
-    it, and no open issue carries one.
+    ✅ And sherpa-onnx stays closed: `tests/sherpa-stays-closed.node.test.js` refuses its name wherever work is directed —
+    the engine's code, scripts, tests and build configuration.
 
 more-information: |
   Supersedes ADR-0124 in part: the parenthesis «webgazer não». Its central decision — the heavy runtimes are
