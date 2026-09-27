@@ -357,6 +357,7 @@ repository (`docs:…`, `game-platformer:…`). That row answers for the number 
 | [ADR-0251](ADR-0251-three-faces-with-no-stated-licence-leave-the-package.yaml) | **Three faces with no stated licence leave the package until their licence is established.** 📌 The Dev, 27/09: «Melhor não usá-las por enquanto.» Monoton, Yatra One, iA Writer Quattro; the catalogue's licence corrected for Luckiest Guy, Smokum and Ubuntu | accepted |
 | [ADR-0252](ADR-0252-each-cartridge-builds-its-own-random-stream.yaml) | **Each cartridge builds its own random stream — the engine offers the factory, not a stream.** 📌 The Dev, 27/09: «Registrar o que existe.» | accepted |
 | [ADR-0253](ADR-0253-the-engine-builds-both-targets-of-a-game.yaml) | **The engine builds both targets of a game, and the shared CI builds and checks both.** 📌 The Dev, 27/09: «A engine fornece o build dos dois alvos» | accepted |
+| [ADR-0254](ADR-0254-a-font-with-a-reserved-name-ships-as-its-author-s-original.yaml) | **A font with a reserved name ships as its author's original, compressed and nothing else.** 📌 The Dev, 27/09: «Compra a regularização de tudo», «Merriweather sai devido ao tamanho e ficamos com A para as 22.» | accepted |
 
 > ADRs 0011–0019 replaced the informal `REGISTRO-DE-DECISOES.md` log (a decision is an ADR). The exhaustive per-row
 > detail of the old log is in git history; these ADRs carry the decisions + rationale.

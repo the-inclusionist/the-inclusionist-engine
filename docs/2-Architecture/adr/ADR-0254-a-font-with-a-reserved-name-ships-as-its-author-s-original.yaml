@@ -1,0 +1,67 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-27
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev, 2026-09-27, told that 22 packaged families are web subsets (Modified Versions under the OFL) whose names are Reserved Font Names, and offered (A) the authors' originals, (B) renaming, (C) written permission, (D) leaving: on renaming, «isso está estranho»; on the originals' cost, «Compra a regularização de tudo»; on each cartridge shipping its own fonts, «Se tivermos 300 jogos, são 300+ fontes aparecendo repetidas vezes»; and then: «Merriweather sai devido ao tamanho e ficamos com A para as 22.»"
+    - "SIL OFL 1.1, condition 3 — a Modified Version may not use a Reserved Font Name; «This restriction only applies to the primary font name as presented to the users»"
+    - "OFL-FAQ 2.2.1 (WOFF/WOFF2 conversion that only compresses and keeps the metadata is not modification), 2.6 (subsetting a webfont is modification), 5.4 (no word of a Reserved Font Name may be used in a new name)"
+    - "Ubuntu Font Licence 1.0 §2 — a Modified Version not Substantially Changed must be named «Ubuntu derivative X»"
+  informed: []
+
+title: A font with a reserved name ships as its author's original, compressed and nothing else
+
+context-and-problem-statement: |
+  The engine packages the latin and latin-ext subsets the Google Fonts service serves. A subset is a Modified Version
+  (OFL-FAQ 2.6), and 22 of the packaged families carry their Reserved Font Name as their own name (Lato, Lora, Merriweather,
+  OpenDyslexic, Playfair Display, Press Start 2P, Quicksand, Source Sans 3, Source Serif 4, UnifrakturMaguntia, Abril
+  Fatface, Alfa Slab One, Bowlby One SC, Cookie, Lilita One, Lobster, Monofett, Petit Formal Script, Plaster, Ranchers,
+  Sancreek, Titan One); Ubuntu's licence asks the same of a modified copy. Google Fonts serves them under separate
+  agreements with the authors, which do not pass to whoever redistributes the files.
+
+decision-drivers:
+  - "Every copy of the engine is a redistribution; what it carries must be in order, not merely unlikely to be noticed"
+  - "One font library in the engine, not a copy per cartridge"
+  - "The installed size on a school device"
+
+considered-options:
+  - "A · Ship each author's original, converted to WOFF2 by compression only, metadata intact"
+  - "B · Rename the subsets to names with no word of the reserved one"
+  - "C · Ask each author for written permission"
+  - "D · Leave the families out"
+  - "E · Each cartridge ships the fonts it uses"
+
+pros-and-cons-of-the-options: |
+  **A.** ✅ The Original Version keeps its name and its full coverage; WOFF2 compression alone is not modification. ❌ The
+  package grows (measured on the originals' sizes: about 3 MB without Merriweather). **B.** ❌ Names nobody recognises for
+  the same design. **C.** ❌ Slow, and some authors cannot be reached. **D.** ❌ Loses faces for nothing A cannot keep.
+  **E.** ❌ The same font repeated in every cartridge.
+
+decision-outcome:
+  chosen-option:
+    link: "A — each author's original, compressed only; Merriweather leaves"
+    justification: |
+      The 21 families that stay, and Ubuntu, ship as the original files their authors distribute (the `google/fonts`
+      repository, with its licence), converted to WOFF2 by compression alone with every table and its metadata intact,
+      in the weights the engine already offers — a variable original ships whole, since cutting a weight out of it is a
+      modification. Their `@font-face` rules lose `unicode-range`: one file covers the family. Merriweather LEAVES the
+      package: its original is a 4.5 MB variable font. OpenDyslexic is checked against its author's release and replaced
+      only if it is not already the original.
+
+  consequences:
+    positive:
+      - "Every packaged font is either free of reserved names or its author's original — nothing to rename, nothing to explain"
+      - "The families gain their full character coverage"
+    negative:
+      - "About 3 MB more in every install"
+      - "Merriweather is no longer offered"
+
+  confirmation: |
+    Debt until the gate lands (to be named with the implementation): each of these families' files, decompressed, has
+    every table byte-identical to its author's original (WOFF2 written without table transforms); Merriweather is not packaged; the notices and licences still cover every
+    family.
+
+more-information: |
+  Downloads — the originals from `github.com/google/fonts` and the `fonttools`/`brotli` tools — authorised by the Dev on
+  2026-09-27 with this choice.
