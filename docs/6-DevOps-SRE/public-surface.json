@@ -924,6 +924,7 @@
   ],
   "platform/tts.ts": [
     "LoadKokoro",
+    "NarrateOptions",
     "SpokenPart",
     "SpokenText",
     "Tts",

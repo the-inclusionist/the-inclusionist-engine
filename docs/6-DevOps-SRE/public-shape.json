@@ -1776,6 +1776,9 @@
       "language?",
       "text"
     ],
+    "interface NarrateOptions": [
+      "seat?"
+    ],
     "interface TtsCtx": [
       "audioOut",
       "catNode",

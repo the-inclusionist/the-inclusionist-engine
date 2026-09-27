@@ -202,7 +202,11 @@ export interface SonarCtx {
   /* --- audio --- */
   tonePan: (freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtxOut | null) => void;
   srSay: (text: string) => void;
-  narrate: (text: string) => void;
+  /**
+   * Speaks the sonar's words. `seat` is the player who pressed: a reading takes turns with the other players' and cuts that
+   * player's own (ADR-0234, errata 2026-09-26 — the root's narration does it; a ctx built by hand may ignore it).
+   */
+  narrate: (text: string, seat: number) => void;
   /**
    * WHAT IS ON THE SCREEN NOW, as text in reading order — `''` when there is none the engine can read (ADR-0234: «sonar do que
    * está na tela»). With text, the sonar's WORDS are that text, read at the press; the tone still points at the nearest
@@ -382,7 +386,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     else ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc);
 
     const onScreen = ctx.screenText?.() ?? '';
-    if (onScreen) { ctx.srSay(onScreen); ctx.narrate(onScreen); return; }
+    if (onScreen) { ctx.srSay(onScreen); ctx.narrate(onScreen, pl.i); return; }
     // A sonar that no longer knows what the target is cannot name it when there is NO target at all: it says "nothing
     // nearby", which is true in any genre.
     if (!target) { ctx.srSay(t('sr.nav.noTargetNear')); return; }
@@ -396,7 +400,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
       dist: t(distanceKey(target.d)),
     });
     const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + foundSentence;
-    ctx.srSay(msg); ctx.narrate(msg);
+    ctx.srSay(msg); ctx.narrate(msg, pl.i);
   }
 
   /**

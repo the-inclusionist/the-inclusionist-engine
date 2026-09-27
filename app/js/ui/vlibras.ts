@@ -66,8 +66,11 @@ export interface DeafModePorts {
   readonly t: Translate;
   /** Who signs. */
   readonly interpreter: Interpreter;
-  /** The narration: what the sonar's text does with deaf mode off. */
-  readonly speak: (text: string) => void;
+  /**
+   * The narration: what the sonar's text does with deaf mode off. `seat`, the player who pressed, when the sonar knows it: then
+   * the reading takes turns with the other players' (ADR-0234, errata 2026-09-26).
+   */
+  readonly speak: (text: string, seat?: number) => void;
   /** The caption host, which writes while deaf mode is on (`Engine.captionSound`). */
   readonly caption: (text: string) => void;
   /** The announcer: what the child is told about the interpreter. */
@@ -84,8 +87,11 @@ export interface DeafMode {
   readonly toggle: () => void;
   /** Does a sound get its caption now? Deaf mode on, or the captions setting on — every sound is captioned in deaf mode. */
   readonly captionsOn: () => boolean;
-  /** What the sonar found: captioned and handed to the interpreter with deaf mode on, spoken with it off. */
-  readonly sonar: (text: string) => void;
+  /**
+   * What the sonar found: captioned and handed to the interpreter with deaf mode on, spoken with it off — by `seat`'s turn, when
+   * the player who pressed is known (`speak`).
+   */
+  readonly sonar: (text: string, seat?: number) => void;
   /** Runs `fn` when the mode turns on or off (a host's reflow); returns its release. */
   readonly onChange: (fn: () => void) => () => void;
   /** Releases the interpreter; an answer still on its way is dropped. */
@@ -139,8 +145,8 @@ export function createDeafMode({ store, captionsSetting, t, interpreter, speak, 
     for (const fn of [...changeListeners]) fn();
   };
 
-  const sonar = (text: string): void => {
-    if (!on) { speak(text); return; }
+  const sonar = (text: string, seat?: number): void => {
+    if (!on) { speak(text, seat); return; }
     caption(text);
     let answer: Promise<SignResult>;
     try { answer = interpreter.sign(text); } catch (failure) { answer = Promise.reject(failure); }

@@ -36,6 +36,18 @@ export interface SpokenPart {
 }
 /** What narration speaks: a text in the interface's language, or parts spoken in order, each in its own language. */
 export type SpokenText = string | readonly SpokenPart[];
+/** How a narration meets the one being spoken. Absent: it cuts it, as every narration always has. */
+export interface NarrateOptions {
+  /**
+   * THE PLAYER WHO ASKED, and then the narration takes turns with the other players' (ADR-0234, errata 2026-09-26 — the Dev: «em
+   * fila, não junto ao mesmo tempo com outro sonar em andamento», and «outro jogador não corta, mas um jogador corta a si
+   * mesmo»). Behind another player's narration still being spoken it waits, and is spoken when that one and each one waiting
+   * before it are over; a player's newer narration cuts that player's own being spoken, and replaces that player's own
+   * waiting, in its place in the line. The sonar's readings are spoken so. A narration that names no player still cuts
+   * whatever is being spoken, and ends the ones waiting too.
+   */
+  readonly seat?: number;
+}
 
 /** `finished` is called once the utterance is over, however it ends: what lets parts be spoken in order. */
 interface TtsEngine { id: string; speak: (text: string, finished?: () => void) => void; }
@@ -96,8 +108,11 @@ export interface TtsCtx {
 }
 
 export interface Tts {
-  /** The entry point, gated by the mixer: a text in the interface's language, or parts in order (ADR-0243 §1). */
-  narrate: (text: SpokenText) => void;
+  /**
+   * The entry point, gated by the mixer: a text in the interface's language, or parts in order (ADR-0243 §1). It cuts what is
+   * being spoken, unless `how` names the player who asked — then it takes turns with the other players' (the sonar, ADR-0234).
+   */
+  narrate: (text: SpokenText, how?: NarrateOptions) => void;
   ttsSpeak: (text: string) => boolean;
   loadTTS: () => void;
   speakWebSpeech: (text: string) => boolean;
@@ -403,29 +418,40 @@ export function createTts(ctx: TtsCtx): Tts {
     return meanwhile ? browserSegment(text, language, meanwhile) : null;
   }
 
+  /**
+   * The utterances a narration waits on, held until their end is heard: an utterance nothing holds may be collected by the
+   * browser before it ends, and then its end is never heard — and a player's sonar would wait behind it forever (ADR-0234).
+   */
+  const heldUntilOver = new Set<SpeechSynthesisUtterance>();
   /** Resolves when an utterance is over, however it ends — set before it is queued. */
   const utteranceOver = (u: SpeechSynthesisUtterance): Promise<void> => new Promise((over) => {
+    heldUntilOver.add(u);
+    const done = (): void => { heldUntilOver.delete(u); over(); };
     const measure = u.onend;
-    u.onend = function (this: SpeechSynthesisUtterance, e: SpeechSynthesisEvent) { measure?.call(this, e); over(); };
-    u.onerror = () => { over(); };
+    u.onend = function (this: SpeechSynthesisUtterance, e: SpeechSynthesisEvent) { measure?.call(this, e); done(); };
+    u.onerror = done;
   });
 
-  /** Queues the browser parts from `from` on at once; `over` resolves when the last is over, when a part follows them. */
-  function queueBrowserParts(ss: SpeechSynthesis | null, segments: readonly Segment[], from: number): { next: number; over: Promise<void> | null } {
+  /**
+   * Queues the browser parts from `from` on at once; `over` resolves when the last is over, when a part follows them or the
+   * caller waits for the end (`untilOver`). A device that refuses to speak has nothing to wait for: the rest goes on.
+   */
+  function queueBrowserParts(ss: SpeechSynthesis | null, segments: readonly Segment[], from: number, untilOver: boolean): { next: number; over: Promise<void> | null } {
     const queued: SpeechSynthesisUtterance[] = [];
     let i = from;
     for (let s = segments[i]; s && 'browser' in s; s = segments[++i]) queued.push(s.browser());
     const last = queued.at(-1);
-    const over = ss && last && i < segments.length ? utteranceOver(last) : null;
-    try { for (const u of queued) ss?.speak(u); } catch (e) { /* the device refused to speak: the rest goes on */ }
+    const over = ss && last && (i < segments.length || untilOver) ? utteranceOver(last) : null;
+    try { for (const u of queued) ss?.speak(u); } catch (e) { return { next: i, over: null }; }
     return { next: i, over };
   }
 
   /**
    * THE PARTS, IN ORDER (ADR-0243 §1). Browser utterances go into the browser's own queue at once, each with its tag and voice; a
-   * neural part waits for what is before it to end, and what follows waits for it. A newer narration ends the rest.
+   * neural part waits for what is before it to end, and what follows waits for it. A newer narration ends the rest. `untilOver`:
+   * resolves only when the last part is over, for a narration waiting its turn behind this one.
    */
-  async function speakInOrder(segments: readonly Segment[], turn: number): Promise<void> {
+  async function speakInOrder(segments: readonly Segment[], turn: number, untilOver = false): Promise<void> {
     const ss = ctx.speech.synth();
     try { ss?.cancel(); } catch (e) { /* noop */ }
     neural?.silence();
@@ -433,25 +459,62 @@ export function createTts(ctx: TtsCtx): Tts {
     while (i < segments.length && turn === narrationTurn) {
       const first = segments[i]!;
       if ('neural' in first) { await new Promise<void>((over) => { first.neural(over); }); i++; continue; }
-      const queuedParts = queueBrowserParts(ss, segments, i);
+      const queuedParts = queueBrowserParts(ss, segments, i, untilOver);
       i = queuedParts.next;
       if (queuedParts.over) await queuedParts.over;
     }
   }
 
-  function narrate(text: SpokenText): void { // gated by the mixer's narration toggle, independent of captions
+  /** A player's narration, as its parts. */
+  interface SeatNarration { readonly seat: number; segments: readonly Segment[] }
+  /** The players' narrations waiting behind the one being spoken (ADR-0234), at most one per player, in the order they asked. */
+  const waiting: SeatNarration[] = [];
+  /** The `narrationTurn` of the player's narration being spoken, and whose it is; any narration since has taken the turn. */
+  let turnSpeaking = -1, seatSpeaking = -1;
+
+  /**
+   * A PLAYER'S NARRATION TAKES TURNS (ADR-0234, errata 2026-09-26): behind ANOTHER player's still being spoken it waits — replacing
+   * that player's own waiting one, in its place — and is spoken when the line reaches it. With the SAME player's being spoken, or
+   * none, it starts at once and cuts what is spoken now, as every narration does; the others waiting keep waiting behind it. A
+   * narration that names no player takes the turn, so the next player's finds none being spoken and nobody waiting.
+   */
+  function narrateInTurn(seat: number, segments: readonly Segment[]): void {
+    _narrateCount++;
+    const speakingNow = turnSpeaking === narrationTurn;
+    if (speakingNow && seat !== seatSpeaking) {
+      const own = waiting.find((w) => w.seat === seat);
+      if (own) own.segments = segments; else waiting.push({ seat, segments });
+      return;
+    }
+    if (!speakingNow) waiting.length = 0; // their turn was ended by a narration that named no player
+    void speakInTurn({ seat, segments }, ++narrationTurn);
+  }
+
+  async function speakInTurn(first: SeatNarration, turn: number): Promise<void> {
+    turnSpeaking = turn;
+    for (let next: SeatNarration | undefined = first; next; next = waiting.shift()) {
+      seatSpeaking = next.seat;
+      await speakInOrder(next.segments, turn, true);
+      if (turn !== narrationTurn) return; // cut: the line is the newer narration's now
+    }
+    turnSpeaking = -1; seatSpeaking = -1;
+  }
+
+  function narrate(text: SpokenText, how: NarrateOptions = {}): void { // gated by the mixer's narration toggle, independent of captions
     const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on) return;
-    if (typeof text !== 'string') { narrateParts(text); return; }
+    if (typeof text !== 'string') { narrateParts(text, how); return; }
     if (!text) return;
     if (availableVoices().length === 0) return; // no voice speaks this language: narration is locked (ADR-0185 §4)
+    if (how.seat !== undefined) { const frame = frameSegment(text); if (frame) narrateInTurn(how.seat, [frame]); return; }
     narrationTurn++; _narrateCount++; ttsSpeak(text);
   }
 
-  function narrateParts(parts: readonly SpokenPart[]): void {
+  function narrateParts(parts: readonly SpokenPart[], how: NarrateOptions): void {
     const segments = parts.filter((p) => p.text)
       .map((p) => (p.language ? contentSegment(p.text, p.language) : frameSegment(p.text)))
       .filter((s): s is Segment => s !== null);
     if (!segments.length) return;
+    if (how.seat !== undefined) { narrateInTurn(how.seat, segments); return; }
     _narrateCount++;
     void speakInOrder(segments, ++narrationTurn);
   }

@@ -1088,8 +1088,8 @@
       "fanIn": 1
     },
     "platform/tts.ts": {
-      "codeLines": 304,
-      "decisionNodes": 62,
+      "codeLines": 335,
+      "decisionNodes": 70,
       "maxDepth": 2,
       "fanOut": 5,
       "globalReach": 0,

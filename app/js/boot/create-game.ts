@@ -979,7 +979,8 @@ export function createGame(o: CreateGameOptions): Engine {
     interpreter: hostInterpreter(o.host, () => createLibrasAvatarInterpreter({
       doc, win, fetch: win.fetch, base: doc.baseURI, title: () => t('sr.deaf.interpreter'),
     })),
-    speak: (text) => { tts.narrate(text); },
+    // a player's sonar waits for another player's reading and cuts its own (ADR-0234, errata 2026-09-26)
+    speak: (text, seat) => { tts.narrate(text, { seat }); },
     caption: (text) => { writeSoundCaption(text); },
     tell: srSay,
     report: (line) => { measuredProblems.push(line); },
@@ -4279,8 +4280,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     holdKey: markKeyFrom,
     releaseKey: releaseKey, menuKey: keyToMenu, deliver: deliverCommand,
     // With a menu open the game hears no press, so the engine answers the sonar there: R1 reads the menu in front, spoken or,
-    // in deaf mode, captioned and signed — the same two doors the play sonar's words take (ADR-0234).
-    menuAnswers: (action) => menuSonarPress(action, screen, (text) => { srSay(text); deafMode.sonar(text); }),
+    // in deaf mode, captioned and signed — the same two doors the play sonar's words take (ADR-0234). Any seat's R1 reads it,
+    // though only the first steers the menu (ADR-0144), and a reading takes turns with the other seats' (ADR-0234 errata).
+    menuAnswers: (action, seat) => menuSonarPress(action, screen, (text) => { srSay(text); deafMode.sonar(text, seat); }),
     // START and SELECT from a transport with no key in the world — the eyes, the face, the hands, the voice, the scan — do what
     // the keys do, for the seat that pressed (ADR-0144 §1, ADR-0155): in play and in the quick pause alike, so START there
     // always LEAVES, whatever key the child bound first to `start` (ADR-0144 erratum of 2026-09-26).
