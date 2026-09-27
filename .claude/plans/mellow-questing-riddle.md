@@ -17,17 +17,20 @@
 - ✅ `ee10068b` (BREAKING, nota EA) — **um ouvido só**: o Dev relatou que recarregar em inglês com o 👄 ligado e carregar no U travava a máquina inteira. Medido: modelo pt com gramática en, e cada U abria dois reconhecedores (8 workers e 8 microfones após três U). Agora o 👄 arranca na língua guardada, a escolha usa o ouvido do 👄 quando é da mesma língua, e cada modelo carrega uma vez por língua (`keepVoskModels`). Depois: 1 worker, 1 microfone, 0 avisos. 16 mutações.
 - ✅ `a04ab239`…`66491aee` + `game-platformer:69d2a06` — **ADR-0257**, o guia sonoro mudou para o plataformer.
 
-**Em curso:** 🟡 a metade do guia sonoro do `audio-sonar` → plataformer (ordem do Dev), num agente: ADR-0257, o plataformer recebe primeiro, a engine apaga depois (nota DZ).
+- ✅ `35a17a27` · `a3d719d6` (BREAKING, nota EB) · `07eefdd4` + `docs:4150bb8` — **ADR-0258**, o que o guia deixou para trás sai: as categorias `guide`/`guard` do misturador (Dev: «Saem.»), `CreateGameOptions.sonarPlayers` («Tire agora.») e o `noiseBuffer` do ctx do `audio-ambient` («A engine passas a gerar sozinha.» — o trovão usa o ruído da própria engine). tsc 0, node 3624, navegador 1857; `dist` e entrega refeitos, o painel auditivo lista só o sonar.
+- ✅ `game-pinball:d14a5e9` — **o pinball tem a sua cópia do guia** (Dev: «Fica com uma cópia do guia, feito o platformer»), contra a engine 9.0.0; 26 casos novos, 27 mutações vermelhas; não lê categoria nenhuma do misturador.
 
 **Espera o Dev:**
-- 📋 `platform/audio.noiseBuffer` — sair (cada jogo escreve o seu ruído para o `audio-ambient`) ou a engine passar a gerá-lo ela mesma (o campo sai do ctx). Perguntado 27/09.
-- 📋 `records-token` — o repositório da engine vai ser público? Se sim, uma linha no `game-ci.yml`; se não, as instruções do token já foram dadas.
-- 📋 Rodadas com a voz dele: escolher opções em pt, en e es (entrega com os três modelos de comandos).
-- 📋 Push das duas árvores e fechar #134/#137/#199/#191 no GitHub.
+- 📋 **Pré-carregar o modelo da língua ao abrir uma habilidade** (para o primeiro U numa língua não travar uns segundos) — perguntado 27/09: implementar?
+- 📋 **O guia do pinball mudou de comportamento**: soa sempre que o modo cego está ligado (antes precisava da linha `guide`, que nascia desligada, e que sai com o ADR-0258). É decisão do jogo: fica assim, ou o pinball ganha um interruptor próprio desligado de fábrica?
+- 📋 **O guia do plataformer fica MUDO no próximo bump**: a cópia dele pergunta `cat.guide.on`, e a categoria sai. Precisa de um interruptor próprio — trabalho do plataformer.
+- 📋 **No pinball, dois restos para o bump**: ainda passa `sonarPlayers` ao `createGame`; e o `teardown()` do cartucho não pára o guia (já era assim com o guia da engine).
+- 📋 `records-token` — o Dev segue as instruções dadas (o repositório vai ser público, mas não já).
+- 📋 Push: engine, docs e pinball (`47ce840` de 11/09 + `d14a5e9`); fechar #134/#137/#199/#191 no GitHub.
 
 **Achado anotado, sem conserto ainda:** o `tests/exports-without-consumer.node.test.js` falhou a CARREGAR duas vezes hoje sob a suíte completa e passa sozinho. 📏 Investigado 27/09: 7 corridas aos pares com o `the-engine-builds-both-targets` e 3 suítes completas seguidas — nenhuma falha. Hipótese NÃO provada: o varredor (`scripts/exports-without-consumer.mjs`, no import do teste) desce por `tests/` e só salta `node_modules`/`dist`/`dist-pkg`; o teste da build escreve e apaga `tests/fixtures/game-build/dist-lib/`, e um ficheiro que some entre o `readdirSync` e o `readFileSync` derruba a carga. Na próxima falha, ler o bloco «Failed Suites» antes de mexer.
 
-**Do guia sonoro (ADR-0257, feito: `game-platformer:69d2a06`, engine `a04ab239`…`66491aee`), três perguntas ao Dev:** o **pinball** também corre o guia da engine e quebra no próximo bump; `CreateGameOptions.sonarPlayers` ficou sem efeito (marcado obsoleto; três jogos passam-no); as categorias `guide`/`guard` do misturador ficaram sem som da engine.
+**Do guia sonoro (ADR-0257), as três perguntas foram RESPONDIDAS e feitas (ADR-0258, acima).**
 
 ## 🎯 ATÉ AO FIM — o plano adequado às decisões de 25/09 (esta é a ordem; as secções abaixo são histórico)
 
