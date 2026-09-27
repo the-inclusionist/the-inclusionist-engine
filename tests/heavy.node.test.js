@@ -345,8 +345,9 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
   });
 
   it('🔴 [Right] with the neural voice declared, the whole voice — the model, the tokenizer and every voice', () => {
-    expect(heavyAtBoot({ kokoro: true }))
-      .toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => !id.startsWith('reading:') && !id.startsWith('commands:') && !id.startsWith('libras:')));
+    // the SET — the order is the next cases' (the ways in come first, 2026-09-27)
+    expect([...heavyAtBoot({ kokoro: true })].sort())
+      .toEqual(HEAVY_FILES.map((p) => p.id).filter((id) => !id.startsWith('reading:') && !id.startsWith('commands:') && !id.startsWith('libras:')).sort());
   });
 
   /**
@@ -393,10 +394,29 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     for (const id of ids.filter((x) => !lingua(x))) {
       expect(ids.indexOf(id), `${id}, which every language needs, waits behind another language`).toBeLessThan(primeiraDeOutra);
     }
-    // stable: within the child's language, the catalogue's order — the runtime that opens a model before the model
+    // stable: within the child's language and one kind, the catalogue's order — the runtime that opens a model before the model
     const doCatalogo = HEAVY_FILES.map((p) => p.id);
     const primeiros = ids.slice(0, primeiraDeOutra);
-    expect(primeiros, 'the first position is not in the catalogue\'s order').toEqual(doCatalogo.filter((id) => primeiros.includes(id)));
+    for (const kind of [/^commands:|^visao:/, /^reading:|^voz:runtime:onnx/, /^voz:(kokoro|runtime:fonemas)/]) {
+      const ofKind = primeiros.filter((id) => kind.test(id));
+      expect(ofKind, `the ${kind} files are not in the catalogue's order`).toEqual(doCatalogo.filter((id) => ofKind.includes(id)));
+    }
+  });
+
+  /**
+   * 🔴 AND WITHIN THE CHILD'S LANGUAGE, THE WAYS IN FIRST (2026-09-27). The command model and the camera's reader are how a child
+   * who does not press reaches the game; the reading has no fallback either; the neural voice has the browser's. 📏 In the
+   * catalogue's order a 👄 turned on in a fresh install waited behind 336 MiB of neural voice and 378 MiB of reading.
+   */
+  it('🔴 [Right] the ways in come down before the reading, and the reading before the neural voice', () => {
+    const ids = heavyAtBoot({ kokoro: true, reading: ['pt', 'en', 'es'], commands: ['pt', 'en', 'es'] });
+    const at = (id) => { const i = ids.indexOf(id); expect(i, `${id} was not asked`).toBeGreaterThanOrEqual(0); return i; };
+    expect(at('commands:runtime'), 'the runtime after its model').toBeLessThan(at('commands:model:pt'));
+    expect(at('commands:model:pt'), 'her command model waits behind her reading').toBeLessThan(at('reading:pt:encoder'));
+    expect(at('visao:modelo:gestos'), 'the camera\'s reader waits behind her reading').toBeLessThan(at('reading:pt:encoder'));
+    expect(at('voz:runtime:onnx'), 'the reading\'s runtime after the reading').toBeLessThan(at('reading:pt:encoder'));
+    expect(at('reading:pt:preprocessor'), 'her reading waits behind the neural voice').toBeLessThan(at('voz:kokoro:modelo'));
+    expect(at('voz:kokoro:modelo'), 'another language came before her neural voice').toBeLessThan(at('reading:en:encoder'));
   });
 
   // MUTATIONS CHECKED for the reading list and the order (ADR-0225 erratum, 2026-09-26), all red: the catalogue's order kept (no

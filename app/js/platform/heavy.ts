@@ -64,6 +64,17 @@ export interface HeavyOptions {
 }
 
 /**
+ * Who waits behind whom inside one language's position (`heavyAtBoot`): 0 the ways in (the command models and runtime, the
+ * camera's reader), 1 the reading and the graph runtime it opens its models with, 2 the rest — the neural voice, which the
+ * browser's voice covers until it lands.
+ */
+function waitsBehind(id: string): number {
+  if (id.startsWith('commands:') || id.startsWith('visao:')) return 0;
+  if (id.startsWith('reading:') || id.startsWith('voz:runtime:onnx')) return 1;
+  return 2;
+}
+
+/**
  * WHAT A GAME'S START FETCHES (ADR-0216 §3): the catalogue, less what this game did not ask for.
  *
  * · The neural voice — its model, its voices AND the runtime that speaks them: without that answer they are 372 MB taken from a
@@ -94,6 +105,11 @@ export interface HeavyOptions {
  * position in the list it was asked by, a file of no language (the runtimes, vision) takes the first, and the sort is stable. So
  * everything of the child's language comes first, then each other language whole — her command model never waits behind 470 MiB
  * of another language's reading.
+ * 🔴 AND WITHIN A POSITION, THE WAYS IN COME FIRST (`waitsBehind`): the command models and the camera's reader are how a child
+ * who does not press reaches the game at all (ADR-0111), and they have nothing to fall back on; the reading is the game's own
+ * listening, with nothing either; the neural voice comes last, because the browser's voice speaks meanwhile (ADR-0200). 📏 In
+ * the catalogue's order a 👄 turned on in a fresh install waited behind 336 MiB of neural voice and 378 MiB of reading for a
+ * 34 MiB model — seven seconds from a local disk, minutes on a school's link (measured on 2026-09-27).
  */
 export function heavyAtBoot(
   declared: {
@@ -123,8 +139,8 @@ export function heavyAtBoot(
     return spoken ? commands.indexOf(spoken) : 0;
   };
   return [
-    // `Array.prototype.sort` is stable (ES2019): within a position, the catalogue's order
-    ...HEAVY_FILES.map((p) => p.id).filter(asked).sort((a, b) => rank(a) - rank(b)),
+    // `Array.prototype.sort` is stable (ES2019): within a position and a kind, the catalogue's order — a runtime before its model
+    ...HEAVY_FILES.map((p) => p.id).filter(asked).sort((a, b) => rank(a) - rank(b) || waitsBehind(a) - waitsBehind(b)),
     ...DELIVERY_LISTS.map((l) => l.id).filter(asked),
   ];
 }
