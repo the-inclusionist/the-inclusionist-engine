@@ -11,8 +11,9 @@ metadata:
       what: >-
         ANOTHER PLAYER'S SONAR QUEUES. Asked whether a second player's sonar should still read an open menu aloud (on a shared
         screen only the first player steers it, ADR-0144), the Dev: «Sim mas em fila, não junto ao mesmo tempo com outro
-        sonar em andamento.» A sonar reading never cuts or overlaps another one in progress: it waits its turn, whichever
-        player asked.
+        sonar em andamento.» And, asked to confirm: «outro jogador não corta, mas um jogador corta a si mesmo.» So a
+        player's new sonar reading cuts that player's own reading in progress, and a reading asked by ANOTHER player
+        waits its turn — it never cuts or overlaps it.
     - date: 2026-09-26
       what: >-
         PHASE B4 — THE FREE PLAYER IS APPROVED. Asked for the last phase of route B — «a sua rodada com o avatar novo e a
