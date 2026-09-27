@@ -138,21 +138,62 @@ export function createDeafMode({ store, captionsSetting, t, interpreter, speak, 
     caption(`${text} ${notice}`);
   };
 
-  const toggle = (): void => {
-    on = !on;
-    store.setBool('incl_libras', on);
-    if (on) told = false; else interpreter.hide();
-    for (const fn of [...changeListeners]) fn();
-  };
-
-  const sonar = (text: string, seat?: number): void => {
-    if (!on) { speak(text, seat); return; }
+  /** One request signed: captioned when its turn comes, so the caption and the hands say the same thing; ends when it is heard. */
+  const signOne = (text: string): Promise<void> => {
     caption(text);
     let answer: Promise<SignResult>;
     try { answer = interpreter.sign(text); } catch (failure) { answer = Promise.reject(failure); }
-    answer.then((result) => { heard(text, result); }, (failure: unknown) => {
+    return answer.then((result) => { heard(text, result); }, (failure: unknown) => {
       heard(text, { signed: false, reason: failure instanceof Error ? failure.message : String(failure) });
     });
+  };
+
+  /**
+   * A request in the line, and whose it is (`null`: it named no player). Its text was taken at the press and is never re-read:
+   * a request that waited signs the screen as it was when it was asked (ADR-0234, errata 2026-09-26 — the Dev: «Sim.»).
+   */
+  interface SeatRequest { readonly seat: number | null; text: string }
+  /** The players' requests waiting behind the one being signed, at most one per player, in the order they asked. */
+  const waiting: SeatRequest[] = [];
+  /** Whose request is being signed, when it is a player's; `null` when none is, or when the one being signed named no player. */
+  let seatSigning: number | null = null;
+  /** Bumped by every request that takes the line, so one that ends after being overtaken does not sign the next in line. */
+  let line = 0;
+
+  /** Ends the line: nothing waits and nobody is being signed (the mode went off, or the root went away). */
+  const endLine = (): void => { line++; waiting.length = 0; seatSigning = null; };
+
+  const signInTurn = async (seat: number | null, text: string): Promise<void> => {
+    const mine = ++line;
+    for (let next: SeatRequest | undefined = { seat, text }; next; next = waiting.shift()) {
+      seatSigning = next.seat;
+      await signOne(next.text);
+      if (mine !== line) return; // overtaken: the line is the newer request's now
+    }
+    seatSigning = null;
+  };
+
+  const toggle = (): void => {
+    on = !on;
+    store.setBool('incl_libras', on);
+    if (on) told = false; else { endLine(); interpreter.hide(); }
+    for (const fn of [...changeListeners]) fn();
+  };
+
+  /**
+   * THE INTERPRETER TAKES TURNS, as the narration does (ADR-0234, errata 2026-09-26 — the Dev: «Sim»): a request from ANOTHER
+   * player waits until the one being signed ends — replacing that player's own waiting one, in its place — and a player's newer
+   * request replaces that player's own, at once, the others waiting behind it. A request that names no player takes the line.
+   */
+  const sonar = (text: string, seat?: number): void => {
+    if (!on) { speak(text, seat); return; }
+    if (seat !== undefined && seatSigning !== null && seat !== seatSigning) {
+      const own = waiting.find((w) => w.seat === seat);
+      if (own) own.text = text; else waiting.push({ seat, text });
+      return;
+    }
+    if (seat === undefined || seatSigning === null) waiting.length = 0;
+    void signInTurn(seat ?? null, text);
   };
 
   return {
@@ -163,6 +204,7 @@ export function createDeafMode({ store, captionsSetting, t, interpreter, speak, 
     onChange: (fn) => { changeListeners.add(fn); return () => { changeListeners.delete(fn); }; },
     dispose: () => {
       disposed = true;
+      endLine();
       interpreter.dispose();
     },
   };

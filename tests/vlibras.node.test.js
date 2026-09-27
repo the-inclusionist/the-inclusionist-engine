@@ -219,6 +219,118 @@ describe('ui/vlibras — an interpreter that cannot sign never leaves her with n
   });
 });
 
+/**
+ * An interpreter that signs until the case says it ended: each request is answered only when `end(i)` is called — the way the
+ * free player answers when the last sign reached its end.
+ */
+function turnsDouble() {
+  const d = { asked: [], answers: [], hidden: 0, disposed: false };
+  d.port = {
+    sign: (text) => { d.asked.push(text); return new Promise((resolve, reject) => { d.answers.push({ resolve, reject }); }); },
+    hide: () => { d.hidden++; },
+    dispose: () => { d.disposed = true; },
+  };
+  d.end = async (i, result = { signed: true }) => { d.answers[i].resolve(result); await settle(); };
+  return d;
+}
+
+describe('ui/vlibras — the interpreter takes turns by player (ADR-0234, errata 2026-09-26: «Sim»)', () => {
+  /** A deaf mode already on, over an interpreter that signs until told. */
+  const turns = () => { const s = build(turnsDouble()); s.mode.toggle(); return s; };
+
+  it('🔴 [Right] ANOTHER player\'s request waits until the one being signed ends — and is captioned when its turn comes', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    expect(s.interpreter.asked, 'another player\'s request cut the one being signed').toEqual(['A']);
+    expect(s.captions, 'the caption said B while the hands still signed A').toEqual(['A']);
+    await s.interpreter.end(0);
+    expect(s.interpreter.asked, 'the waiting request was never signed').toEqual(['A', 'B']);
+    expect(s.captions).toEqual(['A', 'B']);
+  });
+
+  it('🔴 [Right] once the one being signed ENDED and nobody waits, another player\'s request starts at once', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    await s.interpreter.end(0);
+    s.mode.sonar('B', 1);
+    expect(s.interpreter.asked, 'a request waited behind one that had already ended — and would wait forever').toEqual(['A', 'B']);
+  });
+
+  it('🔴 [Right] a player\'s newer request replaces that player\'s own at once', () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('A2', 0);
+    expect(s.interpreter.asked, 'a player waited behind their own request').toEqual(['A', 'A2']);
+  });
+
+  it('🔴 [Right] a waiting player\'s newer request replaces their own waiting one, IN ITS PLACE in the line', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    s.mode.sonar('C', 2);
+    s.mode.sonar('B2', 1);
+    await s.interpreter.end(0);
+    await s.interpreter.end(1);
+    await s.interpreter.end(2);
+    expect(s.interpreter.asked, 'the older request was signed too, or the newer one lost its place').toEqual(['A', 'B2', 'C']);
+  });
+
+  it('🎯 [Right] replacing their own keeps the others waiting behind — and the replaced one ending signs nothing', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    s.mode.sonar('A2', 0);
+    await s.interpreter.end(0); // the replaced one ends (the player answers it at once)
+    expect(s.interpreter.asked, 'an overtaken request handed the line on').toEqual(['A', 'A2']);
+    await s.interpreter.end(1);
+    expect(s.interpreter.asked, 'the player waiting behind was dropped').toEqual(['A', 'A2', 'B']);
+  });
+
+  it('🎯 [Right] a request that names no player takes the line: nobody waits behind it', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    s.mode.sonar('S');
+    expect(s.interpreter.asked).toEqual(['A', 'S']);
+    await s.interpreter.end(0);
+    await s.interpreter.end(1);
+    expect(s.interpreter.asked, 'a player\'s request outlived the one that took the line').toEqual(['A', 'S']);
+    s.mode.sonar('C', 1);
+    expect(s.interpreter.asked, 'with nothing being signed, a player\'s request waited').toEqual(['A', 'S', 'C']);
+  });
+
+  it('🎯 [Right] a request that cannot be signed still hands the line on', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    s.interpreter.answers[0].reject(new Error('broken player'));
+    await settle();
+    expect(s.interpreter.asked, 'a failed request stopped the line').toEqual(['A', 'B']);
+  });
+
+  it('🎯 [Zero] turning the mode off drops the line — nothing waiting is signed, and the next request starts at once', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    s.mode.toggle();
+    await s.interpreter.end(0);
+    expect(s.interpreter.asked, 'a request waiting when the mode went off was signed anyway').toEqual(['A']);
+    s.mode.toggle();
+    s.mode.sonar('C', 1);
+    expect(s.interpreter.asked, 'the line of an old session made a new request wait').toEqual(['A', 'C']);
+  });
+
+  it('🎯 [Zero] dispose drops the line', async () => {
+    const s = turns();
+    s.mode.sonar('A', 0);
+    s.mode.sonar('B', 1);
+    s.mode.dispose();
+    await s.interpreter.end(0);
+    expect(s.interpreter.asked, 'a disposed root signed what was waiting').toEqual(['A']);
+  });
+});
+
 describe('ui/vlibras — dispose releases the interpreter', () => {
   it('🔴 [Right] dispose releases the interpreter, and an answer still on its way is dropped', async () => {
     let answer;
@@ -251,3 +363,12 @@ describe('ui/vlibras — dispose releases the interpreter', () => {
 // (2026-09-25, route B phase B2 — scripted, each applied and restored from a copy — both red)
 //   M25 a signed answer's `unsigned` ignored                             🔴 «signed IN PART»
 //   M26 the part-signed line reported at every press (no dedupe)         🔴 «signed IN PART»
+// (2026-09-26, the interpreter takes turns by player — scripted, each applied and restored from a copy — all red)
+//   M27 another player's request not waiting                         🔴 «ANOTHER player's request waits» and five more
+//   M28 a waiting player's own request not replaced in its place      🔴 «IN ITS PLACE»
+//   M29 an overtaken request handing the line on                      🔴 «replacing their own keeps the others waiting»
+//   M30 a request naming no player keeping the line                   🔴 «names no player takes the line»
+//   M31 turning off keeping the line · M32 dispose keeping it          🔴 [Zero] «turning the mode off» · «dispose drops»
+//   M33 captioned at the press instead of at its turn                  🔴 «captioned when its turn comes» and three more
+//   M34 the line not freed when it drains                              🔴 «once the one being signed ENDED» (it survived
+//       until that case existed: without it, a second player's request after the first ended waited forever)

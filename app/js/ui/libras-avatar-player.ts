@@ -8,7 +8,7 @@
 // THE RULES, as the Dev set them for the interpreter: the gloss is the delivery's (`glosses.json`, beside the avatar, where a
 // word with no sign is written as the child reads it), and a text it does not cover is its words in capitals, accents stripped,
 // Ç kept; the avatar appears at the bottom right when a request is played, in front of the screen, never taking the keyboard; a
-// new press replaces what was being signed; the avatar LEAVES the screen `leaveAfterMs` after it stopped signing — hidden, kept
+// new request replaces what is being signed (the players' turns are deaf mode's); the avatar LEAVES the screen `leaveAfterMs` after it stopped signing — hidden, kept
 // loaded for the next press — and a press in those seconds cancels the leaving; `hide()` takes it off at once and `dispose()`
 // releases it. A delivery that did not ship it answers exactly as `NO_INTERPRETER` does («signing unavailable», with the flag
 // that ships it), and a device that cannot draw it (no WebGL) or a load that never ends answers «unavailable» with its own
@@ -200,8 +200,9 @@ export function createLibrasAvatarInterpreter(ports: LibrasAvatarPorts): Interpr
   /** Puts the avatar in front of the screen and signs `steps`; answered when the last one reached its end. */
   const perform = (on: AvatarStage, shown: HTMLCanvasElement, steps: readonly SignStep[], leftOut: string | undefined):
     Promise<SignResult> => {
-    // 📌 A new press replaces what was being signed — the sonar signs what is on screen, not a queue (the Dev's rule). The one
-    // it replaced is not a failure: the child asked again.
+    // 📌 A new request replaces what is being signed. The turns among players are deaf mode's (`ui/vlibras`, ADR-0234 errata
+    // 2026-09-26): it asks again only for the same player, or for a request that names none. The one replaced is not a
+    // failure: the child asked again.
     answerPlaying(signedWith(playingLeftOut));
     shown.hidden = false;
     const box = shown.getBoundingClientRect();

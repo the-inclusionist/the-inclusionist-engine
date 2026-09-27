@@ -2018,12 +2018,12 @@
       "fanIn": 1
     },
     "ui/vlibras.ts": {
-      "codeLines": 88,
-      "decisionNodes": 10,
-      "maxDepth": 1,
+      "codeLines": 112,
+      "decisionNodes": 15,
+      "maxDepth": 2,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 5,
+      "worstFunction": 9,
       "statefulEdges": 0,
       "fanIn": 2
     },
