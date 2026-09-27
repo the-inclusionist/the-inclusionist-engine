@@ -259,6 +259,10 @@ const CRU_CONHECIDO = {
   'ui/screen-text.ts': 1,          // the `problems` line for a world drawn on a canvas, which the sonar cannot read (ADR-0234):
                                    // English, for whoever INTEGRATES the game — the subject, the child's cost and the fix
                                    // (ADR-0169). No child reads it. 📏 The sieve counts one of its literals, measured.
+  'platform/font-library.ts': 2,   // the `problems` lines of the font library (ADR-0255): a `uses.fonts` that is not a list of
+                                   // names, and a declared family the delivery did not carry — English, for whoever INTEGRATES
+                                   // the game, each with the subject, the child's cost and the fix (ADR-0169). No child reads
+                                   // them. 📏 The sieve counts two of their literals, measured.
 };
 
 describe('texto cru em português nas camadas de ENGINE (o buraco do gate do item 14)', () => {

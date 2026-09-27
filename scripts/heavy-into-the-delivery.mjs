@@ -43,19 +43,19 @@ const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).dige
  * ONE FILE, FETCHED (or read from a local base), CHECKED AGAINST ITS PINNED SHA256 AND WRITTEN — or refused with the reason, and
  * nothing written. The one rule the catalogue's files and the library's fonts go through.
  */
-async function trazerVerificado(p, alvo, { fonte, buscar, lerLocal, sha256 }) {
+async function trazerVerificado(p, alvo, { source, fetchFile, readLocal, sha256 }) {
   try {
     let corpo;
-    if (/^https?:\/\//i.test(fonte)) {
-      const resp = await buscar(fonte);
-      if (!resp.ok) return { id: p.id, outcome: 'falhou', error: `HTTP ${resp.status} — ${fonte}` };
+    if (/^https?:\/\//i.test(source)) {
+      const resp = await fetchFile(source);
+      if (!resp.ok) return { id: p.id, outcome: 'falhou', error: `HTTP ${resp.status} — ${source}` };
       corpo = await resp.arrayBuffer();
     } else {
-      corpo = lerLocal(fonte);
+      corpo = readLocal(source);
     }
     const obtido = sha256(corpo);
     if (!p.sha256 || obtido !== p.sha256) {
-      return { id: p.id, outcome: 'falhou', error: `sha256 mismatch at ${fonte}: expected ${p.sha256}, got ${obtido} — not written` };
+      return { id: p.id, outcome: 'falhou', error: `sha256 mismatch at ${source}: expected ${p.sha256}, got ${obtido} — not written` };
     }
     mkdirSync(dirname(alvo), { recursive: true });
     writeFileSync(alvo, Buffer.from(corpo));
@@ -105,7 +105,7 @@ export async function levarFontesParaEntrega({ destino, families, library, deliv
       folder = dirname(alvo);
       const linha = existsSync(alvo) && sha256(readFileSync(alvo)) === face.sha256
         ? { id: p.id, outcome: 'ja-tinha' }
-        : await trazerVerificado(p, alvo, { fonte: fonteDe(url, base), buscar, lerLocal, sha256 });
+        : await trazerVerificado(p, alvo, { source: fonteDe(url, base), fetchFile: buscar, readLocal: lerLocal, sha256 });
       linhas.push(linha);
       if (linha.outcome === 'falhou') whole = false;
     }
@@ -141,7 +141,7 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
       present.push({ id: p.id, path: deliveryPath(p.url) });
       continue;
     }
-    const escrito = await trazerVerificado(p, alvo, { fonte: fonteDe(p.url, base), buscar, lerLocal, sha256 });
+    const escrito = await trazerVerificado(p, alvo, { source: fonteDe(p.url, base), fetchFile: buscar, readLocal: lerLocal, sha256 });
     linhas.push(escrito);
     if (escrito.outcome === 'escrito') present.push({ id: p.id, path: deliveryPath(p.url) });
   }

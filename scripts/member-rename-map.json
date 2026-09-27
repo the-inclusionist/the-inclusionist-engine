@@ -23,7 +23,6 @@
   "dataKeys": {
     "tests/faces-answer-to-the-type-catalogue.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
     "tests/an-offered-font-loads.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
-    "tests/what-fonts-the-package-carries.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
     "app/js/ui/pause-markup.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
     "app/js/ui/shell.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
     "app/js/input/transports.ts toque": "SLOTS: a table keyed by the VALUES of TransportName ('toque', 'teclado'), which are data — the transport stamp a key carries — and not member names",
@@ -38,6 +37,7 @@
     "tests/settings-typo.browser.test.js cursiva": "a DOM dataset key: `data-cursiva` read back from the root",
     "tests/items-without-numbers.browser.test.js fonte": "a DOM dataset key: `data-fonte` read back from the root",
     "tests/boot-create-game.browser.test.js fonte": "a DOM dataset key: `data-fonte` read back from the root",
+    "tests/a-cartridge-declares-a-library-font.browser.test.js fonte": "a DOM dataset key: `data-fonte` read back from the root",
     "app/js/ui/shell.ts nivel": "a pause action id: the key of the action table, which is also the `data-act` value a game reads",
     "app/js/ui/pause-icons.ts idioma": "an icon id: the `k` of a bar icon, keying the icon tables — data, not a member name",
     "app/js/ui/pause-icons.ts tipografia": "an icon id: the `k` of a bar icon, keying the icon tables — data, not a member name",
