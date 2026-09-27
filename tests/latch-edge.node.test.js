@@ -32,6 +32,8 @@ const { inputOf, forgetInputs } = input;
 
 const jogador = () => ({ toggleMove: false, walkDir: 0 });
 const chave = (i, transporte) => latchKey(BASE_DA_MARCHA, i, transporte);
+/** A game that holds nothing — a quiz (ADR-0249: the one-command transports' default). */
+const naoSegura = () => false;
 
 beforeEach(() => { forgetInputs(); });
 afterEach(() => { forgetInputs(); });
@@ -40,7 +42,7 @@ describe('a aresta que também resolve a alternância', () => {
   it('[Right] a aresta chega ao autómato E o jogador recebe a alternância daquele aparelho', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { input, store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [p], { input, store: armazem, byDefault: false, holdsKeys: naoSegura });
 
     aresta(0, 'gamepad');
 
@@ -51,7 +53,7 @@ describe('a aresta que também resolve a alternância', () => {
   it('🎯 [Sequência] trocar de aparelho troca a resposta — e o armazenamento não é tocado', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1', [chave(0, 'teclado')]: '0' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { input, store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [p], { input, store: armazem, byDefault: false, holdsKeys: naoSegura });
 
     aresta(0, 'gamepad');
     expect(p.toggleMove).toBe(true);
@@ -64,19 +66,42 @@ describe('a aresta que também resolve a alternância', () => {
     expect(armazem.escritas, 'trocar de aparelho GRAVOU — apagaria a escolha do outro controle').toEqual([]);
   });
 
-  it('🔴 uma aresta de OLHOS traz a alternância ligada mesmo com `0` guardado — cláusula 3, pela cadeia toda', () => {
-    const armazem = armazemFalso({
-      [chave(0, 'olhos')]: '0', [legacyLatchKey(BASE_DA_MARCHA, 0)]: '0',
-    });
+  it('🔴 uma aresta de OLHOS segue o jogo — e o `0` que ela guardou vence um jogo que segura (ADR-0249)', () => {
     const p = jogador();
-    createLatchedEdge(() => [p], { input, store: armazem, byDefault: false })(0, 'olhos');
-    expect(p.toggleMove, 'quem joga por olhar ficou sem a alternância de que a entrada dela depende').toBe(true);
+    createLatchedEdge(() => [p], { input, store: armazemFalso(), byDefault: false, holdsKeys: () => true })(0, 'olhos');
+    expect(p.toggleMove, 'num jogo que segura, o olhar não aderiu').toBe(true);
+
+    const q = jogador();
+    createLatchedEdge(() => [q], { input, store: armazemFalso(), byDefault: false, holdsKeys: naoSegura })(0, 'fala');
+    expect(q.toggleMove, 'num jogo que não segura nada, a fala aderiu').toBe(false);
+
+    const armazem = armazemFalso({ [chave(0, 'olhos')]: '0', [legacyLatchKey(BASE_DA_MARCHA, 0)]: '1' });
+    const r = jogador();
+    createLatchedEdge(() => [r], { input, store: armazem, byDefault: false, holdsKeys: () => true })(0, 'olhos');
+    expect(r.toggleMove, 'o jogo passou por cima do «desligado» que ela guardou para o olhar').toBe(false);
+  });
+
+  it('🎯 [Sequência] o jogo muda de fase e a PRÓXIMA palavra segue a fase nova — `holdsKeys` é lido a cada aresta', () => {
+    // ADR-0084: a game changes its answer between stages. A platform stage followed by a quiz stage: the latch was on for
+    // «direita», and the first «abaixo» of the quiz stage must find it off — not the answer read at boot.
+    let fase = 'plataforma';
+    const p = jogador();
+    const aresta = createLatchedEdge(() => [p], {
+      input, store: armazemFalso(), byDefault: false, holdsKeys: () => fase === 'plataforma',
+    });
+    aresta(0, 'fala');
+    expect(p.toggleMove, 'a fase de plataforma não aderiu').toBe(true);
+    p.walkDir = 1; // «direita»: walking by latch
+    fase = 'perguntas';
+    aresta(0, 'fala');
+    expect(p.toggleMove, 'a fase de perguntas herdou a aderência da fase anterior').toBe(false);
+    expect(p.walkDir, 'a aderência caiu e a personagem continuou a andar sozinha').toBe(0);
   });
 
   it('[Muitos] cada assento resolve o seu — a aresta do J2 não mexe no J1', () => {
     const armazem = armazemFalso({ [chave(1, 'toque')]: '1' });
     const p0 = jogador(); const p1 = jogador();
-    const aresta = createLatchedEdge(() => [p0, p1], { input, store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [p0, p1], { input, store: armazem, byDefault: false, holdsKeys: naoSegura });
 
     aresta(1, 'toque');
 
@@ -87,7 +112,7 @@ describe('a aresta que também resolve a alternância', () => {
 
   it('[Zero] assento sem jogador: a aresta fica registada à mesma, e nada rebenta', () => {
     const armazem = armazemFalso();
-    const aresta = createLatchedEdge(() => [], { input, store: armazem, byDefault: false });
+    const aresta = createLatchedEdge(() => [], { input, store: armazem, byDefault: false, holdsKeys: naoSegura });
     expect(() => aresta(3, 'toque')).not.toThrow();
     expect(inputOf(3).inUse, 'o transporte em uso é facto sobre a ENTRADA, não sobre quem já entrou').toBe('toque');
   });
@@ -96,12 +121,13 @@ describe('a aresta que também resolve a alternância', () => {
     const { DEFAULTS } = await import('../app/js/core/setting-defaults.js');
     const armazem = armazemFalso();
     const p = { toggleMove: !DEFAULTS.toggleMove, walkDir: 0 };
-    createLatchedEdge(() => [p], { input, store: armazem })(0, 'teclado');
+    createLatchedEdge(() => [p], { input, store: armazem, holdsKeys: naoSegura })(0, 'teclado');
     expect(p.toggleMove, 'sem nada guardado, a resposta tem de ser a de fábrica').toBe(DEFAULTS.toggleMove);
   });
 });
 
 // ================================ MUTATIONS CHECKED ================================
+// (2026-09-27, ADR-0249) `holdsKeys()` read ONCE, when the edge is made, instead of at every edge → 🔴 the stage [Sequência].
 // 1. removing `playerEdge(jogador, origem)` → the [Sequência] case fails: without the automaton, `emUso` stays at
 //    `teclado` forever and the pad's latch is never read. It was the missing half.
 // 2. removing `syncLatch(...)` → the [Right] case fails: the automaton knows, and the player does not.

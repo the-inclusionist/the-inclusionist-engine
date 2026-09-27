@@ -574,10 +574,6 @@ const en: Record<string, string> = {
   'sr.motor.easyOff': 'Easy Mode off.',
   'sr.motor.toggleMoveOn': 'No holding needed, on: one tap turns it on and another turns it off.',
   'sr.motor.toggleMoveOff': 'No holding needed, off.',
-  'alt.exigida.olhos': 'Gaze control needs tap-to-move to work.',
-  'alt.exigida.rosto': 'Face control needs tap-to-move to work.',
-  'alt.exigida.gestos': 'Gesture control needs tap-to-move to work.',
-  'alt.exigida.fala': 'Voice command needs tap-to-move to work.',
   'sr.motor.toggleRunOn': 'Run toggle on.',
   'sr.motor.toggleRunOff': 'Run toggle off.',
   // ===================== HELP (pause menu) + level label =====================

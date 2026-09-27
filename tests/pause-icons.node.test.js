@@ -392,12 +392,11 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconVisual('altmove', snap({ toggleMove: false })).on).toBe(false);
     expect(computeIconVisual('altmove', snap({ toggleMove: true })).on).toBe(true);
     expect(computeIconVisual('altmove', snap({ switchScan: true })).on).toBe(true);
-    // 🔴 AND NEVER GREYED OUT: greying the icon on a device that requires the latch would take «um botão só» with it, and
-    // whoever plays with their eyes is who needs it most. The lock lives in the cycle (case below), not in the look.
-    expect(computeIconVisual('altmove', snap({ toggleMove: true, latchRequired: true })).dis).toBe(false);
+    // 🔴 AND NEVER GREYED OUT: no device locks it (ADR-0249), and what a game cannot hold the cycle leaves out.
+    expect(computeIconVisual('altmove', snap({ toggleMove: true })).dis).toBe(false);
   });
 
-  describe('nextInputMode — o ciclo de ☝️, e as duas coisas que lhe tiram uma posição (ADR-0218)', () => {
+  describe('nextInputMode — o ciclo de ☝️, e a única coisa que lhe tira uma posição (ADR-0218, ADR-0249)', () => {
     it('🔴 [Right] num jogo que segura tecla são três, na ordem que o Dev pediu', () => {
       expect(nextInputMode('standard', true)).toBe('sticky');
       expect(nextInputMode('sticky', true)).toBe('scan');
@@ -411,10 +410,11 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
       expect(nextInputMode('sticky', false)).toBe('standard');
     });
 
-    it('🔴 [Right] e num aparelho que EXIGE a aderência o «padrão» não aparece — mas a varredura continua lá', () => {
-      expect(nextInputMode('sticky', true, true)).toBe('scan');
-      expect(nextInputMode('scan', true, true)).toBe('sticky');
-      expect(nextInputMode('standard', true, true), 'o ciclo parou numa posição que o aparelho não permite').toBe('sticky');
+    it('🔴 [Right] o ciclo NÃO tem argumento de aparelho — nenhum aparelho tira o «padrão» (ADR-0249)', () => {
+      // The superseded rule took a third argument, «the device requires the latch», and skipped `standard`. On eyes, face,
+      // gestures and speech the latch now starts as the game's `holdsKeys()` and the child may turn it off.
+      expect(nextInputMode.length, 'o ciclo voltou a perguntar pelo aparelho').toBe(2);
+      expect(nextInputMode('scan', true, true), 'um terceiro argumento voltou a tirar o «padrão»').toBe('standard');
     });
 
     it('📌 [Right] e a leitura da posição dá a varredura como vencedora da aderência', () => {
@@ -784,21 +784,35 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(said.join(' | '), 'the latch was announced with a raw key').toContain(pt['sr.motor.toggleMoveOn']);
   });
 
-  // ========================= CLAUSE 3 OF ADR-0113, ON THE BAR'S ICON =========================
-  // ⚠️ THE ICON AND `#opt-altmove` WRITE THE SAME VALUE. One accepting the click while the other refuses would give
-  // the child two buttons that disagree about the same setting — and what she would see is the panel saying
-  // it cannot and the bar pretending it did.
-  it('🔴 [Zero] com o olhar em uso, o ícone `altmove` recusa DIZENDO, e não mexe em nada', () => {
-    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
-    const { ctx, alerted } = buildCtx();
-    delete ctx.setToggleMove;
-    ctx.transportInUse = () => 'olhos';
+  // ========================= ADR-0249: THE OPTION IS OFFERED ON THE FOUR ONE-COMMAND TRANSPORTS =========================
+  // The latch on eyes, face, gestures and speech starts as the game's `holdsKeys()`, and the child may change it for that
+  // device. The bar's icon is where she does: it writes under the key of the transport in use, which the root reads first
+  // the next time that transport presses.
+  // MUTATIONS CHECKED (2026-09-27, `scratchpad/latch-by-game/mutate.mjs`): the icon refusing the write on the four → 🔴 this case
+  // and the cycle case below; `writeLatch` refusing the four → 🔴 this case; a device argument that skips «padrão» in
+  // `nextInputMode` → 🔴 «o ciclo NÃO tem argumento de aparelho».
+  it('🔴 [Right] com a fala ou o olhar em uso, o ícone `altmove` ESCREVE a escolha dela — sob a chave DAQUELE aparelho', () => {
+    for (const aparelho of ['olhos', 'rosto', 'gestos', 'fala']) {
+      const guardado = {};
+      const backend = {
+        getItem: (k) => (k in guardado ? guardado[k] : null),
+        setItem: (k, v) => { guardado[k] = String(v); },
+        removeItem: (k) => { delete guardado[k]; },
+      };
+      setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+      const { ctx, alerted } = buildCtx();
+      ctx.store = createStorage(backend);
+      delete ctx.setToggleMove;
+      ctx.transportInUse = () => aparelho;
+      ctx.holdsKeys = () => true;
 
-    initPauseIcons(ctx).iconAct('altmove', 0);
+      initPauseIcons(ctx).iconAct('altmove', 0);
 
-    expect(rodada.players[0].toggleMove, 'o ícone mexeu num ajuste que este aparelho exige').toBe(false);
-    expect(alerted.join(' '), 'recusou em silêncio — a criança fica sem saber por quê')
-      .toContain('precisa das teclas de alternância');
+      expect(rodada.players[0].toggleMove, `${aparelho}: o ícone recusou a escolha`).toBe(true);
+      // ⚠️ Literal key, not `latchKey(...)` — the same note as the gamepad case above.
+      expect(guardado[`incl_togglemove_p0_${aparelho}`], `${aparelho}: a escolha não foi guardada para esse aparelho`).toBe('1');
+      expect(alerted, `${aparelho}: o ícone disse uma recusa`).toEqual([]);
+    }
   });
 
   it('📌 [Zero] sem `transporteEmUso`, o ícone continua a alternar', () => {
@@ -809,16 +823,15 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   /*
-   * 🔴 THE LOCK IS SAID BY THE CYCLE, NOT BY THE LOOK (ADR-0218). Greying the whole icon when gaze is in use would take
-   * away the scan of «um botão só» — and whoever plays with their eyes is exactly who needs it most. Clause 3 of ADR-0113
-   * holds in full through the CYCLE: «padrão» simply does not appear, and the child never reaches a position the device
-   * would not let her stay in.
+   * 🔴 AND THE CYCLE OFFERS THE THREE POSITIONS WITH THE EYES IN USE (ADR-0249). Under the superseded rule it skipped «padrão»
+   * there; now the child playing a platform game with her eyes can go back to the standard reading, and the icon stays
+   * actionable throughout.
    */
-  it('🔴 [Right] com o olhar em uso, o ciclo PULA o padrão — e o ícone continua accionável', () => {
+  it('🔴 [Right] com o olhar em uso, o ciclo PASSA pelo padrão — as três posições, como no teclado', () => {
     setPlayers([{ viz: 'normal', toggleMove: true, walkDir: 0 }]);
     const { ctx, state } = buildCtx();
     ctx.transportInUse = () => 'olhos';
-    ctx.holdsKeys = () => true; // otherwise the latch would have nothing to hold and the cycle would be the other one (the two-position one)
+    ctx.holdsKeys = () => true; // otherwise the latch would have nothing to hold and the cycle would be the two-position one
     const api = initPauseIcons(ctx);
     const b = fakeIconBtn('altmove');
     api.reflectIconBtn(b, 0);
@@ -827,10 +840,10 @@ describe('initPauseIcons — ações dos ícones', () => {
     // From «não precisa segurar» it goes to «um botão só»…
     api.iconAct('altmove', 0);
     expect(estado.switchScan, 'não entrou na varredura').toBe(true);
-    // …and from there back to the latch, never to the standard: the device sends one command at a time and the latch stays.
+    // …and from there to the STANDARD, which the eyes may now choose: the latch is written off for them.
     api.iconAct('altmove', 0);
     expect(estado.switchScan).toBe(false);
-    expect(state.toggleMoveCalls, 'o padrão foi alcançado num aparelho que exige a alternância').toEqual([]);
+    expect(state.toggleMoveCalls, 'o padrão não foi alcançado com o olhar em uso').toEqual([[0, false]]);
   });
 
   // 🔴 ISSUE #128, AND IT IS ONE LINE. `pi-dis` is a CSS CLASS: the child who sees gets a greyed icon, the one who
@@ -1312,9 +1325,8 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * a tile puzzle there is nothing to latch — and the control, offered anyway, is an option that does nothing. The
    * child turns on the setting she depends on and nothing happens; she learns the setting is broken.
    *
-   * ⚠️ AND IT IS A DIFFERENT ABSENCE FROM CLAUSE 3 OF ADR-0113, which lives in the same file: there the control is
-   * DISABLED with the reason, because the device REQUIRES the latch. Here there is nothing to latch, and explaining
-   * why a control does nothing is still handing over a control that does nothing. */
+   * ⚠️ Explaining why a control does nothing is still handing over a control that does nothing, so the latch is left
+   * out here — on every device, the four one-command ones included (ADR-0249). */
   it('🎯 [Zero] um jogo que não segura teclas NEM declara posição não recebe o ícone `altmove`', () => {
     const chaves = iconsThatAct({ clock: () => true, theme: true, correction: true, holdsKeys: () => false, typography: true, camera: true, microphone: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');

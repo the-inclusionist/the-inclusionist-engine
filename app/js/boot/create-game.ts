@@ -111,8 +111,11 @@ import { LOGICAL_W } from '../core/constants.js';
 import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { mountPanel } from '../ui/mount-panel.js';
-// 📌 No `latchRefusal` or `setMoveLatch` here: the sticky keys are written by the bar's ☝️, which already resolves both
-// the device's refusal and the two stored keys.
+// 📌 No `setMoveLatch` here: the sticky keys are written by the bar's ☝️, which already writes both stored keys. What the root
+// does is RESOLVE the latch when a one-command transport presses (ADR-0249) — `createLatchedEdge`, below.
+import { createLatchedEdge } from '../input/latch-edge.js';
+import { latchDefaultFromGame } from '../input/latch-scope.js';
+import type { LatchPlayer } from '../input/latch-sync.js';
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
@@ -3738,10 +3741,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * 🔴 NO STICKY-KEYS ROW IN THIS PANEL (the Dev: «Tire a linha de acessibilidade motora»): the bar's ☝️ is the one
      * surface for that cycle (ADR-0218), and two surfaces of one setting was what the row had become.
      *
-     * ⚠️ The row was also the only place that said WHY the latch is locked on a device that sends one command at a time
-     * (ADR-0113 clause 3). It stays honest because the cycle does not OFFER what is locked: where the latch is required,
-     * «padrão» does not appear, and there is nothing to explain. The «Esperar entre toques» row (ADR-0217) stays: it is
-     * another setting.
+     * 📌 No device locks it any more (ADR-0249): on eyes, face, gestures and speech the latch starts as the game's `holdsKeys()`
+     * and the ☝️ offers all three positions there too. The «Esperar entre toques» row (ADR-0217) stays: it is another setting.
      */
     /*
      * «ESPERAR ENTRE TOQUES» (ADR-0217; GAG Advanced/Motor, issue #182). The row beside the sticky keys, and the other half of
@@ -4269,7 +4270,20 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   stateOn('switchScan', (on) => { if (on) startScan(); else stopScan(); });
   whenDisposed(stopScan); // the scan's frames are this root's, and an ended root keeps none running (ADR-0220)
   if (state.switchScan) startScan();
+  /*
+   * 🔴 THE LATCH OF THE ONE-COMMAND TRANSPORTS (ADR-0249). A press from the eyes, the face, the hands or the voice is that
+   * device's edge (ADR-0109), and on it the seat's latch is resolved again: the child's stored choice for that transport, else
+   * the MOUNTED game's `holdsKeys()` read now — so a platform game keeps walking on «direita», a quiz's «abaixo» presses once,
+   * and a stage that stops holding keys stops latching at the next word.
+   * ⚠️ ONLY THOSE FOUR: the keyboard, the pad and touch keep their rules (ADR-0104, ADR-0109), and resolving theirs here would
+   * change what those children have today. The seats are the ones the bar's ☝️ writes (`PausePlayer`, the same cast).
+   */
+  const oneCommandEdge = createLatchedEdge(() => players() as unknown as readonly LatchPlayer[], {
+    input, store, holdsKeys: () => cartridge.declaration.holdsKeys(),
+  });
   const virtualController = createVirtualController({
+    // told first, for every press that names its transport; only the one-command transports resolve the latch here
+    pressedBy: (source, seat) => { if (latchDefaultFromGame(source)) oneCommandEdge(seat, source); },
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuWithDpad,
     // ⚠️ `markKeyFrom` AND NOT RAW `markKey`: a key that arrives WITHOUT a source — which is every real keyboard event —
     // must ERASE whoever held it last instead of inheriting them (ADR-0109). The choice between the two doors lives in

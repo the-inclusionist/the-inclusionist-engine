@@ -1,20 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE LATCH BELONGS TO A TRANSPORT, and on four of them it is no choice at all (ADR-0104 §C, issue #114).
+// THE LATCH BELONGS TO A TRANSPORT, and on four of them the GAME sets its default (ADR-0104 §C, issue #114, ADR-0249).
 //
 // ========================= THE DEFECT THESE CASES HOLD =========================
 // Stored per PLAYER — per person, for every device at once — turning the latch on for the on-screen pad, where nobody
 // holds a virtual button comfortably, also turned it on for the keyboard, where holding a key is exactly what the child
 // can do. Nobody asked for that and nothing said so.
 //
+// And on eyes, face, gestures and speech (ADR-0249): a word or a look is one tap. Whether the tap keeps going is the
+// game's `holdsKeys()` — «direita» keeps a platform character walking, «abaixo» moves a quiz cursor once — and the
+// child's stored choice for that transport wins over it.
+//
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
-  ONE_COMMAND_AT_A_TIME, latchAlwaysOn, latchIsOptional,
+  ONE_COMMAND_AT_A_TIME, latchDefaultFromGame,
   latchKey, legacyLatchKey, latchOf,
 } from '../app/js/input/latch-scope.js';
 import { defaultTransports } from '../app/js/input/transports.js';
 
-const nada = { fromTransport: null, fromLegacy: null, byDefault: false };
+const nada = { fromTransport: null, fromLegacy: null, byDefault: false, gameHoldsKeys: false };
+const QUATRO = ['olhos', 'rosto', 'gestos', 'fala'];
 
 describe('input/latch-scope · a chave leva o transporte no nome', () => {
   it('[Right] a chave nova separa jogador E transporte; a antiga só separa jogador', () => {
@@ -42,47 +47,72 @@ describe('input/latch-scope · a chave leva o transporte no nome', () => {
   });
 });
 
-describe('input/latch-scope · nos transportes de UM COMANDO ela não é preferência', () => {
-  it('[Right] olhos, rosto, gestos e fala estão sempre ligados; os três de hoje não', () => {
-    for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
-      expect(latchAlwaysOn(t), `${t} deixou de estar sempre ligado`).toBe(true);
-      expect(latchIsOptional(t), `${t} passou a oferecer a opção`).toBe(false);
-    }
+describe('input/latch-scope · nos transportes de UM COMANDO o padrão é o do jogo (ADR-0249)', () => {
+  it('[Right] olhos, rosto, gestos e fala tomam o padrão do jogo; os três de hoje não', () => {
+    for (const t of QUATRO) expect(latchDefaultFromGame(t), `${t} deixou de seguir o jogo`).toBe(true);
     for (const t of ['teclado', 'gamepad', 'toque']) {
-      expect(latchAlwaysOn(t), `${t} passou a estar sempre ligado`).toBe(false);
-      expect(latchIsOptional(t)).toBe(true);
+      expect(latchDefaultFromGame(t), `${t} passou a seguir o jogo — teclado e toque guardam as suas regras`).toBe(false);
     }
   });
 
-  it('⚠️ [Zero] e um `false` guardado NÃO os desliga — nem pelo legado', () => {
-    // The worst possible defect, on the controller of whoever has the fewest alternatives: a child who had turned the
-    // latch off on the keyboard would inherit that `false` and be left with a gaze control that does not respond. So
-    // the question «este transporte é de um comando?» comes BEFORE any read.
-    const desligado = { fromTransport: false, fromLegacy: false, byDefault: false };
-    for (const t of ONE_COMMAND_AT_A_TIME) {
-      expect(latchOf(t, desligado), `${t} foi desligado por um valor guardado`).toBe(true);
+  it('🔴 [Right] um jogo que NÃO segura teclas: sem nada guardado, a fala e a câmara NÃO aderem', () => {
+    // The quiz: «abaixo» must press once. A latch here would keep the press down and the next word would only release it.
+    for (const t of QUATRO) {
+      expect(latchOf(t, { ...nada, gameHoldsKeys: false }), `${t} aderiu num jogo que não segura nada`).toBe(false);
+    }
+  });
+
+  it('🔴 [Right] um jogo que segura teclas: sem nada guardado, eles aderem', () => {
+    // The platform game: «direita» keeps the character walking.
+    for (const t of QUATRO) {
+      expect(latchOf(t, { ...nada, gameHoldsKeys: true }), `${t} não aderiu num jogo que segura`).toBe(true);
+    }
+  });
+
+  it('🎯 [Right] a escolha GUARDADA para aquele transporte vence qualquer dos dois padrões', () => {
+    for (const t of QUATRO) {
+      expect(latchOf(t, { ...nada, fromTransport: false, gameHoldsKeys: true }), `${t}: o «desligado» dela foi ignorado`)
+        .toBe(false);
+      expect(latchOf(t, { ...nada, fromTransport: true, gameHoldsKeys: false }), `${t}: o «ligado» dela foi ignorado`)
+        .toBe(true);
+    }
+  });
+
+  it('⚠️ [Boundary] o LEGADO não chega aos quatro — lá o padrão é do jogo, não do teclado', () => {
+    // The per-player key is still written by every latch change, on any device: a choice made on the keyboard is not a
+    // choice about how a spoken word behaves in THIS game. Inheriting it would latch a quiz for the child who latched
+    // her keyboard.
+    for (const t of QUATRO) {
+      expect(latchOf(t, { ...nada, fromLegacy: true, gameHoldsKeys: false }), `${t} herdou o legado do teclado`).toBe(false);
+      expect(latchOf(t, { ...nada, fromLegacy: false, gameHoldsKeys: true }), `${t} herdou o legado do teclado`).toBe(true);
+    }
+  });
+
+  it('[Boundary] e o padrão do jogo NÃO toca os três de hoje', () => {
+    for (const t of ['teclado', 'gamepad', 'toque']) {
+      expect(latchOf(t, { ...nada, gameHoldsKeys: true }), `${t} passou a aderir porque o jogo segura`).toBe(false);
     }
   });
 
   it('[Interface] os quatro nomes são exactamente quatro — acrescentar um é uma decisão', () => {
     // A transport enters this list because it emits one command at a time, not because it would be convenient. If
-    // someone puts touch here, the option stops being offered to whoever wants it off.
+    // someone puts touch here, its default stops being the factory's and becomes the game's.
     expect([...ONE_COMMAND_AT_A_TIME].sort()).toEqual(['fala', 'gestos', 'olhos', 'rosto']);
   });
 });
 
 describe('input/latch-scope · a resolução, e a herança da chave antiga', () => {
   it('[Right] o valor DESTE transporte vence tudo o resto', () => {
-    expect(latchOf('toque', { fromTransport: true, fromLegacy: false, byDefault: false })).toBe(true);
-    expect(latchOf('toque', { fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
+    expect(latchOf('toque', { ...nada, fromTransport: true, fromLegacy: false })).toBe(true);
+    expect(latchOf('toque', { ...nada, fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
   });
 
-  it('⚠️ [Boundary] sem valor deste transporte, o LEGADO herda — e herda para todos', () => {
+  it('⚠️ [Boundary] sem valor deste transporte, o LEGADO herda — para o teclado, o comando e o toque', () => {
     // The old value was set by the child in some context and the key did not record which. The ways out were losing
     // the setting, guessing a transport, or inheriting for all. Only the third takes nothing from whoever depends on
     // the setting, and the leak it keeps lasts until they touch it once on each device.
     for (const t of ['toque', 'teclado', 'gamepad']) {
-      expect(latchOf(t, { fromTransport: null, fromLegacy: true, byDefault: false })).toBe(true);
+      expect(latchOf(t, { ...nada, fromLegacy: true })).toBe(true);
     }
   });
 
@@ -92,27 +122,27 @@ describe('input/latch-scope · a resolução, e a herança da chave antiga', () 
   });
 
   it('⚠️ [Boundary] `false` guardado é um VALOR, e não uma ausência', () => {
-    // The classic mistake of this design is writing `l.doTransporte || l.doLegado || l.padrao`: a deliberate `false`
+    // The classic mistake of this design is writing `l.fromTransport || l.fromLegacy || l.byDefault`: a deliberate `false`
     // would fall through to the legacy value and the child who TURNED OFF the latch would see it come back by itself.
-    expect(latchOf('teclado', { fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
-    expect(latchOf('teclado', { fromTransport: null, fromLegacy: false, byDefault: true })).toBe(false);
+    expect(latchOf('teclado', { ...nada, fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
+    expect(latchOf('teclado', { ...nada, fromLegacy: false, byDefault: true })).toBe(false);
   });
 });
 
 // ========================= MUTATIONS CHECKED =========================
-//   · ⚠️ TAKING THE TRANSPORT OUT OF THE KEY (back to `incl_${base}_p${jogador}`) -> TWO fail. It is the whole defect in
+// (2026-09-27, ADR-0249) — `scratchpad/latch-by-game/mutate.mjs`, one occurrence required per anchor, restored from a copy
+// checked by SHA-256 (14 red across the latch files and the root for the first):
+//   · `latchOf` answering `true` on the four again, before the stored value (the superseded rule) 🔴 «um jogo que NÃO segura…»,
+//     «a escolha GUARDADA…», «o LEGADO não chega…»
+//   · the game's answer read BEFORE the stored value                                🔴 «a escolha GUARDADA…»
+//   · the four inheriting the legacy key                                            🔴 «o LEGADO não chega aos quatro»
+//   · `latchOf` ignoring the game's answer (always `false`)                         🔴 «um jogo que segura teclas…», «o LEGADO…»
+//   · `latchDefaultFromGame` answering for every transport                           🔴 «os três de hoje não», «NÃO toca os três»,
+//     the legacy inheritance and the factory default
+// Kept from 2026-09-08:
+//   · ⚠️ TAKING THE TRANSPORT OUT OF THE KEY (back to `incl_${base}_p${player}`) -> TWO fail. It is the whole defect in
 //     its original form: turning the latch on for the on-screen pad turns it on for the keyboard.
-//   · putting the question «este transporte e de um comando?» AFTER the reads -> the stored-`false` case fails. A child
-//     who had turned the latch off on the keyboard would inherit that `false` and be left with a gaze control that
-//     does not respond — on the controller of whoever has the fewest alternatives.
-//   · replacing the two `null` checks with `l.doTransporte || l.doLegado || l.padrao` — the classic mistake of this
-//     design — -> TWO fail. A deliberate `false` would become an absence, and the latch the child TURNED OFF would
-//     come back by itself.
-//   · removing the legacy inheritance -> TWO fail. The child would lose the setting they already had, which is the
-//     cost the inheritance exists not to charge.
-//   · putting `toque` on the one-command list -> THREE fail. The option would stop being offered to whoever wants it
-//     off, and an on-screen pad HOLDS two points — it is not one-command.
-//   · taking `olhos` off the list -> TWO fail. It is the mutation that shows the list is a decision and not a detail:
-//     one name leaves and a whole controller stops working.
-//   · `latchIsOptional` always returning `true` -> the four-transports case fails. The panel would draw a button that
-//     can do nothing, which is worse than not drawing it.
+//   · replacing the two `null` checks with `||` — the classic mistake of this design — -> the `false`-is-a-value case fails.
+//   · removing the legacy inheritance -> TWO fail. The child would lose the setting they already had.
+//   · putting `toque` on the one-command list -> THREE fail.
+//   · taking `olhos` off the list -> the four-names cases fail.

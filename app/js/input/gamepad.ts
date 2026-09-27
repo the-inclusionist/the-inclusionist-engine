@@ -271,7 +271,7 @@ export interface GamepadCtx {
    *
    * 🔴 REQUIRED: without it the input state's `playerEdge` has no caller for the pad, so `inputOf(i).inUse` answers
    * `teclado` for everyone — and the latch read is the keyboard's even with the pad in hand. 📌 Pass
-   * `createLatchedEdge(() => players, { store, input })` from `input/latch-edge`, not the raw one: it also resolves this
+   * `createLatchedEdge(() => players, { store, input, holdsKeys })` from `input/latch-edge`, not the raw one: it also resolves this
    * device's latch on the player.
    *
    * ⚠️ The gamepad is the transport that stays identifiable without the key set — it goes through `padCur` —, and that

@@ -492,8 +492,8 @@ export interface KeydownCtx {
    * THIS EDGE IS THIS PLAYER'S, AND IT CAME FROM HERE (ADR-0113 clause 4, issue #127) — `input/state.playerEdge`.
    *
    * 🔴 A REQUIRED FIELD: without a feeder, ADR-0109's automaton answers `teclado` for everyone through
-   * `inputOf(i).inUse` — forever, with no error. Then clause 3's refusal never fires: the child who plays by webcam can
-   * turn off the latch their input depends on, and nothing says so.
+   * `inputOf(i).inUse` — forever, with no error. Then the latch is read and written under the keyboard's key for a child
+   * playing by webcam, and the game's default for her device (ADR-0249) never applies.
    *
    * ⚠️ AND IT IS HERE THAT IT COUNTS, not on the keyboard, which is already the default: a stamped synthetic event
    * (`input/synthetic-source`) is how `olhos`/`rosto`/`gestos`/`fala` become the transport in use through this module.

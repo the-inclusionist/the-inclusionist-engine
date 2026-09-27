@@ -5,7 +5,8 @@
 // ADR-0113 decided the toggle is a CAPS LOCK kept with each device's mapping: changing controls is receiving that
 // device's state, without writing anything. Three modules were built for it and none answers the whole question:
 //
-//   · `input/latch-scope`      — the RULE (assisted always on · the transport's value · legacy · factory);
+//   · `input/latch-scope`      — the RULE (the transport's value · the game's `holdsKeys()` on the four one-command
+//                                transports, ADR-0249 · legacy · factory);
 //   · `input/latch-store`      — the STORAGE (the three states, and the key with the transport in its name);
 //   · `input/transport-in-use` — the STATE MACHINE (which device produced this player's edges).
 //
@@ -24,6 +25,7 @@
 // duplicated table, so the rule lives in one function (`applyLatch`) and the panel calls it.
 import type { PlayerView } from '../core/entity.js';
 import { storedLatch, type LatchStore } from './latch-store.js';
+import type { LatchDefaults } from './latch-scope.js';
 
 /**
  * The MINIMUM OF THE PLAYER the toggle touches — two fields, neither of them part of the game's contract.
@@ -71,16 +73,16 @@ export function applyLatch(p: LatchPlayer, on: boolean): boolean {
  * the answer **without writing to storage**. A sync that stored the resolved value would erase, on the first edge, the
  * choice the child made on the other device.
  *
- * ⚠️ AND ON THE FOUR ASSISTED TRANSPORTS IT ANSWERS `true` WITHOUT CONSULTING ANYTHING — the rule lives in `latch-scope`
- * with its reason: on eyes, face, gestures and speech the toggle is what makes the input work, and inheriting a `false`
- * the child chose on the keyboard would leave them with a gaze control that does not respond.
+ * ⚠️ ON THE FOUR ONE-COMMAND TRANSPORTS THE DEFAULT IS THE GAME'S (ADR-0249) — `defaults.gameHoldsKeys`, which the caller
+ * reads from `holdsKeys()` when it calls: a platform game keeps walking on «direita», a quiz moves once on «abaixo», and a
+ * choice the child stored for that transport wins over both. The rule lives in `latch-scope`.
  */
 export function syncLatch(
   p: LatchPlayer,
   store: LatchStore,
   player: number,
   transport: string,
-  byDefault: boolean,
+  defaults: LatchDefaults,
 ): boolean {
-  return applyLatch(p, storedLatch(store, BASE_DA_MARCHA, player, transport, byDefault));
+  return applyLatch(p, storedLatch(store, BASE_DA_MARCHA, player, transport, defaults));
 }

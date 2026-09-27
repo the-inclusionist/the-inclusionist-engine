@@ -34,6 +34,13 @@ export interface LatchedEdgeOptions {
   readonly store: LatchStore;
   /** The factory default. `DEFAULTS.toggleMove`, not a hand-written `false`: there is ONE source (ADR-0029). */
   readonly byDefault?: boolean;
+  /**
+   * DOES THE MOUNTED GAME HOLD ANY KEY NOW? — `GameDeclaration.holdsKeys` (ADR-0249), the latch's default on eyes, face,
+   * gestures and speech. A FUNCTION, called at every edge: a game changes its answer between stages (ADR-0084), and the
+   * next command must follow the stage it lands in. REQUIRED, like `holdsKeys` itself: `true` latches a quiz's every word,
+   * `false` stops a platform game's «direita» after one step, so no default is safe.
+   */
+  readonly holdsKeys: () => boolean;
 }
 
 /**
@@ -60,6 +67,6 @@ export function createLatchedEdge(
     // the transport in use is a fact about the INPUT and is recorded all the same. What does not happen is the second
     // half, because there is nowhere to write it.
     const p = getPlayers()[player];
-    if (p) syncLatch(p, latchStore, player, inputOf(player).inUse, fallback);
+    if (p) syncLatch(p, latchStore, player, inputOf(player).inUse, { byDefault: fallback, gameHoldsKeys: opts.holdsKeys() });
   };
 }

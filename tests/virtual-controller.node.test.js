@@ -201,6 +201,51 @@ describe('with one-button scanning on, a press is the scan\'s and nothing else',
   });
 });
 
+/*
+ * 🔴 WHO PRESSED IS TOLD FIRST (ADR-0249). The root resolves the latch of the one-command transports here — the child's stored
+ * choice for that device, else the game's `holdsKeys()` now — and it must be resolved BEFORE the press reaches the game, or the
+ * first «direita» of a platform game would arrive with the latch still off. A real key names no transport and tells nothing.
+ */
+describe('the transport that pressed is told first', () => {
+  const makeTold = ({ menu = false, takes = false } = {}) => {
+    const log = [];
+    const vc = createVirtualController({
+      scheme: () => SCHEME, menuOpen: () => menu,
+      holdKey: (code, source) => log.push(['hold', code, source]), releaseKey: (code) => log.push(['release', code]),
+      menuKey: (code, source) => log.push(['menu', code, source]), deliver: (c) => log.push(['deliver', c.action, c.pressed]),
+      takeShown: () => takes,
+      pressedBy: (source, player) => log.push(['by', source, player]),
+    });
+    return { vc, log };
+  };
+
+  it('🔴 [Right] in play, BEFORE the key is held and the game told — with the source and the seat', () => {
+    const { vc, log } = makeTold();
+    vc.press('right', 'fala', 1);
+    expect(log[0], 'the latch would be resolved after the game already heard the press').toEqual(['by', 'fala', 1]);
+    expect(log.slice(1).map((e) => e[0])).toEqual(['hold', 'deliver']);
+  });
+
+  it('🔴 [Right] with a menu open, and under one button only too — it is still that device being used', () => {
+    const inMenu = makeTold({ menu: true });
+    inMenu.vc.press('down', 'olhos');
+    expect(inMenu.log[0]).toEqual(['by', 'olhos', 0]);
+    const taken = makeTold({ takes: true });
+    taken.vc.press('down', 'gestos');
+    expect(taken.log).toEqual([['by', 'gestos', 0]]);
+  });
+
+  it('🔴 [Zero] a real key names nobody, and a release is not a press: nothing is told', () => {
+    const { vc, log } = makeTold();
+    vc.press('down', undefined);
+    vc.release('down', undefined);
+    expect(log.filter((e) => e[0] === 'by'), 'an unsigned key or a release was told as a transport').toEqual([]);
+  });
+});
+
+// MUTATIONS CHECKED (2026-09-27, ADR-0249) — `scratchpad/latch-by-game/mutate.mjs`: `pressedBy` told after the delivery →
+// 🔴 «in play, BEFORE…» and «with a menu open…» (the menu and the scan return before it); never told → 🔴 the same two here and
+// four in `a-quiz-word-presses-once.browser` («direita» latches, the stage sequence, the stored choice, the ☝️).
 // MUTATIONS CHECKED (2026-09-16), each red before this file counted — `scratchpad/mutar-virtual-controller.py`:
 //   · the menu not checked (a menu press reaches the game)     → «the game hears nothing»
 //   · a release delivered without a press the game heard       → «the game hears nothing»

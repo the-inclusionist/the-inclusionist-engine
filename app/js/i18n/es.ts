@@ -573,10 +573,6 @@ const es: Record<string, string> = {
   'sr.motor.easyOff': 'Modo Fácil desactivado.',
   'sr.motor.toggleMoveOn': 'No hace falta mantener, activado: un toque lo activa y otro lo desactiva.',
   'sr.motor.toggleMoveOff': 'No hace falta mantener, desactivado.',
-  'alt.exigida.olhos': 'El control por mirada necesita el movimiento por alternancia para funcionar.',
-  'alt.exigida.rosto': 'El control por rostro necesita el movimiento por alternancia para funcionar.',
-  'alt.exigida.gestos': 'Los gestos necesitan el movimiento por alternancia para funcionar.',
-  'alt.exigida.fala': 'El comando de voz necesita el movimiento por alternancia para funcionar.',
   'sr.motor.toggleRunOn': 'Alternancia de correr activada.',
   'sr.motor.toggleRunOff': 'Alternancia de correr desactivada.',
   // ===================== AYUDA (menú de pausa) + etiqueta de nivel =====================

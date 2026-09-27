@@ -134,8 +134,7 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
 
   it('[Interface] a regra que a fiação vai consumir continua exportada e completa', () => {
     const src = fonte('input/latch-scope.ts');
-    for (const nome of ['latchKey', 'legacyLatchKey', 'latchOf',
-      'latchAlwaysOn', 'latchIsOptional']) {
+    for (const nome of ['latchKey', 'legacyLatchKey', 'latchOf', 'latchDefaultFromGame']) {
       expect(src, `${nome} deixou de ser exportado e a fiação ficaria sem alvo`).toContain(`export function ${nome}`);
     }
   });
@@ -151,7 +150,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 
   it('🔴 [Zero] a criança do TECLADO com alternância gravada: as duas funções DIVERGEM, e o registo diz qual vale', () => {
     const estado = { inUse: 'teclado', assistedOn: false };
-    const gravado = { fromTransport: true, fromLegacy: null, byDefault: false };
+    const gravado = { fromTransport: true, fromLegacy: null, byDefault: false, gameHoldsKeys: false };
 
     // ADR-0109's model: the keyboard has no latch of its own, so NO.
     expect(latchNow(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
@@ -161,19 +160,31 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 
   it('⚠️ [Fronteira] e no TOQUE também divergem — a cláusula do toque caiu com a mesma frase', () => {
     const estado = { inUse: 'toque', assistedOn: false };
-    const desligadoPelaCrianca = { fromTransport: false, fromLegacy: null, byDefault: false };
+    const desligadoPelaCrianca = { fromTransport: false, fromLegacy: null, byDefault: false, gameHoldsKeys: false };
 
     expect(latchNow(estado), 'o toque deixou de estar em COM_ALTERNANCIA_PROPRIA').toBe(true);
     expect(latchOf(estado.inUse, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
   });
 
-  // 📌 AND WHERE THE TWO AGREE, which keeps this block from reading as a blanket accusation: on the four assisted
-  // transports the latch is mandatory in BOTH models, for different reasons and with the same result.
-  it('[Feliz] nos quatro assistidos as duas concordam — obrigatória, e ninguém a desliga', () => {
+  // 🔴 AND ON THE FOUR ONE-COMMAND TRANSPORTS THEY DIVERGE TOO, since ADR-0249: the superseded model forces the latch on
+  // whenever the camera or the microphone is enabled; the rule takes the GAME's `holdsKeys()` as the default and lets the
+  // child's stored choice win. The quiz answered by voice is the child the forced latch would fail.
+  it('🔴 [Zero] nos quatro de um comando: um quiz NÃO adere, e o modelo superado forçaria', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
-      expect(latchOf(t, { fromTransport: false, fromLegacy: false, byDefault: false }), `${t} pôde ser desligado`)
-        .toBe(true);
-      expect(latchNow({ inUse: t, assistedOn: true }), `${t} habilitado deixou de forçar`).toBe(true);
+      const semSegurar = { fromTransport: null, fromLegacy: null, byDefault: false, gameHoldsKeys: false };
+      expect(latchOf(t, semSegurar), `${t} aderiu num jogo que não segura nada`).toBe(false);
+      expect(latchNow({ inUse: t, assistedOn: true }), `${t} habilitado deixou de forçar no modelo superado`).toBe(true);
+    }
+  });
+
+  // 📌 AND WHERE THEY AGREE — which keeps this block from reading as a blanket accusation: a platform game answered by voice
+  // latches in BOTH models, for different reasons — and only in the rule can the child turn it off.
+  it('[Feliz] num jogo que segura, as duas aderem — e só a regra deixa a criança desligar', () => {
+    for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
+      const plataforma = { fromTransport: null, fromLegacy: null, byDefault: false, gameHoldsKeys: true };
+      expect(latchOf(t, plataforma), `${t} não aderiu num jogo que segura`).toBe(true);
+      expect(latchNow({ inUse: t, assistedOn: true })).toBe(true);
+      expect(latchOf(t, { ...plataforma, fromTransport: false }), `${t}: o «desligado» dela não valeu`).toBe(false);
     }
   });
 
@@ -201,7 +212,9 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 //
 // ----- and those of the DIVERGENCE block, one per case with no overlap at all -----
 // 6. `latchOf` no longer reading `doTransporte`   → the KEYBOARD child's case fails
-// 7. `latchOf` no longer forcing the assisted ones → the agreement-on-the-four case fails
+// 7. (2026-09-27, ADR-0249) `latchOf` forcing the four on again (the superseded rule) → 🔴 «um quiz NÃO adere» and the
+//    «só a regra deixa a criança desligar» half; `latchOf` ignoring `gameHoldsKeys` (always `false`) → 🔴 «num jogo que
+//    segura, as duas aderem». (Before ADR-0249 this line read: «no longer forcing the assisted ones → the agreement case».)
 // 8. `input/keydown` calling `latchNow`           → 🎯 the consumer [Zero] fails, the guard that turns «documentação da
 //    divergência» into «decisão obrigatória» the day someone wires it
 // 9. the superseded model no longer answering for TOUCH → the touch-divergence case fails

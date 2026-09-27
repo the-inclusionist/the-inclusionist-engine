@@ -27,6 +27,8 @@ function armazemFalso(inicial = {}) {
 }
 
 const jogador = () => ({ toggleMove: false, walkDir: 0 });
+/** The factory default, and a game that holds nothing — the two defaults storage does not know (ADR-0249). */
+const FABRICA = { byDefault: false, gameHoldsKeys: false };
 const chave = (i, transporte) => latchKey(BASE_DA_MARCHA, i, transporte);
 const legada = (i) => legacyLatchKey(BASE_DA_MARCHA, i);
 
@@ -34,7 +36,7 @@ describe('a alternância resolvida para o transporte em uso', () => {
   it('[Zero] nada guardado e sem legado: fica o padrão de fábrica, e ninguém escreve', () => {
     const a = armazemFalso();
     const p = jogador();
-    expect(syncLatch(p, a, 0, 'teclado', false), 'não havia o que mudar').toBe(false);
+    expect(syncLatch(p, a, 0, 'teclado', FABRICA), 'não havia o que mudar').toBe(false);
     expect(p.toggleMove).toBe(false);
     expect(a.escritas, 'resolver não é gravar').toEqual([]);
   });
@@ -43,10 +45,10 @@ describe('a alternância resolvida para o transporte em uso', () => {
     const a = armazemFalso({ [chave(0, 'gamepad')]: '1', [chave(0, 'teclado')]: '0' });
     const p = jogador();
 
-    expect(syncLatch(p, a, 0, 'gamepad', false), 'ligou ao pegar no controle').toBe(true);
+    expect(syncLatch(p, a, 0, 'gamepad', FABRICA), 'ligou ao pegar no controle').toBe(true);
     expect(p.toggleMove, 'o valor do GAMEPAD não chegou').toBe(true);
 
-    expect(syncLatch(p, a, 0, 'teclado', false), 'a troca tinha de mudar a resposta').toBe(true);
+    expect(syncLatch(p, a, 0, 'teclado', FABRICA), 'a troca tinha de mudar a resposta').toBe(true);
     expect(p.toggleMove, 'o teclado herdou o estado do gamepad').toBe(false);
 
     expect(a.escritas, 'trocar de aparelho GRAVOU — a escolha do outro controle seria apagada').toEqual([]);
@@ -55,31 +57,39 @@ describe('a alternância resolvida para o transporte em uso', () => {
   it('⚠️ [Boundary] o `false` guardado é um VALOR: não deixa o legado ligado passar por cima', () => {
     const a = armazemFalso({ [chave(0, 'teclado')]: '0', [legada(0)]: '1' });
     const p = jogador();
-    syncLatch(p, a, 0, 'teclado', false);
+    syncLatch(p, a, 0, 'teclado', FABRICA);
     expect(p.toggleMove, 'o legado atropelou uma escolha explícita deste aparelho').toBe(false);
   });
 
   it('📌 a criança que já jogava não perde o ajuste: só o legado, e ele vale para o aparelho novo', () => {
     const a = armazemFalso({ [legada(0)]: '1' });
     const p = jogador();
-    syncLatch(p, a, 0, 'gamepad', false);
+    syncLatch(p, a, 0, 'gamepad', FABRICA);
     expect(p.toggleMove, 'o ajuste guardado antes da divisão desapareceu').toBe(true);
   });
 
-  it('🔴 nos quatro assistidos responde LIGADA mesmo com um `false` guardado — ADR-0113 cláusula 3', () => {
+  it('🔴 nos quatro de um comando, o jogo dá o padrão e o `false` guardado dela vence — ADR-0249', () => {
     for (const transporte of ['olhos', 'rosto', 'gestos', 'fala']) {
-      const a = armazemFalso({ [chave(0, transporte)]: '0', [legada(0)]: '0' });
+      const semNada = armazemFalso();
       const p = jogador();
-      syncLatch(p, a, 0, transporte, false);
-      expect(p.toggleMove, `${transporte} ficou sem a alternância de que depende`).toBe(true);
+      syncLatch(p, semNada, 0, transporte, { ...FABRICA, gameHoldsKeys: true });
+      expect(p.toggleMove, `${transporte} não aderiu num jogo que segura`).toBe(true);
+      syncLatch(p, semNada, 0, transporte, { ...FABRICA, gameHoldsKeys: false });
+      expect(p.toggleMove, `${transporte} continuou a aderir quando o jogo deixou de segurar`).toBe(false);
+
+      const desligou = armazemFalso({ [chave(0, transporte)]: '0', [legada(0)]: '1' });
+      const q = jogador();
+      syncLatch(q, desligou, 0, transporte, { ...FABRICA, gameHoldsKeys: true });
+      expect(q.toggleMove, `${transporte}: o jogo passou por cima do «desligado» que ela guardou`).toBe(false);
+      expect(desligou.escritas, 'resolver gravou').toEqual([]);
     }
   });
 
   it('[Muitos] jogadores diferentes não partilham a chave', () => {
     const a = armazemFalso({ [chave(0, 'teclado')]: '1', [chave(1, 'teclado')]: '0' });
     const p0 = jogador(); const p1 = jogador();
-    syncLatch(p0, a, 0, 'teclado', false);
-    syncLatch(p1, a, 1, 'teclado', false);
+    syncLatch(p0, a, 0, 'teclado', FABRICA);
+    syncLatch(p1, a, 1, 'teclado', FABRICA);
     expect([p0.toggleMove, p1.toggleMove]).toEqual([true, false]);
   });
 });
@@ -160,6 +170,7 @@ describe('quem escreve a alternância no jogador', () => {
 });
 
 // ================================ MUTATIONS CHECKED ================================
+// (2026-09-27, ADR-0249) the rule answering `true` on the four again → 🔴 «nos quatro de um comando…», on the quiz half.
 // 1. `syncLatch` writing the resolved value (`armazem.set(...)`) → 🎯 the [Sequência] fails on the write count, and ONLY
 //    on it: every value case would stay green. It is the mutation that separates «a alternância segue o controle» from
 //    «a alternância segue o último controle e apaga os outros».

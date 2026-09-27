@@ -497,10 +497,10 @@
     "createLatchedEdge"
   ],
   "input/latch-scope.ts": [
+    "LatchDefaults",
     "LatchReading",
     "ONE_COMMAND_AT_A_TIME",
-    "latchAlwaysOn",
-    "latchIsOptional",
+    "latchDefaultFromGame",
     "latchKey",
     "latchOf",
     "legacyLatchKey"
@@ -1366,13 +1366,6 @@
   "ui/item-announcement.ts": [
     "ItemDeMenu",
     "announceItem"
-  ],
-  "ui/latch-refusal.ts": [
-    "LatchRefusal",
-    "NEED_LATCH",
-    "REFUSAL_KEY",
-    "latchRefusal",
-    "showsEvenWhenRequired"
   ],
   "ui/layout.ts": [
     "Box",

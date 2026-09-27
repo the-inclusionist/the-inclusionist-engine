@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/latch-store — the latch read from and written to storage (ADR-0113).
+// input/latch-store — the latch read from and written to storage (ADR-0113, ADR-0249).
 //
 // 🎯 THIS FILE ASSERTS CLAUSE 1 OF ADR-0113 IN CODE: «trocar de transporte troca o valor como troca o mapa de
 // teclas». The gate the record asks for is literally that — *the same player, with two transports, gives two answers,
@@ -34,6 +34,9 @@ function armazem(inicial = {}) {
 }
 
 const BASE = 'togglemove';
+const QUATRO = ['olhos', 'rosto', 'gestos', 'fala'];
+/** The two defaults storage does not know: the factory's, and the game's `holdsKeys()` now (ADR-0249). */
+const FABRICA = { byDefault: false, gameHoldsKeys: false };
 
 describe('latch-store · três estados, e não dois', () => {
   it('[Right] `1` é ligado, `0` é desligado, ausente é NULO', () => {
@@ -47,10 +50,10 @@ describe('latch-store · três estados, e não dois', () => {
   // first line and NEVER consult the legacy key — and the child would lose the setting they already had.
   it('🔴 [Zero] nunca escrito NÃO é `false`: o legado ainda é consultado, e é o ajuste da criança', () => {
     const a = armazem({ [legacyLatchKey(BASE, 0)]: '1' });
-    const l = readLatch(a, BASE, 0, 'teclado', false);
+    const l = readLatch(a, BASE, 0, 'teclado', FABRICA);
     expect(l.fromTransport, 'nunca escrito virou um valor').toBe(null);
     expect(l.fromLegacy).toBe(true);
-    expect(storedLatch(a, BASE, 0, 'teclado', false), 'a criança perdeu o ajuste que já tinha').toBe(true);
+    expect(storedLatch(a, BASE, 0, 'teclado', FABRICA), 'a criança perdeu o ajuste que já tinha').toBe(true);
   });
 
   it('⚠️ [Boundary] `0` guardado NESTE transporte é um VALOR e vence o legado ligado', () => {
@@ -58,7 +61,14 @@ describe('latch-store · três estados, e não dois', () => {
       [latchKey(BASE, 0, 'teclado')]: '0',
       [legacyLatchKey(BASE, 0)]: '1',
     });
-    expect(storedLatch(a, BASE, 0, 'teclado', false)).toBe(false);
+    expect(storedLatch(a, BASE, 0, 'teclado', FABRICA)).toBe(false);
+  });
+
+  it('[Interface] a leitura leva os DOIS padrões a regra — o de fábrica e o do jogo', () => {
+    const segura = readLatch(armazem(), BASE, 0, 'fala', { byDefault: false, gameHoldsKeys: true });
+    expect(segura.gameHoldsKeys, 'a resposta do jogo não chegou à regra').toBe(true);
+    const fabrica = readLatch(armazem(), BASE, 0, 'fala', { byDefault: true, gameHoldsKeys: false });
+    expect([fabrica.byDefault, fabrica.gameHoldsKeys], 'os dois padrões trocaram de lugar').toEqual([true, false]);
   });
 });
 
@@ -70,72 +80,80 @@ describe('latch-store · a cláusula 1 do ADR-0113: trocar de controle troca o v
       [latchKey(BASE, 0, 'teclado')]: '1',
       [latchKey(BASE, 0, 'gamepad')]: '0',
     });
-    expect(storedLatch(a, BASE, 0, 'teclado', false)).toBe(true);
-    expect(storedLatch(a, BASE, 0, 'gamepad', false)).toBe(false);
-    expect(storedLatch(a, BASE, 0, 'teclado', false), 'voltar ao primeiro deu outra resposta').toBe(true);
+    expect(storedLatch(a, BASE, 0, 'teclado', FABRICA)).toBe(true);
+    expect(storedLatch(a, BASE, 0, 'gamepad', FABRICA)).toBe(false);
+    expect(storedLatch(a, BASE, 0, 'teclado', FABRICA), 'voltar ao primeiro deu outra resposta').toBe(true);
     expect(a._escritas, 'ler trocou de transporte E GRAVOU — o valor deixou de ser do mapeamento').toEqual([]);
   });
 
   it('[Right] jogadores diferentes não partilham chave no mesmo transporte', () => {
     const a = armazem({ [latchKey(BASE, 0, 'teclado')]: '1' });
-    expect(storedLatch(a, BASE, 0, 'teclado', false)).toBe(true);
-    expect(storedLatch(a, BASE, 1, 'teclado', false), 'o jogador 1 leu a chave do jogador 0').toBe(false);
+    expect(storedLatch(a, BASE, 0, 'teclado', FABRICA)).toBe(true);
+    expect(storedLatch(a, BASE, 1, 'teclado', FABRICA), 'o jogador 1 leu a chave do jogador 0').toBe(false);
   });
 
   it('[Zero] sem nada guardado, responde o padrão de fábrica', () => {
     const a = armazem();
-    expect(storedLatch(a, BASE, 0, 'teclado', false)).toBe(false);
-    expect(storedLatch(a, BASE, 0, 'teclado', true), 'o padrão de fábrica foi ignorado').toBe(true);
+    expect(storedLatch(a, BASE, 0, 'teclado', FABRICA)).toBe(false);
+    expect(storedLatch(a, BASE, 0, 'teclado', { ...FABRICA, byDefault: true }), 'o padrão de fábrica foi ignorado').toBe(true);
   });
 });
 
-describe('latch-store · a escrita, e onde ela se recusa', () => {
+describe('latch-store · a escrita, em todos os transportes (ADR-0249)', () => {
   it('[Right] gravar escreve na chave DESTE transporte, e só nela', () => {
     const a = armazem();
-    expect(writeLatch(a._escrever, BASE, 0, 'gamepad', true)).toBe(true);
+    writeLatch(a._escrever, BASE, 0, 'gamepad', true);
     expect(a._escritas).toEqual([[latchKey(BASE, 0, 'gamepad'), '1']]);
     expect(a._dados[legacyLatchKey(BASE, 0)], 'a escrita tocou na chave legada').toBeUndefined();
   });
 
-  // ⚠️ CLAUSE 3 OF ADR-0113: on the four assisted transports there is no choice to store, because the latch is what makes
-  // the input work. And the refusal is a RETURNED `false` — the caller uses it to disable the control with the reason
-  // stated, which is the half that lives in the interface.
-  it('⚠️ [Zero] nos quatro assistidos a escrita RECUSA-SE, e não grava nada', () => {
-    for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
+  // 🔴 THE OPTION IS OFFERED ON THE FOUR (ADR-0249): the choice is written under THAT transport's key, and it is what the read
+  // answers afterwards — over the game's default, in both directions.
+  it('🔴 [Right] nos quatro a escolha é GRAVADA, e vence o padrão do jogo na leitura seguinte', () => {
+    for (const t of QUATRO) {
       const a = armazem();
-      expect(writeLatch(a._escrever, BASE, 0, t, false), `${t} aceitou uma escolha que não existe`).toBe(false);
-      expect(a._escritas, `${t} gravou um valor que o jogo vai ignorar`).toEqual([]);
+      writeLatch(a._escrever, BASE, 0, t, false);
+      expect(a._escritas, `${t} recusou a escolha da criança`).toEqual([[latchKey(BASE, 0, t), '0']]);
+      expect(storedLatch(a, BASE, 0, t, { ...FABRICA, gameHoldsKeys: true }), `${t}: o jogo venceu o «desligado» dela`)
+        .toBe(false);
+      writeLatch(a._escrever, BASE, 0, t, true);
+      expect(storedLatch(a, BASE, 0, t, { ...FABRICA, gameHoldsKeys: false }), `${t}: o jogo venceu o «ligado» dela`)
+        .toBe(true);
     }
   });
 
-  // 📌 THE PAIR: on those four the READ keeps answering on, whatever is on disk. Without this case, «recusar a escrita»
-  // could mean «deixar a criança sem alternância», which is the opposite.
-  it('📌 [Boundary] e a leitura deles responde LIGADA mesmo com `0` no disco', () => {
-    for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
-      const a = armazem({
-        [latchKey(BASE, 0, t)]: '0',
-        [legacyLatchKey(BASE, 0)]: '0',
-      });
-      expect(storedLatch(a, BASE, 0, t, false), `${t} pôde ficar sem alternância`).toBe(true);
+  // 📌 THE PAIR: with nothing on disk, the four answer the GAME — both ways. Without it, «gravar nos quatro» could hide a read
+  // that always answers the same thing.
+  it('📌 [Zero] sem escolha guardada, os quatro respondem o que o jogo diz — e o legado do teclado não chega lá', () => {
+    for (const t of QUATRO) {
+      const a = armazem({ [legacyLatchKey(BASE, 0)]: '1' });
+      expect(storedLatch(a, BASE, 0, t, { ...FABRICA, gameHoldsKeys: false }), `${t} aderiu num jogo que não segura`)
+        .toBe(false);
+      expect(storedLatch(a, BASE, 0, t, { ...FABRICA, gameHoldsKeys: true }), `${t} não aderiu num jogo que segura`)
+        .toBe(true);
     }
   });
 
   it('[Right] os três de hoje aceitam a escolha', () => {
     for (const t of ['teclado', 'gamepad', 'toque']) {
       const a = armazem();
-      expect(writeLatch(a._escrever, BASE, 0, t, true), `${t} recusou uma escolha legítima`).toBe(true);
-      expect(storedLatch(a, BASE, 0, t, false)).toBe(true);
+      writeLatch(a._escrever, BASE, 0, t, true);
+      expect(storedLatch(a, BASE, 0, t, FABRICA), `${t} perdeu uma escolha legítima`).toBe(true);
     }
   });
 });
 
-// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// ===== MUTATIONS CHECKED =====
+// (2026-09-27, ADR-0249, by script with occurrence counts, restored from a copy):
+//   · `writeLatch` refusing the four again (the superseded clause 3 of ADR-0113) 🔴 «nos quatro a escolha é GRAVADA»
+//   · `readLatch` passing `gameHoldsKeys: false` whatever the game said          🔴 «sem escolha guardada, os quatro respondem
+//     o que o jogo diz» and «a leitura leva os DOIS padrões» (and the eyes and stage cases of `latch-edge`, the four of
+//     `latch-sync`). ⚠️ The second SURVIVED in its first form, which passed `false` and could not see it; rewritten, re-run red.
+//   · `latchOf` answering `true` on the four again                              🔴 «GRAVADA…» and «sem escolha guardada…»
+// Kept from 2026-09-08:
 // 1. `readTriState` returning `v === '1'` without the null branch (= the `getBool` this module exists to avoid)
 //                                                      → 🔴 the LEGACY case fails: the child loses the setting
 // 2. `readLatch` ignoring the legacy key        → the same case fails, by another path
 // 3. `latchKey` without the transport in the name → the TWO TRANSPORTS case fails
-// 4. `writeLatch` without the `latchIsOptional` guard → the REFUSAL case fails on all four
-// 5. `writeLatch` always returning `false`      → the case of today's three fails
-//    📌 it is the pair of 4: without it, «recusar sempre» would pass the refusal case and kill everyone's choice
-// 6. `storedLatch` writing the value it read (a «cache») → 🎯 the clause-1 case fails on the WRITES assertion, not on
+// 4. `storedLatch` writing the value it read (a «cache») → 🎯 the clause-1 case fails on the WRITES assertion, not on
 //    the value — which is why that assertion exists

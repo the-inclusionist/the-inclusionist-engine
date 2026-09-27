@@ -1145,6 +1145,7 @@
     "interface LatchedEdgeOptions": {
       "members": {
         "byDefault?": "readonly byDefault: boolean",
+        "holdsKeys": "readonly holdsKeys: () => boolean",
         "input": "readonly input: Pick<LiveInput, 'playerEdge' | 'inputOf'>",
         "store": "readonly store: LatchStore"
       }
@@ -1155,9 +1156,11 @@
       "members": {
         "byDefault": "readonly byDefault: boolean",
         "fromLegacy": "readonly fromLegacy: boolean | null",
-        "fromTransport": "readonly fromTransport: boolean | null"
+        "fromTransport": "readonly fromTransport: boolean | null",
+        "gameHoldsKeys": "readonly gameHoldsKeys: boolean"
       }
-    }
+    },
+    "type LatchDefaults": "Pick<LatchReading, 'byDefault' | 'gameHoldsKeys'>"
   },
   "input/latch-store.ts": {
     "interface LatchStore": {
@@ -1595,6 +1598,7 @@
         "menuAnswers?": "readonly menuAnswers: (action: Action, player: number) => boolean",
         "menuKey": "readonly menuKey: (code: string, source: TransportName | undefined) => void",
         "menuOpen": "readonly menuOpen: () => boolean",
+        "pressedBy?": "readonly pressedBy: (source: TransportName, player: number) => void",
         "releaseKey": "readonly releaseKey: (code: string) => void",
         "scheme": "readonly scheme: (player: number) => KeyScheme",
         "systemPress?": "readonly systemPress: (action: Action, player: number) => void",
@@ -3270,14 +3274,6 @@
       }
     }
   },
-  "ui/latch-refusal.ts": {
-    "interface LatchRefusal": {
-      "members": {
-        "key": "readonly key: string",
-        "transport": "readonly transport: string"
-      }
-    }
-  },
   "ui/layout.ts": {
     "interface NodeMeasure": {
       "members": {
@@ -3675,7 +3671,6 @@
         "blindMode": "blindMode: boolean",
         "calmMode": "calmMode: number",
         "camera?": "camera: CameraControl",
-        "latchRequired?": "latchRequired: boolean",
         "librasOn": "librasOn: boolean",
         "locale?": "locale: string",
         "noVoice?": "noVoice: boolean",

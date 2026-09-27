@@ -28,10 +28,10 @@
   "stateful": [],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2352,
-      "decisionNodes": 305,
+      "codeLines": 2359,
+      "decisionNodes": 306,
       "maxDepth": 4,
-      "fanOut": 98,
+      "fanOut": 100,
       "globalReach": 0,
       "worstFunction": 76,
       "statefulEdges": 0,
@@ -428,7 +428,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 643,
+      "codeLines": 639,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -438,7 +438,7 @@
       "fanIn": 1
     },
     "i18n/es.ts": {
-      "codeLines": 643,
+      "codeLines": 639,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -448,7 +448,7 @@
       "fanIn": 1
     },
     "i18n/pt.ts": {
-      "codeLines": 643,
+      "codeLines": 639,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -608,17 +608,17 @@
       "fanIn": 0
     },
     "input/latch-edge.ts": {
-      "codeLines": 23,
+      "codeLines": 24,
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 2,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 1
     },
     "input/latch-scope.ts": {
-      "codeLines": 24,
+      "codeLines": 23,
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 0,
@@ -628,8 +628,8 @@
       "fanIn": 2
     },
     "input/latch-store.ts": {
-      "codeLines": 45,
-      "decisionNodes": 2,
+      "codeLines": 44,
+      "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
@@ -638,7 +638,7 @@
       "fanIn": 2
     },
     "input/latch-sync.ts": {
-      "codeLines": 19,
+      "codeLines": 20,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
@@ -778,12 +778,12 @@
       "fanIn": 1
     },
     "input/virtual-controller.ts": {
-      "codeLines": 53,
-      "decisionNodes": 9,
+      "codeLines": 55,
+      "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 11,
+      "worstFunction": 12,
       "statefulEdges": 0,
       "fanIn": 1
     },
@@ -1557,16 +1557,6 @@
       "statefulEdges": 0,
       "fanIn": 4
     },
-    "ui/latch-refusal.ts": {
-      "codeLines": 20,
-      "decisionNodes": 2,
-      "maxDepth": 1,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 3,
-      "statefulEdges": 0,
-      "fanIn": 2
-    },
     "ui/layout.ts": {
       "codeLines": 80,
       "decisionNodes": 10,
@@ -1758,10 +1748,10 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 640,
-      "decisionNodes": 88,
+      "codeLines": 633,
+      "decisionNodes": 85,
       "maxDepth": 3,
-      "fanOut": 19,
+      "fanOut": 18,
       "globalReach": 0,
       "worstFunction": 9,
       "statefulEdges": 0,
@@ -1858,12 +1848,12 @@
       "fanIn": 1
     },
     "ui/settings-mobility.ts": {
-      "codeLines": 235,
-      "decisionNodes": 29,
+      "codeLines": 223,
+      "decisionNodes": 24,
       "maxDepth": 3,
-      "fanOut": 8,
+      "fanOut": 7,
       "globalReach": 0,
-      "worstFunction": 9,
+      "worstFunction": 7,
       "statefulEdges": 0,
       "fanIn": 1
     },

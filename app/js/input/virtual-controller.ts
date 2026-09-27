@@ -75,6 +75,13 @@ export interface VirtualControllerDeps {
    * that lands on the scan's «cancel» is taken too, and means nothing. Absent: every press is itself.
    */
   readonly takeShown?: (source: TransportName | undefined) => boolean;
+  /**
+   * A PRESS FROM A NAMED TRANSPORT, told FIRST — before one button only, a menu or play decides where it goes. This is the one
+   * place every position-pressing transport shares, so it is where «the child is using this device» can be heard for all of
+   * them (ADR-0109), and where the root resolves the latch of the one-command transports before their press reaches the game
+   * (ADR-0249). Not told for a press with no source: a real key is nobody's edge here. Absent: nothing is told.
+   */
+  readonly pressedBy?: (source: TransportName, player: number) => void;
 }
 
 export interface VirtualController {
@@ -106,6 +113,7 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
   const held = new Map<string, string | null>();
   return {
     press(action, source, player = 0, toPlay = true) {
+      if (source) d.pressedBy?.(source, player);
       if (d.takeShown?.(source)) return false; // one button only: whatever was pressed, it was the switch (ADR-0218 §4)
       const menu = d.menuOpen();
       // the POSITION, not its first key: a key means what the child bound to it, and `Enter` on a menu is «confirm»

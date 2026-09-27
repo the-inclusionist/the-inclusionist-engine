@@ -67,9 +67,8 @@ describe('ui/settings-mobility', () => {
    * 🔴 The latch exists for whoever cannot HOLD a key down. In a quiz there is nothing to latch, and the row offered
    * anyway is an option that does nothing: the child turns on the setting she depends on and nothing happens.
    *
-   * ⚠️ AND IT IS THE OPPOSITE OF THE BLOCK JUST BELOW, on purpose. There the device REQUIRES the latch and the control
-   * is `aria-disabled` WITH the reason, reachable so she can read it. Here no reason helps, because there is nothing the
-   * control could do — and one more stop in keyboard navigation, between two that work, is a cost with no return. */
+   * ⚠️ AND IT IS HIDDEN, NOT DISABLED: no reason helps, because there is nothing the control could do — and one more stop
+   * in keyboard navigation, between two that work, is a cost with no return. */
   describe('a linha da alternância num jogo que não segura teclas', () => {
     it('🎯 [Zero] com `seguraTeclas: false`, a linha fica AUSENTE — não desabilitada', () => {
       const ctx = fullCtx();
@@ -79,10 +78,10 @@ describe('ui/settings-mobility', () => {
       const linha = document.querySelector('#opt-altmove')?.closest('.ctrl-row');
       expect(linha, 'a linha do `#opt-altmove` desapareceu do fixture').not.toBeNull();
       expect(linha.hidden, 'a linha ficou visível num jogo que não segura nada').toBe(true);
-      // ⚠️ AND NOT `aria-disabled`: that is the answer of clause 3 of ADR-0113, and using it here would leave on screen
-      // a control that explains why it does nothing — which is still a control that does nothing.
+      // ⚠️ AND NOT `aria-disabled`: that would leave on screen a control that explains why it does nothing — which is still
+      // a control that does nothing.
       expect(document.querySelector('#opt-altmove').getAttribute('aria-disabled'),
-        'a ausência do ADR-0115 foi confundida com a recusa do ADR-0113').toBeNull();
+        'a ausência do ADR-0115 virou um controle desabilitado').toBeNull();
     });
 
     it('⚠️ [Right] e o PAR: com `seguraTeclas: true` a linha FICA — senão «ausente» passaria por esconder tudo', () => {
@@ -92,9 +91,8 @@ describe('ui/settings-mobility', () => {
       expect(linha.hidden, 'a linha sumiu num jogo que segura teclas').toBe(false);
     });
 
-    it('📌 [Boundary] a ausência é do JOGO e não do aparelho — as duas regras não se confundem', () => {
-      // With gaze in use (which REQUIRES the latch) but in a game that holds nothing, the absence wins: there is
-      // nothing to require. An implementation reading only the transport would leave the row disabled and visible.
+    it('📌 [Boundary] a ausência é do JOGO e não do aparelho — com o olhar em uso também', () => {
+      // With gaze in use, in a game that holds nothing, the row is absent all the same: there is nothing to latch.
       const ctx = fullCtx();
       ctx.holdsKeys = false;
       ctx.transportInUse = () => 'olhos';
@@ -104,56 +102,40 @@ describe('ui/settings-mobility', () => {
     });
   });
 
-  // ========================= CLAUSE 3 OF ADR-0113, ON SCREEN =========================
-  // «É impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)» — the Dev's sentence.
-  // The pure model lives in `ui/latch-refusal`; here what the child finds is asserted.
-  describe('a alternância exigida pelo aparelho', () => {
-    it('🔴 [Right] com o olhar em uso, o controle fica `aria-disabled` e a dica diz POR QUÊ', () => {
-      const ctx = fullCtx();
-      ctx.transportInUse = () => 'olhos';
-      initSettingsMobility(ctx);
+  // ========================= ADR-0249: THE OPTION IS OFFERED ON THE FOUR ONE-COMMAND TRANSPORTS =========================
+  // On eyes, face, gestures and speech the latch starts as the game's `holdsKeys()`, and this row is how the child changes
+  // it. The row a child finds with her eyes in use is the same row she finds on the keyboard: actionable, and saying what
+  // it does — no refusal, no reason appended.
+  // MUTATIONS CHECKED (2026-09-27, `scratchpad/latch-by-game/mutate.mjs`): the row `aria-disabled` on the four → 🔴 «ACCIONÁVEL»;
+  // the click refused on the four → 🔴 «clicar LIGA — e desliga».
+  describe('a alternância oferecida em todos os aparelhos', () => {
+    it('🔴 [Right] com o olhar, o rosto, os gestos ou a fala em uso, o controle é ACCIONÁVEL e a dica é a de sempre', () => {
+      for (const aparelho of ['olhos', 'rosto', 'gestos', 'fala']) {
+        mountDom();
+        const ctx = fullCtx();
+        ctx.transportInUse = () => aparelho;
+        initSettingsMobility(ctx);
 
-      expect($('#opt-altmove').getAttribute('aria-disabled'), 'o controle continua a parecer accionável').toBe('true');
-      const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
-      expect(dica.textContent, 'a dica não diz por que o botão não responde')
-        .toContain('precisa das teclas de alternância');
-      // 📌 And the ORIGINAL hint is not lost: the row's explanation is still there, with the reason after it.
-      expect(dica.textContent).toContain('Anda sem segurar.');
+        expect($('#opt-altmove').getAttribute('aria-disabled'), `${aparelho}: o controle voltou a ser recusado`).toBe(null);
+        const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
+        expect(dica.textContent, `${aparelho}: a dica ganhou um motivo de recusa`).toBe('Anda sem segurar.');
+        expect(document.querySelector('#opt-altmove').closest('.ctrl-row').hidden, `${aparelho}: a linha sumiu`).toBe(false);
+      }
     });
 
-    // ⚠️ «Aceitar o clique e ignorá-lo» is the other half of what ADR-0076 forbids. Here the listener is wired once and
-    // cannot be omitted as in `render/viz-setters`, so the refusal SPEAKS.
-    it('🔴 [Zero] clicar não liga nada, e a recusa é DITA em vez de silenciosa', () => {
+    it('🔴 [Right] e clicar LIGA — e desliga — sem dizer recusa nenhuma', () => {
       const ctx = fullCtx();
-      ctx.transportInUse = () => 'olhos';
+      ctx.transportInUse = () => 'fala';
       initSettingsMobility(ctx);
       $('#opt-altmove').click();
-
-      expect(ctx.players[0].toggleMove, 'o clique mexeu num ajuste que este aparelho exige').toBe(false);
-      expect(ctx.said.join(' '), 'o botão não respondeu e não disse nada — a criança fica sem saber')
-        .toContain('precisa das teclas de alternância');
+      expect(ctx.players[0].toggleMove, 'o clique não ligou a aderência da fala').toBe(true);
+      $('#opt-altmove').click();
+      expect(ctx.players[0].toggleMove, 'o clique não desligou a aderência da fala').toBe(false);
+      expect(ctx.toggleMoveCalls).toEqual([[0, true], [0, false]]);
+      expect(ctx.said, 'o painel disse uma recusa').toEqual([]);
     });
 
-    // 🎯 THE CASE THE PRECEDENT DID NOT NEED, and it is the difference in shape between the two: `render/viz-setters`
-    // rebuilds the list on every render, so appending the reason to the hint is enough. This button persists and the
-    // child puts the webcam down and goes back to the keyboard — without restoring, the reason would pile up on the row
-    // at every device switch.
-    it('🎯 [Boundary] ao voltar para o teclado, a recusa sai e a dica volta ao que era', () => {
-      const ctx = fullCtx();
-      let aparelho = 'olhos';
-      ctx.transportInUse = () => aparelho;
-      const api = initSettingsMobility(ctx);
-
-      aparelho = 'teclado';
-      api.reflectAltMove();
-
-      expect($('#opt-altmove').getAttribute('aria-disabled'), 'ficou desabilitado depois de o aparelho mudar')
-        .toBe(null);
-      const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
-      expect(dica.textContent, 'o motivo ficou colado na dica').toBe('Anda sem segurar.');
-    });
-
-    // 📌 WITHOUT THE ROOT ANSWERING, none of this happens — the field is optional and the panel behaves as with no device.
+    // 📌 WITHOUT THE ROOT ANSWERING, the panel behaves as with no device — the field is optional.
     it('📌 [Zero] sem `transporteEmUso`, o controle continua accionável', () => {
       const ctx = fullCtx();
       initSettingsMobility(ctx);

@@ -3,8 +3,8 @@
 //
 // ========================= WHAT THIS MODULE IS, AND WHY IT IS APART =========================
 // `input/latch-scope` is the RULE and touches nothing: it takes a finished `LatchReading` and answers. This module is the
-// one thing that was missing between it and the world — whoever goes to storage for the three values the rule asks for,
-// and whoever writes what the child chooses.
+// one thing that was missing between it and the world — whoever goes to storage for the two stored values the rule asks
+// for, and whoever writes what the child chooses. The two defaults (the factory's and the game's) arrive as an argument.
 //
 // 📌 APART ON PURPOSE, not for tidiness: the rule is pure and has its own gate; mixing storage into it would make every
 // case of the rule build a fake `localStorage` to assert something that does not depend on it. The same split
@@ -14,8 +14,8 @@
 // arrives here as an argument. A storage module that guessed the transport would write one child's choice under another
 // device's key — in silence, the defect ADR-0113 exists to prevent.
 import {
-  latchKey, legacyLatchKey, latchOf, latchIsOptional,
-  type LatchReading,
+  latchKey, legacyLatchKey, latchOf,
+  type LatchReading, type LatchDefaults,
 } from './latch-scope.js';
 
 /** The minimum of `platform/storage` this needs. Injected, so the gate needs no browser. */
@@ -44,19 +44,21 @@ export function readTriState(store: LatchStore, key: string): boolean | null {
 /**
  * THE WHOLE READING the rule asks for, built from storage.
  *
- * `base` is `togglemove` or `togglerun` — the two names that already exist in the child's storage.
+ * `base` is `togglemove` or `togglerun` — the two names that already exist in the child's storage. `defaults` carries what
+ * storage does not know: the factory default and the game's `holdsKeys()` answer now (ADR-0249).
  */
 export function readLatch(
   store: LatchStore,
   base: string,
   player: number,
   transport: string,
-  fallback: boolean,
+  defaults: LatchDefaults,
 ): LatchReading {
   return {
     fromTransport: readTriState(store, latchKey(base, player, transport)),
     fromLegacy: readTriState(store, legacyLatchKey(base, player)),
-    byDefault: fallback,
+    byDefault: defaults.byDefault,
+    gameHoldsKeys: defaults.gameHoldsKeys,
   };
 }
 
@@ -71,20 +73,16 @@ export function storedLatch(
   base: string,
   player: number,
   transport: string,
-  fallback: boolean,
+  defaults: LatchDefaults,
 ): boolean {
-  return latchOf(transport, readLatch(store, base, player, transport, fallback));
+  return latchOf(transport, readLatch(store, base, player, transport, defaults));
 }
 
 /**
- * WRITES THE CHILD'S CHOICE for the transport in use. Returns whether it wrote.
+ * WRITES THE CHILD'S CHOICE for the transport in use — on EVERY transport (ADR-0249).
  *
- * ⚠️ IT REFUSES ON ONE-COMMAND TRANSPORTS, and the refusal is a returned `false`, not a throw: on eyes, face, gestures and
- * speech the toggle is what makes the input work (ADR-0113 clause 3), so there is no choice to write. The caller uses the
- * answer to DISABLE the control WITH A REASON — the other half, which lives in the interface, not here.
- *
- * 📌 Writing anyway would be worse than useless: the child would touch the icon, the value would go to disk, and the game
- * would keep ignoring it — a control that lies about having worked.
+ * 📌 Eyes, face, gestures and speech included: their latch starts as the game answers `holdsKeys()`, and what is written
+ * here is the child changing that default for that device. The stored value is what `latchOf` reads first.
  */
 // ⚠️ IT TAKES THE WRITER AND NOT A STORE: the mobility panel already has a `store: { setBool }` injected, and demanding an
 // object with raw `get`/`set` would force an adapter at the call site — where a second way of writing the same key is
@@ -95,8 +93,6 @@ export function writeLatch(
   player: number,
   transport: string,
   isOn: boolean,
-): boolean {
-  if (!latchIsOptional(transport)) return false;
+): void {
   write(latchKey(base, player, transport), isOn);
-  return true;
 }

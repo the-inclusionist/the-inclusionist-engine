@@ -19,9 +19,10 @@
 // ⚠️ EXCEPT WITH ONE BUTTON ONLY ON (ADR-0218 §4): then every word heard, a name included, is the child's switch and nothing more
 // — one press, which the controller takes as «take the one shown», and no cursor put anywhere first.
 //
-// ⚠️ A SPOKEN COMMAND IS A TAP, NOT A HOLD. The word arrives, the position is pressed and let go — and the latch (ADR-0211,
-// always on for speech) is what keeps a direction held afterwards. That division is the whole reason the latch is forced there:
-// a child who says «acima» cannot also say «and keep holding it».
+// ⚠️ A SPOKEN COMMAND IS A TAP, NOT A HOLD. The word arrives, the position is pressed and let go — one press, one release.
+// Whether that tap keeps a direction going is the latch's, and on speech the latch starts as the GAME answers `holdsKeys()`
+// (ADR-0249, resolved by the root when the press arrives): a platform game keeps walking on «direita», a quiz moves once on
+// «abaixo», and the child may change either for her voice.
 
 import type { Translate } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';

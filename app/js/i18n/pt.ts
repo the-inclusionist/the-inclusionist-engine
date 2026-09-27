@@ -708,13 +708,6 @@ const pt: Record<string, string> = {
   'sr.motor.easyOff': 'Modo Fácil desligado.',
   'sr.motor.toggleMoveOn': 'Não precisa segurar, ligado: um toque liga e outro desliga.',
   'sr.motor.toggleMoveOff': 'Não precisa segurar, desligado.',
-  // ⚠️ O MOTIVO É UM FACTO SOBRE O APARELHO, NUNCA UMA REPREENSÃO (ADR-0113 cláusula 3). Estas frases
-  // dizem por que o botão não responde; «não desligue isto» repreenderia uma criança por mexer num ajuste
-  // de que ela depende. QUATRO chaves e não uma com `{aparelho}`: «os gestos» é plural e «o olhar» não.
-  'alt.exigida.olhos': 'O controle por olhar precisa das teclas de alternância para funcionar.',
-  'alt.exigida.rosto': 'O controle por rosto precisa das teclas de alternância para funcionar.',
-  'alt.exigida.gestos': 'Os gestos precisam das teclas de alternância para funcionar.',
-  'alt.exigida.fala': 'O comando de voz precisa das teclas de alternância para funcionar.',
   'sr.motor.toggleRunOn': 'Alternância do correr ligada.',
   'sr.motor.toggleRunOff': 'Alternância do correr desligada.',
   // ===================== AJUDA (menu de pausa) + rótulo de nível =====================

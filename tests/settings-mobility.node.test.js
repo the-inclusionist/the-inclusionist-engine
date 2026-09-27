@@ -157,14 +157,19 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     expect(Object.keys(c.escrito)).toEqual([KEYS.toggleMoveP(0)]);
   });
 
-  // ⚠️ AND ON THE FOUR ASSISTED ONES THE NEW WRITE REFUSES (clause 3): there is no choice to store, because the latch is
-  // what makes that input work. The legacy one is still written — it is the setting the child takes with her to the
-  // devices where the choice exists.
-  it('⚠️ [Zero] em `olhos` a chave nova não é escrita, e a legada é', () => {
-    const c = cenario([{ toggleMove: false, walkDir: 0 }]);
-    c.ctx.transportInUse = () => 'olhos';
-    setMoveLatch(c.ctx, 0, true);
-    expect(Object.keys(c.escrito), 'gravou uma escolha que o jogo vai ignorar').toEqual([KEYS.toggleMoveP(0)]);
+  // 🔴 AND ON THE FOUR ONE-COMMAND TRANSPORTS THE NEW KEY IS WRITTEN TOO (ADR-0249): their latch starts as the game's
+  // `holdsKeys()`, and this is the child's choice over that default, for that device — in both directions.
+  // MUTATION CHECKED (2026-09-27): `writeLatch` refusing the four again → 🔴 this case.
+  it('🔴 [Right] em `olhos` e `fala` a chave DAQUELE aparelho é escrita, ligada e desligada', () => {
+    for (const aparelho of ['olhos', 'rosto', 'gestos', 'fala']) {
+      const c = cenario([{ toggleMove: true, walkDir: 0 }]);
+      c.ctx.transportInUse = () => aparelho;
+      setMoveLatch(c.ctx, 0, false);
+      expect(c.escrito[latchKey('togglemove', 0, aparelho)], `${aparelho}: o «desligado» dela não foi guardado`).toBe(false);
+      expect(c.ctx.players[0].toggleMove).toBe(false);
+      setMoveLatch(c.ctx, 0, true);
+      expect(c.escrito[latchKey('togglemove', 0, aparelho)], `${aparelho}: o «ligado» dela não foi guardado`).toBe(true);
+    }
   });
 
   it('[Right] ligar escreve o campo, persiste na chave da engine e anuncia', () => {

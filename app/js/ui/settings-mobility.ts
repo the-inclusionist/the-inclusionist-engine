@@ -22,7 +22,6 @@ import { writeLatch } from '../input/latch-store.js';
 import {
   applyLatch, BASE_DA_MARCHA, type LatchPlayer as JogadorDaAlternanciaDaAresta,
 } from '../input/latch-sync.js';
-import { latchRefusal } from './latch-refusal.js';
 import { clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnnouncement, playerPrefix } from './mobility-choices.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
@@ -58,8 +57,7 @@ export interface SettingsMobilityCtx {
    * panel.
    *
    * ⚠️ Not offering it means making the row absent for everyone, with `hidden`, which takes it off the screen AND out of
-   * the accessibility tree. An `aria-disabled` would be the wrong answer — that is clause 3 of ADR-0113, where the
-   * control EXISTS and is locked with a reason.
+   * the accessibility tree — not an `aria-disabled` row that stays in the tab order doing nothing.
    *
    * ⚠️ REQUIRED, for the same reason as in `PauseIconsCtx`: there is no safe default. `true` leaves the row in a game
    * where it does nothing; `false` hides it from a child who depends on it.
@@ -204,10 +202,8 @@ export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   // reason: a cartridge may still READ it through `KEYS.toggleMoveP(i)`. Stopping writing it now would make the child
   // lose the choice at the next boot — the cost ADR-0113 names.
   ctx.store.setBool(toggleMoveKey(i), on);
-  // 📌 And the NEW key, when the device is known. `writeLatch` refuses on the four assisted transports, where there is no
-  // choice to store (ADR-0113 clause 3) — and returns `false` so a caller can disable the control with the reason said.
-  // Here the refusal changes nothing else: the in-memory value is still what the rule resolves, and the rule answers
-  // `true` on those four.
+  // 📌 And the NEW key, when the device is known — on every device (ADR-0249): on eyes, face, gestures and speech this is the
+  // child's choice overriding the game's `holdsKeys()` default for that transport.
   const transport = ctx.transportInUse ? ctx.transportInUse(i) : null;
   if (transport) writeLatch((key, isOn) => ctx.store.setBool(key, isOn), BASE_DA_MARCHA, i, transport, on);
   // 📌 THE ANNOUNCEMENT IS UNCONDITIONAL, unlike `applyLatch`, which returns "changed". The child pressed the icon:
@@ -306,15 +302,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
 
   const easyModeButton = ctx.$<HTMLElement>('#opt-facil');
   const altMoveBtn = ctx.$<HTMLElement>('#opt-altmove');
-  /**
-   * THE ROW'S ORIGINAL HINT, kept once.
-   *
-   * ⚠️ HERE THE REFUSAL COMES AND GOES: this button is persistent, and the child may put the webcam down and go back to
-   * the keyboard — without keeping the original text, the reason would pile up on the row with every device change.
-   */
   const altMoveRow = altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null;
-  const altMoveHint = altMoveRow?.querySelector<HTMLElement>('.opt-hint') ?? null;
-  const originalHint = altMoveHint?.textContent ?? '';
 
   /*
    * ADR-0115 · THE ROW DISAPPEARS IN A GAME THAT HOLDS NOTHING — and disappears for EVERYONE.
@@ -322,17 +310,13 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
    * 🔴 `hidden` and not `aria-disabled`: the child who depends on the latch opens this panel to switch it on, and in a
    * quiz there is nothing to switch on. A control disabled with a reason is still a control that does nothing — and it
    * still takes a place in keyboard navigation, between two that work.
-   * 📌 Clause 3 of ADR-0113 is the opposite case and stays intact: there the device REQUIRES the latch, the control
-   * exists, and it is `aria-disabled` WITH the reason, reachable so it can be read.
+   * 📌 Where the game holds keys the row is offered on EVERY device, eyes and voice included (ADR-0249): there the latch
+   * starts as the game's answer, and this row is how the child changes it.
    * ⚠️ `hidden` and not removal: the row may be the page's own markup, and `hidden` is reversible and idempotent where
    * removing someone else's markup is neither.
    */
   if (!ctx.holdsKeys && altMoveRow) altMoveRow.hidden = true;
 
-  /** THIS player's refusal now, or `null`. Recomputed on every reflect: the device in use changes. */
-  function refusalFor(i: number) {
-    return ctx.transportInUse ? latchRefusal(ctx.transportInUse(i)) : null;
-  }
   const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
 
   // the bar lights up if ANY player uses Easy Mode or a latch
@@ -396,20 +380,6 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
       altMoveBtn.classList.toggle('is-on', on);
       altMoveBtn.setAttribute('aria-pressed', String(on));
       altMoveBtn.textContent = onOffLabel(t, on);
-      /*
-       * ⚠️ CLAUSE 3 OF ADR-0113 ON SCREEN: where the latch is required, the control does NOT disappear — it is
-       * `aria-disabled` and the reason goes into the hint, which the shell (`ui/settings-panel.fillExplain`) moves to the
-       * footer. Disappearing would teach that the thing does not exist; leaving it active would make the child press it
-       * and not understand why nothing changed.
-       *
-       * 📌 And `aria-disabled`, not `disabled`: a really disabled button LEAVES the tab order, and a keyboard user could no
-       * longer reach it — so could no longer READ the reason. The same choice #128 names as a defect when made the other
-       * way (a CSS class only, no `aria`).
-       */
-      const refusal = refusalFor(selMovPlayer);
-      if (refusal) altMoveBtn.setAttribute('aria-disabled', 'true');
-      else altMoveBtn.removeAttribute('aria-disabled');
-      if (altMoveHint) altMoveHint.textContent = refusal ? `${originalHint} ${t(refusal.key)}`.trim() : originalHint;
     }
     reflectMovementBtn();
   }
@@ -453,13 +423,6 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     }
     if (altMoveBtn) {
       altMoveBtn.addEventListener('click', () => {
-        /*
-         * ⚠️ REFUSE BY SAYING, NOT IN SILENCE. The listener is wired once, and a mute `return` would accept the click and
-         * ignore it — the other half of what ADR-0076 forbids. So the refusal SPEAKS: whoever pressed learns why, even
-         * without seeing the hint.
-         */
-        const refusal = refusalFor(selMovPlayer);
-        if (refusal) { ctx.srSay(t(refusal.key)); return; }
         setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
         reflectAltMove();
       });

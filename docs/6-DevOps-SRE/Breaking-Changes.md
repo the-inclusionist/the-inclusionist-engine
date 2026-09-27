@@ -4048,6 +4048,35 @@ can forget, and forgetting it keeps the defect in silence.
 |---|---|---|
 | `input/gamepad.GamepadCtx` — the transport's wizard closed with no word to anyone | gains `wizardClosed(): void`, REQUIRED — called once per close (saved, cancelled, or closed by the root), after `#padwiz` is hidden and after the resume of a game the wizard paused | pass a function that returns the focus to whoever held it when the wizard opened — with the engine's overlays, `wizardClosed: () => { overlays.restoreFocus('padwiz'); }` |
 
+## DU · ADR-0249: the game says whether a one-command transport latches, and the child may change it
+
+**Who is affected:** a consumer that calls the latch rule or its storage itself — `input/latch-scope`, `input/latch-store`,
+`input/latch-sync`, `input/latch-edge` — or `ui/latch-refusal`, or `ui/pause-icons.nextInputMode` with three arguments. 📏 Two
+sibling repositories call the latched edge (`git grep` over the checkouts beside the engine, 2026-09-27): `game-platformer`
+(`app/js/main.ts`) and `game-soccer` (`app/js/boot/main.ts`), both through `criarArestaComAlternancia(() => players)` of
+`^9.0.0`, so each already meets note AO's rename (`createLatchedEdge`) and now also `holdsKeys` on the day it moves to this
+version. No sibling
+names `latchRefusal`, `latchAlwaysOn`, `latchIsOptional`, `nextInputMode` or the `alt.exigida.*` keys. A game that lets
+`createGame` mount its transports needs nothing: the root reads its `holdsKeys()` itself.
+
+📌 **Why:** ADR-0249. On eyes, face, gestures and speech the latch was ALWAYS on and the stored choice was never read
+(ADR-0109, ADR-0113 clause 3). The Dev decided that the game says it: the latch on those four starts as the game's
+`holdsKeys()` — read when the transport presses, since a game changes it between stages — and the child's stored choice for
+that transport wins over it; the option is offered there as on the keyboard. A platform game keeps walking on «direita», a quiz
+presses once on «abaixo». Keyboard, pad and touch keep their rules. The root now resolves the latch when one of the four presses
+the virtual controller (`VirtualControllerDeps.pressedBy`, new and optional).
+
+| was | is | migration |
+|---|---|---|
+| `input/latch-scope.latchAlwaysOn(t)`, `latchIsOptional(t)` | removed; `latchDefaultFromGame(t)` answers whether the transport's default is the game's (`true` on the four) — the option is offered on every transport | a caller of `latchIsOptional` offers the option always; a caller of `latchAlwaysOn` asks `latchDefaultFromGame` and resolves with `latchOf` |
+| `input/latch-scope.LatchReading` `{ fromTransport, fromLegacy, byDefault }`; `latchOf` answering `true` on the four | gains `gameHoldsKeys: boolean`, REQUIRED; `latchOf`: the transport's stored value · on the four, `gameHoldsKeys` · the legacy key · the factory default — the four no longer inherit the legacy key | add `gameHoldsKeys: declaration.holdsKeys()` to a reading built by hand; new type `LatchDefaults` = `{ byDefault, gameHoldsKeys }` |
+| `input/latch-store.readLatch(store, base, player, transport, fallback)`, `storedLatch(…, fallback)` | `(…, transport, defaults: LatchDefaults)` | pass `{ byDefault: fallback, gameHoldsKeys: declaration.holdsKeys() }` |
+| `input/latch-store.writeLatch(…): boolean` — `false` (nothing written) on the four | `: void` — writes on every transport | drop the use of the answer; the four are a choice now |
+| `input/latch-sync.syncLatch(p, store, player, transport, byDefault)` | `(…, transport, defaults: LatchDefaults)` | as `storedLatch` |
+| `input/latch-edge.LatchedEdgeOptions` `{ input, store, byDefault? }` | gains `holdsKeys: () => boolean`, REQUIRED, called at every edge | `createLatchedEdge(() => players, { input, store, holdsKeys: () => declaration.holdsKeys() })` |
+| `ui/latch-refusal` (`latchRefusal`, `LatchRefusal`, `REFUSAL_KEY`, `NEED_LATCH`, `showsEvenWhenRequired`) · dictionary keys `alt.exigida.olhos`, `.rosto`, `.gestos`, `.fala` | removed: no device refuses the latch | delete the refusal branch; `ONE_COMMAND_AT_A_TIME` still names the four |
+| `ui/pause-icons.nextInputMode(m, holdsKeys, latchRequired?)` · `IconStateSnapshot.latchRequired?` | `nextInputMode(m, holdsKeys)`; the snapshot member removed — the ☝️ offers «padrão» on every device of a game that holds keys | drop the third argument and the member |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 ⚠️ Rows marked **✖DO** were added after v10.0.0 for the Libras players and were withdrawn or changed by note DO (ADR-0234 phase B3) before any release: read DO for what holds now.

@@ -90,22 +90,19 @@ export function inputModeOf(s: { readonly toggleMove?: boolean; readonly switchS
 }
 
 /**
- * The next position. Two things take one away, and neither is an error to report — a cycle simply never stops where nothing
- * would happen (ADR-0155), and a word that promised what this game cannot do would teach a child that her setting is broken
- * (ADR-0106 §5):
+ * The next position. A GAME THAT HOLDS NO KEY has nothing for the latch to hold, so the icon offers standard and one button:
+ * a cycle never stops where nothing would happen (ADR-0155), and a word that promised what this game cannot do would teach a
+ * child that her setting is broken (ADR-0106 §5).
  *
- * · A GAME THAT HOLDS NO KEY has nothing for the latch to hold, so the icon offers standard and one button.
- * · A DEVICE THAT SENDS ONE COMMAND AT A TIME always latches and cannot be asked not to (ADR-0113 clause 3, ADR-0211), so
- *   `standard` is unreachable there. 🔴 That used to grey the whole icon out, and with three positions that would have cost a
- *   child playing with her eyes the one-button scan as well — the lock is the latch's, not the scan's.
+ * 📌 THE DEVICE TAKES NOTHING AWAY (ADR-0249): on eyes, face, gestures and speech the latch starts as the game answers
+ * `holdsKeys()`, and the child may turn it on or off like on any other device — so all three positions are offered there too.
  */
-function inputModeOrder(holdsKeys: boolean, latchRequired = false): readonly InputMode[] {
-  if (!holdsKeys) return ['standard', 'scan'];
-  return latchRequired ? ['sticky', 'scan'] : ['standard', 'sticky', 'scan'];
+function inputModeOrder(holdsKeys: boolean): readonly InputMode[] {
+  return holdsKeys ? ['standard', 'sticky', 'scan'] : ['standard', 'scan'];
 }
 
-export function nextInputMode(m: InputMode, holdsKeys: boolean, latchRequired = false): InputMode {
-  const order = inputModeOrder(holdsKeys, latchRequired);
+export function nextInputMode(m: InputMode, holdsKeys: boolean): InputMode {
+  const order = inputModeOrder(holdsKeys);
   const i = order.indexOf(m);
   return order[(i < 0 ? 0 : i + 1) % order.length]!;
 }
@@ -117,7 +114,6 @@ import { nextGameSpeed } from '../core/game-speed.js';
 import type { Store } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
 import { setMoveLatch } from './settings-mobility.js';
-import { latchRefusal } from './latch-refusal.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from './pause-buttons.js';
 import { aacMenuLocked } from './aac-sets.js';
 import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
@@ -235,15 +231,6 @@ export interface IconStateSnapshot {
   locale?: string;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
-  /**
-   * Does the device in use REQUIRE the latch? (ADR-0113 clause 3.) With the eyes, the face, gestures and speech the latch
-   * is what makes the input work, so there is no choice to offer: the ☝️ cycle then skips `standard` (see
-   * `inputModeOrder`).
-   *
-   * OPTIONAL because adding a required member to a published snapshot is a breaking change (the shape gate,
-   * `tests/public-surface-shrinks-by-declaration`, fails on it). Absent means «nobody told me», which degrades to «not required».
-   */
-  latchRequired?: boolean;
   /** No voice speaks the current language (ADR-0185): the narration icon is locked. Absent reads as a voice. */
   noVoice?: boolean;
 }
@@ -319,9 +306,8 @@ const ICON_VISUAL: Readonly<Record<string, IconVisualRule>> = Object.freeze({
   tts: (s) => ({ on: s.ttsOn, dis: !s.privateOutput || !!s.noVoice }),
   libras: (s) => ({ on: s.librasOn }),
   tea: (s) => ({ on: s.calmMode === 2, calm: s.calmMode === 1 }),
-  // ⚠️ AND IT IS NEVER GREYED OUT. `latchRequired` says the DEVICE in use sends one command at a time and the latch cannot be
-  // turned off (ADR-0113 clause 3) — which the CYCLE tells, since `standard` simply does not appear in it. Greying the icon
-  // would take the one-button scan away from the child playing with their eyes, who is the likeliest to need it.
+  // ⚠️ AND IT IS NEVER GREYED OUT: every device may be in any of its positions (ADR-0249), and what a game cannot hold the
+  // CYCLE tells by not offering it — greying the icon would take the one-button scan away with it.
   altmove: (s) => ({ on: inputModeOf(s) !== 'standard' }),
   contrast: (s) => ({ on: hasHighContrast(s.visual) }),
   velocidade: (s) => ({ on: (s.speed ?? 1) < 1 }),
@@ -361,8 +347,8 @@ export interface ActionableIcons {
    * DOES THIS GAME HOLD ANY KEY? — `GameDeclaration.holdsKeys`, the field of ADR-0115.
    *
    * The latch exists for whoever cannot keep a key pressed; in a game where nothing is held it has nothing to hold, and a
-   * control that does nothing teaches a child that the setting she depends on is broken. (A different absence from
-   * ADR-0113 clause 3's, where the device REQUIRES the latch: see `latchRequired`.)
+   * control that does nothing teaches a child that the setting she depends on is broken. On eyes, face, gestures and
+   * speech it is also the latch's default (ADR-0249) — read by the root at every command, not here.
    *
    * A FUNCTION, not a value (as in ADR-0084): an answer read once goes stale silently, and with one `createGame` serving
    * several cartridges (ADR-0142) the icon would describe the game that booted first.
@@ -613,7 +599,7 @@ export interface PauseIconsCtx {
   // --- announcements (core/a11y-sr; injected because they reach `document` at call time) ---
   /** aria-live "polite" — every successful toggle announces its NEW state. */
   srSay: (text: string) => void;
-  /** aria-live "assertive" — the refusals (a shared audio output, a device that always latches). */
+  /** aria-live "assertive" — the refusals (a shared audio output, no voice for the language). */
   srAlert: (text: string) => void;
   /**
    * Called after EVERY exit from the bar mode, with the screen and whether it was silent. Absent, nothing happens. It lets
@@ -877,8 +863,6 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   const setPauseActor = (i: number): void => { if (ctx.setPauseActor) ctx.setPauseActor(i); };
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
-  /** The latch refusal for this player now, or `null`. Recomputed: the device in use changes. */
-  function refusalNow(i: number) { return ctx.transportInUse ? latchRefusal(ctx.transportInUse(i)) : null; }
 
   function iconState(i: number): IconStateSnapshot {
     const p = P()[i] || {};
@@ -898,7 +882,6 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       camera: ctx.settings.cameraControl,
       locale: ctx.translator.locale(),
       privateOutput: hasPrivateOutput(i),
-      latchRequired: refusalNow(i) !== null,
       noVoice: !!ctx.noVoice?.(),
     };
   }
@@ -958,18 +941,15 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
       const latched = !!P()[i].toggleMove;
-      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan: ctx.settings.switchScan }), ctx.holdsKeys(), refusalNow(i) !== null);
+      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan: ctx.settings.switchScan }), ctx.holdsKeys());
       ctx.settings.setSwitchScanValue(next === 'scan');
       // 📌 ENTERING THE SCAN LEAVES THE LATCH WHERE SHE PUT IT — the scan wins in `inputModeOf`, so the position shown is never
       // ambiguous and coming back out returns her to the choice she had made. Leaving it writes the position she walked to.
       // ⚠️ And the latch writer ANNOUNCES BY ITSELF, so it is called only where it changes something: otherwise the child would
       // hear «não precisa segurar, desligado» when what ended was the scan.
+      // 📌 On every device, eyes and voice included (ADR-0249): the write goes under the transport in use, and that stored
+      // choice is what wins over the game's default the next time that transport presses.
       if (next !== 'scan' && latched !== (next === 'sticky')) {
-        // ⚠️ THE REFUSAL, over the WRITE, which is the only thing it ever meant. The cycle above already skips `standard` on a
-        // device that always latches, so this should be unreachable — and it stays because `iconAct` is exported and the two
-        // rules could drift apart, which is the same reason the guards below give for not being belt and braces.
-        const refusal = refusalNow(i);
-        if (refusal) { ctx.srAlert(t(refusal.key)); return; }
         setToggleMove(i, next === 'sticky');
         return;
       }
@@ -1046,9 +1026,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ctx.srAlert(t('sr.icon.needsPrivateOutput'));
       return;
     }
-    // No blanket refusal for `altmove` here (ADR-0218): refusing the whole icon on a device that always latches would also
-    // lock «one button only» away from the child playing with their eyes. The lock lives in the CYCLE, which skips
-    // `standard` on that device, and the refusal lives inside the action, over the latch write only.
+    // No refusal for `altmove` (ADR-0249): no device locks the latch, and what a game cannot hold the CYCLE leaves out.
     const act = ICON_ACTS[k];
     if (act) act(i);
   }

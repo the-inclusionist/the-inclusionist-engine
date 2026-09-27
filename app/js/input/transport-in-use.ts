@@ -71,9 +71,9 @@ export function isTransportName(v: unknown): v is TransportName {
  * THE FOUR THAT REQUIRE EXPLICIT ENABLING and, once enabled, rule over all the others (rule 4).
  *
  * ⚠️ It is the same list as `ONE_COMMAND_AT_A_TIME` in `input/latch-scope`, and the match is no accident: these
- * are the transports of whoever CANNOT HOLD ANYTHING. What ADR-0109 adds is that they do not turn latching on
- * only for themselves — they turn it on for the rest, because whoever uses the webcam may also touch the screen,
- * and a latch that turns off when the device changes is a trap for exactly that person.
+ * are the transports that send one command at a time. What ADR-0109 added — that enabling them turns latching on
+ * for the rest — is the model of `latchNow`, which ADR-0113 superseded; since ADR-0249 their own latch starts as
+ * the game's `holdsKeys()` and the child may change it.
  */
 export const NEED_ENABLING: ReadonlySet<TransportName> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
 
@@ -121,8 +121,8 @@ export const DEFAULT_INPUT_STATE: InputState = Object.freeze({ inUse: 'teclado',
  * `latch-scope.latchOf` returns `true`, because it reads what they saved.
  *
  * ⚠️ AND THE TOUCH CLAUSE FELL TOO: under ADR-0113 touch is a transport like the others — its value is a choice
- * and is stored. Only eyes, face, gestures and speech may refuse to turn OFF, and that half lives in
- * `latch-scope.latchAlwaysOn`, with a different set from this one and answering a different question.
+ * and is stored. Eyes, face, gestures and speech differ only in where their DEFAULT comes from — the game's
+ * `holdsKeys()` (ADR-0249, `latch-scope.latchDefaultFromGame`) — and their value is a choice too.
  *
  * **The right answer is `latch-scope.latchOf(inputState.inUse, reading)`.** The role left to this module is
  * what its name says: WHICH transport is in use — which is what feeds that first argument.
