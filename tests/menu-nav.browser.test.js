@@ -773,7 +773,8 @@ describe('menuNavKey — o tradutor de teclado', () => {
       nav.menuNavKey(e);
       expect(e.stops, `player 2's ${code} was taken by the screen's menus`).toBe(0);
     }
-    expect([$('#typo').hidden, document.activeElement], 'player 2 steered the dialog on top').toEqual([false, foco]);
+    expect($('#typo').hidden, 'player 2 closed the dialog on top').toBe(false);
+    expect(document.activeElement, 'player 2 moved the focus in the dialog on top').toBe(foco); // identity: the SAME element
     expect(nav.itemNames(1), 'player 2 can say the names of a menu she does not steer').toEqual([]);
     $('#typo').hidden = true;
     nav.menuNavKey(key('ArrowRight'));
