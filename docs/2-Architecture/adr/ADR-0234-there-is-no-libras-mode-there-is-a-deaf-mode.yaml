@@ -2,6 +2,8 @@
 metadata:
   status: "accepted"
   confirmed-by:
+    - tests/the-interpreter-takes-turns.browser.test.js
+    - tests/vlibras.node.test.js
     - tests/the-sonar-takes-turns.node.test.js
     - tests/the-sonar-takes-turns.browser.test.js
     - tests/the-sonar-reads-the-screen.browser.test.js
@@ -9,6 +11,15 @@ metadata:
     - tests/libras-glosses.node.test.js
   supersedes-in-part: [ADR-0051]
   errata:
+    - date: 2026-09-26
+      what: >-
+        THE INTERPRETER'S TURNS ARE BUILT (`engine:17c6620a`): deaf mode keeps the line itself (`ui/vlibras`), as the
+        narration does in `platform/tts`, since the player only knows «replace what is being signed». Another player's
+        request waits until the one being signed is answered, replacing that player's own waiting request in its place; a
+        player's newer request replaces their own at once; a request that names no player takes the line; a request that
+        cannot be signed still hands the line on; turning the mode off or disposing the root drops it. A request is
+        captioned when its turn comes, so the caption and the hands say the same text, which is the text of its press. The
+        root already handed the sonar's seat to deaf mode on both paths (in play and with a menu open). 10 mutations red.
     - date: 2026-09-26
       what: >-
         DEAF MODE TAKES TURNS TOO, AND A QUEUED READING KEEPS THE SCREEN OF ITS PRESS. The two points the first erratum of
